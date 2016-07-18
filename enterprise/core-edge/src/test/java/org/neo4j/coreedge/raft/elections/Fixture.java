@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.RaftInstance;
@@ -35,18 +37,22 @@ import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
+import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.NullLogProvider;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class Fixture
 {
-    private final Set members = new HashSet<>();
+    private final Set<CoreMember> members = new HashSet<>();
+    private final Set<BootstrapWaiter> bootstrapWaiters = new HashSet<>();
+    private final List<DelayedRenewableTimeoutService> timeoutServices = new ArrayList<>();
     final Set<RaftInstance> rafts = new HashSet<>();
     final RaftTestNetwork net;
-    private final List<DelayedRenewableTimeoutService> timeoutServices = new ArrayList<>();
 
-    Fixture( Set<CoreMember> memberIds, RaftTestNetwork net, long electionTimeout, long heartbeatInterval,
-             RaftStateMachine stateMachine ) throws Throwable
+    Fixture( Set<CoreMember> memberIds, RaftTestNetwork net, long electionTimeout, long heartbeatInterval )
     {
         this.net = net;
 
@@ -59,6 +65,9 @@ public class Fixture
 
             DelayedRenewableTimeoutService timeoutService = createTimeoutService();
 
+            BootstrapWaiter waiter = new BootstrapWaiter();
+            bootstrapWaiters.add( waiter );
+
             RaftInstance raftInstance =
                     new RaftInstanceBuilder( member, memberIds.size(), RaftTestMemberSetBuilder.INSTANCE )
                             .electionTimeout( electionTimeout )
@@ -67,14 +76,14 @@ public class Fixture
                             .outbound( outbound )
                             .timeoutService( timeoutService )
                             .raftLog( new InMemoryRaftLog() )
-                            .stateMachine( stateMachine )
+                            .stateMachine( waiter )
                             .build();
 
             rafts.add( raftInstance );
         }
     }
 
-    private DelayedRenewableTimeoutService createTimeoutService() throws Throwable
+    private DelayedRenewableTimeoutService createTimeoutService()
     {
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService(
                 Clock.systemUTC(), NullLogProvider.getInstance() );
@@ -87,13 +96,14 @@ public class Fixture
         return timeoutService;
     }
 
-    void boot() throws BootstrapException
+    void boot() throws BootstrapException, TimeoutException, InterruptedException
     {
         net.start();
         Iterables.first( rafts ).bootstrapWithInitialMembers( new RaftTestGroup( members ) );
+        awaitBootstrapped();
     }
 
-    public void teardown() throws InterruptedException
+    public void tearDown()
     {
         net.stop();
         for ( DelayedRenewableTimeoutService timeoutService : timeoutServices )
@@ -111,5 +121,51 @@ public class Fixture
         {
             raft.logShippingManager().stop();
         }
+    }
+
+    /**
+     * This class simply waits for a single entry to have been committed,
+     * which should be the initial member set entry.
+     *
+     * If all members of the cluster have committed such an entry, it's possible for any member
+     * to perform elections. We need to meet this condition before we start disconnecting members.
+     */
+    private static class BootstrapWaiter implements RaftStateMachine
+    {
+        private AtomicBoolean bootstrapped = new AtomicBoolean( false );
+
+        @Override
+        public void notifyCommitted( long commitIndex )
+        {
+            if ( commitIndex >= 0 )
+            {
+                bootstrapped.set( true );
+            }
+        }
+
+        @Override
+        public void notifyNeedFreshSnapshot()
+        {
+        }
+
+        @Override
+        public void downloadSnapshot( CoreMember from )
+        {
+        }
+
+    }
+
+    private void awaitBootstrapped() throws InterruptedException, TimeoutException
+    {
+        Predicates.await( () -> {
+            for ( BootstrapWaiter bootstrapWaiter : bootstrapWaiters )
+            {
+                if ( !bootstrapWaiter.bootstrapped.get() )
+                {
+                    return false;
+                }
+            }
+            return true;
+        }, 30, SECONDS, 100, MILLISECONDS );
     }
 }
