@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,11 +32,13 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.ha.TestRunConditions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.test.rule.LoggerRule;
 import org.neo4j.test.rule.TargetDirectory;
 
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
@@ -65,16 +68,23 @@ public class FailoverWithAdditionalSlaveFailuresIT
                  * cases the cluster takes longer to form because of cumulative timeouts since the machines we run
                  * these tests on cannot cope with the number of threads spun up. The basic scenario is sufficiently
                  * tested with the 5-size cluster, but the 6 and 7 size cases are good to keep around for posterity,
-                 * since a better, multi machine setup can and should test them.
+                 * since a better, multi machine setup can and should test them. Hence, they are ignored through the
+                 * JUnit assumption in the @Before method
                  */
-//                {6, new int[]{1}},
-//                {6, new int[]{3}},
-//                {6, new int[]{5}},
-//
-//                {7, new int[]{1, 2}},
-//                {7, new int[]{3, 4}},
-//                {7, new int[]{5, 6}},
+                {6, new int[]{1}},
+                {6, new int[]{3}},
+                {6, new int[]{5}},
+
+                {7, new int[]{1, 2}},
+                {7, new int[]{3, 4}},
+                {7, new int[]{5, 6}},
         });
+    }
+
+    @Before
+    public void shouldRun()
+    {
+        assumeTrue( TestRunConditions.shouldRunAtClusterSize( clusterSize ) );
     }
 
     public FailoverWithAdditionalSlaveFailuresIT( int clusterSize, int[] slavesToFail )
