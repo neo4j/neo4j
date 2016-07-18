@@ -107,7 +107,34 @@ public class Terms
     synchronized void prune( long upToIndex )
     {
         min = max( upToIndex, min );
-        // could also prune out array
+
+        int lastToPrune = findRangeContaining( min ) - 1; // we can prune the ranges preceding
+
+        if ( lastToPrune < 0 )
+        {
+            return;
+        }
+
+        size = (indexes.length - 1) - lastToPrune;
+        indexes = Arrays.copyOfRange( indexes, lastToPrune + 1, indexes.length );
+        terms = Arrays.copyOfRange( terms, lastToPrune + 1, terms.length );
+    }
+
+    private int findRangeContaining( long index )
+    {
+        for ( int i = 0; i < indexes.length; i++ )
+        {
+            if ( indexes[i] > index )
+            {
+                return i - 1;
+            }
+            else if( indexes[i] == index )
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     synchronized void skip( long prevIndex, long prevTerm )
