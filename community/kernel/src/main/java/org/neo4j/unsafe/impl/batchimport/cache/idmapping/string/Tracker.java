@@ -39,7 +39,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Group;
  * a smaller data structure for smaller datasets, for example those that fit inside {@code int} range.
  * That's why this abstraction exists so that the best suited implementation can be picked for every import.
  */
-public interface Tracker extends MemoryStatsVisitor.Visitable
+public interface Tracker extends MemoryStatsVisitor.Visitable, AutoCloseable
 {
     /**
      * @param index data index to get the value for.
@@ -63,4 +63,7 @@ public interface Tracker extends MemoryStatsVisitor.Visitable
      * @param value value to set at that index.
      */
     void set( long index, long value );
+
+    @Override
+    void close();
 }

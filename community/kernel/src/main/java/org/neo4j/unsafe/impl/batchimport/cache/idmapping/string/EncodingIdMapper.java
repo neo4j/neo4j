@@ -793,7 +793,6 @@ public class EncodingIdMapper implements IdMapper
         nullSafeAcceptMemoryStatsVisitor( visitor, collisionTrackerCache );
         nullSafeAcceptMemoryStatsVisitor( visitor, collisionSourceDataCache );
         nullSafeAcceptMemoryStatsVisitor( visitor, collisionNodeIdCache );
-        // TODO mention anything about the collisionValues data structure?
     }
 
     private void nullSafeAcceptMemoryStatsVisitor( MemoryStatsVisitor visitor, MemoryStatsVisitor.Visitable mem )
@@ -808,5 +807,18 @@ public class EncodingIdMapper implements IdMapper
     public String toString()
     {
         return getClass().getSimpleName() + "[" + encoder + "," + radix + "]";
+    }
+
+    @Override
+    public void close()
+    {
+        dataCache.close();
+        trackerCache.close();
+        if ( collisionSourceDataCache != null )
+        {
+            collisionTrackerCache.close();
+            collisionSourceDataCache.close();
+        }
+        collisionNodeIdCache.close();
     }
 }
