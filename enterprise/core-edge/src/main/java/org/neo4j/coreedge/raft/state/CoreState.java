@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.SessionTracker;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.log.RaftLog;
@@ -35,7 +35,6 @@ import org.neo4j.coreedge.raft.log.pruning.LogPruner;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.replication.DistributedOperation;
 import org.neo4j.coreedge.raft.replication.ProgressTracker;
-import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
@@ -55,7 +54,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     private final StateStorage<Long> lastFlushedStorage;
     private final int flushEvery;
     private final ProgressTracker progressTracker;
-    private final StateStorage<GlobalSessionTrackerState> sessionStorage;
+    private final SessionTracker sessionTracker;
     private final Supplier<DatabaseHealth> dbHealth;
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private final Log log;
@@ -65,7 +64,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     private final RaftLogCommitIndexMonitor commitIndexMonitor;
     private final OperationBatcher batcher;
 
-    private GlobalSessionTrackerState sessionState = new GlobalSessionTrackerState();
     private CoreStateMachines coreStateMachines;
 
     private long lastApplied = NOTHING;
@@ -73,25 +71,26 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     private long lastFlushed = NOTHING;
 
     public CoreState(
-            RaftLog raftLog,
+            CoreStateMachines coreStateMachines, RaftLog raftLog,
             int maxBatchSize,
             int flushEvery,
             Supplier<DatabaseHealth> dbHealth,
             LogProvider logProvider,
             ProgressTracker progressTracker,
             StateStorage<Long> lastFlushedStorage,
-            StateStorage<GlobalSessionTrackerState> sessionStorage,
+            SessionTracker sessionTracker,
             CoreServerSelectionStrategy someoneElse,
             CoreStateApplier applier,
             CoreStateDownloader downloader,
-            InFlightMap<Long,RaftLogEntry> inFlightMap,
+            InFlightMap<Long, RaftLogEntry> inFlightMap,
             Monitors monitors )
     {
+        this.coreStateMachines = coreStateMachines;
         this.raftLog = raftLog;
         this.lastFlushedStorage = lastFlushedStorage;
         this.flushEvery = flushEvery;
         this.progressTracker = progressTracker;
-        this.sessionStorage = sessionStorage;
+        this.sessionTracker = sessionTracker;
         this.someoneElse = someoneElse;
         this.applier = applier;
         this.downloader = downloader;
@@ -100,17 +99,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         this.inFlightMap = inFlightMap;
         this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass() );
         this.batcher = new OperationBatcher( maxBatchSize );
-    }
-
-    synchronized void setStateMachine( CoreStateMachines coreStateMachines )
-    {
-        this.coreStateMachines = coreStateMachines;
-    }
-
-    public void skip( long lastApplied )
-    {
-        this.lastApplied = this.lastFlushed = lastApplied;
-        log.info( format( "Skipping lastApplied index forward to %d", lastApplied ) );
     }
 
     @Override
@@ -222,11 +210,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         }
     }
 
-    /**
-     * Compacts the core state.
-     *
-     * @throws IOException
-     */
     public void compact() throws IOException
     {
         raftLog.prune( lastFlushed );
@@ -256,7 +239,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         {
             for ( DistributedOperation operation : operations )
             {
-                if ( !sessionState.validateOperation( operation.globalSession(), operation.operationId() ) )
+                if ( !sessionTracker.validateOperation( operation.globalSession(), operation.operationId() ) )
                 {
                     commandIndex++;
                     continue;
@@ -266,7 +249,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
                 command.dispatch( dispatcher, commandIndex,
                         result -> progressTracker.trackResult( operation, result ) );
 
-                sessionState.update( operation.globalSession(), operation.operationId(), commandIndex );
+                sessionTracker.update( operation.globalSession(), operation.operationId(), commandIndex );
                 commandIndex++;
             }
         }
@@ -283,7 +266,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     private void flush() throws IOException
     {
         coreStateMachines.flush();
-        sessionStorage.persistStoreData( sessionState );
+        sessionTracker.flush();
         lastFlushedStorage.persistStoreData( lastApplied );
         lastFlushed = lastApplied;
     }
@@ -293,12 +276,12 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     {
         lastFlushed = lastApplied = lastFlushedStorage.getInitialState();
         log.info( format( "Restoring last applied index to %d", lastApplied ) );
-        sessionState = sessionStorage.getInitialState();
+        sessionTracker.start();
 
         /* Considering the order in which state is flushed, the state machines will
          * always be furthest ahead and indicate the furthest possible state to
          * which we must replay to reach a consistent state. */
-        long lastPossiblyApplying = max( coreStateMachines.getLastAppliedIndex(), sessionState.logIndex() );
+        long lastPossiblyApplying = max( coreStateMachines.getLastAppliedIndex(), sessionTracker.getLastAppliedIndex() );
 
         if ( lastPossiblyApplying > lastApplied )
         {
@@ -324,7 +307,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         CoreSnapshot coreSnapshot = new CoreSnapshot( prevIndex, prevTerm );
 
         coreStateMachines.addSnapshots( coreSnapshot );
-        coreSnapshot.add( CoreStateType.SESSION_TRACKER, sessionState.newInstance() );
+        sessionTracker.addSnapshots( coreSnapshot );
 
         return coreSnapshot;
     }
@@ -332,7 +315,22 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     synchronized void installSnapshot( CoreSnapshot coreSnapshot )
     {
         coreStateMachines.installSnapshots( coreSnapshot );
-        sessionState = coreSnapshot.get( CoreStateType.SESSION_TRACKER );
+        long snapshotPrevIndex = coreSnapshot.prevIndex();
+        try
+        {
+            if ( snapshotPrevIndex > 1 )
+            {
+                raftLog.skip( snapshotPrevIndex, coreSnapshot.prevTerm() );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        this.lastApplied = this.lastFlushed = snapshotPrevIndex;
+        log.info( format( "Skipping lastApplied index forward to %d", snapshotPrevIndex ) );
+
+        sessionTracker.installSnapshots( coreSnapshot );
     }
 
     @Override
