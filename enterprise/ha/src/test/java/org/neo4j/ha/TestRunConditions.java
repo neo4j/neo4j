@@ -32,7 +32,7 @@ public class TestRunConditions
     /**
      * Largest cluster size which can run without (many) problems in a typical windows build
      */
-    private static final int MAX_WINDOWS_CLUSTER_SIZE = 3;
+    private static final int MAX_WINDOWS_CLUSTER_SIZE = 5;
 
     /**
      * Largest cluster size which can run without (many) problems on any plaform
