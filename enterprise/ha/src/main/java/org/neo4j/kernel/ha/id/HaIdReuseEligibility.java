@@ -58,8 +58,7 @@ public class HaIdReuseEligibility implements IdReuseEligibility
         case HighAvailabilityModeSwitcher.MASTER:
             // If we're master then we have to keep these ids around during the configured safe zone time
             // so that slaves have a chance to read consistently as well (slaves will know and compensate
-            // for falling outside of safe zone). Let's keep this separate from SLAVE since they
-            // have different reasons for doing what they do.
+            // for falling outside of safe zone).
             return clock.currentTimeMillis() - snapshot.snapshotTime() >= idReuseSafeZone;
         default:
             // If we're anything other than slave, i.e. also pending then retain the ids since we're

@@ -97,6 +97,10 @@ public class HaSettings
     @Description( "Size of batches of transactions applied on slaves when pulling from master" )
     public static final Setting<Integer> pull_apply_batch_size = setting( "ha.pull_batch_size", INTEGER, "100" );
 
+    @Description( "Duration for which master will buffer ids and not reuse them to allow slaves read " +
+                  "consistently. Slaves will also terminate transactions longer than this duration, when " +
+                  "applying received transaction stream, to make sure they do not read potentially " +
+                  "inconsistent/reused records." )
     @Internal
     public static final Setting<Long> id_reuse_safe_zone_time = setting( "unsupported.dbms.id_reuse_safe_zone", Settings.DURATION, "1h" );
 
