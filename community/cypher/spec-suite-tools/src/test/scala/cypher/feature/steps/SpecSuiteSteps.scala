@@ -143,9 +143,9 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
       val matcher = constructResultMatcher(expectedTable)
 
       val assertedSuccessful = successful(result)
-      matcher should accept(assertedSuccessful)
-      tx.success()
-      tx.close()
+      tryAndClose {
+        matcher should accept(assertedSuccessful)
+      }
     }
   }
 
@@ -154,9 +154,9 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
       val matcher = constructResultMatcher(expectedTable, unorderedLists = true)
 
       val assertedSuccessful = successful(result)
-      matcher should accept(assertedSuccessful)
-      tx.success()
-      tx.close()
+      tryAndClose {
+        matcher should accept(assertedSuccessful)
+      }
     }
   }
 
@@ -173,9 +173,9 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
       val matcher = constructResultMatcher(expectedTable)
 
       val assertedSuccessful = successful(result)
-      matcher should acceptOrdered(assertedSuccessful)
-      tx.success()
-      tx.close()
+      tryAndClose {
+        matcher should acceptOrdered(assertedSuccessful)
+      }
     }
   }
 
@@ -216,6 +216,13 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     if (!BlacklistPlugin.blacklisted(currentScenarioName) && (requiredScenarioName.isEmpty || currentScenarioName.contains(requiredScenarioName))) {
       f
     }
+  }
+
+  private def tryAndClose(f: => Unit) = {
+    try {
+      f
+      tx.success()
+    } finally tx.close()
   }
 
   private def successful(value: Try[Result]): Result = value match {
