@@ -80,6 +80,15 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
             return processedTicket.get() == ticket - 1;
         }
     };
+    private final LongPredicate catchUp = new LongPredicate()
+    {
+        @Override
+        public boolean test( long ticket )
+        {
+            long queued = submittedTicket.get() - processedTicket.get();
+            return queued <= executor.processors( 0 );
+        }
+    };
     private final Runnable healthCheck;
     private volatile boolean done;
 
@@ -93,9 +102,20 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
         this.processed = new ArrayBlockingQueue<>( maxProcessors );
     }
 
-    public void submit( long ticket, FROM job )
+    /**
+     * Submits a job for processing. Results from processed jobs will be available from {@link #next()}
+     * in the order in which they got submitted. This method will queue jobs for processing, but not
+     * more than the number of current processors and never more than number of maximum processors
+     * given in the constructor; the call will block until queue size goes under this threshold.
+     * Blocking will provide push-back of submitting new jobs as to reduce unnecessary memory requirements
+     * for jobs that will sit and wait to be processed.
+     *
+     * @param job to process.
+     */
+    public void submit( FROM job )
     {
-        submittedTicket.incrementAndGet();
+        long ticket = submittedTicket.incrementAndGet();
+        await( catchUp, ticket, healthCheck, park );
         executor.submit( threadLocalState ->
         {
             // Process this job (we're now in one of the processing threads)
@@ -116,7 +136,7 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
     }
 
     /**
-     * Essentially starting a thread {@link #submit(long, Object) submitting} a stream of inputs which will
+     * Essentially starting a thread {@link #submit(Object) submitting} a stream of inputs which will
      * each be processed and asynchronically made available in order of processing ticket by later calling
      * {@link #next()}.
      *
@@ -130,9 +150,9 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
     {
         return future( () ->
         {
-            for ( long ticket = 0; input.hasNext(); ticket++ )
+            while ( input.hasNext() )
             {
-                submit( ticket, input.next() );
+                submit( input.next() );
             }
             if ( shutdownAfterAllSubmitted )
             {
