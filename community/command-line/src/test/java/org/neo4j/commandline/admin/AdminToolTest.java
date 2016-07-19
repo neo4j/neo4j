@@ -94,7 +94,7 @@ public class AdminToolTest
         }
     }
 
-    private static class CannedLocator implements AdminTool.CommandLocator
+    private static class CannedLocator implements CommandLocator
     {
         private final RecordingCommand command;
 
@@ -116,7 +116,7 @@ public class AdminToolTest
         }
     }
 
-    private static class NullCommandLocator implements AdminTool.CommandLocator
+    private static class NullCommandLocator implements CommandLocator
     {
         @Override
         public AdminCommand.Provider apply( String s )
