@@ -123,6 +123,12 @@ public class ThreadAheadReadableTest
             }
         }
 
+        @Override
+        public int read( char[] into, int offset, int length ) throws IOException
+        {
+            throw new UnsupportedOperationException();
+        }
+
         private SectionedCharBuffer registerBytesRead( SectionedCharBuffer buffer )
         {
             bytesRead += buffer.available();

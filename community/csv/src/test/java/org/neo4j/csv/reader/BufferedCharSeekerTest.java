@@ -826,6 +826,12 @@ public class BufferedCharSeekerTest
         }
 
         @Override
+        public int read( char[] into, int offset, int length ) throws IOException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public long position()
         {
             return position;
