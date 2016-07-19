@@ -97,20 +97,22 @@ public class KernelTransactionTerminationTest
                     tx.initialize();
                     CommitterAction committerAction = CommitterAction.random();
                     committerAction.executeOn( tx );
-                    assertTrue( committerToTerminator.add( true ) );
-                    TerminatorAction terminatorAction;
-                    try
+                    if ( committerToTerminator.offer( true ) )
                     {
-                        terminatorAction = terminatorToCommitter.poll( 1, TimeUnit.SECONDS );
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        Thread.currentThread().interrupt();
-                        return;
-                    }
-                    if ( terminatorAction != null )
-                    {
-                        close( tx, committerAction, terminatorAction );
+                        TerminatorAction terminatorAction;
+                        try
+                        {
+                            terminatorAction = terminatorToCommitter.poll( 1, TimeUnit.SECONDS );
+                        }
+                        catch ( InterruptedException e )
+                        {
+                            Thread.currentThread().interrupt();
+                            return;
+                        }
+                        if ( terminatorAction != null )
+                        {
+                            close( tx, committerAction, terminatorAction );
+                        }
                     }
                 }
         );
