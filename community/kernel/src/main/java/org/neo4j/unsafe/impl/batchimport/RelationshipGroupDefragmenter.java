@@ -57,31 +57,39 @@ public class RelationshipGroupDefragmenter
         try ( RelationshipGroupCache groupCache =
                 new RelationshipGroupCache( AUTO, memoryWeCanHoldForCertain, highNodeId ) )
         {
-            // Count all nodes, how many groups each node has each
-            executeStage( new CountGroupsStage( config, neoStore, groupCache ) );
-            long fromNodeId = 0;
-            long toNodeId = 0;
-            RecordStore<RelationshipGroupRecord> fromStore = neoStore.getRelationshipGroupStore();
-            RecordStore<RelationshipGroupRecord> toStore =
-                    neoStore.getReplacementNeoStores( StoreType.RELATIONSHIP_GROUP ).getRelationshipGroupStore();
-            while ( fromNodeId < highNodeId )
+            try
             {
-                // See how many nodes' groups we can fit into the cache this iteration of the loop.
-                // Groups that doesn't fit in this round will be included in consecutive rounds.
-                toNodeId = groupCache.prepare( fromNodeId );
-                // Cache those groups
-                executeStage( new ScanAndCacheGroupsStage( config, fromStore, groupCache ) );
-                // And write them in sequential order in the store
-                executeStage( new WriteGroupsStage( config, groupCache, toStore ) );
+                // Count all nodes, how many groups each node has each
+                executeStage( new CountGroupsStage( config, neoStore, groupCache ) );
+                long fromNodeId = 0;
+                long toNodeId = 0;
+                RecordStore<RelationshipGroupRecord> fromStore = neoStore.getRelationshipGroupStore();
+                RecordStore<RelationshipGroupRecord> toStore =
+                        neoStore.getReplacementNeoStores( StoreType.RELATIONSHIP_GROUP ).getRelationshipGroupStore();
+                while ( fromNodeId < highNodeId )
+                {
+                    // See how many nodes' groups we can fit into the cache this iteration of the loop.
+                    // Groups that doesn't fit in this round will be included in consecutive rounds.
+                    toNodeId = groupCache.prepare( fromNodeId );
+                    // Cache those groups
+                    executeStage( new ScanAndCacheGroupsStage( config, fromStore, groupCache ) );
+                    // And write them in sequential order in the store
+                    executeStage( new WriteGroupsStage( config, groupCache, toStore ) );
 
-                // Make adjustments for the next iteration
-                fromNodeId = toNodeId;
+                    // Make adjustments for the next iteration
+                    fromNodeId = toNodeId;
+                }
+
+                // Now update nodes to point to the new groups
+                ByteArray groupCountCache = groupCache.getGroupCountCache();
+                groupCountCache.clear();
+                executeStage( new NodeFirstGroupStage( config, toStore, neoStore.getNodeStore(), groupCountCache ) );
             }
-
-            // Now update nodes to point to the new groups
-            ByteArray groupCountCache = groupCache.getGroupCountCache();
-            groupCountCache.clear();
-            executeStage( new NodeFirstGroupStage( config, toStore, neoStore.getNodeStore(), groupCountCache ) );
+            catch ( Throwable t )
+            {
+                t.printStackTrace();
+                throw t;
+            }
         }
     }
 
