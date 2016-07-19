@@ -23,12 +23,10 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -82,39 +80,6 @@ public class EntryCountThresholdTest
         // Then the last file should be kept around
         assertFalse( threshold.reached( file, 2L, info ) );
         assertTrue( threshold.reached( file, 1L, info ) );
-    }
-
-    @Test
-    public void shouldReturnTrueWhenLogFormatVersionIsOlderThanTheRequiredOne() throws Exception
-    {
-        long version = 10L;
-
-        when( info.getFirstEntryId( version + 1 ) ).thenThrow( new IllegalLogFormatException( 9L, 8L ) );
-
-        EntryCountThreshold threshold = new EntryCountThreshold( 2 );
-        boolean reached = threshold.reached( file, version, info );
-
-        assertTrue( reached );
-    }
-
-    @Test
-    public void shouldThrowExceptionWhenLogFormatVersionIsNewerThanTheRequiredOne() throws Exception
-    {
-        long version = 10L;
-
-        when( info.getFirstEntryId( version + 1 ) ).thenThrow( new IllegalLogFormatException( 9L, 11L ) );
-
-        EntryCountThreshold threshold = new EntryCountThreshold( 2 );
-        try
-        {
-            threshold.reached( file, version, info );
-            fail( "should have thrown IllegalLogFormatException" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertTrue( e.getCause() instanceof IllegalLogFormatException );
-            assertTrue( ((IllegalLogFormatException) e.getCause()).wasNewerLogVersion() );
-        }
     }
 
     @Test

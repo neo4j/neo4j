@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
@@ -46,18 +45,6 @@ public class LogPruneStrategyFactory
             return "NO_PRUNING";
         }
     };
-
-    static boolean decidePruneForIllegalLogFormat( IllegalLogFormatException e )
-    {
-        if ( e.wasNewerLogVersion() )
-        {
-            throw new RuntimeException( "Unable to read database logs, because it contains" +
-                    " logs from a newer version of Neo4j.", e );
-        }
-
-        // Hit an old version log, consider this out of date.
-        return true;
-    }
 
     /**
      * Parses a configuration value for log specifying log pruning. It has one of these forms:

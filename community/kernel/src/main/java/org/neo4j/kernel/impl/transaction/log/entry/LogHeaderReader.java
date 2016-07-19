@@ -26,7 +26,6 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -79,9 +78,8 @@ public class LogHeaderReader
     }
 
     public static long decodeLogVersion( long encLogVersion )
-            throws IllegalLogFormatException
     {
-        return (encLogVersion & 0x00FFFFFFFFFFFFFFL);
+        return encLogVersion & 0x00FFFFFFFFFFFFFFL;
     }
 
     public static byte decodeLogFormatVersion( long encLogVersion )

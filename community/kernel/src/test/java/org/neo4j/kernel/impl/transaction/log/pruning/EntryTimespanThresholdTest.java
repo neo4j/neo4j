@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.FrozenClock;
-import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
 import static org.junit.Assert.assertEquals;
@@ -76,46 +75,6 @@ public class EntryTimespanThresholdTest
 
         // then
         assertTrue( result );
-    }
-
-    @Test
-    public void shouldReturnTrueIfTheLogHasAnOlderVersion() throws IOException
-    {
-        // given
-        FrozenClock clock = new FrozenClock( 1000L, TimeUnit.MILLISECONDS );
-        final EntryTimespanThreshold threshold =
-                new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
-
-        when( source.getFirstStartRecordTimestamp( version ) ).thenThrow( new IllegalLogFormatException( version, 3 ) );
-
-        // when
-        threshold.init();
-        final boolean result = threshold.reached( file, version, source );
-
-        // then
-        assertTrue( result );
-    }
-
-    @Test
-    public void shouldThrowIfTheLogHasANewerVersion() throws IOException
-    {
-        // given
-        FrozenClock clock = new FrozenClock( 1000L, TimeUnit.MILLISECONDS );
-        final EntryTimespanThreshold threshold =
-                new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
-
-        final IllegalLogFormatException ex = new IllegalLogFormatException( version, 5 );
-        when( source.getFirstStartRecordTimestamp( version ) ).thenThrow( ex );
-
-        // when
-        threshold.init();
-        try{
-            threshold.reached( file, version, source );
-            fail("should have thrown");
-        } catch (RuntimeException e) {
-            // then
-            assertEquals( ex, e.getCause() );
-        }
     }
 
     @Test

@@ -29,12 +29,10 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
-
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.decodeLogFormatVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.decodeLogVersion;
@@ -71,7 +69,7 @@ public class LogHeaderWriterTest
     }
 
     @Test
-    public void shouldWriteALogHeaderInTheGivenBuffer() throws IllegalLogFormatException
+    public void shouldWriteALogHeaderInTheGivenBuffer()
     {
         // given
         final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
