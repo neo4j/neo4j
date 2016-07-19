@@ -25,14 +25,14 @@ import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.{ParameterWrongTypeException, CypherTypeException}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-case class ToIntFunction(a: Expression) extends NullInNullOutExpression(a) {
+case class ToIntegerFunction(a: Expression) extends NullInNullOutExpression(a) {
   def symbolTableDependencies: Set[String] = a.symbolTableDependencies
 
   protected def calculateType(symbols: SymbolTable): CypherType = CTInteger
 
   def arguments: Seq[Expression] = Seq(a)
 
-  def rewrite(f: (Expression) => Expression): Expression = f(ToIntFunction(a.rewrite(f)))
+  def rewrite(f: (Expression) => Expression): Expression = f(ToIntegerFunction(a.rewrite(f)))
 
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = value match {
     case v: Number =>

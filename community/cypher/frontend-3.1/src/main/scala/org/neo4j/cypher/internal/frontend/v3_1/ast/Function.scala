@@ -89,7 +89,7 @@ object Function {
     functions.Tan,
     functions.Timestamp,
     functions.ToFloat,
-    functions.ToInt,
+    functions.ToInteger,
     functions.ToLower,
     functions.ToString,
     functions.ToUpper,
