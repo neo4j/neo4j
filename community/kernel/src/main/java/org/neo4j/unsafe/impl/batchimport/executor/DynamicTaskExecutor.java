@@ -132,11 +132,11 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         {
             if ( panic != null )
             {
-                throw new IllegalStateException( "Executor has been shut down in panic", panic );
+                throw new TaskExecutionPanicException( "Executor has been shut down in panic", panic );
             }
             if ( abortQueued )
             {
-                throw new IllegalStateException( "Executor has been shut down, aborting queued" );
+                throw new TaskExecutionPanicException( "Executor has been shut down, aborting queued" );
             }
         }
     }

@@ -24,9 +24,7 @@ import org.junit.Test;
 import java.io.StringReader;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-
-import org.neo4j.csv.reader.CharSeeker;
+import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.function.Suppliers;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 
@@ -50,31 +48,29 @@ public class InputGroupsDeserializerTest
         // GIVEN
         List<DataFactory<InputNode>> data = asList( data( ":ID\n1" ), data( "2" ) );
         final AtomicInteger flips = new AtomicInteger();
-        InputGroupsDeserializer<InputNode> deserializer = new InputGroupsDeserializer<InputNode>(
-                data.iterator(), defaultFormatNodeFileHeader(), lowBufferSize( COMMAS ), INTEGER )
-        {
-            @Override
-            protected InputEntityDeserializer<InputNode> entityDeserializer( CharSeeker dataStream, Header dataHeader,
-                    Function<InputNode,InputNode> decorator )
-            {
-                // This is the point where the currentInput field in InputGroupsDeserializer was null
-                // so ensure that's no longer the case, just by poking those source methods right here and now.
-                if ( flips.get() == 0 )
+        final AtomicReference<InputGroupsDeserializer<InputNode>> deserializerTestHack = new AtomicReference<>( null );
+        InputGroupsDeserializer<InputNode> deserializer = new InputGroupsDeserializer<>(
+                data.iterator(), defaultFormatNodeFileHeader(), lowBufferSize( COMMAS ), INTEGER,
+                Runtime.getRuntime().availableProcessors(), (stream,header,decorator) ->
                 {
-                    assertNotNull( sourceDescription() );
-                }
-                else
-                {
-                    assertEquals( "" + flips.get(), sourceDescription() );
-                }
+                    // This is the point where the currentInput field in InputGroupsDeserializer was null
+                    // so ensure that's no longer the case, just by poking those source methods right here and now.
+                    if ( flips.get() == 0 )
+                    {
+                        assertNotNull( deserializerTestHack.get().sourceDescription() );
+                    }
+                    else
+                    {
+                        assertEquals( "" + flips.get(), deserializerTestHack.get().sourceDescription() );
+                    }
 
-                flips.incrementAndGet();
-                @SuppressWarnings( "unchecked" )
-                InputEntityDeserializer<InputNode> result = mock( InputEntityDeserializer.class );
-                when( result.sourceDescription() ).thenReturn( String.valueOf( flips.get() ) );
-                return result;
-            }
-        };
+                    flips.incrementAndGet();
+                    @SuppressWarnings( "unchecked" )
+                    InputEntityDeserializer<InputNode> result = mock( InputEntityDeserializer.class );
+                    when( result.sourceDescription() ).thenReturn( String.valueOf( flips.get() ) );
+                    return result;
+                }, InputNode.class );
+        deserializerTestHack.set( deserializer );
 
         // WHEN running through the iterator
         count( deserializer );
@@ -91,6 +87,12 @@ public class InputGroupsDeserializerTest
             public int bufferSize()
             {
                 return 100;
+            }
+
+            @Override
+            public boolean multilineFields()
+            {
+                return true;
             }
         };
     }

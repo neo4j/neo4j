@@ -515,7 +515,10 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         @Override
         public void close()
         {
-            array.close();
+            if ( array != null )
+            {
+                array.close();
+            }
         }
 
         @Override

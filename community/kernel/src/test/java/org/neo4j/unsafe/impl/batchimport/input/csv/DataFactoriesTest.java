@@ -194,7 +194,7 @@ public class DataFactoriesTest
         Extractors extractors = new Extractors( ';' );
 
         // WHEN
-        CharSeeker seeker = dataFactory.create( TABS ).stream();
+        CharSeeker seeker = CharSeekers.charSeeker( dataFactory.create( TABS ).stream(), TABS, false );
         Header header = headerFactory.create( seeker, TABS, IdType.ACTUAL );
 
         // THEN

@@ -66,6 +66,7 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
+import static java.lang.Runtime.getRuntime;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -97,7 +98,8 @@ public class CsvInputBatchImportIT
         try
         {
             importer.doImport( csv( nodeDataAsFile( nodeData ), relationshipDataAsFile( relationshipData ),
-                    IdType.STRING, lowBufferSize( COMMAS ), silentBadCollector( 0 ) ) );
+                    IdType.STRING, lowBufferSize( COMMAS ), silentBadCollector( 0 ),
+                    getRuntime().availableProcessors() ) );
             // THEN
             verifyImportedData( nodeData, relationshipData );
             success = true;

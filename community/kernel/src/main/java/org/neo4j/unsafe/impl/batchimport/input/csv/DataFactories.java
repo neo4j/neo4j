@@ -45,7 +45,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
-import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Readables.files;
 
 /**
@@ -70,11 +69,11 @@ public class DataFactories
         return config -> new Data<ENTITY>()
         {
             @Override
-            public CharSeeker stream()
+            public CharReadable stream()
             {
                 try
                 {
-                    return charSeeker( files( charset, files ), config, true );
+                    return files( charset, files );
                 }
                 catch ( IOException e )
                 {
@@ -101,9 +100,9 @@ public class DataFactories
         return config -> new Data<ENTITY>()
         {
             @Override
-            public CharSeeker stream()
+            public CharReadable stream()
             {
-                return charSeeker( readable.get(), config, true );
+                return readable.get();
             }
 
             @Override

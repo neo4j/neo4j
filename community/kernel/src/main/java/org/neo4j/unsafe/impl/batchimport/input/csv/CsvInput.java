@@ -21,8 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
-
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
@@ -50,6 +48,7 @@ public class CsvInput implements Input
     private final Configuration config;
     private final Groups groups = new Groups();
     private final Collector badCollector;
+    private final int maxProcessors;
 
     /**
      * @param nodeDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
@@ -62,12 +61,15 @@ public class CsvInput implements Input
      * @param relationshipHeaderFactory factory for reading relationship headers.
      * @param idType {@link IdType} to expect in id fields of node and relationship input.
      * @param config CSV configuration.
+     * @param badCollector Collector getting calls about bad input data.
+     * @param maxProcessors maximum number of processors in scenarios where multiple threads may parse CSV data.
      */
     public CsvInput(
             Iterable<DataFactory<InputNode>> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory<InputRelationship>> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, Collector badCollector )
+            IdType idType, Configuration config, Collector badCollector, int maxProcessors )
     {
+        this.maxProcessors = maxProcessors;
         assertSaneConfiguration( config );
 
         this.nodeDataFactory = nodeDataFactory;
@@ -105,18 +107,11 @@ public class CsvInput implements Input
             @Override
             public InputIterator<InputNode> iterator()
             {
-                return new InputGroupsDeserializer<InputNode>( nodeDataFactory.iterator(),
-                        nodeHeaderFactory, config, idType )
-                {
-                    @Override
-                    protected InputEntityDeserializer<InputNode> entityDeserializer( CharSeeker dataStream,
-                            Header dataHeader, Function<InputNode,InputNode> decorator )
-                    {
-                        return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
+                return new InputGroupsDeserializer<>( nodeDataFactory.iterator(),
+                        nodeHeaderFactory, config, idType, maxProcessors, (dataStream, dataHeader, decorator) ->
+                        new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
                                 new InputNodeDeserialization( dataStream, dataHeader, groups, idType.idsAreExternal() ),
-                                decorator, Validators.<InputNode>emptyValidator(), badCollector );
-                    }
-                };
+                                decorator, Validators.<InputNode>emptyValidator(), badCollector ), InputNode.class );
             }
 
             @Override
@@ -135,18 +130,11 @@ public class CsvInput implements Input
             @Override
             public InputIterator<InputRelationship> iterator()
             {
-                return new InputGroupsDeserializer<InputRelationship>( relationshipDataFactory.iterator(),
-                        relationshipHeaderFactory, config, idType )
-                {
-                    @Override
-                    protected InputEntityDeserializer<InputRelationship> entityDeserializer( CharSeeker dataStream,
-                              Header dataHeader, Function<InputRelationship,InputRelationship> decorator )
-                    {
-                        return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
+                return new InputGroupsDeserializer<>( relationshipDataFactory.iterator(),
+                        relationshipHeaderFactory, config, idType, maxProcessors, (dataStream, dataHeader, decorator) ->
+                        new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
                                 new InputRelationshipDeserialization( dataStream, dataHeader, groups ),
-                                decorator, new InputRelationshipValidator(), badCollector );
-                    }
-                };
+                                decorator, new InputRelationshipValidator(), badCollector ), InputRelationship.class );
             }
 
             @Override

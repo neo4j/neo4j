@@ -40,6 +40,7 @@ public class SimpleDataGenerator extends SourceTraceability.Adapter
     private final Distribution<String> relationshipTypes;
     private final Groups groups = new Groups();
     private final IdType idType;
+    private final String className = getClass().getSimpleName();
 
     public SimpleDataGenerator( Header nodeHeader, Header relationshipHeader, long randomSeed,
             long nodeCount, int labelCount, int relationshipTypeCount, IdType idType )
@@ -82,6 +83,6 @@ public class SimpleDataGenerator extends SourceTraceability.Adapter
     @Override
     public String sourceDescription()
     {
-        return getClass().getSimpleName();
+        return className;
     }
 }
