@@ -273,7 +273,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
   test("warn about type error") {
     expectError(
       "match (p) where id(p) = 0 MATCH (p)-[r*]->() WHERE r.foo = 'apa' RETURN r",
-      "Type mismatch: expected Map, Node or Relationship but was Collection<Relationship> (line 1, column 52 (offset: 51))"
+      "Type mismatch: expected Any, Map, Node or Relationship but was Collection<Relationship> (line 1, column 52 (offset: 51))"
     )
   }
 

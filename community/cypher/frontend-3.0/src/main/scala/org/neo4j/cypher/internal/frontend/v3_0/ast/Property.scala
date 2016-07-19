@@ -28,7 +28,7 @@ case class Property(map: Expression, propertyKey: PropertyKeyName)(val position:
 
   override def semanticCheck(ctx: SemanticContext) =
     map.semanticCheck(ctx) chain
-      map.expectType(CTMap.covariant) chain
+      map.expectType(CTMap.covariant | CTAny.invariant) chain
       super.semanticCheck(ctx)
 }
 
