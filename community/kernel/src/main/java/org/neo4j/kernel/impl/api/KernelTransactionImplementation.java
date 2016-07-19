@@ -71,7 +71,6 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.StatementLocks;
-import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -162,7 +161,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
-    private final StatementLocksFactory statementLocksFactory;
     private final boolean txTerminationAwareLocks;
     private TransactionState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
@@ -207,7 +205,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             TransactionRecordState recordState,
                                             SchemaIndexProviderMap providerMap,
                                             NeoStores neoStores,
-                                            StatementLocksFactory statementLocksFactory,
                                             TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
                                             TransactionHeaderInformationFactory headerInformationFactory,
@@ -230,7 +227,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.recordState = recordState;
         this.providerMap = providerMap;
         this.schemaState = schemaState;
-        this.statementLocksFactory = statementLocksFactory;
         this.txTerminationAwareLocks = txTerminationAwareLocks;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -251,9 +247,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /**
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
-    public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp )
+    public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp,
+            StatementLocks statementLocks )
     {
-        this.statementLocks = statementLocksFactory.newInstance();
+        this.statementLocks = statementLocks;
         this.terminationReason = null;
         this.closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;

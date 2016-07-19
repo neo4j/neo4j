@@ -39,15 +39,14 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.locking.NoOpLocks;
-import org.neo4j.kernel.impl.locking.StatementLocksFactory;
+import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -393,7 +392,7 @@ public class KernelTransactionTerminationTest
                     mock( SchemaWriteGuard.class ), mock( LabelScanStore.class ), mock( IndexingService.class ),
                     mock( UpdateableSchemaState.class ), mock( TransactionRecordState.class ),
                     mock( SchemaIndexProviderMap.class ), mock( NeoStores.class, RETURNS_MOCKS ),
-                    new StatementLocksFactory( new NoOpLocks(), new Config() ), new TransactionHooks(),
+                    new TransactionHooks(),
                     mock( ConstraintIndexCreator.class ), TransactionHeaderInformationFactory.DEFAULT,
                     mock( TransactionCommitProcess.class ), monitor,
                     mock( StoreReadLayer.class, RETURNS_MOCKS ), mock( LegacyIndexTransactionState.class ),
@@ -410,7 +409,7 @@ public class KernelTransactionTerminationTest
 
         TestKernelTransaction initialize()
         {
-            initialize( 42, 42 );
+            initialize( 42, 42, new SimpleStatementLocks( NoOpClient.NO_LOCKS ) );
             monitor.reset();
             return this;
         }

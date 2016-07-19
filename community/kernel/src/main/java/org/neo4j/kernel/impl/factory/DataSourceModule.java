@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.function.Supplier;
@@ -31,6 +32,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -63,6 +66,8 @@ import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -190,12 +195,14 @@ public class DataSourceModule
         KernelHealth kernelHealth = deps.satisfyDependency( new KernelHealth( kernelPanicEventGenerator,
                 logging.getInternalLog( KernelHealth.class ) ) );
 
+        StatementLocksFactory statementLocksFactory = createStatementLocksFactory();
+
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource( storeDir, config,
                 storeFactory, logging.getInternalLogProvider(), platformModule.jobScheduler,
                 new NonTransactionalTokenNameLookup( editionModule.labelTokenHolder,
                         editionModule.relationshipTypeTokenHolder, editionModule.propertyKeyTokenHolder ),
                 deps, editionModule.propertyKeyTokenHolder, editionModule.labelTokenHolder, relationshipTypeTokenHolder,
-                editionModule.lockManager, schemaWriteGuard, transactionEventHandlers,
+                editionModule.lockManager, statementLocksFactory, schemaWriteGuard, transactionEventHandlers,
                 platformModule.monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
                 storeMigrationProcess, platformModule.transactionMonitor, kernelHealth,
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
@@ -377,6 +384,22 @@ public class DataSourceModule
         };
     }
 
+    private static StatementLocksFactory createStatementLocksFactory()
+    {
+        List<StatementLocksFactory> factories = Iterables.toList( Service.load( StatementLocksFactory.class ) );
+        if ( factories.isEmpty() )
+        {
+            return new SimpleStatementLocksFactory();
+        }
+        else if ( factories.size() == 1 )
+        {
+            return factories.get( 0 );
+        }
+        else
+        {
+            throw new IllegalStateException( "Found more than one implementation: " + factories );
+        }
+    }
 
     /**
      * At end of startup, wait for instance to become available for transactions.

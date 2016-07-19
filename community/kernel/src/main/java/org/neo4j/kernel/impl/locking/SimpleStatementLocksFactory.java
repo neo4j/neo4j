@@ -19,7 +19,11 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-public interface StatementLocksFactory
+public class SimpleStatementLocksFactory implements StatementLocksFactory
 {
-    StatementLocks newInstance( Locks.Client locksClient );
+    @Override
+    public StatementLocks newInstance( Locks.Client locksClient )
+    {
+        return new SimpleStatementLocks( locksClient );
+    }
 }

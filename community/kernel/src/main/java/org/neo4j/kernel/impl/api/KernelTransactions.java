@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TransactionId;
@@ -83,6 +84,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final NeoStoreTransactionContextFactory neoStoreTransactionContextFactory;
     private final NeoStores neoStores;
     private final StatementLocksFactory statementLocksFactory;
+    private final Locks locks;
     private final boolean txTerminationAwareLocks;
     private final IntegrityValidator integrityValidator;
     private final ConstraintIndexCreator constraintIndexCreator;
@@ -123,7 +125,9 @@ public class KernelTransactions extends LifecycleAdapter
             new ConcurrentHashMap<KernelTransactionImplementation,Boolean>() );
 
     public KernelTransactions( NeoStoreTransactionContextFactory neoStoreTransactionContextFactory,
-                               NeoStores neoStores, Locks locks, IntegrityValidator integrityValidator,
+                               NeoStores neoStores,
+                               Locks locks, StatementLocksFactory statementLocksFactory,
+                               IntegrityValidator integrityValidator,
                                ConstraintIndexCreator constraintIndexCreator,
                                IndexingService indexingService, LabelScanStore labelScanStore,
                                StatementOperationParts statementOperations,
@@ -143,7 +147,8 @@ public class KernelTransactions extends LifecycleAdapter
     {
         this.neoStoreTransactionContextFactory = neoStoreTransactionContextFactory;
         this.neoStores = neoStores;
-        this.statementLocksFactory = new StatementLocksFactory( locks, config );
+        this.locks = locks;
+        this.statementLocksFactory = statementLocksFactory;
         this.txTerminationAwareLocks = config.get( tx_termination_aware_locks );
         this.integrityValidator = integrityValidator;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -183,7 +188,7 @@ public class KernelTransactions extends LifecycleAdapter
             KernelTransactionImplementation tx = new KernelTransactionImplementation(
                     statementOperations, schemaWriteGuard,
                     labelScanStore, indexingService, updateableSchemaState, recordState, providerMap,
-                    neoStores, statementLocksFactory, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
+                    neoStores, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
                     transactionCommitProcess, transactionMonitor, storeLayer, legacyIndexTransactionState,
                     localTxPool, constraintSemantics, clock, tracers.transactionTracer, procedureCache,
                     context, txTerminationAwareLocks );
@@ -202,8 +207,9 @@ public class KernelTransactions extends LifecycleAdapter
         {
             assertDatabaseIsRunning();
             TransactionId lastCommittedTransaction = neoStores.getMetaDataStore().getLastCommittedTransaction();
+            StatementLocks statementLocks = statementLocksFactory.newInstance( locks.newClient() );
             return localTxPool.acquire().initialize( lastCommittedTransaction.transactionId(),
-                    lastCommittedTransaction.commitTimestamp() );
+                    lastCommittedTransaction.commitTimestamp(), statementLocks );
         }
         finally
         {
