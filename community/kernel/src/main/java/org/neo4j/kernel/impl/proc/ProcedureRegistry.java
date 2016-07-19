@@ -37,11 +37,11 @@ public class ProcedureRegistry
     private final Map<ProcedureSignature.ProcedureName,CallableProcedure> procedures = new HashMap<>();
 
     /**
-     * Register a new procedure. This method must not be called concurrently with {@link #get(ProcedureSignature.ProcedureName)}.
+     * Register a new procedure.
      *
      * @param proc the procedure.
      */
-    public synchronized void register( CallableProcedure proc ) throws ProcedureException
+    public void register( CallableProcedure proc ) throws ProcedureException
     {
         ProcedureSignature signature = proc.signature();
         ProcedureSignature.ProcedureName name = signature.name();
