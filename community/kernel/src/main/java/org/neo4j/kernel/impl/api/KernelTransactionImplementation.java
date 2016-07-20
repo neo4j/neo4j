@@ -254,6 +254,22 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return terminationReason;
     }
 
+    void markForTermination( long expectedReuseCount, Status reason )
+    {
+        terminationReleaseLock.lock();
+        try
+        {
+            if ( expectedReuseCount == reuseCount )
+            {
+                markForTermination( reason );
+            }
+        }
+        finally
+        {
+            terminationReleaseLock.unlock();
+        }
+    }
+
     /**
      * {@inheritDoc}
      * <p>
@@ -263,20 +279,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public void markForTermination( Status reason )
     {
-        if ( !canBeTerminated() )
-        {
-            return;
-        }
-
-        int initialReuseCount = reuseCount;
         terminationReleaseLock.lock();
         try
         {
-            // this instance could have been reused, make sure we are trying to terminate the right transaction
-            // without this check there exists a possibility to terminate lock client that has just been returned to
-            // the pool or a transaction that was reused and represents a completely different logical transaction
-            boolean stillSameTransaction = initialReuseCount == reuseCount;
-            if ( stillSameTransaction && canBeTerminated() )
+            if ( canBeTerminated() )
             {
                 failure = true;
                 terminationReason = reason;

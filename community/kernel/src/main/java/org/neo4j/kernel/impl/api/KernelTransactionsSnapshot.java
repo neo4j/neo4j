@@ -21,10 +21,12 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Set;
 
+import org.neo4j.kernel.api.KernelTransactionHandle;
+
 /**
  * An instance of this class can get a snapshot of all currently running transactions and be able to tell
  * later if all transactions which were running when it was constructed have closed.
- *
+ * <p>
  * Creating a snapshot creates a list and one additional book keeping object per open transaction.
  * No thread doing normal transaction work should create snapshots, only threads that monitor transactions.
  */
@@ -33,14 +35,14 @@ public class KernelTransactionsSnapshot
     private Tx relevantTransactions;
     private final long snapshotTime;
 
-    public KernelTransactionsSnapshot( Set<KernelTransactionImplementation> allTransactions, long snapshotTime )
+    public KernelTransactionsSnapshot( Set<KernelTransactionHandle> allTransactions, long snapshotTime )
     {
         Tx head = null;
-        for ( KernelTransactionImplementation tx : allTransactions )
+        for ( KernelTransactionHandle tx : allTransactions )
         {
             if ( tx.isOpen() )
             {
-                Tx current = new Tx( tx, tx.getReuseCount() );
+                Tx current = new Tx( tx );
                 if ( head != null )
                 {
                     current.next = head;
@@ -81,19 +83,17 @@ public class KernelTransactionsSnapshot
 
     private static class Tx
     {
-        private final KernelTransactionImplementation transaction;
-        private final int reuseCount;
+        private final KernelTransactionHandle transaction;
         private Tx next;
 
-        Tx( KernelTransactionImplementation tx, int reuseCount )
+        Tx( KernelTransactionHandle tx )
         {
             this.transaction = tx;
-            this.reuseCount = reuseCount;
         }
 
         boolean haveClosed()
         {
-            return transaction.getReuseCount() != reuseCount;
+            return !transaction.isOpen();
         }
     }
 }

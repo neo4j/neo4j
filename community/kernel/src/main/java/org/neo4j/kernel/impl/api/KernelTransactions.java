@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -32,6 +31,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
@@ -52,6 +52,7 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.util.Collections.newSetFromMap;
+import static java.util.stream.Collectors.toSet;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -199,18 +200,25 @@ public class KernelTransactions extends LifecycleAdapter
      *
      * @return the set of open transactions.
      */
-    public Set<KernelTransaction> activeTransactions()
+    public Set<KernelTransactionHandle> activeTransactions()
     {
-        Set<KernelTransaction> output = new HashSet<>();
-        for ( KernelTransactionImplementation tx : allTransactions )
-        {
-            if ( tx.isOpen() )
-            {
-                output.add( tx );
-            }
-        }
+        return allTransactions.stream()
+                .map( this::createHandle )
+                .filter( KernelTransactionHandle::isOpen )
+                .collect( toSet() );
+    }
 
-        return output;
+    /**
+     * Create new handle for the given transaction.
+     * <p>
+     * <b>Note:</b> this method is package-private for testing <b>only</b>.
+     *
+     * @param tx transaction to wrap.
+     * @return transaction handle.
+     */
+    KernelTransactionHandle createHandle( KernelTransactionImplementation tx )
+    {
+        return new KernelTransactionImplementationHandle( tx );
     }
 
     /**
@@ -256,7 +264,7 @@ public class KernelTransactions extends LifecycleAdapter
     @Override
     public KernelTransactionsSnapshot get()
     {
-        return new KernelTransactionsSnapshot( allTransactions, clock.currentTimeMillis() );
+        return new KernelTransactionsSnapshot( activeTransactions(), clock.currentTimeMillis() );
     }
 
     /**
