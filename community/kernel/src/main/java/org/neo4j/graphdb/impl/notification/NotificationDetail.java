@@ -30,6 +30,11 @@ public interface NotificationDetail
 
     final class Factory
     {
+        public static NotificationDetail functionName( final String oldName, final String newName )
+        {
+            return createNotificationDetail( oldName, newName, true );
+        }
+
         public static NotificationDetail index( final String labelName, final String propertyKeyName )
         {
             return createNotificationDetail( "hinted index",

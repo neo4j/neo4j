@@ -400,6 +400,8 @@ case class ExecutionResultWrapperFor3_1(inner: InternalExecutionResult, planner:
       NotificationCode.UNBOUNDED_SHORTEST_PATH.notification(pos.asInputPosition)
     case ExhaustiveShortestPathForbiddenNotification(pos) =>
       NotificationCode.EXHAUSTIVE_SHORTEST_PATH.notification(pos.asInputPosition)
+    case DeprecatedFunctionNotification(pos, oldName, newName) =>
+      NotificationCode.DEPRECATED_FUNCTION.notification(pos.asInputPosition, NotificationDetail.Factory.functionName(oldName, newName))
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor3_1.runSafely {

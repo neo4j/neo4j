@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
 
+import scala.collection.immutable.TreeMap
+
 case object replaceAliasedFunctionInvocations extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = instance(that)
@@ -29,11 +31,17 @@ case object replaceAliasedFunctionInvocations extends Rewriter {
   /*
    * These are historical names for functions. They are all subject to removal in an upcoming major release.
    */
-  private val aliases: Map[String, String] = Map("toint" -> "toInteger")
+  val aliases: Map[String, String] = TreeMap("toInt" -> "toInteger")(CaseInsensitiveOrdered)
 
   val instance: Rewriter = bottomUp(Rewriter.lift {
-    case func@FunctionInvocation(f@FunctionName(name), _, _) if aliases.get(name.toLowerCase).nonEmpty =>
-      func.copy(functionName = FunctionName(aliases(name.toLowerCase))(f.position))(func.position)
+    case func@FunctionInvocation(f@FunctionName(name), _, _) if aliases.get(name).nonEmpty =>
+      func.copy(functionName = FunctionName(aliases(name))(f.position))(func.position)
   })
 
+}
+
+object CaseInsensitiveOrdered extends Ordering[String]
+{
+  def compare(x: String, y: String): Int =
+    x.compareToIgnoreCase(y)
 }

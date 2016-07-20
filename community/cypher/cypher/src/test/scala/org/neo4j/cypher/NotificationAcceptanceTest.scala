@@ -458,4 +458,10 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     result.notifications shouldBe empty
   }
+
+  test("warn for use of deprecated toInt") {
+    val result = innerExecute("EXPLAIN RETURN toInt('1') AS one")
+
+    result.notifications should contain(DeprecatedFunctionNotification(InputPosition(7, 1, 8), "toInt", "toInteger"))
+  }
 }
