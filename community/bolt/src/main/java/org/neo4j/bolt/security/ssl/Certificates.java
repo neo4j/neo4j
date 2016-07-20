@@ -92,7 +92,7 @@ public class Certificates
             throws GeneralSecurityException, IOException, OperatorCreationException
     {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance( DEFAULT_ENCRYPTION );
-        keyGen.initialize( 1024, random );
+        keyGen.initialize( 2048, random );
         KeyPair keypair = keyGen.generateKeyPair();
 
         // Prepare the information required for generating an X.509 certificate.
