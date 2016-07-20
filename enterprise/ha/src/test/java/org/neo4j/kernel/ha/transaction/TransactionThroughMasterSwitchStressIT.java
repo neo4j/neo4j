@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.util.Arrays;
@@ -83,19 +82,21 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
 @RunWith( Parameterized.class )
 public class TransactionThroughMasterSwitchStressIT
 {
-    @Parameter
-    public boolean txTerminationAwareLocks;
-
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withInstanceSetting( HaSettings.slave_only,
-                value -> value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE )
-            .withSharedSetting( tx_termination_aware_locks, String.valueOf( txTerminationAwareLocks ) );
+    public final ClusterRule clusterRule;
+
+    public TransactionThroughMasterSwitchStressIT( boolean txTerminationAwareLocks )
+    {
+        clusterRule = new ClusterRule( getClass() )
+                .withInstanceSetting( HaSettings.slave_only,
+                        value -> value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE )
+                .withSharedSetting( tx_termination_aware_locks, String.valueOf( txTerminationAwareLocks ) );
+    }
 
     @Parameters(name = "txTerminationAwareLocks={0}")
-    public static List<Object[]> txTerminationAwareLocks()
+    public static List<Object> txTerminationAwareLocks()
     {
-        return Arrays.asList( new Object[]{false}, new Object[]{true} );
+        return Arrays.asList( false, true );
     }
 
     @Test
