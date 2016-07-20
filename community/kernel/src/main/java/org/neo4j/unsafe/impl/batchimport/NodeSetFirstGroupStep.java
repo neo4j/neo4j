@@ -71,6 +71,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     {
         for ( RelationshipGroupRecord group : batch )
         {
+            assert group.inUse();
             long nodeId = group.getOwningNode();
             if ( cache.getByte( nodeId, 0 ) == 0 )
             {

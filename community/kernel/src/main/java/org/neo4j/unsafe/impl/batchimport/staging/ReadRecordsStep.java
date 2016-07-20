@@ -21,9 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -47,23 +44,16 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends IoProduc
     private final PrimitiveLongIterator ids;
     private final Class<RECORD> klass;
     private final int recordSize;
-    private final Predicate<RECORD> filter;
-    private long count;
-
-    public ReadRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
-            PrimitiveLongIterator ids )
-    {
-        this( control, config, store, ids, all -> true );
-    }
+    // volatile since written by processing threads and read by execution monitor
+    private volatile long count;
 
     @SuppressWarnings( "unchecked" )
     public ReadRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
-            PrimitiveLongIterator ids, Predicate<RECORD> filter )
+            PrimitiveLongIterator ids )
     {
         super( control, config );
         this.store = store;
         this.ids = ids;
-        this.filter = filter;
         this.klass = (Class<RECORD>) store.newRecord().getClass();
         this.recordSize = store.getRecordSize();
         this.cursor = store.newRecordCursor( record = store.newRecord() );
@@ -87,27 +77,19 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends IoProduc
         }
 
         RECORD[] batch = (RECORD[]) Array.newInstance( klass, batchSize );
-        boolean seenReservedId = false;
-
         int i = 0;
         while ( i < batchSize && ids.hasNext() )
         {
-            cursor.next( ids.next() );
-            if ( !filter.test( record ) )
+            if ( cursor.next( ids.next() ) && !IdValidator.isReservedId( record.getId() ) )
             {
-                continue;
+                RECORD newRecord = (RECORD) record.clone();
+                batch[i] = newRecord;
+                i++;
             }
-
-            RECORD newRecord = (RECORD) record.clone();
-            batch[i] = newRecord;
-            seenReservedId |= IdValidator.isReservedId( newRecord.getId() );
-            i++;
-            count++;
         }
 
+        count += i;
         batch = i == batchSize ? batch : Arrays.copyOf( batch, i );
-        batch = removeRecordWithReservedId( batch, seenReservedId );
-
         return batch.length > 0 ? batch : null;
     }
 
@@ -122,22 +104,5 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends IoProduc
     protected long position()
     {
         return count * recordSize;
-    }
-
-    protected RECORD[] removeRecordWithReservedId( RECORD[] records, boolean seenReservedId )
-    {
-        if ( !seenReservedId )
-        {
-            return records;
-        }
-        return Stream.of( records )
-                .filter( record -> !IdValidator.isReservedId( record.getId() ) )
-                .toArray( length -> newArray( length, records.getClass().getComponentType() ) );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private RECORD[] newArray( int length, Class<?> componentType )
-    {
-        return (RECORD[]) Array.newInstance( componentType, length );
     }
 }
