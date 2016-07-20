@@ -45,6 +45,11 @@ class LogRecord<R extends Abstract64BitRecord>
         return record;
     }
 
+    long logVersion()
+    {
+        return logVersion;
+    }
+
     @Override
     public String toString()
     {
