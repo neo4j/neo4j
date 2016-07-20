@@ -93,7 +93,7 @@ public class ColleaguesCypherExecutionResource
 
     private String colleaguesQuery()
     {
-        return "MATCH (p:Person {name: {personName} })-[:ACTED_IN]->()<-[:ACTED_IN]-(colleague) RETURN colleague";
+        return "MATCH (p:Person {name: $personName })-[:ACTED_IN]->()<-[:ACTED_IN]-(colleague) RETURN colleague";
     }
 }
 // END SNIPPET: ColleaguesCypherExecutionResource
