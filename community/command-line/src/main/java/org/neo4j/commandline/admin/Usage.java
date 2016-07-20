@@ -5,34 +5,31 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.commandline.admin;
 
-import java.util.function.Supplier;
-
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.Args.splitLongLine;
 
 public class Usage
 {
     private final String scriptName;
     private final Output out;
-    private final Supplier<Iterable<AdminCommand.Provider>> commands;
+    private final CommandLocator commands;
     private final String extraHelp;
 
-    public Usage( String scriptName, Output out, Supplier<Iterable<AdminCommand.Provider>> commands, String extraHelp )
+    public Usage( String scriptName, Output out, CommandLocator commands, String extraHelp )
     {
         this.scriptName = scriptName;
         this.out = out;
@@ -45,7 +42,7 @@ public class Usage
         out.line( "Usage:" );
         out.line( "" );
 
-        for ( AdminCommand.Provider command : commands.get() )
+        for ( AdminCommand.Provider command : commands.getAllProviders() )
         {
             new CommandUsage( command, out, scriptName ).print();
         }

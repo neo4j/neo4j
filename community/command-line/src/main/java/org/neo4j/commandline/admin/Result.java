@@ -19,7 +19,10 @@
  */
 package org.neo4j.commandline.admin;
 
-public interface Output
+/**
+ * The result of an admin command execution, with a delayed program termination action.
+ */
+public interface Result
 {
-    void line( String text );
+    void exit();
 }
