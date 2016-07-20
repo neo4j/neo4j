@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.util.Arrays;
@@ -84,29 +83,31 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
 @RunWith( Parameterized.class )
 public class TransactionThroughMasterSwitchStressIT
 {
-    @Parameter
-    public boolean txTerminationAwareLocks;
-
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withSharedSetting( tx_termination_aware_locks, String.valueOf( txTerminationAwareLocks ) )
-            .withInstanceSetting( HaSettings.slave_only,
-                    new IntFunction<String>() // instances 1 and 2 are slave only
-                    {
-                        @Override
-                        public String apply( int value )
+    public final ClusterRule clusterRule;
+
+    public TransactionThroughMasterSwitchStressIT( boolean txTerminationAwareLocks )
+    {
+        clusterRule = new ClusterRule( getClass() )
+                .withSharedSetting( tx_termination_aware_locks, String.valueOf( txTerminationAwareLocks ) )
+                .withInstanceSetting( HaSettings.slave_only,
+                        new IntFunction<String>() // instances 1 and 2 are slave only
                         {
-                            if ( value == 1 || value == 2 )
+                            @Override
+                            public String apply( int value )
                             {
-                                return Settings.TRUE;
-                            }
-                            else
-                            {
-                                return Settings.FALSE;
+                                if ( value == 1 || value == 2 )
+                                {
+                                    return Settings.TRUE;
+                                }
+                                else
+                                {
+                                    return Settings.FALSE;
+                                }
                             }
                         }
-                    }
-            );
+                );
+    }
 
     @Parameters(name = "txTerminationAwareLocks={0}")
     public static List<Object[]> txTerminationAwareLocks()
