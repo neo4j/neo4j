@@ -51,7 +51,7 @@ class UnwindTest extends DocumentingTestBase {
       text = "Create a number of nodes and relationships from a parameter-list without using +FOREACH+.",
       parameters = Map("events" -> List(Map("year" -> 2014, "id" -> 1), Map("year" -> 2014, "id" -> 2))),
       queryText =
-        """UNWIND {events} as event
+        """UNWIND $events as event
            MERGE (y:Year {year:event.year})
            MERGE (y)<-[:IN]-(e:Event {id:event.id})
            RETURN e.id as x order by x""",

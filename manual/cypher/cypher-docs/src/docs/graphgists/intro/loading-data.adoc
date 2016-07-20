@@ -35,7 +35,7 @@ For instance to create a movie graph from JSON data structures pulled from an AP
 
 [source,cypher,hideexec=true]
 ----
-UNWIND {movies} as movie
+UNWIND $movies as movie
 MERGE (m:Movie {title:movie.title}) ON CREATE SET m.released = movie.released
 FOREACH (role IN movie.cast |
    MERGE (a:Person {name:role.actor.name}) ON CREATE SET a.born = role.actor.born

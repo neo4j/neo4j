@@ -96,7 +96,7 @@ will remove all other properties on the receiving graph element.""".stripMargin,
 Use a parameter to give the value of a property.
 """,
       parameters = Map("surname" -> "Taylor"),
-      queryText = "match (n {name: 'Andres'}) set n.surname = {surname} return n",
+      queryText = "match (n {name: 'Andres'}) set n.surname = $surname return n",
       optionalResultExplanation = "The Andres node has got an surname added.",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesWritten = 1))
   }
@@ -108,7 +108,7 @@ Use a parameter to give the value of a property.
 This will replace all existing properties on the node with the new set provided by the parameter.
 """,
       parameters = Map("props" -> Map("name" -> "Andres", "position" -> "Developer")),
-      queryText = "match (n {name: 'Andres'}) set n = {props} return n",
+      queryText = "match (n {name: 'Andres'}) set n = $props return n",
       optionalResultExplanation = "The Andres node has had all it's properties replaced by the properties in the +props+ parameter.",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesWritten = 4))
   }

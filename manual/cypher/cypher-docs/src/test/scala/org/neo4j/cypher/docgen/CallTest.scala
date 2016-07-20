@@ -99,7 +99,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
     testQuery(
       title = "Call a procedure with mixed literal and parameter arguments",
       text = "This invokes the example procedure `org.neo4j.procedure.example.addNodeToIndex` using both literal and parameterized arguments.",
-      queryText = "CALL org.neo4j.procedure.example.addNodeToIndex('users', {node}, 'name')",
+      queryText = "CALL org.neo4j.procedure.example.addNodeToIndex('users', $node, 'name')",
       parameters = Map("node"->nodeId),
       optionalResultExplanation = "Since our example procedure does not return any result, the result is empty.",
       assertions = (p) => assert(p.isEmpty) )

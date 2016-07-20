@@ -197,7 +197,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterForNodeId
         Map<String, Object> params = new HashMap<>();
         params.put( "id", 0 );
-        String query = "MATCH (n) WHERE id(n) = {id} RETURN n.name";
+        String query = "MATCH (n) WHERE id(n) = $id RETURN n.name";
         Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterForNodeId
 
@@ -213,7 +213,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterForMultipleNodeIds
         Map<String, Object> params = new HashMap<>();
         params.put( "ids", Arrays.asList( 0, 1, 2 ) );
-        String query = "MATCH (n) WHERE id(n) in {ids} RETURN n.name";
+        String query = "MATCH (n) WHERE id(n) in $ids RETURN n.name";
         Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterForMultipleNodeIds
 
@@ -234,7 +234,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithStringLiteralAsParameter
         Map<String, Object> params = new HashMap<>();
         params.put( "name", "Johan" );
-        String query = "MATCH (n) WHERE n.name = {name} RETURN n";
+        String query = "MATCH (n) WHERE n.name = $name RETURN n";
         Result result = db.execute( query, params );
         // END SNIPPET: exampleWithStringLiteralAsParameter
 
@@ -248,7 +248,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithShortSyntaxStringLiteralAsParameter
         Map<String, Object> params = new HashMap<>();
         params.put( "name", "Johan" );
-        String query = "MATCH (n {name: {name}}) RETURN n";
+        String query = "MATCH (n {name: $name}) RETURN n";
         Result result = db.execute( query, params );
         // END SNIPPET: exampleWithShortSyntaxStringLiteralAsParameter
 
@@ -264,7 +264,7 @@ public class JavaExecutionEngineDocTest
             // START SNIPPET: exampleWithParameterForIndexValue
             Map<String, Object> params = new HashMap<>();
             params.put( "value", "Michaela" );
-            String query = "START n=node:people(name = {value}) RETURN n";
+            String query = "START n=node:people(name = $value) RETURN n";
             Result result = db.execute( query, params );
             // END SNIPPET: exampleWithParameterForIndexValue
             assertEquals( asList( michaelaNode ), this.<Node>toList( result, "n" ) );
@@ -280,7 +280,7 @@ public class JavaExecutionEngineDocTest
             // START SNIPPET: exampleWithParametersForQuery
             Map<String, Object> params = new HashMap<>();
             params.put( "query", "name:Andreas" );
-            String query = "START n=node:people({query}) RETURN n";
+            String query = "START n=node:people($query) RETURN n";
             Result result = db.execute( query, params );
             // END SNIPPET: exampleWithParametersForQuery
             assertEquals( asList( andreasNode ), this.<Node>toList( result, "n" ) );
@@ -294,7 +294,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterForNodeObject
         Map<String, Object> params = new HashMap<>();
         params.put( "node", andreasNode );
-        String query = "MATCH (n) WHERE n = {node} RETURN n.name";
+        String query = "MATCH (n) WHERE n = $node RETURN n.name";
         Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterForNodeObject
 
@@ -310,7 +310,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<>();
         params.put( "s", 1 );
         params.put( "l", 1 );
-        String query = "MATCH (n) RETURN n.name SKIP {s} LIMIT {l}";
+        String query = "MATCH (n) RETURN n.name SKIP $s LIMIT $l";
         Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterForSkipLimit
 
@@ -326,7 +326,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterRegularExpression
         Map<String, Object> params = new HashMap<>();
         params.put( "regex", ".*h.*" );
-        String query = "MATCH (n) WHERE n.name =~ {regex} RETURN n.name";
+        String query = "MATCH (n) WHERE n.name =~ $regex RETURN n.name";
         Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterRegularExpression
         dumpToFile( "exampleWithParameterRegularExpression", query, params );
@@ -343,7 +343,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterCSCIStringPatternMatching
         Map<String, Object> params = new HashMap<>();
         params.put( "name", "Michael" );
-        String query = "MATCH (n) WHERE n.name STARTS WITH {name} RETURN n.name";
+        String query = "MATCH (n) WHERE n.name STARTS WITH $name RETURN n.name";
         Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterCSCIStringPatternMatching
         dumpToFile( "exampleWithParameterCSCIStringPatternMatching", query, params );
@@ -363,7 +363,7 @@ public class JavaExecutionEngineDocTest
 
         Map<String, Object> params = new HashMap<>();
         params.put( "props", props );
-        String query = "CREATE ({props})";
+        String query = "CREATE ($props)";
         db.execute( query, params );
         // END SNIPPET: create_node_from_map
         dumpToFile( "create_node_from_map", query, params );
@@ -389,7 +389,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<>();
         List<Map<String, Object>> maps = Arrays.asList( n1, n2 );
         params.put( "props", maps );
-        String query = "UNWIND {props} AS properties CREATE (n:Person) SET n = properties RETURN n";
+        String query = "UNWIND $props AS properties CREATE (n:Person) SET n = properties RETURN n";
         db.execute( query, params );
         // END SNIPPET: create_multiple_nodes_from_map
         dumpToFile( "create_multiple_nodes_from_map", query, params );
@@ -417,7 +417,7 @@ public class JavaExecutionEngineDocTest
             Map<String, Object> params = new HashMap<>();
             params.put( "props", n1 );
 
-            String query = "MATCH (n) WHERE n.name='Michaela' SET n = {props}";
+            String query = "MATCH (n) WHERE n.name='Michaela' SET n = $props";
             db.execute( query, params );
             // END SNIPPET: set_properties_on_a_node_from_a_map
             dumpToFile( "set_properties_on_a_node_from_a_map", query, params );
@@ -437,7 +437,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<>();
         params.put( "props", props );
 
-        String query = "MATCH (n) WHERE id(n) = 0 CREATE UNIQUE p = (n)-[:REL]->({props}) RETURN last(nodes(p)) AS X";
+        String query = "MATCH (n) WHERE id(n) = 0 CREATE UNIQUE p = (n)-[:REL]->($props) RETURN last(nodes(p)) AS X";
         Result result = db.execute( query, params );
         assertThat( count( result ), is( 1L ) );
     }
@@ -457,7 +457,7 @@ public class JavaExecutionEngineDocTest
         params.put( "props1", props1 );
         params.put( "props2", props2 );
 
-        String query = "MATCH (n) WHERE id(n) = 0 CREATE UNIQUE p = (n)-[:REL]->({props1})-[:LER]->({props2}) RETURN p";
+        String query = "MATCH (n) WHERE id(n) = 0 CREATE UNIQUE p = (n)-[:REL]->($props1)-[:LER]->($props2) RETURN p";
         Result result = db.execute( query, params );
         assertThat( count( result ), is( 1L ) );
     }
@@ -476,7 +476,7 @@ public class JavaExecutionEngineDocTest
     public void explain_returns_plan() throws Exception
     {
         // START SNIPPET: explain_returns_plan
-        Result result = db.execute( "EXPLAIN CREATE (user:User{name:{name}}) RETURN user" );
+        Result result = db.execute( "EXPLAIN CREATE (user:User{name:$name}) RETURN user" );
 
         assert result.getQueryExecutionType().isExplained();
         assert result.getQueryExecutionType().requestedExecutionPlanDescription();
