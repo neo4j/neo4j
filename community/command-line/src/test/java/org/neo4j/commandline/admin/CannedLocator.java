@@ -19,7 +19,31 @@
  */
 package org.neo4j.commandline.admin;
 
-public interface Output
+import java.util.HashMap;
+import java.util.Map;
+
+class CannedLocator implements CommandLocator
 {
-    void line( String text );
+    private final Map<String,AdminCommand.Provider> commands;
+
+    public CannedLocator( AdminCommand.Provider... commands )
+    {
+        this.commands = new HashMap<>();
+        for ( AdminCommand.Provider provider : commands )
+        {
+            this.commands.put( provider.name(), provider );
+        }
+    }
+
+    @Override
+    public AdminCommand.Provider findProvider( String s )
+    {
+        return commands.get( s );
+    }
+
+    @Override
+    public Iterable<AdminCommand.Provider> getAllProviders()
+    {
+        return commands.values();
+    }
 }
