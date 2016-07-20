@@ -19,6 +19,11 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <jta.groupId>org.apache.geronimo.specs</jta.groupId>
+    <jta.artifactId>geronimo-jta_1.1_spec</jta.artifactId>
+    <jta.version>1.1.1</jta.version>
     <pico.version>2.14.3</pico.version>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>compile</licensing.phase>
@@ -28,7 +33,6 @@
     <hsqldb.version>2.3.2</hsqldb.version>
     <test.runner.jvm.settings>-Xmx1G -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields</test.runner.jvm.settings>
     <doclint-groups>reference</doclint-groups>
-    <neo4j.java.version>1.8</neo4j.java.version>
     <jetty.version>9.2.9.v20150224</jetty.version>
     <findbugs.version>3.0.0</findbugs.version>
   </properties>
