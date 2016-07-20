@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase.{AST_REWRITE, PARSING, SEMANTIC_CHECK}
-import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses, replaceAliasedFunctionInvocations}
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.procs.DelegatingProcedureExecutablePlanBuilder
@@ -189,7 +189,8 @@ case class CypherCompiler(parser: CypherParser,
 
     val mkException = new SyntaxExceptionCreator(rawQueryText, offset)
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException),
-                                                                             normalizeWithClauses(mkException)))
+                                                                             normalizeWithClauses(mkException),
+                                                                             replaceAliasedFunctionInvocations))
     val originalSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
       semanticChecker.check(queryText, cleanedStatement, mkException)
     }

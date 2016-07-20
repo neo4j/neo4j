@@ -46,4 +46,8 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("id(r)" -> expected)))
   }
 
+  test("deprecated functions still work") {
+    executeWithAllPlannersAndCompatibilityMode("RETURN toInt('1') AS one").columnAs[Long]("one").next should equal(1L)
+  }
+
 }
