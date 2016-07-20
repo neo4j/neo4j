@@ -35,7 +35,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseDatabaseRule;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -56,8 +55,7 @@ public class IdReuseTest
         protected void configure( GraphDatabaseBuilder builder )
         {
             super.configure( builder );
-            builder.setConfig( EnterpriseEditionSettings.idTypesToReuse,
-                    Strings.join( ",", IdType.NODE, IdType.RELATIONSHIP ) );
+            builder.setConfig( EnterpriseEditionSettings.idTypesToReuse, IdType.NODE + "," + IdType.RELATIONSHIP );
         }
     };
 

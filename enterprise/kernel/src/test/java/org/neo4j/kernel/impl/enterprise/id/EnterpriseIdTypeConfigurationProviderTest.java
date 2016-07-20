@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.IdTypeConfiguration;
@@ -82,7 +81,7 @@ public class EnterpriseIdTypeConfigurationProviderTest
     private IdTypeConfigurationProvider createIdTypeProvider()
     {
         Map<String,String> params = MapUtil.stringMap( EnterpriseEditionSettings.idTypesToReuse.name(),
-                Strings.join( ",", IdType.NODE, IdType.RELATIONSHIP ) );
+                IdType.NODE + "," + IdType.RELATIONSHIP );
         Config config = new Config( params );
         return new EnterpriseIdTypeConfigurationProvider( config );
     }

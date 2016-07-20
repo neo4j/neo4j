@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import java.io.File;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
@@ -34,8 +36,8 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.Functions.map;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.MANDATORY;
@@ -43,6 +45,7 @@ import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.basePath;
 import static org.neo4j.kernel.configuration.Settings.isFile;
 import static org.neo4j.kernel.configuration.Settings.list;
@@ -51,7 +54,6 @@ import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class SettingsTest
 {
@@ -86,6 +88,25 @@ public class SettingsTest
 
         Setting<List<Integer>> setting3 = setting( "foo", list( ",", INTEGER ), "" );
         assertThat( setting3.apply( map( stringMap() ) ).toString(), equalTo( "[]" ) );
+
+        Setting<List<Integer>> setting4 = setting( "foo", list( ",", INTEGER ), "1,    2,3, 4,   5  " );
+        assertThat( setting4.apply( map( stringMap() ) ).toString(), equalTo( "[1, 2, 3, 4, 5]" ) );
+
+        Setting<List<Integer>> setting5 = setting( "foo", list( ",", INTEGER ), "1,    2,3, 4,   " );
+        assertThat( setting5.apply( map( stringMap() ) ).toString(), equalTo( "[1, 2, 3, 4]" ) );
+    }
+
+    @Test
+    public void testStringList()
+    {
+        Setting<List<String>> setting1 = setting( "apa", STRING_LIST, "foo,bar,baz" );
+        assertEquals( Arrays.asList( "foo", "bar", "baz" ), setting1.apply( map( stringMap() ) ) );
+
+        Setting<List<String>> setting2 = setting( "apa", STRING_LIST, "foo,  bar, BAZ   " );
+        assertEquals( Arrays.asList( "foo", "bar", "BAZ" ), setting2.apply( map( stringMap() ) ) );
+
+        Setting<List<String>> setting3 = setting( "apa", STRING_LIST, "" );
+        assertEquals( Collections.emptyList(), setting3.apply( map( stringMap() ) ) );
     }
 
     @Test
