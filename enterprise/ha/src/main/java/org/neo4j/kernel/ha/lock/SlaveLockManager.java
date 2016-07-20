@@ -25,6 +25,7 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.logging.LogProvider;
 
 public class SlaveLockManager implements Locks
 {
@@ -32,15 +33,17 @@ public class SlaveLockManager implements Locks
     private final Locks local;
     private final Master master;
     private final AvailabilityGuard availabilityGuard;
+    private final LogProvider logProvider;
     private final boolean txTerminationAwareLocks;
 
     public SlaveLockManager( Locks localLocks, RequestContextFactory requestContextFactory, Master master,
-                             AvailabilityGuard availabilityGuard, Config config )
+            AvailabilityGuard availabilityGuard, LogProvider logProvider, Config config )
     {
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
         this.local = localLocks;
         this.master = master;
+        this.logProvider = logProvider;
         this.txTerminationAwareLocks = config.get( KernelTransactions.tx_termination_aware_locks );
     }
 
@@ -48,7 +51,7 @@ public class SlaveLockManager implements Locks
     public Client newClient()
     {
         Client client = local.newClient();
-        return new SlaveLocksClient( master, client, local, requestContextFactory, availabilityGuard,
+        return new SlaveLocksClient( master, client, local, requestContextFactory, availabilityGuard, logProvider,
                 txTerminationAwareLocks );
     }
 

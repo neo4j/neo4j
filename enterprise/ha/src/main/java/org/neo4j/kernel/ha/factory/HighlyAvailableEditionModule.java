@@ -598,17 +598,17 @@ public class HighlyAvailableEditionModule
             Config config,
             DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
             RequestContextFactory requestContextFactory,
-            AvailabilityGuard availabilityGuard, LogService logging )
+            AvailabilityGuard availabilityGuard, LogService logService )
     {
         DelegateInvocationHandler<Locks> lockManagerDelegate = new DelegateInvocationHandler<>( Locks.class );
         Locks lockManager = (Locks) newProxyInstance( Locks.class.getClassLoader(), new Class[]{Locks.class},
                 lockManagerDelegate );
 
-        Factory<Locks> locksFactory = () -> CommunityEditionModule.createLockManager( config, logging );
+        Factory<Locks> locksFactory = () -> CommunityEditionModule.createLockManager( config, logService );
 
         LockManagerSwitcher lockManagerModeSwitcher = new LockManagerSwitcher(
                 lockManagerDelegate, masterDelegateInvocationHandler, requestContextFactory, availabilityGuard,
-                locksFactory, config );
+                locksFactory, logService.getInternalLogProvider(), config );
 
         componentSwitcherContainer.add( lockManagerModeSwitcher );
         return lockManager;
