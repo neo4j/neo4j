@@ -96,5 +96,13 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
     parsing("$0") shouldGive ast.Parameter("0", CTAny)(t)
   }
 
+  test("variables are not allowed to start with currency symbols") {
+    implicit val parserToTest = Variable
+
+    Seq("$", "¢", "£", "₲", "₶", "\u20BD", "＄", "﹩").foreach { curr =>
+      assertFails(s"${curr}var")
+    }
+  }
+
   def convert(result: Any): Any = result
 }
