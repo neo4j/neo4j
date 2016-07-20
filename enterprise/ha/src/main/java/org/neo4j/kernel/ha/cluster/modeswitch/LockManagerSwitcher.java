@@ -27,6 +27,7 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.SlaveLockManager;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.logging.LogProvider;
 
 public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
 {
@@ -34,19 +35,21 @@ public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
     private final RequestContextFactory requestContextFactory;
     private final AvailabilityGuard availabilityGuard;
     private final Factory<Locks> locksFactory;
+    private final LogProvider logProvider;
     private final Config config;
 
     private volatile Locks currentLocks;
 
     public LockManagerSwitcher( DelegateInvocationHandler<Locks> delegate, DelegateInvocationHandler<Master> master,
-            RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
-            Factory<Locks> locksFactory, Config config )
+                                RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
+                                Factory<Locks> locksFactory, LogProvider logProvider, Config config )
     {
         super( delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
         this.locksFactory = locksFactory;
+        this.logProvider = logProvider;
         this.config = config;
     }
 
@@ -61,7 +64,7 @@ public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
     protected Locks getSlaveImpl()
     {
         currentLocks = new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
-                availabilityGuard, config );
+                availabilityGuard, logProvider, config );
         return currentLocks;
     }
 
