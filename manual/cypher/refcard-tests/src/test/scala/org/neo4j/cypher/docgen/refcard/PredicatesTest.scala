@@ -74,7 +74,7 @@ MATCH (n)-->(m)
 WHERE id(n) = %A% AND id(m) = %B%
 AND
 
-n.property <> {value}
+n.property <> $value
 
 RETURN n, m###
 
@@ -136,7 +136,7 @@ Check if something is `NULL`.
 MATCH (n)
 WHERE
 
-NOT exists(n.property) OR n.property = {value}
+NOT exists(n.property) OR n.property = $value
 
 RETURN n###
 
@@ -146,7 +146,7 @@ Either property does not exist or predicate is +TRUE+.
 MATCH (n)
 WHERE
 
-n.property = {value}
+n.property = $value
 
 RETURN n###
 
@@ -156,7 +156,7 @@ Non-existing property returns `NULL`, which is not equal to anything.
 MATCH (n)
 WHERE
 
-n["property"] = {value}
+n["property"] = $value
 
 RETURN n###
 
@@ -208,7 +208,7 @@ Exclude matches to `(n)-[:KNOWS]->(m)` from the result.
 MATCH (n)
 WHERE exists(n.property) AND
 
-n.property IN [{value1}, {value2}]
+n.property IN [$value1, $value2]
 
 RETURN n###
 

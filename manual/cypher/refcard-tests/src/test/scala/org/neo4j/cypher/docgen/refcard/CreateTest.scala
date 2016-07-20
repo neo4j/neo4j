@@ -72,7 +72,7 @@ class CreateTest extends RefcardTest with QueryStatisticsTestSupport {
 ###assertion=create-node parameters=aname
 //
 
-CREATE (n {name: {value}})
+CREATE (n {name: $value})
 
 RETURN n###
 
@@ -81,7 +81,7 @@ Create a node with the given properties.
 ###assertion=create-node-from-map parameters=map
 //
 
-CREATE (n {map})
+CREATE (n $map)
 
 RETURN n###
 
@@ -90,7 +90,7 @@ Create a node with the given properties.
 ###assertion=create-nodes-from-maps parameters=maps
 //
 
-UNWIND {listOfMaps} AS properties CREATE (n) SET n = properties
+UNWIND $listOfMaps AS properties CREATE (n) SET n = properties
 
 RETURN n###
 
@@ -110,7 +110,7 @@ Create a relationship with the given type and direction; bind a variable to it.
 MATCH (n), (m)
 WHERE id(n) = %A% AND id(m) = %B%
 
-CREATE (n)-[:LOVES {since: {value}}]->(m)
+CREATE (n)-[:LOVES {since: $value}]->(m)
 
 RETURN n###
 

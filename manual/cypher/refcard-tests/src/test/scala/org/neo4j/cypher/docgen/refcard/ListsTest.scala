@@ -76,7 +76,7 @@ Literal lists are declared in square brackets.
 ###assertion=returns-one parameters=list
 RETURN
 
-size({list}) AS len, {list}[0] AS value
+size($list) AS len, $list[0] AS value
 
 ###
 
@@ -85,7 +85,7 @@ Lists can be passed in as parameters.
 ###assertion=returns-one parameters=range
 RETURN
 
-range({firstNum}, {lastNum}, {step}) AS list
+range($firstNum, $lastNum, $step) AS list
 
 ###
 
@@ -116,8 +116,8 @@ Properties can be lists of strings, numbers or booleans.
 WITH [1, 2, 3] AS list
 RETURN
 
-list[{idx}] AS value,
-list[{startIdx}..{endIdx}] AS slice
+list[$idx] AS value,
+list[$startIdx..$endIdx] AS slice
 
 ###
 
@@ -129,7 +129,7 @@ Out of range elements are ignored.
 ###assertion=returns-one parameters=names
 //
 
-UNWIND {names} AS name
+UNWIND $names AS name
 MATCH (n {name: name})
 RETURN avg(n.age)
 

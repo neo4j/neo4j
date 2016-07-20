@@ -79,7 +79,7 @@ class StartTest extends RefcardTest with QueryStatisticsTestSupport {
 ### assertion=index-match parameters=index-match
 //
 
-START n = node:nodeIndexName(key = {value})
+START n = node:nodeIndexName(key = $value)
 
 RETURN n###
 
@@ -88,17 +88,3 @@ Use `node_auto_index` for the automatic index.
 Note that other uses of `START` have been removed as of Cypher 2.2.
 """
 }
-
-/*
-
-### assertion=index-match parameters=index-query
-//
-
-START n=node:nodeIndexName({query})
-
-RETURN n###
-
-Query the index using a full Lucene query.
-A query can look like this: "name:Bob"
-
-*/

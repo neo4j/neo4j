@@ -69,18 +69,18 @@ Create an index on the label `Person` and property `name`.
 ###assertion=match parameters=aname
 //
 
-MATCH (n:Person) WHERE n.name = {value}
+MATCH (n:Person) WHERE n.name = $value
 
 RETURN n
 ###
 
 An index can be automatically used for the equality comparison.
-Note that for example `lower(n.name) = {value}` will not use an index.
+Note that for example `lower(n.name) = $value` will not use an index.
 
 ###assertion=match parameters=aname
 //
 
-MATCH (n:Person) WHERE n.name IN [{value}]
+MATCH (n:Person) WHERE n.name IN [$value]
 
 RETURN n
 ###
@@ -92,7 +92,7 @@ An index can be automatically used for the `IN` list checks.
 
 MATCH (n:Person)
 USING INDEX n:Person(name)
-WHERE n.name = {value}
+WHERE n.name = $value
 
 RETURN n
 ###

@@ -56,7 +56,7 @@ class CreateUniqueTest extends RefcardTest with QueryStatisticsTestSupport {
 MATCH (n)  WHERE id(n) = %A%
 
 CREATE UNIQUE
-    (n)-[:KNOWS]->(m {property: {value}})
+    (n)-[:KNOWS]->(m {property: $value})
 
 RETURN m###
 

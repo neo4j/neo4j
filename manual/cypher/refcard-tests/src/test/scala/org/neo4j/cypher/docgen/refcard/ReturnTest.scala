@@ -116,7 +116,7 @@ Sort the result in descending order.
 MATCH (n)
 RETURN *
 
-SKIP {skipNumber}
+SKIP $skipNumber
 ###
 
 Skip a number of results.
@@ -126,7 +126,7 @@ Skip a number of results.
 MATCH (n)
 RETURN *
 
-LIMIT {limitNumber}
+LIMIT $limitNumber
 ###
 
 Limit the number of results.
@@ -136,7 +136,7 @@ Limit the number of results.
 MATCH (n)
 RETURN *
 
-SKIP {skipNumber} LIMIT {limitNumber}
+SKIP $skipNumber LIMIT $limitNumber
 ###
 
 Skip results at the top and limit the number of results.

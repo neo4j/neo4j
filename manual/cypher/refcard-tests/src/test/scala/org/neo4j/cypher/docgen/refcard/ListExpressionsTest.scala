@@ -65,7 +65,7 @@ class ListExpressionsTest extends RefcardTest with QueryStatisticsTestSupport {
 ###assertion=returns-one parameters=list
 RETURN
 
-size({list})
+size($list)
 ###
 
 Number of elements in the list.
@@ -73,7 +73,7 @@ Number of elements in the list.
 ###assertion=returns-one parameters=list
 RETURN
 
-head({list}), last({list}), tail({list})
+head($list), last($list), tail($list)
 ###
 
 +head+ returns the first, +last+ the last element
@@ -86,7 +86,7 @@ WHERE id(n) = %A% AND id(m) = %B%
 WITH nodes(path) AS list
 RETURN
 
-[x IN list WHERE x.prop <> {value} | x.prop]
+[x IN list WHERE x.prop <> $value | x.prop]
 ###
 
 Combination of filter and extract in a concise notation.
@@ -106,7 +106,7 @@ MATCH (n) WHERE id(n) = %A%
 WITH [n] AS list
 RETURN
 
-filter(x IN list WHERE x.prop <> {value})
+filter(x IN list WHERE x.prop <> $value)
 ###
 
 A filtered list of the elements where the predicate is `TRUE`.

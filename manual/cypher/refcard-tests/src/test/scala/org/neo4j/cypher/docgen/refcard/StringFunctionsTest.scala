@@ -66,7 +66,7 @@ class StringFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
 ###assertion=returns-one parameters=expression
 RETURN
 
-toString({expression})
+toString($expression)
 ###
 
 String representation of the expression.
@@ -74,7 +74,7 @@ String representation of the expression.
 ###assertion=returns-one parameters=replace
 RETURN
 
-replace({original}, {search}, {replacement})
+replace($original, $search, $replacement)
 ###
 
 Replace all occurrences of `search` with `replacement`.
@@ -83,7 +83,7 @@ All arguments are be expressions.
 ###assertion=returns-one parameters=sub
 RETURN
 
-substring({original}, {begin}, {subLength})
+substring($original, $begin, $subLength)
 ###
 
 Get part of a string.
@@ -92,8 +92,8 @@ The `subLength` argument is optional.
 ###assertion=returns-one parameters=sub
 RETURN
 
-left({original}, {subLength}),
-  right({original}, {subLength})
+left($original, $subLength),
+  right($original, $subLength)
 ###
 
 The first part of a string. The last part of the string.
@@ -101,8 +101,8 @@ The first part of a string. The last part of the string.
 ###assertion=returns-one parameters=sub
 RETURN
 
-trim({original}), ltrim({original}),
-  rtrim({original})
+trim($original), ltrim($original),
+  rtrim($original)
 ###
 
 Trim all whitespace, or on left or right side.
@@ -110,7 +110,7 @@ Trim all whitespace, or on left or right side.
 ###assertion=returns-one parameters=sub
 RETURN
 
-upper({original}), lower({original})
+upper($original), lower($original)
 ###
 
 UPPERCASE and lowercase.
@@ -118,7 +118,7 @@ UPPERCASE and lowercase.
 ###assertion=returns-one parameters=split
 RETURN
 
-split({original}, {delimiter})
+split($original, $delimiter)
 ###
 
 Split a string into a list of strings.
@@ -126,7 +126,7 @@ Split a string into a list of strings.
 ###assertion=returns-one parameters=sub
 RETURN
 
-reverse({original})
+reverse($original)
 ###
 
 Reverse a string.
@@ -134,7 +134,7 @@ Reverse a string.
 ###assertion=returns-one parameters=string
 RETURN
 
-length({string})
+length($string)
 ###
 
 Calculate the number of characters in the string.

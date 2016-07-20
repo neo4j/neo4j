@@ -58,12 +58,12 @@ class ExamplesTest extends RefcardTest with QueryStatisticsTestSupport {
 //
 
 MATCH (user:Person)-[:FRIEND]-(friend)
-WHERE user.city = {city}
+WHERE user.city = $city
 WITH user, count(friend) AS friendCount
 WHERE friendCount > 10
 RETURN user.name
 ORDER BY friendCount DESC
-SKIP {skipNumber}
+SKIP $skipNumber
 LIMIT 10
 
 ###
@@ -74,8 +74,8 @@ See the `WITH` section for additional options on its usage.
 ###assertion=create parameters=name
 //
 
-CREATE (user:Person {name: {name}})
-SET user.city = {city}
+CREATE (user:Person {name: $name})
+SET user.city = $city
 FOREACH (n IN [user] : SET n.marked = true)
 DELETE user
 ###
