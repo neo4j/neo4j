@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
 public final class EntryCountThreshold implements Threshold
@@ -56,10 +55,6 @@ public final class EntryCountThreshold implements Threshold
 
             long highest = source.getLastEntryId();
             return highest - lastTx >= maxTransactionCount;
-        }
-        catch ( IllegalLogFormatException e )
-        {
-            return LogPruneStrategyFactory.decidePruneForIllegalLogFormat( e );
         }
         catch ( IOException e )
         {
