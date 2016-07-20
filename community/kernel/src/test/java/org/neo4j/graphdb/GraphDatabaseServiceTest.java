@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -36,6 +35,7 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.iterableWithSize;
 import static org.junit.Assert.assertEquals;
@@ -244,7 +244,7 @@ public class GraphDatabaseServiceTest
             }
         }
 
-        assertThat( result.get().getClass(), CoreMatchers.<Object>equalTo( DatabaseShutdownException.class ) );
+        assertThat( result.get(), instanceOf( DatabaseShutdownException.class ) );
     }
 
     @Test
