@@ -86,6 +86,7 @@ object Function {
     functions.Tail,
     functions.Tan,
     functions.Timestamp,
+    functions.ToBoolean,
     functions.ToFloat,
     functions.ToInteger,
     functions.ToLower,

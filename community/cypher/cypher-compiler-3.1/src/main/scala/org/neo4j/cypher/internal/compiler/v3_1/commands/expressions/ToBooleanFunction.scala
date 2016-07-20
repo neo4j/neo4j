@@ -21,6 +21,29 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.ParameterWrongTypeException
+import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
+case class ToBooleanFunction(a: Expression) extends NullInNullOutExpression(a) {
+  def symbolTableDependencies: Set[String] = a.symbolTableDependencies
 
+  protected def calculateType(symbols: SymbolTable): CypherType = CTBoolean
+
+  def arguments: Seq[Expression] = Seq(a)
+
+  def rewrite(f: (Expression) => Expression): Expression = f(ToBooleanFunction(a.rewrite(f)))
+
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = value match {
+    case b: Boolean => b
+    case v: String =>
+      try {
+        v.trim.toBoolean
+      } catch {
+        case e: IllegalArgumentException =>
+          null
+      }
+    case v =>
+      throw new ParameterWrongTypeException("Expected a String or Boolean, got: " + v.toString)
+  }
+}

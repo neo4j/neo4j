@@ -217,6 +217,7 @@ object ExpressionConverters {
         )
       case Tan => commandexpressions.TanFunction(toCommandExpression(invocation.arguments.head))
       case Timestamp => commandexpressions.TimestampFunction()
+      case ToBoolean => commandexpressions.ToBooleanFunction(toCommandExpression(invocation.arguments.head))
       case ToFloat => commandexpressions.ToFloatFunction(toCommandExpression(invocation.arguments.head))
       case ToInteger => commandexpressions.ToIntegerFunction(toCommandExpression(invocation.arguments.head))
       case ToLower => commandexpressions.ToLowerFunction(toCommandExpression(invocation.arguments.head))
