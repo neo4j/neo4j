@@ -187,7 +187,19 @@ public class TransactionPropagator implements Lifecycle
     }
 
     /**
+     * Propagatet transactions at least up to and including the given transaction id, which was committed by the given
+     * authorId, which is a server id.
      *
+     * The number of slaves receiving each transactions is controlled by {@link HaSettings#tx_push_factor}.
+     * Which slaves receives transactions is controlled by {@link HaSettings#tx_push_strategy}.
+     *
+     * We assume that <strong>this</strong> HA instance is the master of the cluster. If the author is not
+     * <strong>this</strong> instance, then it was committed on a slave instance, and that instead would then already
+     * have the given transaction. Thus, if the author id differs from the server id of this instance, then we will
+     * push to one less than push-factor number of slave instances.
+     *
+     * The pushing to all slaves happen in parallel, but this method as a whole is a blocking operation, and will not
+     * return until all designated slaves have received the commit, or they have timed out.
      * @param txId transaction id to replicate
      * @param authorId author id for such transaction id
      * @return the number of missed replicas (e.g., desired replication factor - number of successful replications)

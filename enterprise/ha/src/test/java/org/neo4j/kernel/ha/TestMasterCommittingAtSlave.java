@@ -40,7 +40,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
-import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -221,14 +220,7 @@ public class TestMasterCommittingAtSlave
                 HaSettings.tx_push_factor.name(), "" + replication, ClusterSettings.server_id.name(), "" + MasterServerId ) );
         Neo4jJobScheduler scheduler = cleanup.add( new Neo4jJobScheduler() );
         TransactionPropagator result = new TransactionPropagator( TransactionPropagator.from( config, slavePriority ),
-                NullLog.getInstance(), new Slaves()
-        {
-            @Override
-            public Iterable<Slave> getSlaves()
-            {
-                return slaves;
-            }
-        }, new CommitPusher( scheduler ) );
+                NullLog.getInstance(), () -> slaves, new CommitPusher() );
         // Life
         try
         {

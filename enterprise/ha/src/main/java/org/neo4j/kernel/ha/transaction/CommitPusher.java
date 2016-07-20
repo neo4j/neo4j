@@ -25,16 +25,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 
 import org.neo4j.com.Response;
 import org.neo4j.kernel.ha.com.master.Slave;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.masterTransactionPushing;
 
 public class CommitPusher extends LifecycleAdapter
 {
@@ -46,14 +44,7 @@ public class CommitPusher extends LifecycleAdapter
 
         public PullUpdateFuture( Slave slave, long txId )
         {
-            super( new Callable<Object>()
-            {
-                @Override
-                public Object call() throws Exception
-                {
-                    return null;
-                }
-            } );
+            super( () -> null );
             this.slave = slave;
             this.txId = txId;
         }
@@ -85,11 +76,13 @@ public class CommitPusher extends LifecycleAdapter
     private static final int PULL_UPDATES_QUEUE_SIZE = 100;
 
     private final Map<Integer, BlockingQueue<PullUpdateFuture>> pullUpdateQueues = new HashMap<>();
-    private final JobScheduler scheduler;
+    private final ExecutorService scheduler;
 
-    public CommitPusher( JobScheduler scheduler )
+    public CommitPusher()
     {
-        this.scheduler = scheduler;
+        // TODO Temporary hack.
+        // TODO The whole transaction propagation machinery needs to be reimplemented on top of Scheduler.
+        this.scheduler = Executors.newCachedThreadPool();
     }
 
     public void queuePush( Slave slave, final long txId )
@@ -137,7 +130,7 @@ public class CommitPusher extends LifecycleAdapter
             pullUpdateQueues.put( slave.getServerId(), queue );
 
             final BlockingQueue<PullUpdateFuture> finalQueue = queue;
-            scheduler.schedule( masterTransactionPushing, new Runnable()
+            scheduler.submit( new Runnable()
             {
                 List<PullUpdateFuture> currentPulls = new ArrayList<>();
 

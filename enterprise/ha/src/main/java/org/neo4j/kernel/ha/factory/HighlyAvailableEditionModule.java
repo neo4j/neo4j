@@ -132,7 +132,6 @@ import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
-import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -571,7 +570,7 @@ public class HighlyAvailableEditionModule
                 clusterClient, slaveFactory, me ) ) );
 
         TransactionPropagator transactionPropagator = new TransactionPropagator( TransactionPropagator.from( config ),
-                logging.getInternalLog( TransactionPropagator.class ), slaves, new CommitPusher( jobScheduler ) );
+                logging.getInternalLog( TransactionPropagator.class ), slaves, new CommitPusher() );
         paxosLife.add( transactionPropagator );
 
         DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate = new DelegateInvocationHandler<>(

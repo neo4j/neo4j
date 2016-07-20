@@ -53,7 +53,7 @@ import static org.neo4j.test.rule.SuppressOutput.suppress;
 public class BackupReadReplicaIT
 {
     @Rule
-    public SuppressOutput suppressOutput = suppress( SuppressOutput.System.out, SuppressOutput.System.err );
+    public SuppressOutput suppressOutput = suppress( SuppressOutput.StandardIO.out, SuppressOutput.StandardIO.err );
 
     @Rule
     public ClusterRule clusterRule = new ClusterRule( BackupReadReplicaIT.class )

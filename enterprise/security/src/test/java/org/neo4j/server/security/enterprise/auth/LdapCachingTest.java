@@ -41,12 +41,11 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
-import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -71,7 +70,6 @@ public class LdapCachingTest
                 new InMemoryRoleRepository(),
                 new BasicPasswordPolicy(),
                 new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ),
-                mock( JobScheduler.class ),
                 new InMemoryUserRepository()
             );
 

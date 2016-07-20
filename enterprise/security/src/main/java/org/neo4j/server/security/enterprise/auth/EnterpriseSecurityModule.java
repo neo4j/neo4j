@@ -186,7 +186,6 @@ public class EnterpriseSecurityModule extends SecurityModule
                 new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 ),
                 config.get( SecuritySettings.native_authentication_enabled ),
                 config.get( SecuritySettings.native_authorization_enabled ),
-                jobScheduler,
                 CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem )
             );
     }

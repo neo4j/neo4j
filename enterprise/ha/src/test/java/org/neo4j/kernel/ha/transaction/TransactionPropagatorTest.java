@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.transaction;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.util.Collections;
 
@@ -36,6 +37,7 @@ import org.neo4j.kernel.ha.transaction.TransactionPropagator.Configuration;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.Log;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -52,8 +54,11 @@ import static org.neo4j.kernel.ha.HaSettings.tx_push_strategy;
 
 public class TransactionPropagatorTest
 {
-    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.StandardIO.out );
     public final LifeRule life = new LifeRule( true );
+
+    @Rule
+    public final RuleChain ruleChain = RuleChain.outerRule( suppressOutput ).around( life );
 
     @Test
     public void shouldCapUndesiredSlaveCountPushLogging() throws Exception

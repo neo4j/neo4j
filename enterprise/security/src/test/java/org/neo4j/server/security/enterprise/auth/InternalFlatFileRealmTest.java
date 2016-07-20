@@ -32,12 +32,11 @@ import org.junit.Test;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
@@ -46,6 +45,7 @@ import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.time.Clocks;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -73,7 +73,6 @@ public class InternalFlatFileRealmTest
                         new InMemoryRoleRepository(),
                         new BasicPasswordPolicy(),
                         new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ),
-                        mock( JobScheduler.class ),
                         new InMemoryUserRepository()
                     );
 
@@ -137,17 +136,17 @@ public class InternalFlatFileRealmTest
         final RoleRepository roleRepository = mock( RoleRepository.class );
         final UserRepository initialUserRepository = mock( UserRepository.class );
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
+        final AtomicReference<Runnable> scheduledReadAuthRealm = new AtomicReference<>();
         AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 );
-        InternalFlatFileRealmIT.TestJobScheduler jobScheduler = new InternalFlatFileRealmIT.TestJobScheduler();
-        InternalFlatFileRealm realm =
-                new InternalFlatFileRealm(
-                        userRepository,
-                        roleRepository,
-                        passwordPolicy,
-                        authenticationStrategy,
-                        jobScheduler,
-                        initialUserRepository
-                    );
+        InternalFlatFileRealm realm = new InternalFlatFileRealm(
+                userRepository, roleRepository, passwordPolicy, authenticationStrategy, initialUserRepository )
+        {
+            @Override
+            protected void schedule( Runnable readFilesFromDisk )
+            {
+                scheduledReadAuthRealm.set( readFilesFromDisk );
+            }
+        };
 
         when( userRepository.getPersistedSnapshot() ).thenReturn(
                 new ListSnapshot<>( 10L, Collections.emptyList(), usersChanged ) );
@@ -159,7 +158,7 @@ public class InternalFlatFileRealmTest
         realm.init();
         realm.start();
 
-        jobScheduler.scheduledRunnable.run();
+        scheduledReadAuthRealm.get().run();
 
         verify( userRepository, times( nSetUsers ) ).setUsers( any() );
         verify( roleRepository, times( nSetRoles ) ).setRoles( any() );
@@ -171,10 +170,9 @@ public class InternalFlatFileRealmTest
         private boolean authorizationFlag = false;
 
         public TestRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
-                AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler,
-                UserRepository initialUserRepository )
+                AuthenticationStrategy authenticationStrategy, UserRepository initialUserRepository )
         {
-            super( userRepository, roleRepository, passwordPolicy, authenticationStrategy, jobScheduler, initialUserRepository );
+            super( userRepository, roleRepository, passwordPolicy, authenticationStrategy, initialUserRepository );
         }
 
         boolean takeAuthenticationFlag()

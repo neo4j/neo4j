@@ -46,8 +46,8 @@ import static org.mockito.Mockito.when;
 public class DBMSModuleTest
 {
     @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.err,
-            SuppressOutput.System.out );
+    public SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.StandardIO.err,
+            SuppressOutput.StandardIO.out );
 
     @SuppressWarnings( "unchecked" )
     @Test

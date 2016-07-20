@@ -59,10 +59,10 @@ public final class SuppressOutput implements TestRule
 
     public static SuppressOutput suppressAll()
     {
-        return suppress( System.out, System.err, java_util_logging );
+        return suppress( StandardIO.out, StandardIO.err, java_util_logging );
     }
 
-    public enum System implements Suppressible
+    public enum StandardIO implements Suppressible
     {
         out
         {
@@ -182,12 +182,12 @@ public final class SuppressOutput implements TestRule
 
     public Voice getOutputVoice()
     {
-        return getVoice( System.out );
+        return getVoice( StandardIO.out );
     }
 
     public Voice getErrorVoice()
     {
-        return getVoice( System.err );
+        return getVoice( StandardIO.err );
     }
 
     public Voice getVoice( Suppressible suppressible )
