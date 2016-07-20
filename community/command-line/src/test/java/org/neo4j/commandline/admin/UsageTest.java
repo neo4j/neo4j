@@ -19,13 +19,11 @@
  */
 package org.neo4j.commandline.admin;
 
-import java.nio.file.Path;
-import java.util.Optional;
-
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import static java.util.Arrays.asList;
+import java.nio.file.Path;
+import java.util.Optional;
 
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -37,13 +35,15 @@ public class UsageTest
     {
         Output out = mock( Output.class );
 
-        Iterable<AdminCommand.Provider> commands = asList(
-                new StubProvider( "restore",
-                        Optional.of( "---from <backup-directory> --database=<database-name> [--force]" ),
-                        "Restores a database backed up using the neo4j-backup tool." ),
-                new StubProvider( "bam", Optional.empty(), "Some description" ) );
+        AdminCommand.Provider[] commands = new AdminCommand.Provider[]
+                {
+                        new StubProvider( "restore",
+                                Optional.of( "---from <backup-directory> --database=<database-name> [--force]" ),
+                                "Restores a database backed up using the neo4j-backup tool." ),
+                        new StubProvider( "bam", Optional.empty(), "Some description" )
+                };
         String extraHelp = "some extra help or other\nmaybe over multiple lines\n";
-        new Usage( "neo4j-admin", out, () -> commands, extraHelp ).print();
+        new Usage( "neo4j-admin", out, new CannedLocator( commands ), extraHelp ).print();
 
         InOrder ordered = inOrder( out );
         ordered.verify( out ).line( "Usage:" );

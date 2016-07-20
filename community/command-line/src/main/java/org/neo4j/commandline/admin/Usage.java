@@ -19,20 +19,17 @@
  */
 package org.neo4j.commandline.admin;
 
-import java.util.function.Supplier;
-
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.Args.splitLongLine;
 
 public class Usage
 {
     private final String scriptName;
     private final Output out;
-    private final Supplier<Iterable<AdminCommand.Provider>> commands;
+    private final CommandLocator commands;
     private final String extraHelp;
 
-    public Usage( String scriptName, Output out, Supplier<Iterable<AdminCommand.Provider>> commands, String extraHelp )
+    public Usage( String scriptName, Output out, CommandLocator commands, String extraHelp )
     {
         this.scriptName = scriptName;
         this.out = out;
@@ -45,7 +42,7 @@ public class Usage
         out.line( "Usage:" );
         out.line( "" );
 
-        for ( AdminCommand.Provider command : commands.get() )
+        for ( AdminCommand.Provider command : commands.getAllProviders() )
         {
             new CommandUsage( command, out, scriptName ).print();
         }

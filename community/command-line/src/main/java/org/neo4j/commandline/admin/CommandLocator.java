@@ -19,8 +19,8 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.helpers.Service;
@@ -31,42 +31,65 @@ import org.neo4j.helpers.collection.Iterables;
  * help output.
  */
 public interface CommandLocator
-        extends Function<String, AdminCommand.Provider>, Supplier<Iterable<AdminCommand.Provider>>
 {
+    /**
+     * Find a command provider that matches the given key or name, or throws {@link NoSuchElementException} if no
+     * matching provider was found.
+     * @param name The name of the provider to look for.
+     * @return Any matching command provider.
+     */
+    AdminCommand.Provider findProvider( String name ) throws NoSuchElementException;
 
+    /**
+     * Get an iterable of all of the command providers that are available through this command locator instance.
+     * @return An iterable of command providers.
+     */
+    Iterable<AdminCommand.Provider> getAllProviders();
+
+    /**
+     * Get a command locator that uses the {@link Service service locator} mechanism to find providers by their service
+     * key.
+     * @return A service locator based command locator.
+     */
     static CommandLocator fromServiceLocator()
     {
         return new CommandLocator()
         {
             @Override
-            public AdminCommand.Provider apply( String name )
+            public AdminCommand.Provider findProvider( String name )
             {
                 return Service.load( AdminCommand.Provider.class, name );
             }
 
             @Override
-            public Iterable<AdminCommand.Provider> get()
+            public Iterable<AdminCommand.Provider> getAllProviders()
             {
                 return Service.load( AdminCommand.Provider.class );
             }
         };
     }
 
+    /**
+     * Augment the given command locator such that it also considers the command provider given through the supplier.
+     * @param command A supplier of an additional command. Note that this may be called multiple times.
+     * @param commands The command locator to augment with the additional command provider.
+     * @return The augmented command locator.
+     */
     static CommandLocator withAdditionalCommand( Supplier<AdminCommand.Provider> command, CommandLocator commands )
     {
         return new CommandLocator()
         {
             @Override
-            public AdminCommand.Provider apply( String name )
+            public AdminCommand.Provider findProvider( String name )
             {
                 AdminCommand.Provider provider = command.get();
-                return Objects.equals( name, provider.name() ) ? provider : commands.apply( name );
+                return Objects.equals( name, provider.name() ) ? provider : commands.findProvider( name );
             }
 
             @Override
-            public Iterable<AdminCommand.Provider> get()
+            public Iterable<AdminCommand.Provider> getAllProviders()
             {
-                return Iterables.append( command.get(), commands.get() );
+                return Iterables.append( command.get(), commands.getAllProviders() );
             }
         };
     }

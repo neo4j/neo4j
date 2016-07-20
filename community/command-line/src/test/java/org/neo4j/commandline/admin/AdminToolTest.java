@@ -19,14 +19,12 @@
  */
 package org.neo4j.commandline.admin;
 
+import org.junit.Test;
+
 import java.nio.file.Path;
 import java.util.Optional;
 
-import org.junit.Test;
-
 import org.neo4j.helpers.collection.Iterables;
-
-import static java.util.Arrays.asList;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -39,7 +37,9 @@ public class AdminToolTest
     public void shouldExecuteTheCommand()
     {
         RecordingCommand command = new RecordingCommand();
-        new AdminTool( new CannedLocator( command ), new NullOutput(), "", false ).execute( null, null, "foo" );
+        AdminCommand.Provider provider = command.provider();
+        AdminTool tool = new AdminTool( new CannedLocator( provider ), new NullOutput(), "", false );
+        tool.execute( null, null, provider.name() );
         assertThat( command.executed, is( true ) );
     }
 
@@ -94,38 +94,16 @@ public class AdminToolTest
         }
     }
 
-    private static class CannedLocator implements CommandLocator
-    {
-        private final RecordingCommand command;
-
-        public CannedLocator( RecordingCommand command )
-        {
-            this.command = command;
-        }
-
-        @Override
-        public AdminCommand.Provider apply( String s )
-        {
-            return command.provider();
-        }
-
-        @Override
-        public Iterable<AdminCommand.Provider> get()
-        {
-            return asList( command.provider() );
-        }
-    }
-
     private static class NullCommandLocator implements CommandLocator
     {
         @Override
-        public AdminCommand.Provider apply( String s )
+        public AdminCommand.Provider findProvider( String s )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
 
         @Override
-        public Iterable<AdminCommand.Provider> get()
+        public Iterable<AdminCommand.Provider> getAllProviders()
         {
             return Iterables.empty();
         }

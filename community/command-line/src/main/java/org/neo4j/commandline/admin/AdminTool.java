@@ -65,7 +65,7 @@ public class AdminTool
             AdminCommand.Provider provider;
             try
             {
-                provider = locator.apply( name );
+                provider = locator.findProvider( name );
             }
             catch ( NoSuchElementException e )
             {
