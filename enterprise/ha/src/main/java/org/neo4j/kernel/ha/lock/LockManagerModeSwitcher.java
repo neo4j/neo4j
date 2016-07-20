@@ -29,6 +29,7 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.LogProvider;
 
 public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
 {
@@ -36,18 +37,20 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     private final RequestContextFactory requestContextFactory;
     private final AvailabilityGuard availabilityGuard;
     private final Factory<Locks> locksFactory;
+    private final LogProvider logProvider;
     private final Config config;
 
     public LockManagerModeSwitcher( ModeSwitcherNotifier modeSwitcherNotifier,
                                     DelegateInvocationHandler<Locks> delegate, DelegateInvocationHandler<Master> master,
                                     RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
-                                    Factory<Locks> locksFactory, Config config )
+                                    Factory<Locks> locksFactory, LogProvider logProvider, Config config )
     {
         super( modeSwitcherNotifier, delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
         this.locksFactory = locksFactory;
+        this.logProvider = logProvider;
         this.config = config;
     }
 
@@ -61,6 +64,6 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     protected Locks getSlaveImpl( LifeSupport life )
     {
         return life.add( new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
-                availabilityGuard, config ) );
+                availabilityGuard, logProvider, config ) );
     }
 }

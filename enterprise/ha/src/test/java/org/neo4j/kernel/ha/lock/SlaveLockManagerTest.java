@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNotNull;
@@ -87,6 +88,7 @@ public class SlaveLockManagerTest
 
     private SlaveLockManager newSlaveLockManager( Locks localLocks )
     {
-        return new SlaveLockManager( localLocks, requestContextFactory, master, availabilityGuard, new Config() );
+        return new SlaveLockManager( localLocks, requestContextFactory, master, availabilityGuard,
+                NullLogProvider.getInstance(), new Config() );
     }
 }
