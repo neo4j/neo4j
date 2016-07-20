@@ -106,6 +106,13 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-resource</artifactId>
+      <version>${project.version}</version>
+      <classifier>sources</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-jmx</artifactId>
       <version>${project.version}</version>
       <classifier>sources</classifier>

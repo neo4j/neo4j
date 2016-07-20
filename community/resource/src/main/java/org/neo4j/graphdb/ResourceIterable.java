@@ -34,10 +34,12 @@ import java.util.stream.Stream;
  * If you intend to exhaust the returned iterators, you can use conventional code as you would with a normal Iterable:
  *
  * <pre>
+ * {@code
  * ResourceIterable<Object> iterable;
  * for ( Object item : iterable )
  * {
  *     ...
+ * }
  * }
  * </pre>
  *
@@ -46,6 +48,7 @@ import java.util.stream.Stream;
  * can be invoked to release its associated resources early, by using a {@code finally}-block, or try-with-resource.
  *
  * <pre>
+ * {@code
  * ResourceIterable<Object> iterable;
  * ResourceIterator<Object> iterator = iterable.iterator();
  * try
@@ -62,6 +65,7 @@ import java.util.stream.Stream;
  * finally
  * {
  *     iterator.close();
+ * }
  * }
  * </pre>
  *
