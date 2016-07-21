@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TransactionId;
@@ -190,8 +189,9 @@ public class KernelTransactions extends LifecycleAdapter
                     labelScanStore, indexingService, updateableSchemaState, recordState, providerMap,
                     neoStores, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
                     transactionCommitProcess, transactionMonitor, storeLayer, legacyIndexTransactionState,
-                    localTxPool, constraintSemantics, clock, tracers.transactionTracer, procedureCache,
-                    context, txTerminationAwareLocks );
+                    localTxPool, constraintSemantics, clock, tracers.transactionTracer, procedureCache, locks,
+                    statementLocksFactory, context, txTerminationAwareLocks );
+
             allTransactions.add( tx );
 
             return tx;
@@ -207,9 +207,8 @@ public class KernelTransactions extends LifecycleAdapter
         {
             assertDatabaseIsRunning();
             TransactionId lastCommittedTransaction = neoStores.getMetaDataStore().getLastCommittedTransaction();
-            StatementLocks statementLocks = statementLocksFactory.newInstance( locks.newClient() );
             return localTxPool.acquire().initialize( lastCommittedTransaction.transactionId(),
-                    lastCommittedTransaction.commitTimestamp(), statementLocks );
+                    lastCommittedTransaction.commitTimestamp() );
         }
         finally
         {

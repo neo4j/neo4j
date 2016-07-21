@@ -45,8 +45,8 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.locking.NoOpClient;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.kernel.impl.locking.NoOpLocks;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -397,7 +397,8 @@ public class KernelTransactionTerminationTest
                     mock( TransactionCommitProcess.class ), monitor,
                     mock( StoreReadLayer.class, RETURNS_MOCKS ), mock( LegacyIndexTransactionState.class ),
                     mock( Pool.class ), new StandardConstraintSemantics(), new FakeClock(), TransactionTracer.NULL,
-                    new ProcedureCache(), mock( NeoStoreTransactionContext.class ), true );
+                    new ProcedureCache(), new NoOpLocks(), new SimpleStatementLocksFactory(),
+                    mock( NeoStoreTransactionContext.class ), true );
 
             this.monitor = monitor;
         }
@@ -409,7 +410,7 @@ public class KernelTransactionTerminationTest
 
         TestKernelTransaction initialize()
         {
-            initialize( 42, 42, new SimpleStatementLocks( NoOpClient.NO_LOCKS ) );
+            initialize( 42, 42 );
             monitor.reset();
             return this;
         }

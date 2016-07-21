@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpLocks;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -348,7 +348,7 @@ public class KernelTransactionImplementationTest
         } ).when( recordState ).extractCommands( anyListOf( Command.class ) );
         try ( KernelTransactionImplementation transaction = newInitializedTransaction() )
         {
-            transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, newStatementLocks() );
+            transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP );
 
             // WHEN committing it at a later point
             clock.forward( 5, MILLISECONDS );
@@ -386,7 +386,7 @@ public class KernelTransactionImplementationTest
         transaction.markForTermination( Status.General.UnknownFailure );
 
         // WHEN
-        transaction.initialize( 10L, BASE_TX_COMMIT_TIMESTAMP, newStatementLocks() );
+        transaction.initialize( 10L, BASE_TX_COMMIT_TIMESTAMP );
         transaction.txState().nodeDoCreate( 11L );
         transaction.success();
         transaction.close();
@@ -406,7 +406,7 @@ public class KernelTransactionImplementationTest
         reset( locks );
 
         // WHEN
-        transaction.initialize( 10L, BASE_TX_COMMIT_TIMESTAMP, newStatementLocks() );
+        transaction.initialize( 10L, BASE_TX_COMMIT_TIMESTAMP );
         transaction.close();
 
         // THEN
@@ -422,7 +422,7 @@ public class KernelTransactionImplementationTest
 
         // WHEN
         transaction.close();
-        transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, newStatementLocks() );
+        transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP );
 
         // THEN
         assertEquals( reuseCount + 1, transaction.getReuseCount() );
@@ -431,7 +431,7 @@ public class KernelTransactionImplementationTest
     @Test
     public void markForTerminationNotInitializedTransaction()
     {
-        KernelTransactionImplementation transaction = newTransaction( true );
+        KernelTransactionImplementation transaction = newTransaction( true, locks );
 
         transaction.markForTermination( Status.General.UnknownFailure );
 
@@ -623,30 +623,20 @@ public class KernelTransactionImplementationTest
 
     private KernelTransactionImplementation newInitializedTransaction( boolean txTerminationAware, Locks locks )
     {
-        KernelTransactionImplementation transaction = newTransaction( txTerminationAware );
-        transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP, newStatementLocks( locks ) );
+        KernelTransactionImplementation transaction = newTransaction( txTerminationAware, locks );
+        transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP );
         return transaction;
     }
 
-    private KernelTransactionImplementation newTransaction( boolean txTerminationAware )
+    private KernelTransactionImplementation newTransaction( boolean txTerminationAware, Locks locks )
     {
         when( storeReadLayer.acquireStatement() ).thenReturn( mock( StoreStatement.class ) );
 
         return new KernelTransactionImplementation( null, null, null, null, null, recordState, null, neoStores,
                 hooks, null, headerInformationFactory, commitProcess,
                 transactionMonitor, storeReadLayer, legacyIndexState, pool, new StandardConstraintSemantics(), clock,
-                TransactionTracer.NULL, new ProcedureCache(), mock( NeoStoreTransactionContext.class ),
-                txTerminationAware );
-    }
-
-    private SimpleStatementLocks newStatementLocks()
-    {
-        return newStatementLocks( locks );
-    }
-
-    private SimpleStatementLocks newStatementLocks( Locks locks )
-    {
-        return new SimpleStatementLocks( locks.newClient() );
+                TransactionTracer.NULL, new ProcedureCache(), locks, new SimpleStatementLocksFactory(),
+                mock( NeoStoreTransactionContext.class ), txTerminationAware );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

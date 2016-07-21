@@ -38,12 +38,13 @@ public interface StatementLocks extends AutoCloseable
      * Get {@link Locks.Client} responsible for optimistic locks. Such locks could potentially be grabbed later at
      * commit time.
      *
-     * @return the locks client to serve implicit locks.
+     * @return the locks client to serve optimistic locks.
      */
     Locks.Client optimistic();
 
     /**
-     * Prepare the underlying {@link Locks.Client client}(s) for commit.
+     * Prepare the underlying {@link Locks.Client client}(s) for commit. This will grab all locks that have
+     * previously been taken {@link #optimistic() optimistically}.
      */
     void prepareForCommit();
 

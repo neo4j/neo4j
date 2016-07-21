@@ -70,7 +70,9 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -158,6 +160,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionMonitor transactionMonitor;
     private final StoreReadLayer storeLayer;
     private final ProcedureCache procedureCache;
+    private final Locks locks;
+    private final StatementLocksFactory statementLocksFactory;
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
@@ -217,6 +221,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             Clock clock,
                                             TransactionTracer tracer,
                                             ProcedureCache procedureCache,
+                                            Locks locks,
+                                            StatementLocksFactory statementLocksFactory,
                                             NeoStoreTransactionContext context,
                                             boolean txTerminationAwareLocks )
     {
@@ -235,6 +241,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMonitor = transactionMonitor;
         this.storeLayer = storeLayer;
         this.procedureCache = procedureCache;
+        this.locks = locks;
+        this.statementLocksFactory = statementLocksFactory;
         this.context = context;
         this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
         this.pool = pool;
@@ -247,10 +255,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /**
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
-    public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp,
-            StatementLocks statementLocks )
+    public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp )
     {
-        this.statementLocks = statementLocks;
+        this.statementLocks = statementLocksFactory.newInstance( locks.newClient() );
         this.terminationReason = null;
         this.closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
@@ -598,9 +605,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     }
                 }
 
-                statementLocks.prepareForCommit();
-                context.init( statementLocks.pessimistic() );
-                prepareRecordChangesFromTransactionState();
+                prepareStateForCommit();
             }
 
             // Convert changes into commands and commit
@@ -658,6 +663,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 afterCommit();
             }
         }
+    }
+
+    private void prepareStateForCommit() throws ConstraintValidationKernelException, CreateConstraintFailureException
+    {
+        // grab all optimistic locks now, locks can't be deferred any further
+        statementLocks.prepareForCommit();
+
+        // use pessimistic locks for the rest of the commit process, locks can't be deferred any further
+        context.init( statementLocks.pessimistic() );
+
+        prepareRecordChangesFromTransactionState();
     }
 
     private void rollback() throws TransactionFailureException
