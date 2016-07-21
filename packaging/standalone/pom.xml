@@ -53,6 +53,7 @@
     <neo4j.confdir>${neo4j.home}/conf</neo4j.confdir> <!-- needed? -->
     <neo4j.datadir>${neo4j.home}/data</neo4j.datadir> <!-- needed? -->
     <neo4j.logdir>${neo4j.datadir}/log</neo4j.logdir> <!-- needed? -->
+    <skip.shell.tests>false</skip.shell.tests>
 
   </properties>
 
@@ -242,6 +243,7 @@
             </goals>
             <inherited>false</inherited>
             <configuration>
+              <skip>${skip.shell.tests}</skip>
               <executable>./run-tests.sh</executable>
               <workingDirectory>src/tests/shell-scripts</workingDirectory>
               <arguments>
@@ -332,20 +334,20 @@
           <family>windows</family>
         </os>
       </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>shell-script-tests</id>
-                <phase>none</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
+      <properties>
+        <skip.shell.tests>true</skip.shell.tests>
+      </properties>
+    </profile>
+    <profile>
+      <id>skip-shell-script-tests</id>
+      <activation>
+        <property>
+          <name>skipTests</name>
+        </property>
+      </activation>
+      <properties>
+        <skip.shell.tests>true</skip.shell.tests>
+      </properties>
     </profile>
   </profiles>
 </project>
