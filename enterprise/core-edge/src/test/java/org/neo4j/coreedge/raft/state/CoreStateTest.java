@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import org.neo4j.coreedge.SessionTracker;
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -67,8 +68,8 @@ public class CoreStateTest
     private final InMemoryRaftLog raftLog = spy( new InMemoryRaftLog() );
 
     private final InMemoryStateStorage<Long> lastFlushedStorage = new InMemoryStateStorage<>( -1L );
-    private final InMemoryStateStorage<GlobalSessionTrackerState> sessionStorage =
-            new InMemoryStateStorage<>( new GlobalSessionTrackerState() );
+    private final SessionTracker sessionStorage = new SessionTracker(
+            new InMemoryStateStorage<>( new GlobalSessionTrackerState() ) );
 
     private final DatabaseHealth dbHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
             NullLogProvider.getInstance().getLog( getClass() ) );
@@ -80,14 +81,14 @@ public class CoreStateTest
     private final CoreStateApplier applier = new CoreStateApplier( NullLogProvider.getInstance() );
     private InFlightMap<Long,RaftLogEntry> inFlightMap = spy( new InFlightMap<>() );
     private final Monitors monitors = new Monitors();
-    private final CoreState coreState = new CoreState( raftLog, batchSize, flushEvery, () -> dbHealth,
+    private final CoreStateMachines coreStateMachines = mock( CoreStateMachines.class );
+    private final CoreState coreState = new CoreState( coreStateMachines, raftLog, batchSize, flushEvery, () -> dbHealth,
             NullLogProvider.getInstance(), new ProgressTrackerImpl( globalSession ), lastFlushedStorage,
             sessionStorage, mock( CoreServerSelectionStrategy.class), applier, mock( CoreStateDownloader.class ), inFlightMap, monitors );
 
     private ReplicatedTransaction nullTx = new ReplicatedTransaction( null );
 
     private final CommandDispatcher commandDispatcher = mock( CommandDispatcher.class );
-    private final CoreStateMachines coreStateMachines = mock( CoreStateMachines.class );
 
     {
         when( coreStateMachines.commandDispatcher() ).thenReturn( commandDispatcher );
@@ -113,7 +114,6 @@ public class CoreStateTest
         // given
         RaftLogCommitIndexMonitor listener = mock( RaftLogCommitIndexMonitor.class );
         monitors.addMonitorListener( listener );
-        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         InOrder inOrder = inOrder( coreStateMachines, commandDispatcher );
@@ -139,7 +139,6 @@ public class CoreStateTest
     public void shouldNotApplyUncommittedCommands() throws Throwable
     {
         // given
-        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         // when
@@ -156,7 +155,6 @@ public class CoreStateTest
     public void entriesThatAreNotStateMachineCommandsShouldStillIncreaseCommandIndex() throws Throwable
     {
         // given
-        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         // when
@@ -177,7 +175,6 @@ public class CoreStateTest
     public void duplicatesShouldBeIgnoredButStillIncreaseCommandIndex() throws Exception
     {
         // given
-        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         // when
@@ -204,7 +201,6 @@ public class CoreStateTest
     public void outOfOrderDuplicatesShouldBeIgnoredButStillIncreaseCommandIndex() throws Exception
     {
         // given
-        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         // when
@@ -240,7 +236,6 @@ public class CoreStateTest
     public void shouldPeriodicallyFlushState() throws Throwable
     {
         // given
-        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         int interactions = flushEvery * 5;
@@ -264,7 +259,6 @@ public class CoreStateTest
         // given
         doThrow( IllegalStateException.class ).when( commandDispatcher )
                 .dispatch( any( ReplicatedTransaction.class ), anyLong(), anyCallback() );
-        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -284,7 +278,6 @@ public class CoreStateTest
         //given n things to apply in the cache, check that they are actually applied.
 
         // given
-        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         inFlightMap.register( 0L, new RaftLogEntry( 1, operation( nullTx ) ) );
@@ -302,7 +295,6 @@ public class CoreStateTest
     public void cacheEntryShouldBePurgedWhenApplied() throws Throwable
     {
         //given a cache in submitApplyJob, the contents of the cache should only contain unapplied "things"
-        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         inFlightMap.register( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -324,7 +316,6 @@ public class CoreStateTest
     {
         // if the cache does not contain all things to be applied, make sure we fall back to the log
         // should only happen in recovery, otherwise this is probably a bug.
-        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         //given cache with missing entry
@@ -359,8 +350,6 @@ public class CoreStateTest
     public void shouldFailWhenCacheAndLogMiss() throws Throwable
     {
         //When an entry is not in the log, we must fail.
-
-        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         inFlightMap.register( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -379,7 +368,6 @@ public class CoreStateTest
     public void shouldIncreaseLastAppliedForStateMachineCommands() throws Exception
     {
         // given
-        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         // when
@@ -397,7 +385,6 @@ public class CoreStateTest
     public void shouldIncreaseLastAppliedForOtherCommands() throws Exception
     {
         // given
-        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         // when

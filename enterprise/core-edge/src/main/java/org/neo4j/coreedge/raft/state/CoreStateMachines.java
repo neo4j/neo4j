@@ -22,9 +22,9 @@ package org.neo4j.coreedge.raft.state;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import org.neo4j.coreedge.SnapFlushable;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
-import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
@@ -40,7 +40,7 @@ import org.neo4j.storageengine.api.Token;
 
 import static java.lang.Math.max;
 
-public class CoreStateMachines
+public class CoreStateMachines implements SnapFlushable
 {
     private final ReplicatedTransactionStateMachine replicatedTxStateMachine;
 
@@ -50,9 +50,7 @@ public class CoreStateMachines
 
     private final ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine;
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine;
-    private final CoreState coreState;
     private final RecoverTransactionLogState txLogState;
-    private final RaftLog raftLog;
     private final LocalDatabase localDatabase;
 
     private final CommandDispatcher currentBatch = new StateMachineCommandDispatcher();
@@ -65,9 +63,7 @@ public class CoreStateMachines
             ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine,
             ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine,
             ReplicatedIdAllocationStateMachine idAllocationStateMachine,
-            CoreState coreState,
             RecoverTransactionLogState txLogState,
-            RaftLog raftLog,
             LocalDatabase localDatabase )
     {
         this.replicatedTxStateMachine = replicatedTxStateMachine;
@@ -76,9 +72,7 @@ public class CoreStateMachines
         this.propertyKeyTokenStateMachine = propertyKeyTokenStateMachine;
         this.replicatedLockTokenStateMachine = replicatedLockTokenStateMachine;
         this.idAllocationStateMachine = idAllocationStateMachine;
-        this.coreState = coreState;
         this.txLogState = txLogState;
-        this.raftLog = raftLog;
         this.localDatabase = localDatabase;
     }
 
@@ -90,6 +84,21 @@ public class CoreStateMachines
         return currentBatch;
     }
 
+    @Override
+    public long getLastAppliedIndex()
+    {
+        long lastAppliedTxIndex = replicatedTxStateMachine.lastAppliedIndex();
+        assert lastAppliedTxIndex == labelTokenStateMachine.lastAppliedIndex();
+        assert lastAppliedTxIndex == relationshipTypeTokenStateMachine.lastAppliedIndex();
+        assert lastAppliedTxIndex == propertyKeyTokenStateMachine.lastAppliedIndex();
+
+        long lastAppliedLockTokenIndex = replicatedLockTokenStateMachine.lastAppliedIndex();
+        long lastAppliedIdAllocationIndex = idAllocationStateMachine.lastAppliedIndex();
+
+        return max( max( lastAppliedLockTokenIndex, lastAppliedIdAllocationIndex ), lastAppliedTxIndex );
+    }
+
+    @Override
     public void flush() throws IOException
     {
         assert !runningBatch;
@@ -104,7 +113,8 @@ public class CoreStateMachines
         idAllocationStateMachine.flush();
     }
 
-    void addSnapshots( CoreSnapshot coreSnapshot )
+    @Override
+    public void addSnapshots( CoreSnapshot coreSnapshot )
     {
         assert !runningBatch;
 
@@ -113,27 +123,14 @@ public class CoreStateMachines
         // transactions and tokens live in the store
     }
 
-    void installSnapshots( CoreSnapshot coreSnapshot )
+    @Override
+    public void installSnapshots( CoreSnapshot coreSnapshot )
     {
         assert !runningBatch;
 
         idAllocationStateMachine.installSnapshot( coreSnapshot.get( CoreStateType.ID_ALLOCATION ) );
         replicatedLockTokenStateMachine.installSnapshot( coreSnapshot.get( CoreStateType.LOCK_TOKEN ) );
         // transactions and tokens live in the store
-
-        long snapshotPrevIndex = coreSnapshot.prevIndex();
-        try
-        {
-            if ( snapshotPrevIndex > 1 )
-            {
-                raftLog.skip( snapshotPrevIndex, coreSnapshot.prevTerm() );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        coreState.skip( snapshotPrevIndex );
     }
 
     public void refresh( TransactionRepresentationCommitProcess localCommit )
@@ -146,8 +143,6 @@ public class CoreStateMachines
         labelTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
         relationshipTypeTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
         propertyKeyTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
-
-        coreState.setStateMachine( this );
     }
 
     private class StateMachineCommandDispatcher implements CommandDispatcher
@@ -191,25 +186,11 @@ public class CoreStateMachines
             replicatedTxStateMachine.ensuredApplied();
             replicatedLockTokenStateMachine.applyCommand( lockRequest, commandIndex, callback );
         }
-
         @Override
         public void close()
         {
             runningBatch = false;
             replicatedTxStateMachine.ensuredApplied();
         }
-    }
-
-    long getLastAppliedIndex()
-    {
-        long lastAppliedTxIndex = replicatedTxStateMachine.lastAppliedIndex();
-        assert lastAppliedTxIndex == labelTokenStateMachine.lastAppliedIndex();
-        assert lastAppliedTxIndex == relationshipTypeTokenStateMachine.lastAppliedIndex();
-        assert lastAppliedTxIndex == propertyKeyTokenStateMachine.lastAppliedIndex();
-
-        long lastAppliedLockTokenIndex = replicatedLockTokenStateMachine.lastAppliedIndex();
-        long lastAppliedIdAllocationIndex = idAllocationStateMachine.lastAppliedIndex();
-
-        return max( max( lastAppliedLockTokenIndex, lastAppliedIdAllocationIndex ), lastAppliedTxIndex );
     }
 }
