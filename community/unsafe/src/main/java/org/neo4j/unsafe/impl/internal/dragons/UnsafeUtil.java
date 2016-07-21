@@ -256,6 +256,14 @@ public final class UnsafeUtil
     }
 
     /**
+     * Orders stores before the fence, with loads and stores after the fence.
+     */
+    public static void storeFence()
+    {
+        unsafe.storeFence();
+    }
+
+    /**
      * Atomically compare the current value of the given long field with the expected value, and if they are the
      * equal, set the field to the updated value and return true. Otherwise return false.
      * <p>
