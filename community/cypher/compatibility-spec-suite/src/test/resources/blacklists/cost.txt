@@ -3,5 +3,3 @@ Fail when comparing parameters to nodes
 Comparing nodes to properties
 Fail when comparing nodes to relationships
 Fail when comparing relationships to nodes
-Handling property access on the Any type
-Failing when performing property access on a non-map 1
