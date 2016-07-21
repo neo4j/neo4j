@@ -31,14 +31,11 @@ trait Literals extends Parser
   def Variable: Rule1[ast.Variable] =
     rule("a variable") { SymbolicNameString ~~>> (ast.Variable(_) ) }.memoMismatches
 
-  def FunctionName: Rule1[ast.FunctionName] =
-    rule("a function name") { SymbolicNameString ~~>> (ast.FunctionName(_) ) }.memoMismatches
-
   def ProcedureName: Rule1[ast.ProcedureName] =
     rule("a procedure name") { SymbolicNameString ~~>> (ast.ProcedureName(_) ) }.memoMismatches
 
-  def EscapedVariable: Rule1[ast.Variable] =
-    rule("a variable") { EscapedSymbolicNameString ~~>> (ast.Variable(_)) }
+  def FunctionName: Rule1[ast.FunctionName] =
+    rule("a function name") { SymbolicNameString ~~>> (ast.FunctionName(_) ) }.memoMismatches
 
   def PropertyKeyName: Rule1[ast.PropertyKeyName] =
     rule("a property key name") { SymbolicNameString ~~>> (ast.PropertyKeyName(_) ) }.memoMismatches
