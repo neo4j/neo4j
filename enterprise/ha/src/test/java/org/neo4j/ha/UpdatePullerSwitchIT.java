@@ -107,16 +107,38 @@ public class UpdatePullerSwitchIT
         verifyUpdatePullerThreads();
     }
 
-    private void verifyUpdatePullerThreads()
+    private void verifyUpdatePullerThreads() throws InterruptedException
     {
-        InstanceId masterId = managedCluster.getMaster().getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
-        InstanceId slaveId = managedCluster.getAnySlave().getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
-        Map<Thread,StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
-        Set<Thread> threads = allStackTraces.keySet();
-        assertFalse( "Master should not have any puller threads", findThreadWithPrefix( threads,
-                SlaveUpdatePuller.UPDATE_PULLER_THREAD_PREFIX + masterId ) );
-        assertTrue( "Slave should have active puller thread", findThreadWithPrefix( threads,
-                SlaveUpdatePuller.UPDATE_PULLER_THREAD_PREFIX + slaveId ) );
+        int iterationCount = 0;
+        boolean masterHasUpdatePullerThreads;
+        boolean slaveHasUpdatePullerThreads;
+
+        do
+        {
+            if ( iterationCount > 1 )
+            {
+                Thread.sleep( 100 );
+            }
+
+            InstanceId masterId = getInstanceIdOf( managedCluster.getMaster() );
+            InstanceId slaveId = getInstanceIdOf( managedCluster.getAnySlave() );
+            Map<Thread,StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
+            Set<Thread> threads = allStackTraces.keySet();
+
+            masterHasUpdatePullerThreads = findThreadWithPrefix( threads,
+                    SlaveUpdatePuller.UPDATE_PULLER_THREAD_PREFIX + masterId );
+            slaveHasUpdatePullerThreads = findThreadWithPrefix( threads,
+                    SlaveUpdatePuller.UPDATE_PULLER_THREAD_PREFIX + slaveId );
+        }
+        while ( (masterHasUpdatePullerThreads || !slaveHasUpdatePullerThreads) && iterationCount++ < 20 );
+
+        assertFalse( "Master should not have any puller threads", masterHasUpdatePullerThreads );
+        assertTrue( "Slave should have active puller thread", slaveHasUpdatePullerThreads );
+    }
+
+    private InstanceId getInstanceIdOf( HighlyAvailableGraphDatabase db )
+    {
+        return db.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
     }
 
     private boolean findThreadWithPrefix( Set<Thread> threads, String prefix )
