@@ -22,16 +22,10 @@ package org.neo4j.coreedge.raft.elections;
 import org.junit.Test;
 
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.RaftTestNetwork;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.function.Predicates;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
@@ -50,42 +44,9 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
  * ability to perform an election at all should be caught by this test. Very
  * rare false positives should not be used as an indication for increasing the
  * limits.
- *
- * Notice the class name: this is _not_ going to be run as part of the main build.
  */
-public class ElectionPerformanceTesting
+public class ElectionPerformanceIT
 {
-    /**
-     * This class simply waits for a single entry to have been committed for each member,
-     * which should be the initial member set entry, making it possible for every member
-     * to perform elections. We need this before we start disconnecting members.
-     */
-    private class BootstrapWaiter implements RaftStateMachine
-    {
-        private AtomicLong count = new AtomicLong();
-
-        @Override
-        public void notifyCommitted( long commitIndex )
-        {
-            count.incrementAndGet();
-        }
-
-        @Override
-        public void notifyNeedFreshSnapshot()
-        {
-        }
-
-        @Override
-        public void downloadSnapshot( CoreMember from )
-        {
-        }
-
-        private void await( long awaitedCount ) throws InterruptedException, TimeoutException
-        {
-            Predicates.await( () -> count.get() >= awaitedCount, 30, SECONDS, 100, MILLISECONDS );
-        }
-    }
-
     @Test
     public void electionPerformance_NormalConditions() throws Throwable
     {
@@ -102,20 +63,18 @@ public class ElectionPerformanceTesting
 
         RaftTestNetwork net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
         Set<CoreMember> members = asSet( member( 0 ), member( 1 ), member( 2 ) );
-        BootstrapWaiter bootstrapWaiter = new BootstrapWaiter();
-        Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval, bootstrapWaiter );
+        Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval );
         DisconnectLeaderScenario scenario = new DisconnectLeaderScenario( fixture, electionTimeout );
 
         try
         {
             // when running scenario
             fixture.boot();
-            bootstrapWaiter.await( members.size() );
             scenario.run( iterations, 10 * electionTimeout );
         }
         finally
         {
-            fixture.teardown();
+            fixture.tearDown();
         }
 
         DisconnectLeaderScenario.Result result = scenario.result();
@@ -145,20 +104,18 @@ public class ElectionPerformanceTesting
 
         RaftTestNetwork net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
         Set<CoreMember> members = asSet( member( 0 ), member( 1 ), member( 2 ) );
-        BootstrapWaiter bootstrapWaiter = new BootstrapWaiter();
-        Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval, bootstrapWaiter );
+        Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval );
         DisconnectLeaderScenario scenario = new DisconnectLeaderScenario( fixture, electionTimeout );
 
         try
         {
             // when running scenario
             fixture.boot();
-            bootstrapWaiter.await( members.size() );
             scenario.run( iterations, 10 * electionTimeout );
         }
         finally
         {
-            fixture.teardown();
+            fixture.tearDown();
         }
 
         DisconnectLeaderScenario.Result result = scenario.result();

@@ -57,20 +57,21 @@ public class RaftInstanceBuilder
     private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clock.systemUTC(),
             NullLogProvider.getInstance() );
 
-    private Inbound<RaftMessages.RaftMessage> inbound = handler -> {};
+    private Inbound<RaftMessages.RaftMessage> inbound = handler -> {
+    };
     private Outbound<CoreMember, RaftMessages.RaftMessage> outbound =
             new Outbound<CoreMember, RaftMessages.RaftMessage>()
-    {
-        @Override
-        public void send( CoreMember to, RaftMessages.RaftMessage message )
-        {
-        }
+            {
+                @Override
+                public void send( CoreMember to, RaftMessages.RaftMessage message )
+                {
+                }
 
-        @Override
-        public void send( CoreMember to, Collection<RaftMessages.RaftMessage> raftMessages )
-        {
-        }
-    };
+                @Override
+                public void send( CoreMember to, Collection<RaftMessages.RaftMessage> raftMessages )
+                {
+                }
+            };
 
     private LogProvider logProvider = NullLogProvider.getInstance();
     private Clock clock = Clock.systemUTC();
@@ -85,7 +86,7 @@ public class RaftInstanceBuilder
             new InMemoryStateStorage<>( new RaftMembershipState() );
     private Monitors monitors = new Monitors();
     private RaftStateMachine raftStateMachine = new EmptyStateMachine();
-    private final InFlightMap<Long,RaftLogEntry> inFlightMap;
+    private final InFlightMap<Long, RaftLogEntry> inFlightMap;
 
     public RaftInstanceBuilder( CoreMember member, int expectedClusterSize, RaftGroup.Builder memberSetBuilder )
     {
@@ -117,7 +118,7 @@ public class RaftInstanceBuilder
                 }
                 else
                 {
-                    raftStateMachine.notifyCommitted( outcome.getCommitIndex());
+                    raftStateMachine.notifyCommitted( outcome.getCommitIndex() );
                 }
             }
             catch ( IOException e )
@@ -146,7 +147,7 @@ public class RaftInstanceBuilder
         return this;
     }
 
-    public RaftInstanceBuilder outbound( Outbound<CoreMember,RaftMessages.RaftMessage> outbound )
+    public RaftInstanceBuilder outbound( Outbound<CoreMember, RaftMessages.RaftMessage> outbound )
     {
         this.outbound = outbound;
         return this;
