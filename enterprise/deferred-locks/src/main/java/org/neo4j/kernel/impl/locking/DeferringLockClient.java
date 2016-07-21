@@ -39,6 +39,8 @@ public class DeferringLockClient implements Locks.Client
     @Override
     public void acquireShared( Locks.ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
+        assertNotStopped();
+
         for ( long resourceId : resourceIds )
         {
             addLock( resourceType, resourceId, false );
@@ -49,6 +51,8 @@ public class DeferringLockClient implements Locks.Client
     public void acquireExclusive( Locks.ResourceType resourceType, long... resourceIds )
             throws AcquireLockTimeoutException
     {
+        assertNotStopped();
+
         for ( long resourceId : resourceIds )
         {
             addLock( resourceType, resourceId, true );
@@ -70,12 +74,16 @@ public class DeferringLockClient implements Locks.Client
     @Override
     public void releaseShared( Locks.ResourceType resourceType, long resourceId )
     {
+        assertNotStopped();
+
         removeLock( resourceType, resourceId, false );
     }
 
     @Override
     public void releaseExclusive( Locks.ResourceType resourceType, long resourceId )
     {
+        assertNotStopped();
+
         removeLock( resourceType, resourceId, true );
     }
 
@@ -157,8 +165,6 @@ public class DeferringLockClient implements Locks.Client
 
     private void addLock( Locks.ResourceType resourceType, long resourceId, boolean exclusive )
     {
-        assertNotStopped();
-
         LockUnit lockUnit = new LockUnit( resourceType, resourceId, exclusive );
         MutableInt lockCount = locks.get( lockUnit );
         if ( lockCount == null )
@@ -171,8 +177,6 @@ public class DeferringLockClient implements Locks.Client
 
     private void removeLock( Locks.ResourceType resourceType, long resourceId, boolean exclusive )
     {
-        assertNotStopped();
-
         LockUnit lockUnit = new LockUnit( resourceType, resourceId, exclusive );
         MutableInt lockCount = locks.get( lockUnit );
         if ( lockCount == null )
