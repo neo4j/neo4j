@@ -154,11 +154,11 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
   test("should not extract expressions that do not contain on variables as implicit grouping key") {
     assertRewrite(
       """MATCH (user:User {userId: 11})-[friendship:FRIEND]-()
-        |WITH user AS user, collect(friendship)[toInt(rand() * count(friendship))] AS selectedFriendship
+        |WITH user AS user, collect(friendship)[toInteger(rand() * count(friendship))] AS selectedFriendship
         |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin,
       """MATCH (user:User {userId: 11})-[friendship:FRIEND]-()
-        |WITH user AS `  AGGREGATION59`, collect(friendship) AS `  AGGREGATION73`, count(friendship) AS `  AGGREGATION108`
-        |WITH `  AGGREGATION59` AS user, `  AGGREGATION73`[toInt(rand() * `  AGGREGATION108`)] AS selectedFriendship
+        |WITH user AS `  AGGREGATION59`, collect(friendship) AS `  AGGREGATION73`, count(friendship) AS `  AGGREGATION112`
+        |WITH `  AGGREGATION59` AS user, `  AGGREGATION73`[toInteger(rand() * `  AGGREGATION112`)] AS selectedFriendship
         |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin
     )
   }

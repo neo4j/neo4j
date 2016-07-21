@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
+import org.neo4j.graphdb.Relationship
 
 class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -47,7 +48,12 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
   }
 
   test("deprecated functions still work") {
+    val r = relate(createNode(), createNode())
+
     executeWithAllPlannersAndCompatibilityMode("RETURN toInt('1') AS one").columnAs[Long]("one").next should equal(1L)
+    executeWithAllPlannersAndCompatibilityMode("RETURN upper('abc') AS a").columnAs[String]("a").next should equal("ABC")
+    executeWithAllPlannersAndCompatibilityMode("RETURN lower('ABC') AS a").columnAs[String]("a").next should equal("abc")
+    executeWithAllPlannersAndCompatibilityMode("MATCH p = ()-->() RETURN rels(p) AS r").columnAs[List[Relationship]]("r").next should equal(List(r))
   }
 
 }

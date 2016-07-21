@@ -54,7 +54,6 @@ object Function {
     functions.Length,
     functions.Log,
     functions.Log10,
-    functions.Lower,
     functions.LTrim,
     functions.Max,
     functions.Min,
@@ -69,7 +68,6 @@ object Function {
     functions.Range,
     functions.Reduce,
     functions.Relationships,
-    functions.Rels,
     functions.Replace,
     functions.Reverse,
     functions.Right,
@@ -95,8 +93,7 @@ object Function {
     functions.ToUpper,
     functions.Properties,
     functions.Trim,
-    functions.Type,
-    functions.Upper
+    functions.Type
   )
 
   val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap

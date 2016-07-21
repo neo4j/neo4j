@@ -312,7 +312,7 @@ object QueryTagger extends QueryTagger[String] {
   }
 
   private def stringFunctions: Set[Function] = Set(Replace, Substring, Left, Right, LTrim, RTrim,
-                                                   Lower, Upper, Split, Reverse, ToString)
+                                                   ToLower, ToUpper, Split, Reverse, ToString)
 
   private def mathFunctions: Set[Function] = Set(Abs, Ceil, Floor, Round, Sign, Rand,
                                                  Log, Log10, Exp, E, Sqrt,

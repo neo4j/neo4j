@@ -31,7 +31,10 @@ case object replaceAliasedFunctionInvocations extends Rewriter {
   /*
    * These are historical names for functions. They are all subject to removal in an upcoming major release.
    */
-  val aliases: Map[String, String] = TreeMap("toInt" -> "toInteger")(CaseInsensitiveOrdered)
+  val aliases: Map[String, String] = TreeMap("toInt" -> "toInteger",
+                                             "upper" -> "toUpper",
+                                             "lower" -> "toLower",
+                                             "rels" -> "relationships")(CaseInsensitiveOrdered)
 
   val instance: Rewriter = bottomUp(Rewriter.lift {
     case func@FunctionInvocation(f@FunctionName(name), _, _) if aliases.get(name).nonEmpty =>

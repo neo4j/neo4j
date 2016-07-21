@@ -61,10 +61,10 @@ case class ToStringFunction(argument: Expression) extends StringFunction(argumen
   override def rewrite(f: (Expression) => Expression): Expression = f(ToStringFunction(argument.rewrite(f)))
 }
 
-case class LowerFunction(argument: Expression) extends StringFunction(argument) {
+case class ToLowerFunction(argument: Expression) extends StringFunction(argument) {
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toLowerCase
 
-  override def rewrite(f: (Expression) => Expression) = f(LowerFunction(argument.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) = f(ToLowerFunction(argument.rewrite(f)))
 }
 
 case class ReverseFunction(argument: Expression) extends StringFunction(argument) {
@@ -76,10 +76,10 @@ case class ReverseFunction(argument: Expression) extends StringFunction(argument
   override def rewrite(f: (Expression) => Expression) = f(ReverseFunction(argument.rewrite(f)))
 }
 
-case class UpperFunction(argument: Expression) extends StringFunction(argument) {
+case class ToUpperFunction(argument: Expression) extends StringFunction(argument) {
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toUpperCase
 
-  override def rewrite(f: (Expression) => Expression) = f(UpperFunction(argument.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) = f(ToUpperFunction(argument.rewrite(f)))
 }
 
 case class LTrimFunction(argument: Expression) extends StringFunction(argument) {

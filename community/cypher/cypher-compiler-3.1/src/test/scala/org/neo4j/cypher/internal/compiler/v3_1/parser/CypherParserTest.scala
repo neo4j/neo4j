@@ -850,7 +850,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("relationshipsFromPathInWhere") {
     expectQuery(
-      "start n=NODE(1) match p=(n)-[r]->(x) where length(rels(p))=1 return p",
+      "start n=NODE(1) match p=(n)-[r]->(x) where length(relationships(p))=1 return p",
 
       Query.
         start(NodeById("n", 1)).
@@ -1471,7 +1471,7 @@ class CypherParserTest extends CypherFunSuite {
 
   test("listComprehension") {
     expectQuery(
-      "start x = NODE(1) match p=x-[r]->z return [x in rels(p) WHERE x.prop > 123 | x.prop]",
+      "start x = NODE(1) match p=x-[r]->z return [x in relationships(p) WHERE x.prop > 123 | x.prop]",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo(SingleNode("x"), SingleNode("z"), "r", Seq(), SemanticDirection.OUTGOING, Map.empty)).
@@ -1481,7 +1481,7 @@ class CypherParserTest extends CypherFunSuite {
           FilterFunction(RelationshipFunction(Variable("p")), "x", GreaterThan(Property(Variable("x"), PropertyKey("prop")), Literal(123))),
           "x",
           Property(Variable("x"), PropertyKey("prop"))
-        ), "[x in rels(p) WHERE x.prop > 123 | x.prop]"))
+        ), "[x in relationships(p) WHERE x.prop > 123 | x.prop]"))
     )
   }
 
