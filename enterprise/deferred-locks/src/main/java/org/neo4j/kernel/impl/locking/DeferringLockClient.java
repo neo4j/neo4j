@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 
-// TODO the state keeping in this class is quite unoptimized, please do so
 public class DeferringLockClient implements Locks.Client
 {
     private final Locks.Client clientDelegate;
@@ -90,7 +89,6 @@ public class DeferringLockClient implements Locks.Client
         boolean currentExclusive = false;
         for ( LockUnit lockUnit : locks.keySet() )
         {
-            // TODO perhaps also add a condition which sends batches over a certain size threshold
             if ( currentType == null ||
                  (currentType.typeId() != lockUnit.resourceType().typeId() ||
                   currentExclusive != lockUnit.isExclusive()) )
