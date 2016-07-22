@@ -26,14 +26,14 @@ import java.util.UUID;
 
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.impl.store.id.IdType;
 
 import static junit.framework.TestCase.assertEquals;
 
 public class ReplicatedIdAllocationStateMachineTest
 {
-    private CoreMember me = new CoreMember( UUID.randomUUID() );
+    private MemberId me = new MemberId( UUID.randomUUID() );
 
     private IdType someType = IdType.NODE;
     private IdType someOtherType = IdType.RELATIONSHIP;

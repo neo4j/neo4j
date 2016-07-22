@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 class EmptyStateMachine implements RaftStateMachine
 {
@@ -34,7 +34,7 @@ class EmptyStateMachine implements RaftStateMachine
     }
 
     @Override
-    public void downloadSnapshot( CoreMember from )
+    public void downloadSnapshot( MemberId from )
     {
     }
 }

@@ -21,8 +21,6 @@ package org.neo4j.coreedge.server.core;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -35,7 +33,7 @@ import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
@@ -70,8 +68,8 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     {
         List<ReadWriteEndPoint> endpoints = new ArrayList<>();
         ClusterTopology clusterTopology = discoveryService.currentTopology();
-        Set<CoreMember> coreMembers = clusterTopology.coreMembers();
-        CoreMember leader = null;
+        Set<MemberId> coreMembers = clusterTopology.coreMembers();
+        MemberId leader = null;
         try
         {
             leader = leaderLocator.getLeader();
@@ -81,19 +79,19 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             log.debug( "No write server found. This can happen during a leader switch." );
         }
 
-        for ( CoreMember coreMember : coreMembers )
+        for ( MemberId memberId : coreMembers )
         {
             AdvertisedSocketAddress boltServerAddress = null;
             try
             {
-                boltServerAddress = clusterTopology.coreAddresses( coreMember ).getBoltServer();
+                boltServerAddress = clusterTopology.coreAddresses( memberId ).getBoltServer();
             }
             catch ( NoKnownAddressesException e )
             {
                 log.debug( "Address found for " );
             }
-            Type type = coreMember.equals( leader ) ? Type.LEADER : Type.FOLLOWER;
-            endpoints.add( new ReadWriteEndPoint( boltServerAddress, type, coreMember.getUuid() ) );
+            Type type = memberId.equals( leader ) ? Type.LEADER : Type.FOLLOWER;
+            endpoints.add( new ReadWriteEndPoint( boltServerAddress, type, memberId.getUuid() ) );
         }
         for ( EdgeAddresses edgeAddresses : clusterTopology.edgeMemberAddresses() )
         {

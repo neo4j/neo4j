@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
 import org.neo4j.coreedge.raft.state.CommandDispatcher;
 import org.neo4j.coreedge.raft.state.Result;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.impl.store.id.IdType;
 
 import static java.lang.String.format;
@@ -33,12 +33,12 @@ import static java.lang.String.format;
  * This type is handled by the ReplicatedIdAllocationStateMachine. */
 public class ReplicatedIdAllocationRequest implements CoreReplicatedContent
 {
-    private final CoreMember owner;
+    private final MemberId owner;
     private final IdType idType;
     private final long idRangeStart;
     private final int idRangeLength;
 
-    public ReplicatedIdAllocationRequest( CoreMember owner, IdType idType, long idRangeStart, int idRangeLength )
+    public ReplicatedIdAllocationRequest( MemberId owner, IdType idType, long idRangeStart, int idRangeLength )
     {
         this.owner = owner;
         this.idType = idType;
@@ -76,7 +76,7 @@ public class ReplicatedIdAllocationRequest implements CoreReplicatedContent
         return result;
     }
 
-    public CoreMember owner()
+    public MemberId owner()
     {
         return owner;
     }

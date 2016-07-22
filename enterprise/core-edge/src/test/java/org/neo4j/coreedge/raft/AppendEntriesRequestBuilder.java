@@ -23,7 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public class AppendEntriesRequestBuilder
 {
@@ -32,7 +32,7 @@ public class AppendEntriesRequestBuilder
     private long prevLogTerm = -1;
     private long prevLogIndex = -1;
     private long leaderTerm = -1;
-    private CoreMember from;
+    private MemberId from;
 
     public RaftMessages.AppendEntries.Request build()
     {
@@ -40,7 +40,7 @@ public class AppendEntriesRequestBuilder
                 logEntries.toArray( new RaftLogEntry[logEntries.size()] ), leaderCommit );
     }
 
-    public AppendEntriesRequestBuilder from( CoreMember from )
+    public AppendEntriesRequestBuilder from( MemberId from )
     {
         this.from = from;
         return this;

@@ -29,12 +29,12 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
 
-public class CoreMember
+public class MemberId
 {
     private final UUID uuid;
     private final String shortName;
 
-    public CoreMember( UUID uuid )
+    public MemberId( UUID uuid )
     {
         Objects.requireNonNull( uuid );
         this.uuid = uuid;
@@ -49,7 +49,7 @@ public class CoreMember
     @Override
     public String toString()
     {
-        return format( "CoreMember{%s}", shortName );
+        return format( "MemberId{%s}", shortName );
     }
 
     @Override
@@ -64,7 +64,7 @@ public class CoreMember
             return false;
         }
 
-        CoreMember that = (CoreMember) o;
+        MemberId that = (MemberId) o;
         return Objects.equals( uuid, that.uuid );
     }
 
@@ -74,25 +74,32 @@ public class CoreMember
         return Objects.hash( uuid );
     }
 
-    public static class CoreMemberMarshal extends SafeStateMarshal<CoreMember>
+    /**
+     * Format:
+     * ┌──────────────────────────────┐
+     * │mostSignificantBits    8 bytes│
+     * │leastSignificantBits   8 bytes│
+     * └──────────────────────────────┘
+     */
+    public static class MemberIdMarshal extends SafeStateMarshal<MemberId>
     {
         @Override
-        public void marshal( CoreMember member, WritableChannel channel ) throws IOException
+        public void marshal( MemberId memberId, WritableChannel channel ) throws IOException
         {
-            if ( member == null )
+            if ( memberId == null )
             {
                 channel.put( (byte) 0 );
             }
             else
             {
                 channel.put( (byte) 1 );
-                channel.putLong( member.uuid.getMostSignificantBits() );
-                channel.putLong( member.uuid.getLeastSignificantBits() );
+                channel.putLong( memberId.uuid.getMostSignificantBits() );
+                channel.putLong( memberId.uuid.getLeastSignificantBits() );
             }
         }
 
         @Override
-        public CoreMember unmarshal0( ReadableChannel channel ) throws IOException
+        public MemberId unmarshal0( ReadableChannel channel ) throws IOException
         {
             byte nullMarker = channel.get();
             if ( nullMarker == 0 )
@@ -103,20 +110,20 @@ public class CoreMember
             {
                 long mostSigBits = channel.getLong();
                 long leastSigBits = channel.getLong();
-                return new CoreMember( new UUID( mostSigBits, leastSigBits ) );
+                return new MemberId( new UUID( mostSigBits, leastSigBits ) );
             }
         }
 
         @Override
-        public CoreMember startState()
+        public MemberId startState()
         {
             return null;
         }
 
         @Override
-        public long ordinal( CoreMember coreMember )
+        public long ordinal( MemberId memberId )
         {
-            return coreMember == null ? 0 : 1;
+            return memberId == null ? 0 : 1;
         }
     }
 }

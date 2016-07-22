@@ -35,7 +35,7 @@ import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.RaftTestNetwork;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Iterables;
@@ -46,17 +46,17 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Fixture
 {
-    private final Set<CoreMember> members = new HashSet<>();
+    private final Set<MemberId> members = new HashSet<>();
     private final Set<BootstrapWaiter> bootstrapWaiters = new HashSet<>();
     private final List<DelayedRenewableTimeoutService> timeoutServices = new ArrayList<>();
     final Set<RaftInstance> rafts = new HashSet<>();
     final RaftTestNetwork net;
 
-    Fixture( Set<CoreMember> memberIds, RaftTestNetwork net, long electionTimeout, long heartbeatInterval )
+    Fixture( Set<MemberId> memberIds, RaftTestNetwork net, long electionTimeout, long heartbeatInterval )
     {
         this.net = net;
 
-        for ( CoreMember member : memberIds )
+        for ( MemberId member : memberIds )
         {
             RaftTestNetwork.Inbound inbound = net.new Inbound( member );
             RaftTestNetwork.Outbound outbound = net.new Outbound( member );
@@ -149,7 +149,7 @@ public class Fixture
         }
 
         @Override
-        public void downloadSnapshot( CoreMember from )
+        public void downloadSnapshot( MemberId from )
         {
         }
 

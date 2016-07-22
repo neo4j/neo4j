@@ -23,15 +23,15 @@ import org.junit.Test;
 
 import java.util.UUID;
 
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 public class LocalSessionPoolTest
 {
-    private CoreMember coreMember = new CoreMember( UUID.randomUUID() );
-    private GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), coreMember );
+    private MemberId memberId = new MemberId( UUID.randomUUID() );
+    private GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), memberId );
 
     @Test
     public void poolGivesBackSameSessionAfterRelease()

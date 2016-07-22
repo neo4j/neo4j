@@ -30,7 +30,7 @@ import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpWriter;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseListener;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.LogProvider;
@@ -59,7 +59,7 @@ public class StoreFetcherTest
                 storeCopyClient, txPullClient, factory( writer ) );
 
         // when
-        CoreMember localhost = new CoreMember( UUID.randomUUID() );
+        MemberId localhost = new MemberId( UUID.randomUUID() );
         fetcher.copyStore( localhost, new File( "destination" ) );
 
         // then
@@ -74,7 +74,7 @@ public class StoreFetcherTest
         long lastFlushedTxId = 12;
         long lastPulledTxId = 34;
 
-        CoreMember localhost = new CoreMember( UUID.randomUUID() );
+        MemberId localhost = new MemberId( UUID.randomUUID() );
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         when( storeCopyClient.copyStoreFiles( eq( localhost ), any( StoreFileStreams.class ) ) )
@@ -110,7 +110,7 @@ public class StoreFetcherTest
                 storeCopyClient, txPullClient, factory( writer ) );
 
         doThrow( StoreCopyFailedException.class ).when( txPullClient )
-                .pullTransactions( any( CoreMember.class ), anyLong(), any( TransactionLogCatchUpWriter.class ) );
+                .pullTransactions( any( MemberId.class ), anyLong(), any( TransactionLogCatchUpWriter.class ) );
 
         // when
         try

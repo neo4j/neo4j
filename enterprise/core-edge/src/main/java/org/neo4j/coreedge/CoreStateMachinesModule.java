@@ -42,7 +42,7 @@ import org.neo4j.coreedge.raft.state.DurableStateStorage;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
 import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenState;
@@ -82,7 +82,7 @@ public class CoreStateMachinesModule
     public final ReplicatedIdGeneratorFactory replicatedIdGeneratorFactory;
     public final CoreStateMachines coreStateMachines;
 
-    public CoreStateMachinesModule( CoreMember myself, PlatformModule platformModule, File clusterStateDirectory,
+    public CoreStateMachinesModule( MemberId myself, PlatformModule platformModule, File clusterStateDirectory,
                                     Supplier<DatabaseHealth> databaseHealthSupplier, Config config,
                                     RaftReplicator replicator, LeaderLocator leaderLocator,
                                     Dependencies dependencies, LocalDatabase localDatabase )
@@ -98,7 +98,7 @@ public class CoreStateMachinesModule
         {
             lockTokenState = life.add(
                     new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "lock-token-state" ),
-                            "lock-token", new ReplicatedLockTokenState.Marshal( new CoreMember.CoreMemberMarshal() ),
+                            "lock-token", new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() ),
                             config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ),
                             databaseHealthSupplier, logProvider ) );
 
@@ -197,7 +197,7 @@ public class CoreStateMachinesModule
     }
 
     private Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,
-                                     CoreMember myself, LeaderLocator leaderLocator, long leaderLockTokenTimeout,
+                                     MemberId myself, LeaderLocator leaderLocator, long leaderLockTokenTimeout,
                                      ReplicatedLockTokenStateMachine lockTokenStateMachine )
     {
         Locks localLocks = CommunityEditionModule.createLockManager( config, logging );

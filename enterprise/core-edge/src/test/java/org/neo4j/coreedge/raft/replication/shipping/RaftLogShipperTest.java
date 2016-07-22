@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.OutboundMessageCollector;
@@ -35,16 +34,14 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
-import org.neo4j.coreedge.raft.log.DelegatingRaftLog;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.matchers.Matchers;
 
 import static java.util.Arrays.asList;
@@ -62,8 +59,8 @@ public class RaftLogShipperTest
     private OutboundMessageCollector outbound;
     private RaftLog raftLog;
     private Clock clock;
-    private CoreMember leader;
-    private CoreMember follower;
+    private MemberId leader;
+    private MemberId follower;
     private long leaderTerm;
     private long leaderCommit;
     private long retryTimeMillis;

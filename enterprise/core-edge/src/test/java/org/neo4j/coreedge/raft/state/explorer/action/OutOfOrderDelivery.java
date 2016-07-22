@@ -23,13 +23,13 @@ import java.util.LinkedList;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public class OutOfOrderDelivery implements Action
 {
-    private final CoreMember member;
+    private final MemberId member;
 
-    public OutOfOrderDelivery( CoreMember member )
+    public OutOfOrderDelivery( MemberId member )
     {
         this.member = member;
     }

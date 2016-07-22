@@ -32,7 +32,7 @@ import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -69,7 +69,7 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
         Set<ReadWriteEndPoint> writeEndpoints = emptySet();
         try
         {
-            CoreMember leader = leaderLocator.getLeader();
+            MemberId leader = leaderLocator.getLeader();
             AdvertisedSocketAddress leaderAddress =
                     discoveryService.currentTopology().coreAddresses( leader ).getBoltServer();
             writeEndpoints = writeEndpoints( leaderAddress );

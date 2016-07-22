@@ -32,7 +32,7 @@ import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -60,8 +60,8 @@ public class HeartbeatTest
     @Parameterized.Parameter(value = 1)
     public int leaderTermDifference;
 
-    private CoreMember myself = member( 0 );
-    private CoreMember leader = member( 1 );
+    private MemberId myself = member( 0 );
+    private MemberId leader = member( 1 );
 
     @Test
     public void shouldNotResultInCommitIfReferringToFutureEntries() throws Exception

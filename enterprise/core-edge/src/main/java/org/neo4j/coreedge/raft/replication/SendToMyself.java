@@ -21,14 +21,14 @@ package org.neo4j.coreedge.raft.replication;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public class SendToMyself
 {
-    private final CoreMember myself;
-    private final Outbound<CoreMember,RaftMessages.RaftMessage> outbound;
+    private final MemberId myself;
+    private final Outbound<MemberId,RaftMessages.RaftMessage> outbound;
 
-    public SendToMyself( CoreMember myself, Outbound<CoreMember,RaftMessages.RaftMessage> outbound )
+    public SendToMyself( MemberId myself, Outbound<MemberId,RaftMessages.RaftMessage> outbound )
     {
         this.myself = myself;
         this.outbound = outbound;

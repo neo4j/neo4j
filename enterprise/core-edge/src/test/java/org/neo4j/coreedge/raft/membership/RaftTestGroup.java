@@ -22,16 +22,16 @@ package org.neo4j.coreedge.raft.membership;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 import static java.lang.String.format;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 public class RaftTestGroup implements RaftGroup
 {
-    private final Set<CoreMember> members = new HashSet<>();
+    private final Set<MemberId> members = new HashSet<>();
 
-    public RaftTestGroup( Set<CoreMember> members )
+    public RaftTestGroup( Set<MemberId> members )
     {
         this.members.addAll( members );
     }
@@ -44,16 +44,16 @@ public class RaftTestGroup implements RaftGroup
         }
     }
 
-    public RaftTestGroup( CoreMember... memberIds )
+    public RaftTestGroup( MemberId... memberIds )
     {
-        for ( CoreMember memberId : memberIds )
+        for ( MemberId memberId : memberIds )
         {
             this.members.add( memberId );
         }
     }
 
     @Override
-    public Set<CoreMember> getMembers()
+    public Set<MemberId> getMembers()
     {
         return members;
     }

@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public class Voting
 {
@@ -53,10 +53,10 @@ public class Voting
                 willVoteForCandidate ) ) );
     }
 
-    public static boolean shouldVoteFor( CoreMember candidate, long contextTerm, long requestTerm,
-                                                  long contextLastLogTerm, long requestLastLogTerm,
-                                                  long contextLastAppended, long requestLastLogIndex,
-                                                  CoreMember votedFor )
+    public static boolean shouldVoteFor( MemberId candidate, long contextTerm, long requestTerm,
+                                         long contextLastLogTerm, long requestLastLogTerm,
+                                         long contextLastAppended, long requestLastLogIndex,
+                                         MemberId votedFor )
     {
         if ( requestTerm < contextTerm )
         {

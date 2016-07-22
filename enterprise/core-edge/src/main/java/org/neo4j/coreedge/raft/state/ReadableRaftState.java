@@ -23,29 +23,29 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public interface ReadableRaftState
 {
-    CoreMember myself();
+    MemberId myself();
 
-    Set<CoreMember> votingMembers();
+    Set<MemberId> votingMembers();
 
-    Set<CoreMember> replicationMembers();
+    Set<MemberId> replicationMembers();
 
     long term();
 
-    CoreMember leader();
+    MemberId leader();
 
     long leaderCommit();
 
-    CoreMember votedFor();
+    MemberId votedFor();
 
-    Set<CoreMember> votesForMe();
+    Set<MemberId> votesForMe();
 
     long lastLogIndexBeforeWeBecameLeader();
 
-    FollowerStates<CoreMember> followerStates();
+    FollowerStates<MemberId> followerStates();
 
     ReadableRaftLog entryLog();
 

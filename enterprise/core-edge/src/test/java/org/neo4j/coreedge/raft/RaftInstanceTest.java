@@ -29,7 +29,7 @@ import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.net.Inbound;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -57,13 +57,13 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class RaftInstanceTest
 {
-    private CoreMember myself = member( 0 );
+    private MemberId myself = member( 0 );
 
     /* A few members that we use at will in tests. */
-    private CoreMember member1 = member( 1 );
-    private CoreMember member2 = member( 2 );
-    private CoreMember member3 = member( 3 );
-    private CoreMember member4 = member( 4 );
+    private MemberId member1 = member( 1 );
+    private MemberId member2 = member( 2 );
+    private MemberId member3 = member( 3 );
+    private MemberId member4 = member( 4 );
 
     private ReplicatedInteger data1 = ReplicatedInteger.valueOf( 1 );
 
@@ -372,7 +372,7 @@ public class RaftInstanceTest
     {
         // Given
         DirectNetworking network = new DirectNetworking();
-        final CoreMember newMember = member( 99 );
+        final MemberId newMember = member( 99 );
         DirectNetworking.Inbound newMemberInbound = network.new Inbound( newMember );
         final OutboundMessageCollector messages = new OutboundMessageCollector();
         newMemberInbound.registerHandler( new Inbound.MessageHandler<RaftMessages.RaftMessage>()

@@ -44,7 +44,7 @@ import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.net.CoreOutbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.state.CoreSnapshot;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.NonBlockingChannels;
 import org.neo4j.coreedge.server.SenderService;
 import org.neo4j.coreedge.server.StoreId;
@@ -69,7 +69,7 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     private final Listeners<TxPullResponseListener> txPullResponseListeners = new Listeners<>();
     private CompletableFuture<CoreSnapshot> coreSnapshotFuture;
 
-    private Outbound<CoreMember, Message> outbound;
+    private Outbound<MemberId, Message> outbound;
 
     public CoreClient( LogProvider logProvider, ChannelInitializer<SocketChannel> channelInitializer, Monitors monitors,
             int maxQueueSize, NonBlockingChannels nonBlockingChannels, TopologyService discoveryService,
@@ -81,19 +81,19 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 
-    public void requestStore( CoreMember serverAddress )
+    public void requestStore( MemberId serverAddress )
     {
         GetStoreRequest getStoreRequest = new GetStoreRequest();
         send( serverAddress, RequestMessageType.STORE, getStoreRequest );
     }
 
-    public void requestStoreId( CoreMember serverAddress )
+    public void requestStoreId( MemberId serverAddress )
     {
         GetStoreIdRequest getStoreIdRequest = new GetStoreIdRequest();
         send( serverAddress, RequestMessageType.STORE_ID, getStoreIdRequest );
     }
 
-    public CompletableFuture<CoreSnapshot> requestCoreSnapshot( CoreMember serverAddress )
+    public CompletableFuture<CoreSnapshot> requestCoreSnapshot( MemberId serverAddress )
     {
         coreSnapshotFuture = new CompletableFuture<>();
         CoreSnapshotRequest coreSnapshotRequest = new CoreSnapshotRequest();
@@ -101,14 +101,14 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
         return coreSnapshotFuture;
     }
 
-    public void pollForTransactions( CoreMember serverAddress, long lastTransactionId )
+    public void pollForTransactions( MemberId serverAddress, long lastTransactionId )
     {
         TxPullRequest txPullRequest = new TxPullRequest( lastTransactionId );
         send( serverAddress, RequestMessageType.TX_PULL_REQUEST, txPullRequest );
         pullRequestMonitor.txPullRequest( lastTransactionId );
     }
 
-    private void send( CoreMember to, RequestMessageType messageType, Message contentMessage )
+    private void send( MemberId to, RequestMessageType messageType, Message contentMessage )
     {
         outbound.send( to,  asList( messageType, contentMessage ) );
     }

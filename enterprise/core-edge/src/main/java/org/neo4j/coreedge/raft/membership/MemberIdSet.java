@@ -21,13 +21,50 @@ package org.neo4j.coreedge.raft.membership;
 
 import java.util.Set;
 
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
-public class CoreMemberSetBuilder implements RaftGroup.Builder<CoreMember>
+public class MemberIdSet implements RaftGroup<MemberId>
 {
-    @Override
-    public RaftGroup<CoreMember> build( Set<CoreMember> members )
+    private final Set<MemberId> members;
+
+    public MemberIdSet( Set<MemberId> members )
     {
-        return new CoreMemberSet( members );
+        this.members = members;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "MemberIdSet{ members=" + members + '}';
+    }
+
+    @Override
+    public Set<MemberId> getMembers()
+    {
+        return members;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        MemberIdSet that = (MemberIdSet) o;
+
+        return !(members != null ? !members.equals( that.members ) : that.members != null);
+
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return members != null ? members.hashCode() : 0;
     }
 }

@@ -26,7 +26,7 @@ import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -79,32 +79,32 @@ public class EdgeServerStartupProcess implements Lifecycle
     {
         dataSourceManager.start();
 
-        CoreMember coreMember = findCoreMemberToCopyFrom();
+        MemberId memberId = findCoreMemberToCopyFrom();
         if ( localDatabase.isEmpty() )
         {
             localDatabase.stop();
-            localDatabase.copyStoreFrom( coreMember, storeFetcher );
+            localDatabase.copyStoreFrom( memberId, storeFetcher );
             localDatabase.start();
         }
         else
         {
-            localDatabase.ensureSameStoreId( coreMember, storeFetcher );
+            localDatabase.ensureSameStoreId( memberId, storeFetcher );
         }
 
         txPulling.start();
     }
 
-    private CoreMember findCoreMemberToCopyFrom()
+    private MemberId findCoreMemberToCopyFrom()
     {
         while ( true )
         {
             try
             {
-                CoreMember coreMember = connectionStrategy.coreServer();
-                log.info( "Server starting, connecting to core server at %s", coreMember.toString() );
+                MemberId memberId = connectionStrategy.coreServer();
+                log.info( "Server starting, connecting to core server at %s", memberId.toString() );
 
                 discoveryService.registerEdgeServer( extractBoltAddress( config ) );
-                return coreMember;
+                return memberId;
             }
             catch ( CoreServerSelectionException ex )
             {

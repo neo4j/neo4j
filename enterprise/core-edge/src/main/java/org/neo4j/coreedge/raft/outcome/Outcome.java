@@ -29,7 +29,7 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 /**
  * Holds the outcome of a RAFT role's handling of a message. The role handling logic is stateless
@@ -45,7 +45,7 @@ public class Outcome implements Message, ConsensusOutcome
     private Role nextRole;
 
     private long term;
-    private CoreMember leader;
+    private MemberId leader;
 
     private long leaderCommit;
 
@@ -55,16 +55,16 @@ public class Outcome implements Message, ConsensusOutcome
     private long commitIndex;
 
     /* Follower */
-    private CoreMember votedFor;
+    private MemberId votedFor;
     private boolean renewElectionTimeout;
     private boolean needsFreshSnapshot;
 
     /* Candidate */
-    private Set<CoreMember> votesForMe;
+    private Set<MemberId> votesForMe;
     private long lastLogIndexBeforeWeBecameLeader;
 
     /* Leader */
-    private FollowerStates<CoreMember> followerStates;
+    private FollowerStates<MemberId> followerStates;
     private Collection<ShipCommand> shipCommands = new ArrayList<>();
     private boolean electedLeader;
     private boolean steppingDown;
@@ -74,9 +74,9 @@ public class Outcome implements Message, ConsensusOutcome
         defaults( currentRole, ctx );
     }
 
-    public Outcome( Role nextRole, long term, CoreMember leader, long leaderCommit, CoreMember votedFor,
-                    Set<CoreMember> votesForMe, long lastLogIndexBeforeWeBecameLeader,
-                    FollowerStates<CoreMember> followerStates, boolean renewElectionTimeout,
+    public Outcome( Role nextRole, long term, MemberId leader, long leaderCommit, MemberId votedFor,
+                    Set<MemberId> votesForMe, long lastLogIndexBeforeWeBecameLeader,
+                    FollowerStates<MemberId> followerStates, boolean renewElectionTimeout,
                     Collection<RaftLogCommand> logCommands, Collection<RaftMessages.Directed> outgoingMessages,
                     Collection<ShipCommand> shipCommands, long commitIndex )
     {
@@ -127,7 +127,7 @@ public class Outcome implements Message, ConsensusOutcome
         this.term = nextTerm;
     }
 
-    public void setLeader( CoreMember leader )
+    public void setLeader( MemberId leader )
     {
         this.leader = leader;
     }
@@ -147,7 +147,7 @@ public class Outcome implements Message, ConsensusOutcome
         this.outgoingMessages.add( message );
     }
 
-    public void setVotedFor( CoreMember votedFor )
+    public void setVotedFor( MemberId votedFor )
     {
         this.votedFor = votedFor;
     }
@@ -162,7 +162,7 @@ public class Outcome implements Message, ConsensusOutcome
         this.needsFreshSnapshot = true;
     }
 
-    public void addVoteForMe( CoreMember voteFrom )
+    public void addVoteForMe( MemberId voteFrom )
     {
         this.votesForMe.add( voteFrom );
     }
@@ -172,7 +172,7 @@ public class Outcome implements Message, ConsensusOutcome
         this.lastLogIndexBeforeWeBecameLeader = lastLogIndexBeforeWeBecameLeader;
     }
 
-    public void replaceFollowerStates( FollowerStates<CoreMember> followerStates )
+    public void replaceFollowerStates( FollowerStates<MemberId> followerStates )
     {
         this.followerStates = followerStates;
     }
@@ -226,7 +226,7 @@ public class Outcome implements Message, ConsensusOutcome
         return term;
     }
 
-    public CoreMember getLeader()
+    public MemberId getLeader()
     {
         return leader;
     }
@@ -246,7 +246,7 @@ public class Outcome implements Message, ConsensusOutcome
         return outgoingMessages;
     }
 
-    public CoreMember getVotedFor()
+    public MemberId getVotedFor()
     {
         return votedFor;
     }
@@ -262,7 +262,7 @@ public class Outcome implements Message, ConsensusOutcome
         return needsFreshSnapshot;
     }
 
-    public Set<CoreMember> getVotesForMe()
+    public Set<MemberId> getVotesForMe()
     {
         return votesForMe;
     }
@@ -272,7 +272,7 @@ public class Outcome implements Message, ConsensusOutcome
         return lastLogIndexBeforeWeBecameLeader;
     }
 
-    public FollowerStates<CoreMember> getFollowerStates()
+    public FollowerStates<MemberId> getFollowerStates()
     {
         return followerStates;
     }

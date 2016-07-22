@@ -17,32 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state.explorer.action;
+package org.neo4j.coreedge.raft.membership;
 
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.Set;
 
-import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.state.explorer.ClusterState;
 import org.neo4j.coreedge.server.MemberId;
 
-public class ElectionTimeout implements Action
+public class MemberIdSetBuilder implements RaftGroup.Builder<MemberId>
 {
-    private final MemberId member;
-
-    public ElectionTimeout( MemberId member )
-    {
-        this.member = member;
-    }
-
     @Override
-    public ClusterState advance( ClusterState previous ) throws IOException
+    public RaftGroup<MemberId> build( Set<MemberId> members )
     {
-        ClusterState newClusterState = new ClusterState( previous );
-        Queue<RaftMessages.RaftMessage> newQueue = new LinkedList<>( previous.queues.get( member ) );
-        newQueue.offer( new RaftMessages.Timeout.Election( member ) );
-        newClusterState.queues.put( member, newQueue );
-        return newClusterState;
+        return new MemberIdSet( members );
     }
 }

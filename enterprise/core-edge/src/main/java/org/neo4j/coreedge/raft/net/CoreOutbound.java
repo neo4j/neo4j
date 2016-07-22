@@ -27,10 +27,10 @@ import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.LogProvider;
 
-public class CoreOutbound implements Outbound<CoreMember, Message>
+public class CoreOutbound implements Outbound<MemberId, Message>
 {
     private final TopologyService discoveryService;
     private final Outbound<AdvertisedSocketAddress, Message> outbound;
@@ -46,7 +46,7 @@ public class CoreOutbound implements Outbound<CoreMember, Message>
     }
 
     @Override
-    public void send( CoreMember to, Message message )
+    public void send( MemberId to, Message message )
     {
         try
         {
@@ -60,7 +60,7 @@ public class CoreOutbound implements Outbound<CoreMember, Message>
     }
 
     @Override
-    public void send( CoreMember to, Collection<Message> messages )
+    public void send( MemberId to, Collection<Message> messages )
     {
         try
         {

@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public class TxPullClient
 {
@@ -35,7 +35,7 @@ public class TxPullClient
         this.coreClient = coreClient;
     }
 
-    public long pullTransactions( CoreMember from, long startTxId, TxPullResponseListener txPullResponseListener )
+    public long pullTransactions( MemberId from, long startTxId, TxPullResponseListener txPullResponseListener )
             throws StoreCopyFailedException
     {
         coreClient.addTxPullResponseListener( txPullResponseListener );

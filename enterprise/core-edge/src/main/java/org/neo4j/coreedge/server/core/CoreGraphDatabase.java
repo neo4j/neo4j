@@ -27,7 +27,7 @@ import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -51,9 +51,9 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
         new GraphDatabaseFacadeFactory( DatabaseInfo.CORE, factory ).initFacade( storeDir, params, dependencies, this );
     }
 
-    public CoreMember id()
+    public MemberId id()
     {
-        return (CoreMember) getDependencyResolver().resolveDependency( RaftInstance.class ).identity();
+        return (MemberId) getDependencyResolver().resolveDependency( RaftInstance.class ).identity();
     }
 
     public Role getRole()

@@ -39,7 +39,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.SafeChannelMarshal;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -56,7 +56,7 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeAppendRequestWithMultipleEntries() throws Exception
     {
-        CoreMember sender = new CoreMember( UUID.randomUUID() );
+        MemberId sender = new MemberId( UUID.randomUUID() );
         RaftMessages.AppendEntries.Request request = new AppendEntriesRequestBuilder()
                 .from( sender )
                 .leaderCommit( 2 )
@@ -70,7 +70,7 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeAppendRequestWithNoEntries() throws Exception
     {
-        CoreMember sender = new CoreMember( UUID.randomUUID() );
+        MemberId sender = new MemberId( UUID.randomUUID() );
         RaftMessages.AppendEntries.Request request = new AppendEntriesRequestBuilder()
                 .from( sender )
                 .leaderCommit( 2 )
@@ -82,7 +82,7 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeAppendResponse() throws Exception
     {
-        CoreMember sender = new CoreMember( UUID.randomUUID() );
+        MemberId sender = new MemberId( UUID.randomUUID() );
         RaftMessages.AppendEntries.Response request = new AppendEntriesResponseBuilder()
                 .from( sender )
                 .success()
@@ -104,7 +104,7 @@ public class RaftMessageEncodingDecodingTest
         ArrayList<Object> thingsRead = new ArrayList<>( 1 );
 
         // When
-        CoreMember sender = new CoreMember( UUID.randomUUID() );
+        MemberId sender = new MemberId( UUID.randomUUID() );
         RaftMessages.StoreIdAwareMessage message = new RaftMessages.StoreIdAwareMessage( storeId,
         new RaftMessages.Heartbeat( sender, 1, 2, 3 ) );
         encoder.encode( setupContext(), message, resultingBuffers );
@@ -123,7 +123,7 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeVoteRequest() throws Exception
     {
-        CoreMember sender = new CoreMember( UUID.randomUUID() );
+        MemberId sender = new MemberId( UUID.randomUUID() );
         RaftMessages.Vote.Request request = new VoteRequestBuilder()
                 .candidate( sender )
                 .from( sender )
@@ -137,7 +137,7 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeVoteResponse() throws Exception
     {
-        CoreMember sender = new CoreMember( UUID.randomUUID() );
+        MemberId sender = new MemberId( UUID.randomUUID() );
         RaftMessages.Vote.Response request = new VoteResponseBuilder()
                 .from( sender )
                 .grant()

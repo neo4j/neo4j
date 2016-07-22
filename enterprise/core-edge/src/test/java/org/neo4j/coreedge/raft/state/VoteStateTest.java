@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.util.UUID;
 
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,7 +39,7 @@ public class VoteStateTest
     {
         // given
         VoteState voteState = new VoteState();
-        CoreMember member = new CoreMember( UUID.randomUUID() );
+        MemberId member = new MemberId( UUID.randomUUID() );
 
         // when
         voteState.update( member, 0 );
@@ -63,8 +63,8 @@ public class VoteStateTest
     {
         // given
         VoteState voteState = new VoteState();
-        CoreMember member1 = new CoreMember( UUID.randomUUID() );
-        CoreMember member2 = new CoreMember( UUID.randomUUID() );
+        MemberId member1 = new MemberId( UUID.randomUUID() );
+        MemberId member2 = new MemberId( UUID.randomUUID() );
 
         // when
         voteState.update( member1, 0 );
@@ -79,7 +79,7 @@ public class VoteStateTest
     {
         // given
         VoteState voteState = new VoteState();
-        CoreMember member = new CoreMember( UUID.randomUUID() );
+        MemberId member = new MemberId( UUID.randomUUID() );
 
         voteState.update( member, 0 );
 
@@ -95,8 +95,8 @@ public class VoteStateTest
     {
         // given
         VoteState voteState = new VoteState();
-        CoreMember member1 = new CoreMember( UUID.randomUUID() );
-        CoreMember member2 = new CoreMember( UUID.randomUUID() );
+        MemberId member1 = new MemberId( UUID.randomUUID() );
+        MemberId member2 = new MemberId( UUID.randomUUID() );
 
         voteState.update( member1, 0 );
 
@@ -117,7 +117,7 @@ public class VoteStateTest
     {
         // given
         VoteState voteState = new VoteState();
-        CoreMember member = new CoreMember( UUID.randomUUID() );
+        MemberId member = new MemberId( UUID.randomUUID() );
 
         voteState.update( member, 0 );
 
@@ -138,8 +138,8 @@ public class VoteStateTest
     {
         // given
         VoteState voteState = new VoteState();
-        CoreMember member1 = new CoreMember( UUID.randomUUID() );
-        CoreMember member2 = new CoreMember( UUID.randomUUID() );
+        MemberId member1 = new MemberId( UUID.randomUUID() );
+        MemberId member2 = new MemberId( UUID.randomUUID() );
 
         // when
         assertTrue( voteState.update( null, 0 ) );

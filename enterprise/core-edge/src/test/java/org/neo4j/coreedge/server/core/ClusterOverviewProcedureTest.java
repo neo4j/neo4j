@@ -33,7 +33,7 @@ import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.raft.LeaderLocator;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -52,10 +52,10 @@ public class ClusterOverviewProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
-        CoreMember theLeader = new CoreMember( UUID.randomUUID() );
-        CoreMember follower1 = new CoreMember( UUID.randomUUID() );
-        CoreMember follower2 = new CoreMember( UUID.randomUUID() );
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        MemberId theLeader = new MemberId( UUID.randomUUID() );
+        MemberId follower1 = new MemberId( UUID.randomUUID() );
+        MemberId follower2 = new MemberId( UUID.randomUUID() );
 
         coreMembers.put( follower2, coreAddresses( 2 ) );
         coreMembers.put( follower1, coreAddresses( 1 ) );

@@ -23,29 +23,29 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
-public class Messages implements Iterable<Map.Entry<CoreMember, RaftMessages.RaftMessage>>
+public class Messages implements Iterable<Map.Entry<MemberId, RaftMessages.RaftMessage>>
 {
-    private final Map<CoreMember, RaftMessages.RaftMessage> map;
+    private final Map<MemberId, RaftMessages.RaftMessage> map;
 
-    Messages( Map<CoreMember, RaftMessages.RaftMessage> map )
+    Messages( Map<MemberId, RaftMessages.RaftMessage> map )
     {
         this.map = map;
     }
 
-    public boolean hasMessageFor( CoreMember member )
+    public boolean hasMessageFor( MemberId member )
     {
         return map.containsKey( member );
     }
 
-    public RaftMessages.RaftMessage messageFor( CoreMember member )
+    public RaftMessages.RaftMessage messageFor( MemberId member )
     {
         return map.get( member );
     }
 
     @Override
-    public Iterator<Map.Entry<CoreMember, RaftMessages.RaftMessage>> iterator()
+    public Iterator<Map.Entry<MemberId, RaftMessages.RaftMessage>> iterator()
     {
         return map.entrySet().iterator();
     }

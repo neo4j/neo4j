@@ -30,7 +30,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
@@ -39,7 +39,7 @@ import static java.util.Collections.unmodifiableSet;
 
 public class SharedDiscoveryService implements DiscoveryServiceFactory
 {
-    private final Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>(  );
+    private final Map<MemberId, CoreAddresses> coreMembers = new HashMap<>(  );
     private final Set<EdgeAddresses> edgeAddresses = new HashSet<>();
     private final List<SharedDiscoveryCoreClient> coreClients = new ArrayList<>();
 
@@ -47,7 +47,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     private final Condition enoughMembers = lock.newCondition();
 
     @Override
-    public CoreTopologyService coreDiscoveryService( Config config, CoreMember myself, LogProvider logProvider )
+    public CoreTopologyService coreDiscoveryService( Config config, MemberId myself, LogProvider logProvider )
     {
         return new SharedDiscoveryCoreClient( config, myself, this, logProvider );
     }
@@ -91,12 +91,12 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    void registerCoreServer( CoreMember coreMember, CoreAddresses coreAddresses, SharedDiscoveryCoreClient client )
+    void registerCoreServer( MemberId memberId, CoreAddresses coreAddresses, SharedDiscoveryCoreClient client )
     {
         lock.lock();
         try
         {
-            coreMembers.put( coreMember, coreAddresses );
+            coreMembers.put( memberId, coreAddresses );
             coreClients.add( client );
             enoughMembers.signalAll();
             coreClients.forEach( SharedDiscoveryCoreClient::onTopologyChange );
@@ -107,12 +107,12 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    void unRegisterCoreServer( CoreMember coreMember, SharedDiscoveryCoreClient client )
+    void unRegisterCoreServer( MemberId memberId, SharedDiscoveryCoreClient client )
     {
         lock.lock();
         try
         {
-            coreMembers.remove( coreMember );
+            coreMembers.remove( memberId );
             coreClients.remove( client );
             coreClients.forEach( SharedDiscoveryCoreClient::onTopologyChange );
         }

@@ -36,7 +36,7 @@ import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.replication.DistributedOperation;
 import org.neo4j.coreedge.raft.replication.ProgressTracker;
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -220,7 +220,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
      *
      * @param source The source address to attempt a download of a snapshot from.
      */
-    public synchronized void downloadSnapshot( CoreMember source )
+    public synchronized void downloadSnapshot( MemberId source )
     {
         try
         {

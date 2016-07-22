@@ -30,7 +30,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.StoreId;
 
 public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.StoreIdAwareMessage>
@@ -49,7 +49,7 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Sto
     {
         RaftMessages.RaftMessage message = decoratedMessage.message();
         StoreId storeId = decoratedMessage.storeId();
-        CoreMember.CoreMemberMarshal memberMarshal = new CoreMember.CoreMemberMarshal();
+        MemberId.MemberIdMarshal memberMarshal = new MemberId.MemberIdMarshal();
 
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
         StoreIdMarshal.marshal( storeId, channel );

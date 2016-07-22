@@ -67,8 +67,8 @@ import org.neo4j.coreedge.raft.state.DurableStateStorage;
 import org.neo4j.coreedge.raft.state.LongIndexMarshal;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.CoreMember.CoreMemberMarshal;
+import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.server.MemberId.MemberIdMarshal;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.NonBlockingChannels;
 import org.neo4j.coreedge.server.SenderService;
@@ -167,18 +167,18 @@ public class EnterpriseCoreEditionModule extends EditionModule
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        CoreMember myself;
+        MemberId myself;
         StateStorage<Long> lastFlushedStorage;
 
         try
         {
-            StateStorage<CoreMember> idStorage = life.add( new DurableStateStorage<>(
-                    fileSystem, clusterStateDirectory, "raft-member-id", new CoreMemberMarshal(), 1,
+            StateStorage<MemberId> idStorage = life.add( new DurableStateStorage<>(
+                    fileSystem, clusterStateDirectory, "raft-member-id", new MemberIdMarshal(), 1,
                     databaseHealthSupplier, logProvider ) );
-            CoreMember member = idStorage.getInitialState();
+            MemberId member = idStorage.getInitialState();
             if ( member == null )
             {
-                member = new CoreMember( UUID.randomUUID() );
+                member = new MemberId( UUID.randomUUID() );
                 idStorage.persistStoreData( member );
             }
             myself = member;
@@ -205,7 +205,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                         maxQueueSize, new NonBlockingChannels() );
         life.add( senderService );
 
-        final MessageLogger<CoreMember> messageLogger;
+        final MessageLogger<MemberId> messageLogger;
         if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
         {
             File logsDir = config.get( GraphDatabaseSettings.logs_directory );
@@ -245,7 +245,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         RaftOutbound raftOutbound =
                 new RaftOutbound( discoveryService, senderService, localDatabase, logProvider, logThresholdMillis );
-        Outbound<CoreMember,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>(
+        Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>(
                 raftOutbound, myself, messageLogger );
 
         CoreStateApplier coreStateApplier = new CoreStateApplier( logProvider );

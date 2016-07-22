@@ -19,13 +19,13 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public class VoteRequestBuilder
 {
     private long term = -1;
-    private CoreMember from = null;
-    private CoreMember candidate;
+    private MemberId from = null;
+    private MemberId candidate;
     private long lastLogIndex;
     private long lastLogTerm;
 
@@ -34,7 +34,7 @@ public class VoteRequestBuilder
         return new RaftMessages.Vote.Request( from, term, candidate, lastLogIndex, lastLogTerm );
     }
 
-    public VoteRequestBuilder from( CoreMember from )
+    public VoteRequestBuilder from( MemberId from )
     {
         this.from = from;
         return this;
@@ -46,7 +46,7 @@ public class VoteRequestBuilder
         return this;
     }
 
-    public VoteRequestBuilder candidate( CoreMember candidate )
+    public VoteRequestBuilder candidate( MemberId candidate )
     {
         this.candidate = candidate;
         return this;

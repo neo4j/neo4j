@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.raft.ControlledRenewableTimeoutService;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -46,7 +46,7 @@ public class TxPollingClientTest
 {
     private final CoreClient coreClient = mock( CoreClient.class );
     private final CoreServerSelectionStrategy serverSelection = mock( CoreServerSelectionStrategy.class );
-    private final CoreMember coreServer = mock( CoreMember.class );
+    private final MemberId coreServer = mock( MemberId.class );
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
 
     private final BatchingTxApplier txApplier = mock( BatchingTxApplier.class );
@@ -76,7 +76,7 @@ public class TxPollingClientTest
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( coreClient ).pollForTransactions( any( CoreMember.class ), eq( lastAppliedTxId ) );
+        verify( coreClient ).pollForTransactions( any( MemberId.class ), eq( lastAppliedTxId ) );
     }
 
     @Test
@@ -89,7 +89,7 @@ public class TxPollingClientTest
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( coreClient, never() ).pollForTransactions( any( CoreMember.class ), anyLong() );
+        verify( coreClient, never() ).pollForTransactions( any( MemberId.class ), anyLong() );
     }
 
     @Test

@@ -31,7 +31,7 @@ import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.stream.Collectors.toList;
@@ -52,8 +52,8 @@ public class AcquireEndpointsProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
-        CoreMember theLeader = member( 0 );
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 1 ) );
@@ -81,8 +81,8 @@ public class AcquireEndpointsProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
-        CoreMember theLeader = member( 0 );
+        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
+        MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 1, 2, 3 ) );
@@ -107,8 +107,8 @@ public class AcquireEndpointsProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
-        CoreMember theLeader = member( 0 );
+        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
+        MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses() );
 
@@ -136,7 +136,7 @@ public class AcquireEndpointsProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses() );
@@ -163,7 +163,7 @@ public class AcquireEndpointsProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses() );

@@ -20,9 +20,9 @@
 package org.neo4j.coreedge.server.edge;
 
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public interface CoreServerSelectionStrategy
 {
-    CoreMember coreServer() throws CoreServerSelectionException;
+    MemberId coreServer() throws CoreServerSelectionException;
 }

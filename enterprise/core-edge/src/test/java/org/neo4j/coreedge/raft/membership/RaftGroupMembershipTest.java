@@ -32,7 +32,7 @@ import org.neo4j.coreedge.raft.DirectNetworking;
 import org.neo4j.coreedge.raft.RaftTestFixture;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -48,7 +48,7 @@ import static org.neo4j.coreedge.server.RaftTestMember.member;
 public class RaftGroupMembershipTest
 {
     @Mock
-    private Outbound<CoreMember, Message> outbound;
+    private Outbound<MemberId, Message> outbound;
 
     @Mock
     private Inbound inbound;
@@ -59,7 +59,7 @@ public class RaftGroupMembershipTest
         // given
         DirectNetworking net = new DirectNetworking();
 
-        final CoreMember[] ids = {member( 0 ), member( 1 ), member( 2 )};
+        final MemberId[] ids = {member( 0 ), member( 1 ), member( 2 )};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, ids );
 
@@ -81,13 +81,13 @@ public class RaftGroupMembershipTest
         // given
         DirectNetworking net = new DirectNetworking();
 
-        final CoreMember leader = member( 0 );
-        final CoreMember stable1 = member( 1 );
-        final CoreMember stable2 = member( 2 );
-        final CoreMember toBeAdded = member( 3 );
+        final MemberId leader = member( 0 );
+        final MemberId stable1 = member( 1 );
+        final MemberId stable2 = member( 2 );
+        final MemberId toBeAdded = member( 3 );
 
-        final CoreMember[] initialMembers = {leader, stable1, stable2};
-        final CoreMember[] finalMembers = {leader, stable1, stable2, toBeAdded};
+        final MemberId[] initialMembers = {leader, stable1, stable2};
+        final MemberId[] finalMembers = {leader, stable1, stable2, toBeAdded};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, finalMembers );
 
@@ -117,15 +117,15 @@ public class RaftGroupMembershipTest
         // given
         DirectNetworking net = new DirectNetworking();
 
-        final CoreMember leader = member( 0 );
-        final CoreMember stable1 = member( 1 );
-        final CoreMember stable2 = member( 2 );
-        final CoreMember toBeAdded1 = member( 3 );
-        final CoreMember toBeAdded2 = member( 4 );
-        final CoreMember toBeAdded3 = member( 5 );
+        final MemberId leader = member( 0 );
+        final MemberId stable1 = member( 1 );
+        final MemberId stable2 = member( 2 );
+        final MemberId toBeAdded1 = member( 3 );
+        final MemberId toBeAdded2 = member( 4 );
+        final MemberId toBeAdded3 = member( 5 );
 
-        final CoreMember[] initialMembers = {leader, stable1, stable2};
-        final CoreMember[] finalMembers = {leader, stable1, stable2, toBeAdded1, toBeAdded2, toBeAdded3};
+        final MemberId[] initialMembers = {leader, stable1, stable2};
+        final MemberId[] finalMembers = {leader, stable1, stable2, toBeAdded1, toBeAdded2, toBeAdded3};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, finalMembers );
 
@@ -158,12 +158,12 @@ public class RaftGroupMembershipTest
         DirectNetworking net = new DirectNetworking();
 
         // given
-        final CoreMember leader = member( 0 );
-        final CoreMember stable = member( 1 );
-        final CoreMember toBeRemoved = member( 2 );
+        final MemberId leader = member( 0 );
+        final MemberId stable = member( 1 );
+        final MemberId toBeRemoved = member( 2 );
 
-        final CoreMember[] initialMembers = {leader, stable, toBeRemoved};
-        final CoreMember[] finalMembers = {leader, stable};
+        final MemberId[] initialMembers = {leader, stable, toBeRemoved};
+        final MemberId[] finalMembers = {leader, stable};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 2, initialMembers );
 
@@ -186,14 +186,14 @@ public class RaftGroupMembershipTest
         DirectNetworking net = new DirectNetworking();
 
         // given
-        final CoreMember leader = member( 0 );
-        final CoreMember stable = member( 1 );
-        final CoreMember toBeRemoved1 = member( 2 );
-        final CoreMember toBeRemoved2 = member( 3 );
-        final CoreMember toBeRemoved3 = member( 4 );
+        final MemberId leader = member( 0 );
+        final MemberId stable = member( 1 );
+        final MemberId toBeRemoved1 = member( 2 );
+        final MemberId toBeRemoved2 = member( 3 );
+        final MemberId toBeRemoved3 = member( 4 );
 
-        final CoreMember[] initialMembers = {leader, stable, toBeRemoved1, toBeRemoved2, toBeRemoved3};
-        final CoreMember[] finalMembers = {leader, stable};
+        final MemberId[] initialMembers = {leader, stable, toBeRemoved1, toBeRemoved2, toBeRemoved3};
+        final MemberId[] finalMembers = {leader, stable};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 2, initialMembers );
 
@@ -217,17 +217,17 @@ public class RaftGroupMembershipTest
         DirectNetworking net = new DirectNetworking();
 
         // given
-        final CoreMember leader = member( 0 );
-        final CoreMember stable = member( 1 );
-        final CoreMember toBeRemoved1 = member( 2 );
-        final CoreMember toBeRemoved2 = member( 3 );
-        final CoreMember toBeAdded1 = member( 4 );
-        final CoreMember toBeAdded2 = member( 5 );
+        final MemberId leader = member( 0 );
+        final MemberId stable = member( 1 );
+        final MemberId toBeRemoved1 = member( 2 );
+        final MemberId toBeRemoved2 = member( 3 );
+        final MemberId toBeAdded1 = member( 4 );
+        final MemberId toBeAdded2 = member( 5 );
 
-        final CoreMember[] everyone = {leader, stable, toBeRemoved1, toBeRemoved2, toBeAdded1, toBeAdded2};
+        final MemberId[] everyone = {leader, stable, toBeRemoved1, toBeRemoved2, toBeAdded1, toBeAdded2};
 
-        final CoreMember[] initialMembers = {leader, stable, toBeRemoved1, toBeRemoved2};
-        final CoreMember[] finalMembers = {leader, stable, toBeAdded1, toBeAdded2};
+        final MemberId[] initialMembers = {leader, stable, toBeRemoved1, toBeRemoved2};
+        final MemberId[] finalMembers = {leader, stable, toBeAdded1, toBeAdded2};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, everyone );
 
@@ -259,12 +259,12 @@ public class RaftGroupMembershipTest
         DirectNetworking net = new DirectNetworking();
 
         // given
-        final CoreMember leader = member( 0 );
-        final CoreMember stable1 = member( 1 );
-        final CoreMember stable2 = member( 2 );
+        final MemberId leader = member( 0 );
+        final MemberId stable1 = member( 1 );
+        final MemberId stable2 = member( 2 );
 
-        final CoreMember[] initialMembers = {leader, stable1, stable2};
-        final CoreMember[] finalMembers = {stable1, stable2};
+        final MemberId[] initialMembers = {leader, stable1, stable2};
+        final MemberId[] finalMembers = {stable1, stable2};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 2, initialMembers );
 
@@ -291,13 +291,13 @@ public class RaftGroupMembershipTest
         DirectNetworking net = new DirectNetworking();
 
         // given
-        final CoreMember leader1 = member( 0 );
-        final CoreMember leader2 = member( 1 );
-        final CoreMember stable1 = member( 2 );
-        final CoreMember stable2 = member( 3 );
+        final MemberId leader1 = member( 0 );
+        final MemberId leader2 = member( 1 );
+        final MemberId stable1 = member( 2 );
+        final MemberId stable2 = member( 3 );
 
-        final CoreMember[] allMembers = {leader1, leader2, stable1, stable2};
-        final CoreMember[] fewerMembers = {leader2, stable1, stable2};
+        final MemberId[] allMembers = {leader1, leader2, stable1, stable2};
+        final MemberId[] fewerMembers = {leader2, stable1, stable2};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, allMembers );
 
@@ -331,13 +331,13 @@ public class RaftGroupMembershipTest
         DirectNetworking net = new DirectNetworking();
 
         // given
-        final CoreMember leader = member( 0 );
-        final CoreMember unstable = member( 1 );
-        final CoreMember stable1 = member( 2 );
-        final CoreMember stable2 = member( 3 );
+        final MemberId leader = member( 0 );
+        final MemberId unstable = member( 1 );
+        final MemberId stable1 = member( 2 );
+        final MemberId stable2 = member( 3 );
 
-        final CoreMember[] allMembers = {leader, unstable, stable1, stable2};
-        final CoreMember[] fewerMembers = {leader, stable1, stable2};
+        final MemberId[] allMembers = {leader, unstable, stable1, stable2};
+        final MemberId[] fewerMembers = {leader, stable1, stable2};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, allMembers );
 
@@ -369,11 +369,11 @@ public class RaftGroupMembershipTest
         DirectNetworking net = new DirectNetworking();
 
         // given
-        final CoreMember leader1 = member( 0 );
-        final CoreMember leader2 = member( 1 );
-        final CoreMember stable = member( 2 );
+        final MemberId leader1 = member( 0 );
+        final MemberId leader2 = member( 1 );
+        final MemberId stable = member( 2 );
 
-        final CoreMember[] initialMembers = {leader1, leader2, stable};
+        final MemberId[] initialMembers = {leader1, leader2, stable};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 2, initialMembers );
 

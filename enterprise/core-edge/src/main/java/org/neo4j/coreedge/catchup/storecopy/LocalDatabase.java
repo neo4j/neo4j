@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -109,7 +109,7 @@ public class LocalDatabase implements Supplier<StoreId>
         return databaseHealth;
     }
 
-    public void copyStoreFrom( CoreMember from, StoreFetcher storeFetcher ) throws StoreCopyFailedException
+    public void copyStoreFrom( MemberId from, StoreFetcher storeFetcher ) throws StoreCopyFailedException
     {
         try
         {
@@ -142,11 +142,11 @@ public class LocalDatabase implements Supplier<StoreId>
         return storeId();
     }
 
-    public void ensureSameStoreId( CoreMember coreMember, StoreFetcher storeFetcher )
+    public void ensureSameStoreId( MemberId memberId, StoreFetcher storeFetcher )
             throws StoreIdDownloadFailedException
     {
         StoreId localStoreId = storeId();
-        StoreId remoteStoreId = storeFetcher.storeId( coreMember );
+        StoreId remoteStoreId = storeFetcher.storeId( memberId );
         if ( !localStoreId.equals( remoteStoreId ) )
         {
             throw new IllegalStateException( format( "This edge machine cannot join the cluster. " +

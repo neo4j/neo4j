@@ -34,7 +34,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -54,11 +54,11 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 @RunWith(MockitoJUnitRunner.class)
 public class FollowerTest
 {
-    private CoreMember myself = member( 0 );
+    private MemberId myself = member( 0 );
 
     /* A few members that we use at will in tests. */
-    private CoreMember member1 = member( 1 );
-    private CoreMember member2 = member( 2 );
+    private MemberId member1 = member( 1 );
+    private MemberId member2 = member( 2 );
 
     @Mock
     private Inbound inbound;

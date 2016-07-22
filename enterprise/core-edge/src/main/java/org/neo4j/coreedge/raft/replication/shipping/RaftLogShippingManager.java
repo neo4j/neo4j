@@ -33,7 +33,7 @@ import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 
@@ -41,11 +41,11 @@ import static java.lang.String.format;
 
 public class RaftLogShippingManager extends LifecycleAdapter implements RaftMembership.Listener
 {
-    private final Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
+    private final Outbound<MemberId, RaftMessages.RaftMessage> outbound;
     private final LogProvider logProvider;
     private final ReadableRaftLog raftLog;
     private final Clock clock;
-    private final CoreMember myself;
+    private final MemberId myself;
 
     private final RaftMembership membership;
     private final long retryTimeMillis;
@@ -53,15 +53,15 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
     private final int maxAllowedShippingLag;
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
 
-    private Map<CoreMember,RaftLogShipper> logShippers = new HashMap<>();
+    private Map<MemberId,RaftLogShipper> logShippers = new HashMap<>();
     private LeaderContext lastLeaderContext;
 
     private boolean running;
     private boolean stopped = false;
 
-    public RaftLogShippingManager( Outbound<CoreMember,RaftMessages.RaftMessage> outbound, LogProvider logProvider,
+    public RaftLogShippingManager( Outbound<MemberId,RaftMessages.RaftMessage> outbound, LogProvider logProvider,
                                    ReadableRaftLog raftLog,
-                                   Clock clock, CoreMember myself, RaftMembership membership, long retryTimeMillis,
+                                   Clock clock, MemberId myself, RaftMembership membership, long retryTimeMillis,
                                    int catchupBatchSize, int maxAllowedShippingLag,
                                    InFlightMap<Long, RaftLogEntry> inFlightMap )
     {
@@ -101,7 +101,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
 
         running = true;
 
-        for ( CoreMember member : membership.replicationMembers() )
+        for ( MemberId member : membership.replicationMembers() )
         {
             ensureLogShipperRunning( member, initialLeaderContext );
         }
@@ -116,7 +116,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
         stopped = true;
     }
 
-    private RaftLogShipper ensureLogShipperRunning( CoreMember member, LeaderContext leaderContext )
+    private RaftLogShipper ensureLogShipperRunning( MemberId member, LeaderContext leaderContext )
     {
         RaftLogShipper logShipper = logShippers.get( member );
         if ( logShipper == null && !member.equals( myself ) )
@@ -151,10 +151,10 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
         if ( lastLeaderContext == null || !running )
             return;
 
-        HashSet<CoreMember> toBeRemoved = new HashSet<>( logShippers.keySet() );
+        HashSet<MemberId> toBeRemoved = new HashSet<>( logShippers.keySet() );
         toBeRemoved.removeAll( membership.replicationMembers() );
 
-        for ( CoreMember member : toBeRemoved )
+        for ( MemberId member : toBeRemoved )
         {
             RaftLogShipper logShipper = logShippers.remove( member );
             if( logShipper != null )
@@ -163,7 +163,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
             }
         }
 
-        for ( CoreMember replicationMember : membership.replicationMembers() )
+        for ( MemberId replicationMember : membership.replicationMembers() )
         {
             ensureLogShipperRunning( replicationMember, lastLeaderContext );
         }

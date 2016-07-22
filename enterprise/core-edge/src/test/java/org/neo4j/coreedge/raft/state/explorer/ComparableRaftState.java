@@ -32,19 +32,19 @@ import org.neo4j.coreedge.raft.outcome.RaftLogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 import static java.lang.String.format;
 
 public class ComparableRaftState implements ReadableRaftState
 {
-    protected final CoreMember myself;
+    protected final MemberId myself;
     protected final Set votingMembers;
     protected final Set replicationMembers;
     protected long term = 0;
-    protected CoreMember leader;
+    protected MemberId leader;
     private long leaderCommit = -1;
-    protected CoreMember votedFor = null;
+    protected MemberId votedFor = null;
     protected Set votesForMe = new HashSet<>();
     protected long lastLogIndexBeforeWeBecameLeader = -1;
     protected FollowerStates followerStates = new FollowerStates<>();
@@ -52,8 +52,8 @@ public class ComparableRaftState implements ReadableRaftState
     protected final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private long commitIndex = -1;
 
-    public ComparableRaftState( CoreMember myself, Set votingMembers, Set replicationMembers,
-            RaftLog entryLog, InFlightMap<Long,RaftLogEntry> inFlightMap )
+    public ComparableRaftState( MemberId myself, Set votingMembers, Set replicationMembers,
+                                RaftLog entryLog, InFlightMap<Long,RaftLogEntry> inFlightMap )
     {
         this.myself = myself;
         this.votingMembers = votingMembers;
@@ -69,7 +69,7 @@ public class ComparableRaftState implements ReadableRaftState
     }
 
     @Override
-    public CoreMember myself()
+    public MemberId myself()
     {
         return myself;
     }
@@ -93,7 +93,7 @@ public class ComparableRaftState implements ReadableRaftState
     }
 
     @Override
-    public CoreMember leader()
+    public MemberId leader()
     {
         return leader;
     }
@@ -105,7 +105,7 @@ public class ComparableRaftState implements ReadableRaftState
     }
 
     @Override
-    public CoreMember votedFor()
+    public MemberId votedFor()
     {
         return votedFor;
     }

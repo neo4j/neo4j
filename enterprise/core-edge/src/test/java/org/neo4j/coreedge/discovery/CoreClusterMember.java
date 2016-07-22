@@ -30,7 +30,7 @@ import org.neo4j.coreedge.raft.log.segmented.FileNames;
 import org.neo4j.coreedge.raft.state.CoreState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -135,7 +135,7 @@ public class CoreClusterMember
         return database.getDependencyResolver().resolveDependency( CoreState.class );
     }
 
-    public CoreMember id()
+    public MemberId id()
     {
         return database.getDependencyResolver().resolveDependency( RaftInstance.class ).identity();
     }

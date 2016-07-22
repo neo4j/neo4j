@@ -27,16 +27,16 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
 import org.neo4j.coreedge.raft.state.explorer.ComparableRaftState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
 public class ProcessMessage implements Action
 {
-    private final CoreMember member;
+    private final MemberId member;
     private Log log = NullLog.getInstance();
 
-    public ProcessMessage( CoreMember member )
+    public ProcessMessage( MemberId member )
     {
         this.member = member;
     }

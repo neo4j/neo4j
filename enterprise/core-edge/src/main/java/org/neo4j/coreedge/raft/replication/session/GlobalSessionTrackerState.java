@@ -27,7 +27,7 @@ import java.util.UUID;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.raft.state.SafeStateMarshal;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -39,7 +39,7 @@ public class GlobalSessionTrackerState
     /**
      * Each owner can only have one local session tracker, identified by the unique global session ID.
      */
-    private Map<CoreMember, LocalSessionTracker> sessionTrackers = new HashMap<>();
+    private Map<MemberId, LocalSessionTracker> sessionTrackers = new HashMap<>();
 
     private long logIndex = -1L;
 
@@ -99,7 +99,7 @@ public class GlobalSessionTrackerState
     public GlobalSessionTrackerState newInstance()
     {
         GlobalSessionTrackerState copy = new GlobalSessionTrackerState();
-        for ( Map.Entry<CoreMember,LocalSessionTracker> entry : sessionTrackers.entrySet() )
+        for ( Map.Entry<MemberId,LocalSessionTracker> entry : sessionTrackers.entrySet() )
         {
             copy.sessionTrackers.put( entry.getKey(), entry.getValue().newInstance() );
         }
@@ -114,9 +114,9 @@ public class GlobalSessionTrackerState
 
     public static class Marshal extends SafeStateMarshal<GlobalSessionTrackerState>
     {
-        private final ChannelMarshal<CoreMember> memberMarshal;
+        private final ChannelMarshal<MemberId> memberMarshal;
 
-        public Marshal( ChannelMarshal<CoreMember> marshal )
+        public Marshal( ChannelMarshal<MemberId> marshal )
         {
             this.memberMarshal = marshal;
         }
@@ -125,12 +125,12 @@ public class GlobalSessionTrackerState
         public void marshal( GlobalSessionTrackerState target, WritableChannel channel )
                 throws IOException
         {
-            final Map<CoreMember, LocalSessionTracker> sessionTrackers = target.sessionTrackers;
+            final Map<MemberId, LocalSessionTracker> sessionTrackers = target.sessionTrackers;
 
             channel.putLong( target.logIndex );
             channel.putInt( sessionTrackers.size() );
 
-            for ( Map.Entry<CoreMember, LocalSessionTracker> entry : sessionTrackers.entrySet() )
+            for ( Map.Entry<MemberId, LocalSessionTracker> entry : sessionTrackers.entrySet() )
             {
                 memberMarshal.marshal( entry.getKey(), channel );
                 final LocalSessionTracker localSessionTracker = entry.getValue();
@@ -156,11 +156,11 @@ public class GlobalSessionTrackerState
         {
             final long logIndex = channel.getLong();
             final int sessionTrackerSize = channel.getInt();
-            final Map<CoreMember, LocalSessionTracker> sessionTrackers = new HashMap<>();
+            final Map<MemberId, LocalSessionTracker> sessionTrackers = new HashMap<>();
 
             for ( int i = 0; i < sessionTrackerSize; i++ )
             {
-                final CoreMember member = memberMarshal.unmarshal( channel );
+                final MemberId member = memberMarshal.unmarshal( channel );
                 if ( member == null )
                 {
                     throw new IllegalStateException( "Null member" );

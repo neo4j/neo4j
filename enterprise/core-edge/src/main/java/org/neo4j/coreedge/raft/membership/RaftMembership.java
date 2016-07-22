@@ -21,7 +21,7 @@ package org.neo4j.coreedge.raft.membership;
 
 import java.util.Set;
 
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 /**
  * Exposes a view of the members of a Raft cluster. Essentially it gives access to two sets - the set of voting
@@ -33,12 +33,12 @@ public interface RaftMembership
     /**
      * @return members whose votes count towards consensus. The returned set should be considered immutable.
      */
-    Set<CoreMember> votingMembers();
+    Set<MemberId> votingMembers();
 
     /**
      * @return members to which replication should be attempted. The returned set should be considered immutable.
      */
-    Set<CoreMember> replicationMembers();
+    Set<MemberId> replicationMembers();
 
     /**
      * Register a membership listener.

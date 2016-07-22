@@ -28,7 +28,7 @@ import java.util.UUID;
 import org.neo4j.coreedge.raft.replication.DirectReplicator;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.NullLogProvider;
 
@@ -36,10 +36,10 @@ import static org.junit.Assert.assertTrue;
 
 public class ReplicatedIdRangeAcquirerTest
 {
-    private final CoreMember memberA =
-            new CoreMember( UUID.randomUUID() );
-    private final CoreMember memberB =
-            new CoreMember( UUID.randomUUID() );
+    private final MemberId memberA =
+            new MemberId( UUID.randomUUID() );
+    private final MemberId memberB =
+            new MemberId( UUID.randomUUID() );
 
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine(
             new InMemoryStateStorage<>( new IdAllocationState() ) );
@@ -94,7 +94,7 @@ public class ReplicatedIdRangeAcquirerTest
     }
 
     private ReplicatedIdGenerator createForMemberWithInitialIdAndRangeLength(
-            CoreMember member, long initialHighId, int idRangeLength )
+            MemberId member, long initialHighId, int idRangeLength )
     {
         ReplicatedIdRangeAcquirer acquirer = new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine,
                 idRangeLength, member, NullLogProvider.getInstance() );

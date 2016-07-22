@@ -31,7 +31,7 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 
 import static org.junit.Assert.assertEquals;
@@ -50,16 +50,16 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 @RunWith(MockitoJUnitRunner.class)
 public class ElectionTest
 {
-    private CoreMember myself = member( 0 );
+    private MemberId myself = member( 0 );
 
     /* A few members that we use at will in tests. */
-    private CoreMember member1 = member( 1 );
-    private CoreMember member2 = member( 2 );
+    private MemberId member1 = member( 1 );
+    private MemberId member2 = member( 2 );
 
     @Mock
     private Inbound inbound;
     @Mock
-    private Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
+    private Outbound<MemberId, RaftMessages.RaftMessage> outbound;
 
     @Test
     public void candidateShouldWinElectionAndBecomeLeader() throws Exception

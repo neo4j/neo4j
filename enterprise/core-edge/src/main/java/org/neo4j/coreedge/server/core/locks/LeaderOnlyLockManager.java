@@ -27,7 +27,7 @@ import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -61,7 +61,7 @@ public class LeaderOnlyLockManager implements Locks
 {
     public static final String LOCK_NOT_ON_LEADER_ERROR_MESSAGE = "Should only attempt to take locks when leader.";
 
-    private final CoreMember myself;
+    private final MemberId myself;
 
     private final Replicator replicator;
     private final LeaderLocator leaderLocator;
@@ -70,7 +70,7 @@ public class LeaderOnlyLockManager implements Locks
     private final ReplicatedLockTokenStateMachine lockTokenStateMachine;
 
     public LeaderOnlyLockManager(
-            CoreMember myself, Replicator replicator, LeaderLocator leaderLocator,
+            MemberId myself, Replicator replicator, LeaderLocator leaderLocator,
             Locks localLocks, long leaderLockTokenTimeout, ReplicatedLockTokenStateMachine lockTokenStateMachine )
     {
         this.myself = myself;
@@ -140,7 +140,7 @@ public class LeaderOnlyLockManager implements Locks
 
     private void ensureLeader()
     {
-        CoreMember leader;
+        MemberId leader;
 
         try
         {

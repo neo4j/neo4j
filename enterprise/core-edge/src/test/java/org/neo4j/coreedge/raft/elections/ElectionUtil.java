@@ -29,19 +29,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.Listener;
 
 public class ElectionUtil
 {
-    public static CoreMember waitForLeaderAgreement( Iterable<RaftInstance> validRafts, long maxTimeMillis ) throws
+    public static MemberId waitForLeaderAgreement( Iterable<RaftInstance> validRafts, long maxTimeMillis ) throws
             InterruptedException, TimeoutException
     {
         long viewCount = Iterables.count( validRafts );
 
-        Map<CoreMember, CoreMember> leaderViews = new HashMap<>();
-        CompletableFuture<CoreMember> futureAgreedLeader = new CompletableFuture<>();
+        Map<MemberId, MemberId> leaderViews = new HashMap<>();
+        CompletableFuture<MemberId> futureAgreedLeader = new CompletableFuture<>();
 
         Collection<Runnable> destructors = new ArrayList<>();
         for ( RaftInstance raft : validRafts )
@@ -67,10 +67,10 @@ public class ElectionUtil
     }
 
     private static Runnable leaderViewUpdatingListener( RaftInstance raft, Iterable<RaftInstance>
-            validRafts, Map<CoreMember,CoreMember> leaderViews, long viewCount, CompletableFuture<CoreMember>
+            validRafts, Map<MemberId,MemberId> leaderViews, long viewCount, CompletableFuture<MemberId>
             futureAgreedLeader )
     {
-        Listener<CoreMember> listener = newLeader -> {
+        Listener<MemberId> listener = newLeader -> {
             synchronized ( leaderViews )
             {
                 leaderViews.put( raft.identity(), newLeader );

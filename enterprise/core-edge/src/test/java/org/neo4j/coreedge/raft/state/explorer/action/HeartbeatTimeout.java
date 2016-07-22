@@ -25,13 +25,13 @@ import java.util.Queue;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public class HeartbeatTimeout implements Action
 {
-    private final CoreMember member;
+    private final MemberId member;
 
-    public HeartbeatTimeout( CoreMember member )
+    public HeartbeatTimeout( MemberId member )
     {
         this.member = member;
     }

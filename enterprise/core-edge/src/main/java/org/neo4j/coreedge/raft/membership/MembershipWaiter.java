@@ -25,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.coreedge.raft.BatchingMessageHandler;
 import org.neo4j.coreedge.raft.MismatchedStoreIdService;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -50,13 +50,13 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
  */
 public class MembershipWaiter
 {
-    private final CoreMember myself;
+    private final MemberId myself;
     private final JobScheduler jobScheduler;
     private final long maxCatchupLag;
     private final MismatchedStoreIdService mismatchedStoreIdService;
     private final Log log;
 
-    public MembershipWaiter( CoreMember myself, JobScheduler jobScheduler, long maxCatchupLag,
+    public MembershipWaiter( MemberId myself, JobScheduler jobScheduler, long maxCatchupLag,
                              MismatchedStoreIdService mismatchedStoreIdService, LogProvider logProvider )
     {
         this.myself = myself;

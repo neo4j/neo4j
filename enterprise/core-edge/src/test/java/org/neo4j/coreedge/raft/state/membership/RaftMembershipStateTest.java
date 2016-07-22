@@ -27,7 +27,7 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
@@ -41,8 +41,8 @@ public class RaftMembershipStateTest
 {
     private RaftMembershipState state = new RaftMembershipState();
 
-    private Set<CoreMember> membersA = asSet( member( 0 ), member( 1 ), member( 2 ) );
-    private Set<CoreMember> membersB = asSet( member( 0 ), member( 1 ), member( 2 ), member( 3 ) );
+    private Set<MemberId> membersA = asSet( member( 0 ), member( 1 ), member( 2 ) );
+    private Set<MemberId> membersB = asSet( member( 0 ), member( 1 ), member( 2 ), member( 3 ) );
 
     @Test
     public void shouldHaveCorrectInitialState() throws Exception

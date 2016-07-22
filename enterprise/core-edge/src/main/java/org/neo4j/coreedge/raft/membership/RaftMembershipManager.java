@@ -34,7 +34,7 @@ import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -52,10 +52,10 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
 {
     private RaftMembershipChanger membershipChanger;
 
-    private Set<CoreMember> targetMembers = null;
+    private Set<MemberId> targetMembers = null;
 
     private final SendToMyself sendToMyself;
-    private final RaftGroup.Builder<CoreMember> memberSetBuilder;
+    private final RaftGroup.Builder<MemberId> memberSetBuilder;
     private final ReadableRaftLog raftLog;
     private final Log log;
     private final long recoverFromIndex;
@@ -65,13 +65,13 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
 
     private final int expectedClusterSize;
 
-    private volatile Set<CoreMember> votingMembers = new HashSet<>();
-    private volatile Set<CoreMember> replicationMembers = new HashSet<>(); // votingMembers + additionalReplicationMembers
+    private volatile Set<MemberId> votingMembers = new HashSet<>();
+    private volatile Set<MemberId> replicationMembers = new HashSet<>(); // votingMembers + additionalReplicationMembers
 
     private Set<Listener> listeners = new HashSet<>();
-    private Set<CoreMember> additionalReplicationMembers = new HashSet<>();
+    private Set<MemberId> additionalReplicationMembers = new HashSet<>();
 
-    public RaftMembershipManager( SendToMyself sendToMyself, RaftGroup.Builder<CoreMember> memberSetBuilder,
+    public RaftMembershipManager( SendToMyself sendToMyself, RaftGroup.Builder<MemberId> memberSetBuilder,
             ReadableRaftLog raftLog, LogProvider logProvider, int expectedClusterSize, long electionTimeout,
             Clock clock, long catchupTimeout, StateStorage<RaftMembershipState> membershipStorage, long recoverFromIndex )
     {
@@ -106,7 +106,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
         updateMemberSets();
     }
 
-    public void setTargetMembershipSet( Set<CoreMember> targetMembers )
+    public void setTargetMembershipSet( Set<MemberId> targetMembers )
     {
         this.targetMembers = new HashSet<>( targetMembers );
 
@@ -116,13 +116,13 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
         checkForStartCondition();
     }
 
-    private Set<CoreMember> missingMembers()
+    private Set<MemberId> missingMembers()
     {
         if ( targetMembers == null || votingMembers() == null )
         {
             return emptySet();
         }
-        Set<CoreMember> missingMembers = new HashSet<>( targetMembers );
+        Set<MemberId> missingMembers = new HashSet<>( targetMembers );
         missingMembers.removeAll( votingMembers() );
 
         return missingMembers;
@@ -135,7 +135,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
     {
         votingMembers = state.getLatest();
 
-        HashSet<CoreMember> newReplicationMembers = new HashSet<>( votingMembers );
+        HashSet<MemberId> newReplicationMembers = new HashSet<>( votingMembers );
         newReplicationMembers.addAll( additionalReplicationMembers );
 
         replicationMembers = newReplicationMembers;
@@ -148,7 +148,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
      *
      * @param member The member which will be added to the replication group.
      */
-    void addAdditionalReplicationMember( CoreMember member )
+    void addAdditionalReplicationMember( MemberId member )
     {
         additionalReplicationMembers.add( member );
         updateMemberSets();
@@ -162,7 +162,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
      *
      * @param member The member to remove from the replication group.
      */
-    void removeAdditionalReplicationMember( CoreMember member )
+    void removeAdditionalReplicationMember( MemberId member )
     {
         additionalReplicationMembers.remove( member );
         updateMemberSets();
@@ -173,13 +173,13 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
         return votingMembers() != null && votingMembers().size() > expectedClusterSize;
     }
 
-    private Set<CoreMember> superfluousMembers()
+    private Set<MemberId> superfluousMembers()
     {
         if ( targetMembers == null || votingMembers() == null )
         {
             return emptySet();
         }
-        Set<CoreMember> superfluousMembers = new HashSet<>( votingMembers() );
+        Set<MemberId> superfluousMembers = new HashSet<>( votingMembers() );
         superfluousMembers.removeAll( targetMembers );
 
         return superfluousMembers;
@@ -202,7 +202,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
      *
      * @param newVotingMemberSet The new set of members.
      */
-    void doConsensus( Set<CoreMember> newVotingMemberSet )
+    void doConsensus( Set<MemberId> newVotingMemberSet )
     {
         sendToMyself.replicate( memberSetBuilder.build( newVotingMemberSet ) );
     }
@@ -217,7 +217,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
         checkForStartCondition();
     }
 
-    public void onFollowerStateChange( FollowerStates<CoreMember> followerStates )
+    public void onFollowerStateChange( FollowerStates<MemberId> followerStates )
     {
         membershipChanger.onFollowerStateChange( followerStates );
     }
@@ -228,13 +228,13 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
     }
 
     @Override
-    public Set<CoreMember> votingMembers()
+    public Set<MemberId> votingMembers()
     {
         return votingMembers;
     }
 
     @Override
-    public Set<CoreMember> replicationMembers()
+    public Set<MemberId> replicationMembers()
     {
         return replicationMembers;
     }
@@ -279,7 +279,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
         {
             if ( entry.content() instanceof RaftGroup )
             {
-                RaftGroup<CoreMember> raftGroup = (RaftGroup<CoreMember>) entry.content();
+                RaftGroup<MemberId> raftGroup = (RaftGroup<MemberId>) entry.content();
 
                 if ( state.uncommittedMemberChangeInLog() )
                 {

@@ -23,24 +23,24 @@ import java.util.Optional;
 
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 
 public class NotMyselfSelectionStrategy implements CoreServerSelectionStrategy
 {
     private final CoreTopologyService discoveryService;
-    private final CoreMember myself;
+    private final MemberId myself;
 
-    public NotMyselfSelectionStrategy( CoreTopologyService discoveryService, CoreMember myself )
+    public NotMyselfSelectionStrategy( CoreTopologyService discoveryService, MemberId myself )
     {
         this.discoveryService = discoveryService;
         this.myself = myself;
     }
 
     @Override
-    public CoreMember coreServer() throws CoreServerSelectionException
+    public MemberId coreServer() throws CoreServerSelectionException
     {
-        Optional<CoreMember> member = discoveryService.currentTopology().coreMembers().stream()
+        Optional<MemberId> member = discoveryService.currentTopology().coreMembers().stream()
                 .filter( coreMember -> !coreMember.equals( myself ) ).findFirst();
 
         if ( member.isPresent() )

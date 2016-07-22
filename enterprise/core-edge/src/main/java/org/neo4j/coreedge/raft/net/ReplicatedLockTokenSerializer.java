@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft.net;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -33,13 +33,13 @@ class ReplicatedLockTokenSerializer
             throws IOException
     {
         channel.putInt( tokenRequest.id() );
-        new CoreMember.CoreMemberMarshal().marshal( tokenRequest.owner(), channel );
+        new MemberId.MemberIdMarshal().marshal( tokenRequest.owner(), channel );
     }
 
     public static ReplicatedLockTokenRequest unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
         int candidateId = channel.getInt();
-        CoreMember owner = new CoreMember.CoreMemberMarshal().unmarshal( channel );
+        MemberId owner = new MemberId.MemberIdMarshal().unmarshal( channel );
 
         return new ReplicatedLockTokenRequest( owner, candidateId );
     }

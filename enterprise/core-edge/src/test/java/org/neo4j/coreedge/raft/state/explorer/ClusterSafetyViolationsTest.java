@@ -26,7 +26,7 @@ import java.io.IOException;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -163,7 +163,7 @@ public class ClusterSafetyViolationsTest
         assertFalse( multipleLeadersInSameTerm( clusterState ) );
     }
 
-    private void commit( ClusterState clusterState, CoreMember member, long commitIndex ) throws IOException
+    private void commit( ClusterState clusterState, MemberId member, long commitIndex ) throws IOException
     {
         ComparableRaftState state = clusterState.states.get( member );
         Outcome outcome = new Outcome( clusterState.roles.get( member ), state );

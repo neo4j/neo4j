@@ -21,7 +21,7 @@ package org.neo4j.coreedge.server.core;
 
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 
 public class LeaderOnlySelectionStrategy implements CoreServerSelectionStrategy
@@ -34,8 +34,8 @@ public class LeaderOnlySelectionStrategy implements CoreServerSelectionStrategy
     }
 
     @Override
-    public CoreMember coreServer() throws CoreServerSelectionException
+    public MemberId coreServer() throws CoreServerSelectionException
     {
-        return (CoreMember) outcome.getLeader();
+        return (MemberId) outcome.getLeader();
     }
 }
