@@ -51,7 +51,7 @@ public class CoreOutbound implements Outbound<MemberId, Message>
         try
         {
             CoreAddresses coreAddresses = discoveryService.currentTopology().coreAddresses( to );
-            outbound.send( coreAddresses.getCoreServer(), message );
+            outbound.send( coreAddresses.getCatchupServer(), message );
         }
         catch ( NoKnownAddressesException e )
         {
@@ -65,7 +65,7 @@ public class CoreOutbound implements Outbound<MemberId, Message>
         try
         {
             CoreAddresses coreAddresses = discoveryService.currentTopology().coreAddresses( to );
-            outbound.send( coreAddresses.getCoreServer(), messages );
+            outbound.send( coreAddresses.getCatchupServer(), messages );
         }
         catch ( NoKnownAddressesException e )
         {
