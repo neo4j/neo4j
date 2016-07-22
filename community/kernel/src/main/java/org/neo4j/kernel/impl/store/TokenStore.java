@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -62,10 +63,11 @@ public abstract class TokenStore<RECORD extends TokenRecord,TOKEN extends Token>
             String typeDescriptor,
             TokenFactory<TOKEN> tokenFactory,
             RecordFormat<RECORD> recordFormat,
-            String storeVersion )
+            String storeVersion,
+            OpenOption... openOptions )
     {
         super( file, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
-                recordFormat, NO_STORE_HEADER_FORMAT, storeVersion );
+                recordFormat, NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
         this.nameStore = nameStore;
         this.tokenFactory = tokenFactory;
     }

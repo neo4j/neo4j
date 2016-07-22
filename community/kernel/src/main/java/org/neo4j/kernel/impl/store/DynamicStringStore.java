@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
+import java.nio.file.OpenOption;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -46,10 +47,11 @@ public class DynamicStringStore extends AbstractDynamicStore
             LogProvider logProvider,
             int dataSizeFromConfiguration,
             RecordFormat<DynamicRecord> recordFormat,
-            String storeVersion )
+            String storeVersion,
+            OpenOption... openOptions )
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormat, storeVersion );
+                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormat, storeVersion, openOptions );
     }
 
     @Override

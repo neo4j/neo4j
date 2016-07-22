@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
+import java.nio.file.OpenOption;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -47,11 +48,12 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             PageCache pageCache,
             LogProvider logProvider,
             DynamicStringStore nameStore,
-            RecordFormats recordFormats)
+            RecordFormats recordFormats,
+            OpenOption... openOptions )
     {
         super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
                 TYPE_DESCRIPTOR, new RelationshipTypeToken.Factory(), recordFormats.relationshipTypeToken(),
-                recordFormats.storeVersion() );
+                recordFormats.storeVersion(), openOptions );
     }
 
     @Override
