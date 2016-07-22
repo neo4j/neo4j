@@ -37,7 +37,7 @@ import java.util.function.IntFunction;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class ClusterRule extends ExternalResource implements ClusterBuilder<ClusterRule>
+public class ClusterRule extends ExternalResource
 {
     private final TargetDirectory.TestDirectory testDirectory;
     private File clusterDirectory;
@@ -129,84 +129,72 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
         return clusterDirectory;
     }
 
-    @Override
     public ClusterRule withNumberOfCoreMembers( int noCoreMembers )
     {
         this.noCoreMembers = noCoreMembers;
         return this;
     }
 
-    @Override
     public ClusterRule withNumberOfEdgeMembers( int noEdgeMembers )
     {
         this.noEdgeMembers = noEdgeMembers;
         return this;
     }
 
-    @Override
     public ClusterRule withDiscoveryServiceFactory( DiscoveryServiceFactory factory )
     {
         this.factory = factory;
         return this;
     }
 
-    @Override
     public ClusterRule withSharedCoreParams( Map<String,String> params )
     {
         this.coreParams.putAll( params );
         return this;
     }
 
-    @Override
     public ClusterRule withSharedCoreParam( Setting<?> key, String value )
     {
         this.coreParams.put( key.name(), value );
         return this;
     }
 
-    @Override
     public ClusterRule withInstanceCoreParams( Map<String,IntFunction<String>> params )
     {
         this.instanceCoreParams.putAll( params );
         return this;
     }
 
-    @Override
     public ClusterRule withInstanceCoreParam( Setting<?> key, IntFunction<String> valueFunction )
     {
         this.instanceCoreParams.put( key.name(), valueFunction );
         return this;
     }
 
-    @Override
     public ClusterRule withSharedEdgeParams( Map<String,String> params )
     {
         this.edgeParams.putAll( params );
         return this;
     }
 
-    @Override
     public ClusterRule withSharedEdgeParam( Setting<?> key, String value )
     {
         this.edgeParams.put( key.name(), value );
         return this;
     }
 
-    @Override
     public ClusterRule withInstanceEdgeParams( Map<String,IntFunction<String>> params )
     {
         this.instanceEdgeParams.putAll( params );
         return this;
     }
 
-    @Override
     public ClusterRule withInstanceEdgeParam( Setting<?> key, IntFunction<String> valueFunction )
     {
         this.instanceEdgeParams.put( key.name(), valueFunction );
         return this;
     }
 
-    @Override
     public ClusterRule withRecordFormat( String recordFormat )
     {
         this.recordFormat = recordFormat;
