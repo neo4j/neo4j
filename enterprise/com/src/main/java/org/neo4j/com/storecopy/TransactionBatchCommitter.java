@@ -122,9 +122,9 @@ class TransactionBatchCommitter implements TransactionQueue.Applier
         long lastCommittedTimestamp = last.transactionRepresentation().getTimeCommitted();
         long earliestSafeTimestamp = lastCommittedTimestamp - idReuseSafeZoneTime;
 
-        for ( KernelTransactionHandle tx : kernelTransactions.activeTransactions() )
+        for ( KernelTransactionHandle txHandle : kernelTransactions.activeTransactions() )
         {
-            long commitTimestamp = tx.lastTransactionTimestampWhenStarted();
+            long commitTimestamp = txHandle.lastTransactionTimestampWhenStarted();
 
             if ( commitTimestamp != TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP &&
                  commitTimestamp < earliestSafeTimestamp )
@@ -141,10 +141,11 @@ class TransactionBatchCommitter implements TransactionQueue.Applier
                         ", safeZoneDuration:" + informativeDuration( idReuseSafeZoneTime ) +
                         "\n" +
                         "  Transaction: lastCommittedTimestamp:" +
-                        informativeTimestamp( tx.lastTransactionTimestampWhenStarted() ) +
-                        ", lastCommittedTxId:" + tx.lastTransactionIdWhenStarted() +
-                        ", localStartTimestamp:" + informativeTimestamp( tx.localStartTime() ) );
-                tx.markForTermination( Status.Transaction.Outdated );
+                        informativeTimestamp( txHandle.lastTransactionTimestampWhenStarted() ) +
+                        ", lastCommittedTxId:" + txHandle.lastTransactionIdWhenStarted() +
+                        ", localStartTimestamp:" + informativeTimestamp( txHandle.localStartTime() ) );
+
+                txHandle.markForTermination( Status.Transaction.Outdated );
             }
         }
     }

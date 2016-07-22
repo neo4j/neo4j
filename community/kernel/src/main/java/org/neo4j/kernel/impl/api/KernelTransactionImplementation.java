@@ -146,24 +146,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private AccessMode accessMode;
     private Locks.Client locks;
     private boolean beforeHookInvoked;
-    private boolean closing, closed;
+    private volatile boolean closing, closed;
     private boolean failure, success;
     private volatile Status terminationReason;
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
-    private long lastTransactionTimestampWhenStarted;
+    private volatile long lastTransactionTimestampWhenStarted;
     private TransactionEvent transactionEvent;
     private Type type;
     private volatile int reuseCount;
 
     /**
-     * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
-     * {@link #close() transaction commit} and specifically with {@link #release()}.
-     * Termination can run concurrently with commit and we need to make sure that it terminates the right lock client
-     * and the right transaction (with the right {@link #reuseCount}) because {@link KernelTransactionImplementation}
-     * instances are pooled.
+     * Lock prevents transaction termination ({@link #markForTermination(Status)} and
+     * {@link #markForTermination(long, Status)}) from interfering with
+     * {@link #initialize(long, long, Locks.Client, Type, AccessMode) transaction initialization} and
+     * {@link #close() transaction commit}. Termination can run concurrently with initialization and commit so we
+     * need to make sure that it terminates the right lock client and the right transaction
+     * (with the right {@link #reuseCount}) because {@link KernelTransactionImplementation} instances are pooled.
      */
-    private final Lock terminationReleaseLock = new ReentrantLock();
+    private final Lock terminationReuseLock = new ReentrantLock();
 
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard,
@@ -204,19 +205,28 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation initialize(
             long lastCommittedTx, long lastTimeStamp, Locks.Client locks, Type type, AccessMode accessMode )
     {
-        this.type = type;
-        this.locks = locks;
-        this.terminationReason = null;
-        this.closing = closed = failure = success = beforeHookInvoked = false;
-        this.writeState = TransactionWriteState.NONE;
-        this.startTimeMillis = clock.currentTimeMillis();
-        this.lastTransactionIdWhenStarted = lastCommittedTx;
-        this.lastTransactionTimestampWhenStarted = lastTimeStamp;
-        this.transactionEvent = tracer.beginTransaction();
-        assert transactionEvent != null : "transactionEvent was null!";
-        this.accessMode = accessMode;
-        this.currentStatement.initialize( locks );
-        return this;
+        // guarded by the lock to coordinate with concurrent termination attempts
+        terminationReuseLock.lock();
+        try
+        {
+            this.type = type;
+            this.locks = locks;
+            this.terminationReason = null;
+            this.closing = closed = failure = success = beforeHookInvoked = false;
+            this.writeState = TransactionWriteState.NONE;
+            this.startTimeMillis = clock.currentTimeMillis();
+            this.lastTransactionIdWhenStarted = lastCommittedTx;
+            this.lastTransactionTimestampWhenStarted = lastTimeStamp;
+            this.transactionEvent = tracer.beginTransaction();
+            assert transactionEvent != null : "transactionEvent was null!";
+            this.accessMode = accessMode;
+            this.currentStatement.initialize( locks );
+            return this;
+        }
+        finally
+        {
+            terminationReuseLock.unlock();
+        }
     }
 
     int getReuseCount()
@@ -256,46 +266,51 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     void markForTermination( long expectedReuseCount, Status reason )
     {
-        terminationReleaseLock.lock();
+        terminationReuseLock.lock();
         try
         {
             if ( expectedReuseCount == reuseCount )
             {
-                markForTermination( reason );
+                markForTerminationIfPossible( reason );
             }
         }
         finally
         {
-            terminationReleaseLock.unlock();
+            terminationReuseLock.unlock();
         }
     }
 
     /**
      * {@inheritDoc}
      * <p>
-     * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
+     * This method is guarded by {@link #terminationReuseLock} to coordinate concurrent
      * {@link #close()} and {@link #release()} calls.
      */
     @Override
     public void markForTermination( Status reason )
     {
-        terminationReleaseLock.lock();
+        terminationReuseLock.lock();
         try
         {
-            if ( canBeTerminated() )
-            {
-                failure = true;
-                terminationReason = reason;
-                if ( txTerminationAwareLocks && locks != null )
-                {
-                    locks.stop();
-                }
-                transactionMonitor.transactionTerminated( hasTxStateWithChanges() );
-            }
+            markForTerminationIfPossible( reason );
         }
         finally
         {
-            terminationReleaseLock.unlock();
+            terminationReuseLock.unlock();
+        }
+    }
+
+    private void markForTerminationIfPossible( Status reason )
+    {
+        if ( canBeTerminated() )
+        {
+            failure = true;
+            terminationReason = reason;
+            if ( txTerminationAwareLocks && locks != null )
+            {
+                locks.stop();
+            }
+            transactionMonitor.transactionTerminated( hasTxStateWithChanges() );
         }
     }
 
@@ -656,12 +671,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     /**
      * Release resources held up by this transaction & return it to the transaction pool.
-     * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
+     * This method is guarded by {@link #terminationReuseLock} to coordinate concurrent
      * {@link #markForTermination(Status)} calls.
      */
     private void release()
     {
-        terminationReleaseLock.lock();
+        terminationReuseLock.lock();
         try
         {
             locks.close();
@@ -679,7 +694,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         finally
         {
-            terminationReleaseLock.unlock();
+            terminationReuseLock.unlock();
         }
     }
 

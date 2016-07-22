@@ -20,6 +20,8 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.impl.api.Kernel;
 
 /**
  * View of a {@link KernelTransaction} that provides a limited set of actions against the transaction.
@@ -27,11 +29,26 @@ import org.neo4j.kernel.api.exceptions.Status;
 public interface KernelTransactionHandle
 {
     /**
+     * The id of the last transaction that was committed to the store when the underlying transaction started.
+     *
+     * @return the committed transaction id.
+     */
+    long lastTransactionIdWhenStarted();
+
+    /**
      * The timestamp of the last transaction that was committed to the store when the underlying transaction started.
      *
      * @return the timestamp value obtained with {@link System#currentTimeMillis()}.
      */
     long lastTransactionTimestampWhenStarted();
+
+    /**
+     * The start time of the underlying transaction. I.e. basically {@link System#currentTimeMillis()} when user
+     * called {@link Kernel#newTransaction(KernelTransaction.Type, AccessMode)}.
+     *
+     * @return the transaction start time.
+     */
+    long localStartTime();
 
     /**
      * Check if the underlying transaction is open.

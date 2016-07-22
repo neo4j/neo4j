@@ -40,9 +40,21 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
+    public long lastTransactionIdWhenStarted()
+    {
+        return tx.lastTransactionIdWhenStarted();
+    }
+
+    @Override
     public long lastTransactionTimestampWhenStarted()
     {
         return tx.lastTransactionTimestampWhenStarted();
+    }
+
+    @Override
+    public long localStartTime()
+    {
+        return tx.localStartTime();
     }
 
     @Override
