@@ -23,11 +23,9 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -83,12 +81,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
                 storeVersion );
     }
 
-    public static void allocateRecordsFromBytes(
-            Collection<DynamicRecord> recordList, byte[] src, Iterator<DynamicRecord> recordsToUseFirst,
+    public static void allocateRecordsFromBytes( Collection<DynamicRecord> recordList, byte[] src,
             DynamicRecordAllocator dynamicRecordAllocator )
     {
         assert src != null : "Null src argument";
-        DynamicRecord nextRecord = dynamicRecordAllocator.nextUsedRecordOrNew( recordsToUseFirst );
+        DynamicRecord nextRecord = dynamicRecordAllocator.nextRecord();
         int srcOffset = 0;
         int dataSize = dynamicRecordAllocator.getRecordDataSize();
         do
@@ -100,7 +97,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
                 byte[] data = new byte[dataSize];
                 System.arraycopy( src, srcOffset, data, 0, dataSize );
                 record.setData( data );
-                nextRecord = dynamicRecordAllocator.nextUsedRecordOrNew( recordsToUseFirst );
+                nextRecord = dynamicRecordAllocator.nextRecord();
                 record.setNextBlock( nextRecord.getId() );
                 srcOffset += dataSize;
             }
@@ -181,29 +178,17 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     }
 
     @Override
-    public DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst )
+    public DynamicRecord nextRecord()
     {
-        DynamicRecord record;
-        if ( recordsToUseFirst.hasNext() )
-        {
-            record = recordsToUseFirst.next();
-            if ( !record.inUse() )
-            {
-                record.setCreated();
-            }
-        }
-        else
-        {
-            record = new DynamicRecord( nextId() );
-            record.setCreated();
-        }
+        DynamicRecord record = new DynamicRecord( nextId() );
+        record.setCreated();
         record.setInUse( true );
         return record;
     }
 
     public void allocateRecordsFromBytes( Collection<DynamicRecord> target, byte[] src )
     {
-        allocateRecordsFromBytes( target, src, Iterators.<DynamicRecord>emptyIterator(), this );
+        allocateRecordsFromBytes( target, src, this );
     }
 
     @Override

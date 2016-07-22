@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.StandaloneDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -479,8 +480,8 @@ public class StorePropertyPayloadCursorTest
 
     private static long[] asBlocks( Object... values )
     {
-        RecordAllocator stringAllocator = new RecordAllocator();
-        RecordAllocator arrayAllocator = new RecordAllocator();
+        DynamicRecordAllocator stringAllocator = new StandaloneDynamicRecordAllocator();
+        DynamicRecordAllocator arrayAllocator = new StandaloneDynamicRecordAllocator();
         long[] blocks = new long[PropertyType.getPayloadSizeLongs()];
         int cursor = 0;
         for ( int i = 0; i < values.length; i++ )
@@ -564,26 +565,6 @@ public class StorePropertyPayloadCursorTest
         public String toString()
         {
             return "{params=" + Arrays.toString( params ) + "}";
-        }
-    }
-
-    private static class RecordAllocator implements DynamicRecordAllocator
-    {
-        long id;
-
-        @Override
-        public int getRecordDataSize()
-        {
-            return 120;
-        }
-
-        @Override
-        public DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst )
-        {
-            DynamicRecord record = new DynamicRecord( id++ );
-            record.setCreated();
-            record.setInUse( true );
-            return record;
         }
     }
 }

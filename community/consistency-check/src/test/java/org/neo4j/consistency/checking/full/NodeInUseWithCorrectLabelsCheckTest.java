@@ -31,7 +31,7 @@ import org.neo4j.consistency.store.RecordAccessStub;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
-import org.neo4j.kernel.impl.store.PreAllocatedRecords;
+import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
@@ -142,7 +142,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
         }
         Collection<DynamicRecord> dynamicRecords = new ArrayList<>();
         DynamicArrayStore.allocateFromNumbers( dynamicRecords, prependNodeId( nodeRecord.getId(), labelIds ),
-                preAllocatedRecords.iterator(), new PreAllocatedRecords( 4 ) );
+                new ReusableRecordsAllocator( 4, preAllocatedRecords ) );
         for ( DynamicRecord dynamicRecord : dynamicRecords )
         {
             recordAccess.addNodeDynamicLabels( dynamicRecord );

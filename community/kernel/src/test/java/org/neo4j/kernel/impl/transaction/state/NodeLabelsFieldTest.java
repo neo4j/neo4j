@@ -37,7 +37,6 @@ import java.util.Set;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
@@ -544,7 +543,7 @@ public class NodeLabelsFieldTest
     private Collection<DynamicRecord> allocateAndApply( NodeStore nodeStore, long nodeId, long[] longs )
     {
         Collection<DynamicRecord> records = DynamicNodeLabels.allocateRecordsForDynamicLabels( nodeId, longs,
-                Iterators.<DynamicRecord>emptyIterator(), nodeStore.getDynamicLabelStore() );
+                nodeStore.getDynamicLabelStore() );
         nodeStore.updateDynamicLabelRecords( records );
         return records;
     }

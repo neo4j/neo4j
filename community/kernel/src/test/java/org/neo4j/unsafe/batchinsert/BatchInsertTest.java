@@ -911,7 +911,7 @@ public class BatchInsertTest
             SchemaStore store = neoStores.getSchemaStore();
             SchemaStorage storage = new SchemaStorage( store );
             List<Long> inUse = new ArrayList<>();
-            DynamicRecord record = store.newRecord();
+            DynamicRecord record = store.nextRecord();
             for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
             {
                 store.getRecord( i, record, RecordLoad.FORCE );

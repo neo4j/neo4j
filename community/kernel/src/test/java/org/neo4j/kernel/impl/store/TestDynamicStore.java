@@ -35,7 +35,6 @@ import java.util.Set;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -128,7 +127,7 @@ public class TestDynamicStore
         char[] chars = new char[STR.length()];
         STR.getChars( 0, STR.length(), chars, 0 );
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, chars, Iterators.<DynamicRecord>emptyIterator() );
+        store.allocateRecords( records, chars );
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record );
@@ -171,7 +170,7 @@ public class TestDynamicStore
             {
                 byte[] bytes = createRandomBytes( random );
                 Collection<DynamicRecord> records = new ArrayList<>();
-                store.allocateRecords( records, bytes, Iterators.<DynamicRecord>emptyIterator() );
+                store.allocateRecords( records, bytes );
                 for ( DynamicRecord record : records )
                 {
                     assert !set.contains( record.getId() );
@@ -213,7 +212,7 @@ public class TestDynamicStore
     private long create( DynamicArrayStore store, Object arrayToStore )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, arrayToStore, Iterators.<DynamicRecord>emptyIterator() );
+        store.allocateRecords( records, arrayToStore );
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record );

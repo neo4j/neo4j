@@ -28,7 +28,6 @@ import java.util.List;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -206,13 +205,13 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     public static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars,
             DynamicRecordAllocator allocator )
     {
-        AbstractDynamicStore.allocateRecordsFromBytes( target, chars, Iterators.emptyIterator(), allocator );
+        AbstractDynamicStore.allocateRecordsFromBytes( target, chars, allocator );
     }
 
     public static void allocateArrayRecords( Collection<DynamicRecord> target, Object array,
             DynamicRecordAllocator allocator )
     {
-        DynamicArrayStore.allocateRecords( target, array, Iterators.emptyIterator(), allocator );
+        DynamicArrayStore.allocateRecords( target, array, allocator );
     }
 
     public void encodeValue( PropertyBlock block, int keyId, Object value )

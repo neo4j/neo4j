@@ -789,11 +789,11 @@ public class StorePropertyCursorTest
         propertyRecordCursor.acquire( 0, NORMAL );
 
         DynamicStringStore stringStore = propertyStore.getStringStore();
-        RecordCursor<DynamicRecord> dynamicStringCursor = stringStore.newRecordCursor( stringStore.newRecord() );
+        RecordCursor<DynamicRecord> dynamicStringCursor = stringStore.newRecordCursor( stringStore.nextRecord() );
         dynamicStringCursor.acquire( 0, NORMAL );
 
         DynamicArrayStore arrayStore = propertyStore.getArrayStore();
-        RecordCursor<DynamicRecord> dynamicArrayCursor = arrayStore.newRecordCursor( arrayStore.newRecord() );
+        RecordCursor<DynamicRecord> dynamicArrayCursor = arrayStore.newRecordCursor( arrayStore.nextRecord() );
         dynamicArrayCursor.acquire( 0, NORMAL );
 
         RecordCursors cursors = mock( RecordCursors.class );

@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.Iterator;
-
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
@@ -52,7 +50,7 @@ public class RelativeIdRecordAllocator implements DynamicRecordAllocator
     }
 
     @Override
-    public DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst )
+    public DynamicRecord nextRecord()
     {
         DynamicRecord record = new DynamicRecord( id++ );
         record.setInUse( true );
