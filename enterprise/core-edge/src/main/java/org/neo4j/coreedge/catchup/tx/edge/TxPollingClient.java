@@ -24,7 +24,7 @@ import org.neo4j.coreedge.raft.RenewableTimeoutService;
 import org.neo4j.coreedge.raft.RenewableTimeoutService.RenewableTimeout;
 import org.neo4j.coreedge.raft.RenewableTimeoutService.TimeoutName;
 import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
+import org.neo4j.coreedge.server.edge.CoreMemberSelectionStrategy;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -77,7 +77,7 @@ public class TxPollingClient extends LifecycleAdapter implements TxPullListener
     private final Log log;
 
     private final CoreClient coreClient;
-    private final CoreServerSelectionStrategy connectionStrategy;
+    private final CoreMemberSelectionStrategy connectionStrategy;
     private final RenewableTimeoutService timeoutService;
 
     private final long txPullIntervalMillis;
@@ -89,7 +89,7 @@ public class TxPollingClient extends LifecycleAdapter implements TxPullListener
     private long unexpectedCount;
     private boolean streamingCompleted;
 
-    public TxPollingClient( LogProvider logProvider, CoreClient coreClient, CoreServerSelectionStrategy connectionStrategy,
+    public TxPollingClient( LogProvider logProvider, CoreClient coreClient, CoreMemberSelectionStrategy connectionStrategy,
             RenewableTimeoutService timeoutService, long txPullIntervalMillis, BatchingTxApplier applier )
     {
         this.log = logProvider.getLog( getClass() );
@@ -178,7 +178,7 @@ public class TxPollingClient extends LifecycleAdapter implements TxPullListener
             MemberId transactionServer;
             try
             {
-                transactionServer = ctx.connectionStrategy.coreServer();
+                transactionServer = ctx.connectionStrategy.coreMember();
                 ctx.coreClient.pollForTransactions( transactionServer, ctx.applier.lastAppliedTxId() );
             }
             catch ( Exception e )

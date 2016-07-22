@@ -21,12 +21,12 @@ package org.neo4j.coreedge.server.core;
 
 import java.util.Optional;
 
-import org.neo4j.coreedge.discovery.CoreServerSelectionException;
+import org.neo4j.coreedge.discovery.CoreMemberSelectionException;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
+import org.neo4j.coreedge.server.edge.CoreMemberSelectionStrategy;
 
-public class NotMyselfSelectionStrategy implements CoreServerSelectionStrategy
+public class NotMyselfSelectionStrategy implements CoreMemberSelectionStrategy
 {
     private final CoreTopologyService discoveryService;
     private final MemberId myself;
@@ -38,7 +38,7 @@ public class NotMyselfSelectionStrategy implements CoreServerSelectionStrategy
     }
 
     @Override
-    public MemberId coreServer() throws CoreServerSelectionException
+    public MemberId coreMember() throws CoreMemberSelectionException
     {
         Optional<MemberId> member = discoveryService.currentTopology().coreMembers().stream()
                 .filter( coreMember -> !coreMember.equals( myself ) ).findFirst();
@@ -49,7 +49,7 @@ public class NotMyselfSelectionStrategy implements CoreServerSelectionStrategy
         }
         else
         {
-            throw new CoreServerSelectionException( "No core servers available" );
+            throw new CoreMemberSelectionException( "No core servers available" );
         }
     }
 }

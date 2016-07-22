@@ -17,26 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.edge;
+package org.neo4j.coreedge.discovery;
 
-import org.neo4j.coreedge.discovery.ClusterTopology;
-import org.neo4j.coreedge.discovery.CoreServerSelectionException;
-import org.neo4j.coreedge.discovery.TopologyService;
-import org.neo4j.coreedge.server.MemberId;
-
-public class AlwaysChooseFirstServer implements CoreServerSelectionStrategy
+public class CoreMemberSelectionException extends Exception
 {
-    private final TopologyService discoveryService;
-
-    public AlwaysChooseFirstServer( TopologyService discoveryService)
+    public CoreMemberSelectionException( String message )
     {
-        this.discoveryService = discoveryService;
-    }
-
-    @Override
-    public MemberId coreServer() throws CoreServerSelectionException
-    {
-        ClusterTopology clusterTopology = discoveryService.currentTopology();
-        return clusterTopology.coreMembers().iterator().next();
+        super( message );
     }
 }

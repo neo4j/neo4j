@@ -31,7 +31,7 @@ import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.StoreId;
-import org.neo4j.coreedge.server.edge.AlwaysChooseFirstServer;
+import org.neo4j.coreedge.server.edge.AlwaysChooseFirstMember;
 import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -71,7 +71,7 @@ public class EdgeServerStartupProcessTest
         Lifecycle txPulling = mock( Lifecycle.class );
 
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
-                txPulling, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
+                txPulling, dataSourceManager, new AlwaysChooseFirstMember( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
                 mock( EdgeTopologyService.class ), Config.empty() );
 
@@ -109,7 +109,7 @@ public class EdgeServerStartupProcessTest
         Lifecycle txPulling = mock( Lifecycle.class );
 
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
-                txPulling, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
+                txPulling, dataSourceManager, new AlwaysChooseFirstMember( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
                 mock( EdgeTopologyService.class ), Config.empty() );
 
@@ -155,7 +155,7 @@ public class EdgeServerStartupProcessTest
         Lifecycle txPulling = mock( Lifecycle.class );
 
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
-                txPulling, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
+                txPulling, dataSourceManager, new AlwaysChooseFirstMember( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
                 mock( EdgeTopologyService.class ), Config.empty() );
 
@@ -188,7 +188,7 @@ public class EdgeServerStartupProcessTest
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
         Lifecycle txPulling = mock( Lifecycle.class );
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
-                txPulling, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
+                txPulling, dataSourceManager, new AlwaysChooseFirstMember( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
                 mock( EdgeTopologyService.class ), null );
 

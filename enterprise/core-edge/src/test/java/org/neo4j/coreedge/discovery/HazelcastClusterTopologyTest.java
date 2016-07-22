@@ -38,7 +38,7 @@ import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
+import org.neo4j.coreedge.server.edge.CoreMemberSelectionStrategy;
 import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
@@ -77,8 +77,8 @@ public class HazelcastClusterTopologyTest
 
         // when
 
-        final CoreServerSelectionStrategy connectionStrategy = mock( CoreServerSelectionStrategy.class );
-        when( connectionStrategy.coreServer() ).thenReturn( new MemberId( UUID.randomUUID() ) );
+        final CoreMemberSelectionStrategy connectionStrategy = mock( CoreMemberSelectionStrategy.class );
+        when( connectionStrategy.coreMember() ).thenReturn( new MemberId( UUID.randomUUID() ) );
 
         LocalDatabase localDatabase = mock( LocalDatabase.class );
         when( localDatabase.isEmpty() ).thenReturn( true );

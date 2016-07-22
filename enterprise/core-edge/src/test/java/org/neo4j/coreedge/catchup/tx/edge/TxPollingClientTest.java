@@ -26,7 +26,7 @@ import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.raft.ControlledRenewableTimeoutService;
 import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.StoreId;
-import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
+import org.neo4j.coreedge.server.edge.CoreMemberSelectionStrategy;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.NullLogProvider;
@@ -45,7 +45,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 public class TxPollingClientTest
 {
     private final CoreClient coreClient = mock( CoreClient.class );
-    private final CoreServerSelectionStrategy serverSelection = mock( CoreServerSelectionStrategy.class );
+    private final CoreMemberSelectionStrategy serverSelection = mock( CoreMemberSelectionStrategy.class );
     private final MemberId coreServer = mock( MemberId.class );
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
 
@@ -61,7 +61,7 @@ public class TxPollingClientTest
     public void before() throws Throwable
     {
         when( idStore.getLastCommittedTransactionId() ).thenReturn( BASE_TX_ID );
-        when( serverSelection.coreServer() ).thenReturn( coreServer );
+        when( serverSelection.coreMember() ).thenReturn( coreServer );
         txPuller.start();
     }
 

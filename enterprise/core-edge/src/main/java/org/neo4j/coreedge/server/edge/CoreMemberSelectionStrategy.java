@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.discovery;
+package org.neo4j.coreedge.server.edge;
 
-public class CoreServerSelectionException extends Exception
+import org.neo4j.coreedge.discovery.CoreMemberSelectionException;
+import org.neo4j.coreedge.server.MemberId;
+
+public interface CoreMemberSelectionStrategy
 {
-    public CoreServerSelectionException( String message )
-    {
-        super( message );
-    }
+    MemberId coreMember() throws CoreMemberSelectionException;
 }

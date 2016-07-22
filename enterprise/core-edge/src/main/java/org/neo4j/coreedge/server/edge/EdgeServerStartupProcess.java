@@ -23,7 +23,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.discovery.CoreServerSelectionException;
+import org.neo4j.coreedge.discovery.CoreMemberSelectionException;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
 import org.neo4j.coreedge.server.MemberId;
@@ -41,7 +41,7 @@ public class EdgeServerStartupProcess implements Lifecycle
     private final LocalDatabase localDatabase;
     private final Lifecycle txPulling;
     private final DataSourceManager dataSourceManager;
-    private final CoreServerSelectionStrategy connectionStrategy;
+    private final CoreMemberSelectionStrategy connectionStrategy;
     private final Log log;
     private final EdgeTopologyService discoveryService;
     private final Config config;
@@ -52,7 +52,7 @@ public class EdgeServerStartupProcess implements Lifecycle
             LocalDatabase localDatabase,
             Lifecycle txPulling,
             DataSourceManager dataSourceManager,
-            CoreServerSelectionStrategy connectionStrategy,
+            CoreMemberSelectionStrategy connectionStrategy,
             RetryStrategy retryStrategy,
             LogProvider logProvider, EdgeTopologyService discoveryService, Config config )
     {
@@ -100,13 +100,13 @@ public class EdgeServerStartupProcess implements Lifecycle
         {
             try
             {
-                MemberId memberId = connectionStrategy.coreServer();
+                MemberId memberId = connectionStrategy.coreMember();
                 log.info( "Server starting, connecting to core server at %s", memberId.toString() );
 
                 discoveryService.registerEdgeServer( extractBoltAddress( config ) );
                 return memberId;
             }
-            catch ( CoreServerSelectionException ex )
+            catch ( CoreMemberSelectionException ex )
             {
                 log.info( "Failed to connect to core server. Retrying in %d ms.", timeout.getMillis() );
                 LockSupport.parkUntil( timeout.getMillis() + System.currentTimeMillis() );
