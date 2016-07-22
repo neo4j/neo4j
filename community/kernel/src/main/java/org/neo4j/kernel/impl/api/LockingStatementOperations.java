@@ -109,7 +109,7 @@ public class LockingStatementOperations implements
         // by ConstraintEnforcingEntityOperations included the full cake, with locking included.
         acquireSharedSchemaLock( state );
 
-        state.locks().optimistic().acquireExclusive( ResourceTypes.NODE, nodeId );
+        acquireExclusiveNodeLock( state, nodeId );
         state.assertOpen();
 
         return entityWriteDelegate.nodeAddLabel( state, nodeId, labelId );
@@ -118,7 +118,7 @@ public class LockingStatementOperations implements
     @Override
     public boolean nodeRemoveLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
     {
-        state.locks().optimistic().acquireExclusive( ResourceTypes.NODE, nodeId );
+        acquireExclusiveNodeLock( state, nodeId );
         state.assertOpen();
         return entityWriteDelegate.nodeRemoveLabel( state, nodeId, labelId );
     }
@@ -258,7 +258,7 @@ public class LockingStatementOperations implements
     @Override
     public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
-        state.locks().optimistic().acquireExclusive( ResourceTypes.NODE, nodeId );
+        acquireExclusiveNodeLock( state, nodeId );
         state.assertOpen();
         entityWriteDelegate.nodeDelete( state, nodeId );
     }
@@ -319,7 +319,7 @@ public class LockingStatementOperations implements
                 lockRelationshipNodes(state, startNode, endNode);
             }
         });
-        state.locks().optimistic().acquireExclusive(ResourceTypes.RELATIONSHIP, relationshipId);
+        acquireExclusiveRelationshipLock( state, relationshipId );
         state.assertOpen();
         entityWriteDelegate.relationshipDelete(state, relationshipId);
     }
@@ -327,10 +327,10 @@ public class LockingStatementOperations implements
     private void lockRelationshipNodes( KernelStatement state, long startNodeId, long endNodeId )
     {
         // Order the locks to lower the risk of deadlocks with other threads creating/deleting rels concurrently
-        state.locks().optimistic().acquireExclusive( ResourceTypes.NODE, min( startNodeId, endNodeId ) );
+        acquireExclusiveNodeLock( state, min( startNodeId, endNodeId ) );
         if ( startNodeId != endNodeId )
         {
-            state.locks().optimistic().acquireExclusive( ResourceTypes.NODE, max( startNodeId, endNodeId ) );
+            acquireExclusiveNodeLock( state, max( startNodeId, endNodeId ) );
         }
     }
 
@@ -473,7 +473,7 @@ public class LockingStatementOperations implements
         // by ConstraintEnforcingEntityOperations included the full cake, with locking included.
         acquireSharedSchemaLock( state );
 
-        state.locks().optimistic().acquireExclusive( ResourceTypes.NODE, nodeId );
+        acquireExclusiveNodeLock( state, nodeId );
         state.assertOpen();
         return entityWriteDelegate.nodeSetProperty( state, nodeId, property );
     }
@@ -482,7 +482,7 @@ public class LockingStatementOperations implements
     public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
             throws EntityNotFoundException
     {
-        state.locks().optimistic().acquireExclusive( ResourceTypes.NODE, nodeId );
+        acquireExclusiveNodeLock( state, nodeId );
         state.assertOpen();
         return entityWriteDelegate.nodeRemoveProperty( state, nodeId, propertyKeyId );
     }
@@ -492,7 +492,7 @@ public class LockingStatementOperations implements
             long relationshipId,
             DefinedProperty property ) throws EntityNotFoundException
     {
-        state.locks().optimistic().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
+        acquireExclusiveRelationshipLock( state, relationshipId );
         state.assertOpen();
         return entityWriteDelegate.relationshipSetProperty( state, relationshipId, property );
     }
@@ -502,7 +502,7 @@ public class LockingStatementOperations implements
             long relationshipId,
             int propertyKeyId ) throws EntityNotFoundException
     {
-        state.locks().optimistic().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
+        acquireExclusiveRelationshipLock( state, relationshipId );
         state.assertOpen();
         return entityWriteDelegate.relationshipRemoveProperty( state, relationshipId, propertyKeyId );
     }
@@ -557,6 +557,22 @@ public class LockingStatementOperations implements
             throws IndexNotFoundKernelException
     {
         return schemaReadDelegate.indexGetFailure( state, descriptor );
+    }
+
+    private void acquireExclusiveNodeLock( KernelStatement state, long nodeId )
+    {
+        if ( !state.txState().nodeIsAddedInThisTx( nodeId ) )
+        {
+            state.locks().optimistic().acquireExclusive( ResourceTypes.NODE, nodeId );
+        }
+    }
+
+    private void acquireExclusiveRelationshipLock( KernelStatement state, long relationshipId )
+    {
+        if ( !state.txState().relationshipIsAddedInThisTx( relationshipId ) )
+        {
+            state.locks().optimistic().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
+        }
     }
 
     private void acquireSharedSchemaLock( KernelStatement state )

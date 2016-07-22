@@ -45,8 +45,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 public class NodeTest
 {
     @ClassRule
@@ -426,61 +424,6 @@ public class NodeTest
         assertEquals( "test4", node.getProperty( "test" ) );
     }
     
-    @Test
-    public void testNodeLockingProblem() throws InterruptedException
-    {
-        testLockProblem( getGraphDb().createNode() );
-    }
-
-    @Test
-    public void testRelationshipLockingProblem() throws InterruptedException
-    {
-        Node node = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        testLockProblem( node.createRelationshipTo( node2,
-                DynamicRelationshipType.withName( "lock-rel" ) ) );
-    }
-    
-    private void testLockProblem( final PropertyContainer entity ) throws InterruptedException
-    {
-        entity.setProperty( "key", "value" );
-        final AtomicBoolean gotTheLock = new AtomicBoolean();
-        Thread thread = new Thread()
-        {
-            @Override
-            public void run()
-            {
-                try( Transaction tx = getGraphDb().beginTx() )
-                {
-                    tx.acquireWriteLock( entity );
-                    gotTheLock.set( true );
-                    tx.success();
-                }
-                catch ( Exception e )
-                {
-                    e.printStackTrace();
-                    throw launderedException( e );
-                }
-            }
-        };
-        thread.start();
-        long endTime = System.currentTimeMillis() + 5000;
-        while ( thread.getState() != State.TERMINATED )
-        {
-            if ( thread.getState() == Thread.State.WAITING || thread.getState() == State.TIMED_WAITING)
-            {
-                break;
-            }
-            Thread.sleep( 1 );
-            if ( System.currentTimeMillis() > endTime ) break;
-        }
-        boolean gotLock = gotTheLock.get();
-        tx.success();
-        tx.begin();
-        assertFalse( gotLock );
-        thread.join();
-    }
-
     private GraphDatabaseService getGraphDb()
     {
         return db.getGraphDatabaseService();
