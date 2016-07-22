@@ -132,6 +132,7 @@ public class LuceneLabelScanStoreTest
     {
         expectedException.expectCause( Matchers.<Throwable>instanceOf( IOException.class ) );
         startLabelScanStore( MapUtil.stringMap(GraphDatabaseSettings.read_only.name(), "true") );
+        assertTrue( monitor.noIndexCalled );
     }
 
     @Test

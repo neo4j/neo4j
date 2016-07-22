@@ -145,6 +145,7 @@ public class StoreUpgraderTest
         // We leave logical logs in place since the new version can read the old
 
         assertFalse( containsAnyStoreFiles( fileSystem, isolatedMigrationDirectoryOf( dbDirectory ) ) );
+        // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
         startStopDatabase();
         assertConsistentStore( dbDirectory );
     }

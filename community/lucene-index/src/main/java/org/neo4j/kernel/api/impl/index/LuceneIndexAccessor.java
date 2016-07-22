@@ -132,21 +132,25 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         this.dir = dirFactory.open( indexFolder );
         if ( readOnly )
         {
-            try
-            {
-                this.writer = null;
-                searcherManager =
-                        new LuceneReferenceManager.Wrap<>( new SearcherManager( dir, new SearcherFactory() ) );
-            }
-            catch ( IndexNotFoundException e )
-            {
-                throw new IllegalStateException( "Index creation is not supported in read only mode.", e );
-            }
+            this.writer = null;
+            searcherManager = createReadOnlySearchManager();
         }
         else
         {
             this.writer = indexWriterFactory.create( dir );
             this.searcherManager = new LuceneReferenceManager.Wrap<>( writer.createSearcherManager() );
+        }
+    }
+
+    private LuceneReferenceManager.Wrap<IndexSearcher> createReadOnlySearchManager() throws IOException
+    {
+        try
+        {
+            return new LuceneReferenceManager.Wrap<>( new SearcherManager( dir, new SearcherFactory() ) );
+        }
+        catch ( IndexNotFoundException e )
+        {
+            throw new IllegalStateException( "Index creation is not supported in read only mode.", e );
         }
     }
 

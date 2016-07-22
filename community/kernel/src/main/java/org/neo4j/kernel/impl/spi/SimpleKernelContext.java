@@ -31,7 +31,7 @@ public class SimpleKernelContext implements KernelContext
 {
     private final FileSystemAbstraction fileSystem;
     private final File storeDir;
-    UsageDataKeys.OperationalMode operationalMode;
+    private final UsageDataKeys.OperationalMode operationalMode;
 
     public SimpleKernelContext( FileSystemAbstraction fileSystem, File storeDir, UsageDataKeys.OperationalMode operationalMode )
     {

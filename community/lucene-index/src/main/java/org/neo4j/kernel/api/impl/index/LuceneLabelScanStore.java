@@ -263,6 +263,12 @@ public class LuceneLabelScanStore
             {
                 searcherManager = new SearcherManager( directory, new SearcherFactory() );
             }
+            catch ( IndexNotFoundException inf )
+            {
+                monitor.noIndex();
+                throw new IOException( "Label scan store not found while database was started in read only mode. " +
+                                       "To trigger a rebuild please restart database in writable mode.", inf );
+            }
             catch ( IOException e )
             {
                 monitor.corruptIndex( e );

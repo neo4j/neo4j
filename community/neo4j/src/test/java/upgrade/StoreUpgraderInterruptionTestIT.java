@@ -19,7 +19,6 @@
  */
 package upgrade;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -132,12 +131,12 @@ public class StoreUpgraderInterruptionTestIT
         assertTrue( checkNeoStoreHasLatestVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
+        // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
         startStopDatabase( workingDirectory );
         assertConsistentStore( workingDirectory );
     }
 
     @Test
-    @Ignore
     public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMovingFiles()
             throws IOException, ConsistencyCheckIncompleteException
     {
@@ -177,8 +176,6 @@ public class StoreUpgraderInterruptionTestIT
         assertTrue( checkNeoStoreHasLatestVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
-        assertConsistentStore( workingDirectory );
-
         progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, config, logService );
         newUpgrader( migrator ).migrateIfNeeded( workingDirectory, upgradableDatabase, schemaIndexProvider );
@@ -188,6 +185,7 @@ public class StoreUpgraderInterruptionTestIT
 
         pageCache.close();
 
+        // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
         startStopDatabase( workingDirectory );
         assertConsistentStore( workingDirectory );
     }
