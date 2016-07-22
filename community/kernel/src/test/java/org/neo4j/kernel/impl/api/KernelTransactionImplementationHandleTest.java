@@ -39,6 +39,21 @@ public class KernelTransactionImplementationHandleTest
 
         KernelTransactionImplementation tx = mock( KernelTransactionImplementation.class );
         when( tx.lastTransactionTimestampWhenStarted() ).thenReturn( lastCommittedTxTimestamp );
+        when( tx.isOpen() ).thenReturn( true );
+
+        KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle( tx );
+
+        assertEquals( lastCommittedTxTimestamp, handle.lastTransactionTimestampWhenStarted() );
+    }
+
+    @Test
+    public void returnsCorrectLastTransactionTimestampWhenStartedForClosedTx()
+    {
+        long lastCommittedTxTimestamp = 4242;
+
+        KernelTransactionImplementation tx = mock( KernelTransactionImplementation.class );
+        when( tx.lastTransactionTimestampWhenStarted() ).thenReturn( lastCommittedTxTimestamp );
+        when( tx.isOpen() ).thenReturn( false );
 
         KernelTransactionImplementationHandle handle = new KernelTransactionImplementationHandle( tx );
 
