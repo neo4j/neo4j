@@ -85,7 +85,7 @@ public class LuceneRecoveryIT
                 }
             }
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             if ( Exceptions.contains( e, CorruptIndexException.class ) ||
                     exceptionContainsStackTraceElementFromPackage( e, "org.apache.lucene" ) )
@@ -126,7 +126,7 @@ public class LuceneRecoveryIT
         db.shutdown();
     }
 
-    private boolean exceptionContainsStackTraceElementFromPackage( Exception e, String packageName )
+    private boolean exceptionContainsStackTraceElementFromPackage( Throwable e, String packageName )
     {
         for ( StackTraceElement element : e.getStackTrace() )
         {
