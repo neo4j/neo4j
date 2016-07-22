@@ -38,8 +38,8 @@ public class ClusterFormationIT
 {
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreServers( 3 )
-            .withNumberOfEdgeServers( 0 );
+            .withNumberOfCoreMembers( 3 )
+            .withNumberOfEdgeMembers( 0 );
 
     private Cluster cluster;
 
@@ -50,30 +50,30 @@ public class ClusterFormationIT
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveCoreServers() throws Exception
+    public void shouldBeAbleToAddAndRemoveCoreMembers() throws Exception
     {
         // when
-        cluster.getCoreServerById( 0 ).shutdown();
-        cluster.getCoreServerById( 0 ).start();
+        cluster.getCoreMemberById( 0 ).shutdown();
+        cluster.getCoreMemberById( 0 ).start();
 
         // then
-        assertEquals( 3, cluster.numberOfCoreServers() );
+        assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
-        cluster.removeCoreServerWithServerId( 1 );
+        cluster.removeCoreMemberWithMemberId( 1 );
 
         // then
-        assertEquals( 2, cluster.numberOfCoreServers() );
+        assertEquals( 2, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
-        cluster.addCoreServerWithServerId( 4, 3 ).start();
+        cluster.addCoreMemberWithId( 4, 3 ).start();
 
         // then
-        assertEquals( 3, cluster.numberOfCoreServers() );
+        assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveCoreServersUnderModestLoad() throws Exception
+    public void shouldBeAbleToAddAndRemoveCoreMembersUnderModestLoad() throws Exception
     {
         // given
         ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -87,23 +87,23 @@ public class ClusterFormationIT
         } );
 
         // when
-        cluster.getCoreServerById( 0 ).shutdown();
-        cluster.getCoreServerById( 0 ).start();
+        cluster.getCoreMemberById( 0 ).shutdown();
+        cluster.getCoreMemberById( 0 ).start();
 
         // then
-        assertEquals( 3, cluster.numberOfCoreServers() );
+        assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
-        cluster.removeCoreServerWithServerId( 0 );
+        cluster.removeCoreMemberWithMemberId( 0 );
 
         // then
-        assertEquals( 2, cluster.numberOfCoreServers() );
+        assertEquals( 2, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
-        cluster.addCoreServerWithServerId( 4, 3 ).start();
+        cluster.addCoreMemberWithId( 4, 3 ).start();
 
         // then
-        assertEquals( 3, cluster.numberOfCoreServers() );
+        assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
 
         executorService.shutdown();
     }
@@ -112,24 +112,24 @@ public class ClusterFormationIT
     public void shouldBeAbleToRestartTheCluster() throws Exception
     {
         // when started then
-        assertEquals( 3, cluster.numberOfCoreServers() );
+        assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
         cluster.shutdown();
         cluster.start();
 
         // then
-        assertEquals( 3, cluster.numberOfCoreServers() );
+        assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
-        cluster.removeCoreServerWithServerId( 1 );
+        cluster.removeCoreMemberWithMemberId( 1 );
 
-        cluster.addCoreServerWithServerId( 3, 3 ).start();
+        cluster.addCoreMemberWithId( 3, 3 ).start();
         cluster.shutdown();
 
         cluster.start();
 
         // then
-        assertEquals( 3, cluster.numberOfCoreServers() );
+        assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
     }
 }

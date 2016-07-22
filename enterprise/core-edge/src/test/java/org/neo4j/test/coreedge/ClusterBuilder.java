@@ -27,9 +27,9 @@ import java.util.function.IntFunction;
 
 public interface ClusterBuilder<C extends ClusterBuilder>
 {
-    C withNumberOfCoreServers( int noCoreServers );
+    C withNumberOfCoreMembers( int noCoreServers );
 
-    C withNumberOfEdgeServers( int noEdgeServers );
+    C withNumberOfEdgeMembers( int noEdgeServers );
 
     C withDiscoveryServiceFactory( DiscoveryServiceFactory factory );
 

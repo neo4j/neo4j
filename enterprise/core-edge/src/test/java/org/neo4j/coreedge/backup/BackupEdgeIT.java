@@ -41,9 +41,9 @@ public class BackupEdgeIT
 
     @Rule
     public ClusterRule clusterRule = new ClusterRule( BackupCoreIT.class )
-            .withNumberOfCoreServers( 3 )
+            .withNumberOfCoreMembers( 3 )
             .withSharedCoreParam( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-            .withNumberOfEdgeServers( 1 )
+            .withNumberOfEdgeMembers( 1 )
             .withSharedEdgeParam( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
             .withInstanceEdgeParam( OnlineBackupSettings.online_backup_server, serverId -> ":8000" );
 

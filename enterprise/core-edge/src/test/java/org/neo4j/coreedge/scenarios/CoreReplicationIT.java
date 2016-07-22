@@ -23,17 +23,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.CoreServer;
+import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
@@ -41,12 +35,12 @@ import static org.neo4j.coreedge.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 
-public class CoreServerReplicationIT
+public class CoreReplicationIT
 {
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreServers( 3 )
-            .withNumberOfEdgeServers( 0 );
+            .withNumberOfCoreMembers( 3 )
+            .withNumberOfEdgeMembers( 0 );
 
     private Cluster cluster;
 
@@ -57,7 +51,7 @@ public class CoreServerReplicationIT
     }
 
     @Test
-    public void shouldReplicateTransactionsToCoreServers() throws Exception
+    public void shouldReplicateTransactionsToCoreMembers() throws Exception
     {
         // when
         cluster.coreTx( ( db, tx ) -> {
@@ -65,21 +59,21 @@ public class CoreServerReplicationIT
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
         } );
-        CoreServer last = cluster.coreTx( ( db, tx ) -> {
+        CoreClusterMember last = cluster.coreTx( ( db, tx ) -> {
             db.schema().indexFor( label( "boo" ) ).on( "foobar" ).create();
             tx.success();
         } );
 
         // then
         assertEquals( 1, countNodes( last ) );
-        dataMatchesEventually( last, cluster.coreServers() );
+        dataMatchesEventually( last, cluster.coreMembers() );
     }
 
     @Test
-    public void shouldReplicateTransactionToCoreServerAddedAfterInitialStartUp() throws Exception
+    public void shouldReplicateTransactionToCoreMemberAddedAfterInitialStartUp() throws Exception
     {
         // given
-        cluster.addCoreServerWithServerId( 3, 4 ).start();
+        cluster.addCoreMemberWithId( 3, 4 ).start();
 
         cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
@@ -88,8 +82,8 @@ public class CoreServerReplicationIT
         } );
 
         // when
-        cluster.addCoreServerWithServerId( 4, 5 ).start();
-        CoreServer last = cluster.coreTx( ( db, tx ) -> {
+        cluster.addCoreMemberWithId( 4, 5 ).start();
+        CoreClusterMember last = cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -97,7 +91,7 @@ public class CoreServerReplicationIT
 
         // then
         assertEquals( 2, countNodes( last ) );
-        dataMatchesEventually( last, cluster.coreServers() );
+        dataMatchesEventually( last, cluster.coreMembers() );
     }
 
     @Test
@@ -111,8 +105,8 @@ public class CoreServerReplicationIT
         } );
 
         // when
-        cluster.removeCoreServer( cluster.awaitLeader() );
-        CoreServer last = cluster.coreTx( ( db, tx ) -> {
+        cluster.removeCoreMember( cluster.awaitLeader() );
+        CoreClusterMember last = cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -120,14 +114,14 @@ public class CoreServerReplicationIT
 
         // then
         assertEquals( 2, countNodes( last ) );
-        dataMatchesEventually( last, cluster.coreServers() );
+        dataMatchesEventually( last, cluster.coreMembers() );
     }
 
     @Test
-    public void shouldReplicateToCoreServersAddedAfterInitialTransactions() throws Exception
+    public void shouldReplicateToCoreMembersAddedAfterInitialTransactions() throws Exception
     {
         // when
-        CoreServer last = null;
+        CoreClusterMember last = null;
         for ( int i = 0; i < 15; i++ )
         {
             last = cluster.coreTx( ( db, tx ) -> {
@@ -137,16 +131,16 @@ public class CoreServerReplicationIT
             } );
         }
 
-        cluster.addCoreServerWithServerId( 3, 4 ).start();
-        cluster.addCoreServerWithServerId( 4, 5 ).start();
+        cluster.addCoreMemberWithId( 3, 4 ).start();
+        cluster.addCoreMemberWithId( 4, 5 ).start();
 
         // then
         assertEquals( 15, countNodes( last ) );
-        dataMatchesEventually( last, cluster.coreServers() );
+        dataMatchesEventually( last, cluster.coreMembers() );
     }
 
     @Test
-    public void shouldReplicateTransactionsToReplacementCoreServers() throws Exception
+    public void shouldReplicateTransactionsToReplacementCoreMembers() throws Exception
     {
         // when
         cluster.coreTx( ( db, tx ) -> {
@@ -155,23 +149,23 @@ public class CoreServerReplicationIT
             tx.success();
         } );
 
-        cluster.removeCoreServerWithServerId( 0 );
-        CoreServer replacement = cluster.addCoreServerWithServerId( 0, 3 );
+        cluster.removeCoreMemberWithMemberId( 0 );
+        CoreClusterMember replacement = cluster.addCoreMemberWithId( 0, 3 );
         replacement.start();
 
-        CoreServer leader = cluster.coreTx( ( db, tx ) -> {
+        CoreClusterMember leader = cluster.coreTx( ( db, tx ) -> {
             db.schema().indexFor( label( "boo" ) ).on( "foobar" ).create();
             tx.success();
         } );
 
         // then
         assertEquals( 1, countNodes( leader ) );
-        dataMatchesEventually( leader, cluster.coreServers() );
+        dataMatchesEventually( leader, cluster.coreMembers() );
     }
 
-    private long countNodes( CoreServer server )
+    private long countNodes( CoreClusterMember member )
     {
-        CoreGraphDatabase db = server.database();
+        CoreGraphDatabase db = member.database();
         long count;
         try ( Transaction tx = db.beginTx() )
         {

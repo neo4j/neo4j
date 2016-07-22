@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.CoreServer;
+import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
@@ -51,8 +51,8 @@ public class CoreToCoreCopySnapshotIT
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreServers( 3 )
-            .withNumberOfEdgeServers( 0 );
+            .withNumberOfCoreMembers( 3 )
+            .withNumberOfEdgeMembers( 0 );
 
     @Test
     public void shouldBeAbleToDownloadFreshEmptySnapshot() throws Exception
@@ -60,10 +60,10 @@ public class CoreToCoreCopySnapshotIT
         // given
         Cluster cluster = clusterRule.startCluster();
 
-        CoreServer leader = cluster.awaitLeader( TIMEOUT_MS );
+        CoreClusterMember leader = cluster.awaitLeader( TIMEOUT_MS );
 
         // when
-        CoreServer follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
+        CoreClusterMember follower = cluster.awaitCoreMemberWithRole( TIMEOUT_MS, Role.FOLLOWER );
         follower.coreState().downloadSnapshot( leader.id() );
 
         // then
@@ -76,14 +76,14 @@ public class CoreToCoreCopySnapshotIT
         // given
         Cluster cluster = clusterRule.startCluster();
 
-        CoreServer source = cluster.coreTx( ( db, tx ) -> {
+        CoreClusterMember source = cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
             node.setProperty( "hej", "svej" );
             tx.success();
         } );
 
         // when
-        CoreServer follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
+        CoreClusterMember follower = cluster.awaitCoreMemberWithRole( TIMEOUT_MS, Role.FOLLOWER );
 
         follower.coreState().downloadSnapshot( source.id() );
 
@@ -97,13 +97,13 @@ public class CoreToCoreCopySnapshotIT
         // given
         Cluster cluster = clusterRule.startCluster();
 
-        CoreServer source = cluster.coreTx( ( db, tx ) -> {
+        CoreClusterMember source = cluster.coreTx( ( db, tx ) -> {
             createData( db, 1000 );
             tx.success();
         } );
 
         // when
-        CoreServer follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
+        CoreClusterMember follower = cluster.awaitCoreMemberWithRole( TIMEOUT_MS, Role.FOLLOWER );
         follower.coreState().downloadSnapshot( source.id() );
 
         // then
@@ -120,23 +120,23 @@ public class CoreToCoreCopySnapshotIT
 
         Cluster cluster = clusterRule.withSharedCoreParams( params ).startCluster();
 
-        CoreServer leader = cluster.coreTx( ( db, tx ) -> {
+        CoreClusterMember leader = cluster.coreTx( ( db, tx ) -> {
             createData( db, 10000 );
             tx.success();
         } );
 
         // when
-        for ( CoreServer coreDb : cluster.coreServers() )
+        for ( CoreClusterMember coreDb : cluster.coreMembers() )
         {
             coreDb.coreState().compact();
         }
 
-        cluster.removeCoreServer( leader ); // to force a change of leader
+        cluster.removeCoreMember( leader ); // to force a change of leader
         leader = cluster.awaitLeader();
 
         int newDbId = 3;
-        cluster.addCoreServerWithServerId( newDbId, 3 ).start();
-        CoreGraphDatabase newDb = cluster.getCoreServerById( newDbId ).database();
+        cluster.addCoreMemberWithId( newDbId, 3 ).start();
+        CoreGraphDatabase newDb = cluster.getCoreMemberById( newDbId ).database();
 
         // then
         assertEquals( DbRepresentation.of( leader.database() ), DbRepresentation.of( newDb ) );
@@ -154,7 +154,7 @@ public class CoreToCoreCopySnapshotIT
         //Start the cluster and accumulate some log files.
         Cluster cluster = clusterRule.withSharedCoreParams( coreParams ).startCluster();
 
-        CoreServer leader = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.LEADER );
+        CoreClusterMember leader = cluster.awaitCoreMemberWithRole( TIMEOUT_MS, Role.LEADER );
         int followersLastLog = getMostRecentLogIdOn( leader );
         while ( followersLastLog < 2 )
         {
@@ -162,7 +162,7 @@ public class CoreToCoreCopySnapshotIT
             followersLastLog = getMostRecentLogIdOn( leader );
         }
 
-        CoreServer follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
+        CoreClusterMember follower = cluster.awaitCoreMemberWithRole( TIMEOUT_MS, Role.FOLLOWER );
         follower.shutdown();
 
         /**
@@ -200,12 +200,12 @@ public class CoreToCoreCopySnapshotIT
         }
     }
 
-    private int getOldestLogIdOn( CoreServer clusterMember ) throws TimeoutException
+    private int getOldestLogIdOn( CoreClusterMember clusterMember ) throws TimeoutException
     {
         return clusterMember.getLogFileNames().firstKey().intValue();
     }
 
-    private int getMostRecentLogIdOn( CoreServer clusterMember ) throws TimeoutException
+    private int getMostRecentLogIdOn( CoreClusterMember clusterMember ) throws TimeoutException
     {
         return clusterMember.getLogFileNames().lastKey().intValue();
     }

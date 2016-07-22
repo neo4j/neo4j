@@ -43,8 +43,8 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     private File clusterDirectory;
     private Cluster cluster;
 
-    private int noCoreServers = 3;
-    private int noEdgeServers = 3;
+    private int noCoreMembers = 3;
+    private int noEdgeMembers = 3;
     private DiscoveryServiceFactory factory = new SharedDiscoveryService();
     private Map<String,String> coreParams = stringMap();
     private Map<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
@@ -111,7 +111,7 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     {
         if ( cluster == null )
         {
-            cluster = new Cluster( clusterDirectory, noCoreServers, noEdgeServers, factory, coreParams,
+            cluster = new Cluster( clusterDirectory, noCoreMembers, noEdgeMembers, factory, coreParams,
                     instanceCoreParams, edgeParams, instanceEdgeParams, recordFormat );
 
         }
@@ -130,16 +130,16 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     }
 
     @Override
-    public ClusterRule withNumberOfCoreServers( int noCoreServers )
+    public ClusterRule withNumberOfCoreMembers( int noCoreMembers )
     {
-        this.noCoreServers = noCoreServers;
+        this.noCoreMembers = noCoreMembers;
         return this;
     }
 
     @Override
-    public ClusterRule withNumberOfEdgeServers( int noEdgeServers )
+    public ClusterRule withNumberOfEdgeMembers( int noEdgeMembers )
     {
-        this.noEdgeServers = noEdgeServers;
+        this.noEdgeMembers = noEdgeMembers;
         return this;
     }
 

@@ -47,7 +47,7 @@ public class ClusterShutdownIT
 {
     @Rule
     public final ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withNumberOfCoreServers( 3 ).withNumberOfEdgeServers( 0 );
+            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfEdgeMembers( 0 );
 
     @Parameterized.Parameter()
     public Collection<Integer> shutdownOrder;
@@ -63,9 +63,9 @@ public class ClusterShutdownIT
     {
         Cluster cluster = clusterRule.startCluster();
 
-        for ( int victimId = 0; victimId < cluster.numberOfCoreServers(); victimId++ )
+        for ( int victimId = 0; victimId < cluster.numberOfCoreMembersReportedByTopology(); victimId++ )
         {
-            assertTrue( cluster.getCoreServerById( victimId ).database().isAvailable( 1000 ) );
+            assertTrue( cluster.getCoreMemberById( victimId ).database().isAvailable( 1000 ) );
             shouldShutdownEvenThoughWaitingForLock0( cluster, victimId, shutdownOrder );
             cluster.start();
         }
@@ -87,7 +87,7 @@ public class ClusterShutdownIT
         {
             // when - blocking on lock acquiring
             final AtomicReference<Node> someNode = new AtomicReference<>();
-            final GraphDatabaseService victimDB = cluster.getCoreServerById( victimId ).database();
+            final GraphDatabaseService victimDB = cluster.getCoreMemberById( victimId ).database();
 
             try ( Transaction tx = victimDB.beginTx() )
             {
@@ -120,13 +120,13 @@ public class ClusterShutdownIT
                 Thread.sleep( 100 );
             }
 
-            final CountDownLatch shutdownLatch = new CountDownLatch( cluster.numberOfCoreServers() );
+            final CountDownLatch shutdownLatch = new CountDownLatch( cluster.numberOfCoreMembersReportedByTopology() );
 
             // then - shutdown in any order should still be possible
             for ( final int id : shutdownOrder )
             {
                 shutdownExecutor.execute( () -> {
-                    cluster.getCoreServerById( id ).shutdown();
+                    cluster.getCoreMemberById( id ).shutdown();
                     shutdownLatch.countDown();
                 } );
             }

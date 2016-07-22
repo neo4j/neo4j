@@ -26,7 +26,7 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.CoreServer;
+import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule;
 import org.neo4j.test.coreedge.ClusterRule;
@@ -41,7 +41,7 @@ public class CorePruningIT
 {
     @Rule
     public final ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withNumberOfCoreServers( 3 ).withNumberOfEdgeServers( 0 )
+            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfEdgeMembers( 0 )
                     .withSharedCoreParam( CoreEdgeClusterSettings.state_machine_flush_window_size, "1" )
                     .withSharedCoreParam( raft_log_pruning_strategy, "keep_none" )
                     .withSharedCoreParam( CoreEdgeClusterSettings.raft_log_rotation_size, "1K" )
@@ -53,7 +53,7 @@ public class CorePruningIT
         // given
         Cluster cluster = clusterRule.startCluster();
 
-        CoreServer coreGraphDatabase = null;
+        CoreClusterMember coreGraphDatabase = null;
         int txs = 10;
         for ( int i = 0; i < txs; i++ )
         {
@@ -76,7 +76,7 @@ public class CorePruningIT
         // given
         Cluster cluster = clusterRule.startCluster();
 
-        CoreServer coreGraphDatabase = null;
+        CoreClusterMember coreGraphDatabase = null;
         int txs = 1000;
         for ( int i = 0; i < txs; i++ )
         {

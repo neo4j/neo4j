@@ -72,10 +72,10 @@ public class Cluster
     private final File parentDir;
     private final DiscoveryServiceFactory discoveryServiceFactory;
 
-    private Map<Integer, CoreServer> coreServers = new ConcurrentHashMap<>();
-    private Map<Integer, EdgeServer> edgeServers = new ConcurrentHashMap<>();
+    private Map<Integer, CoreClusterMember> coreMembers = new ConcurrentHashMap<>();
+    private Map<Integer, EdgeClusterMember> edgeMembers = new ConcurrentHashMap<>();
 
-    public Cluster( File parentDir, int noOfCoreServers, int noOfEdgeServers,
+    public Cluster( File parentDir, int noOfCoreMembers, int noOfEdgeMembers,
                     DiscoveryServiceFactory discoveryServiceFactory,
                     Map<String, String> coreParams, Map<String, IntFunction<String>> instanceCoreParams,
                     Map<String, String> edgeParams, Map<String, IntFunction<String>> instanceEdgeParams,
@@ -83,18 +83,18 @@ public class Cluster
     {
         this.discoveryServiceFactory = discoveryServiceFactory;
         this.parentDir = parentDir;
-        List<AdvertisedSocketAddress> initialHosts = buildAddresses( noOfCoreServers );
-        createCoreServers( noOfCoreServers, initialHosts, coreParams, instanceCoreParams, recordFormat );
-        createEdgeServers( noOfEdgeServers, initialHosts, edgeParams, instanceEdgeParams, recordFormat );
+        List<AdvertisedSocketAddress> initialHosts = buildAddresses( noOfCoreMembers );
+        createCoreMembers( noOfCoreMembers, initialHosts, coreParams, instanceCoreParams, recordFormat );
+        createEdgeMembers( noOfEdgeMembers, initialHosts, edgeParams, instanceEdgeParams, recordFormat );
     }
 
     public void start() throws InterruptedException, ExecutionException
     {
-        ExecutorService executor = Executors.newCachedThreadPool( new NamedThreadFactory( "server-starter" ) );
+        ExecutorService executor = Executors.newCachedThreadPool( new NamedThreadFactory( "cluster-starter" ) );
         try
         {
-            startCoreServers( executor );
-            startEdgeServers( executor );
+            startCoreMembers( executor );
+            startEdgeMembers( executor );
         }
         finally
         {
@@ -102,70 +102,70 @@ public class Cluster
         }
     }
 
-    public Set<CoreServer> healthyCoreMembers()
+    public Set<CoreClusterMember> healthyCoreMembers()
     {
-        return coreServers.values().stream()
+        return coreMembers.values().stream()
                 .filter( db -> db.database().getDependencyResolver().resolveDependency( DatabaseHealth.class ).isHealthy() )
                 .collect( Collectors.toSet() );
     }
 
-    public CoreServer getCoreServerById( int serverId )
+    public CoreClusterMember getCoreMemberById( int memberId )
     {
-        return coreServers.get( serverId );
+        return coreMembers.get( memberId );
     }
 
-    public EdgeServer getEdgeServerById( int serverId )
+    public EdgeClusterMember getEdgeMemberById( int memberId )
     {
-        return edgeServers.get( serverId );
+        return edgeMembers.get( memberId );
     }
 
-    public CoreServer addCoreServerWithServerId( int serverId, int intendedClusterSize )
+    public CoreClusterMember addCoreMemberWithId( int memberId, int intendedClusterSize )
     {
-        return addCoreServerWithServerId( serverId, intendedClusterSize, stringMap(), emptyMap(), StandardV3_0.NAME );
+        return addCoreMemberWithId( memberId, intendedClusterSize, stringMap(), emptyMap(), StandardV3_0.NAME );
     }
 
-    public EdgeServer addEdgeServerWithIdAndRecordFormat( int serverId, String recordFormat )
+    public EdgeClusterMember addEdgeMemberWithIdAndRecordFormat( int memberId, String recordFormat )
     {
-        CoreServer coreServer = coreServers.values().stream().filter( ( server ) -> server.database() != null )
+        CoreClusterMember coreClusterMember = coreMembers.values().stream().filter( ( member ) -> member.database() != null )
                 .findAny().orElseThrow( () -> new IllegalStateException(
-                        "No core servers are running to use as a template for the edge server" ) );
-        Config config = coreServer.database().getDependencyResolver().resolveDependency( Config.class );
+                        "No core members are running to use as a template for the edge member" ) );
+        Config config = coreClusterMember.database().getDependencyResolver().resolveDependency( Config.class );
 
         List<AdvertisedSocketAddress> advertisedAddresses =
                 config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
 
-        EdgeServer server = new EdgeServer( parentDir, serverId, discoveryServiceFactory, advertisedAddresses,
+        EdgeClusterMember member = new EdgeClusterMember( parentDir, memberId, discoveryServiceFactory, advertisedAddresses,
                 stringMap(), emptyMap(), recordFormat );
-        edgeServers.put( serverId, server );
-        return server;
+        edgeMembers.put( memberId, member );
+        return member;
     }
 
-    public EdgeServer addEdgeServerWithId( int serverId )
+    public EdgeClusterMember addEdgeMemberWithId( int memberId )
     {
-        return addEdgeServerWithIdAndRecordFormat( serverId, StandardV3_0.NAME );
+        return addEdgeMemberWithIdAndRecordFormat( memberId, StandardV3_0.NAME );
     }
 
     public void shutdown() throws ExecutionException, InterruptedException
     {
-        shutdownCoreServers();
-        shutdownEdgeServers();
+        shutdownCoreMembers();
+        shutdownEdgeMembers();
     }
 
-    public void shutdownCoreServers() throws InterruptedException, ExecutionException
+    public void shutdownCoreMembers() throws InterruptedException, ExecutionException
     {
         ExecutorService executor = Executors.newCachedThreadPool();
-        List<Callable<Object>> serverShutdownSuppliers = new ArrayList<>();
-        for ( final CoreServer coreServer : coreServers.values() )
+        List<Callable<Object>> memberShutdownSuppliers = new ArrayList<>();
+        for ( final CoreClusterMember coreClusterMember : coreMembers.values() )
         {
-            serverShutdownSuppliers.add( () -> {
-                coreServer.shutdown();
+            memberShutdownSuppliers.add( () -> {
+                coreClusterMember.shutdown();
                 return null;
             } );
         }
 
         try
         {
-            combine( executor.invokeAll( serverShutdownSuppliers ) ).get();
+            combine( executor.invokeAll( memberShutdownSuppliers ) ).get();
         }
         finally
         {
@@ -173,89 +173,89 @@ public class Cluster
         }
     }
 
-    public void removeCoreServerWithServerId( int serverId )
+    public void removeCoreMemberWithMemberId( int memberId )
     {
-        CoreServer serverToRemove = getCoreServerById( serverId );
+        CoreClusterMember memberToRemove = getCoreMemberById( memberId );
 
-        if ( serverToRemove != null )
+        if ( memberToRemove != null )
         {
-            serverToRemove.shutdown();
-            removeCoreServer( serverToRemove );
+            memberToRemove.shutdown();
+            removeCoreMember( memberToRemove );
         }
         else
         {
-            throw new RuntimeException( "Could not remove core server with server id " + serverId );
+            throw new RuntimeException( "Could not remove core meber with member id " + memberId );
         }
     }
 
-    public void removeCoreServer( CoreServer serverToRemove )
+    public void removeCoreMember( CoreClusterMember memberToRemove )
     {
-        serverToRemove.shutdown();
-        coreServers.values().remove( serverToRemove );
+        memberToRemove.shutdown();
+        coreMembers.values().remove( memberToRemove );
     }
 
-    public void removeEdgeServerWithServerId( int serverId )
+    public void removeEdgeMemberWithMemberId( int memberId )
     {
-        EdgeServer serverToRemove = getEdgeServerById( serverId );
+        EdgeClusterMember memberToRemove = getEdgeMemberById( memberId );
 
-        if ( serverToRemove != null )
+        if ( memberToRemove != null )
         {
-            removeEdgeServer( serverToRemove );
+            removeEdgeMember( memberToRemove );
         }
         else
         {
-            throw new RuntimeException( "Could not remove core server with server id " + serverId );
+            throw new RuntimeException( "Could not remove core member with member id " + memberId );
         }
     }
 
-    public void removeEdgeServer( EdgeServer serverToRemove )
+    public void removeEdgeMember( EdgeClusterMember memberToRemove )
     {
-        serverToRemove.shutdown();
-        edgeServers.values().remove( serverToRemove );
+        memberToRemove.shutdown();
+        edgeMembers.values().remove( memberToRemove );
     }
 
-    public Collection<CoreServer> coreServers()
+    public Collection<CoreClusterMember> coreMembers()
     {
-        return coreServers.values();
+        return coreMembers.values();
     }
 
-    public Collection<EdgeServer> edgeServers()
+    public Collection<EdgeClusterMember> edgeMembers()
     {
-        return edgeServers.values();
+        return edgeMembers.values();
     }
 
-    public EdgeServer findAnEdgeServer()
+    public EdgeClusterMember findAnEdgeMember()
     {
-        return firstOrNull( edgeServers.values() );
+        return firstOrNull( edgeMembers.values() );
     }
 
-    public CoreServer getDbWithRole( Role role )
+    public CoreClusterMember getDbWithRole( Role role )
     {
-        for ( CoreServer coreServer : coreServers.values() )
+        for ( CoreClusterMember coreClusterMember : coreMembers.values() )
         {
-            if ( coreServer.database() != null && coreServer.database().getRole().equals( role ) )
+            if ( coreClusterMember.database() != null && coreClusterMember.database().getRole().equals( role ) )
             {
-                return coreServer;
+                return coreClusterMember;
             }
         }
         return null;
     }
 
-    public CoreServer awaitLeader() throws TimeoutException
+    public CoreClusterMember awaitLeader() throws TimeoutException
     {
-        return awaitCoreGraphDatabaseWithRole( DEFAULT_TIMEOUT_MS, Role.LEADER );
+        return awaitCoreMemberWithRole( DEFAULT_TIMEOUT_MS, Role.LEADER );
     }
 
-    public CoreServer awaitLeader( long timeoutMillis ) throws TimeoutException
+    public CoreClusterMember awaitLeader( long timeoutMillis ) throws TimeoutException
     {
-        return awaitCoreGraphDatabaseWithRole( timeoutMillis, Role.LEADER );
+        return awaitCoreMemberWithRole( timeoutMillis, Role.LEADER );
     }
 
-    public CoreServer awaitCoreGraphDatabaseWithRole( long timeoutMillis, Role role ) throws TimeoutException
+    public CoreClusterMember awaitCoreMemberWithRole( long timeoutMillis, Role role ) throws TimeoutException
     {
         long endTimeMillis = timeoutMillis + System.currentTimeMillis();
 
-        CoreServer db;
+        CoreClusterMember db;
         while ( (db = getDbWithRole( role )) == null && (System.currentTimeMillis() < endTimeMillis) )
         {
             LockSupport.parkNanos( MILLISECONDS.toNanos( 100 ) );
@@ -268,10 +268,10 @@ public class Cluster
         return db;
     }
 
-    public int numberOfCoreServers()
+    public int numberOfCoreMembersReportedByTopology()
     {
-        CoreServer aCoreGraphDb = coreServers.values().stream()
-                .filter( ( server ) -> server.database() != null ).findAny().get();
+        CoreClusterMember aCoreGraphDb = coreMembers.values().stream()
+                .filter( ( member ) -> member.database() != null ).findAny().get();
         CoreTopologyService coreTopologyService = aCoreGraphDb.database().getDependencyResolver()
                 .resolveDependency( CoreTopologyService.class );
         return coreTopologyService.currentTopology().coreMembers().size();
@@ -280,45 +280,45 @@ public class Cluster
     /**
      * Perform a transaction against the core cluster, selecting the target and retrying as necessary.
      */
-    public CoreServer coreTx( BiConsumer<CoreGraphDatabase, Transaction> op )
+    public CoreClusterMember coreTx( BiConsumer<CoreGraphDatabase, Transaction> op )
             throws TimeoutException, InterruptedException
     {
         // this currently wraps the leader-only strategy, since it is the recommended and only approach
         return leaderTx( op );
     }
 
-    private CoreServer addCoreServerWithServerId( int serverId, int intendedClusterSize, Map<String, String> extraParams,
-                                                  Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
+    private CoreClusterMember addCoreMemberWithId( int memberId, int intendedClusterSize, Map<String, String> extraParams,
+                                                   Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
     {
-        Config config = firstOrNull( coreServers.values() ).database().getDependencyResolver().resolveDependency( Config.class );
+        Config config = firstOrNull( coreMembers.values() ).database().getDependencyResolver().resolveDependency( Config.class );
         List<AdvertisedSocketAddress> advertisedAddress = config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
 
-        CoreServer coreServer = new CoreServer( serverId, intendedClusterSize, advertisedAddress,
+        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, intendedClusterSize, advertisedAddress,
                 discoveryServiceFactory, recordFormat, parentDir,
                 extraParams, instanceExtraParams );
-        coreServers.put( serverId, coreServer );
-        return coreServer;
+        coreMembers.put( memberId, coreClusterMember );
+        return coreClusterMember;
     }
 
     /**
      * Perform a transaction against the leader of the core cluster, retrying as necessary.
      */
-    private CoreServer leaderTx( BiConsumer<CoreGraphDatabase, Transaction> op )
+    private CoreClusterMember leaderTx( BiConsumer<CoreGraphDatabase, Transaction> op )
             throws TimeoutException, InterruptedException
     {
         long endTime = System.currentTimeMillis() + DEFAULT_TIMEOUT_MS;
 
         do
         {
-            CoreServer server = awaitCoreGraphDatabaseWithRole( DEFAULT_TIMEOUT_MS, Role.LEADER );
-            CoreGraphDatabase db = server.database();
+            CoreClusterMember member = awaitCoreMemberWithRole( DEFAULT_TIMEOUT_MS, Role.LEADER );
+            CoreGraphDatabase db = member.database();
 
             try
             {
                 Transaction tx = db.beginTx();
                 op.accept( db, tx );
                 tx.close();
-                return server;
+                return member;
             }
             catch ( Throwable e )
             {
@@ -361,10 +361,10 @@ public class Cluster
                         LockSessionExpired;
     }
 
-    private static List<AdvertisedSocketAddress> buildAddresses( int noOfCoreServers )
+    private static List<AdvertisedSocketAddress> buildAddresses( int noOfCoreMembers )
     {
         List<AdvertisedSocketAddress> addresses = new ArrayList<>();
-        for ( int i = 0; i < noOfCoreServers; i++ )
+        for ( int i = 0; i < noOfCoreMembers; i++ )
         {
             int port = 5000 + i;
             addresses.add( new AdvertisedSocketAddress( "localhost:" + port ) );
@@ -372,79 +372,79 @@ public class Cluster
         return addresses;
     }
 
-    private void createCoreServers( final int noOfCoreServers,
+    private void createCoreMembers( final int noOfCoreMembers,
                                     List<AdvertisedSocketAddress> addresses, Map<String, String> extraParams,
                                     Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
     {
 
-        for ( int i = 0; i < noOfCoreServers; i++ )
+        for ( int i = 0; i < noOfCoreMembers; i++ )
         {
-            CoreServer coreServer = new CoreServer( i, noOfCoreServers, addresses, discoveryServiceFactory,
-                    recordFormat, parentDir, extraParams, instanceExtraParams );
-            coreServers.put( i, coreServer );
+            CoreClusterMember coreClusterMember = new CoreClusterMember( i, noOfCoreMembers, addresses,
+                    discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams );
+            coreMembers.put( i, coreClusterMember );
         }
     }
 
-    private void startCoreServers( ExecutorService executor ) throws InterruptedException, ExecutionException
+    private void startCoreMembers( ExecutorService executor ) throws InterruptedException, ExecutionException
     {
         CompletionService<CoreGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
 
-        for ( CoreServer coreServer : coreServers.values() )
+        for ( CoreClusterMember coreClusterMember : coreMembers.values() )
         {
             ecs.submit( () -> {
-                coreServer.start();
-                return coreServer.database();
+                coreClusterMember.start();
+                return coreClusterMember.database();
             } );
         }
 
-        for ( int i = 0; i < coreServers.size(); i++ )
+        for ( int i = 0; i < coreMembers.size(); i++ )
         {
             ecs.take().get();
         }
     }
 
-    private void startEdgeServers( ExecutorService executor ) throws InterruptedException, ExecutionException
+    private void startEdgeMembers( ExecutorService executor ) throws InterruptedException, ExecutionException
     {
         CompletionService<EdgeGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
 
-        for ( EdgeServer edgeServer : edgeServers.values() )
+        for ( EdgeClusterMember edgeClusterMember : edgeMembers.values() )
         {
             ecs.submit( () -> {
-                edgeServer.start();
-                return edgeServer.database();
+                edgeClusterMember.start();
+                return edgeClusterMember.database();
             } );
         }
 
-        for ( int i = 0; i < edgeServers.size(); i++ )
+        for ( int i = 0; i < edgeMembers.size(); i++ )
         {
             ecs.take().get();
         }
     }
 
-    private void createEdgeServers( int noOfEdgeServers,
+    private void createEdgeMembers( int noOfEdgeMembers,
                                     final List<AdvertisedSocketAddress> addresses,
                                     Map<String, String> extraParams,
                                     Map<String, IntFunction<String>> instanceExtraParams,
                                     String recordFormat )
     {
 
-        for ( int i = 0; i < noOfEdgeServers; i++ )
+        for ( int i = 0; i < noOfEdgeMembers; i++ )
         {
-            edgeServers.put( i, new EdgeServer( parentDir, i, discoveryServiceFactory, addresses,
+            edgeMembers.put( i, new EdgeClusterMember( parentDir, i, discoveryServiceFactory, addresses,
                     extraParams, instanceExtraParams, recordFormat ) );
         }
     }
 
-    private void shutdownEdgeServers()
+    private void shutdownEdgeMembers()
     {
-        edgeServers.values().forEach( EdgeServer::shutdown );
+        edgeMembers.values().forEach( EdgeClusterMember::shutdown );
     }
 
-    public static void dataMatchesEventually( CoreServer server, Collection<CoreServer> targetDBs ) throws TimeoutException, InterruptedException
+    public static void dataMatchesEventually( CoreClusterMember member, Collection<CoreClusterMember> targetDBs ) throws TimeoutException, InterruptedException
     {
-        CoreGraphDatabase sourceDB = server.database();
+        CoreGraphDatabase sourceDB = member.database();
         DbRepresentation sourceRepresentation = DbRepresentation.of( sourceDB );
-        for ( CoreServer targetDB : targetDBs )
+        for ( CoreClusterMember targetDB : targetDBs )
         {
             Predicates.await( () -> sourceRepresentation.equals( DbRepresentation.of( targetDB.database() ) ),
                     DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );

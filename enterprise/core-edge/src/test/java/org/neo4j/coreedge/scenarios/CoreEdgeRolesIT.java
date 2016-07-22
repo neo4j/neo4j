@@ -33,8 +33,8 @@ public class CoreEdgeRolesIT
 {
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreServers( 3 )
-            .withNumberOfEdgeServers( 1 );
+            .withNumberOfCoreMembers( 3 )
+            .withNumberOfEdgeMembers( 1 );
 
     @Rule
     public ExpectedException exceptionMatcher = ExpectedException.none();
@@ -44,7 +44,7 @@ public class CoreEdgeRolesIT
     {
         // given
         Cluster cluster = clusterRule.startCluster();
-        GraphDatabaseService db = cluster.findAnEdgeServer().database();
+        GraphDatabaseService db = cluster.findAnEdgeMember().database();
         Transaction tx = db.beginTx();
         db.createNode();
 

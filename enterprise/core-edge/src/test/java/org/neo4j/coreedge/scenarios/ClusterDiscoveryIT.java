@@ -49,20 +49,20 @@ public class ClusterDiscoveryIT
 {
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreServers( 3 );
+            .withNumberOfCoreMembers( 3 );
 
     @Test
     public void shouldDiscoverCoreClusterMembers() throws Exception
     {
         // when
-        Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).startCluster();
+        Cluster cluster = clusterRule.withNumberOfEdgeMembers( 0 ).startCluster();
 
         // then
 
         List<Object[]> currentMembers;
         for ( int i = 0; i < 3; i++ )
         {
-            currentMembers = discoverClusterMembers( cluster.getCoreServerById( i ).database() );
+            currentMembers = discoverClusterMembers( cluster.getCoreMemberById( i ).database() );
             assertThat( currentMembers, containsInAnyOrder(
                     new Object[]{"127.0.0.1:8000"},
                     new Object[]{"127.0.0.1:8001"},
@@ -74,14 +74,14 @@ public class ClusterDiscoveryIT
     public void shouldFindReadAndWriteServers() throws Exception
     {
         // when
-        Cluster cluster = clusterRule.withNumberOfEdgeServers( 1 ).startCluster();
+        Cluster cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
 
         // then
 
         List<Object[]> currentMembers;
         for ( int i = 0; i < 3; i++ )
         {
-            currentMembers = endPoints( cluster.getCoreServerById( i ).database() );
+            currentMembers = endPoints( cluster.getCoreMemberById( i ).database() );
 
             assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "write" ) ).count());
             assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "read" ) ).count());
@@ -92,12 +92,12 @@ public class ClusterDiscoveryIT
     public void shouldNotBeAbleToDiscoverFromEdgeMembers() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.withNumberOfEdgeServers( 2 ).startCluster();
+        Cluster cluster = clusterRule.withNumberOfEdgeMembers( 2 ).startCluster();
 
         try
         {
             // when
-            discoverClusterMembers( cluster.getEdgeServerById( 0 ).database() );
+            discoverClusterMembers( cluster.getEdgeMemberById( 0 ).database() );
             fail( "Should not be able to discover members from edge members" );
         }
         catch ( ProcedureException ex )

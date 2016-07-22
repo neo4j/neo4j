@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.coreedge.TestStoreId;
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.CoreServer;
+import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
@@ -72,8 +72,8 @@ public class BackupCoreIT
 
     @Rule
     public ClusterRule clusterRule = new ClusterRule( BackupCoreIT.class )
-            .withNumberOfCoreServers( 3 )
-            .withNumberOfEdgeServers( 0 )
+            .withNumberOfCoreMembers( 3 )
+            .withNumberOfEdgeMembers( 0 )
             .withSharedCoreParam( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
             .withInstanceCoreParam( OnlineBackupSettings.online_backup_server, serverId -> (":" + (8000 + serverId) ) );
     private Cluster cluster;
@@ -108,7 +108,7 @@ public class BackupCoreIT
     @Test
     public void makeSureBackupCanBePerformedFromAnyInstance() throws Throwable
     {
-        for ( CoreServer db : cluster.coreServers() )
+        for ( CoreClusterMember db : cluster.coreMembers() )
         {
             // Run backup
             DbRepresentation beforeChange = DbRepresentation.of(createSomeData( cluster ));
@@ -137,7 +137,7 @@ public class BackupCoreIT
 
         // when we shutdown the cluster we lose the number of core servers so we won't go through the for loop unless
         // we capture the count beforehand
-        List<File> dbPaths = cluster.coreServers().stream().map( CoreServer::storeDir ).collect( toList() );
+        List<File> dbPaths = cluster.coreMembers().stream().map( CoreClusterMember::storeDir ).collect( toList() );
         int numberOfCoreServers = dbPaths.size();
 
         cluster.shutdown();
@@ -149,7 +149,7 @@ public class BackupCoreIT
         StringBuilder output = new StringBuilder();
         PrintStream sysout = new PrintStream( new RestoreClusterUtils.MyOutputStream( output ) );
 
-        Path homeDir = Paths.get(cluster.getCoreServerById( 0 ).homeDir().getPath());
+        Path homeDir = Paths.get(cluster.getCoreMemberById( 0 ).homeDir().getPath());
         new RestoreNewClusterCli( homeDir, homeDir, sysout ).execute(toArray( args().from( backupPath )
                 .database( "graph.db" ).force().build() ));
 
@@ -157,7 +157,7 @@ public class BackupCoreIT
 
         for ( int i = 1; i < numberOfCoreServers; i++ )
         {
-            homeDir = Paths.get(cluster.getCoreServerById( i ).homeDir().getPath());
+            homeDir = Paths.get(cluster.getCoreMemberById( i ).homeDir().getPath());
             new RestoreExistingClusterCli( homeDir, homeDir  ).execute(
                     toArray( args().from( backupPath ).database( "graph.db" ).seed( seed ).force().build() ) );
         }
@@ -165,11 +165,11 @@ public class BackupCoreIT
         cluster.start();
 
         // then
-        Collection<CoreServer> coreGraphDatabases = cluster.coreServers();
+        Collection<CoreClusterMember> coreGraphDatabases = cluster.coreMembers();
         Stream<DbRepresentation> dbRepresentations = coreGraphDatabases.stream().map( x -> DbRepresentation.of(x.database()) );
         dbRepresentations.forEach( afterReSeed -> assertEquals( beforeBackup, afterReSeed ) );
 
-        List<File> afterRestoreDbPaths = coreGraphDatabases.stream().map( CoreServer::storeDir ).collect( toList() );
+        List<File> afterRestoreDbPaths = coreGraphDatabases.stream().map( CoreClusterMember::storeDir ).collect( toList() );
         cluster.shutdown();
 
         assertAllStoresHaveTheSameStoreId( afterRestoreDbPaths, fs );

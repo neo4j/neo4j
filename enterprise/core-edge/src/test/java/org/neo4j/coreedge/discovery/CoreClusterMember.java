@@ -43,7 +43,7 @@ import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_L
 import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class CoreServer
+public class CoreClusterMember
 {
     private final File neo4jHome;
     private final DiscoveryServiceFactory discoveryServiceFactory;
@@ -54,13 +54,13 @@ public class CoreServer
 
     public static final String CLUSTER_NAME = "core-neo4j";
 
-    public CoreServer( int serverId, int clusterSize,
-                       List<AdvertisedSocketAddress> addresses,
-                       DiscoveryServiceFactory discoveryServiceFactory,
-                       String recordFormat,
-                       File parentDir,
-                       Map<String, String> extraParams,
-                       Map<String, IntFunction<String>> instanceExtraParams)
+    public CoreClusterMember( int serverId, int clusterSize,
+                              List<AdvertisedSocketAddress> addresses,
+                              DiscoveryServiceFactory discoveryServiceFactory,
+                              String recordFormat,
+                              File parentDir,
+                              Map<String, String> extraParams,
+                              Map<String, IntFunction<String>> instanceExtraParams)
     {
         this.serverId =  serverId;
         int clusterPort = 5000 + serverId;
