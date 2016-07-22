@@ -325,7 +325,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         long joinCatchupTimeout = config.get( CoreEdgeClusterSettings.join_catch_up_timeout );
 
-        life.add( CoreServerStartupProcess.createLifeSupport(
+        life.add( CoreStartupProcess.createLifeSupport(
                 platformModule.dataSourceManager, coreStateMachinesModule.replicatedIdGeneratorFactory, consensusModule.raftInstance(), coreState, raftServer,
                 catchupServer, raftTimeoutService, membershipWaiter, joinCatchupTimeout, logProvider ) );
 

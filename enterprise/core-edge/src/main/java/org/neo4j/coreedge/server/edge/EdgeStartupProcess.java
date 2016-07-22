@@ -35,7 +35,7 @@ import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule.extractBoltAddress;
 
-public class EdgeServerStartupProcess implements Lifecycle
+public class EdgeStartupProcess implements Lifecycle
 {
     private final StoreFetcher storeFetcher;
     private final LocalDatabase localDatabase;
@@ -47,7 +47,7 @@ public class EdgeServerStartupProcess implements Lifecycle
     private final Config config;
     private final RetryStrategy.Timeout timeout;
 
-    public EdgeServerStartupProcess(
+    public EdgeStartupProcess(
             StoreFetcher storeFetcher,
             LocalDatabase localDatabase,
             Lifecycle txPulling,

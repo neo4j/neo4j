@@ -37,6 +37,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.logging.Level;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
@@ -155,8 +156,6 @@ public class CoreClusterMember
     @Override
     public String toString()
     {
-        return "CoreServer{" +
-                "serverId=" + serverId +
-                '}';
+        return format( "CoreClusterMember{serverId=%d}", serverId );
     }
 }

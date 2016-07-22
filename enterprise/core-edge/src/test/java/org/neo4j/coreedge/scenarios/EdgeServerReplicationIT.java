@@ -175,7 +175,7 @@ public class EdgeServerReplicationIT
     }
 
     @Test
-    public void shouldShutdownRatherThanPullUpdatesFromCoreServerWithDifferentStoreIfServerHasData() throws Exception
+    public void shouldShutdownRatherThanPullUpdatesFromCoreMemberWithDifferentStoreIdIfLocalStoreIsNonEmpty() throws Exception
     {
         Cluster cluster = clusterRule.withNumberOfEdgeMembers( 0 ).startCluster();
 

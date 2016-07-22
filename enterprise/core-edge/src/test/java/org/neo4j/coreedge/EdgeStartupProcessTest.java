@@ -32,7 +32,7 @@ import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.coreedge.server.edge.AlwaysChooseFirstMember;
-import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
+import org.neo4j.coreedge.server.edge.EdgeStartupProcess;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -49,10 +49,10 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class EdgeServerStartupProcessTest
+public class EdgeStartupProcessTest
 {
     @Test
-    public void startShouldReplaceTheEmptyLocalStoreWithStoreFromCoreServerAndStartPolling() throws Throwable
+    public void startShouldReplaceTheEmptyLocalStoreWithStoreFromCoreMemberAndStartPolling() throws Throwable
     {
         // given
         StoreFetcher storeFetcher = mock( StoreFetcher.class );
@@ -70,13 +70,13 @@ public class EdgeServerStartupProcessTest
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
         Lifecycle txPulling = mock( Lifecycle.class );
 
-        EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
+        EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
                 txPulling, dataSourceManager, new AlwaysChooseFirstMember( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
                 mock( EdgeTopologyService.class ), Config.empty() );
 
         // when
-        edgeServerStartupProcess.start();
+        edgeStartupProcess.start();
 
         // then
         verify( dataSourceManager ).start();
@@ -89,7 +89,7 @@ public class EdgeServerStartupProcessTest
     }
 
     @Test
-    public void startShouldNotReplaceTheNonEmptyLocalStoreWithStoreFromCoreServerAndStartPolling() throws Throwable
+    public void startShouldNotReplaceTheNonEmptyLocalStoreWithStoreFromCoreMemberAndStartPolling() throws Throwable
     {
         // given
         StoreFetcher storeFetcher = mock( StoreFetcher.class );
@@ -108,7 +108,7 @@ public class EdgeServerStartupProcessTest
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
         Lifecycle txPulling = mock( Lifecycle.class );
 
-        EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
+        EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
                 txPulling, dataSourceManager, new AlwaysChooseFirstMember( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
                 mock( EdgeTopologyService.class ), Config.empty() );
@@ -116,7 +116,7 @@ public class EdgeServerStartupProcessTest
         // when
         try
         {
-            edgeServerStartupProcess.start();
+            edgeStartupProcess.start();
             fail( "should have thrown" );
         }
         catch ( IllegalStateException ex )
@@ -154,13 +154,13 @@ public class EdgeServerStartupProcessTest
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
         Lifecycle txPulling = mock( Lifecycle.class );
 
-        EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
+        EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
                 txPulling, dataSourceManager, new AlwaysChooseFirstMember( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
                 mock( EdgeTopologyService.class ), Config.empty() );
 
         // when
-        edgeServerStartupProcess.start();
+        edgeStartupProcess.start();
 
         // then
         verify( localDatabase ).isEmpty();
@@ -187,13 +187,13 @@ public class EdgeServerStartupProcessTest
 
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
         Lifecycle txPulling = mock( Lifecycle.class );
-        EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
+        EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
                 txPulling, dataSourceManager, new AlwaysChooseFirstMember( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
                 mock( EdgeTopologyService.class ), null );
 
         // when
-        edgeServerStartupProcess.stop();
+        edgeStartupProcess.stop();
 
         // then
         verify( txPulling ).stop();

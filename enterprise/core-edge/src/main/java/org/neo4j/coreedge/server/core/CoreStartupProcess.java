@@ -39,7 +39,7 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class CoreServerStartupProcess
+public class CoreStartupProcess
 {
     public static LifeSupport createLifeSupport( DataSourceManager dataSourceManager,
             ReplicatedIdGeneratorFactory idGeneratorFactory, RaftInstance raft, CoreState coreState,

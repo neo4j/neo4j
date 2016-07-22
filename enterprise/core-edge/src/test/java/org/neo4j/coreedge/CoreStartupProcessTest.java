@@ -32,7 +32,7 @@ import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.raft.state.CoreState;
-import org.neo4j.coreedge.server.core.CoreServerStartupProcess;
+import org.neo4j.coreedge.server.core.CoreStartupProcess;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -41,9 +41,9 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.coreedge.CoreServerStartupProcessTest.LifeSupportMatcherBuilder.startsComponent;
+import static org.neo4j.coreedge.CoreStartupProcessTest.LifeSupportMatcherBuilder.startsComponent;
 
-public class CoreServerStartupProcessTest
+public class CoreStartupProcessTest
 {
     @Test
     public void raftTimeOutServiceTriggersMessagesSentToAnotherServer() throws Exception
@@ -57,7 +57,7 @@ public class CoreServerStartupProcessTest
         RaftInstance raftInstance = mock( RaftInstance.class );
         CoreState recoverableStateMachine = mock( CoreState.class );
 
-        LifeSupport lifeSupport = CoreServerStartupProcess.createLifeSupport( dataSourceManager,
+        LifeSupport lifeSupport = CoreStartupProcess.createLifeSupport( dataSourceManager,
                 idGeneratorFactory, raftInstance, recoverableStateMachine, raftServer, catchupServer, raftTimeoutService,
                 membershipWaiter, 0, NullLogProvider.getInstance() );
 

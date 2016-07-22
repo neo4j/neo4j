@@ -37,6 +37,7 @@ import org.neo4j.logging.NullLogProvider;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
@@ -102,7 +103,7 @@ public class AcquireEndpointsProcedureTest
     }
 
     @Test
-    public void shouldReturnCoreServerAsReadServerIfNoEdgeServersAvailable() throws Exception
+    public void shouldReturnCoreMemberAsReadServerIfNoEdgeServersAvailable() throws Exception
     {
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
@@ -124,7 +125,7 @@ public class AcquireEndpointsProcedureTest
         final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
 
         // then
-        MatcherAssert.assertThat( members, containsInAnyOrder(
+        assertThat( members, containsInAnyOrder(
                 new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "write"},
                 new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "read"}
         ) );

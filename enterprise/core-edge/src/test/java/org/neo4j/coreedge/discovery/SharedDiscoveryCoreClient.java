@@ -57,7 +57,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     @Override
     public void start() throws InterruptedException
     {
-        sharedDiscoveryService.registerCoreServer( member, coreAddresses, this );
+        sharedDiscoveryService.registerCoreMember( member, coreAddresses, this );
         log.info( "Registered core server %s", member );
         sharedDiscoveryService.waitForClusterFormation();
         log.info( "Cluster formed" );
@@ -66,7 +66,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     @Override
     public void stop()
     {
-        sharedDiscoveryService.unRegisterCoreServer( member, this );
+        sharedDiscoveryService.unRegisterCoreMember( member, this );
         log.info( "Unregistered core server %s", member );
     }
 

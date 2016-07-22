@@ -214,7 +214,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 new StoreCopyClient( edgeToCoreClient ), new TxPullClient( edgeToCoreClient ),
                 new TransactionLogCatchUpFactory() );
 
-        life.add( new EdgeServerStartupProcess( storeFetcher,
+        life.add( new EdgeStartupProcess( storeFetcher,
                 new LocalDatabase( platformModule.storeDir,
                         new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache ),
                         new StoreFiles( new DefaultFileSystemAbstraction() ),

@@ -84,7 +84,7 @@ public class ConvertNonCoreEdgeStoreIT
     }
 
     @Test
-    public void shouldReplicateTransactionToCoreServers() throws Throwable
+    public void shouldReplicateTransactionToCoreMembers() throws Throwable
     {
         // given
         File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db" );

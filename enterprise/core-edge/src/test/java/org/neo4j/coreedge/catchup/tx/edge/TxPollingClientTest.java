@@ -46,7 +46,7 @@ public class TxPollingClientTest
 {
     private final CoreClient coreClient = mock( CoreClient.class );
     private final CoreMemberSelectionStrategy serverSelection = mock( CoreMemberSelectionStrategy.class );
-    private final MemberId coreServer = mock( MemberId.class );
+    private final MemberId coreMemberId = mock( MemberId.class );
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
 
     private final BatchingTxApplier txApplier = mock( BatchingTxApplier.class );
@@ -61,7 +61,7 @@ public class TxPollingClientTest
     public void before() throws Throwable
     {
         when( idStore.getLastCommittedTransactionId() ).thenReturn( BASE_TX_ID );
-        when( serverSelection.coreMember() ).thenReturn( coreServer );
+        when( serverSelection.coreMember() ).thenReturn( coreMemberId );
         txPuller.start();
     }
 

@@ -39,7 +39,7 @@ import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.edge.CoreMemberSelectionStrategy;
-import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
+import org.neo4j.coreedge.server.edge.EdgeStartupProcess;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
@@ -82,7 +82,7 @@ public class HazelcastClusterTopologyTest
 
         LocalDatabase localDatabase = mock( LocalDatabase.class );
         when( localDatabase.isEmpty() ).thenReturn( true );
-        final EdgeServerStartupProcess startupProcess = new EdgeServerStartupProcess( null,
+        final EdgeStartupProcess startupProcess = new EdgeStartupProcess( null,
                 localDatabase,
                 mock( Lifecycle.class ),
                 mock( DataSourceManager.class ),

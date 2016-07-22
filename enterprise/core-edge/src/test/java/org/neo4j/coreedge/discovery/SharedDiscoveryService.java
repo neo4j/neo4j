@@ -91,7 +91,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    void registerCoreServer( MemberId memberId, CoreAddresses coreAddresses, SharedDiscoveryCoreClient client )
+    void registerCoreMember( MemberId memberId, CoreAddresses coreAddresses, SharedDiscoveryCoreClient client )
     {
         lock.lock();
         try
@@ -107,7 +107,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    void unRegisterCoreServer( MemberId memberId, SharedDiscoveryCoreClient client )
+    void unRegisterCoreMember( MemberId memberId, SharedDiscoveryCoreClient client )
     {
         lock.lock();
         try
@@ -122,7 +122,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    void registerEdgeServer( EdgeAddresses edgeAddresses )
+    void registerEdgeMember( EdgeAddresses edgeAddresses )
     {
         lock.lock();
         try

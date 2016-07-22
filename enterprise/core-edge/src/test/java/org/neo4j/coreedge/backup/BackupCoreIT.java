@@ -138,7 +138,7 @@ public class BackupCoreIT
         // when we shutdown the cluster we lose the number of core servers so we won't go through the for loop unless
         // we capture the count beforehand
         List<File> dbPaths = cluster.coreMembers().stream().map( CoreClusterMember::storeDir ).collect( toList() );
-        int numberOfCoreServers = dbPaths.size();
+        int numberOfCoreMembers = dbPaths.size();
 
         cluster.shutdown();
         assertAllStoresHaveTheSameStoreId( dbPaths, fs );
@@ -155,7 +155,7 @@ public class BackupCoreIT
 
         String seed = RestoreClusterCliTest.extractSeed( output.toString() );
 
-        for ( int i = 1; i < numberOfCoreServers; i++ )
+        for ( int i = 1; i < numberOfCoreMembers; i++ )
         {
             homeDir = Paths.get(cluster.getCoreMemberById( i ).homeDir().getPath());
             new RestoreExistingClusterCli( homeDir, homeDir  ).execute(
