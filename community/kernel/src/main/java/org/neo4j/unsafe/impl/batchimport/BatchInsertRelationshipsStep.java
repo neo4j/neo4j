@@ -23,11 +23,11 @@ import java.util.function.ToIntFunction;
 
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
@@ -41,12 +41,12 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static org.neo4j.unsafe.impl.batchimport.EntityStoreUpdaterStep.reassignDynamicRecordIds;
 
 public class BatchInsertRelationshipsStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
-    private final RelationshipStore relationshipStore;
     private final ToIntFunction<Object> typeToId;
     private final RelationshipCreator relationshipCreator;
     private final Locks.Client noopLockClient = new NoOpClient();
@@ -59,18 +59,22 @@ public class BatchInsertRelationshipsStep extends ProcessorStep<Batch<InputRelat
     private final ReusableIteratorCostume<PropertyBlock> blockIterator = new ReusableIteratorCostume<>();
     private final IdSequence relationshipIdGenerator;
 
-    public BatchInsertRelationshipsStep( StageControl control, Configuration config, NeoStores store,
+    public BatchInsertRelationshipsStep( StageControl control, Configuration config, BatchingNeoStores store,
             ToIntFunction<Object> typeToId, long nextRelationshipId )
     {
         super( control, "INSERT", config, 1 );
         this.typeToId = typeToId;
-        this.relationshipStore = store.getRelationshipStore();
-        RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( store.getRelationshipGroupStore() );
+        RecordStore<RelationshipGroupRecord> relationshipGroupStore = store.getTemporaryRelationshipGroupStore();
+        RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( relationshipGroupStore );
         this.relationshipCreator = new RelationshipCreator( groupGetter, config.denseNodeThreshold() );
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         this.propertyCreator = new PropertyCreator( store.getPropertyStore(), propertyTraverser );
-        this.recordAccess = new DirectRecordAccessSet( store );
         this.propertyStore = store.getPropertyStore();
+        this.recordAccess = new DirectRecordAccessSet( store.getNodeStore(), propertyStore,
+                store.getRelationshipStore(), relationshipGroupStore,
+                store.getNeoStores().getPropertyKeyTokenStore(),
+                store.getNeoStores().getRelationshipTypeTokenStore(),
+                store.getNeoStores().getLabelTokenStore(), store.getNeoStores().getSchemaStore() );
         this.relationshipIdGenerator = new BatchingIdSequence( nextRelationshipId );
     }
 
