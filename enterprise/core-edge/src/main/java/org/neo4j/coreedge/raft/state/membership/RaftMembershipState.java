@@ -26,7 +26,7 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.raft.state.SafeStateMarshal;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -84,7 +84,7 @@ public class RaftMembershipState extends LifecycleAdapter
         this.appended = appended;
     }
 
-    public boolean append( long logIndex, Set<CoreMember> members )
+    public boolean append( long logIndex, Set<MemberId> members )
     {
         if ( committed != null && logIndex <= committed.logIndex() )
         {
@@ -140,7 +140,7 @@ public class RaftMembershipState extends LifecycleAdapter
         return appended != null;
     }
 
-    public Set<CoreMember> getLatest()
+    public Set<MemberId> getLatest()
     {
         return appended != null ? appended.members() :
                committed != null ? committed.members() : new HashSet<>();

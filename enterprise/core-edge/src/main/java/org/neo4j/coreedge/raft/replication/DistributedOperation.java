@@ -26,7 +26,7 @@ import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -65,7 +65,7 @@ public class  DistributedOperation implements ReplicatedContent
     {
         channel.putLong( globalSession().sessionId().getMostSignificantBits() );
         channel.putLong( globalSession().sessionId().getLeastSignificantBits() );
-        new CoreMember.CoreMemberMarshal().marshal( globalSession().owner(), channel );
+        new MemberId.MemberIdMarshal().marshal( globalSession().owner(), channel );
 
         channel.putLong( operationId.localSessionId() );
         channel.putLong( operationId.sequenceNumber() );
@@ -77,7 +77,7 @@ public class  DistributedOperation implements ReplicatedContent
     {
         long mostSigBits = channel.getLong();
         long leastSigBits = channel.getLong();
-        CoreMember owner = new CoreMember.CoreMemberMarshal().unmarshal( channel );
+        MemberId owner = new MemberId.MemberIdMarshal().unmarshal( channel );
         GlobalSession globalSession = new GlobalSession( new UUID( mostSigBits, leastSigBits ), owner );
 
         long localSessionId = channel.getLong();

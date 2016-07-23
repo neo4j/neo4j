@@ -23,10 +23,10 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.discovery.CoreServerSelectionException;
+import org.neo4j.coreedge.discovery.CoreMemberSelectionException;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -35,24 +35,24 @@ import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule.extractBoltAddress;
 
-public class EdgeServerStartupProcess implements Lifecycle
+public class EdgeStartupProcess implements Lifecycle
 {
     private final StoreFetcher storeFetcher;
     private final LocalDatabase localDatabase;
     private final Lifecycle txPulling;
     private final DataSourceManager dataSourceManager;
-    private final CoreServerSelectionStrategy connectionStrategy;
+    private final CoreMemberSelectionStrategy connectionStrategy;
     private final Log log;
     private final EdgeTopologyService discoveryService;
     private final Config config;
     private final RetryStrategy.Timeout timeout;
 
-    public EdgeServerStartupProcess(
+    public EdgeStartupProcess(
             StoreFetcher storeFetcher,
             LocalDatabase localDatabase,
             Lifecycle txPulling,
             DataSourceManager dataSourceManager,
-            CoreServerSelectionStrategy connectionStrategy,
+            CoreMemberSelectionStrategy connectionStrategy,
             RetryStrategy retryStrategy,
             LogProvider logProvider, EdgeTopologyService discoveryService, Config config )
     {
@@ -79,34 +79,34 @@ public class EdgeServerStartupProcess implements Lifecycle
     {
         dataSourceManager.start();
 
-        CoreMember coreMember = findCoreMemberToCopyFrom();
+        MemberId memberId = findCoreMemberToCopyFrom();
         if ( localDatabase.isEmpty() )
         {
             localDatabase.stop();
-            localDatabase.copyStoreFrom( coreMember, storeFetcher );
+            localDatabase.copyStoreFrom( memberId, storeFetcher );
             localDatabase.start();
         }
         else
         {
-            localDatabase.ensureSameStoreId( coreMember, storeFetcher );
+            localDatabase.ensureSameStoreId( memberId, storeFetcher );
         }
 
         txPulling.start();
     }
 
-    private CoreMember findCoreMemberToCopyFrom()
+    private MemberId findCoreMemberToCopyFrom()
     {
         while ( true )
         {
             try
             {
-                CoreMember coreMember = connectionStrategy.coreServer();
-                log.info( "Server starting, connecting to core server at %s", coreMember.toString() );
+                MemberId memberId = connectionStrategy.coreMember();
+                log.info( "Server starting, connecting to core server at %s", memberId.toString() );
 
                 discoveryService.registerEdgeServer( extractBoltAddress( config ) );
-                return coreMember;
+                return memberId;
             }
-            catch ( CoreServerSelectionException ex )
+            catch ( CoreMemberSelectionException ex )
             {
                 log.info( "Failed to connect to core server. Retrying in %d ms.", timeout.getMillis() );
                 LockSupport.parkUntil( timeout.getMillis() + System.currentTimeMillis() );

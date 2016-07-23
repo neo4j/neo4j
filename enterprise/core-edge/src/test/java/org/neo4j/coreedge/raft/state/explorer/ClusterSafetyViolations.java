@@ -30,7 +30,7 @@ import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.roles.Leader;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 
@@ -91,7 +91,7 @@ public class ClusterSafetyViolations
     public static boolean multipleLeadersInSameTerm( ClusterState state )
     {
         Set<Long> termThatHaveALeader = new HashSet<>();
-        for ( Map.Entry<CoreMember, Role> entry : state.roles.entrySet() )
+        for ( Map.Entry<MemberId, Role> entry : state.roles.entrySet() )
         {
             RaftMessageHandler role = entry.getValue().handler;
             if ( role instanceof Leader )

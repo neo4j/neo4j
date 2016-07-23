@@ -37,9 +37,9 @@ import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
-import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
+import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.server.edge.CoreMemberSelectionStrategy;
+import org.neo4j.coreedge.server.edge.EdgeStartupProcess;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
@@ -77,12 +77,12 @@ public class HazelcastClusterTopologyTest
 
         // when
 
-        final CoreServerSelectionStrategy connectionStrategy = mock( CoreServerSelectionStrategy.class );
-        when( connectionStrategy.coreServer() ).thenReturn( new CoreMember( UUID.randomUUID() ) );
+        final CoreMemberSelectionStrategy connectionStrategy = mock( CoreMemberSelectionStrategy.class );
+        when( connectionStrategy.coreMember() ).thenReturn( new MemberId( UUID.randomUUID() ) );
 
         LocalDatabase localDatabase = mock( LocalDatabase.class );
         when( localDatabase.isEmpty() ).thenReturn( true );
-        final EdgeServerStartupProcess startupProcess = new EdgeServerStartupProcess( null,
+        final EdgeStartupProcess startupProcess = new EdgeStartupProcess( null,
                 localDatabase,
                 mock( Lifecycle.class ),
                 mock( DataSourceManager.class ),
@@ -100,7 +100,7 @@ public class HazelcastClusterTopologyTest
     public void shouldStoreMemberIdentityAndAddressesAsMemberAttributes() throws Exception
     {
         // given
-        CoreMember coreMember = new CoreMember( UUID.randomUUID() );
+        MemberId memberId = new MemberId( UUID.randomUUID() );
         Config config = Config.defaults();
         HashMap<String, String> settings = new HashMap<>();
         settings.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "tx:1001" );
@@ -109,13 +109,13 @@ public class HazelcastClusterTopologyTest
         config.augment( settings );
 
         // when
-        Map<String, Object> attributes = buildMemberAttributes( coreMember, config ).getAttributes();
-        Pair<CoreMember, CoreAddresses> extracted = extractMemberAttributes( new MemberImpl( null, null, attributes ) );
+        Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
+        Pair<MemberId, CoreAddresses> extracted = extractMemberAttributes( new MemberImpl( null, null, attributes ) );
 
         // then
-        assertEquals( coreMember, extracted.first() );
+        assertEquals( memberId, extracted.first() );
         CoreAddresses addresses = extracted.other();
-        assertEquals( new AdvertisedSocketAddress( "tx:1001" ), addresses.getCoreServer() );
+        assertEquals( new AdvertisedSocketAddress( "tx:1001" ), addresses.getCatchupServer() );
         assertEquals( new AdvertisedSocketAddress( "raft:2001" ), addresses.getRaftServer() );
         assertEquals( new AdvertisedSocketAddress( "bolt:3001" ), addresses.getBoltServer() );
     }
@@ -125,11 +125,11 @@ public class HazelcastClusterTopologyTest
     {
         // given
         Set<Member> hazelcastMembers = new HashSet<>();
-        List<CoreMember> coreMembers = new ArrayList<>();
+        List<MemberId> coreMembers = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
-            CoreMember coreMember = new CoreMember( UUID.randomUUID() );
-            coreMembers.add( coreMember );
+            MemberId memberId = new MemberId( UUID.randomUUID() );
+            coreMembers.add( memberId );
             Config config = Config.defaults();
             HashMap<String, String> settings = new HashMap<>();
             settings.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "tx:" + (i + 1 ));
@@ -137,18 +137,18 @@ public class HazelcastClusterTopologyTest
             settings.put( GraphDatabaseSettings.bolt_advertised_address.name(), "bolt:" + (i + 1));
             config.augment( settings );
             hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null,
-                    buildMemberAttributes( coreMember, config ).getAttributes() ) );
+                    buildMemberAttributes( memberId, config ).getAttributes() ) );
         }
 
         // when
-        Map<CoreMember, CoreAddresses> coreMemberMap =
+        Map<MemberId, CoreAddresses> coreMemberMap =
                 HazelcastClusterTopology.toCoreMemberMap( hazelcastMembers, NullLog.getInstance() );
 
         // then
         for ( int i = 0; i < 5; i++ )
         {
             CoreAddresses coreAddresses = coreMemberMap.get( coreMembers.get( i ) );
-            assertEquals( new AdvertisedSocketAddress( "tx:" + (i  + 1 )), coreAddresses.getCoreServer() );
+            assertEquals( new AdvertisedSocketAddress( "tx:" + (i  + 1 )), coreAddresses.getCatchupServer() );
             assertEquals( new AdvertisedSocketAddress( "raft:" + (i  + 1 )), coreAddresses.getRaftServer() );
             assertEquals( new AdvertisedSocketAddress( "bolt:" + (i  + 1 )), coreAddresses.getBoltServer() );
         }
@@ -159,12 +159,12 @@ public class HazelcastClusterTopologyTest
     {
         // given
         Set<Member> hazelcastMembers = new HashSet<>();
-        List<CoreMember> coreMembers = new ArrayList<>();
+        List<MemberId> coreMembers = new ArrayList<>();
         for ( int i = 0; i < 4; i++ )
         {
-            CoreMember coreMember = new CoreMember( UUID.randomUUID() );
-            coreMembers.add( coreMember );
-            Map<String, Object> attributes = buildMemberAttributes( coreMember, Config.defaults() ).getAttributes();
+            MemberId memberId = new MemberId( UUID.randomUUID() );
+            coreMembers.add( memberId );
+            Map<String, Object> attributes = buildMemberAttributes( memberId, Config.defaults() ).getAttributes();
             if ( i == 2 )
             {
                 attributes.remove( HazelcastClusterTopology.RAFT_SERVER );
@@ -172,7 +172,7 @@ public class HazelcastClusterTopologyTest
             hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null, attributes ) );
         }
         // when
-        Map<CoreMember, CoreAddresses> map =
+        Map<MemberId, CoreAddresses> map =
                 HazelcastClusterTopology.toCoreMemberMap( hazelcastMembers, NullLog.getInstance() );
 
         // then

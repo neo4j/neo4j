@@ -43,7 +43,7 @@ import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -67,11 +67,11 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 @RunWith(MockitoJUnitRunner.class)
 public class LeaderTest
 {
-    private CoreMember myself = member( 0 );
+    private MemberId myself = member( 0 );
 
     /* A few members that we use at will in tests. */
-    private CoreMember member1 = member( 1 );
-    private CoreMember member2 = member( 2 );
+    private MemberId member1 = member( 1 );
+    private MemberId member2 = member( 2 );
 
     @Mock
     private Inbound inbound;
@@ -95,12 +95,12 @@ public class LeaderTest
          * - assumes that instance 2 is at an index less than 100 -say 84 but it has already been sent up to 100
          */
         Leader leader = new Leader();
-        CoreMember instance2 = member( 2 );
+        MemberId instance2 = member( 2 );
         FollowerState instance2State = createArtificialFollowerState( 84 );
 
         ReadableRaftState state = mock( ReadableRaftState.class );
 
-        FollowerStates<CoreMember> followerState = new FollowerStates<>();
+        FollowerStates<MemberId> followerState = new FollowerStates<>();
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
@@ -122,7 +122,7 @@ public class LeaderTest
         // The leader should not be trying to send any messages to that instance
         assertTrue( outcome.getOutgoingMessages().isEmpty() );
         // And the follower state should be updated
-        FollowerStates<CoreMember> leadersViewOfFollowerStates = outcome.getFollowerStates();
+        FollowerStates<MemberId> leadersViewOfFollowerStates = outcome.getFollowerStates();
         assertEquals( 90, leadersViewOfFollowerStates.get( instance2 ).getMatchIndex() );
     }
 
@@ -137,12 +137,12 @@ public class LeaderTest
          * - assumes that instance 2 is at an index less than 100 -say 84
          */
         Leader leader = new Leader();
-        CoreMember instance2 = member( 2 );
+        MemberId instance2 = member( 2 );
         FollowerState instance2State = createArtificialFollowerState( 84 );
 
         ReadableRaftState state = mock( ReadableRaftState.class );
 
-        FollowerStates<CoreMember> followerState = new FollowerStates<>();
+        FollowerStates<MemberId> followerState = new FollowerStates<>();
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
@@ -164,7 +164,7 @@ public class LeaderTest
         // The leader should not be trying to send any messages to that instance
         assertTrue( outcome.getOutgoingMessages().isEmpty() );
         // And the follower state should be updated
-        FollowerStates<CoreMember> updatedFollowerStates = outcome.getFollowerStates();
+        FollowerStates<MemberId> updatedFollowerStates = outcome.getFollowerStates();
         assertEquals( 100, updatedFollowerStates.get( instance2 ).getMatchIndex() );
     }
 
@@ -180,12 +180,12 @@ public class LeaderTest
          * - assumes that instance 2 is at an index less than 100 -say 50
          */
         Leader leader = new Leader();
-        CoreMember instance2 = member( 2 );
+        MemberId instance2 = member( 2 );
         FollowerState instance2State = createArtificialFollowerState( 50 );
 
         ReadableRaftState state = mock( ReadableRaftState.class );
 
-        FollowerStates<CoreMember> followerState = new FollowerStates<>();
+        FollowerStates<MemberId> followerState = new FollowerStates<>();
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
@@ -232,13 +232,13 @@ public class LeaderTest
          * - assumes that instance 2 is fully caught up
          */
         Leader leader = new Leader();
-        CoreMember instance2 = member( 2 );
+        MemberId instance2 = member( 2 );
         int j = 100;
         FollowerState instance2State = createArtificialFollowerState( j );
 
         ReadableRaftState state = mock( ReadableRaftState.class );
 
-        FollowerStates<CoreMember> followerState = new FollowerStates<>();
+        FollowerStates<MemberId> followerState = new FollowerStates<>();
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
@@ -264,7 +264,7 @@ public class LeaderTest
         // request
         assertTrue( outcome.getOutgoingMessages().isEmpty() );
         // The follower state should not be touched
-        FollowerStates<CoreMember> updatedFollowerStates = outcome.getFollowerStates();
+        FollowerStates<MemberId> updatedFollowerStates = outcome.getFollowerStates();
         assertEquals( 100, updatedFollowerStates.get( instance2 ).getMatchIndex() );
     }
 
@@ -285,12 +285,12 @@ public class LeaderTest
          * - assumes that instance 2 is fully caught up
          */
         Leader leader = new Leader();
-        CoreMember instance2 = member( 2 );
+        MemberId instance2 = member( 2 );
         FollowerState instance2State = createArtificialFollowerState( 100 );
 
         ReadableRaftState state = mock( ReadableRaftState.class );
 
-        FollowerStates<CoreMember> followerState = new FollowerStates<>();
+        FollowerStates<MemberId> followerState = new FollowerStates<>();
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         RaftLog log = new InMemoryRaftLog();

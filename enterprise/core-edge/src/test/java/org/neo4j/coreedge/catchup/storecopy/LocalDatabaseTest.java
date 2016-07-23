@@ -25,7 +25,7 @@ import java.io.File;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -62,14 +62,14 @@ public class LocalDatabaseTest
     {
         // given
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
-        CoreMember coreMember = mock( CoreMember.class );
+        MemberId memberId = mock( MemberId.class );
         StoreFetcher storeFetcher = mock( StoreFetcher.class );
-        when( storeFetcher.storeId( coreMember ) ).thenReturn( storeId );
+        when( storeFetcher.storeId( memberId ) ).thenReturn( storeId );
 
         // when
         LocalDatabase localDatabase = createLocalDatabase( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
 
-        localDatabase.ensureSameStoreId( coreMember, storeFetcher );
+        localDatabase.ensureSameStoreId( memberId, storeFetcher );
 
         // no exception is thrown
     }
@@ -79,16 +79,16 @@ public class LocalDatabaseTest
     {
         // given
         StoreId storeId = new StoreId( 6, 7, 8, 9 );
-        CoreMember coreMember = mock( CoreMember.class );
+        MemberId memberId = mock( MemberId.class );
         StoreFetcher storeFetcher = mock( StoreFetcher.class );
-        when( storeFetcher.storeId( coreMember ) ).thenReturn( storeId );
+        when( storeFetcher.storeId( memberId ) ).thenReturn( storeId );
 
         // when
         LocalDatabase localDatabase = createLocalDatabase( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
 
         try
         {
-            localDatabase.ensureSameStoreId( coreMember, storeFetcher );
+            localDatabase.ensureSameStoreId( memberId, storeFetcher );
             fail( "should have thrown ");
         }
         catch ( IllegalStateException ex )

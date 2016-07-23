@@ -35,7 +35,7 @@ import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.emptySet;
@@ -48,25 +48,25 @@ public class RaftStateBuilder
         return new RaftStateBuilder();
     }
 
-    public CoreMember myself;
-    public Set<CoreMember> votingMembers = emptySet();
+    public MemberId myself;
+    public Set<MemberId> votingMembers = emptySet();
     public long term;
-    public CoreMember leader;
+    public MemberId leader;
     public long leaderCommit = -1;
-    public CoreMember votedFor;
+    public MemberId votedFor;
     private RaftLog entryLog = new InMemoryRaftLog();
     public Set votesForMe = emptySet();
     public long lastLogIndexBeforeWeBecameLeader = -1;
     public long commitIndex = -1;
     private FollowerStates followerStates = new FollowerStates<>();
 
-    public RaftStateBuilder myself( CoreMember myself )
+    public RaftStateBuilder myself( MemberId myself )
     {
         this.myself = myself;
         return this;
     }
 
-    public RaftStateBuilder votingMembers( Set<CoreMember> currentMembers )
+    public RaftStateBuilder votingMembers( Set<MemberId> currentMembers )
     {
         this.votingMembers = currentMembers;
         return this;
@@ -78,7 +78,7 @@ public class RaftStateBuilder
         return this;
     }
 
-    public RaftStateBuilder leader( CoreMember leader )
+    public RaftStateBuilder leader( MemberId leader )
     {
         this.leader = leader;
         return this;
@@ -90,7 +90,7 @@ public class RaftStateBuilder
         return this;
     }
 
-    public RaftStateBuilder votedFor( CoreMember votedFor )
+    public RaftStateBuilder votedFor( MemberId votedFor )
     {
         this.votedFor = votedFor;
         return this;
@@ -138,12 +138,12 @@ public class RaftStateBuilder
         return state;
     }
 
-    public RaftStateBuilder votingMembers( CoreMember... members )
+    public RaftStateBuilder votingMembers( MemberId... members )
     {
         return votingMembers( asSet( members ) );
     }
 
-    public RaftStateBuilder messagesSentToFollower( CoreMember member, long nextIndex )
+    public RaftStateBuilder messagesSentToFollower( MemberId member, long nextIndex )
     {
         return this;
     }
@@ -151,13 +151,13 @@ public class RaftStateBuilder
     private class StubMembership implements RaftMembership
     {
         @Override
-        public Set<CoreMember> votingMembers()
+        public Set<MemberId> votingMembers()
         {
             return votingMembers;
         }
 
         @Override
-        public Set<CoreMember> replicationMembers()
+        public Set<MemberId> replicationMembers()
         {
             return votingMembers;
         }

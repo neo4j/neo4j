@@ -31,12 +31,13 @@ import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
@@ -52,8 +53,8 @@ public class AcquireEndpointsProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
-        CoreMember theLeader = member( 0 );
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 1 ) );
@@ -81,8 +82,8 @@ public class AcquireEndpointsProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
-        CoreMember theLeader = member( 0 );
+        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
+        MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 1, 2, 3 ) );
@@ -102,13 +103,13 @@ public class AcquireEndpointsProcedureTest
     }
 
     @Test
-    public void shouldReturnCoreServerAsReadServerIfNoEdgeServersAvailable() throws Exception
+    public void shouldReturnCoreMemberAsReadServerIfNoEdgeServersAvailable() throws Exception
     {
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
-        CoreMember theLeader = member( 0 );
+        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
+        MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses() );
 
@@ -124,7 +125,7 @@ public class AcquireEndpointsProcedureTest
         final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
 
         // then
-        MatcherAssert.assertThat( members, containsInAnyOrder(
+        assertThat( members, containsInAnyOrder(
                 new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "write"},
                 new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "read"}
         ) );
@@ -136,7 +137,7 @@ public class AcquireEndpointsProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses() );
@@ -163,7 +164,7 @@ public class AcquireEndpointsProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses() );

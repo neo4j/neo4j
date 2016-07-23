@@ -35,26 +35,25 @@ import static java.util.stream.Collectors.joining;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class EdgeServer
+public class EdgeClusterMember
 {
-    private final File neo4jHome;
     private final Map<String, String> config;
     private final DiscoveryServiceFactory discoveryServiceFactory;
     private final File storeDir;
     private EdgeGraphDatabase database;
 
-    public EdgeServer( File parentDir, int serverId, DiscoveryServiceFactory discoveryServiceFactory,
-                       List<AdvertisedSocketAddress> addresses,
-                       Map<String, String> extraParams,
-                       Map<String, IntFunction<String>> instanceExtraParams,
-                       String recordFormat )
+    public EdgeClusterMember( File parentDir, int memberId, DiscoveryServiceFactory discoveryServiceFactory,
+                              List<AdvertisedSocketAddress> addresses,
+                              Map<String, String> extraParams,
+                              Map<String, IntFunction<String>> instanceExtraParams,
+                              String recordFormat )
     {
         String initialHosts = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
         Map<String, String> params = stringMap();
         params.put( "dbms.mode", "EDGE" );
         params.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
-        params.put( CoreEdgeClusterSettings.cluster_name.name(), CoreServer.CLUSTER_NAME );
+        params.put( CoreEdgeClusterSettings.cluster_name.name(), CoreClusterMember.CLUSTER_NAME );
         params.put( CoreEdgeClusterSettings.initial_core_cluster_members.name(), initialHosts );
         params.put( GraphDatabaseSettings.record_format.name(), recordFormat );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
@@ -63,18 +62,17 @@ public class EdgeServer
 
         for ( Map.Entry<String, IntFunction<String>> entry : instanceExtraParams.entrySet() )
         {
-            params.put( entry.getKey(), entry.getValue().apply( serverId ) );
+            params.put( entry.getKey(), entry.getValue().apply( memberId ) );
         }
 
         params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
         params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + (9000 + serverId) );
-        params.put( GraphDatabaseSettings.bolt_advertised_address.name(), "127.0.0.1:" + (9000 + serverId) );
+        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + (9000 + memberId) );
+        params.put( GraphDatabaseSettings.bolt_advertised_address.name(), "127.0.0.1:" + (9000 + memberId) );
 
-        File neo4jHome = new File( parentDir, "server-edge-" + serverId );
+        File neo4jHome = new File( parentDir, "server-edge-" + memberId );
         params.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
 
-        this.neo4jHome = neo4jHome;
         this.config = params;
         this.discoveryServiceFactory = discoveryServiceFactory;
         storeDir = new File( new File( new File( neo4jHome, "data" ), "databases" ), "graph.db" );

@@ -29,7 +29,7 @@ import java.util.Collection;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -52,8 +52,8 @@ public class NonFollowerVoteRequestTest
     @Parameterized.Parameter
     public Role role;
 
-    private CoreMember myself = member( 0 );
-    private CoreMember member1 = member( 1 );
+    private MemberId myself = member( 0 );
+    private MemberId member1 = member( 1 );
 
     @Test
     public void shouldRejectVoteRequestFromCurrentTerm() throws Exception

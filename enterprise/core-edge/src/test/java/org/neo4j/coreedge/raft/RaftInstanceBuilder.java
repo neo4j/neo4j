@@ -39,14 +39,14 @@ import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 public class RaftInstanceBuilder
 {
-    private final CoreMember member;
+    private final MemberId member;
 
     private int expectedClusterSize;
     private RaftGroup.Builder memberSetBuilder;
@@ -59,16 +59,16 @@ public class RaftInstanceBuilder
 
     private Inbound<RaftMessages.RaftMessage> inbound = handler -> {
     };
-    private Outbound<CoreMember, RaftMessages.RaftMessage> outbound =
-            new Outbound<CoreMember, RaftMessages.RaftMessage>()
+    private Outbound<MemberId, RaftMessages.RaftMessage> outbound =
+            new Outbound<MemberId, RaftMessages.RaftMessage>()
             {
                 @Override
-                public void send( CoreMember to, RaftMessages.RaftMessage message )
+                public void send( MemberId to, RaftMessages.RaftMessage message )
                 {
                 }
 
                 @Override
-                public void send( CoreMember to, Collection<RaftMessages.RaftMessage> raftMessages )
+                public void send( MemberId to, Collection<RaftMessages.RaftMessage> raftMessages )
                 {
                 }
             };
@@ -88,7 +88,7 @@ public class RaftInstanceBuilder
     private RaftStateMachine raftStateMachine = new EmptyStateMachine();
     private final InFlightMap<Long, RaftLogEntry> inFlightMap;
 
-    public RaftInstanceBuilder( CoreMember member, int expectedClusterSize, RaftGroup.Builder memberSetBuilder )
+    public RaftInstanceBuilder( MemberId member, int expectedClusterSize, RaftGroup.Builder memberSetBuilder )
     {
         this.member = member;
         this.expectedClusterSize = expectedClusterSize;
@@ -147,7 +147,7 @@ public class RaftInstanceBuilder
         return this;
     }
 
-    public RaftInstanceBuilder outbound( Outbound<CoreMember, RaftMessages.RaftMessage> outbound )
+    public RaftInstanceBuilder outbound( Outbound<MemberId, RaftMessages.RaftMessage> outbound )
     {
         this.outbound = outbound;
         return this;

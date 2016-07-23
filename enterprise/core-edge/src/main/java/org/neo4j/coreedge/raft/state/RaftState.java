@@ -33,29 +33,29 @@ import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 public class RaftState implements ReadableRaftState
 {
-    private final CoreMember myself;
+    private final MemberId myself;
     private final StateStorage<TermState> termStorage;
     private final StateStorage<VoteState> voteStorage;
     private final RaftMembership membership;
     private final TermState termState;
     private final Log log;
-    private CoreMember leader;
+    private MemberId leader;
     private long leaderCommit = -1;
     private final VoteState voteState;
-    private Set<CoreMember> votesForMe = new HashSet<>();
+    private Set<MemberId> votesForMe = new HashSet<>();
     private long lastLogIndexBeforeWeBecameLeader = -1;
-    private FollowerStates<CoreMember> followerStates = new FollowerStates<>();
+    private FollowerStates<MemberId> followerStates = new FollowerStates<>();
     private final RaftLog entryLog;
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private long commitIndex = -1;
 
-    public RaftState( CoreMember myself,
+    public RaftState( MemberId myself,
                       StateStorage<TermState> termStorage,
                       RaftMembership membership,
                       RaftLog entryLog,
@@ -74,19 +74,19 @@ public class RaftState implements ReadableRaftState
     }
 
     @Override
-    public CoreMember myself()
+    public MemberId myself()
     {
         return myself;
     }
 
     @Override
-    public Set<CoreMember> votingMembers()
+    public Set<MemberId> votingMembers()
     {
         return membership.votingMembers();
     }
 
     @Override
-    public Set<CoreMember> replicationMembers()
+    public Set<MemberId> replicationMembers()
     {
         return membership.replicationMembers();
     }
@@ -98,7 +98,7 @@ public class RaftState implements ReadableRaftState
     }
 
     @Override
-    public CoreMember leader()
+    public MemberId leader()
     {
         return leader;
     }
@@ -110,13 +110,13 @@ public class RaftState implements ReadableRaftState
     }
 
     @Override
-    public CoreMember votedFor()
+    public MemberId votedFor()
     {
         return voteState.votedFor();
     }
 
     @Override
-    public Set<CoreMember> votesForMe()
+    public Set<MemberId> votesForMe()
     {
         return votesForMe;
     }
@@ -128,7 +128,7 @@ public class RaftState implements ReadableRaftState
     }
 
     @Override
-    public FollowerStates<CoreMember> followerStates()
+    public FollowerStates<MemberId> followerStates()
     {
         return followerStates;
     }
@@ -172,7 +172,7 @@ public class RaftState implements ReadableRaftState
         commitIndex = outcome.getCommitIndex();
     }
 
-    private void logIfLeaderChanged( CoreMember leader )
+    private void logIfLeaderChanged( MemberId leader )
     {
         if ( this.leader == null )
         {

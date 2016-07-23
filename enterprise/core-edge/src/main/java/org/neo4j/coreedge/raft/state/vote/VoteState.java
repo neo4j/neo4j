@@ -24,31 +24,31 @@ import java.io.IOException;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.raft.state.SafeStateMarshal;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
 public class VoteState
 {
-    private CoreMember votedFor;
+    private MemberId votedFor;
     private long term = -1;
 
     public VoteState()
     {
     }
 
-    private VoteState( CoreMember votedFor, long term )
+    private VoteState( MemberId votedFor, long term )
     {
         this.term = term;
         this.votedFor = votedFor;
     }
 
-    public CoreMember votedFor()
+    public MemberId votedFor()
     {
         return votedFor;
     }
 
-    public boolean update( CoreMember votedFor, long term )
+    public boolean update( MemberId votedFor, long term )
     {
         if ( termChanged( term ) )
         {
@@ -86,9 +86,9 @@ public class VoteState
 
     public static class Marshal extends SafeStateMarshal<VoteState>
     {
-        private final ChannelMarshal<CoreMember> memberMarshal;
+        private final ChannelMarshal<MemberId> memberMarshal;
 
-        public Marshal( ChannelMarshal<CoreMember> memberMarshal )
+        public Marshal( ChannelMarshal<MemberId> memberMarshal )
         {
             this.memberMarshal = memberMarshal;
         }
@@ -104,7 +104,7 @@ public class VoteState
         public VoteState unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
         {
             final long term = channel.getLong();
-            final CoreMember member = memberMarshal.unmarshal( channel );
+            final MemberId member = memberMarshal.unmarshal( channel );
             return new VoteState( member, term );
         }
 

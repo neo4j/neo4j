@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 /**
  * The RAFT external entity that is interested in log entries and
@@ -40,5 +40,5 @@ public interface RaftStateMachine
      */
     void notifyNeedFreshSnapshot();
 
-    void downloadSnapshot( CoreMember from );
+    void downloadSnapshot( MemberId from );
 }

@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft.net;
 import java.time.Clock;
 import java.util.HashMap;
 
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.Log;
 
 public class UnknownAddressMonitor
@@ -31,7 +31,7 @@ public class UnknownAddressMonitor
     private final Clock clock;
     private final long logThreshold;
 
-    private HashMap<CoreMember, Long> throttle = new HashMap<>(  );
+    private HashMap<MemberId, Long> throttle = new HashMap<>(  );
 
     public UnknownAddressMonitor( Log log, Clock clock, long logThresholdMillis )
     {
@@ -40,7 +40,7 @@ public class UnknownAddressMonitor
         this.logThreshold = logThresholdMillis;
     }
 
-    void logAttemptToSendToMemberWithNoKnownAddress( CoreMember to )
+    void logAttemptToSendToMemberWithNoKnownAddress( MemberId to )
     {
         long currentTime = clock.millis();
         Long lastLogged = throttle.get( to );

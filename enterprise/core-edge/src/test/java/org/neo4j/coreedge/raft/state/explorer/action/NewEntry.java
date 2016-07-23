@@ -26,13 +26,13 @@ import java.util.Queue;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public class NewEntry implements Action
 {
-    private final CoreMember member;
+    private final MemberId member;
 
-    public NewEntry( CoreMember member )
+    public NewEntry( MemberId member )
     {
         this.member = member;
     }

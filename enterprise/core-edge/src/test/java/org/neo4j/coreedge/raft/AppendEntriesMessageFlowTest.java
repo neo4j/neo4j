@@ -28,7 +28,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 
 import static org.mockito.Matchers.eq;
@@ -43,13 +43,13 @@ import static org.neo4j.coreedge.server.RaftTestMember.member;
 @RunWith(MockitoJUnitRunner.class)
 public class AppendEntriesMessageFlowTest
 {
-    private CoreMember myself = member( 0 );
-    private CoreMember otherMember = member( 1 );
+    private MemberId myself = member( 0 );
+    private MemberId otherMember = member( 1 );
 
     private ReplicatedInteger data = ReplicatedInteger.valueOf( 1 );
 
     @Mock
-    private Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
+    private Outbound<MemberId, RaftMessages.RaftMessage> outbound;
 
     ReplicatedInteger data( int value )
     {

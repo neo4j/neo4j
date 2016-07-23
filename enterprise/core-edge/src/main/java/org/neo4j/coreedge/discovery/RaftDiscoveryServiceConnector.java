@@ -23,8 +23,8 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftInstance.BootstrapException;
-import org.neo4j.coreedge.raft.membership.CoreMemberSet;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.raft.membership.MemberIdSet;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements CoreTopologyService.Listener
@@ -45,11 +45,11 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
         discoveryService.addMembershipListener( this );
 
         ClusterTopology clusterTopology = discoveryService.currentTopology();
-        Set<CoreMember> initialMembers = clusterTopology.coreMembers();
+        Set<MemberId> initialMembers = clusterTopology.coreMembers();
 
         if ( clusterTopology.canBeBootstrapped() )
         {
-            raftInstance.bootstrapWithInitialMembers( new CoreMemberSet( initialMembers ) );
+            raftInstance.bootstrapWithInitialMembers( new MemberIdSet( initialMembers ) );
         }
 
         onTopologyChange();

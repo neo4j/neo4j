@@ -30,7 +30,7 @@ import org.neo4j.coreedge.raft.RaftInstanceBuilder;
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 
 import static org.junit.Assert.assertEquals;
@@ -45,7 +45,7 @@ public class RaftInstanceLogTest
     @Mock
     RaftStateMachine raftStateMachine;
 
-    private CoreMember myself = member( 0 );
+    private MemberId myself = member( 0 );
     private ReplicatedContent content = ReplicatedInteger.valueOf( 1 );
     private RaftLog testEntryLog;
 

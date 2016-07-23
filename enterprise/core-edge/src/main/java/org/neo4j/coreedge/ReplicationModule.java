@@ -35,7 +35,7 @@ import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.raft.replication.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.raft.state.DurableStateStorage;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -51,9 +51,9 @@ public class ReplicationModule
     private final ProgressTrackerImpl progressTracker;
     private final SessionTracker sessionTracker;
 
-    public ReplicationModule( CoreMember myself, PlatformModule platformModule, Config config, ConsensusModule consensusModule,
-            Outbound<CoreMember,RaftMessages.RaftMessage> loggingOutbound, File clusterStateDirectory,
-            FileSystemAbstraction fileSystem, Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
+    public ReplicationModule( MemberId myself, PlatformModule platformModule, Config config, ConsensusModule consensusModule,
+                              Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound, File clusterStateDirectory,
+                              FileSystemAbstraction fileSystem, Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
     {
         LifeSupport life = platformModule.life;
 
@@ -63,7 +63,7 @@ public class ReplicationModule
             sessionTrackerStorage = life.add(
                     new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "session-tracker-state" ),
                             "session-tracker",
-                            new GlobalSessionTrackerState.Marshal( new CoreMember.CoreMemberMarshal() ),
+                            new GlobalSessionTrackerState.Marshal( new MemberId.MemberIdMarshal() ),
                             config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ),
                             databaseHealthSupplier, logProvider ) );
 

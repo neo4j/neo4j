@@ -19,21 +19,21 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public class HeartbeatBuilder
 {
     private long commitIndex = -1;
     private long leaderTerm = -1;
     private long commitIndexTerm = -1;
-    private CoreMember from = null;
+    private MemberId from = null;
 
     public RaftMessages.Heartbeat build()
     {
         return new RaftMessages.Heartbeat( from, leaderTerm, commitIndex, commitIndexTerm );
     }
 
-    public HeartbeatBuilder from( CoreMember from )
+    public HeartbeatBuilder from( MemberId from )
     {
         this.from = from;
         return this;

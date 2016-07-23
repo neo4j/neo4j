@@ -26,7 +26,7 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.raft.state.SafeStateMarshal;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -36,9 +36,9 @@ import org.neo4j.storageengine.api.WritableChannel;
 class MembershipEntry
 {
     private long logIndex;
-    private Set<CoreMember> members;
+    private Set<MemberId> members;
 
-    MembershipEntry( long logIndex, Set<CoreMember> members )
+    MembershipEntry( long logIndex, Set<MemberId> members )
     {
         this.members = members;
         this.logIndex = logIndex;
@@ -49,7 +49,7 @@ class MembershipEntry
         return logIndex;
     }
 
-    public Set<CoreMember> members()
+    public Set<MemberId> members()
     {
         return members;
     }
@@ -83,7 +83,7 @@ class MembershipEntry
 
     static class Marshal extends SafeStateMarshal<MembershipEntry>
     {
-        CoreMember.CoreMemberMarshal memberMarshal = new CoreMember.CoreMemberMarshal();
+        MemberId.MemberIdMarshal memberMarshal = new MemberId.MemberIdMarshal();
 
         @Override
         public MembershipEntry startState()
@@ -112,7 +112,7 @@ class MembershipEntry
 
             channel.putLong( entry.logIndex );
             channel.putInt( entry.members.size() );
-            for ( CoreMember member : entry.members )
+            for ( MemberId member : entry.members )
             {
                 memberMarshal.marshal( member, channel );
             }
@@ -128,7 +128,7 @@ class MembershipEntry
             }
             long logIndex = channel.getLong();
             int memberCount = channel.getInt();
-            Set<CoreMember> members = new HashSet<>();
+            Set<MemberId> members = new HashSet<>();
             for ( int i = 0; i < memberCount; i++ )
             {
                 members.add( memberMarshal.unmarshal( channel ) );

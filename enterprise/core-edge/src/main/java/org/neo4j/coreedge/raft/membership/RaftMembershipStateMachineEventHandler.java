@@ -23,7 +23,7 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 interface RaftMembershipStateMachineEventHandler
 {
@@ -31,13 +31,13 @@ interface RaftMembershipStateMachineEventHandler
 
     RaftMembershipStateMachineEventHandler onRaftGroupCommitted();
 
-    RaftMembershipStateMachineEventHandler onFollowerStateChange( FollowerStates<CoreMember> followerStates );
+    RaftMembershipStateMachineEventHandler onFollowerStateChange( FollowerStates<MemberId> followerStates );
 
-    RaftMembershipStateMachineEventHandler onMissingMember( CoreMember member );
+    RaftMembershipStateMachineEventHandler onMissingMember( MemberId member );
 
-    RaftMembershipStateMachineEventHandler onSuperfluousMember( CoreMember member );
+    RaftMembershipStateMachineEventHandler onSuperfluousMember( MemberId member );
 
-    RaftMembershipStateMachineEventHandler onTargetChanged( Set<CoreMember> targetMembers );
+    RaftMembershipStateMachineEventHandler onTargetChanged( Set<MemberId> targetMembers );
 
     void onExit();
 
@@ -58,19 +58,19 @@ interface RaftMembershipStateMachineEventHandler
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler onMissingMember( CoreMember member )
+        public RaftMembershipStateMachineEventHandler onMissingMember( MemberId member )
         {
             return this;
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler onSuperfluousMember( CoreMember member )
+        public RaftMembershipStateMachineEventHandler onSuperfluousMember( MemberId member )
         {
             return this;
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler onFollowerStateChange( FollowerStates<CoreMember> followerStates )
+        public RaftMembershipStateMachineEventHandler onFollowerStateChange( FollowerStates<MemberId> followerStates )
         {
             return this;
         }

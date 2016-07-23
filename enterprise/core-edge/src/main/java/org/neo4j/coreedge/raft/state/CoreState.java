@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.coreedge.SessionTracker;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.coreedge.discovery.CoreServerSelectionException;
+import org.neo4j.coreedge.discovery.CoreMemberSelectionException;
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -36,8 +36,8 @@ import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.replication.DistributedOperation;
 import org.neo4j.coreedge.raft.replication.ProgressTracker;
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
-import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
+import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.server.edge.CoreMemberSelectionStrategy;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -59,7 +59,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private final Log log;
     private final CoreStateApplier applier;
-    private final CoreServerSelectionStrategy someoneElse;
+    private final CoreMemberSelectionStrategy someoneElse;
     private final CoreStateDownloader downloader;
     private final RaftLogCommitIndexMonitor commitIndexMonitor;
     private final OperationBatcher batcher;
@@ -79,7 +79,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
             ProgressTracker progressTracker,
             StateStorage<Long> lastFlushedStorage,
             SessionTracker sessionTracker,
-            CoreServerSelectionStrategy someoneElse,
+            CoreMemberSelectionStrategy someoneElse,
             CoreStateApplier applier,
             CoreStateDownloader downloader,
             InFlightMap<Long, RaftLogEntry> inFlightMap,
@@ -202,9 +202,9 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     {
         try
         {
-            downloadSnapshot( someoneElse.coreServer() );
+            downloadSnapshot( someoneElse.coreMember() );
         }
-        catch ( CoreServerSelectionException e )
+        catch ( CoreMemberSelectionException e )
         {
             log.error( "Failed to select server", e );
         }
@@ -220,7 +220,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
      *
      * @param source The source address to attempt a download of a snapshot from.
      */
-    public synchronized void downloadSnapshot( CoreMember source )
+    public synchronized void downloadSnapshot( MemberId source )
     {
         try
         {

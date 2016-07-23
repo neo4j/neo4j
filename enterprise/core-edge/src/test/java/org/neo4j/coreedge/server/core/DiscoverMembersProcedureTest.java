@@ -33,7 +33,7 @@ import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,7 +53,7 @@ public class DiscoverMembersProcedureTest
         // given
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
         coreMembers.put( member( 1 ), coreAddresses( 1 ) );
         coreMembers.put( member( 2 ), coreAddresses( 2 ) );
@@ -80,7 +80,7 @@ public class DiscoverMembersProcedureTest
     {
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 3, 4, 5 ) );
@@ -101,7 +101,7 @@ public class DiscoverMembersProcedureTest
         // given
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
         coreMembers.put( member( 1 ), coreAddresses( 1 ) );
         coreMembers.put( member( 2 ), coreAddresses( 2 ) );
@@ -125,7 +125,7 @@ public class DiscoverMembersProcedureTest
         // given
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
         coreMembers.put( member( 1 ), coreAddresses( 1 ) );
         coreMembers.put( member( 2 ), coreAddresses( 2 ) );

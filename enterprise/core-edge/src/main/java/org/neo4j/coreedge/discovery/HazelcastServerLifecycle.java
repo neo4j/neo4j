@@ -31,7 +31,7 @@ import java.util.List;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -41,13 +41,13 @@ import org.neo4j.logging.LogProvider;
 class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyService
 {
     private final Config config;
-    private final CoreMember myself;
+    private final MemberId myself;
     private final Log log;
     private final MembershipListenerAdapter membershipListener;
 
     private HazelcastInstance hazelcastInstance;
 
-    HazelcastServerLifecycle( Config config, CoreMember myself, LogProvider logProvider )
+    HazelcastServerLifecycle( Config config, MemberId myself, LogProvider logProvider )
     {
         this.config = config;
         this.myself = myself;

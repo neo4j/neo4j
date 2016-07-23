@@ -32,7 +32,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.CoreServer;
+import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -69,8 +69,8 @@ public class ConvertNonCoreEdgeStoreIT
     private static final int CLUSTER_SIZE = 3;
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreServers( CLUSTER_SIZE )
-            .withNumberOfEdgeServers( 0 );
+            .withNumberOfCoreMembers( CLUSTER_SIZE )
+            .withNumberOfEdgeMembers( 0 );
 
     @Parameterized.Parameter()
     public String recordFormat;
@@ -84,7 +84,7 @@ public class ConvertNonCoreEdgeStoreIT
     }
 
     @Test
-    public void shouldReplicateTransactionToCoreServers() throws Throwable
+    public void shouldReplicateTransactionToCoreMembers() throws Throwable
     {
         // given
         File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db" );
@@ -92,7 +92,7 @@ public class ConvertNonCoreEdgeStoreIT
 
         Cluster cluster = this.clusterRule.withRecordFormat( recordFormat ).createCluster();
 
-        Path homeDir = Paths.get(cluster.getCoreServerById( 0 ).homeDir().getPath());
+        Path homeDir = Paths.get(cluster.getCoreMemberById( 0 ).homeDir().getPath());
 
         StringBuilder output = new StringBuilder();
         PrintStream sysout = new PrintStream( new RestoreClusterUtils.MyOutputStream( output ) );
@@ -104,7 +104,7 @@ public class ConvertNonCoreEdgeStoreIT
 
         for ( int serverId = 1; serverId < CLUSTER_SIZE; serverId++ )
         {
-            Path destination = Paths.get(cluster.getCoreServerById( serverId ).homeDir().getPath());
+            Path destination = Paths.get(cluster.getCoreMemberById( serverId ).homeDir().getPath());
 
             new RestoreExistingClusterCli( destination, destination ).execute(
                     toArray( args().from( classicNeo4jStore ).database( "graph.db" ).seed( seed ).force().build() )  );
@@ -122,10 +122,10 @@ public class ConvertNonCoreEdgeStoreIT
             tx.success();
         }
 
-        cluster.addEdgeServerWithIdAndRecordFormat( 4, recordFormat ).start();
+        cluster.addEdgeMemberWithIdAndRecordFormat( 4, recordFormat ).start();
 
         // then
-        for ( final CoreServer server : cluster.coreServers() )
+        for ( final CoreClusterMember server : cluster.coreMembers() )
         {
             CoreGraphDatabase db = server.database();
 

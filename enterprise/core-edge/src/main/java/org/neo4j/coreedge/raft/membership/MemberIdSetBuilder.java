@@ -17,25 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.core;
+package org.neo4j.coreedge.raft.membership;
 
-import org.neo4j.coreedge.discovery.CoreMemberSelectionException;
-import org.neo4j.coreedge.raft.outcome.Outcome;
+import java.util.Set;
+
 import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.edge.CoreMemberSelectionStrategy;
 
-public class LeaderOnlySelectionStrategy implements CoreMemberSelectionStrategy
+public class MemberIdSetBuilder implements RaftGroup.Builder<MemberId>
 {
-    private final Outcome outcome;
-
-    public LeaderOnlySelectionStrategy( Outcome outcome )
-    {
-        this.outcome = outcome;
-    }
-
     @Override
-    public MemberId coreMember() throws CoreMemberSelectionException
+    public RaftGroup<MemberId> build( Set<MemberId> members )
     {
-        return (MemberId) outcome.getLeader();
+        return new MemberIdSet( members );
     }
 }

@@ -33,8 +33,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.CoreServer;
-import org.neo4j.coreedge.discovery.EdgeServer;
+import org.neo4j.coreedge.discovery.CoreClusterMember;
+import org.neo4j.coreedge.discovery.EdgeClusterMember;
 import org.neo4j.coreedge.raft.log.segmented.FileNames;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
@@ -88,7 +88,7 @@ public class EdgeServerReplicationIT
 {
     @Rule
     public final ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withNumberOfCoreServers( 3 ).withNumberOfEdgeServers( 1 );
+            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfEdgeMembers( 1 );
 
     @Test
     public void shouldNotBeAbleToWriteToEdge() throws Exception
@@ -96,7 +96,7 @@ public class EdgeServerReplicationIT
         // given
         Cluster cluster = clusterRule.startCluster();
 
-        EdgeGraphDatabase edgeDB = cluster.findAnEdgeServer().database();
+        EdgeGraphDatabase edgeDB = cluster.findAnEdgeMember().database();
 
         // when (write should fail)
         boolean transactionFailed = false;
@@ -123,9 +123,9 @@ public class EdgeServerReplicationIT
         Cluster cluster = clusterRule.startCluster();
 
         // then
-        for ( final EdgeServer edgeServer : cluster.edgeServers() )
+        for ( final EdgeClusterMember edgeClusterMember : cluster.edgeMembers() )
         {
-            ThrowingSupplier<Boolean,Exception> availability = () -> edgeServer.database().isAvailable( 0 );
+            ThrowingSupplier<Boolean,Exception> availability = () -> edgeClusterMember.database().isAvailable( 0 );
             assertEventually( "edge server becomes available", availability, is( true ), 10, SECONDS );
         }
     }
@@ -134,7 +134,7 @@ public class EdgeServerReplicationIT
     public void shouldEventuallyPullTransactionDownToAllEdgeServers() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).startCluster();
+        Cluster cluster = clusterRule.withNumberOfEdgeMembers( 0 ).startCluster();
         int nodesBeforeEdgeServerStarts = 1;
 
         // when
@@ -146,7 +146,7 @@ public class EdgeServerReplicationIT
             }
         }, cluster );
 
-        cluster.addEdgeServerWithId( 0 ).start();
+        cluster.addEdgeMemberWithId( 0 ).start();
 
         // when
         executeOnLeaderWithRetry( db -> {
@@ -155,7 +155,7 @@ public class EdgeServerReplicationIT
         }, cluster );
 
         // then
-        for ( final EdgeServer server : cluster.edgeServers() )
+        for ( final EdgeClusterMember server : cluster.edgeMembers() )
         {
             GraphDatabaseService edgeDB = server.database();
             try ( Transaction tx = edgeDB.beginTx() )
@@ -175,22 +175,22 @@ public class EdgeServerReplicationIT
     }
 
     @Test
-    public void shouldShutdownRatherThanPullUpdatesFromCoreServerWithDifferentStoreIfServerHasData() throws Exception
+    public void shouldShutdownRatherThanPullUpdatesFromCoreMemberWithDifferentStoreIdIfLocalStoreIsNonEmpty() throws Exception
     {
-        Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).startCluster();
+        Cluster cluster = clusterRule.withNumberOfEdgeMembers( 0 ).startCluster();
 
         executeOnLeaderWithRetry( this::createData, cluster );
 
-        CoreServer follower = cluster.awaitCoreGraphDatabaseWithRole( 2000, Role.FOLLOWER );
+        CoreClusterMember follower = cluster.awaitCoreMemberWithRole( 2000, Role.FOLLOWER );
         // Shutdown server before copying its data, because Windows can't copy open files.
         follower.shutdown();
 
-        EdgeServer edgeServer = cluster.addEdgeServerWithId( 4 );
-        putSomeDataWithDifferentStoreId( edgeServer.storeDir(), follower.storeDir() );
+        EdgeClusterMember edgeClusterMember = cluster.addEdgeMemberWithId( 4 );
+        putSomeDataWithDifferentStoreId( edgeClusterMember.storeDir(), follower.storeDir() );
 
         try
         {
-            edgeServer.start();
+            edgeClusterMember.start();
             fail( "Should have failed to start" );
         }
         catch ( RuntimeException required )
@@ -204,10 +204,10 @@ public class EdgeServerReplicationIT
         }
     }
 
-    private boolean edgesUpToDateAsTheLeader( CoreServer leader, Collection<EdgeServer> edgeServers )
+    private boolean edgesUpToDateAsTheLeader( CoreClusterMember leader, Collection<EdgeClusterMember> edgeClusterMembers )
     {
         long leaderTxId = lastClosedTransactionId( leader.database() );
-        return edgeServers.stream().map( EdgeServer::database ).map( this::lastClosedTransactionId )
+        return edgeClusterMembers.stream().map( EdgeClusterMember::database ).map( this::lastClosedTransactionId )
                 .reduce( true, ( acc, txId ) -> acc && txId == leaderTxId, Boolean::logicalAnd );
     }
 
@@ -230,26 +230,26 @@ public class EdgeServerReplicationIT
     public void anEdgeServerShouldBeAbleToRejoinTheCluster() throws Exception
     {
         int edgeServerId = 4;
-        Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).startCluster();
+        Cluster cluster = clusterRule.withNumberOfEdgeMembers( 0 ).startCluster();
 
         executeOnLeaderWithRetry( this::createData, cluster );
 
-        cluster.addEdgeServerWithId( edgeServerId );
+        cluster.addEdgeMemberWithId( edgeServerId );
 
         // let's spend some time by adding more data
         executeOnLeaderWithRetry( this::createData, cluster );
 
-        cluster.removeEdgeServerWithServerId( edgeServerId );
+        cluster.removeEdgeMemberWithMemberId( edgeServerId );
 
         // let's spend some time by adding more data
         executeOnLeaderWithRetry( this::createData, cluster );
 
-        cluster.addEdgeServerWithId( edgeServerId ).start();
+        cluster.addEdgeMemberWithId( edgeServerId ).start();
 
-        awaitEx( () -> edgesUpToDateAsTheLeader( cluster.awaitLeader(), cluster.edgeServers() ), 1, TimeUnit.MINUTES );
+        awaitEx( () -> edgesUpToDateAsTheLeader( cluster.awaitLeader(), cluster.edgeMembers() ), 1, TimeUnit.MINUTES );
 
-        List<File> coreStoreDirs = cluster.coreServers().stream().map( CoreServer::storeDir ).collect( toList() );
-        List<File> edgeStoreDirs = cluster.edgeServers().stream().map( EdgeServer::storeDir ).collect( toList() );
+        List<File> coreStoreDirs = cluster.coreMembers().stream().map( CoreClusterMember::storeDir ).collect( toList() );
+        List<File> edgeStoreDirs = cluster.edgeMembers().stream().map( EdgeClusterMember::storeDir ).collect( toList() );
 
         cluster.shutdown();
 
@@ -267,14 +267,14 @@ public class EdgeServerReplicationIT
     public void shouldThrowExceptionIfEdgeRecordFormatDiffersToCoreRecordFormat() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).withRecordFormat( HighLimit.NAME ).startCluster();
+        Cluster cluster = clusterRule.withNumberOfEdgeMembers( 0 ).withRecordFormat( HighLimit.NAME ).startCluster();
 
         // when
         executeOnLeaderWithRetry( this::createData, cluster );
 
         try
         {
-            cluster.addEdgeServerWithIdAndRecordFormat( 0, StandardV3_0.NAME );
+            cluster.addEdgeMemberWithIdAndRecordFormat( 0, StandardV3_0.NAME );
         }
         catch ( Exception e )
         {
@@ -291,7 +291,7 @@ public class EdgeServerReplicationIT
                 CoreEdgeClusterSettings.raft_log_pruning_frequency.name(), "500ms",
                 CoreEdgeClusterSettings.state_machine_flush_window_size.name(), "1",
                 CoreEdgeClusterSettings.raft_log_pruning_strategy.name(), "1 entries" );
-        Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).withSharedCoreParams( params )
+        Cluster cluster = clusterRule.withNumberOfEdgeMembers( 0 ).withSharedCoreParams( params )
                 .withRecordFormat( HighLimit.NAME ).startCluster();
 
         cluster.coreTx( ( db, tx ) -> {
@@ -305,7 +305,7 @@ public class EdgeServerReplicationIT
 
         long baseVersion = versionBy( cluster.awaitLeader().storeDir(), Math::max );
 
-        CoreServer coreGraphDatabase = null;
+        CoreClusterMember coreGraphDatabase = null;
         for ( int j = 0; j < 2; j++ )
         {
             coreGraphDatabase = cluster.coreTx( ( db, tx ) -> {
@@ -323,10 +323,10 @@ public class EdgeServerReplicationIT
                 5, SECONDS );
 
         // when
-        cluster.addEdgeServerWithIdAndRecordFormat( 42, HighLimit.NAME ).start();
+        cluster.addEdgeMemberWithIdAndRecordFormat( 42, HighLimit.NAME ).start();
 
         // then
-        for ( final EdgeServer edge : cluster.edgeServers() )
+        for ( final EdgeClusterMember edge : cluster.edgeMembers() )
         {
             assertEventually( "edge server available", () -> edge.database().isAvailable( 0 ), is( true ), 10,
                     SECONDS );

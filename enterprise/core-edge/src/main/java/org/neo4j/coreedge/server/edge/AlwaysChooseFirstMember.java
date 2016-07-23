@@ -20,21 +20,21 @@
 package org.neo4j.coreedge.server.edge;
 
 import org.neo4j.coreedge.discovery.ClusterTopology;
-import org.neo4j.coreedge.discovery.CoreServerSelectionException;
+import org.neo4j.coreedge.discovery.CoreMemberSelectionException;
 import org.neo4j.coreedge.discovery.TopologyService;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
-public class AlwaysChooseFirstServer implements CoreServerSelectionStrategy
+public class AlwaysChooseFirstMember implements CoreMemberSelectionStrategy
 {
     private final TopologyService discoveryService;
 
-    public AlwaysChooseFirstServer( TopologyService discoveryService)
+    public AlwaysChooseFirstMember( TopologyService discoveryService)
     {
         this.discoveryService = discoveryService;
     }
 
     @Override
-    public CoreMember coreServer() throws CoreServerSelectionException
+    public MemberId coreMember() throws CoreMemberSelectionException
     {
         ClusterTopology clusterTopology = discoveryService.currentTopology();
         return clusterTopology.coreMembers().iterator().next();

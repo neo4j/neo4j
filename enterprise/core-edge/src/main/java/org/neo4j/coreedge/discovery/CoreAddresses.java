@@ -24,14 +24,14 @@ import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 public class CoreAddresses
 {
     private final AdvertisedSocketAddress raftServer;
-    private final AdvertisedSocketAddress coreServer;
+    private final AdvertisedSocketAddress catchupServer;
     private final AdvertisedSocketAddress boltServer;
 
-    public CoreAddresses( AdvertisedSocketAddress raftServer, AdvertisedSocketAddress coreServer,
+    public CoreAddresses( AdvertisedSocketAddress raftServer, AdvertisedSocketAddress catchupServer,
             AdvertisedSocketAddress boltServer )
     {
         this.raftServer = raftServer;
-        this.coreServer = coreServer;
+        this.catchupServer = catchupServer;
         this.boltServer = boltServer;
     }
 
@@ -40,9 +40,9 @@ public class CoreAddresses
         return raftServer;
     }
 
-    public AdvertisedSocketAddress getCoreServer()
+    public AdvertisedSocketAddress getCatchupServer()
     {
-        return coreServer;
+        return catchupServer;
     }
 
     public AdvertisedSocketAddress getBoltServer()

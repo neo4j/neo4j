@@ -24,7 +24,7 @@ import java.util.Set;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -34,12 +34,12 @@ import org.neo4j.logging.LogProvider;
 class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopologyService
 {
     private final SharedDiscoveryService sharedDiscoveryService;
-    private final CoreMember member;
+    private final MemberId member;
     private final CoreAddresses coreAddresses;
     private final Set<Listener> listeners = new LinkedHashSet<>();
     private final Log log;
 
-    SharedDiscoveryCoreClient( Config config, CoreMember member,
+    SharedDiscoveryCoreClient( Config config, MemberId member,
             SharedDiscoveryService sharedDiscoveryService, LogProvider logProvider )
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
@@ -57,7 +57,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     @Override
     public void start() throws InterruptedException
     {
-        sharedDiscoveryService.registerCoreServer( member, coreAddresses, this );
+        sharedDiscoveryService.registerCoreMember( member, coreAddresses, this );
         log.info( "Registered core server %s", member );
         sharedDiscoveryService.waitForClusterFormation();
         log.info( "Cluster formed" );
@@ -66,7 +66,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     @Override
     public void stop()
     {
-        sharedDiscoveryService.unRegisterCoreServer( member, this );
+        sharedDiscoveryService.unRegisterCoreMember( member, this );
         log.info( "Unregistered core server %s", member );
     }
 

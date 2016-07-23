@@ -31,7 +31,7 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.state.InFlightLogEntryReader;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -96,13 +96,13 @@ public class RaftLogShipper
         RESEND
     }
 
-    private final Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
+    private final Outbound<MemberId, RaftMessages.RaftMessage> outbound;
     private final LogProvider logProvider;
     private final Log log;
     private final ReadableRaftLog raftLog;
     private final Clock clock;
-    private final CoreMember follower;
-    private final CoreMember leader;
+    private final MemberId follower;
+    private final MemberId leader;
     private final long retryTimeMillis;
     private final int catchupBatchSize;
     private final int maxAllowedShippingLag;
@@ -116,9 +116,9 @@ public class RaftLogShipper
     private LeaderContext lastLeaderContext;
     private Mode mode = Mode.MISMATCH;
 
-    RaftLogShipper( Outbound<CoreMember, RaftMessages.RaftMessage> outbound, LogProvider logProvider,
+    RaftLogShipper( Outbound<MemberId, RaftMessages.RaftMessage> outbound, LogProvider logProvider,
                     ReadableRaftLog raftLog, Clock clock,
-                    CoreMember leader, CoreMember follower, long leaderTerm, long leaderCommit, long retryTimeMillis,
+                    MemberId leader, MemberId follower, long leaderTerm, long leaderCommit, long retryTimeMillis,
                     int catchupBatchSize, int maxAllowedShippingLag, InFlightMap<Long, RaftLogEntry> inFlightMap )
     {
         this.outbound = outbound;

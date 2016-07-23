@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.raft.state.SafeStateMarshal;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -77,9 +77,9 @@ public class ReplicatedLockTokenState
 
     public static class Marshal extends SafeStateMarshal<ReplicatedLockTokenState>
     {
-        private final ChannelMarshal<CoreMember> memberMarshal;
+        private final ChannelMarshal<MemberId> memberMarshal;
 
-        public Marshal( ChannelMarshal<CoreMember> memberMarshal )
+        public Marshal( ChannelMarshal<MemberId> memberMarshal )
         {
             this.memberMarshal = memberMarshal;
         }
@@ -98,7 +98,7 @@ public class ReplicatedLockTokenState
         {
             long logIndex = channel.getLong();
             int candidateId = channel.getInt();
-            CoreMember member = memberMarshal.unmarshal( channel );
+            MemberId member = memberMarshal.unmarshal( channel );
 
             return new ReplicatedLockTokenState( logIndex, new ReplicatedLockTokenRequest( member, candidateId ) );
         }

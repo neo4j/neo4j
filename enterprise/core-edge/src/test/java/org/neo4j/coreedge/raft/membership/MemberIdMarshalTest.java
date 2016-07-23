@@ -28,25 +28,25 @@ import java.util.UUID;
 import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class CoreMemberMarshalTest
+public class MemberIdMarshalTest
 {
     @Test
     public void shouldSerializeAndDeserialize() throws Exception
     {
         // given
-        CoreMember.CoreMemberMarshal marshal = new CoreMember.CoreMemberMarshal();
+        MemberId.MemberIdMarshal marshal = new MemberId.MemberIdMarshal();
 
-        final CoreMember member = new CoreMember( UUID.randomUUID() );
+        final MemberId member = new MemberId( UUID.randomUUID() );
 
         // when
         ByteBuf buffer = Unpooled.buffer( 1_000 );
         marshal.marshal( member, new NetworkFlushableChannelNetty4( buffer ) );
-        final CoreMember recovered = marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) );
+        final MemberId recovered = marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) );
 
         // then
         assertEquals( member, recovered );
@@ -57,8 +57,8 @@ public class CoreMemberMarshalTest
     {
         // given
         // a CoreMember and a ByteBuffer to write it to
-        CoreMember.CoreMemberMarshal marshal = new CoreMember.CoreMemberMarshal();
-        final CoreMember aRealMember = new CoreMember( UUID.randomUUID() );
+        MemberId.MemberIdMarshal marshal = new MemberId.MemberIdMarshal();
+        final MemberId aRealMember = new MemberId( UUID.randomUUID() );
 
         ByteBuf buffer = Unpooled.buffer( 1000 );
 

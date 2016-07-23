@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.util.Set;
 
 import org.neo4j.coreedge.raft.RaftTestNetwork;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,7 +62,7 @@ public class ElectionPerformanceIT
         final int iterations = 10;
 
         RaftTestNetwork net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
-        Set<CoreMember> members = asSet( member( 0 ), member( 1 ), member( 2 ) );
+        Set<MemberId> members = asSet( member( 0 ), member( 1 ), member( 2 ) );
         Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval );
         DisconnectLeaderScenario scenario = new DisconnectLeaderScenario( fixture, electionTimeout );
 
@@ -103,7 +103,7 @@ public class ElectionPerformanceIT
         final int iterations = 100;
 
         RaftTestNetwork net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
-        Set<CoreMember> members = asSet( member( 0 ), member( 1 ), member( 2 ) );
+        Set<MemberId> members = asSet( member( 0 ), member( 1 ), member( 2 ) );
         Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval );
         DisconnectLeaderScenario scenario = new DisconnectLeaderScenario( fixture, electionTimeout );
 

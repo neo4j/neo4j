@@ -32,7 +32,7 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.logging.Log;
 
@@ -42,7 +42,7 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
 public class Leader implements RaftMessageHandler
 {
-    private static Iterable<CoreMember> replicationTargets( final ReadableRaftState ctx )
+    private static Iterable<MemberId> replicationTargets( final ReadableRaftState ctx )
     {
         return new FilteringIterable<>( ctx.replicationMembers(), member -> !member.equals( ctx.myself() ) );
     }
@@ -53,7 +53,7 @@ public class Leader implements RaftMessageHandler
         long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
         Heartbeat heartbeat = new Heartbeat( ctx.myself(), ctx.term(), commitIndex,
                 commitIndexTerm );
-        for ( CoreMember to : replicationTargets( ctx ) )
+        for ( MemberId to : replicationTargets( ctx ) )
         {
             outcome.addOutgoingMessage( new RaftMessages.Directed( to, heartbeat ) );
         }

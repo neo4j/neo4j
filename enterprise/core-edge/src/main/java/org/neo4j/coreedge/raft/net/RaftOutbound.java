@@ -30,12 +30,12 @@ import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.raft.RaftMessages.StoreIdAwareMessage;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.stream.Collectors.toList;
 
-public class RaftOutbound implements Outbound<CoreMember, RaftMessage>
+public class RaftOutbound implements Outbound<MemberId, RaftMessage>
 {
     private final CoreTopologyService discoveryService;
     private final Outbound<AdvertisedSocketAddress,Message> outbound;
@@ -53,7 +53,7 @@ public class RaftOutbound implements Outbound<CoreMember, RaftMessage>
     }
 
     @Override
-    public void send( CoreMember to, RaftMessage message )
+    public void send( MemberId to, RaftMessage message )
     {
         try
         {
@@ -67,7 +67,7 @@ public class RaftOutbound implements Outbound<CoreMember, RaftMessage>
     }
 
     @Override
-    public void send( CoreMember to, Collection<RaftMessage> messages )
+    public void send( MemberId to, Collection<RaftMessage> messages )
     {
         try
         {

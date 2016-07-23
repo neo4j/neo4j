@@ -23,7 +23,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Predicate;
 
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.helpers.collection.Iterables;
 
@@ -31,7 +31,7 @@ import static java.lang.String.format;
 
 public class MessageUtils
 {
-    public static RaftMessages.RaftMessage messageFor( Outcome outcome, final CoreMember member )
+    public static RaftMessages.RaftMessage messageFor( Outcome outcome, final MemberId member )
     {
         Predicate<RaftMessages.Directed> selectMember = message -> message.to() == member;
         try

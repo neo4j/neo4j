@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.Log;
@@ -42,12 +42,12 @@ public class ReplicatedIdRangeAcquirer
 
     private final int allocationChunk;
 
-    private final CoreMember me;
+    private final MemberId me;
     private final Log log;
 
     public ReplicatedIdRangeAcquirer(
             Replicator replicator, ReplicatedIdAllocationStateMachine idAllocationStateMachine,
-            int allocationChunk, CoreMember me, LogProvider logProvider )
+            int allocationChunk, MemberId me, LogProvider logProvider )
     {
         this.replicator = replicator;
         this.idAllocationStateMachine = idAllocationStateMachine;

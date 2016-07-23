@@ -31,7 +31,7 @@ import java.util.UUID;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
@@ -77,15 +77,15 @@ class HazelcastClusterTopology
         return iterator.hasNext() && iterator.next().localMember();
     }
 
-    static Map<CoreMember, CoreAddresses> toCoreMemberMap( Set<Member> members, Log log )
+    static Map<MemberId, CoreAddresses> toCoreMemberMap( Set<Member> members, Log log )
     {
-        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
 
         for ( Member member : members )
         {
             try
             {
-                Pair<CoreMember, CoreAddresses> pair = extractMemberAttributes( member );
+                Pair<MemberId, CoreAddresses> pair = extractMemberAttributes( member );
                 coreMembers.put( pair.first(), pair.other() );
             }
             catch ( IllegalArgumentException e )
@@ -97,7 +97,7 @@ class HazelcastClusterTopology
         return coreMembers;
     }
 
-    static MemberAttributeConfig buildMemberAttributes( CoreMember myself, Config config )
+    static MemberAttributeConfig buildMemberAttributes( MemberId myself, Config config )
     {
         MemberAttributeConfig memberAttributeConfig = new MemberAttributeConfig();
         memberAttributeConfig.setStringAttribute( MEMBER_UUID, myself.getUuid().toString() );
@@ -114,12 +114,12 @@ class HazelcastClusterTopology
         return memberAttributeConfig;
     }
 
-    static Pair<CoreMember, CoreAddresses> extractMemberAttributes( Member member )
+    static Pair<MemberId, CoreAddresses> extractMemberAttributes( Member member )
     {
-        CoreMember coreMember =
-                new CoreMember( UUID.fromString( member.getStringAttribute( MEMBER_UUID ) ) );
+        MemberId memberId =
+                new MemberId( UUID.fromString( member.getStringAttribute( MEMBER_UUID ) ) );
 
-        return Pair.of( coreMember, new CoreAddresses(
+        return Pair.of( memberId, new CoreAddresses(
                         new AdvertisedSocketAddress( member.getStringAttribute( RAFT_SERVER ) ),
                         new AdvertisedSocketAddress( member.getStringAttribute( TRANSACTION_SERVER ) ),
                         new AdvertisedSocketAddress( member.getStringAttribute( BOLT_SERVER ) )

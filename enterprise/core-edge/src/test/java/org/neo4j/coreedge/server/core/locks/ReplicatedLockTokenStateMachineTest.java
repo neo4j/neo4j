@@ -28,7 +28,7 @@ import org.neo4j.coreedge.raft.state.DurableStateStorage;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.raft.state.StateMarshal;
 import org.neo4j.coreedge.raft.state.StateStorage;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
@@ -187,15 +187,15 @@ public class ReplicatedLockTokenStateMachineTest
         fsa.mkdir( testDir.directory() );
 
         StateMarshal<ReplicatedLockTokenState> marshal =
-                new ReplicatedLockTokenState.Marshal( new CoreMember.CoreMemberMarshal() );
+                new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() );
 
         DurableStateStorage<ReplicatedLockTokenState> storage = new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", marshal, 100, health(), NullLogProvider.getInstance() );
 
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine( storage );
 
-        CoreMember memberA = member( 0 );
-        CoreMember memberB = member( 1 );
+        MemberId memberA = member( 0 );
+        MemberId memberB = member( 1 );
 
         // when
         int candidateId;
@@ -227,15 +227,15 @@ public class ReplicatedLockTokenStateMachineTest
         fsa.mkdir( testDir.directory() );
 
         StateMarshal<ReplicatedLockTokenState> marshal =
-                new ReplicatedLockTokenState.Marshal( new CoreMember.CoreMemberMarshal() );
+                new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() );
 
         DurableStateStorage<ReplicatedLockTokenState> storage = new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", marshal, 100, health(), NullLogProvider.getInstance() );
 
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine( storage );
 
-        CoreMember memberA = member( 0 );
-        CoreMember memberB = member( 1 );
+        MemberId memberA = member( 0 );
+        MemberId memberB = member( 1 );
 
         stateMachine.applyCommand( new ReplicatedLockTokenRequest( memberA, 0 ), 3, r -> {} );
 
@@ -252,7 +252,7 @@ public class ReplicatedLockTokenStateMachineTest
         // Given
         @SuppressWarnings( "unchecked" )
         StateStorage<ReplicatedLockTokenState> storage = mock( StateStorage.class );
-        CoreMember initialHoldingCoreMember = member( 0 );
+        MemberId initialHoldingCoreMember = member( 0 );
         ReplicatedLockTokenState initialState = new ReplicatedLockTokenState( 123, new ReplicatedLockTokenRequest( initialHoldingCoreMember, 3 ) );
         when( storage.getInitialState() ).thenReturn( initialState );
 

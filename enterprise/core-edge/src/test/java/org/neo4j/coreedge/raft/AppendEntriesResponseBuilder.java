@@ -19,13 +19,13 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public class AppendEntriesResponseBuilder
 {
     private boolean success;
     private long term = -1;
-    private CoreMember from;
+    private MemberId from;
     private long matchIndex = -1;
     private long appendIndex = -1;
 
@@ -36,7 +36,7 @@ public class AppendEntriesResponseBuilder
         return new RaftMessages.AppendEntries.Response( from, term, success, matchIndex, appendIndex );
     }
 
-    public AppendEntriesResponseBuilder from( CoreMember from )
+    public AppendEntriesResponseBuilder from( MemberId from )
     {
         this.from = from;
         return this;

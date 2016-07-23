@@ -25,14 +25,14 @@ import java.util.Set;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.Log;
 
 public class Election
 {
     public static  boolean start( ReadableRaftState ctx, Outcome outcome, Log log ) throws IOException
     {
-        Set<CoreMember> currentMembers = ctx.votingMembers();
+        Set<MemberId> currentMembers = ctx.votingMembers();
         if ( currentMembers == null || !currentMembers.contains( ctx.myself() ) )
         {
             log.info( "Election attempted but not started, current members are %s, i am %s",

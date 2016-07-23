@@ -27,7 +27,7 @@ import java.util.Set;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.CoreServer;
+import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -44,8 +44,8 @@ public class RecoveryIT
 {
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreServers( 3 )
-            .withNumberOfEdgeServers( 0 );
+            .withNumberOfCoreMembers( 3 )
+            .withNumberOfEdgeMembers( 0 );
 
     @Test
     public void shouldBeConsistentAfterShutdown() throws Exception
@@ -55,7 +55,7 @@ public class RecoveryIT
 
         fireSomeLoadAtTheCluster( cluster );
 
-        Set<File> storeDirs = cluster.coreServers().stream().map( CoreServer::storeDir ).collect( toSet() );
+        Set<File> storeDirs = cluster.coreMembers().stream().map( CoreClusterMember::storeDir ).collect( toSet() );
 
         // when
         cluster.shutdown();
@@ -69,18 +69,18 @@ public class RecoveryIT
     {
         // given
         Cluster cluster = clusterRule.startCluster();
-        int clusterSize = cluster.numberOfCoreServers();
+        int clusterSize = cluster.numberOfCoreMembersReportedByTopology();
 
         fireSomeLoadAtTheCluster( cluster );
 
-        Set<File> storeDirs = cluster.coreServers().stream().map( CoreServer::storeDir ).collect( toSet() );
+        Set<File> storeDirs = cluster.coreMembers().stream().map( CoreClusterMember::storeDir ).collect( toSet() );
 
         // when
         for ( int i = 0; i < clusterSize; i++ )
         {
-            cluster.removeCoreServerWithServerId( i );
+            cluster.removeCoreMemberWithMemberId( i );
             fireSomeLoadAtTheCluster( cluster );
-            cluster.addCoreServerWithServerId( i, clusterSize ).start();
+            cluster.addCoreMemberWithId( i, clusterSize ).start();
         }
 
         cluster.shutdown();
@@ -107,7 +107,7 @@ public class RecoveryIT
 
     private void fireSomeLoadAtTheCluster( Cluster cluster ) throws Exception
     {
-        for ( int i = 0; i < cluster.numberOfCoreServers(); i++ )
+        for ( int i = 0; i < cluster.numberOfCoreMembersReportedByTopology(); i++ )
         {
             final String prop = "val" + i;
             cluster.coreTx( ( db, tx ) -> {

@@ -47,19 +47,19 @@ import static org.neo4j.kernel.api.security.AccessMode.Static.READ;
 public class ClusterOverviewIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreServers( 3 );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 );
 
     @Test
     public void shouldDiscoverCoreClusterMembers() throws Exception
     {
         // when
-        Cluster cluster = clusterRule.withNumberOfEdgeServers( 1 ).startCluster();
+        Cluster cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
 
         // then
         List<Object[]> overview;
         for ( int i = 0; i < 3; i++ )
         {
-            overview = clusterOverview( cluster.getCoreServerById( i ).database() );
+            overview = clusterOverview( cluster.getCoreMemberById( i ).database() );
 
             assertThat( overview, containsRole( "leader", 1 ) );
             assertThat( overview, containsRole( "follower", 2 ) );

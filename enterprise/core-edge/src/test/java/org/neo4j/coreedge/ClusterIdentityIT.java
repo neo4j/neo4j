@@ -31,7 +31,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.CoreServer;
+import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -58,8 +58,8 @@ public class ClusterIdentityIT
 
     @Rule
     public ClusterRule clusterRule = new ClusterRule( ClusterIdentityIT.class )
-            .withNumberOfCoreServers( 3 )
-            .withNumberOfEdgeServers( 0 )
+            .withNumberOfCoreMembers( 3 )
+            .withNumberOfEdgeMembers( 0 )
             .withSharedCoreParam( CoreEdgeClusterSettings.raft_log_pruning_strategy, "3 entries" )
             .withSharedCoreParam( CoreEdgeClusterSettings.raft_log_rotation_size, "1K" );
 
@@ -83,7 +83,7 @@ public class ClusterIdentityIT
             tx.success();
         } );
 
-        List<File> coreStoreDirs = storeDirs( cluster.coreServers() );
+        List<File> coreStoreDirs = storeDirs( cluster.coreMembers() );
 
         cluster.shutdown();
 
@@ -106,7 +106,7 @@ public class ClusterIdentityIT
         // WHEN
         cluster.start();
 
-        List<File> coreStoreDirs = storeDirs( cluster.coreServers() );
+        List<File> coreStoreDirs = storeDirs( cluster.coreMembers() );
 
         cluster.coreTx( ( db, tx ) ->
         {
@@ -132,15 +132,15 @@ public class ClusterIdentityIT
             tx.success();
         } );
 
-        File storeDir = cluster.getCoreServerById( 0 ).storeDir();
+        File storeDir = cluster.getCoreMemberById( 0 ).storeDir();
 
-        cluster.removeCoreServerWithServerId( 0 );
+        cluster.removeCoreMemberWithMemberId( 0 );
         changeStoreId( storeDir );
 
         // WHEN
         try
         {
-            cluster.addCoreServerWithServerId( 0, 3 ).start();
+            cluster.addCoreMemberWithId( 0, 3 ).start();
             fail( "Should not have joined the cluster" );
         }
         catch ( RuntimeException e )
@@ -160,24 +160,24 @@ public class ClusterIdentityIT
             tx.success();
         } );
 
-        cluster.removeCoreServerWithServerId( 0 );
+        cluster.removeCoreMemberWithMemberId( 0 );
 
         createSomeData( 100, cluster );
 
-        for ( CoreServer db : cluster.coreServers() )
+        for ( CoreClusterMember db : cluster.coreMembers() )
         {
             db.coreState().compact();
         }
 
         // WHEN
-        cluster.addCoreServerWithServerId( 0, 3 ).start();
+        cluster.addCoreMemberWithId( 0, 3 ).start();
 
         cluster.awaitLeader();
 
         // THEN
         assertEquals( 3, cluster.healthyCoreMembers().size() );
 
-        List<File> coreStoreDirs = storeDirs( cluster.coreServers() );
+        List<File> coreStoreDirs = storeDirs( cluster.coreMembers() );
         cluster.shutdown();
         assertAllStoresHaveTheSameStoreId( coreStoreDirs, fs );
     }
@@ -193,13 +193,13 @@ public class ClusterIdentityIT
             tx.success();
         } );
 
-        File storeDir = cluster.getCoreServerById( 0 ).storeDir();
-        cluster.removeCoreServerWithServerId( 0 );
+        File storeDir = cluster.getCoreMemberById( 0 ).storeDir();
+        cluster.removeCoreMemberWithMemberId( 0 );
         changeStoreId( storeDir );
 
         createSomeData( 100, cluster );
 
-        for ( CoreServer db : cluster.coreServers() )
+        for ( CoreClusterMember db : cluster.coreMembers() )
         {
             db.coreState().compact();
         }
@@ -207,7 +207,7 @@ public class ClusterIdentityIT
         // WHEN
         try
         {
-            cluster.addCoreServerWithServerId( 0, 3 ).start();
+            cluster.addCoreMemberWithId( 0, 3 ).start();
             fail( "Should not have joined the cluster" );
         }
         catch ( RuntimeException e )
@@ -229,27 +229,27 @@ public class ClusterIdentityIT
 
         createSomeData( 100, cluster );
 
-        for ( CoreServer db : cluster.coreServers() )
+        for ( CoreClusterMember db : cluster.coreMembers() )
         {
             db.coreState().compact();
         }
 
         // WHEN
-        cluster.addCoreServerWithServerId( 4, 4 ).start();
+        cluster.addCoreMemberWithId( 4, 4 ).start();
 
         cluster.awaitLeader();
 
         // THEN
         assertEquals( 4, cluster.healthyCoreMembers().size() );
 
-        List<File> coreStoreDirs = storeDirs( cluster.coreServers() );
+        List<File> coreStoreDirs = storeDirs( cluster.coreMembers() );
         cluster.shutdown();
         assertAllStoresHaveTheSameStoreId( coreStoreDirs, fs );
     }
 
-    private List<File> storeDirs( Collection<CoreServer> dbs )
+    private List<File> storeDirs( Collection<CoreClusterMember> dbs )
     {
-        return dbs.stream().map( CoreServer::storeDir ).collect( Collectors.toList() );
+        return dbs.stream().map( CoreClusterMember::storeDir ).collect( Collectors.toList() );
     }
 
     private void createSomeData( int items, Cluster cluster ) throws TimeoutException, InterruptedException

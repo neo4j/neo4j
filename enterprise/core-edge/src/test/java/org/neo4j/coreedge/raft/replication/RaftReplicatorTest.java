@@ -36,7 +36,7 @@ import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
 import org.neo4j.coreedge.raft.state.Result;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -53,8 +53,8 @@ public class RaftReplicatorTest
     private static final int DEFAULT_TIMEOUT_MS = 15_000;
 
     private LeaderLocator leaderLocator = mock( LeaderLocator.class );
-    private CoreMember myself = new CoreMember( UUID.randomUUID() );
-    private CoreMember leader = new CoreMember( UUID.randomUUID() );
+    private MemberId myself = new MemberId( UUID.randomUUID() );
+    private MemberId leader = new MemberId( UUID.randomUUID() );
     private GlobalSession session = new GlobalSession( UUID.randomUUID(), myself );
     private LocalSessionPool sessionPool = new LocalSessionPool( session );
     private RetryStrategy retryStrategy = new ConstantTimeRetryStrategy( 1, SECONDS );
@@ -212,20 +212,20 @@ public class RaftReplicatorTest
         }
     }
 
-    private class CapturingOutbound<MESSAGE extends Message> implements Outbound<CoreMember, MESSAGE>
+    private class CapturingOutbound<MESSAGE extends Message> implements Outbound<MemberId, MESSAGE>
     {
-        private CoreMember lastTo;
+        private MemberId lastTo;
         private int count;
 
         @Override
-        public void send( CoreMember to, MESSAGE message )
+        public void send( MemberId to, MESSAGE message )
         {
             this.lastTo = to;
             this.count++;
         }
 
         @Override
-        public void send( CoreMember to, Collection<MESSAGE> messages )
+        public void send( MemberId to, Collection<MESSAGE> messages )
         {
             this.lastTo = to;
             this.count+=messages.size();

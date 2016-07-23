@@ -25,19 +25,19 @@ import java.util.function.Consumer;
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
 import org.neo4j.coreedge.raft.state.CommandDispatcher;
 import org.neo4j.coreedge.raft.state.Result;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 import static java.lang.String.format;
 
 public class ReplicatedLockTokenRequest implements CoreReplicatedContent, LockToken
 {
-    private final CoreMember owner;
+    private final MemberId owner;
     private final int candidateId;
 
     public static final ReplicatedLockTokenRequest INVALID_REPLICATED_LOCK_TOKEN_REQUEST =
             new ReplicatedLockTokenRequest( null, LockToken.INVALID_LOCK_TOKEN_ID );
 
-    public ReplicatedLockTokenRequest( CoreMember owner, int candidateId )
+    public ReplicatedLockTokenRequest( MemberId owner, int candidateId )
     {
         this.owner = owner;
         this.candidateId = candidateId;
@@ -49,7 +49,7 @@ public class ReplicatedLockTokenRequest implements CoreReplicatedContent, LockTo
         return candidateId;
     }
 
-    public CoreMember owner()
+    public MemberId owner()
     {
         return owner;
     }

@@ -29,21 +29,21 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.coreedge.network.Message;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public class DirectNetworking
 {
-    private final Map<CoreMember, org.neo4j.coreedge.raft.net.Inbound.MessageHandler> handlers = new HashMap<>();
-    private final Map<CoreMember, Queue<Message>> messageQueues = new HashMap<>();
-    private final Set<CoreMember> disconnectedMembers = Collections.newSetFromMap( new ConcurrentHashMap<>() );
+    private final Map<MemberId, org.neo4j.coreedge.raft.net.Inbound.MessageHandler> handlers = new HashMap<>();
+    private final Map<MemberId, Queue<Message>> messageQueues = new HashMap<>();
+    private final Set<MemberId> disconnectedMembers = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
     public void processMessages()
     {
         while ( messagesToBeProcessed() )
         {
-            for ( Map.Entry<CoreMember, Queue<Message>> entry : messageQueues.entrySet() )
+            for ( Map.Entry<MemberId, Queue<Message>> entry : messageQueues.entrySet() )
             {
-                CoreMember id = entry.getKey();
+                MemberId id = entry.getKey();
                 Queue<Message> queue = entry.getValue();
                 if ( !queue.isEmpty() )
                 {
@@ -66,28 +66,28 @@ public class DirectNetworking
         return false;
     }
 
-    public void disconnect( CoreMember id )
+    public void disconnect( MemberId id )
     {
         disconnectedMembers.add( id );
     }
 
-    public void reconnect( CoreMember id )
+    public void reconnect( MemberId id )
     {
         disconnectedMembers.remove( id );
     }
 
     public class Outbound implements
-            org.neo4j.coreedge.raft.net.Outbound<CoreMember, RaftMessages.RaftMessage>
+            org.neo4j.coreedge.raft.net.Outbound<MemberId, RaftMessages.RaftMessage>
     {
-        private final CoreMember me;
+        private final MemberId me;
 
-        public Outbound( CoreMember me )
+        public Outbound( MemberId me )
         {
             this.me = me;
         }
 
         @Override
-        public synchronized void send( CoreMember to, final RaftMessages.RaftMessage message )
+        public synchronized void send( MemberId to, final RaftMessages.RaftMessage message )
         {
             if ( canDeliver( to ) )
             {
@@ -96,7 +96,7 @@ public class DirectNetworking
         }
 
         @Override
-        public void send( CoreMember to, Collection<RaftMessages.RaftMessage> messages )
+        public void send( MemberId to, Collection<RaftMessages.RaftMessage> messages )
         {
             if ( canDeliver( to ) )
             {
@@ -104,7 +104,7 @@ public class DirectNetworking
             }
         }
 
-        private boolean canDeliver( CoreMember to )
+        private boolean canDeliver( MemberId to )
         {
             return messageQueues.containsKey( to ) &&
                     !disconnectedMembers.contains( to ) &&
@@ -114,9 +114,9 @@ public class DirectNetworking
 
     public class Inbound implements org.neo4j.coreedge.raft.net.Inbound
     {
-        private final CoreMember id;
+        private final MemberId id;
 
-        public Inbound( CoreMember id )
+        public Inbound( MemberId id )
         {
             this.id = id;
         }

@@ -30,23 +30,23 @@ import java.util.Set;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.RaftState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 
 public class ClusterState
 {
-    public final Map<CoreMember, Role> roles;
-    public final Map<CoreMember, ComparableRaftState> states;
-    public final Map<CoreMember, Queue<RaftMessages.RaftMessage>> queues;
+    public final Map<MemberId, Role> roles;
+    public final Map<MemberId, ComparableRaftState> states;
+    public final Map<MemberId, Queue<RaftMessages.RaftMessage>> queues;
 
-    public ClusterState( Set<CoreMember> members ) throws IOException
+    public ClusterState( Set<MemberId> members ) throws IOException
     {
         this.roles = new HashMap<>();
         this.states = new HashMap<>();
         this.queues = new HashMap<>();
 
-        for ( CoreMember member : members )
+        for ( MemberId member : members )
         {
             roles.put( member, Role.FOLLOWER );
             RaftState memberState = raftState().myself( member ).votingMembers( members ).build();
@@ -89,7 +89,7 @@ public class ClusterState
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        for ( CoreMember member : roles.keySet() )
+        for ( MemberId member : roles.keySet() )
         {
             builder.append( member ).append( " : " ).append( roles.get( member ) ).append( "\n" );
             builder.append( "  state: " ).append( states.get( member ) ).append( "\n" );

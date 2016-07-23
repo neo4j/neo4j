@@ -24,16 +24,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 
 public class ClusterTopology
 {
-    private final Map<CoreMember, CoreAddresses> coreMembers;
+    private final Map<MemberId, CoreAddresses> coreMembers;
     private final Set<EdgeAddresses> edgeAddresses;
     private final boolean canBeBootstrapped;
 
     public ClusterTopology( boolean canBeBootstrapped,
-                            Map<CoreMember, CoreAddresses> coreMembers,
+                            Map<MemberId, CoreAddresses> coreMembers,
                             Set<EdgeAddresses> edgeAddresses )
     {
         this.canBeBootstrapped = canBeBootstrapped;
@@ -41,7 +41,7 @@ public class ClusterTopology
         this.coreMembers = new HashMap<>( coreMembers );
     }
 
-    public Set<CoreMember> coreMembers()
+    public Set<MemberId> coreMembers()
     {
         return coreMembers.keySet();
     }
@@ -61,9 +61,9 @@ public class ClusterTopology
         return canBeBootstrapped;
     }
 
-    public CoreAddresses coreAddresses( CoreMember coreMember ) throws NoKnownAddressesException
+    public CoreAddresses coreAddresses( MemberId memberId ) throws NoKnownAddressesException
     {
-        CoreAddresses coreAddresses = coreMembers.get( coreMember );
+        CoreAddresses coreAddresses = coreMembers.get( memberId );
         if ( coreAddresses == null )
         {
             throw new NoKnownAddressesException();

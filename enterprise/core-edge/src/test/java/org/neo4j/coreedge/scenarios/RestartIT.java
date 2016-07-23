@@ -28,8 +28,8 @@ import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.CoreServer;
-import org.neo4j.coreedge.discovery.EdgeServer;
+import org.neo4j.coreedge.discovery.CoreClusterMember;
+import org.neo4j.coreedge.discovery.EdgeClusterMember;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -49,8 +49,8 @@ public class RestartIT
 {
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreServers( 3 )
-            .withNumberOfEdgeServers( 0 );
+            .withNumberOfCoreMembers( 3 )
+            .withNumberOfEdgeMembers( 0 );
 
     @Test
     public void restartFirstServer() throws Exception
@@ -59,8 +59,8 @@ public class RestartIT
         Cluster cluster = clusterRule.startCluster();
 
         // when
-        cluster.removeCoreServerWithServerId( 0 );
-        cluster.addCoreServerWithServerId( 0, 3 );
+        cluster.removeCoreMemberWithMemberId( 0 );
+        cluster.addCoreMemberWithId( 0, 3 );
 
         // then
         cluster.shutdown();
@@ -73,8 +73,8 @@ public class RestartIT
         Cluster cluster = clusterRule.startCluster();
 
         // when
-        cluster.removeCoreServerWithServerId( 1 );
-        cluster.addCoreServerWithServerId( 1, 3 );
+        cluster.removeCoreMemberWithMemberId( 1 );
+        cluster.addCoreMemberWithId( 1, 3 );
 
         // then
         cluster.shutdown();
@@ -87,7 +87,7 @@ public class RestartIT
         Cluster cluster = clusterRule.startCluster();
 
         // when
-        final GraphDatabaseService coreDB = cluster.getCoreServerById( 0 ).database();
+        final GraphDatabaseService coreDB = cluster.getCoreMemberById( 0 ).database();
 
         ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -109,8 +109,8 @@ public class RestartIT
         } );
         Thread.sleep( 500 );
 
-        cluster.removeCoreServerWithServerId( 1 );
-        cluster.addCoreServerWithServerId( 1, 3 );
+        cluster.removeCoreMemberWithMemberId( 1 );
+        cluster.addCoreMemberWithId( 1, 3 );
         Thread.sleep( 500 );
 
         // then
@@ -128,7 +128,7 @@ public class RestartIT
         // when
         cluster.start();
 
-        CoreServer last = cluster.coreTx( ( db, tx ) ->
+        CoreClusterMember last = cluster.coreTx( ( db, tx ) ->
         {
             Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
@@ -136,7 +136,7 @@ public class RestartIT
         } );
 
         // then
-        dataMatchesEventually( last, cluster.coreServers() );
+        dataMatchesEventually( last, cluster.coreMembers() );
         cluster.shutdown();
     }
 
@@ -144,7 +144,7 @@ public class RestartIT
     public void edgeTest() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.withNumberOfCoreServers( 2 ).withNumberOfEdgeServers( 1 ).startCluster();
+        Cluster cluster = clusterRule.withNumberOfCoreMembers( 2 ).withNumberOfEdgeMembers( 1 ).startCluster();
 
         // when
         final GraphDatabaseService coreDB = cluster.awaitLeader( 5000 ).database();
@@ -156,10 +156,10 @@ public class RestartIT
             tx.success();
         }
 
-        cluster.addCoreServerWithServerId( 2, 3 ).start();
+        cluster.addCoreMemberWithId( 2, 3 ).start();
         cluster.shutdown();
 
-        for ( CoreServer core : cluster.coreServers() )
+        for ( CoreClusterMember core : cluster.coreMembers() )
         {
             ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
                     core.storeDir(), Config.defaults(), ProgressMonitorFactory.NONE,
@@ -167,7 +167,7 @@ public class RestartIT
             assertTrue( "Inconsistent: " + core, result.isSuccessful() );
         }
 
-        for ( EdgeServer edge : cluster.edgeServers() )
+        for ( EdgeClusterMember edge : cluster.edgeMembers() )
         {
             ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
                     edge.storeDir(), Config.defaults(), ProgressMonitorFactory.NONE,

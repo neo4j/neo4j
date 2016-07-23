@@ -22,8 +22,8 @@ package org.neo4j.coreedge.raft.net;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
-import org.neo4j.coreedge.raft.membership.CoreMemberSet;
-import org.neo4j.coreedge.raft.membership.CoreMemberSetSerializer;
+import org.neo4j.coreedge.raft.membership.MemberIdSet;
+import org.neo4j.coreedge.raft.membership.MemberIdSetSerializer;
 import org.neo4j.coreedge.raft.replication.DistributedOperation;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
@@ -56,10 +56,10 @@ public class CoreReplicatedContentMarshal extends SafeChannelMarshal<ReplicatedC
             channel.put( TX_CONTENT_TYPE );
             ReplicatedTransactionSerializer.marshal( (ReplicatedTransaction) content, channel );
         }
-        else if ( content instanceof CoreMemberSet )
+        else if ( content instanceof MemberIdSet )
         {
             channel.put( RAFT_MEMBER_SET_TYPE );
-            CoreMemberSetSerializer.marshal( (CoreMemberSet) content, channel );
+            MemberIdSetSerializer.marshal( (MemberIdSet) content, channel );
         }
         else if ( content instanceof ReplicatedIdAllocationRequest )
         {
@@ -102,7 +102,7 @@ public class CoreReplicatedContentMarshal extends SafeChannelMarshal<ReplicatedC
                 content = ReplicatedTransactionSerializer.unmarshal( channel );
                 break;
             case RAFT_MEMBER_SET_TYPE:
-                content = CoreMemberSetSerializer.unmarshal( channel );
+                content = MemberIdSetSerializer.unmarshal( channel );
                 break;
             case ID_RANGE_REQUEST_TYPE:
                 content = ReplicatedIdAllocationRequestSerializer.unmarshal( channel );

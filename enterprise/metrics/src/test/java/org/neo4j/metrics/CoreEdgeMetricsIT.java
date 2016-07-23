@@ -29,8 +29,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.CoreServer;
-import org.neo4j.coreedge.discovery.EdgeServer;
+import org.neo4j.coreedge.discovery.CoreClusterMember;
+import org.neo4j.coreedge.discovery.EdgeClusterMember;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Node;
@@ -63,8 +63,8 @@ public class CoreEdgeMetricsIT
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreServers( 3 )
-            .withNumberOfEdgeServers( 1 )
+            .withNumberOfCoreMembers( 3 )
+            .withNumberOfEdgeMembers( 1 )
             .withSharedCoreParam( MetricsSettings.metricsEnabled, Settings.TRUE )
             .withSharedEdgeParam( MetricsSettings.metricsEnabled, Settings.TRUE )
             .withSharedCoreParam( MetricsSettings.csvEnabled, Settings.TRUE )
@@ -100,37 +100,37 @@ public class CoreEdgeMetricsIT
         }
 
         // then
-        for ( CoreServer db : cluster.coreServers() )
+        for ( CoreClusterMember db : cluster.coreMembers() )
         {
             assertAllNodesVisible( db.database() );
         }
 
-        for ( EdgeServer db : cluster.edgeServers() )
+        for ( EdgeClusterMember db : cluster.edgeMembers() )
         {
             assertAllNodesVisible( db.database() );
         }
 
-        File coreServerMetricsDir = new File( cluster.getCoreServerById( 0 ).storeDir(), csvPath.getDefaultValue() );
+        File coreMetricsDir = new File( cluster.getCoreMemberById( 0 ).storeDir(), csvPath.getDefaultValue() );
 
         assertEventually( "append index eventually accurate",
-                () -> readLongValue( metricsCsv( coreServerMetricsDir, CoreMetrics.APPEND_INDEX ) ),
+                () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.APPEND_INDEX ) ),
                 greaterThan( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
         assertEventually( "commit index eventually accurate",
-                () -> readLongValue( metricsCsv( coreServerMetricsDir, CoreMetrics.COMMIT_INDEX ) ),
+                () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.COMMIT_INDEX ) ),
                 greaterThan( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
         assertEventually( "term eventually accurate",
-                () -> readLongValue( metricsCsv( coreServerMetricsDir, CoreMetrics.TERM ) ),
+                () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.TERM ) ),
                 greaterThanOrEqualTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
         assertEventually( "leader not found eventually accurate",
-                () -> readLongValue( metricsCsv( coreServerMetricsDir, CoreMetrics.LEADER_NOT_FOUND ) ),
+                () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.LEADER_NOT_FOUND ) ),
                 equalTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
         assertEventually( "tx pull requests received eventually accurate", () -> {
             long total = 0;
-            for ( final CoreGraphDatabase db : cluster.coreServers().stream().map( CoreServer::database ).collect( Collectors.toList()) )
+            for ( final CoreGraphDatabase db : cluster.coreMembers().stream().map( CoreClusterMember::database ).collect( Collectors.toList()) )
             {
                 File metricsDir = new File( db.getStoreDir(), "metrics" );
                 total += readLongValue( metricsCsv( metricsDir, CoreMetrics.TX_PULL_REQUESTS_RECEIVED ) );
@@ -139,14 +139,14 @@ public class CoreEdgeMetricsIT
         }, greaterThan( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
         assertEventually( "tx retries eventually accurate",
-                () -> readLongValue( metricsCsv( coreServerMetricsDir, CoreMetrics.TX_RETRIES ) ), equalTo( 0L ),
+                () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.TX_RETRIES ) ), equalTo( 0L ),
                 TIMEOUT, TimeUnit.SECONDS );
 
         assertEventually( "is leader eventually accurate",
-                () -> readLongValue( metricsCsv( coreServerMetricsDir, CoreMetrics.IS_LEADER ) ),
+                () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.IS_LEADER ) ),
                 greaterThanOrEqualTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
-        File edgeServerMetricsDir = new File( cluster.getEdgeServerById( 0 ).storeDir(), "metrics" );
+        File edgeServerMetricsDir = new File( cluster.getEdgeMemberById( 0 ).storeDir(), "metrics" );
 
         assertEventually( "pull update request registered",
                 () -> readLongValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATES ) ),
@@ -161,11 +161,11 @@ public class CoreEdgeMetricsIT
                 greaterThan( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
         assertEventually( "dropped messages eventually accurate",
-                () -> readLongValue( metricsCsv( coreServerMetricsDir, CoreMetrics.DROPPED_MESSAGES ) ),
+                () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.DROPPED_MESSAGES ) ),
                 greaterThanOrEqualTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
         assertEventually( "queue size eventually accurate",
-                () -> readLongValue( metricsCsv( coreServerMetricsDir, CoreMetrics.QUEUE_SIZE ) ),
+                () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.QUEUE_SIZE ) ),
                 greaterThanOrEqualTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
     }
 

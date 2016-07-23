@@ -20,14 +20,14 @@
 package org.neo4j.coreedge.discovery;
 
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
 public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
 {
     @Override
-    public CoreTopologyService coreDiscoveryService( Config config, CoreMember myself, LogProvider logProvider )
+    public CoreTopologyService coreDiscoveryService( Config config, MemberId myself, LogProvider logProvider )
     {
         makeHazelcastSilent( config );
         return new HazelcastServerLifecycle( config, myself, logProvider );

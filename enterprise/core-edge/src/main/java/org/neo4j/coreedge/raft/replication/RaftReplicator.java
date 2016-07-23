@@ -29,23 +29,23 @@ import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.raft.replication.session.OperationContext;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.impl.util.Listener;
 
 /**
  * A replicator implementation suitable in a RAFT context. Will handle resending due to timeouts and leader switches.
  */
-public class RaftReplicator implements Replicator, Listener<CoreMember>
+public class RaftReplicator implements Replicator, Listener<MemberId>
 {
-    private final CoreMember me;
-    private final Outbound<CoreMember,RaftMessages.RaftMessage> outbound;
+    private final MemberId me;
+    private final Outbound<MemberId,RaftMessages.RaftMessage> outbound;
     private final ProgressTracker progressTracker;
     private final LocalSessionPool sessionPool;
     private final RetryStrategy retryStrategy;
 
-    private CoreMember leader;
+    private MemberId leader;
 
-    public RaftReplicator( LeaderLocator leaderLocator, CoreMember me, Outbound<CoreMember,RaftMessages.RaftMessage> outbound,
+    public RaftReplicator( LeaderLocator leaderLocator, MemberId me, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
                            LocalSessionPool sessionPool, ProgressTracker progressTracker,
                            RetryStrategy retryStrategy )
     {
@@ -105,7 +105,7 @@ public class RaftReplicator implements Replicator, Listener<CoreMember>
     }
 
     @Override
-    public void receive( CoreMember leader )
+    public void receive( MemberId leader )
     {
         this.leader = leader;
         progressTracker.triggerReplicationEvent();

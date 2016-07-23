@@ -43,7 +43,7 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -82,7 +82,7 @@ public class RaftInstance implements LeaderLocator, CoreMetaData
     }
 
     private final RaftState state;
-    private final CoreMember myself;
+    private final MemberId myself;
     private final RaftLog entryLog;
 
     private final RenewableTimeoutService renewableTimeoutService;
@@ -92,19 +92,19 @@ public class RaftInstance implements LeaderLocator, CoreMetaData
 
     private final long electionTimeout;
 
-    private final VolatileFuture<CoreMember> volatileLeader = new VolatileFuture<>( null );
+    private final VolatileFuture<MemberId> volatileLeader = new VolatileFuture<>( null );
 
-    private final Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
+    private final Outbound<MemberId, RaftMessages.RaftMessage> outbound;
     private final Log log;
     private Role currentRole = Role.FOLLOWER;
 
     private RaftLogShippingManager logShipping;
 
-    public RaftInstance( CoreMember myself, StateStorage<TermState> termStorage,
+    public RaftInstance( MemberId myself, StateStorage<TermState> termStorage,
                          StateStorage<VoteState> voteStorage, RaftLog entryLog,
                          long electionTimeout, long heartbeatInterval,
                          RenewableTimeoutService renewableTimeoutService,
-                         Outbound<CoreMember, RaftMessages.RaftMessage> outbound,
+                         Outbound<MemberId, RaftMessages.RaftMessage> outbound,
                          LogProvider logProvider, RaftMembershipManager membershipManager,
                          RaftLogShippingManager logShipping,
                          InFlightMap<Long, RaftLogEntry> inFlightMap,
@@ -200,7 +200,7 @@ public class RaftInstance implements LeaderLocator, CoreMetaData
         }
     }
 
-    public void setTargetMembershipSet( Set<CoreMember> targetMembers )
+    public void setTargetMembershipSet( Set<MemberId> targetMembers )
     {
         membershipManager.setTargetMembershipSet( targetMembers );
 
@@ -211,12 +211,12 @@ public class RaftInstance implements LeaderLocator, CoreMetaData
     }
 
     @Override
-    public CoreMember getLeader() throws NoLeaderFoundException
+    public MemberId getLeader() throws NoLeaderFoundException
     {
         return waitForLeader( 0, member -> member != null );
     }
 
-    private CoreMember waitForLeader( long timeoutMillis, Predicate<CoreMember> predicate ) throws NoLeaderFoundException
+    private MemberId waitForLeader( long timeoutMillis, Predicate<MemberId> predicate ) throws NoLeaderFoundException
     {
         try
         {
@@ -236,10 +236,10 @@ public class RaftInstance implements LeaderLocator, CoreMetaData
         }
     }
 
-    private Collection<Listener<CoreMember>> leaderListeners = new ArrayList<>();
+    private Collection<Listener<MemberId>> leaderListeners = new ArrayList<>();
 
     @Override
-    public synchronized void registerListener( Listener<CoreMember> listener )
+    public synchronized void registerListener( Listener<MemberId> listener )
     {
         leaderListeners.add( listener );
         listener.receive( state.leader() );
@@ -258,7 +258,7 @@ public class RaftInstance implements LeaderLocator, CoreMetaData
 
     private void notifyLeaderChanges( Outcome outcome )
     {
-        for ( Listener<CoreMember> listener : leaderListeners )
+        for ( Listener<MemberId> listener : leaderListeners )
         {
             listener.receive( outcome.getLeader() );
         }
@@ -282,7 +282,7 @@ public class RaftInstance implements LeaderLocator, CoreMetaData
         }
     }
 
-    private boolean leaderChanged( Outcome outcome, CoreMember oldLeader )
+    private boolean leaderChanged( Outcome outcome, MemberId oldLeader )
     {
         if ( oldLeader == null && outcome.getLeader() != null )
         {
@@ -366,7 +366,7 @@ public class RaftInstance implements LeaderLocator, CoreMetaData
         return currentRole;
     }
 
-    public CoreMember identity()
+    public MemberId identity()
     {
         return myself;
     }
@@ -400,12 +400,12 @@ public class RaftInstance implements LeaderLocator, CoreMetaData
         return electionTimeout;
     }
 
-    public Set<CoreMember> votingMembers()
+    public Set<MemberId> votingMembers()
     {
         return membershipManager.votingMembers();
     }
 
-    public Set<CoreMember> replicationMembers()
+    public Set<MemberId> replicationMembers()
     {
         return membershipManager.replicationMembers();
     }

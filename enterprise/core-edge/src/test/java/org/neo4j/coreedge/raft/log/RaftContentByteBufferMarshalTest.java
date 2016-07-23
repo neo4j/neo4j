@@ -29,7 +29,7 @@ import java.util.Collection;
 import java.util.UUID;
 
 import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
-import org.neo4j.coreedge.raft.membership.CoreMemberSet;
+import org.neo4j.coreedge.raft.membership.MemberIdSet;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -37,7 +37,7 @@ import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -51,16 +51,16 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class RaftContentByteBufferMarshalTest
 {
-    private CoreMember coreMember = new CoreMember( UUID.randomUUID() );
+    private MemberId memberId = new MemberId( UUID.randomUUID() );
 
     @Test
     public void shouldSerializeMemberSet() throws Exception
     {
         // given
         CoreReplicatedContentMarshal serializer = new CoreReplicatedContentMarshal();
-        CoreMemberSet in = new CoreMemberSet( asSet(
-                new CoreMember( UUID.randomUUID() ),
-                new CoreMember( UUID.randomUUID() )
+        MemberIdSet in = new MemberIdSet( asSet(
+                new MemberId( UUID.randomUUID() ),
+                new MemberId( UUID.randomUUID() )
         ) );
 
         // when
@@ -129,7 +129,7 @@ public class RaftContentByteBufferMarshalTest
     {
         // given
         CoreReplicatedContentMarshal serializer = new CoreReplicatedContentMarshal();
-        ReplicatedContent in = new ReplicatedIdAllocationRequest( coreMember, IdType.NODE, 100, 200 );
+        ReplicatedContent in = new ReplicatedIdAllocationRequest( memberId, IdType.NODE, 100, 200 );
 
         // when
         ByteBuf buf = Unpooled.buffer();

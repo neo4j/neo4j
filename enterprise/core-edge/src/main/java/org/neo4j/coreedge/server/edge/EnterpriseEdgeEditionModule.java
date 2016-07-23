@@ -201,7 +201,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         DelayedRenewableTimeoutService txPullerTimeoutService = new DelayedRenewableTimeoutService( Clock.systemUTC(), logProvider );
         TxPollingClient txPuller = new TxPollingClient( logProvider,
-                edgeToCoreClient, new ConnectToRandomCoreServer( discoveryService ),
+                edgeToCoreClient, new ConnectToRandomCoreMember( discoveryService ),
                 txPullerTimeoutService, config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier );
 
         txPulling.add( batchingTxApplier );
@@ -214,14 +214,14 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 new StoreCopyClient( edgeToCoreClient ), new TxPullClient( edgeToCoreClient ),
                 new TransactionLogCatchUpFactory() );
 
-        life.add( new EdgeServerStartupProcess( storeFetcher,
+        life.add( new EdgeStartupProcess( storeFetcher,
                 new LocalDatabase( platformModule.storeDir,
                         new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache ),
                         new StoreFiles( new DefaultFileSystemAbstraction() ),
                         platformModule.dataSourceManager,
                         dependencies.provideDependency( TransactionIdStore.class ),
                         databaseHealthSupplier, logProvider ),
-                txPulling, platformModule.dataSourceManager, new ConnectToRandomCoreServer( discoveryService ),
+                txPulling, platformModule.dataSourceManager, new ConnectToRandomCoreMember( discoveryService ),
                 new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, discoveryService, config ) );
 
         dependencies.satisfyDependency( createSessionTracker() );

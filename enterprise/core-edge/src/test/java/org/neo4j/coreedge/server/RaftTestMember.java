@@ -25,13 +25,13 @@ import java.util.UUID;
 
 public class RaftTestMember
 {
-    private static final Map<Integer, CoreMember> testMembers = new HashMap<>();
+    private static final Map<Integer, MemberId> testMembers = new HashMap<>();
 
-    public static CoreMember member( int id )
+    public static MemberId member( int id )
     {
-        CoreMember member = testMembers.get( id );
+        MemberId member = testMembers.get( id );
         if ( member == null ) {
-            member = new CoreMember( UUID.randomUUID() );
+            member = new MemberId( UUID.randomUUID() );
             testMembers.put( id, member );
         }
         return member;

@@ -34,7 +34,7 @@ import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
-import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
+import org.neo4j.coreedge.raft.membership.MemberIdSetBuilder;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.net.LoggingOutbound;
@@ -50,7 +50,7 @@ import org.neo4j.coreedge.raft.state.term.MonitoredTermStateStorage;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.NonBlockingChannels;
 import org.neo4j.coreedge.server.SenderService;
 import org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule;
@@ -74,7 +74,7 @@ public class ConsensusModule
     private final MonitoredRaftLog raftLog;
     private final RaftInstance raftInstance;
 
-    public ConsensusModule( CoreMember myself, final PlatformModule platformModule,
+    public ConsensusModule( MemberId myself, final PlatformModule platformModule,
                             RaftOutbound raftOutbound, File clusterStateDirectory,
                             DelayedRenewableTimeoutService raftTimeoutService,
                             CoreTopologyService discoveryService, long recoverFromIndex )
@@ -95,7 +95,7 @@ public class ConsensusModule
                         maxQueueSize, new NonBlockingChannels() );
         life.add( senderService );
 
-        final MessageLogger<CoreMember> messageLogger;
+        final MessageLogger<MemberId> messageLogger;
         if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
         {
             File logsDir = config.get( GraphDatabaseSettings.logs_directory );
@@ -110,7 +110,7 @@ public class ConsensusModule
 
         raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
 
-        Outbound<CoreMember,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>(
+        Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>(
                 raftOutbound, myself, messageLogger );
 
         InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
@@ -131,7 +131,7 @@ public class ConsensusModule
 
             voteState = life.add(
                     new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "vote-state" ),
-                            "vote-state", new VoteState.Marshal( new CoreMember.CoreMemberMarshal() ),
+                            "vote-state", new VoteState.Marshal( new MemberId.MemberIdMarshal() ),
                             config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
                             logProvider ) );
 
@@ -151,7 +151,7 @@ public class ConsensusModule
 
         Integer expectedClusterSize = config.get( CoreEdgeClusterSettings.expected_core_cluster_size );
 
-        CoreMemberSetBuilder memberSetBuilder = new CoreMemberSetBuilder();
+        MemberIdSetBuilder memberSetBuilder = new MemberIdSetBuilder();
 
         SendToMyself leaderOnlyReplicator =
                 new SendToMyself( myself, loggingOutbound );

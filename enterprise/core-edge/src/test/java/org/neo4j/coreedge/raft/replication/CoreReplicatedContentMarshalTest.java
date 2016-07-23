@@ -29,7 +29,7 @@ import java.util.Collections;
 import java.util.UUID;
 
 import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
-import org.neo4j.coreedge.raft.membership.CoreMemberSet;
+import org.neo4j.coreedge.raft.membership.MemberIdSet;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
@@ -39,7 +39,7 @@ import org.neo4j.coreedge.raft.replication.token.TokenType;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -85,9 +85,9 @@ public class CoreReplicatedContentMarshalTest
     public void shouldMarshalMemberSet() throws Exception
     {
         ByteBuf buffer = Unpooled.buffer();
-        ReplicatedContent message = new CoreMemberSet( asSet(
-                new CoreMember( UUID.randomUUID() ),
-                new CoreMember( UUID.randomUUID() )
+        ReplicatedContent message = new MemberIdSet( asSet(
+                new MemberId( UUID.randomUUID() ),
+                new MemberId( UUID.randomUUID() )
         ) );
 
         assertMarshalingEquality( buffer, message );
@@ -98,7 +98,7 @@ public class CoreReplicatedContentMarshalTest
     {
         ByteBuf buffer = Unpooled.buffer();
         ReplicatedContent message = new ReplicatedIdAllocationRequest(
-                new CoreMember( UUID.randomUUID() ), IdType.PROPERTY, 100, 200 );
+                new MemberId( UUID.randomUUID() ), IdType.PROPERTY, 100, 200 );
 
         assertMarshalingEquality( buffer, message );
     }

@@ -30,7 +30,7 @@ import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.LoggingOutbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.coreedge.server.logging.NullMessageLogger;
 
@@ -40,9 +40,9 @@ public class RaftTestFixture
 {
     private Members members = new Members();
 
-    public RaftTestFixture( DirectNetworking net, int expectedClusterSize, CoreMember... ids )
+    public RaftTestFixture( DirectNetworking net, int expectedClusterSize, MemberId... ids )
     {
-        for ( CoreMember id : ids )
+        for ( MemberId id : ids )
         {
             MemberFixture fixtureMember = new MemberFixture();
 
@@ -52,7 +52,7 @@ public class RaftTestFixture
             fixtureMember.member = id;
 
             Inbound inbound = net.new Inbound( fixtureMember.member );
-            Outbound<CoreMember,RaftMessages.RaftMessage> outbound = new LoggingOutbound<>( net.new Outbound( id ), fixtureMember.member,
+            Outbound<MemberId,RaftMessages.RaftMessage> outbound = new LoggingOutbound<>( net.new Outbound( id ), fixtureMember.member,
                     new NullMessageLogger<>() );
 
             fixtureMember.raftInstance = new RaftInstanceBuilder( fixtureMember.member, expectedClusterSize,
@@ -74,22 +74,22 @@ public class RaftTestFixture
 
     public static class Members implements Iterable<MemberFixture>
     {
-        private Map<CoreMember, MemberFixture> memberMap = new HashMap<>();
+        private Map<MemberId, MemberFixture> memberMap = new HashMap<>();
 
         private MemberFixture put( MemberFixture value )
         {
             return memberMap.put( value.member, value );
         }
 
-        public MemberFixture withId( CoreMember id )
+        public MemberFixture withId( MemberId id )
         {
             return memberMap.get( id );
         }
 
-        public Members withIds( CoreMember... ids )
+        public Members withIds( MemberId... ids )
         {
             Members filteredMembers = new Members();
-            for ( CoreMember id : ids )
+            for ( MemberId id : ids )
             {
                 if ( memberMap.containsKey( id ) )
                 {
@@ -103,7 +103,7 @@ public class RaftTestFixture
         {
             Members filteredMembers = new Members();
 
-            for ( Map.Entry<CoreMember,MemberFixture> entry : memberMap.entrySet() )
+            for ( Map.Entry<MemberId,MemberFixture> entry : memberMap.entrySet() )
             {
                 if ( entry.getValue().raftInstance().currentRole() == role )
                 {
@@ -113,7 +113,7 @@ public class RaftTestFixture
             return filteredMembers;
         }
 
-        public void setTargetMembershipSet( Set<CoreMember> targetMembershipSet )
+        public void setTargetMembershipSet( Set<MemberId> targetMembershipSet )
         {
             for ( MemberFixture memberFixture : memberMap.values() )
             {
@@ -149,12 +149,12 @@ public class RaftTestFixture
 
     public class MemberFixture
     {
-        private CoreMember member;
+        private MemberId member;
         private RaftInstance raftInstance;
         private ControlledRenewableTimeoutService timeoutService;
         private RaftLog raftLog;
 
-        public CoreMember member()
+        public MemberId member()
         {
             return member;
         }

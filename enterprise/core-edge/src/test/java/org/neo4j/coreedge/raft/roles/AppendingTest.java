@@ -31,7 +31,7 @@ import org.neo4j.coreedge.raft.outcome.RaftLogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.NullLog;
 
 import static org.junit.Assert.fail;
@@ -46,7 +46,7 @@ import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 public class AppendingTest
 {
-    private CoreMember aMember = member( 0 );
+    private MemberId aMember = member( 0 );
 
     @Test
     public void shouldPerformTruncation() throws Exception

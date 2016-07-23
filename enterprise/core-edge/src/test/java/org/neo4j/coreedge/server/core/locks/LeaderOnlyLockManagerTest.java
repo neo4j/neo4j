@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.replication.DirectReplicator;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -43,7 +43,7 @@ public class LeaderOnlyLockManagerTest
     public void shouldIssueLocksOnLeader() throws Exception
     {
         // given
-        CoreMember me = member( 0 );
+        MemberId me = member( 0 );
 
         ReplicatedLockTokenStateMachine replicatedLockStateMachine =
                 new ReplicatedLockTokenStateMachine( new InMemoryStateStorage( new ReplicatedLockTokenState() ) );
@@ -68,8 +68,8 @@ public class LeaderOnlyLockManagerTest
     public void shouldNotIssueLocksOnNonLeader() throws Exception
     {
         // given
-        CoreMember me = member( 0 );
-        CoreMember leader = member( 1 );
+        MemberId me = member( 0 );
+        MemberId leader = member( 1 );
 
         ReplicatedLockTokenStateMachine replicatedLockStateMachine =
                 new ReplicatedLockTokenStateMachine( new InMemoryStateStorage( new ReplicatedLockTokenState() ) );

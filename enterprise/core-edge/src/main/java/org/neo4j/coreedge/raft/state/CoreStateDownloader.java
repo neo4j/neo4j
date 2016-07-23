@@ -28,7 +28,7 @@ import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -49,7 +49,7 @@ public class CoreStateDownloader
         this.log = logProvider.getLog( getClass() );
     }
 
-    synchronized void downloadSnapshot( CoreMember source, CoreState coreState ) throws InterruptedException, StoreCopyFailedException
+    synchronized void downloadSnapshot( MemberId source, CoreState coreState ) throws InterruptedException, StoreCopyFailedException
     {
         localDatabase.stop();
 
