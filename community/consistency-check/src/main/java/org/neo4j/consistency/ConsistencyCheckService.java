@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
@@ -144,12 +145,14 @@ public class ConsistencyCheckService
             LabelScanStore labelScanStore = null;
             try
             {
+                OperationalMode operationalMode = OperationalMode.single;
                 labelScanStore = new LuceneLabelScanStoreBuilder(
-                        storeDir, neoStores, fileSystem, consistencyCheckerConfig, logProvider ).build();
+                        storeDir, neoStores, fileSystem, consistencyCheckerConfig, operationalMode, logProvider )
+                        .build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         fileSystem,
                         DirectoryFactory.PERSISTENT,
-                        storeDir, consistencyCheckerConfig );
+                        storeDir, consistencyCheckerConfig, operationalMode );
 
                 int numberOfThreads = defaultConsistencyCheckThreadsNumber();
                 Statistics statistics;

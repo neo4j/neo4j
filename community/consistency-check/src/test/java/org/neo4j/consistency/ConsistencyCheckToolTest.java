@@ -62,6 +62,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -340,10 +341,12 @@ public class ConsistencyCheckToolTest
         }
 
         @Override
-        protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+        protected PlatformModule createPlatform( File storeDir, Map<String, String> params,
+                Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade,
+                OperationalMode operationalMode )
         {
             params.put( Configuration.ephemeral.name(), "false" );
-            return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+            return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade, operationalMode )
             {
                 @Override
                 protected FileSystemAbstraction createFileSystemAbstraction()

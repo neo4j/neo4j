@@ -40,10 +40,10 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -52,6 +52,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.tooling.GlobalGraphOperations;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -237,7 +238,9 @@ public class IdGeneratorRebuildFailureEmulationTest
             new CommunityFacadeFactory()
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                protected PlatformModule createPlatform( File storeDir, Map<String, String> params,
+                        Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade,
+                        OperationalMode operationalMode )
                 {
                     return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
                     {

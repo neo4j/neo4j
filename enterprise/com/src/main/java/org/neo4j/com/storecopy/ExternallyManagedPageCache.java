@@ -29,13 +29,14 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.EnterpriseFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 /**
  * A PageCache implementation that delegates to another page cache, whose life cycle is managed elsewhere.
@@ -96,9 +97,11 @@ public class ExternallyManagedPageCache implements PageCache
                 return new EnterpriseFacadeFactory()
                 {
                     @Override
-                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params,
+                            Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade,
+                            OperationalMode operationalMode )
                     {
-                        return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                        return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade, operationalMode )
                         {
 
                             @Override

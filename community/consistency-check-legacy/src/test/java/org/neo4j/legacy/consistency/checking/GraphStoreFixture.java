@@ -65,6 +65,7 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -85,6 +86,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             PageCache pageCache = getPageCache( fileSystem );
             StoreAccess nativeStores = new StoreAccess( fileSystem, pageCache, directory ).initialize();
             Config config = new Config();
+            OperationalMode operationalMode = OperationalMode.single;
             directStoreAccess = new DirectStoreAccess(
                     nativeStores,
                     new LuceneLabelScanStoreBuilder(
@@ -92,17 +94,20 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                             nativeStores.getRawNeoStores(),
                             fileSystem,
                             config,
+                            operationalMode,
                             FormattedLogProvider.toOutputStream( System.out )
                     ).build(),
-                    createIndexes( fileSystem, config )
+                    createIndexes( fileSystem, config, operationalMode )
             );
         }
         return directStoreAccess;
     }
 
-    private SchemaIndexProvider createIndexes( FileSystemAbstraction fileSystem, Config config )
+    private SchemaIndexProvider createIndexes( FileSystemAbstraction fileSystem, Config config,
+            OperationalMode operationalMode )
     {
-        return new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT, directory, config );
+        return new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT, directory, config,
+                operationalMode );
     }
 
     public File directory()

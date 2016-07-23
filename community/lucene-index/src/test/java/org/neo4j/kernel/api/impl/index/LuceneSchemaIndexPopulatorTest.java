@@ -48,6 +48,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
@@ -242,7 +243,8 @@ public class LuceneSchemaIndexPopulatorTest
         directory = new RAMDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
-        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, new File( "target/whatever" ), new Config()  );
+        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, new File( "target/whatever" ),
+                new Config(), OperationalMode.single  );
         indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
         indexStoreView = mock( IndexStoreView.class );
         IndexConfiguration indexConfig = new IndexConfiguration( false );

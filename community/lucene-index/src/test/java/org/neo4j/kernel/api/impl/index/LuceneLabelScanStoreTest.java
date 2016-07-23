@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStre
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.asList;
@@ -541,7 +542,7 @@ public class LuceneLabelScanStoreTest
         monitor = new TrackingMonitor();
         labelScanStore = new LuceneLabelScanStore( strategy,
                 directoryFactory, dir, new DefaultFileSystemAbstraction(), tracking(), asStream( existingData ),
-                new Config( configParams ), monitor );
+                new Config( configParams ), OperationalMode.single, monitor );
         store = life.add( labelScanStore );
         life.start();
     }

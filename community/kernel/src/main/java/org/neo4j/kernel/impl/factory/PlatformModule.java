@@ -64,6 +64,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 /**
  * Platform module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. This creates
@@ -106,7 +107,8 @@ public class PlatformModule
     public final TransactionCounters transactionMonitor;
 
     public PlatformModule( File storeDir, Map<String, String> params, final GraphDatabaseFacadeFactory.Dependencies externalDependencies,
-                                                  final GraphDatabaseFacade graphDatabaseFacade)
+            final GraphDatabaseFacade graphDatabaseFacade,
+            OperationalMode operationalMode )
     {
         dependencies = new org.neo4j.kernel.impl.util.Dependencies( new Supplier<DependencyResolver>()
         {
@@ -171,7 +173,6 @@ public class PlatformModule
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionCounters() );
 
-        UsageDataKeys.OperationalMode operationalMode = config.get( GraphDatabaseFacadeFactory.Configuration.operationalMode );
         KernelContext kernelContext = dependencies.satisfyDependency(
                 new SimpleKernelContext( this.fileSystem, this.storeDir, operationalMode ));
 
@@ -190,7 +191,7 @@ public class PlatformModule
     {
         sysInfo.set( UsageDataKeys.version, Version.getKernel().getReleaseVersion() );
         sysInfo.set( UsageDataKeys.revision, Version.getKernel().getVersion() );
-        sysInfo.set( UsageDataKeys.operationalMode, UsageDataKeys.OperationalMode.ha );
+        sysInfo.set( UsageDataKeys.operationalMode, OperationalMode.ha );
     }
 
     public LifeSupport createLife()

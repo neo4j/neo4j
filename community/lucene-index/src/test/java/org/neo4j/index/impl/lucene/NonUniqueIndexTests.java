@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -94,9 +95,11 @@ public class NonUniqueIndexTests
         return new CommunityFacadeFactory()
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Map<String, String> params,
+                    Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade,
+                    OperationalMode operationalMode)
             {
-                return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade, operationalMode )
                 {
                     @Override
                     protected Neo4jJobScheduler createJobScheduler()
@@ -150,7 +153,7 @@ public class NonUniqueIndexTests
     {
         Config config = new Config();
         SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
-                DirectoryFactory.PERSISTENT, directory.graphDbDir(), new Config() );
+                DirectoryFactory.PERSISTENT, directory.graphDbDir(), new Config(), OperationalMode.single );
         IndexConfiguration indexConfig = new IndexConfiguration( false );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, indexConfig, samplingConfig );

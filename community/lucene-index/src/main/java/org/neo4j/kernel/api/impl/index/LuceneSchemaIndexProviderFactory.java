@@ -57,6 +57,7 @@ public class LuceneSchemaIndexProviderFactory extends
         FileSystemAbstraction fileSystem = context.fileSystem();
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystem );
 
-        return new LuceneSchemaIndexProvider( fileSystem, directoryFactory, context.storeDir(), config );
+        return new LuceneSchemaIndexProvider( fileSystem, directoryFactory, context.storeDir(), config,
+                context.operationalMode() );
     }
 }

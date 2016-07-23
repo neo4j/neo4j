@@ -42,11 +42,10 @@ import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.udc.UsageDataKeys;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
@@ -58,14 +57,14 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     private final Map<Long, String> failures = new HashMap<>();
 
     public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
-            File storeDir, Config config )
+            File storeDir, Config config, OperationalMode operationalMode )
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
         File rootDirectory = getRootDirectory( storeDir, LuceneSchemaIndexProviderFactory.KEY );
         this.folderLayout = new FolderLayout( rootDirectory );
         this.failureStorage = new FailureStorage( fileSystem, folderLayout );
-        this.readOnly = isReadOnly( config );
+        this.readOnly = isReadOnly( config, operationalMode );
     }
 
     @Override
@@ -171,10 +170,9 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         return failure;
     }
 
-    private static boolean isReadOnly( Config config )
+    private static boolean isReadOnly( Config config, OperationalMode operationalMode )
     {
-        UsageDataKeys.OperationalMode operationalMode = config.get( GraphDatabaseFacadeFactory.Configuration.operationalMode );
         return config.get( GraphDatabaseSettings.read_only ) &&
-               (UsageDataKeys.OperationalMode.ha != operationalMode);
+               (OperationalMode.ha != operationalMode);
     }
 }

@@ -48,6 +48,7 @@ import org.neo4j.perftest.enterprise.generator.DataGenerator;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Parameters;
 import org.neo4j.perftest.enterprise.util.Setting;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
@@ -143,12 +144,13 @@ public class ConsistencyPerformanceCheck
         StoreFactory factory = new StoreFactory( storeDir, tuningConfiguration,
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, NullLogProvider.getInstance() );
         NeoStores neoStores = factory.openAllNeoStores( true );
+        OperationalMode operationalMode = OperationalMode.single;
         SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                 fileSystem,
                 DirectoryFactory.PERSISTENT,
-                storeDir, tuningConfiguration );
+                storeDir, tuningConfiguration, operationalMode );
         LuceneLabelScanStoreBuilder labelScanStoreBuilder = new LuceneLabelScanStoreBuilder( storeDir, neoStores,
-                fileSystem, tuningConfiguration, NullLogProvider.getInstance() );
+                fileSystem, tuningConfiguration, operationalMode, NullLogProvider.getInstance() );
         LabelScanStore labelScanStore = labelScanStoreBuilder.build();
         return new DirectStoreAccess( new StoreAccess( neoStores ).initialize(), labelScanStore, indexes );
     }

@@ -52,6 +52,7 @@ import org.neo4j.legacy.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
@@ -140,11 +141,13 @@ public class ConsistencyCheckService
             LabelScanStore labelScanStore = null;
             try
             {
-                labelScanStore = new LuceneLabelScanStoreBuilder(
-                        storeDir, store.getRawNeoStores(), fileSystem, consistencyCheckerConfig, logProvider ).build();
+                OperationalMode operationalMode = OperationalMode.single;
+                labelScanStore = new LuceneLabelScanStoreBuilder( storeDir, store.getRawNeoStores(), fileSystem,
+                        consistencyCheckerConfig, operationalMode, logProvider )
+                        .build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         fileSystem, DirectoryFactory.PERSISTENT,
-                        storeDir, tuningConfiguration );
+                        storeDir, tuningConfiguration, operationalMode );
                 DirectStoreAccess stores = new DirectStoreAccess( store, labelScanStore, indexes );
                 FullCheck check = new FullCheck( tuningConfiguration, progressFactory );
                 summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );

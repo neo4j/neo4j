@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -135,6 +136,7 @@ public class LuceneSchemaIndexCorruptionTest
 
     private LuceneSchemaIndexProvider getLuceneSchemaIndexProvider( DirectoryFactory dirFactory )
     {
-        return new LuceneSchemaIndexProvider( fs.get(), dirFactory, testDirectory.graphDbDir(), new Config() );
+        return new LuceneSchemaIndexProvider( fs.get(), dirFactory, testDirectory.graphDbDir(),
+                new Config(), OperationalMode.single );
     }
 }

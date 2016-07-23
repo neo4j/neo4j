@@ -46,11 +46,10 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.udc.UsageDataKeys;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 public class LuceneLabelScanStore
@@ -132,7 +131,8 @@ public class LuceneLabelScanStore
 
     public LuceneLabelScanStore( LabelScanStorageStrategy strategy, DirectoryFactory directoryFactory,
             File directoryLocation, FileSystemAbstraction fs, IndexWriterFactory<LuceneIndexWriter> writerFactory,
-            FullStoreChangeStream fullStoreStream, Config config, Monitor monitor )
+            FullStoreChangeStream fullStoreStream, Config config, OperationalMode operationalMode,
+            Monitor monitor )
     {
         this.strategy = strategy;
         this.directoryFactory = directoryFactory;
@@ -140,7 +140,7 @@ public class LuceneLabelScanStore
         this.fs = fs;
         this.writerFactory = writerFactory;
         this.fullStoreStream = fullStoreStream;
-        this.readOnly = isReadOnly( config );
+        this.readOnly = isReadOnly( config, operationalMode );
         this.monitor = monitor;
     }
 
@@ -373,10 +373,8 @@ public class LuceneLabelScanStore
         directory = directoryFactory.open( directoryLocation );
     }
 
-    private static boolean isReadOnly( Config config )
+    private static boolean isReadOnly( Config config, OperationalMode operationalMode )
     {
-        UsageDataKeys.OperationalMode operationalMode = config.get( GraphDatabaseFacadeFactory.Configuration.operationalMode );
-        return config.get( GraphDatabaseSettings.read_only ) &&
-               (UsageDataKeys.OperationalMode.ha != operationalMode);
+        return config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.ha != operationalMode);
     }
 }
