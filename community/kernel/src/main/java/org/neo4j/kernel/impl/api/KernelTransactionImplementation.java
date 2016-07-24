@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
@@ -155,6 +156,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile long lastTransactionTimestampWhenStarted;
     private TransactionEvent transactionEvent;
     private Type type;
+    private long transactionId;
+    private long commitTime;
     private volatile int reuseCount;
 
     /**
@@ -216,6 +219,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionEvent = tracer.beginTransaction();
         assert transactionEvent != null : "transactionEvent was null!";
         this.accessMode = accessMode;
+        this.transactionId = TransactionData.UNASSIGNED_TRANSACTION_ID;
+        this.commitTime = TransactionData.UNASSIGNED_COMMIT_TIME;
         this.currentStatement.initialize( statementLocks );
         return this;
     }
@@ -556,14 +561,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     PhysicalTransactionRepresentation transactionRepresentation =
                             new PhysicalTransactionRepresentation( extractedCommands );
                     TransactionHeaderInformation headerInformation = headerInformationFactory.create();
+                    long timeCommitted = clock.currentTimeMillis();
                     transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
                             headerInformation.getMasterId(),
                             headerInformation.getAuthorId(),
-                            startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis(),
+                            startTimeMillis, lastTransactionIdWhenStarted, timeCommitted,
                             commitLocks.getLockSessionId() );
 
                     // Commit the transaction
-                    commitProcess.commit( new TransactionToApply( transactionRepresentation ), commitEvent, INTERNAL );
+                    transactionId = commitProcess
+                            .commit( new TransactionToApply( transactionRepresentation ), commitEvent, INTERNAL );
+                    commitTime = timeCommitted;
                 }
             }
             success = true;
@@ -725,6 +733,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public Type transactionType()
     {
         return type;
+    }
+
+    @Override
+    public long getTransactionId()
+    {
+        return transactionId;
+    }
+
+    @Override
+    public long getCommitTime()
+    {
+        return commitTime;
     }
 
     @Override

@@ -32,18 +32,24 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.RandomRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test for randomly creating data and verifying transaction data seen in transaction event handlers.
  */
 public class TransactionEventsIT
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
-    public final @Rule RandomRule random = new RandomRule();
+    @Rule
+    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final RandomRule random = new RandomRule();
 
     @Test
     public void shouldSeeExpectedTransactionData() throws Exception
@@ -84,6 +90,51 @@ public class TransactionEventsIT
         }
 
         // THEN the verifications all happen inside the transaction event handler
+    }
+
+    @Test
+    public void transactionIdAndCommitTimeAccessibleAfterCommit()
+    {
+        TransactionIdCommitTimeTracker commitTimeTracker = new TransactionIdCommitTimeTracker();
+        db.registerTransactionEventHandler( commitTimeTracker );
+
+        runTransaction();
+
+        long firstTransactionId = commitTimeTracker.getTransactionIdAfterCommit();
+        long firstTransactionCommitTime = commitTimeTracker.getCommitTimeAfterCommit();
+        verifyBeforeCommitData( commitTimeTracker );
+        assertTrue("Should be positive tx id.", firstTransactionId > 0 );
+        assertTrue("Should be positive.", firstTransactionCommitTime > 0);
+
+        runTransaction();
+
+        long secondTransactionId = commitTimeTracker.getTransactionIdAfterCommit();
+        long secondTransactionCommitTime = commitTimeTracker.getCommitTimeAfterCommit();
+        verifyBeforeCommitData( commitTimeTracker );
+        assertTrue("Should be positive tx id.", secondTransactionId > 0 );
+        assertTrue("Should be positive commit time value.", secondTransactionCommitTime > 0);
+
+        assertTrue( "Second tx id should be higher then first one.", secondTransactionId > firstTransactionId );
+        assertTrue( "Second commit time should be higher or equals then first one.",
+                secondTransactionCommitTime >= firstTransactionCommitTime );
+
+    }
+
+    private void verifyBeforeCommitData( TransactionIdCommitTimeTracker commitTimeTracker )
+    {
+        assertEquals("Should be unassigned.", TransactionData.UNASSIGNED_TRANSACTION_ID,
+                commitTimeTracker.getTransactionIdBeforeCommit());
+        assertEquals("Should be unassigned.", TransactionData.UNASSIGNED_COMMIT_TIME,
+                commitTimeTracker.getCommitTimeBeforeCommit());
+    }
+
+    private void runTransaction()
+    {
+        try (Transaction transaction = db.beginTx())
+        {
+            Node node = db.createNode();
+            transaction.success();
+        }
     }
 
     enum Operation
@@ -346,6 +397,51 @@ public class TransactionEventsIT
             Relationship relationship = node1.createRelationshipTo( node2, type );
             relationships.add( relationship );
             return relationship;
+        }
+    }
+
+    private static class TransactionIdCommitTimeTracker extends TransactionEventHandler.Adapter<Object>
+    {
+
+        private long transactionIdAfterCommit;
+        private long commitTimeAfterCommit;
+        private long transactionIdBeforeCommit;
+        private long commitTimeBeforeCommit;
+
+        @Override
+        public Object beforeCommit( TransactionData data ) throws Exception
+        {
+            commitTimeBeforeCommit = data.getCommitTime();
+            transactionIdBeforeCommit = data.getTransactionId();
+            return super.beforeCommit( data );
+        }
+
+        @Override
+        public void afterCommit( TransactionData data, Object state )
+        {
+            commitTimeAfterCommit = data.getCommitTime();
+            transactionIdAfterCommit = data.getTransactionId();
+            super.afterCommit( data, state );
+        }
+
+        public long getTransactionIdAfterCommit()
+        {
+            return transactionIdAfterCommit;
+        }
+
+        public long getCommitTimeAfterCommit()
+        {
+            return commitTimeAfterCommit;
+        }
+
+        public long getTransactionIdBeforeCommit()
+        {
+            return transactionIdBeforeCommit;
+        }
+
+        public long getCommitTimeBeforeCommit()
+        {
+            return commitTimeBeforeCommit;
         }
     }
 }

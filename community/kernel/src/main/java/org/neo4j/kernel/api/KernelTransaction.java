@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -168,6 +169,26 @@ public interface KernelTransaction extends AutoCloseable
      * @return the transaction type: implicit or explicit
      */
     Type transactionType();
+
+    /**
+     * Return transaction id if it was already assigned or {@link TransactionData#UNASSIGNED_TRANSACTION_ID} otherwise.
+     * Transaction id is assigned as soon as transaction committed.
+     * @return transaction id.
+     */
+    default long getTransactionId()
+    {
+        return TransactionData.UNASSIGNED_TRANSACTION_ID;
+    }
+
+    /**
+     * Return transaction commit time if it was already assigned or {@link TransactionData#UNASSIGNED_COMMIT_TIME} otherwise.
+     * Transaction commit time is assigned as soon as transaction committed.
+     * @return transaction commit time
+     */
+    default long getCommitTime()
+    {
+        return TransactionData.UNASSIGNED_COMMIT_TIME;
+    }
 
     Revertable restrict( AccessMode mode );
 
