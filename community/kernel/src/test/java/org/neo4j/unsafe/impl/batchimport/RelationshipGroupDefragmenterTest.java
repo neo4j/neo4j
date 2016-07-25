@@ -101,7 +101,7 @@ public class RelationshipGroupDefragmenterTest
         // GIVEN some nodes which has their groups scattered
         int nodeCount = 10_000;
         int relationshipTypeCount = 50;
-        RecordStore<RelationshipGroupRecord> groupStore = stores.getRelationshipGroupStore();
+        RecordStore<RelationshipGroupRecord> groupStore = stores.getTemporaryRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = groupStore.newRecord();
         RecordStore<NodeRecord> nodeStore = stores.getNodeStore();
         NodeRecord nodeRecord = nodeStore.newRecord();
@@ -122,6 +122,7 @@ public class RelationshipGroupDefragmenterTest
                     nodeRecord.initialize( true, -1, true, groupRecord.getId(), 0 );
                     nodeRecord.setId( nodeId );
                     nodeStore.updateRecord( nodeRecord );
+                    nodeStore.setHighestPossibleIdInUse( nodeId );
                 }
             }
         }
@@ -139,7 +140,7 @@ public class RelationshipGroupDefragmenterTest
         // GIVEN some nodes which has their groups scattered
         int nodeCount = 10_000;
         int relationshipTypeCount = 50;
-        RecordStore<RelationshipGroupRecord> groupStore = stores.getRelationshipGroupStore();
+        RecordStore<RelationshipGroupRecord> groupStore = stores.getTemporaryRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = groupStore.newRecord();
         RecordStore<NodeRecord> nodeStore = stores.getNodeStore();
         NodeRecord nodeRecord = nodeStore.newRecord();
@@ -167,6 +168,7 @@ public class RelationshipGroupDefragmenterTest
                         nodeRecord.initialize( true, -1, true, groupRecord.getId(), 0 );
                         nodeRecord.setId( nodeId );
                         nodeStore.updateRecord( nodeRecord );
+                        nodeStore.setHighestPossibleIdInUse( nodeId );
                         initializedNodes.set( nodeId );
                     }
                 }
@@ -189,7 +191,7 @@ public class RelationshipGroupDefragmenterTest
 
     private void verifyGroupsAreSequentiallyOrderedByNode()
     {
-        RecordStore<RelationshipGroupRecord> store = stores.getReplacementNeoStores().getRelationshipGroupStore();
+        RecordStore<RelationshipGroupRecord> store = stores.getRelationshipGroupStore();
         long firstId = store.getNumberOfReservedLowIds();
         long groupCount = store.getHighId() - firstId;
         RelationshipGroupRecord groupRecord = store.newRecord();

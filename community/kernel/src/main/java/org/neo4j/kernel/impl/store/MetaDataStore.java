@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.helpers.Clock;
@@ -148,10 +149,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     MetaDataStore( File fileName, Config conf,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache, LogProvider logProvider, RecordFormat<MetaDataRecord> recordFormat,
-            String storeVersion )
+            String storeVersion,
+            OpenOption... openOptions )
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider,
-                TYPE_DESCRIPTOR, recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion );
+                TYPE_DESCRIPTOR, recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
         this.transactionCloseWaitLogger = new CappedLogger( logProvider.getLog( MetaDataStore.class ) );
         transactionCloseWaitLogger.setTimeLimit( 30, SECONDS, Clock.SYSTEM_CLOCK );
     }

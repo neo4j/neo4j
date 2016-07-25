@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -72,10 +73,11 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             DynamicStringStore stringPropertyStore,
             PropertyKeyTokenStore propertyKeyTokenStore,
             DynamicArrayStore arrayPropertyStore,
-            RecordFormats recordFormats)
+            RecordFormats recordFormats,
+            OpenOption... openOptions )
     {
         super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
-                recordFormats.property(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion() );
+                recordFormats.property(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;

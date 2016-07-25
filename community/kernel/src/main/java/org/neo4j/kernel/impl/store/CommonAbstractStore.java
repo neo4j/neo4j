@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 
@@ -45,6 +46,9 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.string.UTF8;
 
+import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+
+import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
@@ -80,6 +84,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     private final StoreHeaderFormat<HEADER> storeHeaderFormat;
     private HEADER storeHeader;
 
+    private final OpenOption[] openOptions;
+
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
      * loading any configuration defined in <CODE>config</CODE>. After
@@ -105,7 +111,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             String typeDescriptor,
             RecordFormat<RECORD> recordFormat,
             StoreHeaderFormat<HEADER> storeHeaderFormat,
-            String storeVersion )
+            String storeVersion,
+            OpenOption... openOptions )
     {
         this.storageFileName = fileName;
         this.configuration = configuration;
@@ -116,6 +123,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         this.recordFormat = recordFormat;
         this.storeHeaderFormat = storeHeaderFormat;
         this.storeVersion = storeVersion;
+        this.openOptions = openOptions;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -243,7 +251,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             extractHeaderRecord();
             int filePageSize = pageCache.pageSize() - pageCache.pageSize() % getRecordSize();
-            storeFile = pageCache.map( getStorageFileName(), filePageSize );
+            storeFile = pageCache.map( getStorageFileName(), filePageSize, openOptions );
         }
         catch ( IOException e )
         {
@@ -877,7 +885,14 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             storeFile.close();
             if ( idGenerator != null )
             {
-                idGenerator.close();
+                if ( contains( openOptions, DELETE_ON_CLOSE ) )
+                {
+                    idGenerator.delete();
+                }
+                else
+                {
+                    idGenerator.close();
+                }
             }
         }
         finally

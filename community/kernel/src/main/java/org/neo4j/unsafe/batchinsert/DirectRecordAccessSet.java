@@ -19,14 +19,10 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
+import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -54,14 +50,29 @@ public class DirectRecordAccessSet implements RecordAccessSet
 
     public DirectRecordAccessSet( NeoStores neoStores )
     {
-        Loaders loaders = new Loaders( neoStores );
-        NodeStore nodeStore = neoStores.getNodeStore();
-        PropertyStore propertyStore = neoStores.getPropertyStore();
-        RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
-        PropertyKeyTokenStore propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
-        RelationshipTypeTokenStore relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
-        LabelTokenStore labelTokenStore = neoStores.getLabelTokenStore();
+        this(
+                neoStores.getNodeStore(),
+                neoStores.getPropertyStore(),
+                neoStores.getRelationshipStore(),
+                neoStores.getRelationshipGroupStore(),
+                neoStores.getPropertyKeyTokenStore(),
+                neoStores.getRelationshipTypeTokenStore(),
+                neoStores.getLabelTokenStore(),
+                neoStores.getSchemaStore() );
+    }
+
+    public DirectRecordAccessSet(
+            RecordStore<NodeRecord> nodeStore,
+            PropertyStore propertyStore,
+            RecordStore<RelationshipRecord> relationshipStore,
+            RecordStore<RelationshipGroupRecord> relationshipGroupStore,
+            RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore,
+            RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore,
+            RecordStore<LabelTokenRecord> labelTokenStore,
+            SchemaStore schemaStore )
+    {
+        Loaders loaders = new Loaders( nodeStore, propertyStore, relationshipStore, relationshipGroupStore,
+                propertyKeyTokenStore, relationshipTypeTokenStore, labelTokenStore, schemaStore );
         nodeRecords = new DirectRecordAccess<>( nodeStore, loaders.nodeLoader() );
         propertyRecords = new DirectRecordAccess<>( propertyStore, loaders.propertyLoader() );
         relationshipRecords = new DirectRecordAccess<>( relationshipStore, loaders.relationshipLoader() );

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -30,7 +31,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
@@ -47,7 +48,6 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
     public static final String TYPE_DESCRIPTOR = "SchemaStore";
     public static final int BLOCK_SIZE = 56;
 
-    @SuppressWarnings("deprecation")
     public SchemaStore(
             File fileName,
             Config conf,
@@ -55,11 +55,11 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            RecordFormat<DynamicRecord> recordFormat,
-            String storeVersion )
+            RecordFormats recordFormats,
+            OpenOption... openOptions )
     {
         super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, BLOCK_SIZE,
-                recordFormat, storeVersion );
+                recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
     }
 
     @Override

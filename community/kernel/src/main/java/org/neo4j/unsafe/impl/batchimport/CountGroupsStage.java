@@ -24,18 +24,17 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 /**
  * Stage for counting groups per node, populates {@link RelationshipGroupCache}.
  */
 public class CountGroupsStage extends Stage
 {
-    public CountGroupsStage( Configuration config, BatchingNeoStores neoStore, RelationshipGroupCache groupCache )
+    public CountGroupsStage( Configuration config, RecordStore<RelationshipGroupRecord> store,
+            RelationshipGroupCache groupCache )
     {
         super( "Count groups", config );
 
-        RecordStore<RelationshipGroupRecord> store = neoStore.getRelationshipGroupStore();
         add( new ReadRecordsStep<>( control(), config, store, RecordIdIteration.allIn( store ) ) );
         add( new CountGroupsStep( control(), config, groupCache ) );
     }

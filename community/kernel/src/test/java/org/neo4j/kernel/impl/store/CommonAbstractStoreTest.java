@@ -27,6 +27,7 @@ import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.Arrays;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -36,6 +37,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RecordingPageCacheTracer;
 import org.neo4j.io.pagecache.RecordingPageCacheTracer.Pin;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
@@ -50,6 +52,7 @@ import org.neo4j.kernel.impl.store.id.validation.ReservedIdException;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
@@ -59,6 +62,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -74,6 +78,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+
+import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+
 import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Event;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -92,7 +99,7 @@ public class CommonAbstractStoreTest
     private final PageCache pageCache = mock( PageCache.class );
     private final Config config = Config.empty();
     private final File storeFile = new File( "store" );
-    private RecordFormat<TheRecord> recordFormat = mock( RecordFormat.class );
+    private final RecordFormat<TheRecord> recordFormat = mock( RecordFormat.class );
     private final IdType idType = IdType.RELATIONSHIP; // whatever
 
     private static final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -196,7 +203,7 @@ public class CommonAbstractStoreTest
     }
 
     @Test
-    public void recordCursorGetAll() throws IOException
+    public void recordCursorGetAll()
     {
         TheStore store = newStore();
         RecordCursor<TheRecord> cursor = spy( store.newRecordCursor( store.newRecord() ) );
@@ -260,6 +267,28 @@ public class CommonAbstractStoreTest
         }
     }
 
+    @Test
+    public void shouldDeleteOnCloseIfOpenOptionsSaysSo() throws Exception
+    {
+        // GIVEN
+        File file = dir.file( "store" ).getAbsoluteFile();
+        File idFile = new File( file.getParentFile(), StoreFileType.ID.augment( file.getName() ) );
+        PageCache pageCache = pageCacheRule.getPageCache( fs, PageCacheTracer.NULL, Config.empty() );
+        TheStore store = new TheStore( file, config, idType, new DefaultIdGeneratorFactory( fs ), pageCache,
+                NullLogProvider.getInstance(), recordFormat, DELETE_ON_CLOSE );
+        store.initialise( true );
+        store.makeStoreOk();
+        assertTrue( fs.fileExists( file ) );
+        assertTrue( fs.fileExists( idFile ) );
+
+        // WHEN
+        store.close();
+
+        // THEN
+        assertFalse( fs.fileExists( file ) );
+        assertFalse( fs.fileExists( idFile ) );
+    }
+
     private TheStore newStore()
     {
         LogProvider log = NullLogProvider.getInstance();
@@ -289,10 +318,11 @@ public class CommonAbstractStoreTest
     private static class TheStore extends CommonAbstractStore<TheRecord,NoStoreHeader>
     {
         TheStore( File fileName, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory,
-                PageCache pageCache, LogProvider logProvider, RecordFormat<TheRecord> recordFormat )
+                PageCache pageCache, LogProvider logProvider, RecordFormat<TheRecord> recordFormat,
+                OpenOption... openOptions )
         {
             super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType",
-                    recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, "v1" );
+                    recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, "v1", openOptions );
         }
 
         @Override

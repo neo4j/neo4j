@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.Pair;
@@ -56,10 +57,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
             LogProvider logProvider,
             int dataSizeFromConfiguration,
             RecordFormat<DynamicRecord> recordFormat,
-            String storeVersion )
+            String storeVersion,
+            OpenOption... openOptions )
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormat, storeVersion );
+                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormat, storeVersion, openOptions );
     }
 
     @Override

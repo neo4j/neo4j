@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.OpenOption;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -67,6 +68,7 @@ public class StoreFactory
     private final File neoStoreFileName;
     private final PageCache pageCache;
     private final RecordFormats recordFormats;
+    private final OpenOption[] openOptions;
 
     public StoreFactory( File storeDir, PageCache pageCache, FileSystemAbstraction fileSystem, LogProvider logProvider )
     {
@@ -92,14 +94,23 @@ public class StoreFactory
     public StoreFactory( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider )
     {
+        this( storeDir, MetaDataStore.DEFAULT_NAME, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
+                recordFormats, logProvider );
+    }
+
+    public StoreFactory( File storeDir, String storeName, Config config, IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats,
+            LogProvider logProvider, OpenOption... openOptions )
+    {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.recordFormats = recordFormats;
+        this.openOptions = openOptions;
         new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
 
         this.logProvider = logProvider;
-        this.neoStoreFileName = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        this.neoStoreFileName = new File( storeDir, storeName );
         this.pageCache = pageCache;
     }
 
@@ -156,6 +167,6 @@ public class StoreFactory
             }
         }
         return new NeoStores( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
-                fileSystemAbstraction, recordFormats, createStoreIfNotExists, storeTypes );
+                fileSystemAbstraction, recordFormats, createStoreIfNotExists, storeTypes, openOptions );
     }
 }

@@ -298,7 +298,8 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Stage 4a -- set node nextRel fields for dense nodes
             executeStages( new NodeFirstRelationshipStage( topic, config, neoStore.getNodeStore(),
-                    neoStore.getRelationshipGroupStore(), nodeRelationshipCache, true/*dense*/, currentTypeId ) );
+                    neoStore.getTemporaryRelationshipGroupStore(), nodeRelationshipCache, true/*dense*/,
+                    currentTypeId ) );
 
             // Stage 5a -- link relationship chains together for dense nodes
             nodeRelationshipCache.setForwardScan( false );
@@ -313,7 +314,7 @@ public class ParallelBatchImporter implements BatchImporter
         nodeRelationshipCache.setForwardScan( true );
         // Stage 4b -- set node nextRel fields for sparse nodes
         executeStages( new NodeFirstRelationshipStage( topic, config, neoStore.getNodeStore(),
-                neoStore.getRelationshipGroupStore(), nodeRelationshipCache, false/*sparse*/, -1 ) );
+                neoStore.getTemporaryRelationshipGroupStore(), nodeRelationshipCache, false/*sparse*/, -1 ) );
 
         // Stage 5b -- link relationship chains together for sparse nodes
         nodeRelationshipCache.setForwardScan( false );
