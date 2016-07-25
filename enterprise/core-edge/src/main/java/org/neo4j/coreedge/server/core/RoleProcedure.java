@@ -47,7 +47,7 @@ public class RoleProcedure extends CallableProcedure.BasicProcedure
             @Override
             public boolean hasNext() throws ProcedureException
             {
-                return false;
+                return true;
             }
 
             @Override
