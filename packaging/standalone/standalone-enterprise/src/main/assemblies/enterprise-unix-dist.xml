@@ -85,6 +85,23 @@
         <include>**/config-migrator.jar</include>
       </includes>
     </fileSet>
+    <!-- filter and chmod 755 cypher-shell -->
+    <fileSet>
+      <directory>${project.parent.basedir}/src/main/distribution/cypher-shell/bin</directory>
+      <outputDirectory>bin</outputDirectory>
+      <lineEnding>unix</lineEnding>
+      <fileMode>0755</fileMode>
+      <excludes>
+        <exclude>*.bat</exclude>
+      </excludes>
+    </fileSet>
+    <fileSet>
+      <directory>${project.parent.basedir}/src/main/distribution/cypher-shell/lib</directory>
+      <outputDirectory>lib</outputDirectory>
+      <includes>
+        <include>*.jar</include>
+      </includes>
+    </fileSet>
   </fileSets>
 
   <dependencySets>
