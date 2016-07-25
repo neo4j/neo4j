@@ -20,11 +20,12 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
+import java.nio.file.OpenOption;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -40,12 +41,13 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            RecordFormat<RelationshipGroupRecord> recordFormat,
-            String storeVersion )
+            RecordFormats recordFormats,
+            OpenOption... openOptions )
     {
         super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache,
-                logProvider, TYPE_DESCRIPTOR, recordFormat,
-                new IntStoreHeaderFormat( config.get( GraphDatabaseSettings.dense_node_threshold ) ), storeVersion );
+                logProvider, TYPE_DESCRIPTOR, recordFormats.relationshipGroup(),
+                new IntStoreHeaderFormat( config.get( GraphDatabaseSettings.dense_node_threshold ) ),
+                recordFormats.storeVersion(), openOptions );
     }
 
     @Override

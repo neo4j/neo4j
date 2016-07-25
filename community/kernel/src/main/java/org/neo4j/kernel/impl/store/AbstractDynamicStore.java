@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -76,11 +77,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             String typeDescriptor,
             int dataSizeFromConfiguration,
             RecordFormat<DynamicRecord> recordFormat,
-            String storeVersion )
+            String storeVersion,
+            OpenOption... openOptions )
     {
         super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
                 recordFormat, new DynamicStoreHeaderFormat( dataSizeFromConfiguration, recordFormat ),
-                storeVersion );
+                storeVersion, openOptions );
     }
 
     public static void allocateRecordsFromBytes(

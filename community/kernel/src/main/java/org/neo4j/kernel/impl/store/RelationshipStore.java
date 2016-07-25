@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
+import java.nio.file.OpenOption;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -44,12 +45,12 @@ public class RelationshipStore extends CommonAbstractStore<RelationshipRecord,No
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            RecordFormats recordFormats)
+            RecordFormats recordFormats,
+            OpenOption... openOptions )
     {
         super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
                 pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.relationship(), NO_STORE_HEADER_FORMAT,
-                recordFormats.storeVersion()
-        );
+                recordFormats.storeVersion(), openOptions );
     }
 
     @Override

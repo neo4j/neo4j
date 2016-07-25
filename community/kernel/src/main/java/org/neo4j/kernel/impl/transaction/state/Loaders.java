@@ -19,14 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -41,7 +37,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
-import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -59,14 +54,35 @@ public class Loaders
 
     public Loaders( NeoStores neoStores )
     {
-        nodeLoader = nodeLoader( neoStores.getNodeStore() );
-        propertyLoader = propertyLoader( neoStores.getPropertyStore() );
-        relationshipLoader = relationshipLoader( neoStores.getRelationshipStore() );
-        relationshipGroupLoader = relationshipGroupLoader( neoStores.getRelationshipGroupStore() );
-        schemaRuleLoader = schemaRuleLoader( neoStores.getSchemaStore() );
-        propertyKeyTokenLoader = propertyKeyTokenLoader( neoStores.getPropertyKeyTokenStore() );
-        labelTokenLoader = labelTokenLoader( neoStores.getLabelTokenStore() );
-        relationshipTypeTokenLoader = relationshipTypeTokenLoader( neoStores.getRelationshipTypeTokenStore() );
+        this(
+                neoStores.getNodeStore(),
+                neoStores.getPropertyStore(),
+                neoStores.getRelationshipStore(),
+                neoStores.getRelationshipGroupStore(),
+                neoStores.getPropertyKeyTokenStore(),
+                neoStores.getRelationshipTypeTokenStore(),
+                neoStores.getLabelTokenStore(),
+                neoStores.getSchemaStore() );
+    }
+
+    public Loaders(
+            RecordStore<NodeRecord> nodeStore,
+            PropertyStore propertyStore,
+            RecordStore<RelationshipRecord> relationshipStore,
+            RecordStore<RelationshipGroupRecord> relationshipGroupStore,
+            RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore,
+            RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore,
+            RecordStore<LabelTokenRecord> labelTokenStore,
+            SchemaStore schemaStore )
+    {
+        nodeLoader = nodeLoader( nodeStore );
+        propertyLoader = propertyLoader( propertyStore );
+        relationshipLoader = relationshipLoader( relationshipStore );
+        relationshipGroupLoader = relationshipGroupLoader( relationshipGroupStore );
+        schemaRuleLoader = schemaRuleLoader( schemaStore );
+        propertyKeyTokenLoader = propertyKeyTokenLoader( propertyKeyTokenStore );
+        labelTokenLoader = labelTokenLoader( labelTokenStore );
+        relationshipTypeTokenLoader = relationshipTypeTokenLoader( relationshipTypeTokenStore );
     }
 
     public Loader<Long,NodeRecord,Void> nodeLoader()
@@ -109,7 +125,7 @@ public class Loaders
         return relationshipTypeTokenLoader;
     }
 
-    public static Loader<Long,NodeRecord,Void> nodeLoader( final NodeStore store )
+    public static Loader<Long,NodeRecord,Void> nodeLoader( final RecordStore<NodeRecord> store )
     {
         return new Loader<Long,NodeRecord,Void>()
         {
@@ -184,7 +200,8 @@ public class Loaders
         };
     }
 
-    public static Loader<Long,RelationshipRecord,Void> relationshipLoader( final RelationshipStore store )
+    public static Loader<Long,RelationshipRecord,Void> relationshipLoader(
+            final RecordStore<RelationshipRecord> store )
     {
         return new Loader<Long, RelationshipRecord, Void>()
         {
@@ -280,7 +297,7 @@ public class Loaders
     }
 
     public static Loader<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenLoader(
-            final TokenStore<PropertyKeyTokenRecord, Token> store )
+            final RecordStore<PropertyKeyTokenRecord> store )
     {
         return new Loader<Integer, PropertyKeyTokenRecord, Void>()
         {
@@ -311,7 +328,7 @@ public class Loaders
     }
 
     public static Loader<Integer,LabelTokenRecord,Void> labelTokenLoader(
-            final TokenStore<LabelTokenRecord, Token> store )
+            final RecordStore<LabelTokenRecord> store )
     {
         return new Loader<Integer, LabelTokenRecord, Void>()
         {
@@ -342,7 +359,7 @@ public class Loaders
     }
 
     public static Loader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader(
-            final TokenStore<RelationshipTypeTokenRecord, RelationshipTypeToken> store )
+            final RecordStore<RelationshipTypeTokenRecord> store )
     {
         return new Loader<Integer, RelationshipTypeTokenRecord, Void>()
         {

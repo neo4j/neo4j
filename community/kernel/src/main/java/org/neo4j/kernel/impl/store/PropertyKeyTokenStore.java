@@ -20,10 +20,11 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
+import java.nio.file.OpenOption;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -45,11 +46,12 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord, To
             PageCache pageCache,
             LogProvider logProvider,
             DynamicStringStore nameStore,
-            RecordFormat<PropertyKeyTokenRecord> recordFormat,
-            String storeVersion )
+            RecordFormats recordFormats,
+            OpenOption... openOptions )
     {
         super( fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
-                TYPE_DESCRIPTOR, new Token.Factory(), recordFormat, storeVersion );
+                TYPE_DESCRIPTOR, new Token.Factory(), recordFormats.propertyKeyToken(), recordFormats.storeVersion(),
+                openOptions );
     }
 
     @Override

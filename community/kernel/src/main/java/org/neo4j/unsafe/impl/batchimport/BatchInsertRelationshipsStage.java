@@ -36,7 +36,7 @@ public class BatchInsertRelationshipsStage extends Stage
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
         add( new PropertyEncoderStep<>( control(), config, store.getPropertyKeyRepository(),
                 store.getPropertyStore() ) );
-        add( new BatchInsertRelationshipsStep( control(), config, store.getNeoStores(),
+        add( new BatchInsertRelationshipsStep( control(), config, store,
                 store.getRelationshipTypeRepository(), nextRelationshipId ) );
     }
 }

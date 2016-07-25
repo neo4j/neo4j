@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
+import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.List;
 
@@ -72,10 +73,11 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
             PageCache pageCache,
             LogProvider logProvider,
             DynamicArrayStore dynamicLabelStore,
-            RecordFormats recordFormats)
+            RecordFormats recordFormats,
+            OpenOption... openOptions )
     {
         super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
-                recordFormats.node(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion() );
+                recordFormats.node(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 

@@ -137,7 +137,7 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
         @Override
         public void delete()
         {
-            throw new UnsupportedOperationException();
+            // This would be equivalent of not doing anything because close() will create the file
         }
 
         @Override

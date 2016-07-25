@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
@@ -59,13 +58,15 @@ public class RelationshipGroupDefragmenter
         {
             try
             {
+                // Read from the temporary relationship group store...
+                RecordStore<RelationshipGroupRecord> fromStore = neoStore.getTemporaryRelationshipGroupStore();
+                // and write into the main relationship group store
+                RecordStore<RelationshipGroupRecord> toStore = neoStore.getRelationshipGroupStore();
+
                 // Count all nodes, how many groups each node has each
-                executeStage( new CountGroupsStage( config, neoStore, groupCache ) );
+                executeStage( new CountGroupsStage( config, fromStore, groupCache ) );
                 long fromNodeId = 0;
                 long toNodeId = 0;
-                RecordStore<RelationshipGroupRecord> fromStore = neoStore.getRelationshipGroupStore();
-                RecordStore<RelationshipGroupRecord> toStore =
-                        neoStore.getReplacementNeoStores( StoreType.RELATIONSHIP_GROUP ).getRelationshipGroupStore();
                 while ( fromNodeId < highNodeId )
                 {
                     // See how many nodes' groups we can fit into the cache this iteration of the loop.
