@@ -25,10 +25,9 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 
-public class SlaveLockManager extends LifecycleAdapter implements Locks
+public class SlaveLockManager implements Locks
 {
     private final RequestContextFactory requestContextFactory;
     private final Locks local;
@@ -63,8 +62,8 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void close()
     {
-        local.shutdown();
+        local.close();
     }
 }

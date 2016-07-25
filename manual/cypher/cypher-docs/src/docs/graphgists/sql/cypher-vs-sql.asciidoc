@@ -121,9 +121,9 @@ We'll come back to schema later, for now it's enough to know that labels can be 
 
 In the +CREATE+ statements below, we tell Neo4j what data we want to have in the graph.
 Simply put, the parentheses denote nodes, while the arrows (`-->`, or in our case with a relationship type included `-[:DIRECTED]->`) denote relationships.
-For the nodes we set identifiers like `TheMatrix` so we can easily refer to them later on in the statement.
-Note that the identifiers are scoped to the statement, and not visible to other Cypher statements.
-We could use identifiers for the relationships as well, but there's no need for that in this case.
+For the nodes we set variables like `TheMatrix` so we can easily refer to them later on in the statement.
+Note that the variables are scoped to the statement, and not visible to other Cypher statements.
+We could use variables for the relationships as well, but there's no need for that in this case.
 
 [source,cypher]
 ----
@@ -182,7 +182,7 @@ RETURN movie.title;
 
 +MATCH+ tells Neo4j to match a pattern in the graph.
 In this case the pattern is very simple: any node with a +Movie+ label on it.
-We bind the result of the pattern matching to the identifier `movie`, for use in the +RETURN+ clause.
+We bind the result of the pattern matching to the variable `movie`, for use in the +RETURN+ clause.
 And as you can see, the +RETURN+ keyword of Cypher is similar to +SELECT+ in SQL.
 
 

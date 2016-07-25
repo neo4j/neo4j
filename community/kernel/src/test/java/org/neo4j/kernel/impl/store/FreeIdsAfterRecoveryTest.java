@@ -33,13 +33,11 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-
-
 import static org.neo4j.kernel.impl.store.id.IdGeneratorImpl.HEADER_SIZE;
 import static org.neo4j.kernel.impl.store.id.IdGeneratorImpl.markAsSticky;
 
@@ -55,7 +53,7 @@ public class FreeIdsAfterRecoveryTest
     public void shouldCompletelyRebuildIdGeneratorsAfterCrash() throws Exception
     {
         // GIVEN
-        StoreFactory storeFactory = new StoreFactory( fs, directory.directory(), pageCacheRule.getPageCache( fs ),
+        StoreFactory storeFactory = new StoreFactory( directory.directory(), pageCacheRule.getPageCache( fs ), fs,
                 NullLogProvider.getInstance() );
         long highId;
         try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )

@@ -32,12 +32,8 @@ import org.neo4j.unsafe.impl.batchimport.Parallelizable;
  */
 public interface TaskExecutor<LOCAL> extends Parallelizable
 {
-    /**
-     * Sets the processor count for this executor, i.e. number of threads executing tasks in parallel.
-     *
-     * @param count number of processors executing tasks.
-     */
-    void setNumberOfProcessors( int count );
+    int SF_AWAIT_ALL_COMPLETED = 0x1;
+    int SF_ABORT_QUEUED = 0x2;
 
     /**
      * Submits a task to be executed by one of the processors in this {@link TaskExecutor}. Tasks will be
@@ -50,10 +46,11 @@ public interface TaskExecutor<LOCAL> extends Parallelizable
     /**
      * Shuts down this {@link TaskExecutor}, disallowing new tasks to be {@link #submit(Task) submitted}.
      *
-     * @param awaitAllCompleted if {@code true} will wait for all queued or already executing tasks to be
-     * executed and completed, before returning from this method.
+     * @param flags {@link #SF_AWAIT_ALL_COMPLETED} will wait for all queued or already executing tasks to be
+     * executed and completed, before returning from this method. {@link #SF_ABORT_QUEUED} will have
+     * submitted tasks which haven't started executing yet cancelled, never to be executed.
      */
-    void shutdown( boolean awaitAllCompleted );
+    void shutdown( int flags );
 
     /**
      * Asserts that this {@link TaskExecutor} is healthy. Useful to call when deciding to wait on a condition

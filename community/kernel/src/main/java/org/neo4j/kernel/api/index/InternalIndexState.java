@@ -28,18 +28,18 @@ public enum InternalIndexState
      * Denotes that an index is in the process of being created.
      */
     POPULATING,
-    
+
     /**
      * Given after the database has populated the index, and notified the index provider that the index is in
      * fact populated.
      */
     ONLINE,
-    
+
     /**
      * Denotes that the index, for one reason or another, is broken. Information about the
      * failure is expected to have been logged.
      *
      * Dropping a failed index should be possible, as long as the failure is not caused by eg. out of memory.
      */
-    FAILED;
+    FAILED
 }

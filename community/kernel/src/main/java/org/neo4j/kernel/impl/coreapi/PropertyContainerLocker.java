@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
+
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
- * Manages user-facing locks. Takes a statement and will close it once the lock has been released.
+ * Manages user-facing locks.
  */
 public class PropertyContainerLocker
 {
@@ -43,7 +44,7 @@ public class PropertyContainerLocker
                 return new CoreAPILock(stmtSupplier, ResourceTypes.NODE, ((Node) container).getId())
                 {
                     @Override
-                    void release( Statement statement, Locks.ResourceType type, long resourceId )
+                    void release( Statement statement, ResourceType type, long resourceId )
                     {
                         statement.readOperations().releaseExclusive( type, resourceId );
                     }
@@ -55,7 +56,7 @@ public class PropertyContainerLocker
                 return new CoreAPILock(stmtSupplier, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId())
                 {
                     @Override
-                    void release( Statement statement, Locks.ResourceType type, long resourceId )
+                    void release( Statement statement, ResourceType type, long resourceId )
                     {
                         statement.readOperations().releaseExclusive( type, resourceId );
                     }
@@ -65,6 +66,34 @@ public class PropertyContainerLocker
             {
                 throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
             }
+        }
+    }
+
+    /**
+     * The Cypher runtime keeps statements open for longer, so this method does not close the statement after itself
+     */
+    public Lock exclusiveLock( Statement statement, PropertyContainer container )
+    {
+        if ( container instanceof Node )
+        {
+            statement.readOperations().acquireExclusive( ResourceTypes.NODE, ((Node) container).getId() );
+            return () -> {
+                long id = ((Node) container).getId();
+                statement.readOperations().releaseExclusive( ResourceTypes.NODE, id );
+            };
+        }
+        else if ( container instanceof Relationship )
+        {
+            statement.readOperations()
+                    .acquireExclusive( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
+            return () -> {
+                long id = ((Relationship) container).getId();
+                statement.readOperations().releaseExclusive( ResourceTypes.RELATIONSHIP, id );
+            };
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
         }
     }
 
@@ -78,7 +107,7 @@ public class PropertyContainerLocker
                 return new CoreAPILock(stmtProvider, ResourceTypes.NODE, ((Node) container).getId())
                 {
                     @Override
-                    void release( Statement statement, Locks.ResourceType type, long resourceId )
+                    void release( Statement statement, ResourceType type, long resourceId )
                     {
                         statement.readOperations().releaseShared( type, resourceId );
                     }
@@ -90,7 +119,7 @@ public class PropertyContainerLocker
                 return new CoreAPILock(stmtProvider, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId())
                 {
                     @Override
-                    void release( Statement statement, Locks.ResourceType type, long resourceId )
+                    void release( Statement statement, ResourceType type, long resourceId )
                     {
                         statement.readOperations().releaseShared( type, resourceId );
                     }
@@ -103,14 +132,14 @@ public class PropertyContainerLocker
         }
     }
 
-    private static abstract class CoreAPILock implements Lock
+    private abstract static class CoreAPILock implements Lock
     {
         private final Supplier<Statement> stmtProvider;
-        private final Locks.ResourceType type;
+        private final ResourceType type;
         private final long resourceId;
         private boolean released = false;
 
-        public CoreAPILock( Supplier<Statement> stmtProvider, Locks.ResourceType type, long resourceId )
+        public CoreAPILock( Supplier<Statement> stmtProvider, ResourceType type, long resourceId )
         {
             this.stmtProvider = stmtProvider;
             this.type = type;
@@ -131,7 +160,7 @@ public class PropertyContainerLocker
             }
         }
 
-        abstract void release( Statement statement, Locks.ResourceType type, long resourceId );
+        abstract void release( Statement statement, ResourceType type, long resourceId );
     }
 
 }

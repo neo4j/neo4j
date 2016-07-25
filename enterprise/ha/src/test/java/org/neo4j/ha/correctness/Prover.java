@@ -29,13 +29,13 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.ha.correctness.ClusterInstance.newClusterInstance;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class Prover
 {

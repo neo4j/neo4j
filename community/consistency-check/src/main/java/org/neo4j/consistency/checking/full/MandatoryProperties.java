@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking.full;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.function.Function;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -29,7 +30,6 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
-import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
@@ -87,57 +87,47 @@ public class MandatoryProperties
     public Function<NodeRecord,Check<NodeRecord,ConsistencyReport.NodeConsistencyReport>> forNodes(
             final ConsistencyReporter reporter )
     {
-        return new Function<NodeRecord,Check<NodeRecord,ConsistencyReport.NodeConsistencyReport>>()
-        {
-            @Override
-            public Check<NodeRecord,ConsistencyReport.NodeConsistencyReport> apply( NodeRecord node )
+        return node -> {
+            PrimitiveIntSet keys = null;
+            for ( long labelId : NodeLabelReader.getListOfLabels( node, storeAccess.getNodeDynamicLabelStore() ) )
             {
-                PrimitiveIntSet keys = null;
-                for ( long labelId : NodeLabelReader.getListOfLabels( node, storeAccess.getNodeDynamicLabelStore() ) )
+                // labelId _is_ actually an int. A technical detail in the store format has these come in a long[]
+                int[] propertyKeys = nodes.get( Utils.safeCastLongToInt( labelId ) );
+                if ( propertyKeys != null )
                 {
-                    // labelId _is_ actually an int. A technical detail in the store format has these come in a long[]
-                    int[] propertyKeys = nodes.get( Utils.safeCastLongToInt( labelId ) );
-                    if ( propertyKeys != null )
+                    if ( keys == null )
                     {
-                        if ( keys == null )
-                        {
-                            keys = Primitive.intSet( 16 );
-                        }
-                        for ( int key : propertyKeys )
-                        {
-                            keys.add( key );
-                        }
+                        keys = Primitive.intSet( 16 );
+                    }
+                    for ( int key : propertyKeys )
+                    {
+                        keys.add( key );
                     }
                 }
-                return keys != null
-                        ? new RealCheck<>( node, ConsistencyReport.NodeConsistencyReport.class, reporter,
-                                RecordType.NODE, keys )
-                        : MandatoryProperties.<NodeRecord,ConsistencyReport.NodeConsistencyReport>noCheck();
             }
+            return keys != null
+                    ? new RealCheck<>( node, ConsistencyReport.NodeConsistencyReport.class, reporter,
+                            RecordType.NODE, keys )
+                    : MandatoryProperties.<NodeRecord,ConsistencyReport.NodeConsistencyReport>noCheck();
         };
     }
 
     public Function<RelationshipRecord,Check<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport>>
             forRelationships( final ConsistencyReporter reporter )
     {
-        return new Function<RelationshipRecord,Check<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport>>()
-        {
-            @Override
-            public Check<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> apply( RelationshipRecord relationship )
+        return relationship -> {
+            int[] propertyKeys = relationships.get( relationship.getType() );
+            if ( propertyKeys != null )
             {
-                int[] propertyKeys = relationships.get( relationship.getType() );
-                if ( propertyKeys != null )
+                PrimitiveIntSet keys = Primitive.intSet( propertyKeys.length );
+                for ( int key : propertyKeys )
                 {
-                    PrimitiveIntSet keys = Primitive.intSet( propertyKeys.length );
-                    for ( int key : propertyKeys )
-                    {
-                        keys.add( key );
-                    }
-                    return new RealCheck<>( relationship, ConsistencyReport.RelationshipConsistencyReport.class,
-                            reporter, RecordType.RELATIONSHIP, keys );
+                    keys.add( key );
                 }
-                return noCheck();
+                return new RealCheck<>( relationship, ConsistencyReport.RelationshipConsistencyReport.class,
+                        reporter, RecordType.RELATIONSHIP, keys );
             }
+            return noCheck();
         };
     }
 

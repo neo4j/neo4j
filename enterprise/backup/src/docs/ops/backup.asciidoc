@@ -11,20 +11,16 @@ The backup is run using the `neo4j-backup` tool, which is provided alongside Neo
 
 [IMPORTANT]
 Neo4j Server must be configured to run a backup service.
-This is enabled via the configuration parameter `online_backup_enabled`, and is enabled by default.
-The interface and port the backup service listens on is configured via the parameter `online_backup_server` and defaults to the loopback interface and port 6362.
+This is enabled via the configuration parameter `dbms.backup.enabled`, and is enabled by default.
+The interface and port the backup service listens on is configured via the parameter `dbms.backup.address` and defaults to the loopback interface and port 6362.
 It is typical to reconfigure this to listen on an external
-interface, by setting `online_backup_server=<my-host-ip-address>:6362`.
-It can also be configured to listen on all interfaces by setting `online_backup_server=0.0.0.0:6362`.
+interface, by setting `dbms.backup.address=<my-host-ip-address>:6362`.
+It can also be configured to listen on all interfaces by setting `dbms.backup.address=0.0.0.0:6362`.
 
 Performing a backup requires specifying the target host, an optional port, and the backup location.
 The backup tool will automatically select a full or incremental backup, based on whether an existing backup is present at that location.
 
-The relevant configuration settings are found below.
-
-include::{importdir}/neo4j-backup-docs-jar/ops/configuration-attributes.asciidoc[]
-
-include::{importdir}/neo4j-consistency-check-docs-jar/ops/configuration-attributes.asciidoc[]
+See the <<configuration-settings,configuration reference section>> for detailed documentation on available configuration options.
 
 
 [[backup-performing]]
@@ -64,7 +60,7 @@ However, the incremental backup may fail for a number of reasons:
 
 [NOTE]
 Note that when copying the outstanding transactions, the backup tool needs access to the historical logical logs.
-These logical logs are kept by Neo4j and automatically removed after a period of time, based on the  <<configuration-logical-logs,+keep_logical_logs+ configuration>>.
+These logical logs are kept by Neo4j and automatically removed after a period of time, based on the  <<configuration-logical-logs,+dbms.tx_log.rotation.retention_policy+ configuration>>.
 If the required logical logs have already been removed, the backup tool will do a full backup instead.
 
 [[backup-java]]

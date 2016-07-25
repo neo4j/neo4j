@@ -29,16 +29,16 @@ public class MalformedSchemaRuleException extends SchemaKernelException
 {
     public MalformedSchemaRuleException( Throwable cause, String message, Object... parameters )
     {
-        super( Status.General.CorruptSchemaRule, cause, message, parameters );
+        super( Status.General.SchemaCorruptionDetected, cause, message, parameters );
     }
 
     public MalformedSchemaRuleException( String message, Throwable cause )
     {
-        super( Status.General.CorruptSchemaRule, message, cause );
+        super( Status.General.SchemaCorruptionDetected, message, cause );
     }
 
     public MalformedSchemaRuleException( String message )
     {
-        super( Status.General.CorruptSchemaRule, message );
+        super( Status.General.SchemaCorruptionDetected, message );
     }
 }

@@ -47,9 +47,9 @@ public class DbStructureArgumentFormatterTest
     @Test
     public void shouldFormatLongs()
     {
-        assertEquals( "0l", formatArgument( 0l ) );
-        assertEquals( "-1l", formatArgument( -1l ) );
-        assertEquals( "1l", formatArgument( 1l ) );
+        assertEquals( "0L", formatArgument( 0L ) );
+        assertEquals( "-1L", formatArgument( -1L ) );
+        assertEquals( "1L", formatArgument( 1L ) );
     }
 
     @Test

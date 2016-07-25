@@ -19,19 +19,50 @@
  */
 package org.neo4j.server.rest.dbms;
 
+import com.sun.jersey.api.core.HttpContext;
+import com.sun.jersey.api.core.HttpRequestContext;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import java.security.Principal;
 
+import org.neo4j.kernel.api.security.AccessMode;
+
 public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
 {
-    private class DelegatingPrinciple implements Principal
+    public static final AccessMode getAccessModeFromHttpServletRequest( HttpServletRequest request )
+    {
+        Principal principal = request.getUserPrincipal();
+        return getAccessModeFromUserPrincipal( principal );
+    }
+
+    public static final AccessMode getAccessModeFromHttpContext( HttpContext httpContext )
+    {
+        HttpRequestContext requestContext = httpContext.getRequest();
+        Principal principal = requestContext.getUserPrincipal();
+        return getAccessModeFromUserPrincipal( principal );
+    }
+
+    private static final AccessMode getAccessModeFromUserPrincipal( Principal principal )
+    {
+        if ( principal instanceof DelegatingPrincipal )
+        {
+            return ((DelegatingPrincipal) principal).getAccessMode();
+        }
+        // If whitelisted uris can start transactions we cannot throw exception here
+        //throw new IllegalArgumentException( "Tried to get access mode on illegal user principal" );
+        return AccessMode.Static.NONE;
+    }
+
+    public class DelegatingPrincipal implements Principal
     {
         private String username;
+        private final AccessMode accessMode;
 
-        private DelegatingPrinciple( String username )
+        private DelegatingPrincipal( String username, AccessMode accessMode )
         {
             this.username = username;
+            this.accessMode = accessMode;
         }
 
         @Override
@@ -40,6 +71,8 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
             return username;
         }
 
+        public AccessMode getAccessMode() { return accessMode; }
+
         @Override
         public boolean equals( Object o )
         {
@@ -47,12 +80,12 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
             {
                 return true;
             }
-            if ( !( o instanceof DelegatingPrinciple ) )
+            if ( !( o instanceof DelegatingPrincipal) )
             {
                 return false;
             }
 
-            DelegatingPrinciple that = (DelegatingPrinciple) o;
+            DelegatingPrincipal that = (DelegatingPrincipal) o;
             return username.equals( that.username );
         }
 
@@ -65,20 +98,21 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
         @Override
         public String toString()
         {
-            return "DelegatingPrinciple{" +
+            return "DelegatingPrincipal{" +
                     "username='" + username + '\'' +
                     '}';
         }
     }
 
     private final String authType;
-    private final DelegatingPrinciple principle;
+    private final DelegatingPrincipal principal;
 
-    public AuthorizedRequestWrapper( final String authType, final String username, final HttpServletRequest request )
+    public AuthorizedRequestWrapper( final String authType, final String username, final HttpServletRequest request,
+            AccessMode accessMode )
     {
         super( request );
         this.authType = authType;
-        this.principle = new DelegatingPrinciple( username );
+        this.principal = new DelegatingPrincipal( username, accessMode );
     }
 
     @Override
@@ -90,7 +124,7 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
     @Override
     public Principal getUserPrincipal()
     {
-        return principle;
+        return principal;
     }
 
     @Override
@@ -103,9 +137,9 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
     public String toString()
     {
         return "AuthorizedRequestWrapper{" +
-                "authType='" + authType + '\'' +
-                ", principle=" + principle +
-                '}';
+               "authType='" + authType + '\'' +
+               ", principal=" + principal +
+               '}';
     }
 
     @Override
@@ -125,7 +159,7 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
         {
             return false;
         }
-        if ( !principle.equals( that.principle ) )
+        if ( !principal.equals( that.principal ) )
         {
             return false;
         }
@@ -137,7 +171,7 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
     public int hashCode()
     {
         int result = authType.hashCode();
-        result = 31 * result + principle.hashCode();
+        result = 31 * result + principal.hashCode();
         return result;
     }
 }

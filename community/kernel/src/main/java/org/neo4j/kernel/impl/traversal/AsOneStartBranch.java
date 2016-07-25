@@ -43,7 +43,7 @@ import org.neo4j.graphdb.traversal.UniquenessFactory;
  * one starting {@link Node} and for implementation simplicity a
  * {@link BranchSelector} starts from one {@link TraversalBranch}.
  * This class bridges that gap.
- * 
+ *
  * @author Mattias Persson
  */
 class AsOneStartBranch implements TraversalBranch
@@ -122,13 +122,13 @@ class AsOneStartBranch implements TraversalBranch
     {
         return true;
     }
-    
+
     @Override
     public boolean includes()
     {
         return false;
     }
-    
+
     @Override
     public void evaluation( Evaluation eval )
     {
@@ -151,7 +151,7 @@ class AsOneStartBranch implements TraversalBranch
     {
         throw new UnsupportedOperationException();
     }
-    
+
     @Override
     public Iterable<Relationship> reverseRelationships()
     {
@@ -163,7 +163,7 @@ class AsOneStartBranch implements TraversalBranch
     {
         throw new UnsupportedOperationException();
     }
-    
+
     @Override
     public Iterable<Node> reverseNodes()
     {
@@ -175,13 +175,13 @@ class AsOneStartBranch implements TraversalBranch
     {
         throw new UnsupportedOperationException();
     }
-    
+
     @Override
     public void prune()
     {
         branches = Collections.<TraversalBranch>emptyList().iterator();
     }
-    
+
     @Override
     public Object state()
     {

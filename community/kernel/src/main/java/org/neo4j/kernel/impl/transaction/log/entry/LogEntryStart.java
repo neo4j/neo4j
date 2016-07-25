@@ -130,6 +130,7 @@ public class LogEntryStart extends AbstractLogEntry
                 "time=" + timestamp( timeWritten, timeZone ) + "," +
                 "lastCommittedTxWhenTransactionStarted=" + lastCommittedTxWhenTransactionStarted + "," +
                 "additionalHeaderLength=" + (additionalHeader == null ? -1 : additionalHeader.length) + "," +
+                (additionalHeader == null ? "" : Arrays.toString( additionalHeader ) ) + "," +
                 "position=" + startPosition + "," +
                 "checksum=" + checksum( this ) +
                 "]";

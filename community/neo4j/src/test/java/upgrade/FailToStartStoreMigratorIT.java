@@ -28,10 +28,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.core.NonUniqueTokenException;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.lifecycle.LifecycleException;
-import org.neo4j.test.CleanupRule;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
+import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertNull;
@@ -41,6 +41,12 @@ import static org.junit.Assert.fail;
 
 public class FailToStartStoreMigratorIT
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
+
     @Test
     public void shouldFailToStartWithImproperlyUpgradedPropertyKeyStore() throws Exception
     {
@@ -68,9 +74,4 @@ public class FailToStartStoreMigratorIT
         }
     }
 
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-
-    @Rule
-    public final CleanupRule cleanup = new CleanupRule();
 }

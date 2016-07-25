@@ -30,7 +30,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -39,6 +38,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static java.lang.String.format;
+
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
@@ -52,7 +52,7 @@ public class ReadIndexWritesUnderConcurrentLoadStressIT
     public static final int THREAD_COUNT = 8;
     public static final DecimalFormat COUNT_FORMAT = new DecimalFormat( "###,###,###,###,##0" );
     public static final DecimalFormat THROUGHPUT_FORMAT = new DecimalFormat( "###,###,###,###,##0.00" );
-    public static final Label LABEL = DynamicLabel.label( "Label" );
+    public static final Label LABEL = Label.label( "Label" );
     public static final String PROPERTY_KEY = "key";
 
     @Test
@@ -115,6 +115,7 @@ public class ReadIndexWritesUnderConcurrentLoadStressIT
         }
         printProgress( txs.get(), prevTxs, startTime, System.currentTimeMillis() );
         assertThat( failed.get(), is( false ) );
+        db.shutdown();
     }
 
     private void printProgress( long currTxs, long prevTxs, long startTime, long finishTime )

@@ -29,18 +29,18 @@ import java.io.OutputStream;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollectorTest.InputRelationshipBuilder.inputRelationship;
 
 public class BadCollectorTest
 {
-    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
     public void shouldCollectBadRelationshipsEvenIfThresholdNeverReached() throws IOException
@@ -118,7 +118,6 @@ public class BadCollectorTest
             // then expect to end up here
         }
     }
-
 
     @Test
     public void shouldNotCollectBadRelationshipsIfWeShouldOnlyBeCollectingNodes() throws IOException
@@ -216,7 +215,7 @@ public class BadCollectorTest
         private final int lineNumber = 1;
         private final int position = 1;
         private final Object[] properties = new Object[]{};
-        private final long firstPropertyId = -1l;
+        private final long firstPropertyId = -1L;
         private final Object startNode = null;
         private final Object endNode = null;
         private final String friend = "FRIEND";

@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-import org.neo4j.function.Function;
-import org.neo4j.function.Functions;
+import java.util.function.Function;
+
 import org.neo4j.helpers.ArrayUtil;
 
 /**
@@ -35,26 +35,21 @@ public class InputEntityDecorators
     {
         if ( labelNamesToAdd == null || labelNamesToAdd.length == 0 )
         {
-            return Functions.identity();
+            return value -> value;
         }
 
-        return new Function<InputNode,InputNode>()
-        {
-            @Override
-            public InputNode apply( InputNode node )
+        return node -> {
+            if ( node.hasLabelField() )
             {
-                if ( node.hasLabelField() )
-                {
-                    return node;
-                }
-
-                String[] union = ArrayUtil.union( node.labels(), labelNamesToAdd );
-                if ( union != node.labels() )
-                {
-                    node.setLabels( union );
-                }
                 return node;
             }
+
+            String[] union = ArrayUtil.union( node.labels(), labelNamesToAdd );
+            if ( union != node.labels() )
+            {
+                node.setLabels( union );
+            }
+            return node;
         };
     }
 
@@ -66,41 +61,31 @@ public class InputEntityDecorators
     {
         if ( defaultType == null )
         {
-            return Functions.identity();
+            return value -> value;
         }
 
-        return new Function<InputRelationship,InputRelationship>()
-        {
-            @Override
-            public InputRelationship apply( InputRelationship relationship )
+        return relationship -> {
+            if ( relationship.type() == null && !relationship.hasTypeId() )
             {
-                if ( relationship.type() == null && !relationship.hasTypeId() )
-                {
-                    relationship.setType( defaultType );
-                }
-
-                return relationship;
+                relationship.setType( defaultType );
             }
+
+            return relationship;
         };
     }
 
     public static <ENTITY extends InputEntity> Function<ENTITY,ENTITY> decorators(
             final Function<ENTITY,ENTITY>... decorators )
     {
-        return new Function<ENTITY,ENTITY>()
-        {
-            @Override
-            public ENTITY apply( ENTITY from ) throws RuntimeException
+        return from -> {
+            for ( Function<ENTITY,ENTITY> decorator : decorators )
             {
-                for ( Function<ENTITY,ENTITY> decorator : decorators )
-                {
-                    from = decorator.apply( from );
-                }
-                return from;
+                from = decorator.apply( from );
             }
+            return from;
         };
     }
 
-    public static final Function<InputNode,InputNode> NO_NODE_DECORATOR = Functions.identity();
-    public static final Function<InputRelationship,InputRelationship> NO_RELATIONSHIP_DECORATOR = Functions.identity();
+    public static final Function<InputNode,InputNode> NO_NODE_DECORATOR = value -> value;
+    public static final Function<InputRelationship,InputRelationship> NO_RELATIONSHIP_DECORATOR = value -> value;
 }

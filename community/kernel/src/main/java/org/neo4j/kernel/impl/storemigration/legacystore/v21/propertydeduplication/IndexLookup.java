@@ -30,13 +30,13 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 class IndexLookup implements AutoCloseable
 {
@@ -44,7 +44,7 @@ class IndexLookup implements AutoCloseable
     private final Map<IndexRule,IndexReader> readerCache;
     private final SchemaIndexProvider schemaIndexProvider;
     private final PrimitiveIntObjectMap<List<IndexRule>> indexRuleIndex;
-    private IndexSamplingConfig samplingConfig;
+    private final IndexSamplingConfig samplingConfig;
 
     public IndexLookup( SchemaStore store, SchemaIndexProvider schemaIndexProvider )
     {
@@ -52,7 +52,7 @@ class IndexLookup implements AutoCloseable
         indexAccessors = new ArrayList<>();
         readerCache = new HashMap<>();
         indexRuleIndex = buildIndexRuleIndex( store );
-        samplingConfig = new IndexSamplingConfig( new Config() );
+        samplingConfig = new IndexSamplingConfig( Config.defaults() );
     }
 
     private PrimitiveIntObjectMap<List<IndexRule>> buildIndexRuleIndex( SchemaStore schemaStore )
@@ -108,7 +108,7 @@ class IndexLookup implements AutoCloseable
         IndexReader reader = readerCache.get( rule );
         if ( reader == null )
         {
-            IndexConfiguration indexConfig = new IndexConfiguration( rule.isConstraintIndex() );
+            IndexConfiguration indexConfig = IndexConfiguration.of( rule );
             IndexAccessor accessor = schemaIndexProvider.getOnlineAccessor(
                     rule.getId(), indexConfig, samplingConfig );
             indexAccessors.add( accessor );
@@ -131,14 +131,7 @@ class IndexLookup implements AutoCloseable
         }
         final IndexReader reader = getIndexReader( rule );
 
-        return new Index()
-        {
-            @Override
-            public boolean contains( long nodeId, Object propertyValue )
-            {
-                return reader.countIndexedNodes( nodeId, propertyValue ) > 0;
-            }
-        };
+        return ( nodeId, propertyValue ) -> reader.countIndexedNodes( nodeId, propertyValue ) > 0;
     }
 
     public boolean hasAnyIndexes()
@@ -146,7 +139,7 @@ class IndexLookup implements AutoCloseable
         return !indexRuleIndex.isEmpty();
     }
 
-    static interface Index
+    interface Index
     {
         boolean contains( long nodeId, Object propertyValue ) throws IOException;
     }

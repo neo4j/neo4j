@@ -19,20 +19,20 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -40,7 +40,8 @@ import static org.junit.Assert.assertEquals;
 
 public class PropertyKeyTest
 {
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
     public void lazyLoadWithinWriteTransaction() throws Exception
@@ -52,7 +53,7 @@ public class PropertyKeyTest
         int count = 3000;
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();
-        
+
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( dir );
 
         // When
@@ -62,7 +63,7 @@ public class PropertyKeyTest
             Node node = db.getNodeById( nodeId );
 
             // Then
-            assertEquals( count, IteratorUtil.count( node.getPropertyKeys() ) );
+            assertEquals( count, Iterables.count( node.getPropertyKeys() ) );
             tx.success();
         }
         finally

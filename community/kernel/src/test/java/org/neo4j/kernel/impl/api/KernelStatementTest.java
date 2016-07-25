@@ -22,91 +22,44 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class KernelStatementTest
 {
-    @Test
-    public void shouldCloseOpenedLabelScanReader() throws Exception
-    {
-        // given
-        LabelScanStore scanStore = mock( LabelScanStore.class );
-        LabelScanReader scanReader = mock( LabelScanReader.class );
-
-        when( scanStore.newReader() ).thenReturn( scanReader );
-        KernelStatement statement =
-            new KernelStatement(
-                mock( KernelTransactionImplementation.class ),
-                mock( IndexReaderFactory.class ), scanStore, null, null, null, null );
-
-        statement.acquire();
-
-        // when
-        LabelScanReader actualReader = statement.getLabelScanReader();
-
-        // then
-        assertEquals( scanReader, actualReader );
-
-        // when
-        statement.close();
-
-        // then
-        verify( scanStore ).newReader();
-        verifyNoMoreInteractions( scanStore );
-
-        verify( scanReader ).close();
-        verifyNoMoreInteractions( scanReader );
-    }
-
     @Test(expected = TransactionTerminatedException.class)
     public void shouldThrowTerminateExceptionWhenTransactionTerminated() throws Exception
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        when( transaction.getReasonIfTerminated() ).thenReturn( Status.General.UnknownFailure );
+        when( transaction.getReasonIfTerminated() ).thenReturn( Status.Transaction.Terminated );
+        when( transaction.mode() ).thenReturn( AccessMode.Static.FULL );
 
         KernelStatement statement = new KernelStatement(
-            transaction, mock( IndexReaderFactory.class ),
-                mock( LabelScanStore.class ), null, null, null, null );
+            transaction, null, null, mock( StorageStatement.class ), null );
+        statement.acquire();
 
         statement.readOperations().nodeExists( 0 );
     }
 
     @Test
-    public void shouldCloseOpenedLabelScanReaderWhenForceClosed() throws Exception
+    public void shouldReleaseStorageStatementWhenForceClosed() throws Exception
     {
         // given
-        LabelScanStore scanStore = mock( LabelScanStore.class );
-        LabelScanReader scanReader = mock( LabelScanReader.class );
-
-        when( scanStore.newReader() ).thenReturn( scanReader );
-        KernelStatement statement =
-                new KernelStatement( mock( KernelTransactionImplementation.class ), mock( IndexReaderFactory.class ),
-                        scanStore, null, null, null, null );
-
+        StorageStatement storeStatement = mock( StorageStatement.class );
+        KernelStatement statement = new KernelStatement( mock( KernelTransactionImplementation.class ),
+                null, null, storeStatement, new Procedures() );
         statement.acquire();
-
-        // when
-        LabelScanReader actualReader = statement.getLabelScanReader();
-
-        // then
-        assertEquals( scanReader, actualReader );
 
         // when
         statement.forceClose();
 
         // then
-        verify( scanStore ).newReader();
-        verifyNoMoreInteractions( scanStore );
-
-        verify( scanReader ).close();
-        verifyNoMoreInteractions( scanReader );
+        verify( storeStatement ).release();
     }
 }

@@ -31,7 +31,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -45,8 +45,6 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.ValueRepresentation;
-import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
-import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.repr.ConsoleServiceRepresentation;
 
@@ -67,7 +65,7 @@ public class ConsoleService implements AdvertisableService
     public ConsoleService( @Context Config config, @Context Database database, @Context LogProvider logProvider, @Context HttpServletRequest req,
                            @Context OutputFormat output, @Context CypherExecutor cypherExecutor )
     {
-        this( new SessionFactoryImpl( req, config.get( ServerSettings.management_console_engines ),
+        this( new SessionFactoryImpl( req, config.get( ServerSettings.console_module_engines ),
                 cypherExecutor ), database, logProvider, output );
     }
 

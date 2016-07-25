@@ -33,14 +33,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class DeleteNodeStressIT
 {
-
     private final AtomicBoolean hasFailed = new AtomicBoolean( false );
 
     @Rule
@@ -65,7 +64,6 @@ public class DeleteNodeStressIT
     }
 
     private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
-
 
     @Test
     public void shouldBeAbleToReturnNodesWhileDeletingNode() throws IOException, ExecutionException, InterruptedException
@@ -138,5 +136,4 @@ public class DeleteNodeStressIT
             }
         } );
     }
-
 }

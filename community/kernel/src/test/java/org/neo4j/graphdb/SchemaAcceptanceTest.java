@@ -29,7 +29,8 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -39,16 +40,16 @@ import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.Neo4jMatchers.contains;
-import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
-import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
-import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.getConstraints;
-import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
-import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
-import static org.neo4j.graphdb.Neo4jMatchers.waitForIndex;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.contains;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getConstraints;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.waitForIndex;
 
 public class SchemaAcceptanceTest
 {
@@ -65,10 +66,10 @@ public class SchemaAcceptanceTest
         MY_OTHER_LABEL
     }
 
-    private enum Types implements RelationshipType
+    @Before
+    public void init()
     {
-        MY_TYPE,
-        MY_OTHER_TYPE
+        db = dbRule.getGraphDatabaseAPI();
     }
 
     @Test
@@ -328,7 +329,7 @@ public class SchemaAcceptanceTest
             assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
 
             assertEquals( label.name(), constraint.getLabel().name() );
-            assertEquals( asSet( propertyKey ), asSet( constraint.getPropertyKeys() ) );
+            assertEquals( asSet( propertyKey ), Iterables.asSet( constraint.getPropertyKeys() ) );
             tx.success();
         }
     }
@@ -493,12 +494,6 @@ public class SchemaAcceptanceTest
             assertThat( db.schema().getIndexState( indexA ), is( Schema.IndexState.ONLINE ) );
             assertThat( db.schema().getIndexState( indexC ), is( Schema.IndexState.POPULATING ) );
         }
-    }
-
-    @Before
-    public void init()
-    {
-        db = dbRule.getGraphDatabaseService();
     }
 
     private void dropConstraint( GraphDatabaseService db, ConstraintDefinition constraint )

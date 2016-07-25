@@ -44,7 +44,7 @@ class LimitTest extends DocumentingTestBase with SoftReset {
   @Test def returnFromExpression() {
     testQuery(
       title = "Return first from expression",
-      text = "Limit accepts any expression that evaluates to a positive integer as long as it is not referring to any external identifiers:",
+      text = "Limit accepts any expression that evaluates to a positive integer as long as it is not referring to any external variables:",
       queryText = "match (n) return n order by n.name limit toInt(3 * rand()) + 1",
       parameters = Map("p" -> 12),
       optionalResultExplanation = "Returns one to three top items",

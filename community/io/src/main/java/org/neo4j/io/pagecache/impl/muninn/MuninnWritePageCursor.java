@@ -26,23 +26,38 @@ import org.neo4j.io.pagecache.PagedFile;
 
 final class MuninnWritePageCursor extends MuninnPageCursor
 {
+    private final CursorPool.CursorSets cursorSets;
+    MuninnWritePageCursor nextCursor;
+
+    MuninnWritePageCursor( CursorPool.CursorSets cursorSets, long victimPage )
+    {
+        super( victimPage );
+        this.cursorSets = cursorSets;
+    }
+
     @Override
     protected void unpinCurrentPage()
     {
         if ( page != null )
         {
+            // Mark the page as dirty *after* our write access, to make sure it's dirty even if it was concurrently
+            // flushed
+            page.markAsDirty();
             pinEvent.done();
-            assert page.isWriteLocked(): "page pinned for writing was not write locked: " + page;
             unlockPage( page );
-            page = null;
         }
-        lockStamp = 0;
+        clearPageState();
     }
 
     @Override
     public boolean next() throws IOException
     {
-        assertPagedFileStillMapped();
+        unpinCurrentPage();
+        long lastPageId = assertPagedFileStillMappedAndGetIdOfLastPage();
+        if ( nextPageId < 0 )
+        {
+            return false;
+        }
         if ( nextPageId > lastPageId )
         {
             if ( (pf_flags & PagedFile.PF_NO_GROW) != 0 )
@@ -54,21 +69,22 @@ final class MuninnWritePageCursor extends MuninnPageCursor
                 pagedFile.increaseLastPageIdTo( nextPageId );
             }
         }
-        unpinCurrentPage();
         pin( nextPageId, true );
         currentPageId = nextPageId;
         nextPageId++;
         return true;
     }
 
-    protected void lockPage( MuninnPage page )
+    @Override
+    protected boolean tryLockPage( MuninnPage page )
     {
-        lockStamp = page.writeLock();
+        return page.tryWriteLock();
     }
 
+    @Override
     protected void unlockPage( MuninnPage page )
     {
-        page.unlockWrite( lockStamp );
+        page.unlockWrite();
     }
 
     @Override
@@ -79,16 +95,24 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         // we make any changes to the contents of the page, because once all
         // files have been unmapped, the page cache can be closed. And when
         // that happens, dirty contents in memory will no longer have a chance
-        // to get flushed.
-        assertPagedFileStillMapped();
+        // to get flushed. It is okay for this method to throw, because we are
+        // after the reset() call, which means that if we throw, the cursor will
+        // be closed and the page lock will be released.
+        assertPagedFileStillMappedAndGetIdOfLastPage();
         page.incrementUsage();
-        page.markAsDirty();
     }
 
     @Override
-    protected void convertPageFaultLock( MuninnPage page, long stamp )
+    protected void convertPageFaultLock( MuninnPage page )
     {
-        lockStamp = stamp;
+        page.unlockExclusiveAndTakeWriteLock();
+    }
+
+    @Override
+    protected void releaseCursor()
+    {
+        nextCursor = cursorSets.writeCursors;
+        cursorSets.writeCursors = this;
     }
 
     @Override

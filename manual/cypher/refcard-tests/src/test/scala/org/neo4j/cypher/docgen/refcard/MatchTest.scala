@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class MatchTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A:Person", "A KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
@@ -90,7 +90,7 @@ RETURN p###
 Assign a path to `p`.
 
 ###assertion=related
-MATCH n, m
+MATCH (n), (m)
 WHERE id(n) = %A% AND id(m) = %B%
 
 OPTIONAL MATCH (n)-[r]->(m)

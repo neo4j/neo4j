@@ -22,52 +22,43 @@ package org.neo4j.tools.applytx;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.function.Supplier;
 
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.IOCursor;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.tools.console.input.ArgsCommand;
 
 import static java.lang.String.format;
 
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.textual;
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
+import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
 public class ApplyTransactionsCommand extends ArgsCommand
 {
     private final File from;
-    private final Provider<GraphDatabaseAPI> to;
+    private final Supplier<GraphDatabaseAPI> to;
 
-    public ApplyTransactionsCommand( File from, Provider<GraphDatabaseAPI> to )
+    public ApplyTransactionsCommand( File from, Supplier<GraphDatabaseAPI> to )
     {
         this.from = from;
         this.to = to;
@@ -76,7 +67,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
     @Override
     protected void run( Args args, PrintStream out ) throws Exception
     {
-        TransactionIdStore txIdStore = to.instance().getDependencyResolver().resolveDependency(
+        TransactionIdStore txIdStore = to.get().getDependencyResolver().resolveDependency(
                 TransactionIdStore.class );
         long fromTx = txIdStore.getLastCommittedTransaction().transactionId();
         long toTx;
@@ -99,7 +90,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
             toTx = Long.parseLong( whereTo );
         }
 
-        long lastApplied = applyTransactions( from, to.instance(), fromTx, toTx, out );
+        long lastApplied = applyTransactions( from, to.get(), fromTx, toTx, out );
         out.println( "Applied transactions up to and including " + lastApplied );
     }
 
@@ -108,21 +99,10 @@ public class ApplyTransactionsCommand extends ArgsCommand
             throws IOException, TransactionFailureException
     {
         DependencyResolver resolver = toDb.getDependencyResolver();
-        BatchingTransactionRepresentationStoreApplier applier = new BatchingTransactionRepresentationStoreApplier(
-                resolver.resolveDependency( IndexingService.class ),
-                resolver.resolveDependency( LabelScanStore.class ),
-                resolver.resolveDependency( NeoStoresSupplier.class ).get(),
-                resolver.resolveDependency( CacheAccessBackDoor.class ),
-                resolver.resolveDependency( LockService.class ),
-                resolver.resolveDependency( LegacyIndexApplierLookup.class ),
-                resolver.resolveDependency( IndexConfigStore.class ),
-                resolver.resolveDependency( KernelHealth.class ),
-                resolver.resolveDependency( IdOrderingQueue.class ) );
         TransactionRepresentationCommitProcess commitProcess =
                 new TransactionRepresentationCommitProcess(
                         resolver.resolveDependency( TransactionAppender.class ),
-                        applier,
-                        resolver.resolveDependency( IndexUpdatesValidator.class ) );
+                        resolver.resolveDependency( StorageEngine.class ) );
         LifeSupport life = new LifeSupport();
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
@@ -141,10 +121,11 @@ public class ApplyTransactionsCommand extends ArgsCommand
                 while ( cursor.next() )
                 {
                     CommittedTransactionRepresentation transaction = cursor.get();
-                    try ( LockGroup locks = new LockGroup() )
+                    TransactionRepresentation transactionRepresentation =
+                            transaction.getTransactionRepresentation();
+                    try
                     {
-                        commitProcess.commit( transaction.getTransactionRepresentation(), locks,
-                                CommitEvent.NULL, RECOVERY );
+                        commitProcess.commit( new TransactionToApply( transactionRepresentation ), NULL, EXTERNAL );
                         progress.add( 1 );
                     }
                     catch ( final Throwable e )
@@ -159,7 +140,6 @@ public class ApplyTransactionsCommand extends ArgsCommand
                     }
                 }
             }
-            applier.closeBatch();
             return lastAppliedTx;
         }
         finally

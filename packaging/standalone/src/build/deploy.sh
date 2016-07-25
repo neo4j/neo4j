@@ -4,7 +4,7 @@
 rootpathdist=dist
 
 function work {
-    upload_packages neo4j-community neo4j-advanced neo4j-enterprise
+    upload_packages neo4j-community neo4j-enterprise
 }
 
 function run_command {

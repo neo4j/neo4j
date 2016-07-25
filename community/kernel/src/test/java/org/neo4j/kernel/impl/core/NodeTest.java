@@ -19,32 +19,31 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.lang.Thread.State;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.GraphTransactionRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphTransactionRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 public class NodeTest
@@ -55,31 +54,31 @@ public class NodeTest
     @Rule
     public GraphTransactionRule tx = new GraphTransactionRule( db );
 
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     @Test
-    public void givenNodeWithRelationshipWhenDeleteNodeThenThrowExceptionOnCommit() throws Exception
+    public void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels() throws Exception
     {
         // Given
-        Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "KNOWS" ) );
+        Node node;
 
+        node = db.createNode();
+        Node node2 = db.createNode();
+        node.createRelationshipTo( node2, RelationshipType.withName( "MAYOR_OF" ) );
         tx.success();
 
-        // When
+        // And given a transaction deleting just the node
         tx.begin();
-        node1.delete();
+        node.delete();
 
-        try
-        {
-            tx.success();
+        // Expect
+        exception.expect( ConstraintViolationException.class );
+        exception.expectMessage( "Cannot delete node<"+node.getId()+">, because it still has relationships. " +
+                                 "To delete this node, you must first delete its relationships." );
 
-        // Then
-            Assert.fail();
-        }
-        catch ( TransactionFailureException e )
-        {
-            Assert.assertNotEquals( e.getCause().getMessage().indexOf( "still has relationships" ), -1 );
-        }
+        // When I commit
+        tx.success();
     }
 
     @Test
@@ -97,7 +96,7 @@ public class NodeTest
             getGraphDb().getNodeById( nodeId );
             fail( "Node[" + nodeId + "] should be deleted." );
         }
-        catch ( NotFoundException e )
+        catch ( NotFoundException ignored )
         {
         }
     }
@@ -128,7 +127,7 @@ public class NodeTest
             node1.setProperty( null, null );
             fail( "Null argument should result in exception." );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IllegalArgumentException ignored )
         {
         }
         String key1 = "key1";
@@ -178,7 +177,7 @@ public class NodeTest
                 fail( "Remove of non existing property should return null" );
             }
         }
-        catch ( NotFoundException e )
+        catch ( NotFoundException ignored )
         {
         }
         try
@@ -186,7 +185,7 @@ public class NodeTest
             node1.removeProperty( null );
             fail( "Remove null property should throw exception." );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IllegalArgumentException ignored )
         {
         }
 
@@ -199,7 +198,7 @@ public class NodeTest
             node1.removeProperty( null );
             fail( "Null argument should result in exception." );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IllegalArgumentException ignored )
         {
         }
 
@@ -246,7 +245,7 @@ public class NodeTest
             node1.setProperty( null, null );
             fail( "Null argument should result in exception." );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IllegalArgumentException ignored )
         {
         }
         catch ( NotFoundException e )
@@ -307,7 +306,7 @@ public class NodeTest
             node1.getProperty( key1 );
             fail( "get non existing property din't throw exception" );
         }
-        catch ( NotFoundException e )
+        catch ( NotFoundException ignored )
         {
         }
         try
@@ -315,7 +314,7 @@ public class NodeTest
             node1.getProperty( null );
             fail( "get of null key din't throw exception" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IllegalArgumentException ignored )
         {
         }
         assertTrue( !node1.hasProperty( key1 ) );
@@ -387,7 +386,7 @@ public class NodeTest
 
         tx.success();
     }
-    
+
     @Test
     public void testChangeProperty()
     {
@@ -405,7 +404,7 @@ public class NodeTest
         tx.begin();
         assertEquals( "test4", node.getProperty( "test" ) );
     }
-    
+
     @Test
     public void testChangeProperty2()
     {
@@ -425,7 +424,7 @@ public class NodeTest
         tx.begin();
         assertEquals( "test4", node.getProperty( "test" ) );
     }
-    
+
     @Test
     public void testNodeLockingProblem() throws InterruptedException
     {
@@ -438,9 +437,9 @@ public class NodeTest
         Node node = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         testLockProblem( node.createRelationshipTo( node2,
-                DynamicRelationshipType.withName( "lock-rel" ) ) );
+                RelationshipType.withName( "lock-rel" ) ) );
     }
-    
+
     private void testLockProblem( final PropertyContainer entity ) throws InterruptedException
     {
         entity.setProperty( "key", "value" );
@@ -483,6 +482,6 @@ public class NodeTest
 
     private GraphDatabaseService getGraphDb()
     {
-        return db.getGraphDatabaseService();
+        return db.getGraphDatabaseAPI();
     }
 }

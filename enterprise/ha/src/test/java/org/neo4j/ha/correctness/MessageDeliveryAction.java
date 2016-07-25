@@ -21,22 +21,15 @@ package org.neo4j.ha.correctness;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.function.Function;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageType;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Iterables;
 
 class MessageDeliveryAction implements ClusterAction
 {
-    public static final Function<Message,ClusterAction> MESSAGE_TO_ACTION = new Function<Message, ClusterAction>()
-    {
-        @Override
-        public ClusterAction apply( Message message )
-        {
-            return new MessageDeliveryAction( message );
-        }
-    };
+    public static final Function<Message,ClusterAction> MESSAGE_TO_ACTION = MessageDeliveryAction::new;
 
     private final Message message;
 

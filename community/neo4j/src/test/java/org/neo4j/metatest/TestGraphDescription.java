@@ -19,21 +19,21 @@
  */
 package org.neo4j.metatest;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
@@ -48,15 +48,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 
 public class TestGraphDescription implements GraphHolder
 {
     private static GraphDatabaseService graphdb;
-    public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
-            this, true ) );
+    @Rule
+    public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
     @Test
     public void havingNoGraphAnnotationCreatesAnEmptyDataCollection()
@@ -84,7 +82,7 @@ public class TestGraphDescription implements GraphHolder
             try(Transaction ignored = graphdb.beginTx())
             {
                 n = n.getSingleRelationship(
-                        DynamicRelationshipType.withName( "TO" ),
+                        RelationshipType.withName( "TO" ),
                         Direction.OUTGOING ).getEndNode();
             }
         }
@@ -136,7 +134,7 @@ public class TestGraphDescription implements GraphHolder
                             "name", "I" ).hasNext() );
         }
     }
-    
+
     @Test
     @Graph( nodes = { @NODE( name = "I", setNameProperty=true, properties = {
                     @PROP( key = "name", value = "I" )})}, autoIndexNodes=true )

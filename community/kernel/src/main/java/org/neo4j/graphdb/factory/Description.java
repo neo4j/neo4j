@@ -25,7 +25,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used to add description of settings in {@link GraphDatabaseSettings}. These can then be accessed through the {@link GraphDatabaseSettingsResourceBundle}.
+ * Used to add description of settings in {@link GraphDatabaseSettings}.
  *
  * This is deprecated, it will be moved out of the public API in 1.11.
  */

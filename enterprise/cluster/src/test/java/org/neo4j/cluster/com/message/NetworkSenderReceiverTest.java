@@ -250,7 +250,6 @@ public class NetworkSenderReceiverTest
 
             sem.acquire(); // wait for overridden stop method in receiver
 
-
             /*
              * This is the infernal loop of doom. We keep sending messages until one fails with a ClosedChannelException
              * which we have no better way to grab other than through the logger.warn() call which will occur.

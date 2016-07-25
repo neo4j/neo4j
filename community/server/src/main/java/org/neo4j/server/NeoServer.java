@@ -22,19 +22,11 @@ package org.neo4j.server;
 import java.net.URI;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 
-import org.apache.commons.configuration.Configuration;
-
-/**
- * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
- * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
- */
-@Deprecated
 public interface NeoServer
 {
     void init();
@@ -45,18 +37,9 @@ public interface NeoServer
 
     Config getConfig();
 
-    /**
-     * Use {@link NeoServer#getConfig()} instead.
-     */
-    @Deprecated
-    Configuration getConfiguration();
-
     Database getDatabase();
 
     TransactionRegistry getTransactionRegistry();
-
-    @Deprecated
-    Configurator getConfigurator();
 
     PluginManager getExtensionManager();
 

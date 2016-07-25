@@ -22,44 +22,42 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Map;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
-import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.recovery.LatestCheckPointFinder;
+import org.neo4j.string.UTF8;
 import org.neo4j.test.Unzip;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class MigrationTestUtils
 {
-    public static Config defaultConfig()
-    {
-        return defaultConfig( MapUtil.stringMap() );
-    }
-
-    public static Config defaultConfig( Map<String, String> inputParams )
-    {
-        return new Config( inputParams, GraphDatabaseSettings.class );
-    }
-
     public static int[] makeLongArray()
     {
         int[] longArray = new int[100];
@@ -122,9 +120,10 @@ public class MigrationTestUtils
     public static void truncateToFixedLength( FileSystemAbstraction fileSystem, File storeFile, int newLength )
             throws IOException
     {
-        StoreChannel fileChannel = fileSystem.open( storeFile, "rw" );
-        fileChannel.truncate( newLength );
-        fileChannel.close();
+        try ( StoreChannel fileChannel = fileSystem.open( storeFile, "rw" ) )
+        {
+            fileChannel.truncate( newLength );
+        }
     }
 
     public static void prepareSampleLegacyDatabase( String version, EphemeralFileSystemAbstraction workingFs,
@@ -149,19 +148,31 @@ public class MigrationTestUtils
 
     public static File findFormatStoreDirectoryForVersion( String version, File targetDir ) throws IOException
     {
-        switch ( version )
+        if ( version.equals( StandardV2_3.STORE_VERSION ) )
         {
-        case Legacy22Store.LEGACY_VERSION:
+            return find23FormatStoreDirectory( targetDir );
+        }
+        else if ( version.equals( StandardV2_2.STORE_VERSION ) )
+        {
             return find22FormatStoreDirectory( targetDir );
-        case Legacy21Store.LEGACY_VERSION:
+        }
+        else if ( version.equals( StandardV2_1.STORE_VERSION ) )
+        {
             return find21FormatStoreDirectory( targetDir );
-        case Legacy20Store.LEGACY_VERSION:
+        }
+        else if ( version.equals( StandardV2_0.STORE_VERSION ) )
+        {
             return find20FormatStoreDirectory( targetDir );
-        case Legacy19Store.LEGACY_VERSION:
-            return find19FormatStoreDirectory( targetDir );
-        default:
+        }
+        else
+        {
             throw new IllegalArgumentException( "Unknown version" );
         }
+    }
+
+    private static File find23FormatStoreDirectory( File targetDir ) throws IOException
+    {
+        return Unzip.unzip( Legacy23Store.class, "upgradeTest23Db.zip", targetDir );
     }
 
     public static File find22FormatStoreDirectory( File targetDir ) throws IOException
@@ -184,18 +195,7 @@ public class MigrationTestUtils
         return Unzip.unzip( Legacy20Store.class, "exampledb.zip", targetDir );
     }
 
-    public static File find19FormatStoreDirectory( File targetDir ) throws IOException
-    {
-        return Unzip.unzip( Legacy19Store.class, "propkeydupdb.zip", targetDir );
-    }
-
-    public static File find19FormatHugeStoreDirectory( File targetDir ) throws IOException
-    {
-        return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip", targetDir );
-    }
-
     public static boolean allLegacyStoreFilesHaveVersion( FileSystemAbstraction fs, File dir, String version )
-            throws IOException
     {
         final Iterable<StoreFile> storeFilesWithGivenVersions =
                 Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( version ) );
@@ -210,10 +210,10 @@ public class MigrationTestUtils
         return success;
     }
 
-    public static boolean allStoreFilesHaveNoTrailer( FileSystemAbstraction fs, File dir ) throws IOException
+    public static boolean allStoreFilesHaveNoTrailer( FileSystemAbstraction fs, File dir )
     {
         final Iterable<StoreFile> storeFilesWithGivenVersions =
-                Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( ALL_STORES_VERSION ) );
+                Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( StandardV3_0.STORE_VERSION ) );
         LegacyStoreVersionCheck legacyStoreVersionCheck = new LegacyStoreVersionCheck( fs );
 
         boolean success = true;
@@ -221,7 +221,7 @@ public class MigrationTestUtils
         {
             File file = new File( dir, storeFile.storeFileName() );
             StoreVersionCheck.Result result =
-                    legacyStoreVersionCheck.hasVersion( file, ALL_STORES_VERSION, storeFile.isOptional() );
+                    legacyStoreVersionCheck.hasVersion( file, StandardV3_0.STORE_VERSION, storeFile.isOptional() );
             success &= result.outcome == Outcome.unexpectedUpgradingStoreVersion ||
                        result.outcome == Outcome.storeVersionNotFound;
         }
@@ -240,10 +240,11 @@ public class MigrationTestUtils
         return false;
     }
 
-    public static boolean checkNeoStoreHasLatestVersion( StoreVersionCheck check, File workingDirectory )
+    public static boolean checkNeoStoreHasDefaultFormatVersion( StoreVersionCheck check, File workingDirectory )
     {
         File neostoreFile = new File( workingDirectory, MetaDataStore.DEFAULT_NAME );
-        return check.hasVersion( neostoreFile, ALL_STORES_VERSION ).outcome.isSuccessful();
+        return check.hasVersion( neostoreFile, RecordFormatSelector.defaultFormat().storeVersion() )
+                .outcome.isSuccessful();
     }
 
     public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original, File other )
@@ -289,12 +290,28 @@ public class MigrationTestUtils
         return new File( dbDirectory, "upgrade" );
     }
 
-    private static final Predicate<StoreFile> ALL_EXCEPT_COUNTS_STORE = new Predicate<StoreFile>()
+    private static final Predicate<StoreFile> ALL_EXCEPT_COUNTS_STORE =
+            item -> item != StoreFile.COUNTS_STORE_LEFT && item != StoreFile.COUNTS_STORE_RIGHT;
+
+    public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, File workingDirectory )
+            throws IOException
     {
-        @Override
-        public boolean test( StoreFile item )
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fileSystem );
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fileSystem, logEntryReader );
+        LatestCheckPointFinder.LatestCheckPoint latestCheckPoint = finder.find( logFiles.getHighestLogVersion() );
+
+        if ( latestCheckPoint.commitsAfterCheckPoint )
         {
-            return item != StoreFile.COUNTS_STORE_LEFT && item != StoreFile.COUNTS_STORE_RIGHT;
+            // done already
+            return;
         }
-    };
+
+        // let's assume there is at least a checkpoint
+        assertNotNull( latestCheckPoint.checkPoint );
+
+        LogPosition logPosition = latestCheckPoint.checkPoint.getLogPosition();
+        File logFile = logFiles.getLogFileForVersion( logPosition.getLogVersion() );
+        fileSystem.truncate( logFile, logPosition.getByteOffset() );
+    }
 }

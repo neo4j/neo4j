@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.frontend.v2_3.InputPosition
-import org.neo4j.cypher.internal.frontend.v2_3.parser.Base
+import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_1.parser.Base
 import org.parboiled.scala._
 
 final case class PreParsedStatement(statement: String, options: Seq[PreParserOption], offset: InputPosition)
@@ -34,37 +34,31 @@ case object CypherPreParser extends Parser with Base {
 
   def AllOptions: Rule1[Seq[PreParserOption]] = zeroOrMore(AnyCypherOption, WS)
 
-  def AnyCypherOption: Rule1[PreParserOption] = Cypher | Explain | Profile | PlannerDeprecated
+  def AnyCypherOption: Rule1[PreParserOption] = Cypher | Explain | Profile
 
   def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
 
   def Cypher = rule("CYPHER options") {
     keyword("CYPHER") ~~
       optional(VersionNumber) ~~
-      zeroOrMore(PlannerOption | RuntimeOption, WS) ~~> ConfigurationOptions
+      zeroOrMore(PlannerOption | RuntimeOption | StrategyOption, WS) ~~> ConfigurationOptions
   }
 
   def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
       option("planner", "cost") ~ push(CostPlannerOption)
-    | option("planner", "greedy") ~ push(GreedyPlannerOption)
     | option("planner", "rule") ~ push(RulePlannerOption)
+    | option("planner", "greedy") ~ push(GreedyPlannerOption)
     | option("planner", "idp") ~ push(IDPPlannerOption)
     | option("planner", "dp") ~ push(DPPlannerOption)
   )
 
   def RuntimeOption = rule("runtime option")(
     option("runtime", "interpreted") ~ push(InterpretedRuntimeOption)
-        //Only here for the parser to be backwards compatible
-      | option("runtime", "compiled") ~ push(InterpretedRuntimeOption)
+      | option("runtime", "compiled") ~ push(CompiledRuntimeOption)
   )
 
-  @deprecated
-  def PlannerDeprecated = rule("PLANNER") (
-      keyword("PLANNER COST") ~ push(CostPlannerOption)
-    | keyword("PLANNER GREEDY") ~ push(GreedyPlannerOption)
-    | keyword("PLANNER IDP") ~ push(IDPPlannerOption)
-    | keyword("PLANNER DP") ~ push(DPPlannerOption)
-    | keyword("PLANNER RULE") ~ push(RulePlannerOption)
+  def StrategyOption = rule("strategy option")(
+    option("updateStrategy", "eager") ~ push(EagerOption)
   )
 
   def VersionNumber = rule("Version") {

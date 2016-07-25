@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadRule;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -128,7 +128,7 @@ public class TransientErrorIT extends AbstractRestFunctionalTestBase
 
         // request fails because specified CSV resource is invalid
         assertThat( second.status(), is( 200 ) );
-        assertThat( second, hasErrors( Status.Statement.ExternalResourceFailure ) );
+        assertThat( second, hasErrors( Status.Statement.ExternalResourceFailed ) );
 
         // transaction was rolled back on the previous step and we can't commit it
         HTTP.Response commit = POST( second.stringFromContent( "commit" ) );

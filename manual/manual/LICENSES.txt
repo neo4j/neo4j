@@ -263,7 +263,6 @@ SUCH DAMAGE.
 BSD License
   ASM Core
   Scala Compiler
-  scala-parser-combinators
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>

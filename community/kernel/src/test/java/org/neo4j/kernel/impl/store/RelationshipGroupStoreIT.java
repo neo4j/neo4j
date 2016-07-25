@@ -23,15 +23,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.CleanupRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -48,7 +49,7 @@ public class RelationshipGroupStoreIT
     public void shouldCreateAllTheseRelationshipTypes() throws Exception
     {
         GraphDatabaseService db = new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( directory.graphDbDir().getPath() )
+                .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.dense_node_threshold, "1" )
                 .newGraphDatabase();
         cleanupRule.add( db );
@@ -76,14 +77,14 @@ public class RelationshipGroupStoreIT
 
     private void shiftHighId( GraphDatabaseAPI db )
     {
-        GraphDatabaseAPI databaseAPI = db;
-        NeoStores neoStores = databaseAPI.getDependencyResolver().resolveDependency( NeoStores.class );
+        RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        NeoStores neoStores = storageEngine.testAccessNeoStores();
         neoStores.getRelationshipTypeTokenStore().setHighId( 30000 );
     }
 
-    private DynamicRelationshipType type( int i )
+    private RelationshipType type( int i )
     {
-        return DynamicRelationshipType.withName( "TYPE_" + i );
+        return RelationshipType.withName( "TYPE_" + i );
     }
 
 }

@@ -21,6 +21,8 @@ package org.neo4j.helpers;
 
 import org.junit.Test;
 
+import org.neo4j.function.Predicates;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -42,14 +44,8 @@ public class TestExceptions
                                                 new LevelFourException( "" ) ) ) ) );
 
         // when
-        Throwable peeled = Exceptions.peel( exception, new org.neo4j.function.Predicate<Throwable>()
-        {
-            @Override
-            public boolean test( Throwable item )
-            {
-                return !(item instanceof LevelThreeException) || !item.getMessage().contains( "include" );
-            }
-        } );
+        Throwable peeled = Exceptions.peel( exception,
+                item -> !(item instanceof LevelThreeException) || !item.getMessage().contains( "include" ) );
 
         // then
         assertEquals( expected, peeled );
@@ -68,7 +64,8 @@ public class TestExceptions
                                                 new LevelFourException( "" ) ) ) ) );
 
         // when
-        Throwable peeled = Exceptions.peel( exception, org.neo4j.function.Predicates.<Throwable>instanceOfAny( RuntimeException.class, LevelFourException.class ) );
+        Throwable peeled = Exceptions.peel( exception,
+                Predicates.<Throwable>instanceOfAny( RuntimeException.class, LevelFourException.class ) );
 
         // then
         assertEquals( expected, peeled );

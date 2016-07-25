@@ -159,11 +159,6 @@ public class TimerTransactionTracer implements TransactionTracer, CheckPointTrac
         {
             return StoreApplyEvent.NULL;
         }
-
-        @Override
-        public void setTransactionId( long l )
-        {
-        }
     };
 
     private static final TransactionEvent TRANSACTION_EVENT = new TransactionEvent()

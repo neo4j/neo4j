@@ -20,9 +20,9 @@
 package org.neo4j.tooling;
 
 import java.lang.reflect.Array;
+import java.util.function.Function;
 
 import org.neo4j.csv.reader.SourceTraceability;
-import org.neo4j.function.Function;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
@@ -125,13 +125,6 @@ class StringDeserialization implements Deserialization<String>
 
     public static Function<SourceTraceability,Deserialization<String>> factory( final Configuration config )
     {
-        return new Function<SourceTraceability,Deserialization<String>>()
-        {
-            @Override
-            public Deserialization<String> apply( SourceTraceability from ) throws RuntimeException
-            {
-                return new StringDeserialization( config );
-            }
-        };
+        return from -> new StringDeserialization( config );
     }
 }

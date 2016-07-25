@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
@@ -35,15 +35,16 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.GroupVisito
  */
 public class NodeFirstRelationshipProcessor implements RecordProcessor<NodeRecord>, GroupVisitor
 {
-    private final RelationshipGroupStore relGroupStore;
+    private final RecordStore<RelationshipGroupRecord> relGroupStore;
     private final NodeRelationshipCache cache;
+    private final int relationshipType;
 
-    private long nextGroupId = -1;
-
-    public NodeFirstRelationshipProcessor( RelationshipGroupStore relGroupStore, NodeRelationshipCache cache )
+    public NodeFirstRelationshipProcessor( RecordStore<RelationshipGroupRecord> relGroupStore,
+            NodeRelationshipCache cache, int relationshipType )
     {
         this.relGroupStore = relGroupStore;
         this.cache = cache;
+        this.relationshipType = relationshipType;
     }
 
     @Override
@@ -63,21 +64,19 @@ public class NodeFirstRelationshipProcessor implements RecordProcessor<NodeRecor
     }
 
     @Override
-    public long visit( long nodeId, int type, long next, long out, long in, long loop )
+    public long visit( long nodeId, long next, long out, long in, long loop )
     {
-        long id = nextGroupId != -1 ? nextGroupId : relGroupStore.nextId();
-        nextGroupId = -1;
-
-        RelationshipGroupRecord groupRecord = new RelationshipGroupRecord( id, type );
+        // Here we'll use the already generated id (below) from the previous visit, if that so happened
+        long id = relGroupStore.nextId();
+        RelationshipGroupRecord groupRecord = new RelationshipGroupRecord( id );
+        groupRecord.setType( relationshipType );
         groupRecord.setInUse( true );
         groupRecord.setFirstOut( out );
         groupRecord.setFirstIn( in );
         groupRecord.setFirstLoop( loop );
         groupRecord.setOwningNode( nodeId );
-        if ( next != -1 )
-        {
-            groupRecord.setNext( nextGroupId = relGroupStore.nextId() );
-        }
+        groupRecord.setNext( next );
+        relGroupStore.prepareForCommit( groupRecord );
         relGroupStore.updateRecord( groupRecord );
         return id;
     }

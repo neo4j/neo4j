@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.exceptions;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 
-/** A super class of checked exceptions coming from the {@link org.neo4j.kernel.api.KernelAPI Kernel API}. */
+/** A super class of checked exceptions. */
 public abstract class KernelException extends Exception implements Status.HasStatus
 {
     private final Status statusCode;

@@ -85,12 +85,16 @@ public interface TransactionIdStore
     /**
      * Returns transaction information about the highest committed transaction, i.e.
      * transaction id as well as checksum.
+     *
+     * @return {@link TransactionId} describing the last (i.e. highest) committed transaction.
      */
     TransactionId getLastCommittedTransaction();
 
     /**
      * Returns transaction information about transaction where the last upgrade was performed, i.e.
      * transaction id as well as checksum.
+     *
+     * @return {@link TransactionId} describing the most recent upgrade transaction.
      */
     TransactionId getUpgradeTransaction();
 
@@ -102,6 +106,13 @@ public interface TransactionIdStore
     /**
      * Returns transaction information about the last committed transaction, i.e.
      * transaction id as well as the log position following the commit entry in the transaction log.
+     *
+     * @return transaction information about the last closed (highest gap-free) transaction.
+     * <pre>
+     * [0]: transaction id
+     * [1]: log version
+     * [2]: byte offset into that log version
+     * </pre>
      */
     long[] getLastClosedTransaction();
 
@@ -114,8 +125,8 @@ public interface TransactionIdStore
      * @param byteOffset offset in the log file where the committed entry has been written.
      * @param logVersion version of log the committed entry has been written into.
      */
-    void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long commitTimestamp,
-            long byteOffset, long logVersion );
+    void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long commitTimestamp, long byteOffset,
+            long logVersion );
 
     /**
      * Signals that a transaction with the given transaction id has been fully applied. Calls to this method

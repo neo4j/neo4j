@@ -21,19 +21,17 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 
 import java.util.Arrays;
 
-import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
-
 /**
  * A {@code long[]} on heap, abstracted into a {@link IntArray}.
  */
-public class HeapIntArray extends HeapNumberArray implements IntArray
+public class HeapIntArray extends HeapNumberArray<IntArray> implements IntArray
 {
     private final int[] array;
     private final int defaultValue;
 
-    public HeapIntArray( int length, int defaultValue )
+    public HeapIntArray( int length, int defaultValue, int base )
     {
-        super( 4 );
+        super( 4, base );
         this.defaultValue = defaultValue;
         this.array = new int[length];
         clear();
@@ -48,13 +46,13 @@ public class HeapIntArray extends HeapNumberArray implements IntArray
     @Override
     public int get( long index )
     {
-        return array[safeCastLongToInt( index )];
+        return array[index( index )];
     }
 
     @Override
     public void set( long index, int value )
     {
-        array[safeCastLongToInt( index )] = value;
+        array[index( index )] = value;
     }
 
     @Override
@@ -72,11 +70,5 @@ public class HeapIntArray extends HeapNumberArray implements IntArray
             set( fromIndex+i, get( toIndex+i ) );
             set( toIndex+i, fromValue );
         }
-    }
-
-    @Override
-    public IntArray fixate()
-    {
-        return this;
     }
 }

@@ -3,14 +3,15 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
+
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>packaging-build</artifactId>
-  <version>2.3.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
 
   <name>Neo4j Packaging Build</name>
   <packaging>pom</packaging>
@@ -24,7 +25,7 @@
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-	<url>https://github.com/neo4j/neo4j/tree/master/packaging</url>
+    <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
   <modules>
@@ -71,12 +72,6 @@ terms of the relevant Commercial Agreement.
         <dependency>
           <groupId>org.neo4j.build</groupId>
           <artifactId>community-build</artifactId>
-          <version>${project.version}</version>
-          <type>pom</type>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j.build</groupId>
-          <artifactId>advanced-build</artifactId>
           <version>${project.version}</version>
           <type>pom</type>
         </dependency>

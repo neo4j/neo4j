@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -41,15 +42,16 @@ import static org.mockito.Mockito.when;
 
 public class TransactionPositionLocatorTest
 {
-    private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = mock( LogEntryReader.class );
-    private final ReadableVersionableLogChannel channel = mock( ReadableVersionableLogChannel.class );
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = mock( LogEntryReader.class );
+    private final ReadableClosablePositionAwareChannel channel = mock( ReadableClosablePositionAwareChannel.class );
     private final TransactionMetadataCache metadataCache = mock( TransactionMetadataCache.class );
 
     private final long txId = 42;
     private final LogPosition startPosition = new LogPosition( 1, 128 );
 
     private final LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, null, startPosition );
-    private final LogEntryCommand command = new LogEntryCommand( new Command.NodeCommand() );
+    private final LogEntryCommand command = new LogEntryCommand(
+            new Command.NodeCommand( new NodeRecord( 42 ), new NodeRecord( 42 ) ) );
     private final LogEntryCommit commit = new OnePhaseCommit( txId, System.currentTimeMillis() );
 
     @Test
@@ -102,5 +104,4 @@ public class TransactionPositionLocatorTest
             assertEquals( "Unable to find transaction " + txId + " in any of my logical logs", e.getMessage() );
         }
     }
-
 }

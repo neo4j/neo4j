@@ -19,6 +19,9 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
+import org.junit.After;
+import org.junit.Rule;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -35,9 +38,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
-
-import org.junit.After;
-import org.junit.Rule;
 
 import org.neo4j.cluster.FixedNetworkLatencyStrategy;
 import org.neo4j.cluster.InstanceId;
@@ -62,7 +62,7 @@ import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.LoggerRule;
+import org.neo4j.test.rule.LoggerRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -317,7 +317,6 @@ public class ClusterMockTest
 //        assertEquals( "In:" + in + ", Out:" + out, protocolServers.size(), Iterables.count( Iterables.<Cluster,
 //                List<Cluster>>flatten( in, out ) ) );
 
-
         if ( !errors.isEmpty() )
         {
             for ( AssertionError error : errors )
@@ -377,7 +376,6 @@ public class ClusterMockTest
                 Iterables.count( Iterables.<Cluster,
                 List<Cluster>>flatten( in, out ) ) );
 
-
         if ( !errors.isEmpty() )
         {
             for ( AssertionError error : errors )
@@ -402,7 +400,6 @@ public class ClusterMockTest
             logger.getLogger().warning( "Instance " + myId + " is not in the cluster (" + clusterState + ")" );
             return;
         }
-
 
         HeartbeatContext heartbeatContext = (HeartbeatContext) stateMachines.getStateMachine(
                 HeartbeatMessage.class ).getContext();
@@ -429,8 +426,7 @@ public class ClusterMockTest
         }
         try
         {
-            assertEquals( "Failed for server" + myId + " is wrong", failed, heartbeatContext.getFailed
-                    () );
+            assertEquals( "Failed for server" + myId + " is wrong", failed, heartbeatContext.getFailed() );
         }
         catch ( AssertionError e )
         {

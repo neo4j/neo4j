@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.function.Function;
+import java.util.function.Function;
 
 public interface SchemaState
 {

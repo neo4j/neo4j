@@ -39,7 +39,7 @@ public class StoreIdIterator implements PrimitiveLongIterator
     public StoreIdIterator( RecordStore<?> store, boolean forward )
     {
         this.store = store;
-        this.id = forward ? store.getNumberOfReservedLowIds() : store.getHighId();
+        this.id = forward ? store.getNumberOfReservedLowIds() : store.getHighestPossibleIdInUse();
         this.forward = forward;
     }
 

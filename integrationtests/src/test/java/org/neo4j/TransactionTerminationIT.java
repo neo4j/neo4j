@@ -37,15 +37,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilders;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
@@ -54,11 +53,11 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
-import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.test.CleanupRule;
-import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.RawPayload;
 import org.neo4j.test.server.HTTP.Response;
@@ -73,18 +72,18 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.NamedThreadFactory.named;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.hasErrors;
-import static org.neo4j.test.Assert.assertEventually;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.withBaseUri;
 
 @RunWith( Parameterized.class )
 public class TransactionTerminationIT
 {
-    private static final Label LABEL = DynamicLabel.label( "Foo" );
+    private static final Label LABEL = Label.label( "Foo" );
     private static final String PROPERTY = "bar";
 
     @Parameter
@@ -92,7 +91,7 @@ public class TransactionTerminationIT
 
     private final CleanupRule cleanupRule = new CleanupRule();
     private final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withProvider( clusterOfSize( 3 ) )
+            .withCluster( clusterOfSize( 3 ) )
             .withSharedSetting( HaSettings.ha_server, ":6001-6005" )
             .withSharedSetting( HaSettings.tx_push_factor, "2" )
             .withSharedSetting( HaSettings.lock_read_timeout, "1m" )
@@ -113,21 +112,21 @@ public class TransactionTerminationIT
     public void terminateSingleInstanceRestTransactionThatWaitsForLock() throws Exception
     {
         ServerControls server = cleanupRule.add( TestServerBuilders.newInProcessBuilder()
-                .withConfig( ServerSettings.auth_enabled, Settings.FALSE )
+                .withConfig( GraphDatabaseSettings.auth_enabled, Settings.FALSE )
                 .withConfig( GraphDatabaseFacadeFactory.Configuration.lock_manager, lockManagerName )
                 .withConfig( KernelTransactions.tx_termination_aware_locks, Settings.TRUE )
                 .newServer() );
 
         GraphDatabaseService db = server.graph();
-        final HTTP.Builder http = withBaseUri( server.httpURI().toString() );
+        HTTP.Builder http = withBaseUri( server.httpURI().toString() );
 
-        final long value1 = 1L;
-        final long value2 = 2L;
+        long value1 = 1L;
+        long value2 = 2L;
 
         createNode( db );
 
-        final Response tx1 = startTx( http );
-        final Response tx2 = startTx( http );
+        Response tx1 = startTx( http );
+        Response tx2 = startTx( http );
 
         assertNumberOfActiveTransactions( 2, db );
 
@@ -135,16 +134,11 @@ public class TransactionTerminationIT
         assertThat( update1.status(), equalTo( 200 ) );
         assertThat( update1, containsNoErrors() );
 
-        final CountDownLatch latch = new CountDownLatch( 1 );
-        Future<?> tx2Result = executeInSeparateThread( "tx2", new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                latch.countDown();
-                Response update2 = executeUpdateStatement( tx2, value2, http );
-                assertTxWasTerminated( update2 );
-            }
+        CountDownLatch latch = new CountDownLatch( 1 );
+        Future<?> tx2Result = executeInSeparateThread( "tx2", () -> {
+            latch.countDown();
+            Response update2 = executeUpdateStatement( tx2, value2, http );
+            assertTxWasTerminated( update2 );
         } );
 
         await( latch );
@@ -302,18 +296,11 @@ public class TransactionTerminationIT
         return http.POST( tx.location(), json );
     }
 
-    private static void assertNumberOfActiveTransactions( int expectedCount, final GraphDatabaseService db )
+    private static void assertNumberOfActiveTransactions( int expectedCount, GraphDatabaseService db )
+            throws InterruptedException
     {
-        ThrowingSupplier<Integer,RuntimeException> txCountSupplier = new ThrowingSupplier<Integer,RuntimeException>()
-        {
-            @Override
-            public Integer get() throws RuntimeException
-            {
-                return activeTxCount( db );
-            }
-        };
-
-        assertEventually( "Wrong active tx count", txCountSupplier, equalTo( expectedCount ), 1, TimeUnit.MINUTES );
+        ThrowingSupplier<Integer,RuntimeException> txCount = () -> activeTxCount( db );
+        assertEventually( "Wrong active tx count", txCount, equalTo( expectedCount ), 1, TimeUnit.MINUTES );
     }
 
     private static int activeTxCount( GraphDatabaseService db )
@@ -326,7 +313,7 @@ public class TransactionTerminationIT
     private static void assertTxWasTerminated( Response txResponse )
     {
         assertEquals( 200, txResponse.status() );
-        assertThat( txResponse, hasErrors( Status.Statement.ExecutionFailure ) );
+        assertThat( txResponse, hasErrors( Status.Statement.ExecutionFailed ) );
         assertThat( txResponse.rawContent(), containsString( LockClientStoppedException.class.getSimpleName() ) );
     }
 
@@ -360,44 +347,32 @@ public class TransactionTerminationIT
         }
     }
 
-    private static Future<?> setPropertyInSeparateThreadAndWaitBeforeCommit( String threadName,
-            final GraphDatabaseService db, final Object value, final CountDownLatch txStarted,
-            final CountDownLatch txCommit )
+    private static Future<?> setPropertyInSeparateThreadAndWaitBeforeCommit( String threadName, GraphDatabaseService db,
+            Object value, CountDownLatch txStarted, CountDownLatch txCommit )
     {
-        return executeInSeparateThread( threadName, new Runnable()
-        {
-            @Override
-            public void run()
+        return executeInSeparateThread( threadName, () -> {
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    Node node = findNode( db );
-                    node.setProperty( PROPERTY, value );
-                    txStarted.countDown();
-                    await( txCommit );
-                    tx.success();
-                }
+                Node node = findNode( db );
+                node.setProperty( PROPERTY, value );
+                txStarted.countDown();
+                await( txCommit );
+                tx.success();
             }
         } );
     }
 
     private static Future<?> setPropertyInSeparateThreadAndAttemptToCommit( String threadName,
-            final GraphDatabaseService db, final Object value, final CountDownLatch txStarted,
-            final AtomicReference<Transaction> txReference )
+            GraphDatabaseService db, Object value, CountDownLatch txStarted, AtomicReference<Transaction> txReference )
     {
-        return executeInSeparateThread( threadName, new Runnable()
-        {
-            @Override
-            public void run()
+        return executeInSeparateThread( threadName, () -> {
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    txReference.set( tx );
-                    Node node = findNode( db );
-                    txStarted.countDown();
-                    node.setProperty( PROPERTY, value );
-                    tx.success();
-                }
+                txReference.set( tx );
+                Node node = findNode( db );
+                txStarted.countDown();
+                node.setProperty( PROPERTY, value );
+                tx.success();
             }
         } );
     }

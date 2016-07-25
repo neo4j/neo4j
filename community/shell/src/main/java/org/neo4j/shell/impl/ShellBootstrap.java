@@ -22,15 +22,15 @@ package org.neo4j.shell.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.rmi.RemoteException;
+import java.util.Base64;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
-public class ShellBootstrap implements Serializable
+public class ShellBootstrap
 {
     private final boolean enable;
     private String host;
@@ -68,7 +68,7 @@ public class ShellBootstrap implements Serializable
         {
             throw new RuntimeException( "Broken implementation!", e );
         }
-        return new sun.misc.BASE64Encoder().encode( os.toByteArray() );
+        return Base64.getEncoder().encodeToString( os.toByteArray() );
     }
 
     @SuppressWarnings("boxing")

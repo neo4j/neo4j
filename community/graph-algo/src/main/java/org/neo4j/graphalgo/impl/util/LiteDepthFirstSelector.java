@@ -19,13 +19,10 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
-
 import java.util.LinkedList;
 import java.util.Queue;
 
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
@@ -34,7 +31,7 @@ import org.neo4j.graphdb.traversal.TraversalContext;
  * A preorder depth first selector which detects "super nodes", i.e. nodes
  * which has many relationships. It delays traversing those super nodes until
  * after all non-super nodes have been traversed.
- * 
+ *
  * @author Mattias Persson
  * @author Tobias Ivarsson
  */
@@ -44,19 +41,15 @@ public class LiteDepthFirstSelector implements BranchSelector
     private TraversalBranch current;
     private final int threshold;
     private final PathExpander expander;
-    
+
     public LiteDepthFirstSelector( TraversalBranch startSource, int startThreshold, PathExpander expander )
     {
         this.current = startSource;
         this.threshold = startThreshold;
         this.expander = expander;
     }
-    
-    public LiteDepthFirstSelector( TraversalBranch startSource, int startThreshold, RelationshipExpander expander )
-    {
-        this( startSource, startThreshold, toPathExpander( expander ) );
-    }
-    
+
+    @Override
     public TraversalBranch next( TraversalContext metadata )
     {
         TraversalBranch result = null;
@@ -76,17 +69,14 @@ public class LiteDepthFirstSelector implements BranchSelector
                 current = current.parent();
                 continue;
             }
-            
+
             TraversalBranch next = current.next( expander, metadata );
             if ( next == null )
             {
                 current = current.parent();
                 continue;
             }
-            else
-            {
-                current = next;
-            }
+            current = next;
             if ( current != null )
             {
                 result = current;

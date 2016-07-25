@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Ignore;
-import org.junit.Test;
 
 @Ignore( "Not used anymore" )
 public abstract class TestShortString
@@ -148,7 +148,7 @@ public abstract class TestShortString
         assertCanEncode( string.toUpperCase() );
     }
 
-    abstract protected void assertCanEncode( String string );
+    protected abstract void assertCanEncode( String string );
 
     // === Micro benchmarking === [includes random tests]
 

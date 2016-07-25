@@ -29,7 +29,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
  * Because the batch operation API operates on the HTTP abstraction
  * level, we do not use our normal serialization system for serializing
  * its' results.
- * 
+ *
  * Doing so would require us to de-serialize each JSON response we get from
  * each operation, and we would have to extend our current type safe serialization
  * system to incorporate arbitrary responses.
@@ -56,7 +56,7 @@ public class BatchOperationResults
             firstResult = false;
         else
             results.append(',');
-        
+
         results.append( OPENING_CURLY );
 
         if ( id != null )

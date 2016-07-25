@@ -37,7 +37,7 @@ public class StreamConsumer implements Runnable
     {
         void handle( IOException failure );
     }
-    
+
     public static StreamExceptionHandler PRINT_FAILURES = new StreamExceptionHandler()
     {
         @Override
@@ -46,7 +46,7 @@ public class StreamConsumer implements Runnable
             failure.printStackTrace();
         }
     };
-    
+
     public static StreamExceptionHandler IGNORE_FAILURES = new StreamExceptionHandler()
     {
         @Override
@@ -54,7 +54,7 @@ public class StreamConsumer implements Runnable
         {
         }
     };
-    
+
     private final BufferedReader in;
     private final Writer out;
 

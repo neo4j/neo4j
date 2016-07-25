@@ -31,7 +31,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -39,12 +38,13 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -277,12 +277,11 @@ public class TestLogPruning
                 StoreChannel storeChannel = fs.open( files.getLogFileForVersion( version ), "r" );
                 LogVersionedStoreChannel versionedStoreChannel = PhysicalLogFile.openForVersion( files, fs, version );
                         new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, CURRENT_LOG_VERSION );
-                try ( ReadableVersionableLogChannel channel =
+                try ( ReadableLogChannel channel =
                               new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
                 {
-                    try (PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
-                            new PhysicalTransactionCursor<>( channel,
-                                    new VersionAwareLogEntryReader<ReadableVersionableLogChannel>() ))
+                    try ( PhysicalTransactionCursor<ReadableLogChannel> physicalTransactionCursor =
+                            new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
                     {
                         while ( physicalTransactionCursor.next())
                         {

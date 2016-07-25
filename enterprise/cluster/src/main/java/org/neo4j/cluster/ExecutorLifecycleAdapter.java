@@ -23,7 +23,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.Factory;
+import org.neo4j.function.Factory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class ExecutorLifecycleAdapter

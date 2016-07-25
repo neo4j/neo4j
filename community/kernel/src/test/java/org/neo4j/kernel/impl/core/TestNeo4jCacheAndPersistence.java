@@ -39,7 +39,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -47,11 +47,9 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.Iterables.toList;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.Iterables.asList;
 
 public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 {
@@ -199,9 +197,8 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     public void testDirectedRelationship1()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
-        Relationship rel = node1.getSingleRelationship( MyRelTypes.TEST,
-            Direction.BOTH );
-        Node nodes[] = rel.getNodes();
+        Relationship rel = node1.getSingleRelationship( MyRelTypes.TEST, Direction.BOTH );
+        Node[] nodes = rel.getNodes();
         assertEquals( 2, nodes.length );
 
         Node node2 = getGraphDb().getNodeById( node2Id );
@@ -209,8 +206,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( node1, rel.getStartNode() );
         assertEquals( node2, rel.getEndNode() );
 
-        Relationship relArray[] = getRelationshipArray( node1.getRelationships(
-            MyRelTypes.TEST, Direction.OUTGOING ) );
+        Relationship[] relArray = getRelationshipArray( node1.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
         assertEquals( 1, relArray.length );
         assertEquals( rel, relArray[0] );
         relArray = getRelationshipArray( node2.getRelationships(
@@ -359,7 +355,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
-        Relationship rels[] = new Relationship[100];
+        Relationship[] rels = new Relationship[100];
         for ( int i = 0; i < rels.length; i++ )
         {
             if ( i < 50 )
@@ -372,7 +368,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             }
         }
         newTransaction();
-        Iterable<Relationship> relIterable = toList( node1.getRelationships() );
+        Iterable<Relationship> relIterable = asList( node1.getRelationships() );
         Set<Relationship> relSet = new HashSet<>();
         for ( Relationship rel : rels )
         {
@@ -380,7 +376,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             relSet.add( rel );
         }
         newTransaction();
-        assertEquals( relSet, new HashSet<>( IteratorUtil.asCollection( relIterable ) ) );
+        assertEquals( relSet, new HashSet<>( Iterables.asCollection( relIterable ) ) );
         node1.delete();
         node2.delete();
     }
@@ -407,24 +403,24 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            RelationshipType types[] = new RelationshipType[] {
-                MyRelTypes.TEST, MyRelTypes.TEST2, MyRelTypes.TEST_TRAVERSAL };
+            RelationshipType[] types = new RelationshipType[]{
+                    MyRelTypes.TEST, MyRelTypes.TEST2, MyRelTypes.TEST_TRAVERSAL};
 
-            assertEquals( 3, count( node1.getRelationships( types ) ) );
+            assertEquals( 3, Iterables.count( node1.getRelationships( types ) ) );
 
-            assertEquals( 3, count( node1.getRelationships() ) );
+            assertEquals( 3, Iterables.count( node1.getRelationships() ) );
 
-            assertEquals( 3, count( node2.getRelationships( types ) ) );
+            assertEquals( 3, Iterables.count( node2.getRelationships( types ) ) );
 
-            assertEquals( 3, count( node2.getRelationships() ) );
+            assertEquals( 3, Iterables.count( node2.getRelationships() ) );
 
-            assertEquals( 2, count( node1.getRelationships( OUTGOING ) ) );
+            assertEquals( 2, Iterables.count( node1.getRelationships( OUTGOING ) ) );
 
-            assertEquals( 1, count( node1.getRelationships( INCOMING ) ) );
+            assertEquals( 1, Iterables.count( node1.getRelationships( INCOMING ) ) );
 
-            assertEquals( 1, count( node2.getRelationships( OUTGOING ) ) );
+            assertEquals( 1, Iterables.count( node2.getRelationships( OUTGOING ) ) );
 
-            assertEquals( 2, count( node2.getRelationships( INCOMING ) ) );
+            assertEquals( 2, Iterables.count( node2.getRelationships( INCOMING ) ) );
 
             tx.success();
         }

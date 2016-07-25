@@ -20,21 +20,34 @@
 package org.neo4j.kernel.impl.factory;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdTypeConfigurationProvider;
-import org.neo4j.kernel.KernelDiagnostics;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Service;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.bolt.SessionTracker;
+import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
-import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.internal.KernelDiagnostics;
+import org.neo4j.udc.UsageData;
+import org.neo4j.udc.UsageDataKeys;
+
+import static java.util.Collections.singletonMap;
 
 /**
  * Edition module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. Implementations of this class
@@ -42,6 +55,11 @@ import org.neo4j.kernel.info.DiagnosticsManager;
  */
 public abstract class EditionModule
 {
+    public void registerProcedures( Procedures procedures )
+    {
+        // do nothing
+    }
+
     public IdGeneratorFactory idGeneratorFactory;
     public IdTypeConfigurationProvider idTypeConfigurationProvider;
 
@@ -61,19 +79,71 @@ public abstract class EditionModule
 
     public SchemaWriteGuard schemaWriteGuard;
 
-    public UpgradeConfiguration upgradeConfiguration;
     public ConstraintSemantics constraintSemantics;
+
+    public CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
+
+    public IOLimiter ioLimiter;
 
     public IdReuseEligibility eligibleForIdReuse;
 
-    protected void doAfterRecoveryAndStartup( String editionName, DependencyResolver dependencyResolver)
+    protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver )
     {
         DiagnosticsManager diagnosticsManager = dependencyResolver.resolveDependency( DiagnosticsManager.class );
         NeoStoreDataSource neoStoreDataSource = dependencyResolver.resolveDependency( NeoStoreDataSource.class );
 
         diagnosticsManager.prependProvider( new KernelDiagnostics.Versions(
-                editionName, neoStoreDataSource.get().getMetaDataStore().getStoreId() ) );
+                databaseInfo, neoStoreDataSource.getStoreId() ) );
         neoStoreDataSource.registerDiagnosticsWith( diagnosticsManager );
         diagnosticsManager.appendProvider( new KernelDiagnostics.StoreFiles( neoStoreDataSource.getStoreDir() ) );
+    }
+
+    protected void publishEditionInfo( UsageData sysInfo, DatabaseInfo databaseInfo, Config config )
+    {
+        sysInfo.set( UsageDataKeys.edition, databaseInfo.edition );
+        sysInfo.set( UsageDataKeys.operationalMode, databaseInfo.operationalMode );
+        config.augment( singletonMap( Configuration.editionName.name(), databaseInfo.edition.toString() ) );
+    }
+
+    public static AuthManager createAuthManager( Config config, LogService logging )
+    {
+        boolean authEnabled = config.get( GraphDatabaseSettings.auth_enabled );
+        if ( !authEnabled )
+        {
+            return AuthManager.NO_AUTH;
+        }
+
+        String key = config.get( GraphDatabaseSettings.auth_manager );
+        for ( AuthManager.Factory candidate : Service.load( AuthManager.Factory.class ) )
+        {
+            String candidateId = candidate.getKeys().iterator().next();
+            if ( candidateId.equals( key ) )
+            {
+                return candidate.newInstance( config, logging.getUserLogProvider() );
+            }
+            else if ( key.isEmpty() )
+            {
+                // As a default use the available service for the configured build edition
+                logging.getInternalLog( GraphDatabaseFacadeFactory.class )
+                        .info( "No auth manager implementation specified, defaulting to '" + candidateId + "'" );
+                return candidate.newInstance( config, logging.getUserLogProvider() );
+            }
+        }
+
+        if ( key.isEmpty() )
+        {
+            logging.getUserLog( GraphDatabaseFacadeFactory.class )
+                    .error( "No auth manager implementation specified and no default could be loaded. " +
+                            "It is an illegal product configuration to have auth enabled and not provide an " +
+                            "auth manager service." );
+            throw new IllegalArgumentException( "Auth enabled but no auth manager found. This is an illegal product configuration." );
+        }
+
+        throw new IllegalArgumentException( "No auth manager found with the name '" + key + "'." );
+    }
+
+    protected SessionTracker createSessionTracker()
+    {
+        return SessionTracker.NOOP;
     }
 }

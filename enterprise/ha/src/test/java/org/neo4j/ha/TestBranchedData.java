@@ -21,11 +21,13 @@ package org.neo4j.ha;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -35,6 +37,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
@@ -46,26 +49,25 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.impl.util.StoreUtil;
 import org.neo4j.kernel.lifecycle.LifeRule;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory.TestDirectory;
 
 import static java.lang.String.format;
-
-import static org.neo4j.helpers.SillyUtils.nonNull;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 public class TestBranchedData
 {
-    public final @Rule LifeRule life = new LifeRule( true );
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final LifeRule life = new LifeRule( true );
+    private final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+
+    @Rule
+    public final RuleChain ruleChain = RuleChain.outerRule( directory )
+            .around( life );
 
     @Test
     public void migrationOfBranchedDataDirectories() throws Exception
@@ -100,15 +102,15 @@ public class TestBranchedData
         // GIVEN
         File dir = directory.directory();
         ClusterManager clusterManager = life.add( new ClusterManager.Builder( dir )
-                .withProvider( clusterOfSize( 2 ) ).build() );
-        ManagedCluster cluster = clusterManager.getDefaultCluster();
+                .withCluster( clusterOfSize( 2 ) ).build() );
+        ManagedCluster cluster = clusterManager.getCluster();
         cluster.await( allSeesAllAsAvailable() );
         createNode( cluster.getMaster(), "A" );
         cluster.sync();
 
         // WHEN
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        String storeDir = slave.getStoreDir();
+        File storeDir = new File( slave.getStoreDir() );
         RepairKit starter = cluster.shutdown( slave );
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         createNode( master, "B1" );
@@ -138,7 +140,7 @@ public class TestBranchedData
                 // Effectively disable automatic transaction propagation within the cluster
                 HaSettings.tx_push_factor.name(), "0",
                 HaSettings.pull_interval.name(), "0" ) ).build() );
-        ManagedCluster cluster = clusterManager.getDefaultCluster();
+        ManagedCluster cluster = clusterManager.getCluster();
         cluster.await( allSeesAllAsAvailable() );
         HighlyAvailableGraphDatabase thor = cluster.getMaster();
         String indexName = "valhalla";
@@ -156,8 +158,8 @@ public class TestBranchedData
         createNode( odin, "B2", andIndexInto( indexName ) );
         assertTrue( odin.isMaster() );
         // perform transactions so that index files changes under the hood
-        Set<File> odinLuceneFilesBefore = asSet( gatherLuceneFiles( odin, indexName ) );
-        for ( char prefix = 'C'; !changed( odinLuceneFilesBefore, asSet( gatherLuceneFiles( odin, indexName ) ) ); prefix++ )
+        Set<File> odinLuceneFilesBefore = Iterables.asSet( gatherLuceneFiles( odin, indexName ) );
+        for ( char prefix = 'C'; !changed( odinLuceneFilesBefore, Iterables.asSet( gatherLuceneFiles( odin, indexName ) ) ); prefix++ )
         {
             createNodes( odin, String.valueOf( prefix ), 10_000, andIndexInto( indexName ) );
             cluster.force(); // Force will most likely cause lucene legacy indexes to commit and change file structure
@@ -231,7 +233,7 @@ public class TestBranchedData
     {
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 if ( nodeName.equals( node.getProperty( "name", null ) ) )
                 {
@@ -243,9 +245,9 @@ public class TestBranchedData
     }
 
     @SuppressWarnings( "unchecked" )
-    private void createNodeOffline( String storeDir, String name )
+    private void createNodeOffline( File storeDir, String name )
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = startGraphDatabaseService( storeDir );
         try
         {
             createNode( db, name );
@@ -300,7 +302,7 @@ public class TestBranchedData
         long timestamp = System.currentTimeMillis();
         File branchDir = new File( dir, "branched-" + timestamp );
         assertTrue( "create directory: " + branchDir, branchDir.mkdirs() );
-        for ( File file : nonNull( dir.listFiles() ) )
+        for ( File file : Objects.requireNonNull( dir.listFiles() ) )
         {
             String fileName = file.getName();
             if ( !fileName.equals( StoreLogService.INTERNAL_LOG_NAME ) && !file.getName().startsWith( "branched-" ) )
@@ -313,7 +315,7 @@ public class TestBranchedData
 
     private void startDbAndCreateNode()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        GraphDatabaseService db = startGraphDatabaseService( directory.absolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
@@ -323,5 +325,10 @@ public class TestBranchedData
         {
             db.shutdown();
         }
+    }
+
+    private GraphDatabaseService startGraphDatabaseService( File storeDir )
+    {
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
 }

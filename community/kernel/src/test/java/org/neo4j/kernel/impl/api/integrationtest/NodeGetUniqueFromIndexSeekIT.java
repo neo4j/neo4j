@@ -62,7 +62,6 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     // that transaction blocks until this transaction has finished
     //
 
-
     // [X] must return node from the unique index with the given property
     // [X] must return NO_SUCH_NODE if it is not in the index for the given property
     //

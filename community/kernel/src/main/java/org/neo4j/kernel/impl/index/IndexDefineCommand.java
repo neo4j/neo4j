@@ -27,11 +27,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
+import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.Primitive.intObjectMap;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
 
 /**
  * A command which have to be first in the transaction. It will map index names
@@ -45,7 +48,7 @@ import static org.neo4j.collection.primitive.Primitive.intObjectMap;
  */
 public class IndexDefineCommand extends Command
 {
-    public static final int HIGHEST_POSSIBLE_ID = 0xFFFF - 1; // -1 since the actual value -1 is reserved for all-ones
+    static final int HIGHEST_POSSIBLE_ID = 0xFFFF - 1; // -1 since the actual value -1 is reserved for all-ones
     private final AtomicInteger nextIndexNameId = new AtomicInteger();
     private final AtomicInteger nextKeyId = new AtomicInteger();
     private Map<String,Integer> indexNameIdRange;
@@ -173,7 +176,7 @@ public class IndexDefineCommand extends Command
     }
 
     @Override
-    public boolean handle( CommandHandler visitor ) throws IOException
+    public boolean handle( CommandVisitor visitor ) throws IOException
     {
         return visitor.visitIndexDefineCommand( this );
     }
@@ -202,5 +205,30 @@ public class IndexDefineCommand extends Command
     public String toString()
     {
         return getClass().getSimpleName() + "[names:" + indexNameIdRange + ", keys:" + keyIdRange + "]";
+    }
+
+    @Override
+    public void serialize( WritableChannel channel ) throws IOException
+    {
+        channel.put( NeoCommandType.INDEX_DEFINE_COMMAND );
+        byte zero = 0;
+        IndexCommand.writeIndexCommandHeader( channel, zero, zero, zero, zero, zero, zero, zero );
+        writeMap( channel, getIndexNameIdRange() );
+        writeMap( channel, getKeyIdRange() );
+    }
+
+    private void writeMap( WritableChannel channel, Map<String,Integer> map ) throws IOException
+    {
+        assert map.size() <= IndexDefineCommand.HIGHEST_POSSIBLE_ID :
+            "Can not write map with size larger than 2 bytes. Actual size " + map.size();
+        channel.putShort( (short) map.size() );
+        for ( Map.Entry<String,Integer> entry : map.entrySet() )
+        {
+            write2bLengthAndString( channel, entry.getKey() );
+            int id = entry.getValue();
+            assert id <= IndexDefineCommand.HIGHEST_POSSIBLE_ID :
+                "Can not write id larger than 2 bytes. Actual value " + id;
+            channel.putShort( (short) id );
+        }
     }
 }

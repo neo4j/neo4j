@@ -8,7 +8,11 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
   Jackson
+  Lucene codecs
+  Lucene Common Analyzers
   Lucene Core
+  Lucene Memory
+  Lucene QueryParsers
   opencsv
   parboiled-core
   parboiled-scala
@@ -263,7 +267,6 @@ SUCH DAMAGE.
 BSD License
   ASM Core
   Scala Compiler
-  scala-parser-combinators
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>

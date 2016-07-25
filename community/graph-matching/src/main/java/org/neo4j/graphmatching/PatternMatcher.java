@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphmatching.filter.AbstractFilterExpression;
 import org.neo4j.graphmatching.filter.FilterBinaryNode;
@@ -41,21 +40,21 @@ import org.neo4j.helpers.collection.FilteringIterable;
 @Deprecated
 public class PatternMatcher
 {
-	private static PatternMatcher matcher = new PatternMatcher();
+    private static PatternMatcher matcher = new PatternMatcher();
 
-	private PatternMatcher()
-	{
-	}
+    private PatternMatcher()
+    {
+    }
 
     /**
      * Get the sole instance of the {@link PatternMatcher}.
      *
      * @return the instance of {@link PatternMatcher}.
      */
-	public static PatternMatcher getMatcher()
-	{
-		return matcher;
-	}
+    public static PatternMatcher getMatcher()
+    {
+        return matcher;
+    }
 
     /**
      * Find occurrences of the pattern defined by the given {@link PatternNode}
@@ -82,12 +81,11 @@ public class PatternMatcher
      * @param objectVariables mapping from names to {@link PatternNode}s.
      * @return all matching instances of the pattern.
      */
-	public Iterable<PatternMatch> match( PatternNode start,
-		Node startNode, Map<String, PatternNode> objectVariables )
-	{
-		return match( start, startNode, objectVariables,
-		    ( Collection<PatternNode> ) null );
-	}
+    public Iterable<PatternMatch> match( PatternNode start,
+        Node startNode, Map<String, PatternNode> objectVariables )
+    {
+        return match( start, startNode, objectVariables, (Collection<PatternNode>) null );
+    }
 
     /**
      * Find occurrences of the pattern defined by the given {@link PatternNode}
@@ -117,17 +115,17 @@ public class PatternMatcher
      * @param optional nodes that form sub-patterns connected to this pattern.
      * @return all matching instances of the pattern.
      */
-	public Iterable<PatternMatch> match( PatternNode start,
-	        Map<String, PatternNode> objectVariables,
-	        Collection<PatternNode> optional )
+    public Iterable<PatternMatch> match( PatternNode start,
+            Map<String, PatternNode> objectVariables,
+            Collection<PatternNode> optional )
     {
-	    Node startNode = start.getAssociation();
+        Node startNode = start.getAssociation();
         if ( startNode == null )
         {
             throw new IllegalStateException(
                     "Associating node for start pattern node is null" );
         }
-	    return match( start, startNode, objectVariables, optional );
+        return match( start, startNode, objectVariables, optional );
     }
 
     /**
@@ -141,10 +139,10 @@ public class PatternMatcher
      * @param optional nodes that form sub-patterns connected to this pattern.
      * @return all matching instances of the pattern.
      */
-	public Iterable<PatternMatch> match( PatternNode start,
-		Node startNode, Map<String, PatternNode> objectVariables,
-		Collection<PatternNode> optional )
-	{
+    public Iterable<PatternMatch> match( PatternNode start,
+        Node startNode, Map<String, PatternNode> objectVariables,
+        Collection<PatternNode> optional )
+    {
         Node currentStartNode = start.getAssociation();
         if ( currentStartNode != null && !currentStartNode.equals( startNode ) )
         {
@@ -152,24 +150,24 @@ public class PatternMatcher
                     "Start patter node already has associated " +
                     currentStartNode + ", can not start with " + startNode );
         }
-	    Iterable<PatternMatch> result = null;
-		if ( optional == null || optional.size() < 1 )
-		{
-			result = new PatternFinder( this, start, startNode );
-		}
-		else
-		{
-			result = new PatternFinder( this, start, startNode, false,
-			    optional );
-		}
+        Iterable<PatternMatch> result = null;
+        if ( optional == null || optional.size() < 1 )
+        {
+            result = new PatternFinder( this, start, startNode );
+        }
+        else
+        {
+            result = new PatternFinder( this, start, startNode, false,
+                optional );
+        }
 
-		if ( objectVariables != null )
-		{
-    		// Uses the FILTER expressions
-    		result = new FilteredPatternFinder( result, objectVariables );
-		}
-		return result;
-	}
+        if ( objectVariables != null )
+        {
+            // Uses the FILTER expressions
+            result = new FilteredPatternFinder( result, objectVariables );
+        }
+        return result;
+    }
 
     /**
      * Find occurrences of the pattern defined by the given {@link PatternNode}
@@ -182,49 +180,47 @@ public class PatternMatcher
      * @param optional nodes that form sub-patterns connected to this pattern.
      * @return all matching instances of the pattern.
      */
-	public Iterable<PatternMatch> match( PatternNode start,
-		Node startNode, Map<String, PatternNode> objectVariables,
-		PatternNode... optional )
-	{
-		return match( start, startNode, objectVariables,
-		    Arrays.asList( optional ) );
-	}
+    public Iterable<PatternMatch> match( PatternNode start,
+        Node startNode, Map<String, PatternNode> objectVariables,
+        PatternNode... optional )
+    {
+        return match( start, startNode, objectVariables,
+            Arrays.asList( optional ) );
+    }
 
-	private static class SimpleRegexValueGetter implements FilterValueGetter
-	{
-	    private PatternMatch match;
-	    private Map<String, PatternNode> labelToNode =
-	        new HashMap<String, PatternNode>();
-	    private Map<String, String> labelToProperty =
-	        new HashMap<String, String>();
+    private static class SimpleRegexValueGetter implements FilterValueGetter
+    {
+        private PatternMatch match;
+        private Map<String, PatternNode> labelToNode =
+            new HashMap<String, PatternNode>();
+        private Map<String, String> labelToProperty =
+            new HashMap<String, String>();
 
-	    SimpleRegexValueGetter( Map<String, PatternNode> objectVariables,
-	        PatternMatch match, FilterExpression[] expressions )
-	    {
+        SimpleRegexValueGetter( Map<String, PatternNode> objectVariables,
+            PatternMatch match, FilterExpression[] expressions )
+        {
             this.match = match;
             for ( FilterExpression expression : expressions )
             {
                 mapFromExpression( expression );
             }
             this.labelToNode = objectVariables;
-	    }
+        }
 
-	    private void mapFromExpression( FilterExpression expression )
-	    {
-	        if ( expression instanceof FilterBinaryNode )
-	        {
-	            FilterBinaryNode node = ( FilterBinaryNode ) expression;
-	            mapFromExpression( node.getLeftExpression() );
-	            mapFromExpression( node.getRightExpression() );
-	        }
-	        else
-	        {
-	            AbstractFilterExpression pattern =
-	                ( AbstractFilterExpression ) expression;
-	            labelToProperty.put( pattern.getLabel(),
-	                pattern.getProperty() );
-	        }
-	    }
+        private void mapFromExpression( FilterExpression expression )
+        {
+            if ( expression instanceof FilterBinaryNode )
+            {
+                FilterBinaryNode node = (FilterBinaryNode) expression;
+                mapFromExpression( node.getLeftExpression() );
+                mapFromExpression( node.getRightExpression() );
+            }
+            else
+            {
+                AbstractFilterExpression pattern = (AbstractFilterExpression) expression;
+                labelToProperty.put( pattern.getLabel(), pattern.getProperty() );
+            }
+        }
 
         public String[] getValues( String label )
         {
@@ -255,43 +251,39 @@ public class PatternMatcher
             int counter = 0;
             for ( Object value : values )
             {
-                result[ counter++ ] = ( String ) value;
+                result[counter++] = (String) value;
             }
             return result;
         }
-	}
+    }
 
-	private static class FilteredPatternFinder
-	    extends FilteringIterable<PatternMatch>
-	{
+    private static class FilteredPatternFinder
+        extends FilteringIterable<PatternMatch>
+    {
         public FilteredPatternFinder( Iterable<PatternMatch> source,
             final Map<String, PatternNode> objectVariables )
         {
-            super( source, new Predicate<PatternMatch>()
-            {
-                public boolean test( PatternMatch item )
+            super( source, item -> {
+                Set<PatternGroup> calculatedGroups = new HashSet<>();
+                for ( PatternElement element : item.getElements() )
                 {
-                    Set<PatternGroup> calculatedGroups = new HashSet<PatternGroup>();
-                    for ( PatternElement element : item.getElements() )
+                    PatternNode node = element.getPatternNode();
+                    PatternGroup group = node.getGroup();
+                    if ( calculatedGroups.add( group ) )
                     {
-                        PatternNode node = element.getPatternNode();
-                        PatternGroup group = node.getGroup();
-                        if ( calculatedGroups.add( group ) )
+                        FilterValueGetter valueGetter = new SimpleRegexValueGetter(
+                            objectVariables, item, group.getFilters() );
+                        for ( FilterExpression expression : group.getFilters() )
                         {
-                            FilterValueGetter valueGetter = new SimpleRegexValueGetter(
-                                objectVariables, item, group.getFilters() );
-                            for ( FilterExpression expression : group.getFilters() )
+                            if ( !expression.matches( valueGetter ) )
                             {
-                                if ( !expression.matches( valueGetter ) )
-                                {
-                                    return false;
-                                }
+                                return false;
                             }
                         }
                     }
-                    return true;
                 }
+                return true;
             } );
         }
-	}
+    }
 }

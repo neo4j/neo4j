@@ -23,7 +23,7 @@ import java.io.File
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.{CsvFile, RefcardTest}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class ImportTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List()
@@ -65,7 +65,7 @@ class ImportTest extends RefcardTest with QueryStatisticsTestSupport {
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "created" =>
-        assertStats(result, nodesCreated = 4, labelsAdded = 4, propertiesSet = 8)
+        assertStats(result, nodesCreated = 4, labelsAdded = 4, propertiesWritten = 8)
     }
   }
 

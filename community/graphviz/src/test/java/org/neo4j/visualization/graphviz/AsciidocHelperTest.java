@@ -34,12 +34,12 @@ public class AsciidocHelperTest
     public void test()
     {
         String cypher = "start n=node(0) " +
-        		"match " +
-        		"x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, " +
+                "match " +
+                "x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, " +
                 "x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, " +
                 "x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n, x-n " +
                 "return n, x";
-        
+
         String snippet = AsciidocHelper.createCypherSnippet( cypher );
         assertTrue(snippet.contains( "n,\n" ));
     }

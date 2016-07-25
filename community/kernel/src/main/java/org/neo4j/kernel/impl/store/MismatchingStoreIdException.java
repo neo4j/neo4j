@@ -30,12 +30,12 @@ public class MismatchingStoreIdException extends StoreFailureException
         this.expected = expected;
         this.encountered = encountered;
     }
-    
+
     public StoreId getExpected()
     {
         return expected;
     }
-    
+
     public StoreId getEncountered()
     {
         return encountered;

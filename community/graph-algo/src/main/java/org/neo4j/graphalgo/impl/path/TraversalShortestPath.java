@@ -19,27 +19,22 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.kernel.SideSelectorPolicies.LEVEL_STOP_DESCENT_ON_RESULT;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
-import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
-import static org.neo4j.kernel.Traversal.traversal;
-import static org.neo4j.kernel.Uniqueness.NODE_PATH;
-
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
+
+import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
+import static org.neo4j.graphdb.traversal.SideSelectorPolicies.LEVEL_STOP_DESCENT_ON_RESULT;
+import static org.neo4j.graphdb.traversal.Uniqueness.NODE_PATH;
 
 /**
  * Implements shortest path algorithm, see {@link ShortestPath}, but using
  * the traversal framework straight off with the bidirectional traversal feature.
- * 
+ *
  * It's still experimental and slightly slower than the highly optimized
  * {@link ShortestPath} implementation.
- * 
- * @author Mattias Persson
  */
 public class TraversalShortestPath extends TraversalPathFinder
 {
@@ -47,41 +42,31 @@ public class TraversalShortestPath extends TraversalPathFinder
     private final int maxDepth;
     private final Integer maxResultCount;
 
-    public TraversalShortestPath( RelationshipExpander expander, int maxDepth )
-    {
-        this( toPathExpander( expander ), maxDepth );
-    }
-    
     public TraversalShortestPath( PathExpander expander, int maxDepth )
     {
         this.expander = expander;
         this.maxDepth = maxDepth;
         this.maxResultCount = null;
     }
-    
-    public TraversalShortestPath( RelationshipExpander expander, int maxDepth, int maxResultCount )
-    {
-        this( toPathExpander( expander ), maxDepth, maxResultCount );
-    }
-    
+
     public TraversalShortestPath( PathExpander expander, int maxDepth, int maxResultCount )
     {
         this.expander = expander;
         this.maxDepth = maxDepth;
         this.maxResultCount = maxResultCount;
     }
-    
+
     @Override
     protected Traverser instantiateTraverser( Node start, Node end )
     {
-        TraversalDescription sideBase = traversal().breadthFirst().uniqueness( NODE_PATH );
-        return bidirectionalTraversal()
-            .mirroredSides( sideBase.expand( expander ) )
+        GraphDatabaseService db = start.getGraphDatabase();
+        TraversalDescription sideBase = db.traversalDescription().breadthFirst().uniqueness( NODE_PATH );
+        return db.bidirectionalTraversalDescription().mirroredSides( sideBase.expand( expander ) )
             .sideSelector( LEVEL_STOP_DESCENT_ON_RESULT, maxDepth )
             .collisionEvaluator( toDepth( maxDepth ) )
             .traverse( start, end );
     }
-    
+
     @Override
     protected Integer maxResultCount()
     {

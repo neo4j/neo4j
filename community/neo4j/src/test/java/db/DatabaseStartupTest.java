@@ -34,8 +34,8 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.lifecycle.LifecycleException;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -81,7 +81,7 @@ public class DatabaseStartupTest
             assertTrue( ex.getCause() instanceof LifecycleException );
             assertTrue( ex.getCause().getCause() instanceof UpgradeNotAllowedByConfigurationException );
             assertEquals( "Failed to start Neo4j with an older data store version. To enable automatic upgrade, " +
-                          "please set configuration parameter \"allow_store_upgrade=true\"",
+                          "please set configuration parameter \"dbms.allow_format_migration=true\"",
                     ex.getCause().getCause().getMessage());
         }
     }
@@ -101,10 +101,11 @@ public class DatabaseStartupTest
         db.shutdown();
 
         // mess up the version in the metadatastore
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ))
+        String badStoreVersion = "bad";
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
         {
             MetaDataStore.setRecord( pageCache, new File(storeDir, MetaDataStore.DEFAULT_NAME ),
-                    MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
+                    MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( badStoreVersion ) );
         }
 
         // when
@@ -120,7 +121,7 @@ public class DatabaseStartupTest
             assertTrue( ex.getCause() instanceof LifecycleException );
             assertTrue( ex.getCause().getCause() instanceof StoreUpgrader.UnexpectedUpgradingStoreVersionException );
             assertThat( ex.getCause().getCause().getMessage(),
-                    containsString( "has a store version number that we cannot upgrade from." ) );
+                    containsString( "has a store version '" + badStoreVersion + "' that we cannot upgrade from." ) );
         }
     }
 }

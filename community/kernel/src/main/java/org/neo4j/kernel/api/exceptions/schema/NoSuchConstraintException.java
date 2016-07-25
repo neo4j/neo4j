@@ -28,11 +28,11 @@ import static java.lang.String.format;
 public class NoSuchConstraintException extends SchemaKernelException
 {
     private final PropertyConstraint constraint;
-    private final static String message = "No such constraint %s.";
+    private static final String message = "No such constraint %s.";
 
     public NoSuchConstraintException( PropertyConstraint constraint )
     {
-        super( Status.Schema.NoSuchConstraint, format( message, constraint ) );
+        super( Status.Schema.ConstraintNotFound, format( message, constraint ) );
         this.constraint = constraint;
     }
 

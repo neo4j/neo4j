@@ -28,13 +28,12 @@ import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.ObjectUtil;
+import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import static java.lang.String.format;
 
 public class TestPropertyTypes extends AbstractNeo4jTestCase
 {
@@ -273,7 +272,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        int propertyValue[] = null;
+        int[] propertyValue = null;
         propertyValue = (int[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
@@ -306,7 +305,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        short propertyValue[] = null;
+        short[] propertyValue = null;
         propertyValue = (short[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
@@ -339,7 +338,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        String propertyValue[] = null;
+        String[] propertyValue = null;
         propertyValue = (String[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
@@ -372,7 +371,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        boolean propertyValue[] = null;
+        boolean[] propertyValue = null;
         propertyValue = (boolean[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
@@ -405,7 +404,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        double propertyValue[] = null;
+        double[] propertyValue = null;
         propertyValue = (double[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
@@ -438,7 +437,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        float propertyValue[] = null;
+        float[] propertyValue = null;
         propertyValue = (float[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
@@ -466,7 +465,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     public void testLongArray()
     {
         long[] array1 = new long[] { 1, 2, 3, 4, 5 };
-        Long[] array2 = new Long[] { 6l, 7l, 8l };
+        Long[] array2 = new Long[] { 6L, 7L, 8L };
         String key = "testlongarray";
         node1.setProperty( key, array1 );
         newTransaction();
@@ -715,7 +714,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 
         // THEN reading the value one more time should still yield the set property
         assertTrue(
-                format( "Expected %s, but was %s", ObjectUtil.toString( value ), ObjectUtil.toString( readValue ) ),
+                format( "Expected %s, but was %s", Strings.prettyPrint( value ), Strings.prettyPrint( readValue ) ),
                 ArrayUtil.equals( value, node1.getProperty( key ) ) );
     }
 
@@ -733,7 +732,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 
         // THEN reading the value one more time should still yield the set property
         assertTrue(
-                format( "Expected %s, but was %s", ObjectUtil.toString( value ), ObjectUtil.toString( readValue ) ),
+                format( "Expected %s, but was %s", Strings.prettyPrint( value ), Strings.prettyPrint( readValue ) ),
                 ArrayUtil.equals( value, node1.getProperty( key ) ) );
     }
 }

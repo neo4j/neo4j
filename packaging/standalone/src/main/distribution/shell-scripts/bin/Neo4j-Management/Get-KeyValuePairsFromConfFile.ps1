@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2015 "Neo Technology,"
+# Copyright (c) 2002-2016 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # This file is part of Neo4j.
@@ -28,9 +28,9 @@ Parses a Neo4j configuration file into a hashtable.  Multivalue keys are output 
 The full path to the file to read
 
 .EXAMPLE
-Get-KeyValuePairsFromConfFile -Filename 'C:\Neo4j\conf\neo4j.properties'
+Get-KeyValuePairsFromConfFile -Filename 'C:\Neo4j\conf\neo4j.conf'
 
-Reads the file 'C:\Neo4j\conf\neo4j.properties' and outputs a hashtable of key/value pairs
+Reads the file 'C:\Neo4j\conf\neo4j.conf' and outputs a hashtable of key/value pairs
 
 .OUTPUTS
 System.Collections.Hashtable
@@ -43,12 +43,13 @@ Function Get-KeyValuePairsFromConfFile
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
   param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$false)]
-    [string]$Filename
+    [Parameter(Mandatory=$false,ValueFromPipeline=$false)]
+    [string]$Filename = ''
   )
 
  Process
  {
+    if ($filename -eq '') { Throw "Filename must be specified"; return }
     $properties = @{}
     Get-Content -Path $filename -Filter $Filter | ForEach-Object -Process `
     {

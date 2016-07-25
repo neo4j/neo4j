@@ -23,6 +23,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.logging.Logger;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.OtherThreadExecutor;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
@@ -33,7 +34,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
     {
         super( name, new LockWorkerState( locks ) );
     }
-    
+
     private Future<Void> perform( AcquireLockCommand acquireLockCommand, boolean wait ) throws Exception
     {
         Future<Void> future = executeDontWait( acquireLockCommand );
@@ -43,7 +44,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             waitUntilWaiting();
         return future;
     }
-    
+
     public Future<Void> getReadLock( final long resource, final boolean wait ) throws Exception
     {
         return perform( new AcquireLockCommand()
@@ -71,7 +72,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             }
         }, wait );
     }
-    
+
     public void releaseReadLock( final long resource ) throws Exception
     {
         perform( new AcquireLockCommand()
@@ -85,7 +86,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             }
         }, true );
     }
-    
+
     public void releaseWriteLock( final long resource ) throws Exception
     {
         perform( new AcquireLockCommand()
@@ -104,7 +105,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
     {
         return state.deadlockOnLastWait;
     }
-    
+
     @Override
     public void dump( Logger logger )
     {
@@ -115,28 +116,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
         logger.log( "Doing right now:" );
         logger.log( state.doing );
     }
-    
-    public static ResourceObject newResourceObject( String name )
-    {
-        return new ResourceObject( name );
-    }
 
-    public static class ResourceObject
-    {
-        private final String name;
-
-        ResourceObject( String name )
-        {
-            this.name = name;
-        }
-
-        @Override
-        public String toString()
-        {
-            return this.name;
-        }
-    }
-    
     private abstract static class AcquireLockCommand implements WorkerCommand<LockWorkerState, Void>
     {
         @Override

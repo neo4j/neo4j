@@ -30,8 +30,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.TransactionId;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.ArrayIOCursor;
-import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -55,6 +55,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogFilename;
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.versionedLegacyLogFilesFilter;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
@@ -64,12 +65,25 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 public class LegacyLogsTest
 {
     private static final long NO_NEXT_REL = Record.NO_NEXT_RELATIONSHIP.intValue();
+    private static final int NO_LABELS = Record.NO_LABELS_FIELD.intValue();
 
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LegacyLogEntryReader reader = mock( LegacyLogEntryReader.class );
     private final LegacyLogEntryWriter writer = mock( LegacyLogEntryWriter.class );
-    private final File storeDir = new File( "/store" );
-    private final File migrationDir = new File( "/migration" );
+    private final File storeDir = getRootFile( "/store" );
+    private final File migrationDir = getRootFile( "/migration" );
+
+    private static File getRootFile( String pathname )
+    {
+        try
+        {
+            return new File( pathname ).getCanonicalFile();
+        }
+        catch ( IOException e )
+        {
+            throw new AssertionError( e );
+        }
+    }
 
     @Test
     public void shouldRewriteLogFiles() throws IOException
@@ -231,10 +245,9 @@ public class LegacyLogsTest
 
     private static LogEntry createNode( int id )
     {
-        Command.NodeCommand command = new Command.NodeCommand();
-        NodeRecord before = new NodeRecord( id, false, NO_NEXT_REL, NO_NEXT_REL );
-        NodeRecord after = new NodeRecord( id, true, NO_NEXT_REL, NO_NEXT_REL );
-        command.init( before, after );
+        NodeRecord before = new NodeRecord( id ).initialize( false, NO_NEXT_REL, false, NO_NEXT_REL, NO_LABELS );
+        NodeRecord after = new NodeRecord( id ).initialize( true, NO_NEXT_REL, false, NO_NEXT_REL, NO_LABELS );
+        Command.NodeCommand command = new Command.NodeCommand( before, after );
         return new LogEntryCommand( command );
     }
 

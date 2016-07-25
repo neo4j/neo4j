@@ -46,21 +46,18 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.RepeatRule;
-import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.tooling.GlobalGraphOperations;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
-
-import static java.lang.String.format;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.helpers.collection.Iterators.loop;
 
 /**
  * This test stress tests unique constraints in a setup where writes are being issued against a slave.
@@ -542,7 +539,7 @@ public class PropertyConstraintsStressIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+                for ( Relationship relationship : db.getAllRelationships() )
                 {
                     if ( relationship.getType().name().equals( type ) )
                     {

@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.Arrays;
-import java.util.Collection;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.test.LoggerRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.LoggerRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -66,13 +66,13 @@ public class ClusterFailoverIT
     {
         // given
         ClusterManager clusterManager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "failover" ) ).
-        withProvider( ClusterManager.clusterOfSize( clusterSize ) )
+        withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                     ClusterSettings.heartbeat_interval.name(), "1" ) )
                 .build();
 
         clusterManager.start();
-        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+        ClusterManager.ManagedCluster cluster = clusterManager.getCluster();
 
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
         HighlyAvailableGraphDatabase oldMaster = cluster.getMaster();

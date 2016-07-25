@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.consistency.checking.full.MultiPassStore;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -35,7 +34,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.consistency.store.RecordReference.SkippingReference.skipReference;
 
 public class FilteringRecordAccess extends DelegatingRecordAccess
@@ -99,15 +97,9 @@ public class FilteringRecordAccess extends DelegatingRecordAccess
     @Override
     public Iterator<PropertyRecord> rawPropertyChain( long firstId )
     {
-        return new FilteringIterator<>( super.rawPropertyChain( firstId ), new Predicate<PropertyRecord>()
-        {
-            @Override
-            public boolean accept( PropertyRecord item )
-            {
-                return shouldCheck( item.getId() /*for some reason we don't care about the id*/,
-                        MultiPassStore.PROPERTIES );
-            }
-        } );
+        return new FilteringIterator<>( super.rawPropertyChain( firstId ),
+                item -> shouldCheck( item.getId() /*for some reason we don't care about the id*/,
+                        MultiPassStore.PROPERTIES ) );
     }
 
     @Override

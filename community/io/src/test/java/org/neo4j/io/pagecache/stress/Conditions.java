@@ -21,36 +21,22 @@ package org.neo4j.io.pagecache.stress;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 
 import static java.lang.System.currentTimeMillis;
 
 public class Conditions
 {
-    public static Condition numberOfEvictions( final PageCacheMonitor monitor,
+    public static Condition numberOfEvictions( final PageCacheCounters monitor,
                                                final long desiredNumberOfEvictions )
     {
-        return new Condition()
-        {
-            @Override
-            public boolean fulfilled()
-            {
-                return monitor.countEvictions() > desiredNumberOfEvictions;
-            }
-        };
+        return () -> monitor.evictions() > desiredNumberOfEvictions;
     }
 
     public static Condition timePeriod( final int duration, final TimeUnit timeUnit )
     {
         final long endTimeInMilliseconds = currentTimeMillis() + timeUnit.toMillis( duration );
 
-        return new Condition()
-        {
-            @Override
-            public boolean fulfilled()
-            {
-                return currentTimeMillis() > endTimeInMilliseconds;
-            }
-        };
+        return () -> currentTimeMillis() > endTimeInMilliseconds;
     }
 }

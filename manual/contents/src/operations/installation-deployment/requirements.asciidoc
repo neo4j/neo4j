@@ -53,9 +53,9 @@ Other distributions, including all distributions of Neo4j Enterprise Edition, re
 
 Java::
 +
-http://openjdk.java.net/[OpenJDK 8 (preferred) or 7] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 8 (preferred) or 7]
+http://openjdk.java.net/[OpenJDK 8] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 8]
 +
-http://www.ibm.com/developerworks/java/jdk/[IBM Java 8 (preferred) or 7] (POWER8 only)
+http://www.ibm.com/developerworks/java/jdk/[IBM Java 8] (POWER8 only)
 +
 Operating Systems::
 +
@@ -67,10 +67,9 @@ Architectures::
 +
 x86
 +
-OpenPOWER (POWER8, requires IBM Java or OpenJDK, version 7 or 8)
-
+OpenPOWER (POWER8, requires IBM Java or OpenJDK, version 8)
 
 [IMPORTANT]
 --
-It is strongly recommended to use an up-to-date Java release as there are issues in early versions of both Java 7 and Java 8 that are known to adversely affect Neo4j.
+It is strongly recommended to use an up-to-date Java release as there are issues in early versions of Java 8 that are known to adversely affect Neo4j.
 --

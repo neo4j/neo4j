@@ -19,10 +19,9 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.neo4j.function.IntPredicate;
-import org.neo4j.function.primitive.PrimitiveIntPredicate;
+import java.util.function.IntPredicate;
 
-public interface PrimitiveIntSet extends PrimitiveIntCollection, IntPredicate, PrimitiveIntPredicate
+public interface PrimitiveIntSet extends PrimitiveIntCollection, IntPredicate
 {
     boolean add( int value );
 
@@ -31,11 +30,4 @@ public interface PrimitiveIntSet extends PrimitiveIntCollection, IntPredicate, P
     boolean contains( int value );
 
     boolean remove( int value );
-
-    /**
-     * @deprecated use {@link #contains(int)} instead, or {@link #test(int)} if a predicate is required
-     */
-    @Deprecated
-    @Override
-    boolean accept( int value );
 }

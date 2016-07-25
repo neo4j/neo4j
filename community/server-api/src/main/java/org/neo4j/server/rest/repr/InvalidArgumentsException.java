@@ -31,6 +31,6 @@ public class InvalidArgumentsException extends BadInputException
     @Override
     public Status status()
     {
-        return Status.Statement.InvalidArguments;
+        return Status.Statement.ArgumentError;
     }
 }

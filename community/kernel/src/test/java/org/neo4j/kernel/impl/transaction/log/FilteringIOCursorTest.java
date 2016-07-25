@@ -25,12 +25,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.helpers.Predicates;
+import org.neo4j.cursor.IOCursor;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.Predicates.in;
-import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.function.Predicates.in;
+import static org.neo4j.function.Predicates.not;
+import static org.neo4j.function.Predicates.alwaysTrue;
 
 public class FilteringIOCursorTest
 {
@@ -41,7 +42,7 @@ public class FilteringIOCursorTest
         String[] strings = { "a", "b", "c" };
 
         IOCursor<String> delegate = new ArrayIOCursor<>( strings );
-        FilteringIOCursor<String> cursor = new FilteringIOCursor<>( delegate, Predicates.<String>TRUE() );
+        FilteringIOCursor<String> cursor = new FilteringIOCursor<>( delegate, alwaysTrue() );
 
         assertEquals( asList( strings ), extractCursorContent( cursor ) );
     }

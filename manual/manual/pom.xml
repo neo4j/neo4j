@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-manual</artifactId>
-  <version>2.3.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
 
   <name>Neo4j - Reference Manual</name>
   <description>Neo4j Reference Manual.</description>
@@ -35,7 +35,7 @@
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-    <url>https://github.com/neo4j/neo4j/</url>
+    <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
   <licenses>
@@ -204,23 +204,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>execute-asciidoc-for-upgrades</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <executable>${docs.tools}/bin/asciidoc/asciidoc.py</executable>
-              <arguments>
-                <argument>--backend=docbook</argument>
-                <argument>--attribute=neo4j-version=${project.version}</argument>
-                <argument>--attribute=upgradetext</argument>
-                <argument>--out-file=${project.build.directory}/upgrade/upgrades.xml</argument>
-                <argument>${docs.sources}/neo4j-docs-jar/ops/upgrades.asciidoc</argument>
-              </arguments>
-            </configuration>
-          </execution>
-          <execution>
             <id>validate-xml</id>
             <phase>verify</phase>
             <goals><goal>java</goal></goals>
@@ -231,20 +214,6 @@
               <arguments>
                 <argument>file://${docs.resources}/docbook-schema/docbook.xsd</argument>
                 <argument>file://${project.build.directory}/neo4j-manual-html.xml</argument>
-              </arguments>
-            </configuration>
-          </execution>
-          <execution>
-            <id>validate-upgrade-xml</id>
-            <phase>verify</phase>
-            <goals><goal>java</goal></goals>
-            <configuration>
-              <mainClass>org.neo4j.doc.docbook.Validate</mainClass>
-              <includePluginDependencies>true</includePluginDependencies>
-              <includeProjectDependencies>false</includeProjectDependencies>
-              <arguments>
-                <argument>file://${docs.resources}/docbook-schema/docbook.xsd</argument>
-                <argument>${project.build.directory}/upgrade/upgrades.xml</argument>
               </arguments>
             </configuration>
           </execution>
@@ -273,41 +242,6 @@
         <artifactId>gmaven-plugin</artifactId>
         <version>1.5</version>
         <executions>
-          <execution>
-            <id>create-upgrade-dir</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>execute</goal>
-            </goals>
-            <configuration>
-              <properties>
-                <upgradeDir>${project.build.directory}/upgrade</upgradeDir>
-              </properties>
-              <source>
-                new File( project.properties.upgradeDir ).mkdirs()
-              </source>
-            </configuration>
-          </execution>
-          <execution>
-            <id>transform-upgrade-html-to-text</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>execute</goal>
-            </goals>
-            <configuration>
-              <properties>
-                <upgradehtmlLocation>file://${project.build.directory}/docbkx/html/upgrade/upgrades.html</upgradehtmlLocation>
-                <outputFile>${project.build.directory}/upgrade/UPGRADE.txt</outputFile>
-              </properties>
-              <source>
-                import net.htmlparser.jericho.Source
-                import net.htmlparser.jericho.Renderer
-                Source source = new Source( new URL( project.properties.upgradehtmlLocation ) )
-                Renderer renderer = source.getRenderer().setMaxLineLength( 80 ).setConvertNonBreakingSpaces( true )
-                new File( project.properties.outputFile ).write( renderer.toString(), 'UTF-8' )
-              </source>
-            </configuration>
-          </execution>
           <execution>
             <id>setup-logging</id>
             <!-- A bug in the exec-maven-plugin used elsewhere in the build screws up the logging config,
@@ -357,12 +291,9 @@
               <sourceDirectory>${project.build.directory}/manpages</sourceDirectory>
             <postProcess>
               <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j.1" destfile="${project.build.directory}/manpages/neo4j.1.gz"/>
+              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-admin.1" destfile="${project.build.directory}/manpages/neo4j-admin.1.gz"/>
               <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-shell.1" destfile="${project.build.directory}/manpages/neo4j-shell.1.gz"/>
-              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-installer.1" destfile="${project.build.directory}/manpages/neo4j-installer.1.gz"/>
               <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-backup.1" destfile="${project.build.directory}/manpages/neo4j-backup.1.gz"/>
-              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-arbiter.1" destfile="${project.build.directory}/manpages/neo4j-arbiter.1.gz"/>
-              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-coordinator.1" destfile="${project.build.directory}/manpages/neo4j-coordinator.1.gz"/>
-              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-coordinator-shell.1" destfile="${project.build.directory}/manpages/neo4j-coordinator-shell.1.gz"/>
               <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-import.1" destfile="${project.build.directory}/manpages/neo4j-import.1.gz"/>
             </postProcess>
             </configuration>
@@ -442,24 +373,6 @@
                 </copy>
                  -->
               </postProcess>
-            </configuration>
-          </execution>
-          <execution>
-            <id>generate-upgrade-html</id>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>generate-html</goal>
-            </goals>
-            <configuration>
-              <includes>upgrade/upgrades.xml</includes>
-              <calloutGraphics>false</calloutGraphics>
-              <navigGraphics>false</navigGraphics>
-              <admonTextlabel>true</admonTextlabel>
-              <admonGraphics>false</admonGraphics>
-              <htmlCustomization>${docs.resources}/conf/text.xsl</htmlCustomization>
-              <preProcess>
-                <replace file="${project.build.directory}/upgrade/upgrades.xml" encoding="UTF-8" token="&amp;#8594;" value="--&gt;" />
-              </preProcess>
             </configuration>
           </execution>
           <execution>
@@ -586,21 +499,6 @@
               <attach>true</attach>
             </configuration>
           </execution>
-          <execution>
-            <id>upgrade</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>assemblies/upgrade.xml</descriptor>
-              </descriptors>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <appendAssemblyId>true</appendAssemblyId>
-              <attach>true</attach>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
     </plugins>
@@ -641,36 +539,6 @@
         </plugins>
       </build>
     </profile>
-    <profile>
-      <id>publish-manual</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>publish-manual</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>upload-to-servers</id>
-                <phase>deploy</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <executable>${project.build.directory}/../src/build/upload.sh</executable>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
   </profiles>
 
 </project>
-

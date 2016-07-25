@@ -31,16 +31,15 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.api.integrationtest.UniquenessConstraintValidationConcurrencyIT.createNode;
-import static org.neo4j.test.OtherThreadRule.isWaiting;
+import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
 
 public class UniquenessConstraintValidationHAIT
 {
@@ -99,7 +98,6 @@ public class UniquenessConstraintValidationHAIT
             tx.success();
         }
 
-
         // then
         assertFalse( "creating violating data should fail", created.get() );
     }
@@ -153,24 +151,18 @@ public class UniquenessConstraintValidationHAIT
             tx.failure();
         }
 
-
         // then
         assertTrue( "creating data that conflicts only with rolled back data should pass", created.get() );
     }
 
     private static Listener<GraphDatabaseService> uniquenessConstraint( final Label label, final String propertyKey )
     {
-        return new Listener<GraphDatabaseService>()
-        {
-            @Override
-            public void receive( GraphDatabaseService db )
+        return db -> {
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+                db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
 
-                    tx.success();
-                }
+                tx.success();
             }
         };
     }

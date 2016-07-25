@@ -19,15 +19,15 @@
  */
 package org.neo4j.index.timeline;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -36,14 +36,14 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.lucene.LuceneTimeline;
 import org.neo4j.index.lucene.TimelineIndex;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Collections.sort;
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.Iterators.asCollection;
 
 public class TestTimeline
 {
@@ -77,7 +77,7 @@ public class TestTimeline
 
     private EntityCreator<PropertyContainer> relationshipCreator = new EntityCreator<PropertyContainer>()
     {
-        private final RelationshipType type = DynamicRelationshipType.withName( "whatever" );
+        private final RelationshipType type = RelationshipType.withName( "whatever" );
 
         @Override
         public Relationship create()

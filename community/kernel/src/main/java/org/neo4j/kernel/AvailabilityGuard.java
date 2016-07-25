@@ -23,16 +23,13 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
-
-import static org.neo4j.helpers.Listeners.notifyListeners;
-import static org.neo4j.helpers.collection.Iterables.join;
 
 /**
  * The availability guard ensures that the database will only take calls when it is in an ok state.
@@ -43,7 +40,6 @@ import static org.neo4j.helpers.collection.Iterables.join;
  */
 public class AvailabilityGuard
 {
-
     public static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement makes database available: ";
     public static final String DATABASE_UNAVAILABLE_MSG = "Requirement makes database unavailable: ";
 
@@ -112,7 +108,7 @@ public class AvailabilityGuard
     private final AtomicInteger requirementCount = new AtomicInteger( 0 );
     private final Set<AvailabilityRequirement> blockingRequirements = new CopyOnWriteArraySet<>();
     private final AtomicBoolean isShutdown = new AtomicBoolean( false );
-    private Iterable<AvailabilityListener> listeners = Listeners.newListeners();
+    private final Listeners<AvailabilityListener> listeners = new Listeners<>();
     private final Clock clock;
     private final Log log;
 
@@ -139,14 +135,7 @@ public class AvailabilityGuard
             if ( requirementCount.getAndIncrement() == 0 && !isShutdown.get() )
             {
                 log.info( DATABASE_UNAVAILABLE_MSG + requirement.description() );
-                notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
-                {
-                    @Override
-                    public void notify( AvailabilityListener listener )
-                    {
-                        listener.unavailable();
-                    }
-                } );
+                listeners.notify( AvailabilityListener::unavailable );
             }
         }
     }
@@ -168,14 +157,7 @@ public class AvailabilityGuard
             if ( requirementCount.getAndDecrement() == 1 && !isShutdown.get() )
             {
                 log.info( DATABASE_AVAILABLE_MSG + requirement.description() );
-                notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
-                {
-                    @Override
-                    public void notify( AvailabilityListener listener )
-                    {
-                        listener.available();
-                    }
-                } );
+                listeners.notify( AvailabilityListener::available );
             }
         }
     }
@@ -194,19 +176,12 @@ public class AvailabilityGuard
 
             if ( requirementCount.get() == 0 )
             {
-                notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
-                {
-                    @Override
-                    public void notify( AvailabilityListener listener )
-                    {
-                        listener.unavailable();
-                    }
-                } );
+                listeners.notify( AvailabilityListener::unavailable );
             }
         }
     }
 
-    private static enum Availability
+    private enum Availability
     {
         AVAILABLE,
         UNAVAILABLE,
@@ -221,6 +196,14 @@ public class AvailabilityGuard
     public boolean isAvailable()
     {
         return availability() == Availability.AVAILABLE;
+    }
+
+    /**
+     * Check if the database has been shut down.
+     */
+    public boolean isShutdown()
+    {
+        return availability() == Availability.SHUTDOWN;
     }
 
     /**
@@ -317,7 +300,7 @@ public class AvailabilityGuard
      */
     public void addListener( AvailabilityListener listener )
     {
-        listeners = Listeners.addListener( listener, listeners );
+        listeners.add( listener );
     }
 
     /**
@@ -327,7 +310,7 @@ public class AvailabilityGuard
      */
     public void removeListener( AvailabilityListener listener )
     {
-        listeners = Listeners.removeListener( listener, listeners );
+        listeners.remove( listener );
     }
 
     /**
@@ -337,19 +320,12 @@ public class AvailabilityGuard
     {
         if ( blockingRequirements.size() > 0 || requirementCount.get() > 0 )
         {
-            String causes = join( ", ", Iterables.map( DESCRIPTION, blockingRequirements ) );
+            String causes = Iterables.join( ", ", Iterables.map( DESCRIPTION, blockingRequirements ) );
             return requirementCount.get() + " reasons for blocking: " + causes + ".";
         }
         return "No blocking components";
     }
 
     public static final Function<AvailabilityRequirement, String> DESCRIPTION =
-            new Function<AvailabilityRequirement, String>()
-            {
-                @Override
-                public String apply( AvailabilityRequirement availabilityRequirement )
-                {
-                    return availabilityRequirement.description();
-                }
-            };
+            AvailabilityRequirement::description;
 }

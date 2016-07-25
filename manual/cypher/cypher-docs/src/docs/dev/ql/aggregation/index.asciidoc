@@ -13,7 +13,7 @@ include::includes/cypher-aggregation-graph.asciidoc[]
 [abstract]
 `COUNT` is used to count the number of rows.
 
-`COUNT` can be used in two forms -- `COUNT(*)` which just counts the number of matching rows, and `COUNT(<identifier>)`, which counts the number of non-`NULL` values in `<identifier>`.
+`COUNT` can be used in two forms -- `COUNT(*)` which just counts the number of matching rows, and `COUNT(<expression>)`, which counts the number of non-`NULL` values in `<expression>`.
 
 :leveloffset: 3
 

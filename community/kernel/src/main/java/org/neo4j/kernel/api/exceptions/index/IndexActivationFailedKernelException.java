@@ -26,6 +26,6 @@ public class IndexActivationFailedKernelException extends KernelException
 {
     public IndexActivationFailedKernelException( Throwable cause, String message )
     {
-        super( Status.Schema.IndexCreationFailure, cause, message );
+        super( Status.Schema.IndexCreationFailed, cause, message );
     }
 }

@@ -99,7 +99,6 @@ public class NumericRangeMatchPredicateTest
         assertTrue( range.inRange( 14 ) );
     }
 
-
     @Test
     public void testComparingBigDoublesAndLongs()
     {
@@ -115,10 +114,6 @@ public class NumericRangeMatchPredicateTest
 
         assertFalse( range.inRange( null ) );
     }
-
-
-
-
 
     private NumericRangeMatchPredicate createRange( Number lower, boolean includeLower, Number upper, boolean includeUpper )
     {

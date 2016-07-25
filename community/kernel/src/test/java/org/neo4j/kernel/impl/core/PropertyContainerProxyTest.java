@@ -27,12 +27,12 @@ import java.util.Map;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.CleanupRule;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.Assert.assertObjectOrArrayEquals;
+import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 
 public abstract class PropertyContainerProxyTest
 {

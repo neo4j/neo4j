@@ -34,14 +34,9 @@ org.neo4j.shell.kernel.apps.Rmnode
 org.neo4j.shell.kernel.apps.Rollback
 org.neo4j.shell.kernel.apps.Set
 org.neo4j.shell.kernel.apps.Trav
-org.neo4j.shell.kernel.apps.Index
 org.neo4j.shell.kernel.apps.Gsh
 org.neo4j.shell.kernel.apps.Jsh
 org.neo4j.shell.kernel.apps.Dbinfo
 org.neo4j.shell.kernel.apps.IndexProviderShellApp
 org.neo4j.shell.kernel.apps.Schema
-org.neo4j.shell.apps.ha.Hainfo
-org.neo4j.shell.apps.ha.Pullupdates
-org.neo4j.shell.apps.ha.Shutdown
-org.neo4j.shell.apps.ha.Dumplocks
 org.neo4j.shell.apps.extra.PathShellApp

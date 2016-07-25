@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2015 "Neo Technology,"
+# Copyright (c) 2002-2016 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # This file is part of Neo4j.
@@ -20,13 +20,14 @@
 
 <#
 .SYNOPSIS
+TODO UPDATE HELPTEXT
 Retrieves properties about a Neo4j installation
 
 .DESCRIPTION
 Retrieves properties about a Neo4j installation
 
 .PARAMETER Neo4jServer
-An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
+An object representing a valid Neo4j Server object
 
 .PARAMETER ConfigurationFile
 The name of the configuration file or files to parse.  If not specified the default set of all configuration files are used.  Do not use the full path, just the filename, the path is relative to '[Neo4jHome]\conf'
@@ -35,24 +36,19 @@ The name of the configuration file or files to parse.  If not specified the defa
 The name of the property to retrieve.  If not specified, all properties are returned.
 
 .EXAMPLE
-Get-Neo4jServer -Neo4jHome 'C:\Neo4j'
+Get-Neo4jSetting -Neo4jServer $ServerObject | Format-Table
 
-Retrieves information about the Neo4j installation at C:\Neo4j
-
-.EXAMPLE
-Get-Neo4jSetting | Format-Table
-
-Retrieves all settings for the Neo4j installation as determined by Get-Neo4jHome and display as a table
+Retrieves all settings for the Neo4j installation at $ServerObject
 
 .EXAMPLE
-'C:\Neo4j' | Get-Neo4jSetting -Name 'httpport'
+Get-Neo4jSetting -Neo4jServer $ServerObject -Name 'dbms.active_database'
 
-Retrieves all settings with the name 'httpport' from the Neo4j installation at 'C:\Neo4j'
+Retrieves all settings with the name 'dbms.active_database' from the Neo4j installation at $ServerObject
 
 .EXAMPLE
-'C:\Neo4j' | Get-Neo4jSetting -Name 'httpport' -ConfigurationFile @('neo4j.properties','neo4j-server.properties')
+Get-Neo4jSetting -Neo4jServer $ServerObject -Name 'dbms.active_database' -ConfigurationFile 'neo4j.conf'
 
-Retrieves all settings with the name 'httpport' from the Neo4j installation at 'C:\Neo4j' in configuration files called 'neo4j.properties' or 'neo4j-server.properties'
+Retrieves all settings with the name 'dbms.active_database' from the Neo4j installation at $ServerObject in 'neo4j.conf'
 
 .OUTPUTS
 System.Management.Automation.PSCustomObject
@@ -65,21 +61,20 @@ Properties;
 'Neo4jHome' : Path to the Neo4j installation
 
 .LINK
-Get-Neo4jHome  
-
-.LINK
 Get-Neo4jServer 
+
+.NOTES
+This function is private to the powershell module
 
 #>
 Function Get-Neo4jSetting
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
   param (
-    [Parameter(Mandatory=$false,ValueFromPipeline=$true)]
-    [object]$Neo4jServer = ''
+    [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
+    [PSCustomObject]$Neo4jServer
 
     ,[Parameter(Mandatory=$false)]
-
     [string[]]$ConfigurationFile = $null
 
     ,[Parameter(Mandatory=$false)]
@@ -93,36 +88,18 @@ Function Get-Neo4jSetting
   Process
   {
     # Get the Neo4j Server information
-    if ($Neo4jServer -eq $null) { $Neo4jServer = '' }
-    switch ($Neo4jServer.GetType().ToString())
-    {
-      'System.Management.Automation.PSCustomObject'
-      {
-        if (-not (Confirm-Neo4jServerObject -Neo4jServer $Neo4jServer))
-        {
-          Write-Error "The specified Neo4j Server object is not valid"
-          return
-        }
-        $thisServer = $Neo4jServer
-      }      
-      default
-      {
-        $thisServer = Get-Neo4jServer -Neo4jHome $Neo4jServer
-      }
-    }
-    if ($thisServer -eq $null) { return }
+    if ($Neo4jServer -eq $null) { return }
 
     # Set the default list of configuration files    
     if ($ConfigurationFile -eq $null)
     {
-      $ConfigurationFile = ('neo4j.properties','neo4j-server.properties','neo4j-wrapper.conf')
-      if ($thisServer.ServerType -eq 'Enterprise') { $ConfigurationFile += 'arbiter-wrapper.conf' }
+      $ConfigurationFile = ('neo4j.conf','neo4j-wrapper.conf')
     }
    
     $ConfigurationFile | ForEach-Object -Process `
     {
       $filename = $_
-      $filePath = Join-Path -Path $thisServer.Home -ChildPath "conf\$filename"
+      $filePath = Join-Path -Path $Neo4jServer.ConfDir -ChildPath $filename
       if (Test-Path -Path $filePath)
       {
         $keyPairsFromFile = Get-KeyValuePairsFromConfFile -filename $filePath        
@@ -141,7 +118,7 @@ Function Get-Neo4jSetting
             'Value' = $_.Value;
             'ConfigurationFile' = $filename;
             'IsDefault' = $false;
-            'Neo4jHome' = $thisServer.Home;
+            'Neo4jHome' = $Neo4jServer.Home;
           }
 
           Write-Output (New-Object -TypeName PSCustomObject -Property $properties)

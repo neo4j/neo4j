@@ -121,6 +121,8 @@ public abstract class Service
     private static final boolean printServiceLoaderStackTraces =
             flag( Service.class, "printServiceLoaderStackTraces", false );
 
+    final Set<String> keys;
+
     /**
      * Designates that a class implements the specified service and should be
      * added to the services listings file (META-INF/services/[service-name]).
@@ -145,41 +147,6 @@ public abstract class Service
     }
 
     /**
-     * A base class for services, similar to {@link Service}, that compares keys
-     * using case insensitive comparison instead of exact comparison.
-     *
-     * @author Tobias Ivarsson
-     */
-    public static abstract class CaseInsensitiveService extends Service
-    {
-        /**
-         * Create a new instance of a service implementation identified with the
-         * specified key(s).
-         *
-         * @param key     the main key for identifying this service implementation
-         * @param altKeys alternative spellings of the identifier of this
-         *                service implementation
-         */
-        protected CaseInsensitiveService( String key, String... altKeys )
-        {
-            super( key, altKeys );
-        }
-
-        @Override
-        final public boolean matches( String key )
-        {
-            for ( String id : keys )
-            {
-                if ( id.equalsIgnoreCase( key ) )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    /**
      * Load all implementations of a Service.
      *
      * @param <T>  the type of the Service
@@ -197,6 +164,25 @@ public abstract class Service
     }
 
     /**
+     * Load the Service implementation with the specified key. This method will return null if requested service not found.
+     * @param type the type of the Service to load
+     * @param key the key that identifies the desired implementation
+     * @param <T> the type of the Service to load
+     * @return requested service
+     */
+    public static <T extends Service> T loadSilently( Class<T> type, String key )
+    {
+        for ( T service : load( type ) )
+        {
+            if ( service.matches( key ) )
+            {
+                return service;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Load the Service implementation with the specified key. This method should never return null.
      *
      * @param <T>  the type of the Service
@@ -206,19 +192,15 @@ public abstract class Service
      */
     public static <T extends Service> T load( Class<T> type, String key )
     {
-        for ( T impl : load( type ) )
+        T service = loadSilently( type, key );
+        if ( service == null )
         {
-            if ( impl.matches( key ) )
-            {
-                return impl;
-            }
+            throw new NoSuchElementException( String.format(
+                    "Could not find any implementation of %s with a key=\"%s\"",
+                    type.getName(), key ) );
         }
-        throw new NoSuchElementException( String.format(
-                "Could not find any implementation of %s with a key=\"%s\"",
-                type.getName(), key ) );
+        return service;
     }
-
-    final Set<String> keys;
 
     /**
      * Create a new instance of a service implementation identified with the
@@ -301,10 +283,7 @@ public abstract class Service
                             }
                             catch ( Throwable e )
                             {
-                                if ( printServiceLoaderStackTraces )
-                                {
-                                    e.printStackTrace();
-                                }
+                                e.printStackTrace();
                             }
                         }
                         return null;

@@ -26,14 +26,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.store.PreAllocatedRecords;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static org.mockito.Mockito.verify;
-
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 
@@ -48,7 +47,8 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
         super( new NodeDynamicLabelOrphanChainStartCheck(), DynamicLabelConsistencyReport.class, new int[0] );
     }
 
-    @Test @Ignore("2013-07-17 Revisit once we store sorted label ids")
+    @Test
+    @Ignore("2013-07-17 Revisit once we store sorted label ids")
     public void shouldReportOrphanRecordsThatAreNotFirst() throws Exception
     {
         // given
@@ -90,11 +90,11 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
     public void shouldReportOwningNodeRecordNotInUse() throws Exception
     {
         // given
-        NodeRecord nodeRecord = notInUse( new NodeRecord( 12l, false, -1, -1 ) );
+        NodeRecord nodeRecord = notInUse( new NodeRecord( 12L, false, -1, -1 ) );
         add( nodeRecord );
 
         DynamicRecord nodeDynamicLabelRecord = inUse( new DynamicRecord( 0 ) );
-        allocateFromNumbers( new ArrayList<DynamicRecord>(), new long[]{12l}, iterator( nodeDynamicLabelRecord ),
+        allocateFromNumbers( new ArrayList<DynamicRecord>(), new long[]{12L}, iterator( nodeDynamicLabelRecord ),
                 RECORD_ALLOCATOR );
 
         // when
@@ -108,7 +108,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
     public void shouldReportOwningNodeRecordNotPointingBack() throws Exception
     {
         // given
-        long nodeId = 12l;
+        long nodeId = 12L;
 
         Collection<DynamicRecord> validLabelRecords = new ArrayList<>();
         allocateFromNumbers( validLabelRecords, new long[] {nodeId}, iterator( inUse( new DynamicRecord( 0 ) ) ),
@@ -122,7 +122,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
         add( nodeRecord );
 
         // when
-        DynamicLabelConsistencyReport report = check( single( validLabelRecords.iterator() ) );
+        DynamicLabelConsistencyReport report = check( Iterators.single( validLabelRecords.iterator() ) );
 
         // then
         verify( report ).orphanDynamicLabelRecordDueToInvalidOwner( nodeRecord );

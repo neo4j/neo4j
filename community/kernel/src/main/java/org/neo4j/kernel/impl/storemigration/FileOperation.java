@@ -44,13 +44,17 @@ public enum FileOperation
         @Override
         public void perform( FileSystemAbstraction fs, String fileName,
                 File fromDirectory, boolean skipNonExistentFromFile,
-                File toDirectory, boolean overwrite )
+                File toDirectory, ExistingTargetStrategy existingTargetStrategy )
                 throws IOException
         {
             File fromFile = fromFile( fs, fromDirectory, fileName, skipNonExistentFromFile );
             if ( fromFile != null )
             {
-                fs.copyFile( fromFile, toFile( fs, toDirectory, fileName, overwrite ) );
+                File toFile = toFile( fs, toDirectory, fileName, existingTargetStrategy );
+                if ( toFile != null )
+                {
+                    fs.copyFile( fromFile, toFile );
+                }
             }
         }
     },
@@ -68,14 +72,16 @@ public enum FileOperation
         @Override
         public void perform( FileSystemAbstraction fs, String fileName,
                 File fromDirectory, boolean skipNonExistentFromFile,
-                File toDirectory, boolean overwrite )
+                File toDirectory, ExistingTargetStrategy existingTargetStrategy )
                 throws IOException
         {
             File fromFile = fromFile( fs, fromDirectory, fileName, skipNonExistentFromFile );
             if ( fromFile != null )
             {
-                toFile( fs, toDirectory, fileName, overwrite );
-                fs.moveToDirectory( fromFile, toDirectory );
+                if ( toFile( fs, toDirectory, fileName, existingTargetStrategy ) != null )
+                {
+                    fs.moveToDirectory( fromFile, toDirectory );
+                }
             }
         }
     },
@@ -84,7 +90,7 @@ public enum FileOperation
         @Override
         public void perform( FileSystemAbstraction fs, String fileName,
                 File directory, boolean skipNonExistentFromFile,
-                File unusedFile, boolean unusedBoolean )
+                File unusedFile, ExistingTargetStrategy unused )
                 throws IOException
         {
             File file = fromFile( fs, directory, fileName, skipNonExistentFromFile );
@@ -97,7 +103,7 @@ public enum FileOperation
 
     public abstract void perform( FileSystemAbstraction fs, String fileName,
             File fromDirectory, boolean skipNonExistentFromFile,
-            File toDirectory, boolean overwrite ) throws IOException;
+            File toDirectory, ExistingTargetStrategy existingTargetStrategy ) throws IOException;
 
     protected File fromFile( FileSystemAbstraction fs, File directory, String name, boolean skipNonExistent )
     {
@@ -111,12 +117,24 @@ public enum FileOperation
         return fromFile;
     }
 
-    protected File toFile( FileSystemAbstraction fs, File directory, String name, boolean overwrite )
+    protected File toFile( FileSystemAbstraction fs, File directory, String name,
+            ExistingTargetStrategy existingTargetStrategy )
     {
         File file = new File( directory, name );
-        if ( overwrite )
+        if ( fs.fileExists( file ) )
         {
-            fs.deleteFile( file );
+            switch ( existingTargetStrategy )
+            {
+            case FAIL:
+                // Let the copy operation fail. Is this a good idea? This is how we did before this switch case
+            case OVERWRITE:
+                fs.deleteFile( file );
+                return file;
+            case SKIP:
+                return null;
+            default:
+                throw new IllegalStateException( existingTargetStrategy.name() );
+            }
         }
         return file;
     }

@@ -19,14 +19,15 @@
  */
 package org.neo4j.ext.monitorlogging;
 
+import java.io.InputStream;
+import java.util.Properties;
+
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import java.io.InputStream;
-import java.util.Properties;
 
 @Service.Implementation(KernelExtensionFactory.class)
 public class MonitorLoggingExtensionFactory  extends KernelExtensionFactory<MonitorLoggingExtensionFactory.Dependencies> {
@@ -47,7 +48,7 @@ public class MonitorLoggingExtensionFactory  extends KernelExtensionFactory<Moni
     }
 
     @Override
-    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         LogService logService = dependencies.getLogService();
         Properties props = loadProperties( logService );

@@ -41,7 +41,6 @@ import org.neo4j.server.rest.web.ExtensionService;
 import org.neo4j.server.rest.web.ResourcesService;
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
 import org.neo4j.server.rest.web.TransactionalService;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
@@ -144,7 +143,7 @@ public class RESTApiModule implements ServerModule
     private void setupRequestTimeLimit()
     {
         Long limit = config.get( ServerSettings.webserver_limit_execution_time );
-        
+
         if ( limit != null )
         {
             try
@@ -156,14 +155,14 @@ public class RESTApiModule implements ServerModule
             catch ( IllegalArgumentException e )
             {
                 //TODO enable guard and restart EmbeddedGraphdb
-                throw new RuntimeException( "Unable to use guard, you have to enable guard in neo4j.properties", e );
+                throw new RuntimeException( "Unable to use guard, you have to enable guard in neo4j.conf", e );
             }
         }
     }
 
     private URI restApiUri() throws URISyntaxException
     {
-        return config.get( ServerInternalSettings.rest_api_path );
+        return config.get( ServerSettings.rest_api_path );
     }
 
     private void loadPlugins()

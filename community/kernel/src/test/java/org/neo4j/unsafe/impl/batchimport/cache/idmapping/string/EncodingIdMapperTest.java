@@ -40,8 +40,8 @@ import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.test.RandomRule;
 import org.neo4j.test.RepeatRule;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
@@ -66,7 +66,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.progress.ProgressListener.NONE;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
@@ -112,15 +111,9 @@ public class EncodingIdMapperTest
                     private int i;
 
                     @Override
-                    public boolean hasNext()
+                    protected Object fetchNextOrNull()
                     {
-                        return i < 300_000;
-                    }
-
-                    @Override
-                    public Object next()
-                    {
-                        return "" + (i++);
+                        return i < 300_000 ? "" + (i++) : null;
                     }
                 };
             }
@@ -784,6 +777,8 @@ public class EncodingIdMapperTest
         abstract Factory<Object> data( Random random );
     }
 
-    public final @Rule RandomRule random = new RandomRule().withSeed( 1436724681847L );
-    public final @Rule RepeatRule repeater = new RepeatRule();
+    @Rule
+    public final RandomRule random = new RandomRule().withSeed( 1436724681847L );
+    @Rule
+    public final RepeatRule repeater = new RepeatRule();
 }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.ha.correctness;
 
-import java.net.URI;
-
 import org.junit.Test;
+
+import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
@@ -33,7 +33,7 @@ import org.neo4j.logging.NullLogProvider;
 import static java.util.Arrays.asList;
 import static junit.framework.TestCase.assertEquals;
 import static org.neo4j.ha.correctness.ClusterInstance.newClusterInstance;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class TestProver
 {

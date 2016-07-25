@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 /**
  * {@link StoreAccess} that decorates each store, feeding stats about access into {@link AccessStatistics}.
@@ -63,17 +64,10 @@ public class AccessStatsKeepingStoreAccess extends StoreAccess
         }
 
         @Override
-        public RECORD getRecord( long id )
+        public RECORD getRecord( long id, RECORD record, RecordLoad load )
         {
             accessStats.upRead( id );
-            return super.getRecord( id );
-        }
-
-        @Override
-        public RECORD forceGetRecord( long id )
-        {
-            accessStats.upRead( id );
-            return super.forceGetRecord( id );
+            return super.getRecord( id, record, load );
         }
     }
 }

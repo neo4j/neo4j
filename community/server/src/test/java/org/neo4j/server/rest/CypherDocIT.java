@@ -29,7 +29,7 @@ import javax.ws.rs.core.Response.Status;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
@@ -160,7 +160,6 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
                         + ".name = {name} RETURN TYPE(r)";
         String response = cypherRestCall( script, Status.OK, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
-
         assertEquals( 2, ( jsonToMap( response ) ).size() );
         assertTrue( response.contains( "know" ) );
         assertTrue( response.contains( "data" ) );
@@ -204,7 +203,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     public void send_query_to_create_multipe_nodes_from_a_map() throws Exception
     {
         data.get();
-        String script = "UNWIND {props} as map CREATE (n:Person) SET n = map RETURN n";
+        String script = "UNWIND {props} AS properties CREATE (n:Person) SET n = properties RETURN n";
         String params = "\"props\" : [ { \"name\" : \"Andres\", \"position\" : \"Developer\" }, { \"name\" : \"Michael\", \"position\" : \"Developer\" } ]";
         String response = cypherRestCall( script, Status.OK, params );
 
@@ -258,7 +257,6 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         String script = "START x  = node:node_auto_index(name={startName}) MATC path = (x-[r]-friend) WHERE friend"
                         + ".name = {name} RETURN TYPE(r)";
         String response = cypherRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
-
 
         Map<String, Object> output = jsonToMap( response );
         assertTrue( output.containsKey( "message" ) );
@@ -319,7 +317,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         setProperty("I", "array1", new int[] { 1, 2, 3 } );
         setProperty("I", "array2", new String[] { "a", "b", "c" } );
 
-        String script = "MATCH n WHERE id(n) = %I% RETURN n.array1, n.array2";
+        String script = "MATCH (n) WHERE id(n) = %I% RETURN n.array1, n.array2";
         String response = cypherRestCall( script, Status.OK );
 
         assertThat( response, anyOf( containsString( "[ 1, 2, 3 ]" ), containsString( "[1,2,3]" )) );
@@ -352,7 +350,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertThat( responseMap.keySet(), containsInAnyOrder(
                 "message", "exception", "fullname", "stackTrace", "cause", "errors" ) );
         assertThat( response, containsString( "message" ) );
-        assertThat( ((String) responseMap.get( "message" )), containsString( "frien not defined" ) );
+        assertThat( ((String) responseMap.get( "message" )), containsString( "Variable `frien` not defined" ) );
     }
 
     @SafeVarargs

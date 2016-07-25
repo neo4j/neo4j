@@ -51,7 +51,7 @@ public class CalculateDenseNodesStepTest
         NodeRelationshipCache cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, -1 );
         Step<long[]> step = new CalculateDenseNodesStep( control, config, cache );
         step.start( 0 );
-        maxOutNumberOfProcessors( step );
+        step.processors( 100 );
 
         // WHEN sending many batches, all which "happens" to have ids of the same radix, in fact
         // this test "happens" to send the same batch of ids over and over, which actually may happen in read life,
@@ -68,7 +68,7 @@ public class CalculateDenseNodesStepTest
         // THEN
         for ( long id : ids )
         {
-            assertEquals( numberOfBatches, cache.getCount( id, 0, null /*shouldn't be used here anyway*/ ) );
+            assertEquals( numberOfBatches, cache.getCount( id, null /*shouldn't be used here anyway*/ ) );
         }
     }
 
@@ -88,13 +88,5 @@ public class CalculateDenseNodesStepTest
             ids[i] = i*10 + radixOutOfTen;
         }
         return ids;
-    }
-
-    private void maxOutNumberOfProcessors( Step<?> step )
-    {
-        for ( int i = 0; i < 100 && step.incrementNumberOfProcessors(); i++ )
-        {
-            // Then increment number of processors
-        }
     }
 }

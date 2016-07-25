@@ -34,9 +34,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.Iterables;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.helpers.collection.Iterators.loop;
 
 public class CypherResultSubGraph implements SubGraph
 {
@@ -59,7 +59,7 @@ public class CypherResultSubGraph implements SubGraph
     void addNode( long id, Node data )
     {
         nodes.put( id, data );
-        labels.addAll( asCollection( data.getLabels() ) );
+        labels.addAll( Iterables.asCollection( data.getLabels() ) );
     }
 
     public void add( Relationship rel )

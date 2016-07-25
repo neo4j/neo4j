@@ -34,12 +34,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.ResourceRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.ResourceRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -47,13 +47,16 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileFormatTest.Data.data;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileFormatTest.DataEntry.entry;
-import static org.neo4j.test.ResourceRule.testPath;
+import static org.neo4j.test.rule.ResourceRule.testPath;
 
 public class KeyValueStoreFileFormatTest
 {
-    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    public final @Rule PageCacheRule pages = new PageCacheRule();
-    public final @Rule ResourceRule<File> storeFile = testPath();
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pages = new PageCacheRule();
+    @Rule
+    public final ResourceRule<File> storeFile = testPath();
 
     @Before
     public void existingStoreDirectory()
@@ -273,7 +276,6 @@ public class KeyValueStoreFileFormatTest
             headers.put( "one", new byte[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,} );
             headers.put( "two", new byte[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,} );
 
-
             Data data = data( // two full pages (and nothing more)
                     // page 0
                     entry( bytes( 12 ), bytes( 'v', 'a', 'l', 1 ) ),
@@ -288,7 +290,6 @@ public class KeyValueStoreFileFormatTest
             {
             }
         }
-
 
         {
             // when failing on creating the next version of that file
@@ -342,7 +343,6 @@ public class KeyValueStoreFileFormatTest
             read = stream.read( readEntry );
             assertEquals( size, read );
             assertArrayEquals( new byte[]{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}, readEntry );
-
 
             for ( int i = 0; i < headers.size(); i++ )
             {

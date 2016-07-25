@@ -27,14 +27,15 @@ import org.junit.rules.RuleChain;
 
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.DefaultFileSystemRule;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -46,14 +47,14 @@ public class StoreSingleRelationshipCursorTest
 
     private static final long RELATIONSHIP_ID = 1L;
 
+    private NeoStores neoStores;
     private final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( pageCacheRule )
             .around( fileSystemRule );
-
-    private NeoStores neoStores;
 
     @After
     public void tearDown()
@@ -68,15 +69,14 @@ public class StoreSingleRelationshipCursorTest
     public void setUp()
     {
         StoreFactory storeFactory = getStoreFactory();
-        neoStores = storeFactory.openNeoStores( true, NeoStores.StoreType.RELATIONSHIP_GROUP,
-                NeoStores.StoreType.RELATIONSHIP );
+        neoStores = storeFactory.openAllNeoStores( true );
     }
 
     @Test
     public void retrieveUsedRelationship() throws Exception
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        createRelationshipRecrod( relationshipStore, true );
+        createRelationshipRecord( relationshipStore, true );
 
         try ( StoreSingleRelationshipCursor cursor = createRelationshipCursor() )
         {
@@ -87,10 +87,11 @@ public class StoreSingleRelationshipCursorTest
     }
 
     @Test
-    public void impossibleToRetrieveUnusedRelationship()
+    public void retrieveUnusedRelationship()
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        createRelationshipRecrod( relationshipStore, false );
+        relationshipStore.setHighId( 10 );
+        createRelationshipRecord( relationshipStore, false );
 
         try ( StoreSingleRelationshipCursor cursor = createRelationshipCursor() )
         {
@@ -99,32 +100,22 @@ public class StoreSingleRelationshipCursorTest
         }
     }
 
-    private void createRelationshipRecrod( RelationshipStore relationshipStore, boolean used )
+    private void createRelationshipRecord( RelationshipStore relationshipStore, boolean used )
     {
-        relationshipStore.forceUpdateRecord(
+       relationshipStore.updateRecord(
                 new RelationshipRecord( RELATIONSHIP_ID, used, 1, 2, 1, -1, -1, -1, -1, true, true ) );
     }
 
     private StoreFactory getStoreFactory()
     {
-        return new StoreFactory( fileSystemRule.get(), testDirectory.directory(),
-                pageCacheRule.getPageCache( fileSystemRule.get() ), NullLogProvider.getInstance() );
+        return new StoreFactory( testDirectory.directory(), pageCacheRule.getPageCache( fileSystemRule.get() ),
+                fileSystemRule.get(), NullLogProvider.getInstance() );
     }
 
     private StoreSingleRelationshipCursor createRelationshipCursor()
     {
-        StoreStatement storeStatement = mock( StoreStatement.class );
-        InstanceCache<StoreSingleRelationshipCursor> instanceCache = new TestCursorCache();
-        return new StoreSingleRelationshipCursor( new RelationshipRecord( -1 ), neoStores, storeStatement,
-                instanceCache, LockService.NO_LOCK_SERVICE );
-    }
-
-    private class TestCursorCache extends InstanceCache<StoreSingleRelationshipCursor>
-    {
-        @Override
-        protected StoreSingleRelationshipCursor create()
-        {
-            return null;
-        }
+        InstanceCache<StoreSingleRelationshipCursor> instanceCache = mock(InstanceCache.class);
+        return new StoreSingleRelationshipCursor( new RelationshipRecord( -1 ), instanceCache,
+                new RecordCursors( neoStores ), LockService.NO_LOCK_SERVICE );
     }
 }

@@ -23,22 +23,19 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Expander;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanderBuilder;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.OrderedByTypeExpander;
-import org.neo4j.kernel.Traversal;
+import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 
 import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
 
 public class TraversalDescriptionBuilder
 {
-
     private final EvaluatorFactory evaluatorFactory;
 
     public TraversalDescriptionBuilder( boolean enableSandboxing )
@@ -128,45 +125,46 @@ public class TraversalDescriptionBuilder
                 pairDescriptions = Arrays.asList( relationshipsDescription );
             }
 
-            Expander expander = createExpander( description );
+            PathExpanderBuilder builder = createExpander( description );
 
             for ( Object pairDescription : pairDescriptions )
             {
                 Map map = (Map) pairDescription;
                 String name = (String) map.get( "type" );
-                RelationshipType type = DynamicRelationshipType.withName( name );
+                RelationshipType type = RelationshipType.withName( name );
                 String directionName = (String) map.get( "direction" );
-                expander = directionName == null ? expander.add( type ) :
-                        expander.add( type, stringToEnum( directionName,
+                builder = directionName == null ? builder.add( type ) :
+                        builder.add( type, stringToEnum( directionName,
                                 RelationshipDirection.class, true ).internal );
             }
+            PathExpander<Object> expander = builder.build();
             result = result.expand( expander );
         }
         return result;
     }
 
-    private Expander createExpander( Map<String, Object> description )
+    private PathExpanderBuilder createExpander( Map<String, Object> description )
     {
-        if(description.containsKey( "expander" ))
+        if ( description.containsKey( "expander" ) )
         {
             Object expanderDesc = description.get( "expander" );
-            if(! (expanderDesc instanceof String))
+            if ( !(expanderDesc instanceof String) )
             {
                 throw new IllegalArgumentException( "Invalid expander type '"+expanderDesc+"', expected a string name." );
 
             }
 
             String expanderName = (String) expanderDesc;
-            if(expanderName.equalsIgnoreCase( "order_by_type" ))
+            if ( expanderName.equalsIgnoreCase( "order_by_type" ) )
             {
-                return new OrderedByTypeExpander();
+                return PathExpanderBuilder.emptyOrderedByType();
             }
 
             throw new IllegalArgumentException( "Unknown expander type: '"+expanderName+"'" );
         }
 
         // Default expander
-        return Traversal.emptyExpander();
+        return PathExpanderBuilder.empty();
     }
 
     private TraversalDescription describeUniqueness( TraversalDescription result, Map<String, Object> description )
@@ -186,11 +184,16 @@ public class TraversalDescriptionBuilder
             {
                 name = (String) uniquenessDescription;
             }
-            org.neo4j.kernel.Uniqueness uniqueness = stringToEnum( enumifyName( name ),
-                    org.neo4j.kernel.Uniqueness.class, true );
+            Uniqueness uniqueness = stringToEnum( enumifyName( name ), Uniqueness.class, true );
             result = value == null ? result.uniqueness( uniqueness ) : result.uniqueness( uniqueness, value );
         }
         return result;
+    }
+
+    private enum Order
+    {
+        BREADTH_FIRST,
+        DEPTH_FIRST;
     }
 
     private TraversalDescription describeOrder( TraversalDescription result, Map<String, Object> description )
@@ -199,7 +202,6 @@ public class TraversalDescriptionBuilder
         if ( orderDescription != null )
         {
             Order order = stringToEnum( enumifyName( orderDescription ), Order.class, true );
-            // TODO Fix
             switch ( order )
             {
             case BREADTH_FIRST:
@@ -208,6 +210,8 @@ public class TraversalDescriptionBuilder
             case DEPTH_FIRST:
                 result = result.depthFirst();
                 break;
+            default:
+                throw new IllegalArgumentException( "Unknown order: " + order );
             }
         }
         return result;
@@ -220,11 +224,9 @@ public class TraversalDescriptionBuilder
             return null;
         }
 
-        // name = enumifyName( name );
         for ( T candidate : enumClass.getEnumConstants() )
         {
-            if ( candidate.name()
-                    .equals( name ) )
+            if ( candidate.name().equals( name ) )
             {
                 return candidate;
             }
@@ -233,8 +235,7 @@ public class TraversalDescriptionBuilder
         {
             for ( T candidate : enumClass.getEnumConstants() )
             {
-                if ( candidate.name()
-                        .startsWith( name ) )
+                if ( candidate.name().startsWith( name ) )
                 {
                     return candidate;
                 }
@@ -245,7 +246,6 @@ public class TraversalDescriptionBuilder
 
     private String enumifyName( String name )
     {
-        return name.replaceAll( " ", "_" )
-                .toUpperCase();
+        return name.replaceAll( " ", "_" ).toUpperCase();
     }
 }

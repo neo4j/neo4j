@@ -19,21 +19,24 @@
  */
 package org.neo4j.cypher;
 
-import java.io.IOException;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.graphdb.DynamicLabel;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Pair;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.lang.String.format;
 
@@ -44,17 +47,18 @@ public class ManyMergesStressTest
 
     private String[] SYLLABLES = new String[] { "Om", "Pa", "So", "Hu", "Ma", "Ni", "Ru", "Gu", "Ha", "Ta" };
 
-    private final static int TRIES = 8000;
+    private static final int TRIES = 8000;
 
     @Rule
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
 
     @Test
-    public void shouldWorkFine() throws IOException
+    public void shouldWorkFine() throws Throwable
     {
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        GraphDatabaseQueryService graph = new GraphDatabaseCypherService( db );
 
-        Label person = DynamicLabel.label( "Person" );
+        Label person = Label.label( "Person" );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -80,8 +84,6 @@ public class ManyMergesStressTest
             tx.success();
         }
 
-        org.neo4j.cypher.javacompat.ExecutionEngine engine = new org.neo4j.cypher.javacompat.ExecutionEngine( db );
-
         for( int count = 0; count < TRIES; count++ )
         {
             Pair<String, String> stringPair = getRandomName();
@@ -91,8 +93,12 @@ public class ManyMergesStressTest
             String query =
                 format( "MERGE (%s:Person {id: %s}) ON CREATE SET %s.name = \"%s\";", ident, id, ident, name );
 
-            ExecutionResult result = engine.execute( query );
-            result.iterator().close();
+            try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL ) )
+            {
+                Result result = db.execute( query );
+                result.close();
+                tx.success();
+            }
         }
     }
 

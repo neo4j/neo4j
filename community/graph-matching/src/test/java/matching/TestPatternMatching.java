@@ -50,9 +50,9 @@ import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -71,8 +71,8 @@ public class TestPatternMatching implements GraphHolder
     public static TargetDirectory.TestDirectory testDirectory =
             TargetDirectory.testDirForTest( TestPatternMatching.class );
 
-    public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
+    @Rule
+    public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
     private static GraphDatabaseService graphDb;
     private Transaction tx;

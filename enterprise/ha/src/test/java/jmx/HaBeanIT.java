@@ -26,9 +26,8 @@ import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
@@ -37,7 +36,7 @@ import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
@@ -47,17 +46,15 @@ import org.neo4j.management.HighAvailability;
 import org.neo4j.management.Neo4jManager;
 import org.neo4j.test.ha.ClusterRule;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.kernel.impl.ha.ClusterManager.instanceEvicted;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
@@ -207,6 +204,7 @@ public class HaBeanIT
         masterShutdown.repair();
 
         cluster.await( ClusterManager.masterAvailable() );
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
         cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 2 ) );
 
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
@@ -300,38 +298,19 @@ public class HaBeanIT
 
     public static URI getUriForScheme( final String scheme, Iterable<URI> uris )
     {
-        return first( filter( new Predicate<URI>()
-        {
-            @Override
-            public boolean test( URI item )
-            {
-                return item.getScheme().equals( scheme );
-            }
+        return firstOrNull( filter( item -> {
+            return item.getScheme().equals( scheme );
         }, uris ) );
     }
 
     private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster ) throws Exception
     {
         ClusterMemberInfo master = member( instancesInCluster, 1 );
-        assertEquals( 1137, getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
-        {
-            @Override
-            public URI apply( String from )
-            {
-                return URI.create( from );
-            }
-        }, Arrays.asList( master.getUris() ) ) ).getPort() );
+        assertEquals( 1137, getUriForScheme( "ha", Iterables.map( URI::create, Arrays.asList( master.getUris() ) ) ).getPort() );
         assertEquals( HighAvailabilityModeSwitcher.MASTER, master.getHaRole() );
 
         ClusterMemberInfo slave = member( instancesInCluster, 2 );
-        assertEquals( 1138, getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
-        {
-            @Override
-            public URI apply( String from )
-            {
-                return URI.create( from );
-            }
-        }, Arrays.asList( slave.getUris() ) ) ).getPort() );
+        assertEquals( 1138, getUriForScheme( "ha", Iterables.map( URI::create, Arrays.asList( slave.getUris() ) ) ).getPort() );
         assertEquals( HighAvailabilityModeSwitcher.SLAVE, slave.getHaRole() );
         assertTrue( "Slave not available", slave.isAvailable() );
     }
@@ -366,25 +345,11 @@ public class HaBeanIT
 
     private Predicate<ClusterMemberInfo> dbAvailability( final boolean available )
     {
-        return new Predicate<ClusterMemberInfo>()
-        {
-            @Override
-            public boolean test( ClusterMemberInfo item )
-            {
-                return item.isAvailable() == available;
-            }
-        };
+        return item -> item.isAvailable() == available;
     }
 
     private Predicate<ClusterMemberInfo> dbAlive( final boolean alive )
     {
-        return new Predicate<ClusterMemberInfo>()
-        {
-            @Override
-            public boolean test( ClusterMemberInfo item )
-            {
-                return item.isAlive() == alive;
-            }
-        };
+        return item -> item.isAlive() == alive;
     }
 }

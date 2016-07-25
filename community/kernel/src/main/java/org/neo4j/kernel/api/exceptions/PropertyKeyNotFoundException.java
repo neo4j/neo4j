@@ -23,6 +23,6 @@ public class PropertyKeyNotFoundException extends KernelException
 {
     public PropertyKeyNotFoundException( String propertyKey, Exception cause )
     {
-        super( Status.Schema.NoSuchPropertyKey, cause, "Property key '" + propertyKey + "' not found" );
+        super( Status.Schema.PropertyKeyAccessFailed, cause, "Property key '" + propertyKey + "' not found" );
     }
 }

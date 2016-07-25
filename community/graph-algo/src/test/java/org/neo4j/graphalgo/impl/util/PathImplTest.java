@@ -51,8 +51,8 @@ public class PathImplTest
     public void pathsWithTheSameContentsShouldBeEqual() throws Exception
     {
 
-        Node node = createNode( 1337l );
-        Relationship relationship = createRelationship( 1337l, 7331l );
+        Node node = createNode( 1337L );
+        Relationship relationship = createRelationship( 1337L, 7331L );
 
         // Given
         Path firstPath = new PathImpl.Builder( node ).push( relationship ).build();
@@ -66,12 +66,12 @@ public class PathImplTest
     @Test
     public void pathsWithDifferentLengthAreNotEqual() throws Exception
     {
-        Node node = createNode( 1337l );
-        Relationship relationship = createRelationship( 1337l, 7331l );
+        Node node = createNode( 1337L );
+        Relationship relationship = createRelationship( 1337L, 7331L );
 
         // Given
         Path firstPath = new PathImpl.Builder( node ).push( relationship ).build();
-        Path secondPath = new PathImpl.Builder( node ).push( relationship ).push( createRelationship( 1337l, 7331l ) ).build();
+        Path secondPath = new PathImpl.Builder( node ).push( relationship ).push( createRelationship( 1337L, 7331L ) ).build();
 
         // When Then
         assertThat( firstPath, not( equalTo( secondPath ) ) );
@@ -89,7 +89,7 @@ public class PathImplTest
                                 .build( new PathImpl.Builder( createNodeProxy( 3 ) ) );
 
         Iterable<Node> nodes = path.reverseNodes();
-        List<Node> nodeList = Iterables.toList( nodes );
+        List<Node> nodeList = Iterables.asList( nodes );
 
         Assert.assertEquals( 3, nodeList.size() );
         Assert.assertEquals( 3, nodeList.get( 0 ).getId() );
@@ -108,7 +108,7 @@ public class PathImplTest
                 .build( new PathImpl.Builder( createNodeProxy( 3 ) ) );
 
         Iterable<Node> nodes = path.nodes();
-        List<Node> nodeList = Iterables.toList( nodes );
+        List<Node> nodeList = Iterables.asList( nodes );
 
         Assert.assertEquals( 3, nodeList.size() );
         Assert.assertEquals( 1, nodeList.get( 0 ).getId() );
@@ -118,7 +118,7 @@ public class PathImplTest
 
     private RelationshipProxy createRelationshipProxy( int startNodeId, int endNodeId )
     {
-        return new RelationshipProxy( relationshipActions, 1l, startNodeId, 1, endNodeId );
+        return new RelationshipProxy( relationshipActions, 1L, startNodeId, 1, endNodeId );
     }
 
     private NodeProxy createNodeProxy( int nodeId )

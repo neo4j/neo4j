@@ -19,17 +19,20 @@
  */
 package org.neo4j.server.security.auth;
 
+import java.io.IOException;
+
 import org.junit.After;
 import org.junit.Test;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeTrue;
 
 public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
 {
@@ -39,7 +42,8 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     public void shouldWhitelistBrowser() throws Exception
     {
         // Given
-        server = CommunityServerBuilder.server().withProperty( ServerSettings.auth_enabled.name(), "true" ).build();
+        assumeTrue( browserIsLoaded() );
+        server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();
@@ -50,30 +54,30 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldWhitelistWebadmin() throws Exception
+    public void shouldNotWhitelistConsoleService() throws Exception
     {
         // Given
-        server = CommunityServerBuilder.server().withProperty( ServerSettings.auth_enabled.name(), "true" ).build();
+        server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();
 
-        // Then I should be able to access the webadmin
-        HTTP.Response response = HTTP.GET( server.baseUri().resolve( "webadmin/index.html" ).toString() );
-        assertThat( response.status(), equalTo( 200 ) );
+        // Then I should be able to access the console service
+        HTTP.Response response = HTTP.GET( server.baseUri().resolve( "db/manage/server/console" ).toString() );
+        assertThat( response.status(), equalTo( 401 ) );
     }
 
     @Test
     public void shouldNotWhitelistDB() throws Exception
     {
         // Given
-        server = CommunityServerBuilder.server().withProperty( ServerSettings.auth_enabled.name(), "true" ).build();
+        server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();
 
         // Then I should get a unauthorized response for access to the DB
-        HTTP.Response response = HTTP.GET( server.baseUri().resolve( "db/data" ).toString() );
+        HTTP.Response response = HTTP.GET(HTTP.GET( server.baseUri().resolve( "db/data" ).toString()).location() );
         assertThat( response.status(), equalTo( 401 ) );
     }
 
@@ -81,5 +85,12 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     public void cleanup()
     {
         if ( server != null ) { server.stop(); }
+    }
+
+    private boolean browserIsLoaded() throws IOException
+    {
+        // In some automatic builds, the Neo4j browser is not built, and it is subsequently not present for these
+        // tests. So - only run these tests if the browser artifact is on the classpath
+        return getClass().getClassLoader().getResource( "browser" ) != null;
     }
 }

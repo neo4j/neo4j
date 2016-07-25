@@ -20,8 +20,8 @@
 package org.neo4j.server.rest.repr;
 
 import java.util.Map;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 
@@ -80,7 +80,6 @@ public abstract class CypherPlanRepresentation extends MappingRepresentation
         {
             private ExecutionPlanDescription plan = null;
             private boolean fetched = false;
-
 
             @Override
             protected ExecutionPlanDescription getPlan()

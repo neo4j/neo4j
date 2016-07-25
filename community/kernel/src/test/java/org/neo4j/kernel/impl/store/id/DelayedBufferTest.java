@@ -24,25 +24,24 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
-import org.neo4j.function.Supplier;
 import org.neo4j.helpers.Clock;
 import org.neo4j.test.Race;
+
 import static java.util.concurrent.ThreadLocalRandom.current;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-
-import static org.neo4j.function.Suppliers.singleton;
-import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.function.Suppliers.singleton;
+import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 
 public class DelayedBufferTest
 {
@@ -54,22 +53,8 @@ public class DelayedBufferTest
         final long bufferTime = 3;
         VerifyingConsumer consumer = new VerifyingConsumer( size );
         final Clock clock = Clock.SYSTEM_CLOCK;
-        Supplier<Long> chunkThreshold = new Supplier<Long>()
-        {
-            @Override
-            public Long get()
-            {
-                return clock.currentTimeMillis();
-            }
-        };
-        Predicate<Long> safeThreshold = new Predicate<Long>()
-        {
-            @Override
-            public boolean test( Long time )
-            {
-                return clock.currentTimeMillis() - bufferTime >= time;
-            }
-        };
+        Supplier<Long> chunkThreshold = clock::currentTimeMillis;
+        Predicate<Long> safeThreshold = time -> clock.currentTimeMillis() - bufferTime >= time;
         final DelayedBuffer<Long> buffer = new DelayedBuffer<>( chunkThreshold, safeThreshold, 10, consumer );
         MaintenanceThread maintenance = new MaintenanceThread( buffer, 5 );
         Race adders = new Race();

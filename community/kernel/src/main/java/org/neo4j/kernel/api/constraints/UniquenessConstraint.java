@@ -19,15 +19,11 @@
  */
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
-import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 
+/**
+ * Description of uniqueness constraint over nodes given a label and a property key id.
+ */
 public class UniquenessConstraint extends NodePropertyConstraint
 {
     public UniquenessConstraint( int labelId, int propertyKeyId )
@@ -45,21 +41,6 @@ public class UniquenessConstraint extends NodePropertyConstraint
     public void removed( ChangeVisitor visitor )
     {
         visitor.visitRemovedUniquePropertyConstraint( this );
-    }
-
-    @Override
-    public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
-    {
-        StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOps );
-        return new UniquenessConstraintDefinition( schemaActions,
-                DynamicLabel.label( lookup.labelGetName( labelId ) ),
-                lookup.propertyKeyGetName( propertyKeyId ) );
-    }
-
-    @Override
-    public ConstraintType type()
-    {
-        return ConstraintType.UNIQUENESS;
     }
 
     @Override

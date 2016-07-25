@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
@@ -29,7 +28,6 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
@@ -73,17 +71,17 @@ public class PullerFactory
         this.monitors = monitors;
     }
 
-    public UpdatePuller createUpdatePuller( LifeSupport life )
+    public SlaveUpdatePuller createSlaveUpdatePuller()
     {
-        return life.add( new SlaveUpdatePuller( requestContextFactory, master, lastUpdateTime, logging, serverId,
+        return new SlaveUpdatePuller( requestContextFactory, master, lastUpdateTime, logging, serverId,
                 availabilityGuard, invalidEpochHandler, jobScheduler,
-                monitors.newMonitor( SlaveUpdatePuller.Monitor.class ) ) );
+                monitors.newMonitor( SlaveUpdatePuller.Monitor.class ) );
     }
 
-    public TransactionObligationFulfiller createObligationFulfiller( LifeSupport life, UpdatePuller updatePuller )
+    public UpdatePullingTransactionObligationFulfiller createObligationFulfiller( UpdatePuller updatePuller )
     {
-        return life.add( new UpdatePullingTransactionObligationFulfiller( updatePuller, memberStateMachine, serverId,
-                dependencyResolver.provideDependency( TransactionIdStore.class ) ) );
+        return new UpdatePullingTransactionObligationFulfiller( updatePuller, memberStateMachine, serverId,
+                dependencyResolver.provideDependency( TransactionIdStore.class ) );
     }
 
     public UpdatePullerScheduler createUpdatePullerScheduler( UpdatePuller updatePuller )

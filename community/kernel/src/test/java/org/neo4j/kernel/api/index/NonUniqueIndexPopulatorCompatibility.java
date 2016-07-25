@@ -22,15 +22,19 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Arrays;
+
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 
@@ -50,12 +54,12 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldProvidePopulatorThatAcceptsDuplicateEntries() throws Exception
     {
         // when
-        IndexConfiguration config = new IndexConfiguration( false );
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.create();
-        populator.add( 1, "value1" );
-        populator.add( 2, "value1" );
+        populator.add( Arrays.asList( NodePropertyUpdate.add( 1, 0, "value1", new long[]{0} ),
+                NodePropertyUpdate.add( 2, 0, "value1", new long[]{0} ) ) );
         populator.close( true );
 
         // then
@@ -63,7 +67,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.seek( "value1" );
-            assertEquals( asSet( 1l, 2l ), asSet( nodes ) );
+            assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );
         }
         accessor.close();
     }
@@ -72,8 +76,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
     {
         // GIVEN
-        IndexConfiguration config = new IndexConfiguration( false );
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         String failure = "The contrived failure";
         populator.create();
@@ -89,8 +93,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception
     {
         // GIVEN
-        IndexConfiguration config = new IndexConfiguration( false );
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         String failure = "The contrived failure";
         populator.create();
@@ -106,8 +110,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldBeAbleToDropAClosedIndexPopulator() throws Exception
     {
         // GIVEN
-        IndexConfiguration config = new IndexConfiguration( false );
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.close( false );
 
@@ -121,8 +125,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldApplyUpdatesIdempotently() throws Exception
     {
         // GIVEN
-        IndexConfiguration config = new IndexConfiguration( false );
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.create();
         long nodeId = 1;
@@ -131,14 +135,14 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         PropertyAccessor propertyAccessor = new PropertyAccessor()
         {
             @Override
-            public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException, PropertyNotFoundException
+            public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
             {
                 return Property.stringProperty( propertyKeyId, propertyValue );
             }
         };
 
         // this update (using add())...
-        populator.add( nodeId, propertyValue );
+        populator.add( singletonList( NodePropertyUpdate.add( nodeId, 0, propertyValue, new long[]{0} ) ) );
         // ...is the same as this update (using update())
         try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
         {
@@ -147,14 +151,12 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
 
         populator.close( true );
 
-
-
         // then
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexConfiguration( false ), indexSamplingConfig );
+        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, IndexConfiguration.NON_UNIQUE, indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.seek( propertyValue );
-            assertEquals( asSet( 1l ), asSet( nodes ) );
+            assertEquals( asSet( 1L ), PrimitiveLongCollections.toSet( nodes ) );
         }
         accessor.close();
     }

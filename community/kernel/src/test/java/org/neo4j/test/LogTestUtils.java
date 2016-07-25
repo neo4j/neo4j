@@ -24,21 +24,17 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles.LogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -48,7 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 
@@ -59,14 +55,14 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeL
  */
 public class LogTestUtils
 {
-    public static interface LogHook<RECORD> extends Predicate<RECORD>
+    public interface LogHook<RECORD> extends Predicate<RECORD>
     {
         void file( File file );
 
         void done( File file );
     }
 
-    public static abstract class LogHookAdapter<RECORD> implements LogHook<RECORD>
+    public abstract static class LogHookAdapter<RECORD> implements LogHook<RECORD>
     {
         @Override
         public void file( File file )
@@ -134,15 +130,14 @@ public class LogTestUtils
         try
         {
             channel = fs.open( log, "r" );
-            ByteBuffer buffer = ByteBuffer.allocate( LogHeader.LOG_HEADER_SIZE );
-            LogHeader header = LogHeaderReader.readLogHeader( buffer, channel, true );
+            LogHeader header = LogHeaderReader.readLogHeader( ByteBuffer.allocate( LogHeader.LOG_HEADER_SIZE ), channel, true );
 
             PhysicalLogVersionedStoreChannel logVersionedChannel = new PhysicalLogVersionedStoreChannel( channel,
                     header.logVersion, header.logFormatVersion );
-            ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( logVersionedChannel,
-                    LogVersionBridge.NO_MORE_CHANNELS, ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE );
+            ReadableLogChannel logChannel = new ReadAheadLogChannel( logVersionedChannel,
+                    LogVersionBridge.NO_MORE_CHANNELS );
 
-            return new LogEntryCursor( logChannel );
+            return new LogEntryCursor( new VersionAwareLogEntryReader<>(), logChannel );
         }
         catch ( Throwable t )
         {
@@ -172,14 +167,7 @@ public class LogTestUtils
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( new File( storeDir ), fileSystem );
         final List<File> files = new ArrayList<>();
-        logFiles.accept( new LogVersionVisitor()
-        {
-            @Override
-            public void visit( File file, long logVersion )
-            {
-                files.add( file );
-            }
-        } );
+        logFiles.accept( ( file, logVersion ) -> files.add( file ) );
         for ( File file : files )
         {
             File filteredLog = filterNeostoreLogicalLog( fileSystem, file, filter );
@@ -199,16 +187,13 @@ public class LogTestUtils
         try ( StoreChannel in = fileSystem.open( file, "r" );
                 StoreChannel out = fileSystem.open( tempFile, "rw" ) )
         {
-            ByteBuffer buffer = ByteBuffer.allocate( 1024 * 1024 );
-            LogHeader logHeader = transferLogicalLogHeader( in, out, buffer );
+            LogHeader logHeader = transferLogicalLogHeader( in, out, ByteBuffer.allocate( LOG_HEADER_SIZE ) );
             PhysicalLogVersionedStoreChannel outChannel =
                     new PhysicalLogVersionedStoreChannel( out, logHeader.logVersion, logHeader.logFormatVersion );
-            final WritableLogChannel outBuffer = new PhysicalWritableLogChannel( outChannel );
 
             PhysicalLogVersionedStoreChannel inChannel =
                     new PhysicalLogVersionedStoreChannel( in, logHeader.logVersion, logHeader.logFormatVersion );
-            ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel, LogVersionBridge.NO_MORE_CHANNELS,
-                    DEFAULT_READ_AHEAD_SIZE );
+            ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel, LogVersionBridge.NO_MORE_CHANNELS );
             LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
 
             LogEntry entry;

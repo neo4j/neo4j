@@ -28,11 +28,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -55,7 +55,7 @@ public class ErrorsAndWarningsTest
             }
 
             @Override
-            public GraphDatabaseService getGraphDatabaseService()
+            public GraphDatabaseAPI getGraphDatabaseAPI()
             {
                 try
                 {
@@ -65,36 +65,11 @@ public class ErrorsAndWarningsTest
                 {
                     throwable.printStackTrace();
                 }
-                return super.getGraphDatabaseService();
+                return super.getGraphDatabaseAPI();
             }
         };
 
-        db.getGraphDatabaseService();
-    }
-
-    @Test
-    public void unsupportedQueryShouldPresentWarningIfExplain() throws IOException
-    {
-        // Given
-        // an empty database
-
-        startDatabase( false );
-
-        // When
-        InputStream realStdin = System.in;
-        try
-        {
-            System.setIn( new ByteArrayInputStream( "EXPLAIN CYPHER planner=cost CREATE ();".getBytes() ) );
-            String output = runAndCaptureOutput( new String[]{"-file", "-"} );
-
-            // Then we should get a warning
-            assertThat( output, containsString(
-                    "Using COST planner is unsupported for this query, please use RULE planner instead" ) );
-        }
-        finally
-        {
-            System.setIn( realStdin );
-        }
+        db.getGraphDatabaseAPI();
     }
 
     @Test
@@ -115,31 +90,6 @@ public class ErrorsAndWarningsTest
             // Then we should not get a warning
             assertThat( output, not( containsString(
                     "Using COST planner is unsupported for this query, please use RULE planner instead" ) ) );
-        }
-        finally
-        {
-            System.setIn( realStdin );
-        }
-    }
-
-    @Test
-    public void unsupportedQueryShouldPresentErrorIfConfigured() throws IOException
-    {
-        // Given
-        // an empty database
-
-        startDatabase( true );
-
-        // When
-        InputStream realStdin = System.in;
-        try
-        {
-            System.setIn( new ByteArrayInputStream( "CYPHER planner=cost CREATE ();".getBytes() ) );
-            String output = runAndCaptureOutput( new String[]{"-file", "-"} );
-
-            // Then we should get an error
-            assertThat( output,
-                    containsString( "The given query is not currently supported in the selected cost-based planner" ) );
         }
         finally
         {

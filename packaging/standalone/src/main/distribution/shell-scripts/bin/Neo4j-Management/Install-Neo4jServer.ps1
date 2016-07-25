@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2015 "Neo Technology,"
+# Copyright (c) 2002-2016 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # This file is part of Neo4j.
@@ -25,71 +25,28 @@ Install a Neo4j Server Windows Service
 Install a Neo4j Server Windows Service
 
 .PARAMETER Neo4jServer
-An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
-
-.PARAMETER Name
-The name of the Neo4j Server service.  If no name is specified the default of Neo4j-Server is used
-
-.PARAMETER DisplayName
-The name of the Neo4j Server service displayed in Service Manager.  If no name is specified the default of service name is used
-
-.PARAMETER Description
-The description of the Neo4j Server service.  If no name is specified the default of 'Neo4j Graph Database' is used
-
-.PARAMETER StartType
-The Start Type of the Windows Service.  Valid strings are Manual, Automatic and Disabled.  Automatic is the default
-
-.PARAMETER SucceedIfAlreadyExists
-Do not raise an error if the service already exists
-
-.PARAMETER PassThru
-Pass through the Neo4j Server object instead of the Neo4j Setting Object
+An object representing a valid Neo4j Server object
 
 .EXAMPLE
-'C:\Neo4j\neo4j-enterprise' | Install-Neo4jServer -Name Neo4jServer2
-Install the Neo4j Server Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise', with the name Neo4jServer2
+Install-Neo4jServer -Neo4jServer $ServerObject
 
-.EXAMPLE
-'C:\Neo4j\neo4j-enterprise' | Install-Neo4jServer -PassThru | Start-Neo4jServer
-
-Install the Neo4j Windows Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise' and then start the service
+Install the Neo4j Windows Windows Service for the Neo4j installation at $ServerObject
 
 .OUTPUTS
-System.Management.Automation.PSCustomObject
-Neo4j Setting object for the service name
+System.Int32
+0 = Service is installed or already exists
+non-zero = an error occured
 
-System.Management.Automation.PSCustomObject
-Neo4j Server object (-PassThru)
-
-.LINK
-Start-Neo4jServer
+.NOTES
+This function is private to the powershell module
 
 #>
 Function Install-Neo4jServer
 {
-  [cmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Medium')]
+  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Medium')]
   param (
-    [Parameter(Mandatory=$false,ValueFromPipeline=$true)]
-    [object]$Neo4jServer = ''
-
-    ,[Parameter(Mandatory=$false)]
-    [string]$Name = 'Neo4j-Server'
-
-    ,[Parameter(Mandatory=$false)]
-    [string]$DisplayName = ''
-
-    ,[Parameter(Mandatory=$false)]
-    [string]$Description = 'Neo4j Graph Database'
-
-    ,[Parameter(Mandatory=$false)]
-    [ValidateSet('Manual','Automatic','Disabled')]
-    [string]$StartType = 'Automatic'
-
-    ,[Parameter(Mandatory=$false)]
-    [switch]$SucceedIfAlreadyExists   
-
-    ,[Parameter(Mandatory=$false)]
-    [switch]$PassThru   
+    [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
+    [PSCustomObject]$Neo4jServer
   )
   
   Begin
@@ -98,52 +55,38 @@ Function Install-Neo4jServer
 
   Process
   {
-    # Get the Neo4j Server information
-    if ($Neo4jServer -eq $null) { $Neo4jServer = '' }
-    switch ($Neo4jServer.GetType().ToString())
-    {
-      'System.Management.Automation.PSCustomObject'
-      {
-        if (-not (Confirm-Neo4jServerObject -Neo4jServer $Neo4jServer))
-        {
-          Write-Error "The specified Neo4j Server object is not valid"
-          return
-        }
-        $thisServer = $Neo4jServer
-      }      
-      default
-      {
-        $thisServer = Get-Neo4jServer -Neo4jHome $Neo4jServer
-      }
-    }
-    if ($thisServer -eq $null) { return }
-    
-    $JavaCMD = Get-Java -Neo4jServer $thisServer -ForServer
-    if ($JavaCMD -eq $null)
-    {
-      Write-Error 'Unable to locate Java'
-      return
-    }
+    $Name = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
 
-    $Name = $Name.Trim()
-    if ($DisplayName -eq '') { $DisplayName = $Name }
-    
-    $binPath = "`"$($JavaCMD.java)`" $($JavaCMD.args -join ' ') $Name"    
-
-    $result = $null
-    if ($SucceedIfAlreadyExists)
-    {
-      $result = Get-Service -Name $Name -ComputerName '.' -ErrorAction 'SilentlyContinue'
-    }
-
+    $result = Get-Service -Name $Name -ComputerName '.' -ErrorAction 'SilentlyContinue'
     if ($result -eq $null)
     {
-      $result = (New-Service -Name $Name -Description $Description -DisplayName $DisplayName -BinaryPathName $binPath -StartupType $StartType)
-    }
-    
-    $thisServer | Set-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'wrapper.name' -Value $Name | Out-Null
-        
-    if ($PassThru) { Write-Output $thisServer } else { Write-Output $result }
+      $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $Neo4jServer -ForServerInstall
+      if ($prunsrv -eq $null) { throw "Could not determine the command line for PRUNSRV" }
+
+      Write-Verbose "Installing Neo4j as a service with command line $($prunsrv.cmd) $($prunsrv.args)"
+      $stdError = New-Neo4jTempFile -Prefix 'stderr'
+      $result = (Start-Process -FilePath $prunsrv.cmd -ArgumentList $prunsrv.args -Wait -NoNewWindow -PassThru -WorkingDirectory $Neo4jServer.Home -RedirectStandardError $stdError)
+      Write-Verbose "Returned exit code $($result.ExitCode)"
+
+      # Process the output
+      if ($result.ExitCode -eq 0) {
+        Write-Host "Neo4j service installed"
+      } else {
+        Write-Host "Neo4j service did not install"
+        # Write out STDERR if it did not install
+        Get-Contet -Path $stdError -ErrorAction 'SilentlyContinue' | ForEach-Object -Process {
+          Write-Host $_
+        }
+      }
+
+      # Remove the temp file
+      If (Test-Path -Path $stdError) { Remove-Item -Path $stdError -Force | Out-Null }
+
+      Write-Output $result.ExitCode
+    } else {
+      Write-Verbose "Service already installed"
+      Write-Output 0
+    }    
   }
   
   End

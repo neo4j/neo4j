@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.fs;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -26,9 +27,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.Charset;
+import java.util.function.Function;
 import java.util.zip.ZipOutputStream;
-
-import org.neo4j.function.Function;
 
 public interface FileSystemAbstraction
 {
@@ -38,9 +39,9 @@ public interface FileSystemAbstraction
 
     InputStream openAsInputStream( File fileName ) throws IOException;
 
-    Reader openAsReader( File fileName, String encoding ) throws IOException;
+    Reader openAsReader( File fileName, Charset charset ) throws IOException;
 
-    Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException;
+    Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException;
 
     StoreChannel create( File fileName ) throws IOException;
 
@@ -74,7 +75,7 @@ public interface FileSystemAbstraction
 
     void truncate( File path, long size ) throws IOException;
 
-    interface ThirdPartyFileSystem
+    interface ThirdPartyFileSystem extends Closeable
     {
         void close();
 

@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.helpers.MathUtil;
-import org.neo4j.helpers.ObjectUtil;
-
 import java.util.Comparator;
+
+import org.neo4j.helpers.MathUtil;
+import org.neo4j.helpers.Strings;
 
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
 
@@ -123,7 +123,7 @@ public abstract class DefinedProperty extends Property
     @Override
     public String valueAsString()
     {
-        return ObjectUtil.toString( value() );
+        return Strings.prettyPrint( value() );
     }
 
     DefinedProperty( int propertyKeyId )

@@ -23,15 +23,12 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.helpers.FakeClock;
-import org.neo4j.kernel.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
-import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -50,13 +47,11 @@ public class BufferingIdGeneratorFactoryTest
     {
         // GIVEN
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
-        CommunityIdTypeConfigurationProvider idTypeConfigurationProvider =
-                new CommunityIdTypeConfigurationProvider();
-        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual, idTypeConfigurationProvider );
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
+        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(
+                actual, boundaries, IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider() );
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
-                new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0 );
-        bufferingIdGeneratorFactory.initialize( boundaries, IdReuseEligibility.ALWAYS );
+                new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0, Integer.MAX_VALUE );
 
         // WHEN
         idGenerator.freeId( 7 );
@@ -81,19 +76,13 @@ public class BufferingIdGeneratorFactoryTest
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
         final FakeClock clock = new FakeClock();
         final long safeZone = MINUTES.toMillis( 1 );
-        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual,
-                new CommunityIdTypeConfigurationProvider() );
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
+        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual,
+                boundaries, t -> clock.currentTimeMillis() - t.snapshotTime() >= safeZone,
+                new CommunityIdTypeConfigurationProvider() );
+
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
-                new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0 );
-        bufferingIdGeneratorFactory.initialize( boundaries, new IdReuseEligibility()
-        {
-            @Override
-            public boolean isEligible( KernelTransactionsSnapshot t )
-            {
-                return clock.currentTimeMillis() - t.snapshotTime() >= safeZone;
-            }
-        } );
+                new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0, Integer.MAX_VALUE );
 
         // WHEN
         idGenerator.freeId( 7 );
@@ -138,13 +127,13 @@ public class BufferingIdGeneratorFactoryTest
         private final IdGenerator[] generators = new IdGenerator[IdType.values().length];
 
         @Override
-        public IdGenerator open( File filename, IdType idType, long highId )
+        public IdGenerator open( File filename, IdType idType, long highId, long maxId )
         {
-            return open( filename, 0, idType, highId );
+            return open( filename, 0, idType, highId, maxId );
         }
 
         @Override
-        public IdGenerator open( File filename, int grabSize, IdType idType, long highId )
+        public IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId )
         {
             return generators[idType.ordinal()] = mock( IdGenerator.class );
         }

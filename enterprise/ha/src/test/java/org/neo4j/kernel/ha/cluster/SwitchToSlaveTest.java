@@ -38,14 +38,12 @@ import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
-import org.neo4j.function.Function;
 import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
@@ -57,9 +55,9 @@ import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.UpdatePullerScheduler;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
+import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
-import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
@@ -69,11 +67,12 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.TransactionId;
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -95,6 +94,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
+import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class SwitchToSlaveTest
@@ -104,7 +104,7 @@ public class SwitchToSlaveTest
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final MasterClient masterClient = mock( MasterClient.class );
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
-    private final StoreId storeId = new StoreId( 42, 42, 42, 42 );
+    private final StoreId storeId = newStoreIdForCurrentVersion( 42, 42, 42, 42 );
 
     @Test
     public void shouldRestartServicesIfCopyStoreFails() throws Throwable
@@ -113,7 +113,7 @@ public class SwitchToSlaveTest
 
         PageCache pageCacheMock = mock( PageCache.class );
         PagedFile pagedFileMock = mock( PagedFile.class );
-        when( pagedFileMock.getLastPageId() ).thenReturn( 1l );
+        when( pagedFileMock.getLastPageId() ).thenReturn( 1L );
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenThrow( new IOException() )
                 .thenThrow( new IOException() ).thenReturn( pagedFileMock );
 
@@ -155,7 +155,7 @@ public class SwitchToSlaveTest
         when( response.response() ).thenReturn( new HandshakeResult( 1, 2 ) );
         when( masterClient.handshake( anyLong(), any( StoreId.class ) ) ).thenReturn( response );
 
-        StoreId storeId = new StoreId( 1, 2, 3, 4 );
+        StoreId storeId = newStoreIdForCurrentVersion( 1, 2, 3, 4 );
 
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 42, 42, 42 ) );
@@ -223,7 +223,6 @@ public class SwitchToSlaveTest
         assertNull( uri );
     }
 
-
     @Test
     public void updatesPulledAndPullingScheduledOnSwitchToSlave() throws Throwable
     {
@@ -234,7 +233,7 @@ public class SwitchToSlaveTest
         LifeSupport communicationLife = mock( LifeSupport.class );
         URI localhost = getLocalhostUri();
         final UpdatePullerScheduler pullerScheduler =
-                new UpdatePullerScheduler( jobScheduler, NullLogProvider.getInstance(), updatePuller, 10l );
+                new UpdatePullerScheduler( jobScheduler, NullLogProvider.getInstance(), updatePuller, 10L );
 
         when( pullerFactory.createUpdatePullerScheduler( updatePuller ) ).thenReturn( pullerScheduler );
         // emulate lifecycle start call on scheduler
@@ -248,13 +247,12 @@ public class SwitchToSlaveTest
             }
         } ).when( communicationLife ).start();
 
-
         switchToSlave.switchToSlave( communicationLife, localhost, localhost, mock( CancellationRequest.class ) );
 
         verify( updatePuller ).tryPullUpdates();
         verify( communicationLife ).add( pullerScheduler );
         verify( jobScheduler ).scheduleRecurring( eq( JobScheduler.Groups.pullUpdates ), any( Runnable.class ),
-                eq( 10l ), eq( 10l ), eq( TimeUnit.MILLISECONDS ) );
+                eq( 10L ), eq( 10L ), eq( TimeUnit.MILLISECONDS ) );
     }
 
     private URI getLocalhostUri() throws URISyntaxException
@@ -266,7 +264,7 @@ public class SwitchToSlaveTest
     {
         PageCache pageCacheMock = mock( PageCache.class );
         PagedFile pagedFileMock = mock( PagedFile.class );
-        when( pagedFileMock.getLastPageId() ).thenReturn( 1l );
+        when( pagedFileMock.getLastPageId() ).thenReturn( 1L );
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenReturn( pagedFileMock );
 
         return newSwitchToSlaveSpy( pageCacheMock, mock( StoreCopyClient.class) );
@@ -297,8 +295,8 @@ public class SwitchToSlaveTest
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         when( dataSource.getStoreId() ).thenReturn( storeId );
 
-        TransactionCounters transactionCounters = mock( TransactionCounters.class );
-        when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0l );
+        TransactionStats transactionCounters = mock( TransactionStats.class );
+        when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0L );
 
         Response<HandshakeResult> response = mock( Response.class );
         when( response.response() ).thenReturn( new HandshakeResult( 42, 2 ) );
@@ -324,17 +322,12 @@ public class SwitchToSlaveTest
                 storeCopyClient,
                 Suppliers.singleton( dataSource ),
                 Suppliers.singleton( transactionIdStoreMock ),
-                new Function<Slave,SlaveServer>()
-                {
-                    @Override
-                    public SlaveServer apply( Slave slave ) throws RuntimeException
-                    {
-                        SlaveServer server = mock( SlaveServer.class );
-                        InetSocketAddress inetSocketAddress = InetSocketAddress.createUnresolved( "localhost", 42 );
+                slave -> {
+                    SlaveServer server = mock( SlaveServer.class );
+                    InetSocketAddress inetSocketAddress = InetSocketAddress.createUnresolved( "localhost", 42 );
 
-                        when( server.getSocketAddress() ).thenReturn( inetSocketAddress );
-                        return server;
-                    }
+                    when( server.getSocketAddress() ).thenReturn( inetSocketAddress );
+                    return server;
                 }, updatePuller, pageCacheMock, mock( Monitors.class ), transactionCounters ) );
     }
 

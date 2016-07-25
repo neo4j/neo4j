@@ -38,7 +38,7 @@ public abstract class IndexRepresentation extends MappingRepresentation implemen
     @Override
     protected void serialize( final MappingSerializer serializer )
     {
-        serializer.putUriTemplate( "template", path() + "{key}/{value}" );
+        serializer.putRelativeUriTemplate( "template", path() + "{key}/{value}" );
         for ( Map.Entry<String, String> pair : type.entrySet() )
         {
             serializer.putString( pair.getKey(), pair.getValue() );

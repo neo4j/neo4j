@@ -23,13 +23,13 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandReader;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,7 +39,7 @@ import static org.junit.Assert.fail;
 public class LogEntryParserV2_2Test
 {
     private final LogEntryVersion version = LogEntryVersion.V2_2;
-    private final CommandReader commandReader = version.newCommandReader();
+    private final CommandReaderFactory commandReader = new RecordStorageCommandReaderFactory();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 29 );
 
@@ -48,7 +48,7 @@ public class LogEntryParserV2_2Test
     {
         // given
         final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, 4, new byte[]{5}, position );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putInt( start.getMasterId() );
         channel.putInt( start.getLocalId() );
@@ -73,7 +73,7 @@ public class LogEntryParserV2_2Test
     {
         // given
         final LogEntryCommit commit = new OnePhaseCommit( version, 42, 21 );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong( commit.getTxId() );
         channel.putLong( commit.getTimeWritten() );
@@ -93,12 +93,11 @@ public class LogEntryParserV2_2Test
     public void shouldParseCommandsUsingAGivenFactory() throws IOException
     {
         // given
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( new NodeRecord( 0 ), new NodeRecord( 0 ) );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand( new NodeRecord( 0 ), new NodeRecord( 0 ) );
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
-        new CommandWriter( channel ).visitNodeCommand( nodeCommand );
+        nodeCommand.serialize( channel );
 
         channel.getCurrentPosition( marker );
 
@@ -111,13 +110,12 @@ public class LogEntryParserV2_2Test
         assertFalse( parser.skip() );
     }
 
-
     @Test
     public void shouldParseEmptyEntry() throws IOException
     {
         // when
         final LogEntryParser parser = version.entryParser( LogEntryByteCodes.EMPTY );
-        final LogEntry logEntry = parser.parse( version, new InMemoryLogChannel(), marker, commandReader );
+        final LogEntry logEntry = parser.parse( version, new InMemoryClosableChannel(), marker, commandReader );
 
         // then
         assertNull( logEntry );

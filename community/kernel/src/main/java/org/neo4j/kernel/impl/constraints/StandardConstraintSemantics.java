@@ -23,16 +23,14 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.api.txstate.TxStateVisitor;
-import org.neo4j.kernel.impl.api.StatementOperationParts;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 public class StandardConstraintSemantics implements ConstraintSemantics
 {
@@ -95,8 +93,8 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     }
 
     @Override
-    public TxStateVisitor decorateTxStateVisitor( StatementOperationParts operations, StoreStatement storeStatement,
-            StoreReadLayer storeLayer, TxStateHolder holder, TxStateVisitor visitor )
+    public TxStateVisitor decorateTxStateVisitor( StoreReadLayer storeLayer, ReadableTransactionState txState,
+            TxStateVisitor visitor )
     {
         return visitor;
     }

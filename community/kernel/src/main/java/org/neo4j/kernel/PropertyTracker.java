@@ -20,14 +20,13 @@
 package org.neo4j.kernel;
 
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.kernel.api.DataWriteOperations;
 
-/**
- * @deprecated This will be moved to internal packages in the next major release.
- */
-@Deprecated
 public interface PropertyTracker<T extends PropertyContainer>
 {
-    void propertyAdded( T primitive, String propertyName, Object propertyValue );
+    void setEnabled( boolean enabled );
+
+    void propertyAdded( DataWriteOperations ops, T primitive, String propertyName, Object propertyValue );
 
     void propertyRemoved( T primitive, String propertyName, Object propertyValue );
 

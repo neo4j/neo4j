@@ -148,12 +148,12 @@ public class TestProtocolServer
     public class TestMessageSource
             implements MessageSource, MessageProcessor
     {
-        Iterable<MessageProcessor> listeners = Listeners.newListeners();
+        final Listeners<MessageProcessor> listeners = new Listeners<>();
 
         @Override
         public void addMessageProcessor( MessageProcessor listener )
         {
-            listeners = Listeners.addListener( listener, listeners );
+            listeners.add( listener );
         }
 
         @Override

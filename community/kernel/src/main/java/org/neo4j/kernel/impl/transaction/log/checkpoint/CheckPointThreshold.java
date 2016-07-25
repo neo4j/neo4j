@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
 
 /**
  * A check point threshold provides information if a check point is required or not.

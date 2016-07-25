@@ -19,17 +19,19 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.util.Arrays;
+
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
-
-import org.junit.Ignore;
-import org.junit.Test;
-
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -54,12 +56,12 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
         int nodeId1 = 1;
         int nodeId2 = 2;
 
-        IndexConfiguration indexConfig = new IndexConfiguration( true );
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexConfiguration indexConfig = IndexConfiguration.UNIQUE;
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexConfig, indexSamplingConfig );
         populator.create();
-        populator.add( nodeId1, value );
-        populator.add( nodeId2, value );
+        populator.add( Arrays.asList( NodePropertyUpdate.add( nodeId1, 0, value, new long[]{0} ),
+                NodePropertyUpdate.add( nodeId2, 0, value, new long[]{0} ) ) );
         try
         {
             PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );

@@ -38,7 +38,6 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
 import javax.management.Descriptor;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -52,11 +51,11 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
-import org.neo4j.helpers.Triplet;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.configuration.AsciiDocListGenerator;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.configuration.docs.AsciiDocListGenerator;
+import org.neo4j.kernel.configuration.docs.SettingDescription;
 import org.neo4j.test.AsciiDocGenerator;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -70,7 +69,7 @@ public class JmxDocTest
     private static final List<String> QUERIES = Collections.singletonList( "org.neo4j:*" );
     private static final String JAVADOC_URL = "link:javadocs/";
     private static final int EXPECTED_NUMBER_OF_BEANS = 12;
-    private static final Set<String> EXCLUDES = IteratorUtil.set( "JMX Server" );
+    private static final Set<String> EXCLUDES = Iterators.set( "JMX Server" );
     private static final Map<String, String> TYPES = new HashMap<String, String>()
     {
         {
@@ -88,8 +87,7 @@ public class JmxDocTest
     {
         File storeDir = test.graphDbDir();
         GraphDatabaseBuilder builder =
-                new TestHighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder(
-                        storeDir.getAbsolutePath() );
+                new TestHighlyAvailableGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
         d1b = builder.setConfig( ClusterSettings.server_id, "1" )
                      .setConfig( "jmx.port", "9913" )
                      .setConfig( ClusterSettings.initial_hosts, ":5001" )
@@ -109,7 +107,7 @@ public class JmxDocTest
     @Test
     public void dumpJmxInfo() throws Exception
     {
-        List<Triplet<String, String, String>> beanItems = new ArrayList<>();
+        List<SettingDescription> settingDescriptions = new ArrayList<>();
         AsciiDocListGenerator listGenerator = new AsciiDocListGenerator( "jmx-list", "MBeans exposed by Neo4j", false );
 
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -159,7 +157,7 @@ public class JmxDocTest
                     .replace( '\n', ' ' );
 
             String id = getId( name );
-            beanItems.add( Triplet.of( id, name, description ) );
+            settingDescriptions.add( new SettingDescription( id, name, description ) );
 
             writeDetailsToFile( id, objectName, bean, info, description );
         }
@@ -167,7 +165,7 @@ public class JmxDocTest
         try
         {
             fw = AsciiDocGenerator.getFW( "target/docs/ops", "JMX List" );
-            fw.write( listGenerator.generateListAndTableCombo( beanItems ) );
+            fw.write( listGenerator.generateListAndTableCombo( settingDescriptions ) );
         }
         finally
         {
@@ -304,8 +302,7 @@ public class JmxDocTest
         beanInfo.append( "[options=\"header\", cols=\"23m,37,20m,20m\"]\n"
                 + "|===\n"
                 + "|Name|Description|ReturnType|Signature\n" );
-        SortedSet<String> operationInfo = new TreeSet<String>(
-                String.CASE_INSENSITIVE_ORDER );
+        SortedSet<String> operationInfo = new TreeSet<>( String.CASE_INSENSITIVE_ORDER );
         for ( MBeanOperationInfo operInfo : operations )
         {
             StringBuilder operationRow = new StringBuilder( 512 );

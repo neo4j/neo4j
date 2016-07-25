@@ -21,24 +21,24 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class MergeTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A:Person KNOWS B:Person")
   val title = "MERGE"
-  val css = "write c4-3 c5-4 c6-1"
+  val css = "write c4-3 c5-4 c6-2"
   override val linkId = "query-merge"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "merge" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
+        assertStats(result, nodesCreated = 1, propertiesWritten = 2, labelsAdded = 1)
         assert(result.toList.size === 1)
       case "merge-rel" =>
         assertStats(result, relationshipsCreated = 1)
         assert(result.toList.size === 1)
       case "merge-sub" =>
-        assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+        assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1)
         assert(result.toList.size === 1)
     }
   }

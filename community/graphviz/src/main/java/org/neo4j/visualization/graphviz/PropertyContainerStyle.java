@@ -23,26 +23,26 @@ import java.io.IOException;
 
 interface PropertyContainerStyle
 {
-	/**
-	 * Emit the end of a node or relationship.
-	 * @param stream
-	 *            the stream to emit the end on.
-	 * @throws IOException
-	 *             if there is an error on the stream.
-	 */
-	void emitEnd( Appendable stream ) throws IOException;
+    /**
+     * Emit the end of a node or relationship.
+     * @param stream
+     *            the stream to emit the end on.
+     * @throws IOException
+     *             if there is an error on the stream.
+     */
+    void emitEnd( Appendable stream ) throws IOException;
 
-	/**
-	 * Emit a property of a node of relationship.
-	 * @param stream
-	 *            the stream to emit the property on.
-	 * @param key
-	 *            the key of the property.
-	 * @param value
-	 *            the value of the property.
-	 * @throws IOException
-	 *             if there is an error on the stream.
-	 */
-	void emitProperty( Appendable stream, String key, Object value )
-	    throws IOException;
+    /**
+     * Emit a property of a node of relationship.
+     * @param stream
+     *            the stream to emit the property on.
+     * @param key
+     *            the key of the property.
+     * @param value
+     *            the value of the property.
+     * @throws IOException
+     *             if there is an error on the stream.
+     */
+    void emitProperty( Appendable stream, String key, Object value )
+        throws IOException;
 }

@@ -17,34 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/**
- * Copyright (c) 2002-2015 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -53,25 +35,20 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
-
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_STRINGS;
+import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.schema.IndexSchemaRule;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 /**
  * This is the object-caching layer. It delegates to the legacy object cache system if possible, or delegates to the
@@ -83,32 +60,25 @@ import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_STRINGS;
 public class CacheLayer implements StoreReadLayer
 {
     private static final Function<? super SchemaRule, IndexDescriptor> TO_INDEX_RULE =
-            new Function<SchemaRule, IndexDescriptor>()
-            {
-                @Override
-                public IndexDescriptor apply( SchemaRule from )
-                {
-                    IndexRule rule = (IndexRule) from;
-                    // We know that we only have int range of property key ids.
-                    return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
-                }
+            from -> {
+                IndexRule rule = (IndexRule) from;
+                // We know that we only have int range of property key ids.
+                return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
             };
 
-    private final ProcedureCache procedureCache;
     private final SchemaCache schemaCache;
     private final DiskLayer diskLayer;
 
-    public CacheLayer( DiskLayer diskLayer, SchemaCache schemaCache, ProcedureCache procedureCache )
+    public CacheLayer( DiskLayer diskLayer, SchemaCache schemaCache )
     {
         this.diskLayer = diskLayer;
         this.schemaCache = schemaCache;
-        this.procedureCache = procedureCache;
     }
 
     @Override
-    public StoreStatement acquireStatement()
+    public StorageStatement newStatement()
     {
-        return diskLayer.acquireStatement();
+        return diskLayer.newStatement();
     }
 
     @Override
@@ -124,14 +94,14 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId )
+    public Iterator<IndexDescriptor> uniquenessIndexesGetForLabel( int labelId )
     {
         return toIndexDescriptors( schemaCache.schemaRulesForLabel( labelId ),
                 SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetAll()
+    public Iterator<IndexDescriptor> uniquenessIndexesGetAll()
     {
         return toIndexDescriptors( schemaCache.schemaRules(), SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
     }
@@ -139,22 +109,15 @@ public class CacheLayer implements StoreReadLayer
     private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<SchemaRule> rules,
             final SchemaRule.Kind kind )
     {
-        Iterator<SchemaRule> filteredRules = filter( new Predicate<SchemaRule>()
-        {
-            @Override
-            public boolean test( SchemaRule item )
-            {
-                return item.getKind() == kind;
-            }
-        }, rules.iterator() );
-        return map( TO_INDEX_RULE, filteredRules );
+        Iterator<SchemaRule> filteredRules = Iterators.filter( item -> item.getKind() == kind, rules.iterator() );
+        return Iterators.map( TO_INDEX_RULE, filteredRules );
     }
 
     @Override
     public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        IndexRule rule = indexRule( index, SchemaStorage.IndexRuleKind.ALL );
+        IndexSchemaRule rule = indexRule( index, Predicates.alwaysTrue() );
         if ( rule != null )
         {
             return rule.getOwningConstraint();
@@ -163,26 +126,26 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public long indexGetCommittedId( IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
+    public long indexGetCommittedId( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
             throws SchemaRuleNotFoundException
     {
-        IndexRule rule = indexRule( index, kind );
+        IndexSchemaRule rule = indexRule( index, filter );
         if ( rule != null )
         {
             return rule.getId();
         }
-        return diskLayer.indexGetCommittedId( index, kind );
+        return diskLayer.indexGetCommittedId( index, filter );
     }
 
     @Override
-    public IndexRule indexRule( IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
+    public IndexSchemaRule indexRule( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
     {
         for ( SchemaRule rule : schemaCache.schemaRulesForLabel( index.getLabelId() ) )
         {
-            if ( rule instanceof IndexRule )
+            if ( rule instanceof IndexSchemaRule )
             {
-                IndexRule indexRule = (IndexRule) rule;
-                if ( kind.isOfKind( indexRule ) && indexRule.getPropertyKey() == index.getPropertyKeyId() )
+                IndexSchemaRule indexRule = (IndexSchemaRule) rule;
+                if ( filter.test( indexRule.getKind() ) && indexRule.getPropertyKey() == index.getPropertyKeyId() )
                 {
                     return indexRule;
                 }
@@ -192,9 +155,9 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
+    public PrimitiveIntIterator graphGetPropertyKeys()
     {
-        return diskLayer.graphGetPropertyKeys( state );
+        return diskLayer.graphGetPropertyKeys();
     }
 
     @Override
@@ -204,7 +167,7 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<DefinedProperty> graphGetAllProperties()
+    public Iterator<StorageProperty> graphGetAllProperties()
     {
         return diskLayer.graphGetAllProperties();
     }
@@ -241,72 +204,13 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodeGetFromUniqueIndexSeek(
-            KernelStatement state,
-            IndexDescriptor index,
-            Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException
-    {
-        return diskLayer.nodeGetFromUniqueIndexSeek( state, index, value );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId )
+    public PrimitiveLongIterator nodesGetForLabel( StorageStatement state, int labelId )
     {
         return diskLayer.nodesGetForLabel( state, labelId );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state,
-            IndexDescriptor index,
-            Object value )
-            throws IndexNotFoundKernelException
-    {
-        return diskLayer.nodesGetFromIndexSeek( state, index, value );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromInclusiveNumericIndexRangeSeek( KernelStatement state,
-            IndexDescriptor index,
-            Number lower,
-            Number upper )
-            throws IndexNotFoundKernelException
-
-    {
-        return diskLayer.nodesGetFromInclusiveNumericIndexRangeSeek( state, index, lower, upper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement state,
-                                                                     IndexDescriptor index,
-                                                                     String lower, boolean includeLower,
-                                                                     String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-
-    {
-        return COMPARE_STRINGS.isEmptyRange( lower, includeLower, upper, includeUpper )
-            ? PrimitiveLongCollections.emptyIterator()
-            : diskLayer.nodesGetFromIndexRangeSeekByString( state, index, lower, includeLower, upper, includeUpper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
-                                                                     IndexDescriptor index,
-                                                                     String prefix )
-            throws IndexNotFoundKernelException
-    {
-        return diskLayer.nodesGetFromIndexRangeSeekByPrefix( state, index, prefix );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )
-            throws IndexNotFoundKernelException
-    {
-        return diskLayer.nodesGetFromIndexScan( state, index );
-    }
-
-    @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
+    public IndexDescriptor indexGetForLabelAndPropertyKey( int labelId, int propertyKey )
     {
         return schemaCache.indexDescriptor( labelId, propertyKey );
     }
@@ -319,6 +223,13 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
+    public PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
+    {
+        return diskLayer.indexGetPopulationProgress( descriptor );
+    }
+
+    @Override
     public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return diskLayer.indexSize( descriptor );
@@ -328,18 +239,6 @@ public class CacheLayer implements StoreReadLayer
     public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return diskLayer.indexUniqueValuesPercentage( descriptor );
-    }
-
-    @Override
-    public Iterator<ProcedureDescriptor> proceduresGetAll()
-    {
-        return procedureCache.getAll();
-    }
-
-    @Override
-    public ProcedureDescriptor procedureGet( ProcedureSignature.ProcedureName name )
-    {
-        return procedureCache.get( name );
     }
 
     @Override
@@ -391,6 +290,12 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
+    public Iterator<Token> relationshipTypeGetAllTokens()
+    {
+        return diskLayer.relationshipTypeGetAllTokens();
+    }
+
+    @Override
     public int relationshipTypeGetForName( String relationshipTypeName )
     {
         return diskLayer.relationshipTypeGetForName( relationshipTypeName );
@@ -434,12 +339,6 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public long highestNodeIdInUse()
-    {
-        return diskLayer.highestNodeIdInUse();
-    }
-
-    @Override
     public PrimitiveLongIterator nodesGetAll()
     {
         return diskLayer.nodesGetAll();
@@ -473,5 +372,53 @@ public class CacheLayer implements StoreReadLayer
     public void releaseRelationship( long id )
     {
         diskLayer.releaseRelationship( id );
+    }
+
+    @Override
+    public long nodesGetCount()
+    {
+        return diskLayer.nodesGetCount();
+    }
+
+    @Override
+    public long relationshipsGetCount()
+    {
+        return diskLayer.relationshipsGetCount();
+    }
+
+    @Override
+    public int labelCount()
+    {
+        return diskLayer.labelCount();
+    }
+
+    @Override
+    public int propertyKeyCount()
+    {
+        return diskLayer.propertyKeyCount();
+    }
+
+    @Override
+    public int relationshipTypeCount()
+    {
+        return diskLayer.relationshipTypeCount();
+    }
+
+    @Override
+    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
+    {
+        return diskLayer.indexUpdatesAndSize( index, target );
+    }
+
+    @Override
+    public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
+    {
+        return diskLayer.indexSample( index, target );
+    }
+
+    @Override
+    public boolean nodeExists( long id )
+    {
+        return diskLayer.nodeExists( id );
     }
 }

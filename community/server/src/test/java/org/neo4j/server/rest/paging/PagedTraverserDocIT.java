@@ -33,8 +33,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import javax.ws.rs.core.MediaType;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -56,7 +56,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.test.SuppressOutput.suppressAll;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class PagedTraverserDocIT extends ExclusiveServerTestBase
 {
@@ -72,8 +72,8 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     @ClassRule
     public static TemporaryFolder staticFolder = new TemporaryFolder();
 
-    public
     @Rule
+    public
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
     private static FakeClock clock;
 
@@ -88,18 +88,13 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     {
         clock = new FakeClock();
         server = CommunityServerBuilder.server()
-                .usingDatabaseDir( staticFolder.getRoot().getAbsolutePath() )
+                .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
                 .withClock( clock )
                 .build();
 
-        suppressAll().call( new Callable<Void>()
-        {
-            @Override
-            public Void call() throws Exception
-            {
-                server.start();
-                return null;
-            }
+        suppressAll().call( (Callable<Void>) () -> {
+            server.start();
+            return null;
         } );
         functionalTestHelper = new FunctionalTestHelper( server );
     }
@@ -113,14 +108,9 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     @AfterClass
     public static void stopServer() throws Exception
     {
-        suppressAll().call( new Callable<Void>()
-        {
-            @Override
-            public Void call() throws Exception
-            {
-                server.stop();
-                return null;
-            }
+        suppressAll().call( (Callable<Void>) () -> {
+            server.stop();
+            return null;
         } );
     }
 
@@ -305,14 +295,13 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         assertEquals( 400, response.getStatus() );
     }
 
-
     @Test
     public void shouldRespondWith400OnScriptErrors()
     {
         GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
 
         theStartNode = createLinkedList( 1, server.getDatabase() );
-        
+
         JaxRsResponse response = RestRequest.req().post(
                 functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize=50",
                 "{"
@@ -349,7 +338,6 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
 
         // when
         JaxRsResponse pagedTraverserResponse = createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( 60, 1 );
-
 
         System.out.println( pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ) );
 
@@ -485,7 +473,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
 
                 if ( previous != null )
                 {
-                    previous.createRelationshipTo( current, DynamicRelationshipType.withName( "NEXT" ) );
+                    previous.createRelationshipTo( current, RelationshipType.withName( "NEXT" ) );
                 }
                 else
                 {

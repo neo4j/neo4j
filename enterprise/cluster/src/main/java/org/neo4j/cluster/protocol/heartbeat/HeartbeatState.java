@@ -52,13 +52,13 @@ public enum HeartbeatState
                     {
                         case addHeartbeatListener:
                         {
-                            context.addHeartbeatListener( (HeartbeatListener) message.getPayload() );
+                            context.addHeartbeatListener( message.getPayload() );
                             break;
                         }
 
                         case removeHeartbeatListener:
                         {
-                            context.removeHeartbeatListener( (HeartbeatListener) message.getPayload() );
+                            context.removeHeartbeatListener( message.getPayload() );
                             break;
                         }
 
@@ -77,6 +77,9 @@ public enum HeartbeatState
 
                             return heartbeat;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;
@@ -102,7 +105,6 @@ public enum HeartbeatState
                             {
                                 break;
                             }
-
 
                             if ( state.getServer() == null )
                             {
@@ -253,15 +255,18 @@ public enum HeartbeatState
 
                         case addHeartbeatListener:
                         {
-                            context.addHeartbeatListener( (HeartbeatListener) message.getPayload() );
+                            context.addHeartbeatListener( message.getPayload() );
                             break;
                         }
 
                         case removeHeartbeatListener:
                         {
-                            context.removeHeartbeatListener( (HeartbeatListener) message.getPayload() );
+                            context.removeHeartbeatListener( message.getPayload() );
                             break;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;

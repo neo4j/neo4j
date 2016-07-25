@@ -69,7 +69,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     {
         // Given
         // a node with a constrained label and a long value
-        long propertyValue = 285414114323346805l;
+        long propertyValue = 285414114323346805L;
         long firstNode = constrainedNode( "label1", "key1", propertyValue );
 
         DataWriteOperations statement = dataWriteOperationsInNewTransaction();

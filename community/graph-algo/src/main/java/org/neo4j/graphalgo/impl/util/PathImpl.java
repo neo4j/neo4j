@@ -31,7 +31,7 @@ import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.ReverseArrayIterator;
 
-import static org.neo4j.helpers.collection.IteratorUtil.iteratorsEqual;
+import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 
 public final class PathImpl implements Path
 {
@@ -170,7 +170,7 @@ public final class PathImpl implements Path
     {
         return nodeIterator( start, relationships() );
     }
-    
+
     @Override
     public Iterable<Node> reverseNodes()
     {
@@ -241,7 +241,7 @@ public final class PathImpl implements Path
             }
         };
     }
-    
+
     @Override
     public Iterable<Relationship> reverseRelationships()
     {

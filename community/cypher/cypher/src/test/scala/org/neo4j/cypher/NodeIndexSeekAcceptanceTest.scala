@@ -22,7 +22,7 @@ package org.neo4j.cypher
 /**
  * These tests are testing the actual index implementation, thus they should all check the actual result.
  * If you only want to verify that plans using indexes are actually planned, please use
- * [[org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LeafPlanningIntegrationTest]]
+ * [[org.neo4j.cypher.internal.compiler.v3_1.planner.logical.LeafPlanningIntegrationTest]]
  */
 class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
 
@@ -30,7 +30,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     setUpDatabaseForTests()
 
     // When
-    val result = executeWithAllPlanners("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
 
     // Then
     result should (use("NodeIndexSeek") and be(empty))
@@ -46,7 +46,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     for (i <- 4 to 30) createLabeledNode(Map("id" -> i), "Prop")
 
     // When
-    val result = executeWithAllPlanners("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
+    val result = executeWithAllPlannersAndCompatibilityMode("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
 
     // Then
     val expected = List(Map("n" -> n1), Map("n" -> n2), Map("n" -> n3))
@@ -73,7 +73,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     graph.createIndex("L", "l")
     graph.createIndex("R", "r")
 
-    val result = executeWithAllPlanners("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
     result should (use("NodeIndexSeek") and have size 100)
   }
 
@@ -117,7 +117,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
         |RETURN m""".stripMargin
 
     // When
-    val result = executeWithAllPlanners(query)
+    val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
     result.toList should equal(List(
@@ -142,7 +142,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
         |RETURN m""".stripMargin
 
     // When
-    val result = executeWithAllPlanners(query)
+    val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
     result.toList should equal(List(
@@ -153,19 +153,19 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   private def setUpDatabaseForTests() {
-    executeWithRulePlanner(
+    updateWithBothPlannersAndCompatibilityMode(
       """CREATE (architect:Matrix { name:'The Architect' }),
         |       (smith:Matrix { name:'Agent Smith' }),
         |       (cypher:Matrix:Crew { name:'Cypher' }),
         |       (trinity:Crew { name:'Trinity' }),
         |       (morpheus:Crew { name:'Morpheus' }),
         |       (neo:Crew { name:'Neo' }),
-        |       smith-[:CODED_BY]->architect,
-        |       cypher-[:KNOWS]->smith,
-        |       morpheus-[:KNOWS]->trinity,
-        |       morpheus-[:KNOWS]->cypher,
-        |       neo-[:KNOWS]->morpheus,
-        |       neo-[:LOVES]->trinity""".stripMargin)
+        |       (smith)-[:CODED_BY]->(architect),
+        |       (cypher)-[:KNOWS]->(smith),
+        |       (morpheus)-[:KNOWS]->(trinity),
+        |       (morpheus)-[:KNOWS]->(cypher),
+        |       (neo)-[:KNOWS]->(morpheus),
+        |       (neo)-[:LOVES]->(trinity)""".stripMargin)
 
     for (i <- 1 to 10) createLabeledNode(Map("name" -> ("Joe" + i)), "Crew")
 

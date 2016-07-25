@@ -60,16 +60,11 @@ public class NodeCountInputs implements Input
                     private int lineNumber;
 
                     @Override
-                    public boolean hasNext()
+                    protected InputNode fetchNextOrNull()
                     {
-                        return lineNumber < nodeCount;
-                    }
-
-                    @Override
-                    public InputNode next()
-                    {
-                        lineNumber++;
-                        return new InputNode( "", lineNumber, 0, lineNumber, properties, null, labels, null );
+                        return lineNumber < nodeCount
+                                ? new InputNode( "", ++lineNumber, 0, lineNumber, properties, null, labels, null )
+                                : null;
                     }
 
                     @Override
@@ -96,7 +91,7 @@ public class NodeCountInputs implements Input
             @Override
             public InputIterator<InputRelationship> iterator()
             {
-                return new InputIterator.Adapter<>();
+                return new InputIterator.Empty<>();
             }
 
             @Override
@@ -117,12 +112,6 @@ public class NodeCountInputs implements Input
     public IdGenerator idGenerator()
     {
         return IdGenerators.startingFromTheBeginning();
-    }
-
-    @Override
-    public boolean specificRelationshipIds()
-    {
-        return true;
     }
 
     @Override

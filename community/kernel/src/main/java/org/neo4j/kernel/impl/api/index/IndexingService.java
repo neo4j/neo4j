@@ -33,31 +33,26 @@ import java.util.concurrent.Future;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
-import org.neo4j.function.BiConsumer;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
+import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -65,12 +60,13 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
-import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexPopulation;
 
 /**
  * Manages the indexes that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
@@ -87,18 +83,22 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * If, however, it is {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, the index provider is required to
  * also guarantee that the index had been flushed to disk.
  */
-public class IndexingService extends LifecycleAdapter implements PrimitiveLongVisitor<RuntimeException>
+public class IndexingService extends LifecycleAdapter
 {
     private final IndexSamplingController samplingController;
-    private final IndexProxySetup proxySetup;
+    private final IndexProxyCreator indexProxyCreator;
     private final IndexStoreView storeView;
     private final SchemaIndexProviderMap providerMap;
     private final IndexMapReference indexMapRef;
     private final Iterable<IndexRule> indexRules;
     private final Log log;
     private final TokenNameLookup tokenNameLookup;
+    private final MultiPopulatorFactory multiPopulatorFactory;
+    private final LogProvider logProvider;
     private final Monitor monitor;
     private final PrimitiveLongSet recoveredNodeIds = Primitive.longSet( 20 );
+    private final JobScheduler scheduler;
+    private final Runnable schemaStateChangeCallback;
 
     enum State
     {
@@ -121,7 +121,7 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
         void awaitingPopulationOfRecoveredIndex( long indexId, IndexDescriptor descriptor );
     }
 
-    public static abstract class MonitorAdapter implements Monitor
+    public static class MonitorAdapter implements Monitor
     {
         @Override
         public void appliedRecoveredData( Iterable<NodePropertyUpdate> updates )
@@ -149,61 +149,36 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
         }
     }
 
-    public static final Monitor NO_MONITOR = new MonitorAdapter()
-    {
-    };
+    public static final Monitor NO_MONITOR = new MonitorAdapter();
 
     private volatile State state = State.NOT_STARTED;
 
-    // use IndexService.create do not instantiate manually
-    protected IndexingService( IndexProxySetup proxySetup,
-                               SchemaIndexProviderMap providerMap,
-                               IndexMapReference indexMapRef,
-                               IndexStoreView storeView,
-                               Iterable<IndexRule> indexRules,
-                               IndexSamplingController samplingController,
-                               TokenNameLookup tokenNameLookup,
-                               LogProvider logProvider,
-                               Monitor monitor )
+    IndexingService( IndexProxyCreator indexProxyCreator,
+            SchemaIndexProviderMap providerMap,
+            IndexMapReference indexMapRef,
+            IndexStoreView storeView,
+            Iterable<IndexRule> indexRules,
+            IndexSamplingController samplingController,
+            TokenNameLookup tokenNameLookup,
+            JobScheduler scheduler,
+            Runnable schemaStateChangeCallback,
+            MultiPopulatorFactory multiPopulatorFactory,
+            LogProvider logProvider,
+            Monitor monitor )
     {
-        this.proxySetup = proxySetup;
+        this.indexProxyCreator = indexProxyCreator;
         this.providerMap = providerMap;
         this.indexMapRef = indexMapRef;
         this.storeView = storeView;
         this.indexRules = indexRules;
         this.samplingController = samplingController;
         this.tokenNameLookup = tokenNameLookup;
+        this.scheduler = scheduler;
+        this.schemaStateChangeCallback = schemaStateChangeCallback;
+        this.multiPopulatorFactory = multiPopulatorFactory;
+        this.logProvider = logProvider;
         this.monitor = monitor;
         this.log = logProvider.getLog( getClass() );
-    }
-
-    public static IndexingService create( IndexSamplingConfig samplingConfig,
-                                          JobScheduler scheduler,
-                                          SchemaIndexProviderMap providerMap,
-                                          IndexStoreView storeView,
-                                          TokenNameLookup tokenNameLookup,
-                                          UpdateableSchemaState updateableSchemaState,
-                                          Iterable<IndexRule> indexRules,
-                                          LogProvider logProvider, Monitor monitor )
-    {
-        if ( providerMap == null || providerMap.getDefaultProvider() == null )
-        {
-            // For now
-            throw new IllegalStateException( "You cannot run the database without an index provider, " +
-                    "please make sure that a valid provider (subclass of " + SchemaIndexProvider.class.getName() +
-                    ") is on your classpath." );
-        }
-
-        IndexMapReference indexMapRef = new IndexMapReference();
-        IndexSamplingControllerFactory factory =
-                new IndexSamplingControllerFactory( samplingConfig, storeView, scheduler, tokenNameLookup, logProvider );
-        IndexSamplingController indexSamplingController = factory.create( indexMapRef );
-        IndexProxySetup proxySetup = new IndexProxySetup(
-                samplingConfig, storeView, providerMap, updateableSchemaState, tokenNameLookup, scheduler, logProvider
-        );
-
-        return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
-                indexSamplingController, tokenNameLookup, logProvider, monitor );
     }
 
     /**
@@ -223,23 +198,25 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
             SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
             SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
             InternalIndexState initialState = provider.getInitialState( indexId );
-            log.info( proxySetup.indexStateInfo( "init", indexId, initialState, descriptor ) );
+            log.info( indexStateInfo( "init", indexId, initialState, descriptor ) );
             boolean constraint = indexRule.isConstraintIndex();
 
             switch ( initialState )
             {
                 case ONLINE:
                     indexProxy =
-                        proxySetup.createOnlineIndexProxy( indexId, descriptor, providerDescriptor, constraint );
+                        indexProxyCreator.createOnlineIndexProxy( indexId, descriptor, providerDescriptor, constraint );
                     break;
                 case POPULATING:
                     // The database was shut down during population, or a crash has occurred, or some other sad thing.
 
-                    indexProxy = proxySetup.createRecoveringIndexProxy( descriptor, providerDescriptor, constraint );
+                    indexProxy = indexProxyCreator
+                            .createRecoveringIndexProxy( descriptor, providerDescriptor, constraint );
                     break;
                 case FAILED:
                     IndexPopulationFailure failure = failure( provider.getPopulationFailure( indexId ) );
-                    indexProxy = proxySetup.createFailedIndexProxy( indexId, descriptor, providerDescriptor, constraint, failure );
+                    indexProxy = indexProxyCreator
+                            .createFailedIndexProxy( indexId, descriptor, providerDescriptor, constraint, failure );
                     break;
                 default:
                     throw new IllegalArgumentException( "" + initialState );
@@ -262,28 +239,25 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
         final Map<Long,RebuildingIndexDescriptor> rebuildingDescriptors = new HashMap<>();
 
         // Find all indexes that are not already online, do not require rebuilding, and create them
-        indexMap.foreachIndexProxy( new BiConsumer<Long, IndexProxy>()
-        {
-            @Override
-            public void accept( Long indexId, IndexProxy proxy )
+        indexMap.foreachIndexProxy( ( indexId, proxy ) -> {
+            InternalIndexState state = proxy.getState();
+            IndexDescriptor descriptor = proxy.getDescriptor();
+            log.info( indexStateInfo( "start", indexId, state, descriptor ) );
+            switch ( state )
             {
-                InternalIndexState state = proxy.getState();
-                IndexDescriptor descriptor = proxy.getDescriptor();
-                log.info( proxySetup.indexStateInfo( "start", indexId, state, descriptor ) );
-                switch ( state )
-                {
-                    case ONLINE:
-                        // Don't do anything, index is ok.
-                        break;
-                    case POPULATING:
-                        // Remember for rebuilding
-                        rebuildingDescriptors.put( indexId, new RebuildingIndexDescriptor(
-                                descriptor, proxy.getProviderDescriptor(), proxy.config() ) );
-                        break;
-                    case FAILED:
-                        // Don't do anything, the user needs to drop the index and re-create
-                        break;
-                }
+                case ONLINE:
+                    // Don't do anything, index is ok.
+                    break;
+                case POPULATING:
+                    // Remember for rebuilding
+                    rebuildingDescriptors.put( indexId, new RebuildingIndexDescriptor(
+                            descriptor, proxy.getProviderDescriptor(), proxy.config() ) );
+                    break;
+                case FAILED:
+                    // Don't do anything, the user needs to drop the index and re-create
+                    break;
+                default:
+                    throw new IllegalStateException( "Unknown state: " + state );
             }
         } );
 
@@ -291,21 +265,27 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
         dropRecoveringIndexes( indexMap, rebuildingDescriptors.keySet() );
 
         // Rebuild indexes by recreating and repopulating them
-        for ( Map.Entry<Long,RebuildingIndexDescriptor> entry : rebuildingDescriptors.entrySet() )
+        if ( !rebuildingDescriptors.isEmpty() )
         {
-            long indexId = entry.getKey();
-            RebuildingIndexDescriptor descriptors = entry.getValue();
+            IndexPopulationJob populationJob = newIndexPopulationJob();
+            for ( Map.Entry<Long,RebuildingIndexDescriptor> entry : rebuildingDescriptors.entrySet() )
+            {
+                long indexId = entry.getKey();
+                RebuildingIndexDescriptor descriptors = entry.getValue();
 
-            /*
-             * Passing in "false" for unique here may seem surprising, and.. well, yes, it is, I was surprised too.
-             * However, it is actually perfectly safe, because whenever we have constraint indexes here, they will
-             * be in a state where they didn't finish populating, and despite the fact that we re-create them here,
-             * they will get dropped as soon as recovery is completed by the constraint system.
-             */
-            IndexProxy proxy = proxySetup.createPopulatingIndexProxy(
-                    indexId, descriptors.getIndexDescriptor(), descriptors.getProviderDescriptor(), false, monitor );
-            proxy.start();
-            indexMap.putIndexProxy( indexId, proxy );
+                /*
+                 * Passing in "false" for unique here may seem surprising, and.. well, yes, it is, I was surprised too.
+                 * However, it is actually perfectly safe, because whenever we have constraint indexes here, they will
+                 * be in a state where they didn't finish populating, and despite the fact that we re-create them here,
+                 * they will get dropped as soon as recovery is completed by the constraint system.
+                 */
+                IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy(
+                        indexId, descriptors.getIndexDescriptor(), descriptors.getProviderDescriptor(), false,
+                        monitor, populationJob );
+                proxy.start();
+                indexMap.putIndexProxy( indexId, proxy );
+            }
+            startIndexPopulation( populationJob );
         }
 
         indexMapRef.setIndexMap( indexMap );
@@ -328,11 +308,11 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
             IndexProxy proxy;
             try
             {
-                proxy = getIndexProxy( entry.getKey().longValue() );
+                proxy = getIndexProxy( entry.getKey() );
             }
             catch ( IndexNotFoundKernelException e )
             {
-                throw new ThisShouldNotHappenError( "Mattias",
+                throw new IllegalStateException(
                         "What? This index was seen during recovery just now, why isn't it available now?" );
             }
 
@@ -354,14 +334,17 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
         {
             switch ( proxy.getState() )
             {
-            case ONLINE: return;
-            case FAILED: throw new IllegalStateException( "Index entered " + FAILED +
-                    " state while recovery waited for it to be fully populated" );
+            case ONLINE:
+                return;
+            case FAILED:
+                throw new IllegalStateException(
+                        "Index entered " + FAILED + " state while recovery waited for it to be fully populated" );
             case POPULATING:
                 // Sleep a short while and look at state again the next loop iteration
                 Thread.sleep( 10 );
                 break;
-            default: throw new IllegalStateException( proxy.getState().name() );
+            default:
+                throw new IllegalStateException( proxy.getState().name() );
             }
         }
     }
@@ -399,193 +382,172 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
         }
     }
 
-    /*
-     * Creates an index.
+    /**
+     * Applies updates from the given {@link IndexUpdates}, which may contain updates for one or more indexes.
+     * As long as index updates are derived from physical commands and store state there's special treatment
+     * during recovery since we cannot read from an unrecovered store, so in that case the nodes ids are simply
+     * noted and reindexed after recovery of the store has completed. That is also why {@link IndexUpdates}
+     * has one additional accessor method for getting the node ids.
+     *
+     * As far as {@link IndexingService} is concerned recovery happens between calls to {@link #init()} and
+     * {@link #start()}.
+     *
+     * @param updates {@link IndexUpdates} to apply.
+     * @throws IOException potentially thrown from index updating.
+     * @throws IndexEntryConflictException potentially thrown from index updating.
+     */
+    public void apply( IndexUpdates updates ) throws IOException, IndexEntryConflictException
+    {
+        if ( state == State.NOT_STARTED )
+        {
+            // We're in recovery, which means we'll merely be noting which entity ids are to be refreshed
+            // and we'll refresh them completely after recovery completes.
+            updates.collectUpdatedNodeIds( recoveredNodeIds );
+        }
+        else if ( state == State.RUNNING || state == State.STARTING )
+        {
+            apply( updates, IndexUpdateMode.ONLINE );
+        }
+        else
+        {
+            throw new IllegalStateException(
+                    "Can't apply index updates " + asList( updates ) + " while indexing service is " + state );
+        }
+    }
+
+    private void apply( IndexUpdates updates, IndexUpdateMode updateMode )
+            throws IOException, IndexEntryConflictException
+    {
+        try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
+        {
+            // TODO Sort the updates by index so that we don't have to create an IndexDescriptor object per update
+            for ( NodePropertyUpdate update : updates )
+            {
+                int propertyKeyId = update.getPropertyKeyId();
+                switch ( update.getUpdateMode() )
+                {
+                case ADDED:
+                    for ( int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++ )
+                    {
+                        processUpdate( update, updaterMap, update.getLabelAfter( i ), propertyKeyId );
+                    }
+                    break;
+
+                case REMOVED:
+                    for ( int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++ )
+                    {
+                        processUpdate( update, updaterMap, update.getLabelBefore( i ), propertyKeyId );
+                    }
+                    break;
+
+                case CHANGED:
+                    int lenBefore = update.getNumberOfLabelsBefore();
+                    int lenAfter = update.getNumberOfLabelsAfter();
+
+                    for ( int i = 0, j = 0; i < lenBefore && j < lenAfter; )
+                    {
+                        int labelBefore = update.getLabelBefore( i );
+                        int labelAfter = update.getLabelAfter( j );
+
+                        if ( labelBefore == labelAfter )
+                        {
+                            processUpdate( update, updaterMap, labelAfter, propertyKeyId );
+                            i++;
+                            j++;
+                        }
+                        else
+                        {
+                            if ( labelBefore < labelAfter )
+                            {
+                                i++;
+                            }
+                            else /* labelBefore > labelAfter */
+                            {
+                                j++;
+                            }
+                        }
+                    }
+                    break;
+
+                default:
+                    throw new IllegalStateException( "Unknown update mode: " + update.getUpdateMode() );
+                }
+            }
+        }
+    }
+
+    private void processUpdate( NodePropertyUpdate update, IndexUpdaterMap updaterMap, int labelId,
+            int propertyKeyId ) throws IOException, IndexEntryConflictException
+    {
+        IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
+        IndexUpdater updater = updaterMap.getUpdater( descriptor );
+        if ( updater != null )
+        {
+            updater.process( update );
+        }
+    }
+
+    /**
+     * Creates one or more indexes. They will all be populated by one and the same store scan.
      *
      * This code is called from the transaction infrastructure during transaction commits, which means that
      * it is *vital* that it is stable, and handles errors very well. Failing here means that the entire db
      * will shut down.
      */
-    public void createIndex( IndexRule rule )
+    public void createIndexes( IndexRule... rules ) throws IOException
     {
         IndexMap indexMap = indexMapRef.indexMapSnapshot();
+        IndexPopulationJob populationJob = null;
 
-        long ruleId = rule.getId();
-        IndexProxy index = indexMap.getIndexProxy( ruleId );
-        if ( index != null && state == State.NOT_STARTED )
+        for ( IndexRule rule : rules )
         {
-            // During recovery we might run into this scenario:
-            // - We're starting recovery on a database, where init() is called and all indexes that
-            //   are found in the store, instantiated and put into the IndexMap. Among them is index X.
-            // - While we recover the database we bump into a transaction creating index Y, with the
-            //   same IndexDescriptor, i.e. same label/property, as X. This is possible since this took
-            //   place before the creation of X.
-            // - When Y is dropped in between this creation and the creation of X (it will have to be
-            //   otherwise X wouldn't have had an opportunity to be created) the index is removed from
-            //   the IndexMap, both by id AND descriptor.
-            //
-            // Because of the scenario above we need to put this created index into the IndexMap
-            // again, otherwise it will disappear from the IndexMap (at least for lookup by descriptor)
-            // and not be able to accept changes applied from recovery later on.
-            indexMap.putIndexProxy( ruleId, index );
-            indexMapRef.setIndexMap( indexMap );
-            return;
-        }
-        final IndexDescriptor descriptor = new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
-        SchemaIndexProvider.Descriptor providerDescriptor = rule.getProviderDescriptor();
-        boolean constraint = rule.isConstraintIndex();
-        if ( state == State.RUNNING )
-        {
-            try
+            long ruleId = rule.getId();
+            IndexProxy index = indexMap.getIndexProxy( ruleId );
+            if ( index != null && state == State.NOT_STARTED )
             {
-                index = proxySetup.createPopulatingIndexProxy(
-                        ruleId, descriptor, providerDescriptor, constraint, monitor );
+                // During recovery we might run into this scenario:
+                // - We're starting recovery on a database, where init() is called and all indexes that
+                //   are found in the store, instantiated and put into the IndexMap. Among them is index X.
+                // - While we recover the database we bump into a transaction creating index Y, with the
+                //   same IndexDescriptor, i.e. same label/property, as X. This is possible since this took
+                //   place before the creation of X.
+                // - When Y is dropped in between this creation and the creation of X (it will have to be
+                //   otherwise X wouldn't have had an opportunity to be created) the index is removed from
+                //   the IndexMap, both by id AND descriptor.
+                //
+                // Because of the scenario above we need to put this created index into the IndexMap
+                // again, otherwise it will disappear from the IndexMap (at least for lookup by descriptor)
+                // and not be able to accept changes applied from recovery later on.
+                indexMap.putIndexProxy( ruleId, index );
+                indexMapRef.setIndexMap( indexMap );
+                continue;
+            }
+            final IndexDescriptor descriptor = new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
+            SchemaIndexProvider.Descriptor providerDescriptor = rule.getProviderDescriptor();
+            boolean constraint = rule.isConstraintIndex();
+            if ( state == State.RUNNING )
+            {
+                populationJob = populationJob == null ? newIndexPopulationJob() : populationJob;
+                index = indexProxyCreator.createPopulatingIndexProxy(
+                        ruleId, descriptor, providerDescriptor, constraint, monitor, populationJob );
                 index.start();
             }
-            catch ( IOException e )
+            else
             {
-                throw new RuntimeException( e );
+                index = indexProxyCreator.createRecoveringIndexProxy( descriptor, providerDescriptor, constraint );
             }
-        }
-        else
-        {
-            index = proxySetup.createRecoveringIndexProxy( descriptor, providerDescriptor, constraint );
+
+            indexMap.putIndexProxy( rule.getId(), index );
         }
 
-        indexMap.putIndexProxy( rule.getId(), index );
+        if ( populationJob != null )
+        {
+            startIndexPopulation( populationJob );
+        }
         indexMapRef.setIndexMap( indexMap );
     }
 
-    @Override
-    public boolean visited( long recoveredNodeId ) throws RuntimeException
-    {
-        if ( state != State.NOT_STARTED )
-        {
-            throw new IllegalStateException(
-                    "Can't queue recovered node ids " + recoveredNodeId + " while indexing service is " + state );
-        }
-
-        recoveredNodeIds.add( recoveredNodeId );
-        return false;
-    }
-
-    public ValidatedIndexUpdates validate( Iterable<NodePropertyUpdate> updates, IndexUpdateMode updateMode )
-    {
-        if ( state != State.STARTING && state != State.RUNNING )
-        {
-            throw new IllegalStateException(
-                    "Can't validate index updates " + toList( updates ) + " while indexing service is " + state );
-        }
-
-        IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode );
-
-        boolean updaterMapShouldBeClosed = true;
-        try
-        {
-            Map<IndexDescriptor,List<NodePropertyUpdate>> updatesByIndex =
-                    groupUpdatesByIndexDescriptor( updates, updaterMap );
-
-            if ( updatesByIndex.isEmpty() )
-            {
-                return ValidatedIndexUpdates.NONE;
-            }
-
-            AggregatedReservation aggregatedReservation = new AggregatedReservation( updatesByIndex.size() );
-            for ( Map.Entry<IndexDescriptor,List<NodePropertyUpdate>> entry : updatesByIndex.entrySet() )
-            {
-                validateAndRecordReservation( entry.getValue(), aggregatedReservation, updaterMap,
-                        entry.getKey() );
-            }
-
-            ValidatedIndexUpdates validatedUpdates =
-                    newValidatedIndexUpdates( updaterMap, updatesByIndex, aggregatedReservation );
-
-            updaterMapShouldBeClosed = false;
-
-            return validatedUpdates;
-        }
-        finally
-        {
-            if ( updaterMapShouldBeClosed )
-            {
-                updaterMap.close();
-            }
-        }
-    }
-
-    private void validateAndRecordReservation( List<NodePropertyUpdate> indexUpdates,
-            AggregatedReservation aggregatedReservation, IndexUpdaterMap updaterMap, IndexDescriptor descriptor )
-    {
-        boolean exceptionThrown = false;
-        try
-        {
-            IndexUpdater updater = updaterMap.getUpdater( descriptor );
-            Reservation reservation = updater.validate( indexUpdates );
-            aggregatedReservation.add( reservation );
-        }
-        catch ( IOException | IndexCapacityExceededException e )
-        {
-            exceptionThrown = true;
-            String indexName = descriptor.userDescription( tokenNameLookup );
-            throw new UnderlyingStorageException( "Validation of updates for index " + indexName + " failed", e );
-        }
-        catch ( Throwable t )
-        {
-            exceptionThrown = true;
-            throw t;
-        }
-        finally
-        {
-            if ( exceptionThrown )
-            {
-                aggregatedReservation.release();
-            }
-        }
-    }
-
-    private static ValidatedIndexUpdates newValidatedIndexUpdates( final IndexUpdaterMap indexUpdaters,
-            final Map<IndexDescriptor,List<NodePropertyUpdate>> updatesByIndex, final Reservation reservation )
-    {
-        return new ValidatedIndexUpdates()
-        {
-            @Override
-            public void flush() throws IOException, IndexEntryConflictException, IndexCapacityExceededException
-            {
-                for ( Map.Entry<IndexDescriptor,List<NodePropertyUpdate>> entry : updatesByIndex.entrySet() )
-                {
-                    IndexDescriptor indexDescriptor = entry.getKey();
-                    List<NodePropertyUpdate> updates = entry.getValue();
-
-                    IndexUpdater updater = indexUpdaters.getUpdater( indexDescriptor );
-                    for ( NodePropertyUpdate update : updates )
-                    {
-                        updater.process( update );
-                    }
-                }
-            }
-
-            @Override
-            public void close()
-            {
-                try
-                {
-                    reservation.release();
-                }
-                finally
-                {
-                    indexUpdaters.close();
-                }
-            }
-
-            @Override
-            public boolean hasChanges()
-            {
-                return !updatesByIndex.isEmpty();
-            }
-        };
-    }
-
-    private void applyRecoveredUpdates() throws IOException
+    private void applyRecoveredUpdates() throws IOException, IndexEntryConflictException
     {
         if ( log.isDebugEnabled() )
         {
@@ -594,121 +556,35 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
         monitor.applyingRecoveredData( recoveredNodeIds );
         if ( !recoveredNodeIds.isEmpty() )
         {
-            try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( IndexUpdateMode.BATCHED ) )
+            try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( IndexUpdateMode.RECOVERY ) )
             {
                 for ( IndexUpdater updater : updaterMap )
                 {
                     updater.remove( recoveredNodeIds );
                 }
-            }
 
-            List<NodePropertyUpdate> recoveredUpdates = readRecoveredUpdatesFromStore();
-
-            try ( ValidatedIndexUpdates validatedUpdates = validate( recoveredUpdates, IndexUpdateMode.BATCHED ) )
-            {
-                validatedUpdates.flush();
-                monitor.appliedRecoveredData( recoveredUpdates );
-            }
-            catch ( IndexEntryConflictException | IndexCapacityExceededException e )
-            {
-                throw new UnderlyingStorageException( e );
+                IndexUpdates updates = readRecoveredUpdatesFromStore();
+                apply( updates, IndexUpdateMode.RECOVERY );
+                monitor.appliedRecoveredData( updates );
             }
         }
         recoveredNodeIds.clear();
     }
 
-    private List<NodePropertyUpdate> readRecoveredUpdatesFromStore()
+    private IndexUpdates readRecoveredUpdatesFromStore()
     {
         final List<NodePropertyUpdate> recoveredUpdates = new ArrayList<>();
-
         recoveredNodeIds.visitKeys( new PrimitiveLongVisitor<RuntimeException>()
         {
             @Override
             public boolean visited( long nodeId )
             {
-                Iterables.addAll( recoveredUpdates, storeView.nodeAsUpdates( nodeId ) );
+                storeView.nodeAsUpdates( nodeId, recoveredUpdates );
                 return false;
             }
         } );
 
-        return recoveredUpdates;
-    }
-
-    private static Map<IndexDescriptor,List<NodePropertyUpdate>> groupUpdatesByIndexDescriptor(
-            Iterable<NodePropertyUpdate> updates, IndexUpdaterMap updaterMap )
-    {
-        int numberOfIndexes = updaterMap.numberOfIndexes();
-        Map<IndexDescriptor,List<NodePropertyUpdate>> updatesByIndex = new HashMap<>( numberOfIndexes, 1 );
-
-        for ( NodePropertyUpdate update : updates )
-        {
-            int propertyKeyId = update.getPropertyKeyId();
-            switch ( update.getUpdateMode() )
-            {
-            case ADDED:
-                for ( int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++ )
-                {
-                    IndexDescriptor descriptor = new IndexDescriptor( update.getLabelAfter( i ), propertyKeyId );
-                    storeUpdateIfIndexExists( updaterMap, update, descriptor, updatesByIndex );
-                }
-                break;
-
-            case REMOVED:
-                for ( int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++ )
-                {
-                    IndexDescriptor descriptor = new IndexDescriptor( update.getLabelBefore( i ), propertyKeyId );
-                    storeUpdateIfIndexExists( updaterMap, update, descriptor, updatesByIndex );
-                }
-                break;
-
-            case CHANGED:
-                int lenBefore = update.getNumberOfLabelsBefore();
-                int lenAfter = update.getNumberOfLabelsAfter();
-
-                for ( int i = 0, j = 0; i < lenBefore && j < lenAfter; )
-                {
-                    int labelBefore = update.getLabelBefore( i );
-                    int labelAfter = update.getLabelAfter( j );
-
-                    if ( labelBefore == labelAfter )
-                    {
-                        IndexDescriptor descriptor = new IndexDescriptor( labelAfter, propertyKeyId );
-                        storeUpdateIfIndexExists( updaterMap, update, descriptor, updatesByIndex );
-                        i++;
-                        j++;
-                    }
-                    else
-                    {
-                        if ( labelBefore < labelAfter )
-                        {
-                            i++;
-                        }
-                        else /* labelBefore > labelAfter */
-                        {
-                            j++;
-                        }
-                    }
-                }
-                break;
-            }
-        }
-
-        return updatesByIndex;
-    }
-
-    private static void storeUpdateIfIndexExists( IndexUpdaterMap updaterMap, NodePropertyUpdate update,
-            IndexDescriptor descriptor, Map<IndexDescriptor,List<NodePropertyUpdate>> updatesByIndex )
-    {
-        IndexUpdater updater = updaterMap.getUpdater( descriptor );
-        if ( updater != null )
-        {
-            List<NodePropertyUpdate> indexUpdates = updatesByIndex.get( descriptor );
-            if ( indexUpdates == null )
-            {
-                updatesByIndex.put( descriptor, indexUpdates = new ArrayList<>() );
-            }
-            indexUpdates.add( update );
-        }
+        return new DirectIndexUpdates( recoveredUpdates );
     }
 
     public void dropIndex( IndexRule rule )
@@ -873,11 +749,27 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
             snapshots.add( indexProxy.snapshotFiles() );
         }
 
-        return concatResourceIterators( snapshots.iterator() );
+        return Iterators.concatResourceIterators( snapshots.iterator() );
     }
 
-    // This is currently exposed for use by tests only
-    public IndexSamplingController samplingController()
+    private IndexPopulationJob newIndexPopulationJob()
+    {
+        MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create( storeView, logProvider );
+        return new IndexPopulationJob( storeView, multiPopulator, monitor, schemaStateChangeCallback );
+    }
+
+    private void startIndexPopulation( IndexPopulationJob job )
+    {
+        scheduler.schedule( indexPopulation, job );
+    }
+
+    private String indexStateInfo( String tag, Long indexId, InternalIndexState state, IndexDescriptor descriptor )
+    {
+        return format( "IndexingService.%s: index %d on %s is %s", tag, indexId,
+                descriptor.userDescription( tokenNameLookup ), state.name() );
+    }
+
+    public IndexSamplingController getSamplingController()
     {
         return samplingController;
     }

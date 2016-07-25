@@ -19,19 +19,20 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.neo4j.kernel.internal.Version;
+
 import static org.neo4j.server.rest.web.Surface.PATH_BATCH;
 import static org.neo4j.server.rest.web.Surface.PATH_CYPHER;
 import static org.neo4j.server.rest.web.Surface.PATH_EXTENSIONS;
 import static org.neo4j.server.rest.web.Surface.PATH_LABELS;
 import static org.neo4j.server.rest.web.Surface.PATH_NODES;
 import static org.neo4j.server.rest.web.Surface.PATH_NODE_INDEX;
+import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
 import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_INDEX;
 import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_TYPES;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
 import static org.neo4j.server.rest.web.Surface.PATH_TRANSACTION;
-
-import org.neo4j.kernel.Version;
 
 public class DatabaseRepresentation extends MappingRepresentation implements ExtensibleRepresentation
 {
@@ -51,17 +52,18 @@ public class DatabaseRepresentation extends MappingRepresentation implements Ext
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        serializer.putUri( "node", PATH_NODES );
-        serializer.putUri( "node_index", PATH_NODE_INDEX );
-        serializer.putUri( "relationship_index", PATH_RELATIONSHIP_INDEX );
-        serializer.putUri( "extensions_info", PATH_EXTENSIONS );
-        serializer.putUri( "relationship_types", PATH_RELATIONSHIP_TYPES );
-        serializer.putUri( "batch", PATH_BATCH );
-        serializer.putUri( "cypher", PATH_CYPHER );
-        serializer.putUri( "indexes", PATH_SCHEMA_INDEX );
-        serializer.putUri( "constraints", PATH_SCHEMA_CONSTRAINT );
-        serializer.putUri( "transaction", PATH_TRANSACTION );
-        serializer.putUri( "node_labels", PATH_LABELS );
+        serializer.putRelativeUri( "node", PATH_NODES );
+        serializer.putRelativeUri( "relationship", PATH_RELATIONSHIPS );
+        serializer.putRelativeUri( "node_index", PATH_NODE_INDEX );
+        serializer.putRelativeUri( "relationship_index", PATH_RELATIONSHIP_INDEX );
+        serializer.putRelativeUri( "extensions_info", PATH_EXTENSIONS );
+        serializer.putRelativeUri( "relationship_types", PATH_RELATIONSHIP_TYPES );
+        serializer.putRelativeUri( "batch", PATH_BATCH );
+        serializer.putRelativeUri( "cypher", PATH_CYPHER );
+        serializer.putRelativeUri( "indexes", PATH_SCHEMA_INDEX );
+        serializer.putRelativeUri( "constraints", PATH_SCHEMA_CONSTRAINT );
+        serializer.putRelativeUri( "transaction", PATH_TRANSACTION );
+        serializer.putRelativeUri( "node_labels", PATH_LABELS );
         serializer.putString( "neo4j_version", Version.getKernel().getReleaseVersion() );
     }
 }

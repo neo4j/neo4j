@@ -131,8 +131,8 @@ public class IndexProviderStore
         int wholeRecordsRead = bytesRead/RECORD_SIZE;
         if ( wholeRecordsRead < RECORD_COUNT && !allowUpgrade )
             throw new UpgradeNotAllowedByConfigurationException( "Index version (managed by " + file + ") has changed " +
-            		"and cannot be upgraded unless " + GraphDatabaseSettings.allow_store_upgrade.name() +
-            		"=true is supplied in the configuration" );
+                    "and cannot be upgraded unless " + GraphDatabaseSettings.allow_store_upgrade.name() +
+                    "=true is supplied in the configuration" );
 
         buf.flip();
         Long[] result = new Long[count];

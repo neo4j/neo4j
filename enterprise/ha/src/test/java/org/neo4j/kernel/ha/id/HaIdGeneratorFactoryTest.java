@@ -29,15 +29,15 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.id.HaIdGeneratorFactory.IdRangeIterator;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
@@ -50,7 +50,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.ha.id.HaIdGeneratorFactory.VALUE_REPRESENTING_NULL;
+import static org.neo4j.kernel.ha.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
+
 
 public class HaIdGeneratorFactoryTest
 {
@@ -159,7 +160,7 @@ public class HaIdGeneratorFactoryTest
         gen.nextId(); // that will ask the master for an IdRange
 
         // THEN
-        assertEquals ( highIdFromUpdatedRecord, gen.getHighId() );
+        assertEquals( highIdFromUpdatedRecord, gen.getHighId() );
     }
 
     @Test
@@ -170,7 +171,7 @@ public class HaIdGeneratorFactoryTest
         File idFile = new File( "my.id" );
         // ... opening an id generator as master
         fac.create( idFile, 10, true );
-        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, 10 );
+        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, 10, StandardV3_0.RECORD_FORMATS.node().getMaxId() );
         assertTrue( fs.fileExists( idFile ) );
         idGenerator.close();
 
@@ -191,7 +192,7 @@ public class HaIdGeneratorFactoryTest
         fac.create( idFile, 10, true );
 
         // WHEN
-        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, 10 );
+        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, 10, StandardV3_0.RECORD_FORMATS.node().getMaxId() );
 
         // THEN
         assertFalse( "Id file should've been deleted by now", fs.fileExists( idFile ) );
@@ -250,7 +251,7 @@ public class HaIdGeneratorFactoryTest
         masterDelegate = new DelegateInvocationHandler<>( Master.class );
         fs = new EphemeralFileSystemAbstraction();
         fac  = new HaIdGeneratorFactory( masterDelegate, NullLogProvider.getInstance(),
-                mock( RequestContextFactory.class ), fs, new CommunityIdTypeConfigurationProvider() );
+                mock( RequestContextFactory.class ), fs, new CommunityIdTypeConfigurationProvider()  );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -264,7 +265,7 @@ public class HaIdGeneratorFactoryTest
     private IdGenerator switchToSlave()
     {
         fac.switchToSlave();
-        IdGenerator gen = fac.open( new File( "someFile" ), 10, IdType.NODE, 1 );
+        IdGenerator gen = fac.open( new File( "someFile" ), 10, IdType.NODE, 1, StandardV3_0.RECORD_FORMATS.node().getMaxId() );
         masterDelegate.setDelegate( master );
         return gen;
     }

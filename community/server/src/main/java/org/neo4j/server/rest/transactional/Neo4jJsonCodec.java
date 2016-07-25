@@ -21,6 +21,7 @@ package org.neo4j.server.rest.transactional;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,11 +29,27 @@ import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.spatial.Coordinate;
+import org.neo4j.graphdb.spatial.Geometry;
+import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.graphdb.spatial.Point;
+
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
 public class Neo4jJsonCodec extends ObjectMapper
 {
+    private TransitionalPeriodTransactionMessContainer container;
+
+    public Neo4jJsonCodec( TransitionalPeriodTransactionMessContainer container )
+    {
+        this();
+        this.container = container;
+    }
+
     public Neo4jJsonCodec()
     {
         getSerializationConfig().without( SerializationConfig.Feature.FLUSH_AFTER_WRITE_VALUE );
@@ -43,11 +60,11 @@ public class Neo4jJsonCodec extends ObjectMapper
     {
         if ( value instanceof PropertyContainer )
         {
-            writePropertyContainer( out, (PropertyContainer) value );
+            writePropertyContainer( out, (PropertyContainer) value, TransactionStateChecker.create( container ) );
         }
         else if ( value instanceof Path )
         {
-            writePath( out, ((Path) value).iterator() );
+            writePath( out, ((Path) value).iterator(), TransactionStateChecker.create( container ) );
         }
         else if (value instanceof Iterable)
         {
@@ -60,6 +77,25 @@ public class Neo4jJsonCodec extends ObjectMapper
         else if ( value instanceof Map )
         {
             writeMap(out, (Map) value );
+        }
+        else if( value instanceof Geometry )
+        {
+            Geometry geom = (Geometry) value;
+            Object coordinates = (geom instanceof Point) ? ((Point) geom).getCoordinate() : geom.getCoordinates();
+            writeMap( out,
+                    genericMap( new LinkedHashMap<>(), "type", geom.getGeometryType(),
+                            "coordinates", coordinates, "crs", geom.getCRS() ) );
+        }
+        else if ( value instanceof Coordinate )
+        {
+            Coordinate coordinate = (Coordinate) value;
+            writeIterator( out, coordinate.getCoordinate().iterator());
+        }
+        else if ( value instanceof CRS )
+        {
+            CRS crs = (CRS) value;
+            writeMap( out, genericMap(new LinkedHashMap<>(), "name", crs.getType(), "type", "link", "properties",
+                    genericMap(new LinkedHashMap<>(), "href", crs.getHref() + "ogcwkt/", "type", "ogcwkt" ) ) );
         }
         else
         {
@@ -102,14 +138,14 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writePath( JsonGenerator out, Iterator<PropertyContainer> value ) throws IOException
+    private void writePath( JsonGenerator out, Iterator<PropertyContainer> value, TransactionStateChecker txStateChecker ) throws IOException
     {
         out.writeStartArray();
         try
         {
             while ( value.hasNext() )
             {
-                writePropertyContainer( out, value.next() );
+                writePropertyContainer( out, value.next(), txStateChecker );
             }
         }
         finally
@@ -118,14 +154,37 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writePropertyContainer( JsonGenerator out, PropertyContainer value ) throws IOException
+    private void writePropertyContainer( JsonGenerator out, PropertyContainer value,
+            TransactionStateChecker txStateChecker )
+            throws IOException
+    {
+        if ( value instanceof Node )
+        {
+            writeNodeOrRelationship( out, value, txStateChecker.isNodeDeletedInCurrentTx( ((Node) value).getId() ) );
+        }
+        else if ( value instanceof Relationship )
+        {
+            writeNodeOrRelationship( out, value,
+                    txStateChecker.isRelationshipDeletedInCurrentTx( ((Relationship) value).getId() ) );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Expected a Node or Relationship, but got a " + value.toString() );
+        }
+    }
+
+    private void writeNodeOrRelationship( JsonGenerator out, PropertyContainer entity, boolean isDeleted )
+            throws IOException
     {
         out.writeStartObject();
         try
         {
-            for ( Map.Entry<String, Object> property : value.getAllProperties().entrySet() )
+            if ( !isDeleted )
             {
-                out.writeObjectField( property.getKey(), property.getValue() );
+                for ( Map.Entry<String,Object> property : entity.getAllProperties().entrySet() )
+                {
+                    out.writeObjectField( property.getKey(), property.getValue() );
+                }
             }
         }
         finally
@@ -147,6 +206,78 @@ public class Neo4jJsonCodec extends ObjectMapper
         finally
         {
             out.writeEndArray();
+        }
+    }
+
+    void writeMeta( JsonGenerator out, Object value ) throws IOException
+    {
+        if ( value instanceof Node )
+        {
+            Node node = (Node) value;
+            writeNodeOrRelationshipMeta( out, node.getId(), "node",
+                    TransactionStateChecker.create( container ).isNodeDeletedInCurrentTx( node.getId() ) );
+        }
+        else if ( value instanceof Relationship )
+        {
+            Relationship relationship = (Relationship) value;
+            writeNodeOrRelationshipMeta( out, relationship.getId(), "relationship",
+                    TransactionStateChecker.create( container )
+                            .isRelationshipDeletedInCurrentTx( relationship.getId() ) );
+        }
+        else if ( value instanceof Path )
+        {
+            writeMetaPath( out, (Path) value );
+        }
+        else if ( value instanceof Iterable )
+        {
+            for ( Object v : ((Iterable) value) )
+            {
+                writeMeta( out, v );
+            }
+        }
+        else if ( value instanceof Map )
+        {
+            Map map = (Map) value;
+            for ( Object key : map.keySet() )
+            {
+                writeMeta( out, map.get( key ) );
+            }
+        }
+        else
+        {
+            out.writeNull();
+        }
+    }
+
+    private void writeMetaPath( JsonGenerator out, Path value ) throws IOException
+    {
+        out.writeStartArray();
+        try
+        {
+            for ( PropertyContainer element : value )
+            {
+                writeMeta( out, element );
+            }
+        }
+        finally
+        {
+            out.writeEndArray();
+        }
+    }
+
+    private void writeNodeOrRelationshipMeta( JsonGenerator out, long id, String type, boolean isDeleted )
+            throws IOException
+    {
+        out.writeStartObject();
+        try
+        {
+            out.writeNumberField( "id", id );
+            out.writeStringField( "type", type );
+            out.writeBooleanField( "deleted", isDeleted );
+        }
+        finally
+        {
+            out.writeEndObject();
         }
     }
 }

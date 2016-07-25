@@ -19,21 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Iterator;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
-import org.junit.Test;
-
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.storageengine.api.Token;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -44,8 +41,7 @@ import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.kernel.api.properties.Property.byteArrayProperty;
 import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
@@ -206,7 +202,7 @@ public class PropertyIT extends KernelIntegrationTest
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), equalTo( newProperty.value() ) );
-            assertThat( IteratorUtil.asList( statement.nodeGetPropertyKeys( nodeId ) ), equalTo( Arrays.asList(
+            assertThat( PrimitiveIntCollections.toList( statement.nodeGetPropertyKeys( nodeId ) ), equalTo( Arrays.asList(
                     newProperty.propertyKeyId() ) ) );
         }
     }
@@ -507,24 +503,6 @@ public class PropertyIT extends KernelIntegrationTest
             ReadOperations ops = readOperationsInNewTransaction();
             assertThat( ops.relationshipGetProperty( rel, prop ), nullValue() );
         }
-    }
-
-    private static Matcher<Property> isDefinedProperty()
-    {
-        return new TypeSafeMatcher<Property>()
-        {
-            @Override
-            protected boolean matchesSafely( Property item )
-            {
-                return item.isDefined();
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "a defined Property" );
-            }
-        };
     }
 }
 

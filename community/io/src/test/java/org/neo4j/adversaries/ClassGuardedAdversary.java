@@ -19,76 +19,28 @@
  */
 package org.neo4j.adversaries;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * An adversary that delegates failure injection only when invoked through certain classes.
  */
-public class ClassGuardedAdversary implements Adversary
+public class ClassGuardedAdversary extends StackTraceElementGuardedAdversary
 {
-    private final Adversary delegate;
-    private final Set<String> victimClasses;
-    private volatile boolean enabled;
-
-    public ClassGuardedAdversary( Adversary delegate, String... victimClassNames )
+    public ClassGuardedAdversary( Adversary delegate, Class<?>... victimClassSet )
     {
-        this.delegate = delegate;
-        victimClasses = new HashSet<String>();
-        Collections.addAll( victimClasses, victimClassNames );
-        enabled = true;
-    }
-
-    @Override
-    public void injectFailure( Class<? extends Throwable>... failureTypes )
-    {
-        if ( enabled && calledFromVictimClass() )
+        super( delegate, new Predicate<StackTraceElement>()
         {
-            delegateFailureInjection( failureTypes );
-        }
-    }
+            private final Set<String> victimClasses = Stream.of( victimClassSet ).map( Class::getName ).collect( toSet() );
 
-    @Override
-    public boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
-    {
-        if ( enabled && calledFromVictimClass() )
-        {
-            return delegateFailureOrMischiefInjection( failureTypes );
-        }
-        return false;
-    }
-
-    protected void delegateFailureInjection( Class<? extends Throwable>[] failureTypes )
-    {
-        delegate.injectFailure( failureTypes );
-    }
-
-    protected boolean delegateFailureOrMischiefInjection( Class<? extends Throwable>[] failureTypes )
-    {
-        return delegate.injectFailureOrMischief( failureTypes );
-    }
-
-    private boolean calledFromVictimClass()
-    {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        for ( StackTraceElement element : stackTrace )
-        {
-            if ( victimClasses.contains( element.getClassName() ) )
+            @Override
+            public boolean test( StackTraceElement stackTraceElement )
             {
-                return true;
+                return victimClasses.contains( stackTraceElement.getClassName() );
             }
-        }
-        return false;
-    }
-
-    public void disable()
-    {
-        enabled = false;
-    }
-
-    public void enable()
-    {
-        enabled = true;
+        } );
     }
 }

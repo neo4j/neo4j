@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.neo4j.test</groupId>
   <artifactId>neo4j-harness-test</artifactId>
-  <version>2.3.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
 
@@ -29,7 +29,9 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/neo4j/</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
   <licenses>

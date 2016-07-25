@@ -22,6 +22,8 @@ package org.neo4j.kernel.ha.cluster;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.ClusterSettings;
@@ -35,14 +37,11 @@ import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
-import org.neo4j.function.Function;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.BranchedDataException;
@@ -57,6 +56,7 @@ import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.UpdatePullerScheduler;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
+import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -73,11 +73,12 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.TransactionId;
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.StoreUtil;
+import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -87,9 +88,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.first;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.hasInstanceId;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.getServerId;
 import static org.neo4j.kernel.impl.store.NeoStores.isStorePresent;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -128,7 +129,7 @@ public class SwitchToSlave
     private final UpdatePuller updatePuller;
     private final PageCache pageCache;
     private final Monitors monitors;
-    private final TransactionCounters transactionCounters;
+    private final TransactionStats transactionCounters;
 
     private final Log userLog;
     private final Log msgLog;
@@ -163,7 +164,7 @@ public class SwitchToSlave
             UpdatePuller updatePuller,
             PageCache pageCache,
             Monitors monitors,
-            TransactionCounters transactionCounters )
+            TransactionStats transactionCounters )
     {
         this( storeDir,
                 logService,
@@ -205,7 +206,7 @@ public class SwitchToSlave
             UpdatePuller updatePuller,
             PageCache pageCache,
             Monitors monitors,
-            TransactionCounters transactionCounters )
+            TransactionStats transactionCounters )
     {
         this.neoDataSourceSupplier = neoDataSourceSupplier;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
@@ -428,7 +429,7 @@ public class SwitchToSlave
         ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
         InstanceId serverId = HighAvailabilityModeSwitcher.getServerId( masterUri );
         Iterable<ClusterMember> members = clusterMembers.getMembers();
-        ClusterMember master = first( filter( hasInstanceId( serverId ), members ) );
+        ClusterMember master = firstOrNull( filter( hasInstanceId( serverId ), members ) );
         if ( master == null )
         {
             throw new IllegalStateException( "Cannot find the master among " + members +

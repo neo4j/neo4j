@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Iterator;
 
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -47,7 +48,7 @@ public class RemoveOrphanConstraintIndexesOnStartup
 
     public void perform()
     {
-        try ( KernelTransaction transaction = kernel.newTransaction();
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
               Statement statement = transaction.acquireStatement() )
         {
             for ( Iterator<IndexDescriptor> indexes = statement.readOperations().uniqueIndexesGetAll();
@@ -56,6 +57,7 @@ public class RemoveOrphanConstraintIndexesOnStartup
                 IndexDescriptor index = indexes.next();
                 if ( statement.readOperations().indexGetOwningUniquenessConstraintId( index ) == null )
                 {
+                    log.info( "Removing orphan constraint index: " + index );
                     statement.schemaWriteOperations().uniqueIndexDrop( index );
                 }
             }

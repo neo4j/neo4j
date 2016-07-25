@@ -24,15 +24,15 @@ import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterables;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
 import static org.neo4j.graphdb.traversal.Sorting.endNodeProperty;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestSorting extends TraversalTestBase
 {
@@ -48,7 +48,7 @@ public class TestSorting extends TraversalTestBase
          *                   |
          *              (Nicholas)
          */
-        
+
         String me = "me";
         String abraham = "Abraham";
         String george = "George";
@@ -64,7 +64,7 @@ public class TestSorting extends TraversalTestBase
         try (Transaction tx = beginTx())
         {
             List<Node> nodes = asNodes( abraham, george, dan, zack, andreas, nicholas );
-            assertEquals( nodes, asCollection( traversal().evaluator( excludeStartPosition() )
+            assertEquals( nodes, Iterables.asCollection( getGraphDb().traversalDescription().evaluator( excludeStartPosition() )
                     .sort( endNodeProperty( "name" ) ).traverse( getNodeWithName( me ) ).nodes() ) );
             tx.success();
         }
@@ -82,7 +82,7 @@ public class TestSorting extends TraversalTestBase
         }
         return all;
     }
-    
+
     private static String triplet( String i, String type, String you )
     {
         return i + " " + type + " " + you;

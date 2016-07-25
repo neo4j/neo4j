@@ -29,27 +29,29 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 public class SchemaStoreTest
 {
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private Config config;
     private SchemaStore store;
     private NeoStores neoStores;
@@ -60,7 +62,7 @@ public class SchemaStoreTest
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
-        config = new Config();
+        config = Config.empty();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
         storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCacheRule.getPageCache( fs.get() ),
                 fs.get(), NullLogProvider.getInstance() );
@@ -81,7 +83,7 @@ public class SchemaStoreTest
         {
             store.updateRecord( record );
         }
-        return first( records ).getId();
+        return Iterables.first( records ).getId();
     }
 
     @Test
@@ -94,7 +96,7 @@ public class SchemaStoreTest
 
         // WHEN
         byte[] serialized = new RecordSerializer().append( indexRule ).serialize();
-        IndexRule readIndexRule = (IndexRule) SchemaRule.Kind.deserialize( indexRule.getId(), wrap( serialized ) );
+        IndexRule readIndexRule = (IndexRule) AbstractSchemaRule.deserialize( indexRule.getId(), wrap( serialized ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );

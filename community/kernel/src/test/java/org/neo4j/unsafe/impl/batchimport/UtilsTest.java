@@ -37,7 +37,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
@@ -67,7 +66,7 @@ public class UtilsTest
         expectedException.expect( ArithmeticException.class );
         expectedException.expectMessage( "Value 2147483648 is too big to be represented as int" );
 
-        Utils.safeCastLongToInt( Integer.MAX_VALUE + 1l );
+        Utils.safeCastLongToInt( Integer.MAX_VALUE + 1L );
     }
 
     @Test
@@ -76,7 +75,7 @@ public class UtilsTest
         expectedException.expect( ArithmeticException.class );
         expectedException.expectMessage( "Value 32768 is too big to be represented as short" );
 
-        Utils.safeCastLongToShort( Short.MAX_VALUE + 1l );
+        Utils.safeCastLongToShort( Short.MAX_VALUE + 1L );
     }
 
     @Test

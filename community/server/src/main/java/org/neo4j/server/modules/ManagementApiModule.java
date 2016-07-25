@@ -23,27 +23,27 @@ import java.net.URI;
 import java.util.List;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.management.JmxService;
 import org.neo4j.server.rest.management.RootService;
 import org.neo4j.server.rest.management.VersionAndEditionService;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 
 import static java.util.Arrays.asList;
 
 public class ManagementApiModule implements ServerModule
 {
-	private final Config config;
-	private final WebServer webServer;
+    private final Config config;
+    private final WebServer webServer;
 
     public ManagementApiModule( WebServer webServer, Config config )
     {
-    	this.webServer = webServer;
-    	this.config = config;
+        this.webServer = webServer;
+        this.config = config;
     }
 
     @Override
-	public void start()
+    public void start()
     {
         String serverMountPoint = managementApiUri().toString();
         webServer.addJAXRSClasses( getClassNames(), serverMountPoint, null );
@@ -60,12 +60,12 @@ public class ManagementApiModule implements ServerModule
     @Override
     public void stop()
     {
-    	webServer.removeJAXRSClasses( getClassNames(),
+        webServer.removeJAXRSClasses( getClassNames(),
                 managementApiUri(  ).toString() );
     }
 
     private URI managementApiUri( )
     {
-        return config.get( ServerInternalSettings.management_api_path );
+        return config.get( ServerSettings.management_api_path );
     }
 }

@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.junit.Test;
 
-import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class NonUniqueIndexSamplerTest
 {
@@ -134,12 +132,12 @@ public class NonUniqueIndexSamplerTest
         assertSampledValues( sampler, 1, 1, 1 );
     }
 
-    private void assertSampledValues( NonUniqueIndexSampler sampler, long expectedIndexSize, long expectedUniqueValues, long expectedSampledSize )
+    private void assertSampledValues( NonUniqueIndexSampler sampler, long expectedIndexSize, long expectedUniqueValues,
+            long expectedSampledSize )
     {
-        final DoubleLongRegister register = Registers.newDoubleLongRegister();
-        long indexSize = sampler.result( register );
-        assertEquals( expectedUniqueValues, register.readFirst() );
-        assertEquals( expectedSampledSize, register.readSecond() );
-        assertEquals( expectedIndexSize, indexSize );
+        IndexSample sample = sampler.result();
+        assertEquals( expectedIndexSize, sample.indexSize() );
+        assertEquals( expectedUniqueValues, sample.uniqueValues() );
+        assertEquals( expectedSampledSize, sample.sampleSize() );
     }
 }

@@ -18,20 +18,22 @@ For information on High Availability, please refer to <<ha>>.
 == Prerequisites ==
 
 With the exception of our Windows and Mac Installers, you'll need a Java Virtual Machine installed on your computer.
-We recommend that you install http://openjdk.java.net/[OpenJDK 8 (preferred) or 7] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 8 (preferred) or 7].
+We recommend that you install http://openjdk.java.net/[OpenJDK 8],
+http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 8] or
+http://www.ibm.com/developerworks/java/jdk/[IBM Java 8] (POWER8 only).
 
 [[server-permissions]]
 == Setting Proper File Permissions ==
 
 When installing Neo4j Server, keep in mind that the _bin/neo4j_ executable will need to be run by some OS system user, and that user will need write permissions to some files/directories.
-This goes specifically for the _data/graph.db_ directory.
-That user will also need execute permissions on other files, such as those in _bin/_.
+This goes specifically for the _data_ directory.
+That user will also need execute permissions on other files, such as those in the _bin_ directory.
 
 It is recommended to either choose or create a user who will own and manage the Neo4j Server.
 This user should own the entire Neo4j directory, so make sure to untar/unzip it as this user and not with `sudo` (UNIX/Linux/OSx) etc.
 
-If _data/graph.db_ is not writable by the user Neo4j won't be able to write anything either to the store or its log files.
-As a result any logs would be appended to _console.log_.
+If the _data_ directory is not writable by the user Neo4j won't be able to write anything either to the store.
+As a result any logs would be appended to _neo4j.log_.
 The following error message would indicate a possible permissions issue: `Write transactions to database disabled`.
 
 [[windows-install]]
@@ -60,13 +62,20 @@ If you see this error simply install Neo4j into a different location.
 1. Download the latest release from http://neo4j.com/download/.
    * Select the appropriate Zip distribution.
 2. Right-click the downloaded file, click Extract All.
-   * Refer to the top-level extracted directory as: +NEO4J_HOME+
-3. Consult <<powershell>> for how to start or install Neo4j.
+3. Change directory to top-level extracted directory.
+   * Run `bin\neo4j console`
+4. Stop the server by typing Ctrl-C in the console.
 
 [NOTE]
 Some users have reported problems on Windows when using the ZoneAlarm firewall.
 If you are having problems getting large responses from the server, or if the web interface does not work, try disabling ZoneAlarm.
 Contact ZoneAlarm support to get information on how to resolve this.
+
+=== Windows service ===
+
+Neo4j can also be run as a Windows service.
+Install the service with `bin\neo4j install-service` and start it with `bin\neo4j start`.
+Other commands available are `stop`, `restart`, `status` and `uninstall-service`.
 
 [[linux-install]]
 == Linux ==
@@ -133,7 +142,7 @@ Use the standard OSX system tools to create a service based on the `neo4j` comma
 
 Unlike previous versions, OS X Mavericks does not come with Java pre-installed. You might encounter that the first time you run Neo4j, where OS X will trigger a popup offering you to install Java SE 6.
 
-Java SE 6 is incompatible with Neo4j {neo4j-version}, so we strongly advise you to skip installing Java SE 6 if you have no other uses for it. Instead, for Neo4j {neo4j-version} we recommend you install Java SE 8 (preferred) or 7 from Oracle (http://www.oracle.com/technetwork/java/javase/downloads/index.html) as that is what we support for production use.
+Java SE 6 or 7 is incompatible with Neo4j {neo4j-version}, so we strongly advise you to skip installing Java SE 6 or 7 if you have no other uses for it. Instead, for Neo4j {neo4j-version} we recommend you install Java SE 8 from Oracle (http://www.oracle.com/technetwork/java/javase/downloads/index.html) as that is what we support for production use.
 
 == Multiple Server instances on one machine ==
 

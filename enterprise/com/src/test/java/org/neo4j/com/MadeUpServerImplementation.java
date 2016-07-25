@@ -30,12 +30,12 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.storageengine.api.StorageCommand;
 
 public class MadeUpServerImplementation implements MadeUpCommunicationInterface
 {
@@ -83,7 +83,7 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
         TransactionStream transactions = new TransactionStream()
         {
             @Override
-            public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
+            public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
             {
                 for ( int i = 1; i <= txCount; i++ )
                 {
@@ -115,12 +115,10 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
 
     private TransactionRepresentation transaction( long txId )
     {
-        Collection<Command> commands = new ArrayList<>();
-        NodeCommand command = new NodeCommand();
+        Collection<StorageCommand> commands = new ArrayList<>();
         NodeRecord node = new NodeRecord( txId );
         node.setInUse( true );
-        command.init( new NodeRecord( txId ), node );
-        commands.add( command );
+        commands.add( new NodeCommand( new NodeRecord( txId ), node ) );
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
         transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
         return transaction;

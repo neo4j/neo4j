@@ -21,12 +21,12 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class MapsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A KNOWS B")
   val title = "Maps"
-  val css = "general c2-2 c3-3 c4-2 c5-2 c6-4"
+  val css = "general c2-2 c3-3 c4-4 c5-2 c6-4"
   override val linkId = "syntax-collections"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -38,7 +38,7 @@ class MapsTest extends RefcardTest with QueryStatisticsTestSupport {
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 1)
       case "returns-one-merge" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 3, labelsAdded = 1)
+        assertStats(result, nodesCreated = 1, propertiesWritten = 3, labelsAdded = 1)
         assert(result.toList.size === 1)
       case "returns-none" =>
         assertStats(result, nodesCreated = 0)
@@ -65,12 +65,12 @@ class MapsTest extends RefcardTest with QueryStatisticsTestSupport {
 RETURN
 
 {name: "Alice", age: 38,
- address: {city: 'London', residential: true}}
+ address: {city: "London", residential: true}}
 
 ###
 
 Literal maps are declared in curly braces much like property maps.
-Nested maps and collections are supported.
+Nested maps and list are supported.
 
 ###assertion=returns-one-merge parameters=map
 //
@@ -94,7 +94,7 @@ RETURN matchedNode
 Nodes and relationships are returned as maps of their data.
 
 ###assertion=returns-one
-WITH {name: "Alice", age: 38, children: ['John', 'Max']} AS map
+WITH {name: "Alice", age: 38, children: ["John", "Max"]} AS map
 RETURN
 
 map.name, map.age, map.children[0]

@@ -24,29 +24,24 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.function.Consumer;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.TransactionTemplate;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.SuppressOutput;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
@@ -83,7 +78,6 @@ public class TxPushStrategyConfigIT
             assertLastTransactions( cluster, lastTx( FIRST_SLAVE, BASE_TX_ID ) );
         }
     }
-
 
     @Test
     public void shouldPushToSlavesInAscendingOrder() throws Exception
@@ -189,7 +183,7 @@ public class TxPushStrategyConfigIT
     private ManagedCluster startCluster( int memberCount, final int pushFactor, final HaSettings.TxPushStrategy pushStrategy )
             throws Exception
     {
-        ManagedCluster cluster = clusterRule.withProvider( clusterOfSize( memberCount ) )
+        ManagedCluster cluster = clusterRule.withCluster( clusterOfSize( memberCount ) )
                 .withSharedSetting( HaSettings.tx_push_factor, "" + pushFactor )
                 .withSharedSetting( HaSettings.tx_push_strategy, pushStrategy.name() )
                 .startCluster();
@@ -211,14 +205,7 @@ public class TxPushStrategyConfigIT
                 slaves.add( hadb );
             }
         }
-        Collections.sort( slaves, new Comparator<HighlyAvailableGraphDatabase>()
-        {
-            @Override
-            public int compare( HighlyAvailableGraphDatabase o1, HighlyAvailableGraphDatabase o2 )
-            {
-                return cluster.getServerId( o1 ) .compareTo(  cluster.getServerId( o2 ) );
-            }
-        } );
+        Collections.sort( slaves, ( o1, o2 ) -> cluster.getServerId( o1 ) .compareTo(  cluster.getServerId( o2 ) ) );
         Iterator<HighlyAvailableGraphDatabase> iter = slaves.iterator();
         for ( int i = 1; iter.hasNext(); i++ )
         {
@@ -285,13 +272,8 @@ public class TxPushStrategyConfigIT
                     }
                 } );
 
-        template.execute( new Consumer<Transaction>()
-        {
-            @Override
-            public void accept( Transaction transaction )
-            {
-                db.createNode();
-            }
+        template.execute( transaction -> {
+            db.createNode();
         } );
     }
 

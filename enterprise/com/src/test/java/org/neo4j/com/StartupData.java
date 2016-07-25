@@ -23,12 +23,13 @@ import java.io.Serializable;
 
 class StartupData implements Serializable
 {
-    private static final long serialVersionUID = 1L;
-    final long creationTime;
-    final long storeId;
-    final byte applicationProtocolVersion;
-    final byte internalProtocolVersion;
-    final int chunkSize;
+    private static final long serialVersionUID = 3570271945897559074L;
+
+    long creationTime;
+    long storeId;
+    byte applicationProtocolVersion;
+    byte internalProtocolVersion;
+    int chunkSize;
 
     public StartupData( long creationTime, long storeId, byte internalProtocolVersion, byte applicationProtocolVersion,
                         int chunkSize )

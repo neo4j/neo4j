@@ -29,7 +29,7 @@ public final class FileCountThreshold implements Threshold
 
     private long nonEmptyLogCount;
 
-    FileCountThreshold( long maxNonEmptyLogs )
+    public FileCountThreshold( long maxNonEmptyLogs )
     {
         this.maxNonEmptyLogs = maxNonEmptyLogs;
     }

@@ -24,8 +24,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
- * Signals that some constraint has been violated in a {@link org.neo4j.kernel.api.KernelAPI kernel interaction},
- * for example a name containing invalid characters or length.
+ * Signals that some constraint has been violated, for example a name containing invalid characters or length.
  */
 public abstract class SchemaKernelException extends KernelException
 {

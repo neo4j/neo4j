@@ -28,26 +28,26 @@ class UnwindTest extends DocumentingTestBase {
 
   @Test def simple_unwind() {
     testQuery(
-      title = "Unwind a collection",
-      text = "We want to transform the literal collection into rows named `x` and return them.",
+      title = "Unwind a list",
+      text = "We want to transform the literal list into rows named `x` and return them.",
       queryText = """UNWIND [1,2,3] as x RETURN x""",
-      optionalResultExplanation = "Each value of the original collection is returned as an individual row.",
+      optionalResultExplanation = "Each value of the original list is returned as an individual row.",
       assertions = (p) => assertEquals(List(1,2,3), p.columnAs[Int]("x").toList)
     )
   }
   @Test def distinct_collection() {
     testQuery(
-      title = "Create a distinct collection",
-      text = "We want to transform a collection of duplicates into a set using `DISTINCT`.",
+      title = "Create a distinct list",
+      text = "We want to transform a list of duplicates into a set using `DISTINCT`.",
       queryText = """WITH [1,1,2,2] as coll UNWIND coll as x WITH DISTINCT x RETURN collect(x) as set""",
-      optionalResultExplanation = "Each value of the original collection is unwound and passed through `DISTINCT` to create a unique set.",
+      optionalResultExplanation = "Each value of the original list is unwound and passed through `DISTINCT` to create a unique set.",
       assertions = (p) => assertEquals(List(List(1,2)), p.columnAs[Int]("set").toList)
     )
   }
 
   @Test def create_data_from_collection_parameter() {
     testQuery(
-      title = "Create nodes from a collection parameter",
+      title = "Create nodes from a list parameter",
       text = "Create a number of nodes and relationships from a parameter-list without using +FOREACH+.",
       parameters = Map("events" -> List(Map("year" -> 2014, "id" -> 1), Map("year" -> 2014, "id" -> 2))),
       queryText =
@@ -55,7 +55,7 @@ class UnwindTest extends DocumentingTestBase {
            MERGE (y:Year {year:event.year})
            MERGE (y)<-[:IN]-(e:Event {id:event.id})
            RETURN e.id as x order by x""",
-      optionalResultExplanation = "Each value of the original collection is unwound and passed through `MERGE` to find or create the nodes and relationships.",
+      optionalResultExplanation = "Each value of the original list is unwound and passed through `MERGE` to find or create the nodes and relationships.",
       assertions = (p) => assertEquals(List(1,2), p.columnAs[Int]("x").toList)
     )
   }

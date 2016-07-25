@@ -107,13 +107,12 @@ a database that uses <<term-graph, graph>>-based structures
 to represent and store data.
 
 [[term-graph-element]]graph element::
-<<term-node, node>> or <<term-relationship, relationship>>
-that is part of a <<term-graph, graph>>.
+a <<term-node, node>>, <<term-relationship, relationship>>, or <<term-path, path>> which is part of a <<term-graph, graph>>.
 
-[[term-identifier]]identifier::
-identifiers are named bindings to values (for example, collections, scalars)
+[[term-variable]]variable::
+variables are named bindings to values (for example, collections, scalars)
 in a <<term-statement, statement>>.
-For example, in `MATCH n RETURN n`, `n` is an identifier.
+For example, in `MATCH (n) RETURN n`, `n` is a variable.
 
 [[term-incident]]incident::
 <<term-adjacent, adjacent>> <<term-relationship, relationship>>
@@ -128,7 +127,7 @@ The opposite of <<term-outgoing-relationship, outgoing>>.
 data structure that improves performance of a database by redundantly storing the same information in a way that is faster to read.
 
 [[term-intermediate-result]]intermediate result::
-set of identifiers and values (record) passed from one clause to another during query execution.
+set of variables and values (record) passed from one clause to another during query execution.
 This is internal to the execution of a given query.
 
 [[term-label]]label::
@@ -170,7 +169,7 @@ The opposite of <<term-incoming-relationship, incoming relationship>>.
 <<term-graph, graph>> used to express the shape (that is, connectivity pattern) of the data being searched for in the <<term-data-graph, data graph>>.
 This is what `MATCH` and `WHERE` describe in a Cypher query.
 
-[[term-path]]path::
+[[term-path]]path*::
 collection of alternating <<term-node, nodes>> and <<term-relationship, relationships>> that corresponds to a walk in the <<term-data-graph, data graph>>.
 
 [[term-parameter]]parameter::
@@ -183,7 +182,7 @@ When used in `WHERE`, `NULL` is treated as `FALSE`.
 
 [[term-projection]]projection::
 an operation taking <<term-result-row, result rows>> as both input and output data.
-This may be a subset of the <<term-identifier, identifiers>> provided in the input, a calculation based on single or multiple identifiers in the input, or both.
+This may be a subset of the <<term-variable, variables>> provided in the input, a calculation based on variables in the input, or both.
 The relevant <<term-clause, clauses>> are `WITH` and `RETURN`.
 
 [[term-property]]property*::
@@ -194,7 +193,7 @@ Synonym for <<term-attribute, attribute>>.
 a <<term-graph, graph>> having <<term-directed-relationship, directed>>, <<term-relationship-type, typed>> <<term-relationship, relationships>>.
 Each <<term-node, node>> or relationship may have zero or more associated <<term-property, properties>>.
 
-[[term-query]]query::
+[[term-query]]query*::
 statement that reads or writes data from the database
 
 [[term-relationship]]relationship*::

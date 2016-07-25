@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphalgo.path;
 
-import java.io.IOException;
-
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EstimateEvaluator;
@@ -39,15 +39,13 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.junit.Assert.assertTrue;
-
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.toList;
 
 @Ignore( "Not a test, merely a performance measurement. Convert into a proper performance benchmark at some point" )
 public class PathExplosionIT
@@ -59,7 +57,7 @@ public class PathExplosionIT
     private static final int MAX_PATH_WIDTH = 6;
     private static final int WARMUP_RUNS = 2;
     private static final long TOLERATED_DURATION = 10000;
-    
+
     @Test
     public void aStarShouldFinishWithinToleratedDuration() throws IOException
     {
@@ -134,16 +132,16 @@ public class PathExplosionIT
     long runPathOnce( Node startNode, Node endNode, GraphDatabaseService db, PathFinder<? extends Path> pathFinder )
     {
         long startTime = currentTimeMillis();
-        
+
         Path path = FIND_MULTIPLE_PATHS ?
-                // call findAllPaths, but just grab the first one
-                toList( pathFinder.findAllPaths( startNode, endNode ) ).get( 0 ) :
-                // call findinglePath
-                pathFinder.findSinglePath( startNode, endNode );
+                    // call findAllPaths, but just grab the first one
+                    asList( pathFinder.findAllPaths( startNode, endNode ) ).get( 0 ) :
+                    // call findinglePath
+                    pathFinder.findSinglePath( startNode, endNode );
 
         // iterate through the path
         count( path );
-        
+
         return currentTimeMillis() - startTime;
     }
 
@@ -175,7 +173,7 @@ public class PathExplosionIT
     {
         SomeRelType
     }
-    
+
     private final PathExpander<?> expander = PathExpanders.forDirection(Direction.BOTH );
     private final CostEvaluator<Double> constantEvaluator = new CostEvaluator<Double>()
     {

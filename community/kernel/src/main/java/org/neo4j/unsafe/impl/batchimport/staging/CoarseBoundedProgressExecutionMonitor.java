@@ -19,93 +19,80 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.helpers.collection.IteratorUtil.last;
 
 /**
  * An {@link ExecutionMonitor} that prints progress in percent, knowing the max number of nodes and relationships
  * in advance.
  */
-public class CoarseBoundedProgressExecutionMonitor extends ExecutionMonitor.Adapter
+public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMonitor.Adapter
 {
-    private long totalDoneBatches;
-    private final long highNodeId;
-    private final long highRelationshipId;
-    private int previousPercent;
+    private final long totalNumberOfBatches;
+    private long[] prevDoneBatches;
+    private long totalReportedBatches = 0;
 
-    public CoarseBoundedProgressExecutionMonitor( long highNodeId, long highRelationshipId )
+    public CoarseBoundedProgressExecutionMonitor( long highNodeId, long highRelationshipId,
+            Configuration configuration )
     {
         super( 1, SECONDS );
-        this.highNodeId = highNodeId;
-        this.highRelationshipId = highRelationshipId;
+        // This calculation below is aware of internals of the parallel importer and may
+        // be wrong for other importers.
+        this.totalNumberOfBatches =
+                (highNodeId/configuration.batchSize()) * 3 + // node records encountered three times
+                (highRelationshipId/configuration.batchSize()) * 4; // rel records encountered four times
+    }
+
+    protected long total()
+    {
+        return totalNumberOfBatches;
     }
 
     @Override
     public void check( StageExecution[] executions )
     {
-        updatePercent( executions );
-    }
-
-    private void updatePercent( StageExecution[] executions )
-    {
-        int highestPercentThere = previousPercent;
-        for ( StageExecution execution : executions )
-        {
-            // This calculation below is aware of internals of the parallel importer and may
-            // be wrong for other importers.
-            long maxNumberOfBatches =
-                    (highNodeId/execution.getConfig().batchSize()) * 2 + // node records encountered twice
-                    (highRelationshipId/execution.getConfig().batchSize()) * 3; // rel records encountered three times;
-
-            long doneBatches = totalDoneBatches + doneBatches( execution );
-            int percentThere = (int) ((doneBatches*100D)/maxNumberOfBatches);
-            percentThere = min( percentThere, 100 );
-            highestPercentThere = max( percentThere, highestPercentThere );
-        }
-
-        applyPercentage( highestPercentThere );
-    }
-
-    private void applyPercentage( int percentThere )
-    {
-        while ( previousPercent < percentThere )
-        {
-            percent( ++previousPercent );
-        }
-    }
-
-    protected void percent( int percent )
-    {
-        // TODO An execution monitor that does not accept the writer? A kitten dies every time this happens, you know
-        System.out.print( "." );
-        if ( percent % 10 == 0 )
-        {
-            System.out.println( "  " + percent + "%" );
-        }
-    }
-
-    private long doneBatches( StageExecution execution )
-    {
-        return last( execution.steps() ).stats().stat( Keys.done_batches ).asLong();
+        update( executions );
     }
 
     @Override
-    public void end( StageExecution[] executions, long totalTimeMillis )
+    public void start( StageExecution[] executions )
     {
-        for ( StageExecution execution : executions )
+        prevDoneBatches = new long[executions.length];
+    }
+
+    private void update( StageExecution[] executions )
+    {
+        long diff = 0;
+        for ( int i = 0; i < executions.length; i++ )
         {
-            this.totalDoneBatches += doneBatches( execution );
+            long doneBatches = doneBatches( executions[i] );
+            diff += doneBatches - prevDoneBatches[i];
+            prevDoneBatches[i] = doneBatches;
         }
+        if ( diff > 0 )
+        {
+            totalReportedBatches += diff;
+            progress( diff );
+        }
+    }
+
+    /**
+     * @param progress Relative progress.
+     */
+    protected abstract void progress( long progress );
+
+    private long doneBatches( StageExecution execution )
+    {
+        Step<?> step = Iterables.last( execution.steps() );
+        return step.stats().stat( Keys.done_batches ).asLong();
     }
 
     @Override
     public void done( long totalTimeMillis, String additionalInformation )
     {
-        applyPercentage( 100 );
+        // Just report the last progress
+        progress( totalNumberOfBatches - totalReportedBatches );
     }
 }

@@ -19,13 +19,13 @@
  */
 package org.neo4j.logging;
 
-import org.neo4j.function.Consumer;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Consumer;
+import javax.annotation.Nonnull;
 
 /**
  * A {@link Log} implementation that duplicates all messages to other Log instances
@@ -100,24 +100,28 @@ public class DuplicatingLog extends AbstractLog
         return false;
     }
 
+    @Nonnull
     @Override
     public Logger debugLogger()
     {
         return this.debugLogger;
     }
 
+    @Nonnull
     @Override
     public Logger infoLogger()
     {
         return this.infoLogger;
     }
 
+    @Nonnull
     @Override
     public Logger warnLogger()
     {
         return this.warnLogger;
     }
 
+    @Nonnull
     @Override
     public Logger errorLogger()
     {
@@ -125,9 +129,9 @@ public class DuplicatingLog extends AbstractLog
     }
 
     @Override
-    public void bulk( Consumer<Log> consumer )
+    public void bulk( @Nonnull Consumer<Log> consumer )
     {
-        bulk( new LinkedList<>( logs ), new ArrayList<Log>( logs.size() ), consumer );
+        bulk( new LinkedList<>( logs ), new ArrayList<>( logs.size() ), consumer );
     }
 
     private static void bulk( final LinkedList<Log> remaining, final ArrayList<Log> bulkLogs, final Consumer<Log> finalConsumer )
@@ -135,14 +139,9 @@ public class DuplicatingLog extends AbstractLog
         if ( !remaining.isEmpty() )
         {
             Log log = remaining.pop();
-            log.bulk( new Consumer<Log>()
-            {
-                @Override
-                public void accept( Log bulkLog )
-                {
-                    bulkLogs.add( bulkLog );
-                    bulk( remaining, bulkLogs, finalConsumer );
-                }
+            log.bulk( bulkLog -> {
+                bulkLogs.add( bulkLog );
+                bulk( remaining, bulkLogs, finalConsumer );
             } );
         } else
         {
@@ -166,7 +165,7 @@ public class DuplicatingLog extends AbstractLog
         }
 
         @Override
-        public void log( String message )
+        public void log( @Nonnull String message )
         {
             for ( Logger logger : loggers )
             {
@@ -175,7 +174,7 @@ public class DuplicatingLog extends AbstractLog
         }
 
         @Override
-        public void log( String message, Throwable throwable )
+        public void log( @Nonnull String message, @Nonnull Throwable throwable )
         {
             for ( Logger logger : loggers )
             {
@@ -184,7 +183,7 @@ public class DuplicatingLog extends AbstractLog
         }
 
         @Override
-        public void log( String format, Object... arguments )
+        public void log( @Nonnull String format, @Nonnull Object... arguments )
         {
             for ( Logger logger : loggers )
             {
@@ -193,9 +192,9 @@ public class DuplicatingLog extends AbstractLog
         }
 
         @Override
-        public void bulk( Consumer<Logger> consumer )
+        public void bulk( @Nonnull Consumer<Logger> consumer )
         {
-            bulk( new LinkedList<>( loggers ), new ArrayList<Logger>( loggers.size() ), consumer );
+            bulk( new LinkedList<>( loggers ), new ArrayList<>( loggers.size() ), consumer );
         }
 
         private static void bulk( final LinkedList<Logger> remaining, final ArrayList<Logger> bulkLoggers, final Consumer<Logger> finalConsumer )
@@ -203,14 +202,9 @@ public class DuplicatingLog extends AbstractLog
             if ( !remaining.isEmpty() )
             {
                 Logger logger = remaining.pop();
-                logger.bulk( new Consumer<Logger>()
-                {
-                    @Override
-                    public void accept( Logger bulkLogger )
-                    {
-                        bulkLoggers.add( bulkLogger );
-                        bulk( remaining, bulkLoggers, finalConsumer );
-                    }
+                logger.bulk( bulkLogger -> {
+                    bulkLoggers.add( bulkLogger );
+                    bulk( remaining, bulkLoggers, finalConsumer );
                 } );
             } else
             {

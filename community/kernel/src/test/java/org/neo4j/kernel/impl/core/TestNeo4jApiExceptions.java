@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,7 +35,8 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class TestNeo4jApiExceptions
 {
@@ -147,7 +149,6 @@ public class TestNeo4jApiExceptions
         rollback();
     }
 
-
     @Test
     public void shouldGiveNiceErrorWhenShutdownKernelApi()
     {
@@ -194,7 +195,6 @@ public class TestNeo4jApiExceptions
 
     private Transaction tx;
     private GraphDatabaseService graph;
-
 
     private void newTransaction()
     {

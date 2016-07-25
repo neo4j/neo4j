@@ -19,21 +19,20 @@
  */
 package examples;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -42,8 +41,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
-import org.neo4j.test.DefaultFileSystemRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -52,21 +50,31 @@ import static org.junit.Assert.assertThat;
 
 public class BatchInsertDocTest
 {
+    @Rule
+    public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private DefaultFileSystemAbstraction fileSystem;
+
+    @Before
+    public void before() throws Exception
+    {
+        fileSystem = fileSystemRule.get();
+        fileSystem.mkdirs( new File( "target" ) );
+        fileSystem.mkdirs( new File( "target/docs" ) );
+    }
+
     @Test
     public void insert() throws Exception
     {
         // Make sure our scratch directory is clean
-        File tempStoreDir = new File( "target/batchinserter-example" ).getAbsoluteFile();
-        FileUtils.deleteRecursively( tempStoreDir );
+        File tempStoreDir = clean( "target/batchinserter-example" ).getAbsoluteFile();
 
         // START SNIPPET: insert
         BatchInserter inserter = null;
         try
         {
-            inserter = BatchInserters.inserter(
-                    new File( "target/batchinserter-example" ).getAbsolutePath() );
+            inserter = BatchInserters.inserter( tempStoreDir );
 
-            Label personLabel = DynamicLabel.label( "Person" );
+            Label personLabel = Label.label( "Person" );
             inserter.createDeferredSchemaIndex( personLabel ).on( "name" ).create();
 
             Map<String, Object> properties = new HashMap<>();
@@ -77,7 +85,7 @@ public class BatchInsertDocTest
             properties.put( "name", "Chris" );
             long chrisNode = inserter.createNode( properties, personLabel );
 
-            RelationshipType knows = DynamicRelationshipType.withName( "KNOWS" );
+            RelationshipType knows = RelationshipType.withName( "KNOWS" );
             inserter.createRelationship( mattiasNode, chrisNode, knows, null );
         }
         finally
@@ -91,17 +99,18 @@ public class BatchInsertDocTest
 
         // try it out from a normal db
         GraphDatabaseService db =
-                new GraphDatabaseFactory().newEmbeddedDatabase(
-                    new File("target/batchinserter-example").getAbsolutePath() );
+                new GraphDatabaseFactory()
+                        .newEmbeddedDatabaseBuilder( new File("target/batchinserter-example") )
+                        .newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
         }
         try ( Transaction tx = db.beginTx() )
         {
-            Label personLabelForTesting = DynamicLabel.label( "Person" );
+            Label personLabelForTesting = Label.label( "Person" );
             Node mNode = db.findNode( personLabelForTesting, "name", "Mattias" );
-            Node cNode = mNode.getSingleRelationship( DynamicRelationshipType.withName( "KNOWS" ), Direction.OUTGOING ).getEndNode();
+            Node cNode = mNode.getSingleRelationship( RelationshipType.withName( "KNOWS" ), Direction.OUTGOING ).getEndNode();
             assertThat( (String) cNode.getProperty( "name" ), is( "Chris" ) );
             assertThat( db.schema()
                     .getIndexes( personLabelForTesting )
@@ -117,11 +126,13 @@ public class BatchInsertDocTest
     @Test
     public void insertWithConfig() throws IOException
     {
+        clean( "target/batchinserter-example-config" );
+
         // START SNIPPET: configuredInsert
         Map<String, String> config = new HashMap<>();
-        config.put( "dbms.pagecache.memory", "512m" );
+        config.put( "dbms.memory.pagecache.size", "512m" );
         BatchInserter inserter = BatchInserters.inserter(
-                new File( "target/batchinserter-example-config" ).getAbsolutePath(), config );
+                new File( "target/batchinserter-example-config" ).getAbsoluteFile(), config );
         // Insert data here ... and then shut down:
         inserter.shutdown();
         // END SNIPPET: configuredInsert
@@ -130,9 +141,11 @@ public class BatchInsertDocTest
     @Test
     public void insertWithConfigFile() throws IOException
     {
-        try ( Writer fw = fileSystem.openAsWriter( new File( "target/docs/batchinsert-config" ).getAbsoluteFile(), "utf-8", false ) )
+        clean( "target/docs/batchinserter-example-config" );
+        try ( Writer fw = fileSystem.openAsWriter( new File( "target/docs/batchinsert-config" ).getAbsoluteFile(),
+                StandardCharsets.UTF_8, false ) )
         {
-            fw.append( "dbms.pagecache.memory=8m" );
+            fw.append( "dbms.memory.pagecache.size=8m" );
         }
 
         // START SNIPPET: configFileInsert
@@ -140,22 +153,17 @@ public class BatchInsertDocTest
         {
             Map<String, String> config = MapUtil.load( input );
             BatchInserter inserter = BatchInserters.inserter(
-                    "target/docs/batchinserter-example-config", config );
+                    new File( "target/docs/batchinserter-example-config" ), config );
             // Insert data here ... and then shut down:
             inserter.shutdown();
         }
         // END SNIPPET: configFileInsert
     }
 
-    @Rule
-    public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private DefaultFileSystemAbstraction fileSystem;
-
-    @Before
-    public void before() throws Exception
+    private File clean( String fileName ) throws IOException
     {
-        fileSystem = fileSystemRule.get();
-        fileSystem.mkdirs( new File( "target" ) );
-        fileSystem.mkdirs( new File( "target/docs" ) );
+        File directory = new File( fileName );
+        fileSystem.deleteRecursively( directory );
+        return directory;
     }
 }

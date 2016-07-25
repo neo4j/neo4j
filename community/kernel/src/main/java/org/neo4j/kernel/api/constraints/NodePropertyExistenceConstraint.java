@@ -19,16 +19,12 @@
  */
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
-import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 
+/**
+ * Description of constraint enforcing nodes to contain a certain property.
+ */
 public class NodePropertyExistenceConstraint extends NodePropertyConstraint
 {
     public NodePropertyExistenceConstraint( int labelId, int propertyKeyId )
@@ -46,21 +42,6 @@ public class NodePropertyExistenceConstraint extends NodePropertyConstraint
     public void removed( ChangeVisitor visitor )
     {
         visitor.visitRemovedNodePropertyExistenceConstraint( this );
-    }
-
-    @Override
-    public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
-    {
-        StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOps );
-        return new NodePropertyExistenceConstraintDefinition( schemaActions,
-                DynamicLabel.label( lookup.labelGetName( labelId ) ),
-                lookup.propertyKeyGetName( propertyKeyId ) );
-    }
-
-    @Override
-    public ConstraintType type()
-    {
-        return ConstraintType.NODE_PROPERTY_EXISTENCE;
     }
 
     @Override

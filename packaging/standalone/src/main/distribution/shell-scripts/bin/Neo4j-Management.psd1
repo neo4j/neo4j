@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2015 "Neo Technology,"
+# Copyright (c) 2002-2016 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # This file is part of Neo4j.
@@ -21,9 +21,9 @@
 
 
 @{
-ModuleVersion = '2.3.0'
+ModuleVersion = '3.0.0'
 
-GUID = 'dd9cad34-ad03-439b-b347-590625302c38'
+GUID = '2a3e34b4-5564-488e-aaf6-f2cba3f7f05d'
 
 Author = 'Network Engine for Objects'
 
@@ -38,26 +38,11 @@ PowerShellVersion = '2.0'
 NestedModules = @('Neo4j-Management\Neo4j-Management.psm1')
 
 FunctionsToExport = @(
-'Get-Neo4jHome'
-'Get-Neo4jServer'
-'Get-Neo4jSetting'
-'Initialize-Neo4jHACluster'
-'Initialize-Neo4jServer'
-'Install-Neo4jArbiter'
-'Install-Neo4jServer'
-'Remove-Neo4jSetting'
-'Restart-Neo4jArbiter'
-'Restart-Neo4jServer'
-'Set-Neo4jSetting'
-'Start-Neo4jArbiter'
-'Start-Neo4jBackup'
-'Start-Neo4jImport'
-'Start-Neo4jServer'
-'Start-Neo4jShell'
-'Stop-Neo4jArbiter'
-'Stop-Neo4jServer'
-'Uninstall-Neo4jArbiter'
-'Uninstall-Neo4jServer'
+'Invoke-Neo4j',
+'Invoke-Neo4jAdmin',
+'Invoke-Neo4jShell',
+'Invoke-Neo4jBackup',
+'Invoke-Neo4jImport'
 )
 
 CmdletsToExport = ''

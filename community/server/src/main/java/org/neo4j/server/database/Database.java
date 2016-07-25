@@ -19,21 +19,21 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public interface Database extends Lifecycle
 {
     interface Factory
     {
-        Database newDatabase( Config config, CommunityFacadeFactory.Dependencies dependencies);
+        Database newDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies);
     }
 
     String getLocation();
 
-    GraphDatabaseAPI getGraph();
+    GraphDatabaseFacade getGraph();
 
     boolean isRunning();
 }

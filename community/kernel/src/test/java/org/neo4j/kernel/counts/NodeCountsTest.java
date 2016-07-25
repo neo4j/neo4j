@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.counts;
 
-import java.util.concurrent.Future;
-
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Supplier;
+import java.util.concurrent.Future;
+import java.util.function.Supplier;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -34,17 +33,19 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.NamedFunction;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
 
 public class NodeCountsTest
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
-    public final @Rule ThreadingRule threading = new ThreadingRule();
+    @Rule
+    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final ThreadingRule threading = new ThreadingRule();
 
     @Test
     public void shouldReportNumberOfNodesInAnEmptyGraph() throws Exception
@@ -60,7 +61,7 @@ public class NodeCountsTest
     public void shouldReportNumberOfNodes() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.createNode();
@@ -79,7 +80,7 @@ public class NodeCountsTest
     public void shouldReportAccurateNumberOfNodesAfterDeletion() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         Node one;
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -101,11 +102,10 @@ public class NodeCountsTest
     }
 
     @Test
-    @Ignore("TODO: reenable this test when we can etract proper counts form TxState")
     public void shouldIncludeNumberOfNodesAddedInTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.createNode();
@@ -127,11 +127,10 @@ public class NodeCountsTest
     }
 
     @Test
-    @Ignore("TODO: reenable this test when we can etract proper counts form TxState")
     public void shouldIncludeNumberOfNodesDeletedInTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         Node one;
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -157,7 +156,7 @@ public class NodeCountsTest
     public void shouldNotSeeNodeCountsOfOtherTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         final Barrier.Control barrier = new Barrier.Control();
         long before = numberOfNodes();
         Future<Long> done = threading.execute( new NamedFunction<GraphDatabaseService, Long>( "create-nodes" )
@@ -170,31 +169,31 @@ public class NodeCountsTest
                     graphDb.createNode();
                     graphDb.createNode();
                     barrier.reached();
-                    long during = countsForNode();
+                    long whatThisThreadSees = countsForNode();
                     tx.success();
-                    return during;
+                    return whatThisThreadSees;
                 }
             }
         }, graphDb );
         barrier.await();
 
         // when
-        long nodes = numberOfNodes();
+        long during = numberOfNodes();
         barrier.release();
-        long during = done.get();
+        long whatOtherThreadSees = done.get();
         long after = numberOfNodes();
 
         // then
         assertEquals( 0, before );
-        assertEquals( 0, nodes );
-        assertEquals( before, during );
+        assertEquals( 0, during );
+        assertEquals( after, whatOtherThreadSees );
         assertEquals( 2, after );
     }
 
     /** Transactional version of {@link #countsForNode()} */
     private long numberOfNodes()
     {
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
         {
             long nodeCount = countsForNode();
             tx.success();

@@ -37,29 +37,32 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.string.UTF8;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
@@ -300,7 +303,7 @@ public class UpgradeStoreIT
 
     private GraphDatabaseService startDb( File path )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( path.getAbsolutePath() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( path.getAbsoluteFile() );
     }
 
     private void startAndStopDb( File path )
@@ -310,7 +313,7 @@ public class UpgradeStoreIT
 
     private GraphDatabaseBuilder builderFor( File path )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( path.getAbsolutePath() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( path.getAbsoluteFile() );
     }
 
     private void setOlderNeoStoreVersion( File path ) throws IOException
@@ -327,7 +330,7 @@ public class UpgradeStoreIT
     {
         FileChannel channel = new RandomAccessFile( file, "rw" ).getChannel();
         ByteBuffer buffer = ByteBuffer.wrap( new byte[4] );
-        buffer.putInt( blockSize + AbstractDynamicStore.BLOCK_HEADER_SIZE );
+        buffer.putInt( blockSize + DynamicRecordFormat.RECORD_HEADER_SIZE );
         buffer.flip();
         channel.write( buffer );
 
@@ -341,12 +344,13 @@ public class UpgradeStoreIT
     private void createManyRelationshipTypes( File path, int numberOfTypes )
     {
         File fileName = new File( path, "neostore.relationshiptypestore.db" );
-        Config config = new Config();
+        Config config = Config.empty();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names" ), config,
                 IdType.RELATIONSHIP_TYPE_TOKEN_NAME, new DefaultIdGeneratorFactory( fs ), pageCache,
-                NullLogProvider.getInstance(), TokenStore.NAME_STORE_BLOCK_SIZE );
+                NullLogProvider.getInstance(), TokenStore.NAME_STORE_BLOCK_SIZE, StandardV3_0.RECORD_FORMATS.dynamic(),
+                StandardV3_0.STORE_VERSION );
         RelationshipTypeTokenStore store =
                 new RelationshipTypeTokenStoreWithOneOlderVersion( fileName, stringStore, fs, pageCache );
         for ( int i = 0; i < numberOfTypes; i++ )
@@ -356,7 +360,7 @@ public class UpgradeStoreIT
             record.setCreated();
             record.setInUse( true );
             Collection<DynamicRecord> typeRecords = store.allocateNameRecords( PropertyStore.encodeString( name ) );
-            record.setNameId( (int) first( typeRecords ).getId() );
+            record.setNameId( (int) Iterables.first( typeRecords ).getId() );
             record.addNameRecords( typeRecords );
             store.setHighId( store.getHighId()+1 );
             store.updateRecord( record );
@@ -366,7 +370,6 @@ public class UpgradeStoreIT
 
     private static class RelationshipTypeTokenStoreWithOneOlderVersion extends RelationshipTypeTokenStore
     {
-        private static final Config config = new Config( stringMap() );
         private boolean versionCalled;
 
         public RelationshipTypeTokenStoreWithOneOlderVersion(
@@ -375,8 +378,9 @@ public class UpgradeStoreIT
                 FileSystemAbstraction fs,
                 PageCache pageCache )
         {
-            super( fileName, config, new NoLimitIdGeneratorFactory( fs ), pageCache, NullLogProvider.getInstance(),
-                    stringStore );
+            super( fileName, Config.defaults(), new NoLimitIdGeneratorFactory( fs ), pageCache,
+                    NullLogProvider.getInstance(), stringStore,
+                    RecordFormatSelector.defaultFormat() );
         }
 
         @Override
@@ -410,13 +414,13 @@ public class UpgradeStoreIT
         }
 
         @Override
-        public IdGenerator open( File filename, IdType idType, long highId )
+        public IdGenerator open( File filename, IdType idType, long highId, long maxId )
         {
-            return open( filename, 0, idType, highId );
+            return open( filename, 0, idType, highId, maxId );
         }
 
         @Override
-        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
+        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
         {
             IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, Long.MAX_VALUE, false, highId );
             generators.put( idType, generator );

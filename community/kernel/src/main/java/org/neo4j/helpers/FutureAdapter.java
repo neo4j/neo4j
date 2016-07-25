@@ -27,8 +27,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
 
 public abstract class FutureAdapter<V> implements Future<V>
 {
@@ -78,28 +77,6 @@ public abstract class FutureAdapter<V> implements Future<V>
     }
 
     public static final Future<Void> VOID = new Present<>( null );
-
-    /**
-     * @deprecated use {@link #latchGuardedValue(Supplier, CountDownLatch, String)} instead
-     * @param value the value getter
-     * @param guardedByLatch the guard
-     * @param jobDescription description
-     * @param <T> the type
-     * @return the future from which to get the value
-     */
-    @Deprecated
-    public static <T> Future<T> latchGuardedValue( final ValueGetter<T> value, final CountDownLatch guardedByLatch,
-            final String jobDescription )
-    {
-        return latchGuardedValue( new Supplier<T>()
-        {
-            @Override
-            public T get()
-            {
-                return value.get();
-            }
-        }, guardedByLatch, jobDescription );
-    }
 
     public static <T> Future<T> latchGuardedValue( final Supplier<T> supplier, final CountDownLatch guardedByLatch,
                                                    final String jobDescription )

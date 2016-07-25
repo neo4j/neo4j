@@ -22,10 +22,13 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -42,12 +45,15 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
             throws IOException
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( fromPath, fs );
-        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 100 );
+        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100 );
+        LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
         final ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, fromPath );
         PhysicalLogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 0,
-                transactionIdStore, new ReadOnlyLogVersionRepository( pageCache, fromPath ),
-                monitors.newMonitor( PhysicalLogFile.Monitor.class ), transactionMetadataCache ) );
-        physicalStore = new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache );
+                transactionIdStore::getLastCommittedTransactionId,
+                new ReadOnlyLogVersionRepository( pageCache, fromPath ),
+                monitors.newMonitor( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        physicalStore = new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader );
     }
 
     @Override

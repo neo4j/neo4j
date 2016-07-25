@@ -27,9 +27,9 @@ class InsertStatusUpdateTest extends DocumentingTestBase {
 
   def section = "cookbook"
   override val noTitle = true;
-  
+
   override val setupQueries = List("""
-create 
+create
 (bob{name:'Bob'})-[:STATUS]->(bob_s1{name:'bob_s1', text:'bobs status1',date:1})-[:NEXT]->(bob_s2{name:'bob_s2', text:'bobs status2',date:4})
 """)
 
@@ -58,7 +58,7 @@ Dividing the query into steps, this query resembles adding new item in middle of
   all earlier updates would be connected to their subsequent updates through a `NEXT` relationship. (`DELETE r`).
 . Now, create the new `statusupdate` node (with text and date as properties) and connect this with the user through a `STATUS` relationship
   (`CREATE (me)-[:STATUS]->(latest_update { text:'Status',date:123 })`).
-. Pipe over `statusupdate` or an empty collection to the next query part
+. Pipe over `statusupdate` or an empty list to the next query part
   (`WITH latest_update, collect(secondlatestupdate) AS seconds`).
 . Now, create a `NEXT` relationship between the latest status update and the second latest status update (if it exists) (`FOREACH(x in seconds | CREATE (latest_update)-[:NEXT]->(x))`).""",
       assertions = (p) => assertEquals(List(Map("new_status" -> "Status")), p.toList))

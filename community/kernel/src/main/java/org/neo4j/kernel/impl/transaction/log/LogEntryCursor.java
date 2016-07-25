@@ -21,25 +21,21 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 /**
  * {@link IOCursor} abstraction on top of a {@link LogEntryReader}
  */
 public class LogEntryCursor implements IOCursor<LogEntry>
 {
-    private final LogEntryReader<ReadableLogChannel> logEntryReader;
-    private final ReadableLogChannel channel;
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
+    private final ReadableClosablePositionAwareChannel channel;
     private LogEntry entry;
 
-    public LogEntryCursor( ReadableLogChannel channel )
-    {
-        this( new VersionAwareLogEntryReader<>(), channel );
-    }
-
-    public LogEntryCursor( LogEntryReader<ReadableLogChannel> logEntryReader, ReadableLogChannel channel )
+    public LogEntryCursor( LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
+                           ReadableClosablePositionAwareChannel channel )
     {
         this.logEntryReader = logEntryReader;
         this.channel = channel;

@@ -35,7 +35,7 @@ import java.util.Arrays;
 
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -85,19 +85,15 @@ public class FileSystemAbstractionInterruptionTest
     }
 
     @Before
-    public void interruptPriorToCall()
-    {
-        Thread.currentThread().interrupt();
-    }
-
-    @Before
     public void createWorkingDirectoryAndTestFile() throws IOException
     {
+        Thread.interrupted();
         fs.mkdirs( testdir.directory() );
         file = testdir.file( "a" );
         fs.create( file ).close();
         channel = null;
         channelShouldBeClosed = false;
+        Thread.currentThread().interrupt();
     }
 
     private StoreChannel channel;

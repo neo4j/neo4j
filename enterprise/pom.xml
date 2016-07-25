@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>enterprise-build</artifactId>
-  <version>2.3.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
 
   <name>Neo4j - Enterprise Build</name>
   <packaging>pom</packaging>
@@ -25,7 +25,7 @@
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-	<url>https://github.com/neo4j/neo4j/tree/master/enterprise</url>
+    <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
   <modules>
@@ -35,10 +35,13 @@
     <module>backup</module>
     <module>kernel</module>
     <module>ha</module>
+    <module>core-edge</module>
     <module>metrics</module>
     <module>neo4j-enterprise</module>
     <module>server-enterprise</module>
-    <module>enterprise-performance-tests</module>
+    <module>neo4j-harness-enterprise</module>
+    <module>management</module>
+    <module>security</module>
   </modules>
 
   <licenses>
@@ -73,8 +76,8 @@ terms of the relevant Commercial Agreement.
       <build>
         <plugins>
           <plugin>
-          <groupId>org.neo4j.build.plugins</groupId>
-          <artifactId>ease-maven-plugin</artifactId>
+            <groupId>org.neo4j.build.plugins</groupId>
+            <artifactId>ease-maven-plugin</artifactId>
             <executions>
               <execution>
                 <id>aggregate-artifacts</id>
@@ -85,10 +88,13 @@ terms of the relevant Commercial Agreement.
                   <includes>
                     <include>org.neo4j:*</include>
                     <include>org.neo4j.app:*</include>
+                    <include>org.neo4j.test:*</include>
                   </includes>
                   <excludes>
-                    <exclude>org.neo4j:neo4j-cypher-compiler-1.9_2.11</exclude>
-                    <exclude>org.neo4j:neo4j-cypher-compiler-2.2_2.11</exclude>
+                    <exclude>org.neo4j:neo4j-cypher-frontend-3.0</exclude>
+                    <exclude>org.neo4j:neo4j-cypher-compiler-3.0</exclude>
+                    <exclude>org.neo4j:neo4j-cypher-frontend-2.3</exclude>
+                    <exclude>org.neo4j:neo4j-cypher-compiler-2.3</exclude>
                   </excludes>
                 </configuration>
               </execution>
@@ -109,6 +115,11 @@ terms of the relevant Commercial Agreement.
         <dependency>
           <groupId>org.neo4j.app</groupId>
           <artifactId>neo4j-server-enterprise</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.test</groupId>
+          <artifactId>neo4j-harness-enterprise</artifactId>
           <version>${project.version}</version>
         </dependency>
       </dependencies>

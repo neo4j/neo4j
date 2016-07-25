@@ -19,19 +19,12 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Function;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.test.ThreadingRule;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
+import org.neo4j.test.Race;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -40,7 +33,6 @@ public class ArrayEncoderTest
 {
     @Rule
     public final ThreadingRule threads = new ThreadingRule();
-
 
     private static final Character[] base64chars = new Character[]{
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
@@ -97,7 +89,7 @@ public class ArrayEncoderTest
     }
 
     @Test
-    public void shouldEncodeProperlyWithMultipleThreadsRacing() throws Exception
+    public void shouldEncodeProperlyWithMultipleThreadsRacing() throws Throwable
     {
         // given
         String[] INPUT = {
@@ -111,39 +103,21 @@ public class ArrayEncoderTest
                 "The idea to use the input data as documentation for the test was just a cute thing I came up with.",
                 "Since my imagination for coming up with test data is usually poor, I figured I'd do something useful.",
                 "Hopefully this isn't just nonsensical drivel, and maybe, just maybe someone might actually read it."};
-        long executionTime = SECONDS.toMillis( 5 );
-        final AtomicBoolean running = new AtomicBoolean( true );
-        Function<String, Boolean> function = new Function<String, Boolean>()
-        {
-            @Override
-            public Boolean apply( String input )
-            {
-                String first = ArrayEncoder.encode( new String[]{input} );
-                do
-                {
-                    if ( !first.equals( ArrayEncoder.encode( new String[]{input} ) ) )
-                    {
-                        return false;
-                    }
-                } while ( running.get() );
-                return true;
-            }
-        };
-        List<Future<Boolean>> futures = new ArrayList<>();
 
-        // when
+        Race race = new Race( false );
         for ( String input : INPUT )
         {
-            futures.add( threads.execute( function, input ) );
+            final String[] inputArray = new String[] {input};
+            race.addContestant( () -> {
+                String first = ArrayEncoder.encode( inputArray );
+                for ( int i = 0; i < 1000; i++ )
+                {
+                    String encoded = ArrayEncoder.encode( inputArray );
+                    assertEquals( "Each attempt at encoding should yield the same result. Turns out that first one was '"
+                            + first + "', yet another one was '" + encoded + "'", first, encoded );
+                }
+            } );
         }
-
-        Thread.sleep( executionTime );
-        running.set( false );
-
-        // then
-        for ( Future<Boolean> future : futures )
-        {
-            assertTrue( "Each attempt at encoding should yield the same result.", future.get() );
-        }
+        race.go();
     }
 }

@@ -25,6 +25,7 @@ import org.neo4j.cypher.export.CypherResultSubGraph;
 import org.neo4j.cypher.export.DatabaseSubGraph;
 import org.neo4j.cypher.export.SubGraph;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -34,6 +35,8 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.kernel.api.security.AccessMode.Static.FULL;
 
 @Service.Implementation( App.class )
 public class Dump extends Start
@@ -42,28 +45,35 @@ public class Dump extends Start
     public String getDescription()
     {
         return "Executes a Cypher query to export a subgraph. Usage: DUMP start <rest of query>;\n" +
-                "Example: DUMP start n = node({self}) MATCH n-[r]->m RETURN n,r,m;\n" +
-                "where {self} will be replaced with the current location in the graph." +
-                "Please, note that the query must end with a semicolon. Other parameters are\n" +
-                "taken from shell variables, see 'help export'.";
+               "Example: DUMP start n = node({self}) MATCH n-[r]->m RETURN n,r,m;\n" +
+               "where {self} will be replaced with the current location in the graph." +
+               "Please, note that the query must end with a semicolon. Other parameters are\n" +
+               "taken from shell variables, see 'help export'.";
     }
 
     @Override
-    protected Continuation exec( AppCommandParser parser, Session session, Output out )
-            throws ShellException, RemoteException
+    public Continuation execute( AppCommandParser parser, Session session, Output out )
+            throws Exception
     {
-        if ( parser.arguments().isEmpty() )
+        if ( parser.arguments().isEmpty() ) // Dump the whole graph
         {
-            final SubGraph graph = DatabaseSubGraph.from(getServer().getDb());
-            export( graph, out);
-            return Continuation.INPUT_COMPLETE;
+            try ( Transaction tx = getServer().getDb().beginTransaction( implicit, FULL ) )
+            {
+                getServer().registerTopLevelTransactionInProgress( session.getId() );
+                final SubGraph graph = DatabaseSubGraph.from( getServer().getDb() );
+                export( graph, out );
+                tx.success();
+                return Continuation.INPUT_COMPLETE;
+            }
         }
-
-        AppCommandParser newParser = newParser( parser );
-        return super.exec( newParser, session, out );
+        else
+        {
+            AppCommandParser newParser = newParser( parser );
+            return super.execute( newParser, session, out );
+        }
     }
 
-    private AppCommandParser newParser(AppCommandParser parser) throws ShellException
+    private AppCommandParser newParser( AppCommandParser parser ) throws ShellException
     {
         String newLine = parser.getLineWithoutApp();
         AppCommandParser newParser = newParser( newLine );
@@ -83,7 +93,7 @@ public class Dump extends Start
         }
     }
 
-    private void export(SubGraph subGraph, Output out) throws RemoteException, ShellException
+    private void export( SubGraph subGraph, Output out ) throws RemoteException, ShellException
     {
         new Exporter( subGraph ).export( out );
     }
@@ -91,7 +101,7 @@ public class Dump extends Start
     @Override
     protected void handleResult( Output out, Result result, long startTime ) throws RemoteException, ShellException
     {
-        final SubGraph subGraph = CypherResultSubGraph.from(result, getServer().getDb(), false);
-        export( subGraph, out);
+        final SubGraph subGraph = CypherResultSubGraph.from( result, getServer().getDb(), false );
+        export( subGraph, out );
     }
 }

@@ -87,7 +87,6 @@ public final class RepresentationType
             MAP = new RepresentationType( "map", "maps", Map.class ),
             NULL = new RepresentationType( "null", "nulls", Object.class );
 
-
     final String valueName;
     final String listName;
     final Class<?> extend;

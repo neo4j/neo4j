@@ -19,7 +19,6 @@
  */
 package org.neo4j.helpers;
 
-
 public class Assertion
 {
     private static boolean assertionEnabled = false;
@@ -28,7 +27,6 @@ public class Assertion
     {
         assert assertionEnabled = true;
     }
-
 
     public static boolean assertionsEnabled()
     {

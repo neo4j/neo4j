@@ -28,6 +28,8 @@ include::filter-on-node-label.asciidoc[]
 
 include::filter-on-node-property.asciidoc[]
 
+include::filter-on-relationship-property.asciidoc[]
+
 include::filter-on-dynamic-node-property.asciidoc[]
 
 include::property-exists.asciidoc[]
@@ -88,7 +90,7 @@ include::filtering-on-relationship-type.asciidoc[]
 
 :leveloffset: 2
 
-== Collections ==
+== Lists ==
 
 :leveloffset: 3
 

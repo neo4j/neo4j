@@ -29,15 +29,15 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -62,8 +62,8 @@ public class StoreFactoryTest
 
         storeDir = testDirectory.graphDbDir();
         fs.mkdirs( storeDir );
-        storeFactory = new StoreFactory( storeDir, new Config(), idGeneratorFactory, pageCache,
-                fs, NullLogProvider.getInstance() );
+        storeFactory = new StoreFactory( storeDir, Config.empty(), idGeneratorFactory, pageCache, fs,
+                NullLogProvider.getInstance() );
     }
 
     @After

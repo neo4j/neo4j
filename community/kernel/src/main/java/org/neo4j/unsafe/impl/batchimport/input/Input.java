@@ -59,13 +59,6 @@ public interface Input
     IdGenerator idGenerator();
 
     /**
-     * @return whether or not {@link InputRelationship input relationships} returned by {@link #relationships()}
-     * specify specific actual relationship ids to be used in the database. Either all
-     * {@link InputRelationship input relationships} must specify specific ids or none.
-     */
-    boolean specificRelationshipIds();
-
-    /**
      * @return a {@link Collector} capable of writing {@link InputRelationship bad relationships}
      * and {@link InputNode duplicate nodes} to an output stream for later handling.
      */

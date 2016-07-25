@@ -19,10 +19,9 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.neo4j.function.LongPredicate;
-import org.neo4j.function.primitive.PrimitiveLongPredicate;
+import java.util.function.LongPredicate;
 
-public interface PrimitiveLongSet extends PrimitiveLongCollection, LongPredicate, PrimitiveLongPredicate
+public interface PrimitiveLongSet extends PrimitiveLongCollection, LongPredicate
 {
     boolean add( long value );
 
@@ -31,11 +30,4 @@ public interface PrimitiveLongSet extends PrimitiveLongCollection, LongPredicate
     boolean contains( long value );
 
     boolean remove( long value );
-
-    /**
-     * @deprecated use {@link #contains(long)} instead, or {@link #test(long)} if a predicate is required
-     */
-    @Deprecated
-    @Override
-    boolean accept( long value );
 }

@@ -31,21 +31,19 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
 
-import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.string.UTF8;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -64,12 +62,10 @@ public class TestArrayStore
     public void before() throws Exception
     {
         File dir = testDirectory.graphDbDir();
-        Map<String, String> configParams = MapUtil.stringMap();
-        Config config = new Config( configParams );
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory factory = new StoreFactory( dir, config, idGeneratorFactory, pageCache, fs,
+        StoreFactory factory = new StoreFactory( dir, Config.empty(), idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance() );
         neoStores = factory.openAllNeoStores( true );
         arrayStore = neoStores.getPropertyStore().getArrayStore();
@@ -115,7 +111,7 @@ public class TestArrayStore
     {
         String[] array = new String[] { "first", "second" };
         Collection<DynamicRecord> records = new ArrayList<>();
-        arrayStore.allocateRecords( records, array, IteratorUtil.<DynamicRecord>emptyIterator() );
+        arrayStore.allocateRecords( records, array, Iterators.<DynamicRecord>emptyIterator() );
         Pair<byte[], byte[]> loaded = loadArray( records );
         assertStringHeader( loaded.first(), array.length );
         ByteBuffer buffer = ByteBuffer.wrap( loaded.other() );
@@ -158,7 +154,7 @@ public class TestArrayStore
     private Collection<DynamicRecord> storeArray( Object array )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
-        arrayStore.allocateRecords( records, array, IteratorUtil.<DynamicRecord>emptyIterator() );
+        arrayStore.allocateRecords( records, array, Iterators.<DynamicRecord>emptyIterator() );
         for ( DynamicRecord record : records )
         {
             arrayStore.updateRecord( record );

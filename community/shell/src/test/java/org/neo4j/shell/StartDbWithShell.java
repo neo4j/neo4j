@@ -19,25 +19,25 @@
  */
 package org.neo4j.shell;
 
+import java.io.File;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 
-import static org.neo4j.helpers.SillyUtils.ignore;
-
 public class StartDbWithShell
 {
     public static void main( String[] args ) throws Exception
     {
-        String path = args.length > 0 ? args[0] : "target/test-data/shell-db";
+        File path = args.length > 0 ? new File( args[0] ) : new File( "target/test-data/shell-db" );
         GraphDatabaseService db = new GraphDatabaseFactory().
             newEmbeddedDatabaseBuilder( path ).
             setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE).
             setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE).
             newGraphDatabase();
         System.out.println( "db " + path + " started, ENTER to quit" );
-        ignore( System.in.read() );
+        System.in.read();
         db.shutdown();
     }
 }

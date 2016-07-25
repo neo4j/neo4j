@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.DynamicLabel
+import org.neo4j.cypher.internal.StringCacheMonitor
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.Label
 import org.neo4j.kernel.api.Statement
 import org.scalatest.prop.TableDrivenPropertyChecks
 
@@ -30,7 +31,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
 
   test("re-uses cached plan across different execution modes") {
     // ensure label exists
-    graph.inTx { graph.createNode(DynamicLabel.label("Person")) }
+    graph.inTx { graph.createNode(Label.label("Person")) }
 
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
@@ -66,9 +67,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         val actual = cacheListener.trace
         val expected = List(
           s"cacheFlushDetected",
-          s"cacheMiss: CYPHER 2.3 $query",
-          s"cacheHit: CYPHER 2.3 $query",
-          s"cacheHit: CYPHER 2.3 $query")
+          s"cacheMiss: CYPHER 3.1 $query",
+          s"cacheHit: CYPHER 3.1 $query",
+          s"cacheHit: CYPHER 3.1 $query")
 
         actual should equal(expected)
     }
@@ -95,7 +96,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       log += s"cacheMiss: $key"
     }
 
-    override def cacheDiscard(key: String): Unit = {
+    override def cacheDiscard(key: String, ignored: String): Unit = {
       log += s"cacheDiscard: $key"
     }
   }

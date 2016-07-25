@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
@@ -51,7 +52,7 @@ public class StoreVersionCheck
             return new Result( Outcome.missingStoreFile, null, neostoreFile.getName() );
         }
 
-        if ( record == MetaDataStore.FIELD_NOT_PRESENT )
+        if ( record == MetaDataRecordFormat.FIELD_NOT_PRESENT )
         {
             return new Result( Outcome.storeVersionNotFound, null, neostoreFile.getName() );
         }
@@ -59,7 +60,7 @@ public class StoreVersionCheck
         String storeVersion = MetaDataStore.versionLongToString( record );
         if ( !expectedVersion.equals( storeVersion ) )
         {
-            return new Result( Outcome.unexpectedUpgradingStoreVersion, storeVersion, expectedVersion );
+            return new Result( Outcome.unexpectedUpgradingStoreVersion, storeVersion, neostoreFile.getName() );
         }
 
         return new Result( Outcome.ok, null, neostoreFile.getName() );
@@ -83,7 +84,8 @@ public class StoreVersionCheck
             ok( true ),
             missingStoreFile( false ),
             storeVersionNotFound( false ),
-            unexpectedUpgradingStoreVersion( false );
+            unexpectedUpgradingStoreVersion( false ),
+            storeNotCleanlyShutDown( false );
 
             private final boolean success;
 

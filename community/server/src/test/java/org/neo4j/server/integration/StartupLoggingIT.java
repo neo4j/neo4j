@@ -22,58 +22,78 @@ package org.neo4j.server.integration;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.Map;
+import java.util.Optional;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Pair;
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.CommunityBootstrapper;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.server.configuration.ServerSettings.httpConnector;
 
 public class StartupLoggingIT extends ExclusiveServerTestBase
 {
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
+    @Before
+    public void setUp() throws IOException
+    {
+        FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( DatabaseManagementSystemSettings.data_directory ) );
+    }
+
+    @Rule
+    public TargetDirectory.TestDirectory homeDir = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void shouldLogHelpfulStartupMessages() throws Throwable
     {
-        // Given
-        SuppressOutput suppressed = SuppressOutput.suppressAll();
+        CommunityBootstrapper boot = new CommunityBootstrapper();
+        Pair[] propertyPairs = getPropertyPairs();
 
-        // When
-        suppressed.call( new Callable<Object>()
-        {
-            @Override
-            public Object call() throws Exception
-            {
-                CommunityBootstrapper boot = new CommunityBootstrapper();
-                CommunityBootstrapper.start( boot, new String[]{} );
-                boot.stop();
-                return null;
-            }
-        });
+        boot.start( homeDir.directory(), Optional.of( new File( "nonexistent-file.conf" ) ), propertyPairs );
+        boot.stop();
 
-        // Then
-        List<String> captured = suppressed.getOutputVoice().lines();
-        // TODO: Obviously the logging below is insane, but we added this test in a point release, so we don't want to break anyone grepping for this
-        //       This should be changed in 3.0.0.
+        List<String> captured = suppressOutput.getOutputVoice().lines();
         assertThat( captured, containsAtLeastTheseLines(
-                warn( "Config file \\[config.neo4j-server\\.properties\\] does not exist." ),
-                warn( "Config file \\[config.neo4j\\.properties\\] does not exist." ),
-                info( "Successfully started database" ),
-                info( "Starting HTTP on port 7474 \\(.+ threads available\\)" ),
-                info( "Mounting static content at /webadmin" ),
-                info( "Mounting static content at /browser" ),
-                info( "Remote interface ready and available at http://.+:7474/" ),
-
-                info( "Successfully shutdown Neo4j Server" ),
-                info( "Successfully stopped database" ),
-                info( "Successfully shutdown database" ),
-                info( "Successfully shutdown Neo Server on port \\[.+\\], database \\[.+\\]")
+                warn( "Config file \\[nonexistent-file.conf\\] does not exist." ),
+                info( "Starting..." ),
+                info( "Started." ),
+                info( "Remote interface available at http://.+:7474/" ),
+                info( "Stopping..." ),
+                info( "Stopped." )
         ) );
+    }
+
+    private Pair[] getPropertyPairs() throws IOException
+    {
+        List<Pair> pairs = new ArrayList<>();
+        Map<String,String> relativeProperties = ServerTestUtils.getDefaultRelativeProperties();
+        for ( Map.Entry<String,String> entry : relativeProperties.entrySet() )
+        {
+            pairs.add( Pair.of( entry.getKey(), entry.getValue() ) );
+        }
+        pairs.add( Pair.of( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE) );
+        pairs.add( Pair.of( httpConnector("1").type.name(), "HTTP" ) );
+        pairs.add( Pair.of( httpConnector("1").enabled.name(), "true" ) );
+        return pairs.toArray( new Pair[pairs.size()] );
     }
 
     public static Matcher<List<String>> containsAtLeastTheseLines( final Matcher<String> ... expectedLinePatterns )

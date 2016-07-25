@@ -23,7 +23,7 @@ import java.util.Timer;
 
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.StartupStatistics;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;

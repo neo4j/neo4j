@@ -21,49 +21,12 @@ package org.neo4j.desktop.config.unix;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 
-import org.neo4j.desktop.config.portable.PortableEnvironment;
+import org.neo4j.desktop.config.portable.Environment;
 
-class UnixEnvironment extends PortableEnvironment
+class UnixEnvironment extends Environment
 {
-    @Override
-    public void openBrowser( String url ) throws IOException, URISyntaxException
-    {
-        if ( isPortableBrowseSupported() )
-        {
-            portableBrowse( url );
-            return;
-        }
 
-        throw new UnsupportedOperationException( "Cannot browse to URL: " + url );
-    }
-
-    @Override
-    public void editFile( File file ) throws IOException
-    {
-        if ( isPortableEditFileSupported() )
-        {
-            portableEditFile( file );
-            return;
-        }
-
-        throw new UnsupportedOperationException( "Cannot edit file: " + file );
-    }
-
-    @Override
-    public void openDirectory( File directory ) throws IOException
-    {
-        if ( isPortableOpenSupported() )
-        {
-            portableOpen( directory );
-            return;
-        }
-
-        throw new UnsupportedOperationException( "Cannot open directory: " + directory );
-    }
-
-    @Override
     public void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory ) throws IOException
     {
         throw new UnsupportedOperationException(

@@ -29,20 +29,20 @@ public interface LogFile
 {
     interface LogFileVisitor
     {
-        boolean visit( LogPosition position, ReadableVersionableLogChannel channel ) throws IOException;
+        boolean visit( LogPosition position, ReadableClosablePositionAwareChannel channel ) throws IOException;
     }
 
     /**
-     * @return {@link WritableLogChannel} capable of appending data to this log.
+     * @return {@link FlushableChannel} capable of appending data to this log.
      */
-    WritableLogChannel getWriter();
+    FlushablePositionAwareChannel getWriter();
 
     /**
      * @param position {@link LogPosition} to position the returned reader at.
-     * @return {@link ReadableLogChannel} capable of reading log data, starting from {@link LogPosition position}.
+     * @return {@link ReadableClosableChannel} capable of reading log data, starting from {@link LogPosition position}.
      * @throws IOException
      */
-    ReadableVersionableLogChannel getReader( LogPosition position ) throws IOException;
+    ReadableLogChannel getReader( LogPosition position ) throws IOException;
 
     void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException;
 

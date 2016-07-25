@@ -1,0 +1,32 @@
+= NEO4J-ADMIN(1)
+:author: The Neo4j Team
+
+== NAME
+neo4j-admin - Neo4j administration
+
+[[neo4j-admin-manpage]]
+== SYNOPSIS
+
+*neo4j-admin* <command>
+
+[[neo4j-admin-manpage-description]]
+== DESCRIPTION
+
+Neo4j is a graph database, perfect for working with highly connected data.
+The `neo4j` command is used to control the Neo4j Server.
+
+The preferred way to install Neo4j on Linux systems is by using prebuilt installation packages.
+For information regarding Windows, see http://neo4j.com/docs/operations-manual/current/#windows-installation.
+
+[[neo4j-admin-manpage-commands]]
+== COMMANDS
+
+*import*::
+    Create a new database by importing existing data.
+
+    ----
+    neo4j-admin import --mode=database --database=<database-name> --from=<source-directory>
+    ----
+
+    Import a database from a pre-3.0 Neo4j installation. <source-directory> is the database location (e.g.
+    <neo4j-root>/data/graph.db).

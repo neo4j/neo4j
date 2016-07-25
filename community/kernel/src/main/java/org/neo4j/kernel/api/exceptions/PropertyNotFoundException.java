@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.storageengine.api.EntityType;
 
 import static java.lang.String.format;
 
@@ -37,7 +37,7 @@ public class PropertyNotFoundException extends KernelException
 
     private PropertyNotFoundException( String entity, int propertyKeyId )
     {
-        super( Status.Statement.NoSuchProperty, "%s has no property with propertyKeyId=%s.", entity, propertyKeyId );
+        super( Status.Statement.PropertyNotFound, "%s has no property with propertyKeyId=%s.", entity, propertyKeyId );
         this.entity = entity;
         this.propertyKeyId = propertyKeyId;
     }

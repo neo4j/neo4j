@@ -19,14 +19,16 @@
  */
 package org.neo4j.cypher.internal.spi.v2_3
 
+import java.util.function.Predicate
+
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{TraversalMatcher, ExpanderStep, TraversalPathExpander}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{ExpanderStep, TraversalMatcher, TraversalPathExpander}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
-import org.neo4j.function.Predicate
-import org.neo4j.graphdb.traversal.{BranchCollisionPolicy, _}
+import org.neo4j.graphdb.traversal._
 import org.neo4j.graphdb.{Node, Path}
-import org.neo4j.kernel.{StandardBranchCollisionDetector, Traversal, Uniqueness}
+import org.neo4j.graphdb.impl.traversal.StandardBranchCollisionDetector
+import org.neo4j.kernel.impl.traversal.{MonoDirectionalTraversalDescription, BidirectionalTraversalDescriptionImpl}
 
 import scala.collection.JavaConverters._
 
@@ -36,14 +38,16 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
 
   lazy val reversedSteps = steps.reverse()
 
-  val initialStartStep = new InitialStateFactory[Option[ExpanderStep]] {
+  val initialStartStep = new InitialBranchState[Option[ExpanderStep]] {
     def initialState(path: Path): Option[ExpanderStep] = Some(steps)
+    def reverse() = this
   }
 
-  val initialEndStep = new InitialStateFactory[Option[ExpanderStep]] {
+  val initialEndStep = new InitialBranchState[Option[ExpanderStep]] {
     def initialState(path: Path): Option[ExpanderStep] = Some(reversedSteps)
+    def reverse() = this
   }
-  val baseTraversal: TraversalDescription = Traversal.traversal(Uniqueness.RELATIONSHIP_PATH)
+  val baseTraversal: TraversalDescription = new MonoDirectionalTraversalDescription().uniqueness(Uniqueness.RELATIONSHIP_PATH)
   val collisionDetector = new StepCollisionDetector
 
   def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterator[Path] = {
@@ -68,7 +72,7 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
 
     val (startDescription, endDescription) = produceTraversalDescriptions()
 
-    val result = Traversal.bidirectionalTraversal()
+    val result = new BidirectionalTraversalDescriptionImpl()
       .startSide(startDescription)
       .endSide(endDescription)
       .collisionPolicy(collisionDetector)

@@ -20,13 +20,13 @@
 package org.neo4j.consistency.checking;
 
 import java.util.Iterator;
+import java.util.function.Function;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.consistency.checking.full.MandatoryProperties;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;

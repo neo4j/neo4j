@@ -24,6 +24,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.neo4j.consistency.repair.RelationshipChainDirection.NEXT;
 import static org.neo4j.consistency.repair.RelationshipChainDirection.PREV;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class RelationshipChainExplorer
 {
@@ -61,26 +63,24 @@ public class RelationshipChainExplorer
         return expandChain( record, nodeId, PREV ).union( expandChain( record, nodeId, NEXT ) );
     }
 
-    protected RecordSet<RelationshipRecord> followChainFromNode(long nodeId, long relationshipId )
+    protected RecordSet<RelationshipRecord> followChainFromNode( long nodeId, long relationshipId )
     {
-        RelationshipRecord record = recordStore.getRecord( relationshipId );
-        return expandChain( record, nodeId, NEXT );
+        return expandChain( recordStore.getRecord( relationshipId, recordStore.newRecord(), NORMAL ), nodeId, NEXT );
     }
 
     private RecordSet<RelationshipRecord> expandChain( RelationshipRecord record, long nodeId,
                                                        RelationshipChainDirection direction )
     {
-        RecordSet<RelationshipRecord> chain = new RecordSet<RelationshipRecord>();
+        RecordSet<RelationshipRecord> chain = new RecordSet<>();
         chain.add( record );
         RelationshipRecord currentRecord = record;
         long nextRelId = direction.fieldFor( nodeId, currentRecord ).relOf( currentRecord );
         while ( currentRecord.inUse() && !direction.fieldFor( nodeId, currentRecord ).endOfChain( currentRecord ) )
         {
-            currentRecord = recordStore.forceGetRecord( nextRelId );
+            currentRecord = recordStore.getRecord( nextRelId, recordStore.newRecord(), FORCE );
             chain.add( currentRecord );
             nextRelId = direction.fieldFor( nodeId, currentRecord ).relOf( currentRecord );
         }
         return chain;
     }
-
 }

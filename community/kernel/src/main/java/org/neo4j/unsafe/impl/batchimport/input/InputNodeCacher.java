@@ -22,12 +22,14 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.IOException;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_LABEL_CHANGES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_LABEL_FIELD;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_ADDITION;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_REMOVAL;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_TOKEN;
 
 /**
  * Caches {@link InputNode} to disk using a binary format.
@@ -36,9 +38,11 @@ public class InputNodeCacher extends InputEntityCacher<InputNode>
 {
     private String[] previousLabels = InputEntity.NO_LABELS;
 
-    public InputNodeCacher( StoreChannel channel, StoreChannel header, int bufferSize ) throws IOException
+    public InputNodeCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats,
+            int bufferSize, int batchSize )
+            throws IOException
     {
-        super( channel, header, bufferSize, 1 );
+        super( channel, header, recordFormats, bufferSize, batchSize, 1 );
     }
 
     @Override
@@ -62,21 +66,28 @@ public class InputNodeCacher extends InputEntityCacher<InputNode>
         else
         {   // diff from previous node
             String[] labels = node.labels();
-            writeDiff( LABEL_REMOVAL, previousLabels, labels );
-            writeDiff( LABEL_ADDITION, labels, previousLabels );
+            writeLabelDiff( LABEL_REMOVAL, previousLabels, labels );
+            writeLabelDiff( LABEL_ADDITION, labels, previousLabels );
             channel.put( END_OF_LABEL_CHANGES );
             previousLabels = labels;
         }
     }
 
-    protected void writeDiff( byte mode, String[] compare, String[] with ) throws IOException
+    @Override
+    protected void clearState()
+    {
+        previousLabels = InputEntity.NO_LABELS;
+        super.clearState();
+    }
+
+    protected void writeLabelDiff( byte mode, String[] compare, String[] with ) throws IOException
     {
         for ( String value : compare )
         {
             if ( !contains( with, value ) )
             {
                 channel.put( mode );
-                writeToken( value );
+                writeToken( LABEL_TOKEN, value );
             }
         }
     }

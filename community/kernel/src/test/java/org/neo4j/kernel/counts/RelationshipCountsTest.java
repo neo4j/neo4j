@@ -20,13 +20,12 @@
 package org.neo4j.kernel.counts;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.Future;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -37,19 +36,21 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.NamedFunction;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class RelationshipCountsTest
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
-    public final @Rule ThreadingRule threading = new ThreadingRule();
+    @Rule
+    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final ThreadingRule threading = new ThreadingRule();
 
     @Test
     public void shouldReportNumberOfRelationshipsInAnEmptyGraph() throws Exception
@@ -65,7 +66,7 @@ public class RelationshipCountsTest
     public void shouldReportTotalNumberOfRelationships() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         long before = numberOfRelationships();
         long during;
         try ( Transaction tx = graphDb.beginTx() )
@@ -83,16 +84,15 @@ public class RelationshipCountsTest
 
         // then
         assertEquals( 0, before );
-        assertEquals( 0, during );
+        assertEquals( 3, during );
         assertEquals( 3, after );
     }
 
     @Test
-    @Ignore("TODO: re-enable this test when we can extract proper counts form TxState")
     public void shouldAccountForDeletedRelationships() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         Relationship rel;
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -123,7 +123,7 @@ public class RelationshipCountsTest
     public void shouldNotCountRelationshipsCreatedInOtherTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         final Barrier.Control barrier = new Barrier.Control();
         long before = numberOfRelationships();
         Future<Long> tx = threading.execute( new NamedFunction<GraphDatabaseService, Long>( "create-relationships" )
@@ -131,39 +131,38 @@ public class RelationshipCountsTest
             @Override
             public Long apply( GraphDatabaseService graphDb )
             {
-                long during;
                 try ( Transaction tx = graphDb.beginTx() )
                 {
                     Node node = graphDb.createNode();
                     node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
                     node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
-                    during = countsForRelationship( null, null, null );
+                    long whatThisThreadSees = countsForRelationship( null, null, null );
                     barrier.reached();
                     tx.success();
+                    return whatThisThreadSees;
                 }
-                return during;
             }
         }, graphDb );
         barrier.await();
 
         // when
-        long concurrently = numberOfRelationships();
+        long during = numberOfRelationships();
         barrier.release();
-        long during = tx.get();
+        long whatOtherThreadSees = tx.get();
         long after = numberOfRelationships();
 
         // then
         assertEquals( 0, before );
-        assertEquals( 0, concurrently );
+        assertEquals( 0, during );
         assertEquals( 2, after );
-        assertEquals( before, during );
+        assertEquals( after, whatOtherThreadSees );
     }
 
     @Test
     public void shouldNotCountRelationshipsDeletedInOtherTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         final Relationship rel;
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -180,37 +179,36 @@ public class RelationshipCountsTest
             @Override
             public Long apply( GraphDatabaseService graphDb )
             {
-                long during;
                 try ( Transaction tx = graphDb.beginTx() )
                 {
                     rel.delete();
-                    during = countsForRelationship( null, null, null );
+                    long whatThisThreadSees = countsForRelationship( null, null, null );
                     barrier.reached();
                     tx.success();
+                    return whatThisThreadSees;
                 }
-                return during;
             }
         }, graphDb );
         barrier.await();
 
         // when
-        long concurrently = numberOfRelationships();
+        long during = numberOfRelationships();
         barrier.release();
-        long during = tx.get();
+        long whatOtherThreadSees = tx.get();
         long after = numberOfRelationships();
 
         // then
         assertEquals( 3, before );
-        assertEquals( 3, concurrently );
+        assertEquals( 3, during );
         assertEquals( 2, after );
-        assertEquals( before, during );
+        assertEquals( after, whatOtherThreadSees );
     }
 
     @Test
     public void shouldCountRelationshipsByType() throws Exception
     {
         // given
-        final GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        final GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "FOO" ) );
@@ -314,7 +312,7 @@ public class RelationshipCountsTest
     /** Transactional version of {@link #countsForRelationship(Label, RelationshipType, Label)} */
     private long numberOfRelationshipsMatching( Label lhs, RelationshipType type, Label rhs )
     {
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
         {
             long nodeCount = countsForRelationship( lhs, type, rhs );
             tx.success();

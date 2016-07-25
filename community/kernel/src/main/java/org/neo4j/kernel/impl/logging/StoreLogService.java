@@ -26,9 +26,8 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Consumers;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -42,7 +41,7 @@ import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 public class StoreLogService extends AbstractLogService implements Lifecycle
 {
-    public static final String INTERNAL_LOG_NAME = "messages.log";
+    public static final String INTERNAL_LOG_NAME = "debug.log";
 
     public static class Builder
     {
@@ -51,7 +50,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         private long internalLogRotationThreshold = 0L;
         private long internalLogRotationDelay = 0L;
         private int maxInternalLogArchives = 0;
-        private Consumer<LogProvider> rotationListener = Consumers.noop();
+        private Consumer<LogProvider> rotationListener = (logProvider) -> {};
         private Map<String, Level> logLevels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
 
@@ -100,16 +99,11 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             return this;
         }
 
-        public StoreLogService inStoreDirectory( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
-        {
-            return toFile( fileSystem, new File( storeDir, INTERNAL_LOG_NAME ) );
-        }
-
-        public StoreLogService toFile( FileSystemAbstraction fileSystem, File internalLogPath ) throws IOException
+        public StoreLogService inLogsDirectory(FileSystemAbstraction fileSystem, File logsDir ) throws IOException
         {
             return new StoreLogService(
                     userLogProvider,
-                    fileSystem, internalLogPath, logLevels, defaultLevel,
+                    fileSystem, new File( logsDir, INTERNAL_LOG_NAME ), logLevels, defaultLevel,
                     internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, rotationExecutor, rotationListener );
         }
     }
@@ -124,9 +118,9 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         return new Builder().withRotation( internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, jobScheduler );
     }
 
-    public static StoreLogService inStoreDirectory( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
+    public static StoreLogService inLogsDirectory(FileSystemAbstraction fileSystem, File storeDir ) throws IOException
     {
-        return new Builder().inStoreDirectory( fileSystem, storeDir );
+        return new Builder().inLogsDirectory( fileSystem, storeDir );
     }
 
     private final Closeable closeable;
@@ -145,7 +139,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
     {
         if ( !internalLog.getParentFile().exists() )
         {
-            internalLog.getParentFile().mkdirs();
+            fileSystem.mkdirs( internalLog.getParentFile() );
         }
 
         final FormattedLogProvider.Builder internalLogBuilder = FormattedLogProvider.withUTCTimeZone()

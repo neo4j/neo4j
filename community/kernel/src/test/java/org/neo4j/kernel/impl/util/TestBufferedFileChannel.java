@@ -78,14 +78,14 @@ public class TestBufferedFileChannel
                 getFileChannel( file ),
                 new Monitors().newMonitor( ByteCounterMonitor.class ));
         ByteBuffer buffer = ByteBuffer.allocateDirect( 15 );
-        
+
         channel.read( buffer );
         buffer.flip();
         for ( int value = 0; buffer.hasRemaining(); value++ )
         {
             assertEquals( value%10, buffer.get() );
         }
-        
+
         buffer.clear();
         channel.position( channel.position()+5 );
         channel.read( buffer );
@@ -94,7 +94,7 @@ public class TestBufferedFileChannel
         {
             assertEquals( value%10, buffer.get() );
         }
-        
+
         buffer.clear();
         channel.position( channel.size()-13 );
         channel.read( buffer );
@@ -103,7 +103,7 @@ public class TestBufferedFileChannel
         {
             assertEquals( value%10, buffer.get() );
         }
-        
+
         channel.close();
         file.delete();
     }

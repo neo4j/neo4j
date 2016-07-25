@@ -32,19 +32,12 @@ public class LogEntryVersionTest
         {
             // GIVEN
             byte code = version.byteCode();
-            byte logHeaderFormatVersion = version.logHeaderFormatVersion();
 
             // WHEN
-            LogEntryVersion selectedVersion = LogEntryVersion.byVersion( code, logHeaderFormatVersion );
+            LogEntryVersion selectedVersion = LogEntryVersion.byVersion( code );
 
             // THEN
             assertEquals( version, selectedVersion );
         }
-    }
-
-    @Test
-    public void shouldDisregardLogHeaderFormatVersionForUniqueVersions() throws Exception
-    {
-        assertEquals( LogEntryVersion.V2_1, LogEntryVersion.byVersion( LogEntryVersion.V2_1.byteCode(), (byte)99 ) );
     }
 }

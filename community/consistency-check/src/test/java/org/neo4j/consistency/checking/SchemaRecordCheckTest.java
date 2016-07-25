@@ -26,12 +26,12 @@ import org.neo4j.consistency.store.RecordAccessStub;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -81,7 +81,7 @@ public class SchemaRecordCheckTest
         IndexRule rule = IndexRule.indexRule( schemaRuleId, labelId, propertyKeyId, providerDescriptor );
         when( checker().ruleAccess.loadSingleSchemaRule( schemaRuleId ) ).thenReturn( rule );
 
-        LabelTokenRecord labelTokenRecord = add ( notInUse( new LabelTokenRecord( labelId ) ) );
+        LabelTokenRecord labelTokenRecord = add( notInUse( new LabelTokenRecord( labelId ) ) );
         add(inUse( new PropertyKeyTokenRecord( propertyKeyId ) ) );
 
         // when
@@ -387,7 +387,6 @@ public class SchemaRecordCheckTest
         // then
         verify( report ).duplicateRuleContent( record1 );
     }
-
 
     private DynamicRecord dynamicRecord( long id )
     {

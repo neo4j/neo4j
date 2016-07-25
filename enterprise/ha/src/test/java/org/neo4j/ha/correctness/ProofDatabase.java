@@ -19,21 +19,21 @@
  */
 package org.neo4j.ha.correctness;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileUtils;
+
+import static org.neo4j.graphdb.Label.label;
 
 public class ProofDatabase
 {
@@ -44,7 +44,7 @@ public class ProofDatabase
     {
         File dbDir = new File( location );
         cleanDbDir( dbDir );
-        this.gds = new GraphDatabaseFactory().newEmbeddedDatabase( dbDir.getPath() );
+        this.gds = new GraphDatabaseFactory().newEmbeddedDatabase( dbDir );
     }
 
     public Node newState( ClusterState state )
@@ -69,8 +69,7 @@ public class ProofDatabase
 
             Node subStateNode = newState( transition.other() );
 
-            Relationship msg = stateNode.createRelationshipTo( subStateNode, DynamicRelationshipType
-                    .withName( "MESSAGE" ) );
+            Relationship msg = stateNode.createRelationshipTo( subStateNode, RelationshipType.withName( "MESSAGE" ) );
             msg.setProperty( "description", transition.first().toString() );
             tx.success();
         }

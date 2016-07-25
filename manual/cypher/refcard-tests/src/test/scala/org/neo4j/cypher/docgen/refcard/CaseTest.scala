@@ -21,13 +21,13 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class CaseTest extends RefcardTest with QueryStatisticsTestSupport {
   def graphDescription = List(
     "A KNOWS B")
   val title = "CASE"
-  val css = "general c2-1 c3-3 c4-2 c5-5 c6-4"
+  val css = "general c2-1 c3-3 c4-4 c5-4 c6-4"
   override val linkId = "cypher-expressions"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -47,7 +47,7 @@ class CaseTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=simple
-MATCH n
+MATCH (n)
 RETURN
 
 CASE n.eyes
@@ -63,7 +63,7 @@ Return `THEN` value from the matching `WHEN` value.
 The `ELSE` value is optional, and substituted for `NULL` if missing.
 
 ###assertion=generic
-MATCH n
+MATCH (n)
 RETURN
 
 CASE

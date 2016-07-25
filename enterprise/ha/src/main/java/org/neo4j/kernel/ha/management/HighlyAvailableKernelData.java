@@ -22,22 +22,22 @@ package org.neo4j.kernel.ha.management;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
-import org.neo4j.helpers.Functions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.KernelData;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.management.ClusterDatabaseInfo;
 import org.neo4j.management.ClusterMemberInfo;
 
+import static org.neo4j.helpers.collection.Iterables.asArray;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toArray;
 
 public class HighlyAvailableKernelData extends KernelData implements Lifecycle
 {
@@ -91,12 +91,13 @@ public class HighlyAvailableKernelData extends KernelData implements Lifecycle
     public ClusterMemberInfo[] getClusterInfo()
     {
         List<ClusterMemberInfo> clusterMemberInfos = new ArrayList<ClusterMemberInfo>(  );
+        Function<Object,String> nullSafeToString = from -> from == null ? "" : from.toString();
         for ( ClusterMember clusterMember : memberInfo.getMembers() )
         {
             ClusterMemberInfo clusterMemberInfo = new ClusterMemberInfo( clusterMember.getInstanceId().toString(),
                     clusterMember.getHAUri() != null, clusterMember.isAlive(), clusterMember.getHARole(),
-                    toArray( String.class, map( Functions.TO_STRING, clusterMember.getRoleURIs() ) ),
-                    toArray( String.class, map( Functions.TO_STRING, clusterMember.getRoles() ) ) );
+                    asArray( String.class, map( nullSafeToString, clusterMember.getRoleURIs() ) ),
+                    asArray( String.class, map( nullSafeToString, clusterMember.getRoles() ) ) );
             clusterMemberInfos.add( clusterMemberInfo );
         }
 

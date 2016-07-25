@@ -21,51 +21,49 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD}
-import org.neo4j.cypher.internal.compatibility.{EntityAccessorWrapper2_3, WrappedMonitors2_3}
-import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, GreedyPlannerName, InfoLogger, _}
-import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_1
+import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerFactory, InfoLogger, _}
+import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
+
+import scala.concurrent.duration._
 
 class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
-  import org.scalatest.prop.TableDrivenPropertyChecks._
+  val NUMBER_OF_RUNS = 10
 
-  val VERBOSE = false
-  val NO_RUNS = 5
-
-  val warmup = "warmup" ->
+  val warmup =
     """MATCH (n:Person)-[:KNOWS]->(c:City)
       |WITH DISTINCT n, count(*) AS count
       |MATCH (n)-[:KNOWS*..5]->(f:Person)-[:LIVES_IN]->(:City {name: "Berlin"})
       |WHERE (f)-[:LOVES]->(:Girl)
       |RETURN n, count, collect(f) AS friends""".stripMargin
 
-  val foo1 = "foo1" ->
+  val foo1 =
     """match
       |  (toFrom:Duck{Id:{duckId}}),
-      |  brook-[:precedes|is]->startbrook,
-      |  toFrom-[toFrom_rel:wiggle|quack]->startbrook
+      |  (brook)-[:precedes|is]->(startbrook),
+      |  (toFrom)-[toFrom_rel:wiggle|quack]->(startbrook)
       |with brook
-      |match brook-[:regarding_summary_phrase]->Duck
+      |match (brook)-[:regarding_summary_phrase]->(Duck)
       |with brook, Duck
-      |match checkUnpopularDuck-[:quack]->brook
+      |match (checkUnpopularDuck)-[:quack]->(brook)
       |where ((checkUnpopularDuck.Rank > 0 or checkUnpopularDuck.Rank is null)) and ((Duck.Rank > 0 or Duck.Rank is null)) and (NOT(Duck.Id = {duckId}))
       |RETURN Duck.Id as Id, Duck.Name as Name, Duck.Type as Type, Duck.MentionNames as Mentions, count(distinct brook) as brookCount
       |order by brookCount desc skip 0 limit 51""".stripMargin
 
-  val foo2 = "foo2" ->
+  val foo2 =
     """match
       |  (toFrom:Duck{Id:{duckId}}),
-      |  toFrom-[toFrom_rel:wiggle|quack]->(brook:brook),
-      |  copy-[:of]->bridge-[bridgebrook:containing]->brook,
-      |  brook-[:in_thicket]->(thicket:Thicket),
-      |  (checkUnpopularDuck:Duck)-[:quack]->brook
+      |  (toFrom)-[toFrom_rel:wiggle|quack]->(brook:brook),
+      |  (copy)-[:of]->(bridge)-[bridgebrook:containing]->(brook),
+      |  (brook)-[:in_thicket]->(thicket:Thicket),
+      |  (checkUnpopularDuck:Duck)-[:quack]->(brook)
       |where (checkUnpopularDuck.Rank > 0 or checkUnpopularDuck.Rank is null)
       |return count(distinct thicket) as ThicketCount, count(distinct brook) as brookCount
       |skip 0""".stripMargin
 
-  val socnet1 = "socnet1" ->
+  val socnet1 =
     """MATCH (subject:User {name:{name}})
       |MATCH p=(subject)-[:WORKED_ON]->()<-[:WORKED_ON]-(person)-[:INTERESTED_IN]->(interest)
       |WHERE person<>subject AND interest.name={topic}
@@ -85,7 +83,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       |ORDER BY pathLength ASC LIMIT 10
       |RETURN name, pathLength""".stripMargin
 
-  val socnet9 = "socnet9" ->
+  val socnet9 =
     """MATCH (subject:User {name:{name}})
       |MATCH p=(subject)-[:WORKED_WITH*0..1]-()-[:WORKED_WITH]-(person)-[:INTERESTED_IN]->(interest)
       |WHERE person<>subject AND interest.name IN {interests}
@@ -93,72 +91,87 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       |RETURN person.name AS name, count(interest) AS score, collect(interest.name) AS interests, (pathLength - 1) AS distance
       |ORDER BY score DESC LIMIT 20""".stripMargin
 
-  val qmul1 = "qmul1" ->
+  val qmul1 =
     """MATCH (a:Person)-->(m)-[r]->(n)-->(a)
-      |WHERE a.uid IN ['1195630902','1457065010'] AND HAS(m.location_lat) AND HAS(n.location_lat)
+      |WHERE a.uid IN ['1195630902','1457065010'] AND exists(m.location_lat) AND exists(n.location_lat)
       |RETURN count(r)""".stripMargin
 
   test("plans are built fast enough") {
-    val queries = Table("query", foo1, foo2, socnet1, socnet9, qmul1)
-    plan(10)(warmup)
+    val queries = List(foo1, foo2, socnet1, socnet9, qmul1)
+    plan(NUMBER_OF_RUNS)(warmup)
 
-    forAll(queries) {
-      (query: (String, String)) =>
-        assertIsPlannedTimely(query)
+    queries.foreach(assertIsPlannedTimely)
+  }
+
+  def assertIsPlannedTimely(query: String) = {
+    val result = plan(NUMBER_OF_RUNS)(query)
+
+    withClue("Planning of the first query took too long:\n" + result.description) {
+      result.prepareAndPlanFirstNanos shouldBe <(3.second.toNanos)
+    }
+
+    withClue("Median planning took too long:\n" + result.description) {
+      result.prepareAndPlanMedianNanos shouldBe <(1.5.second.toNanos)
     }
   }
 
-  def assertIsPlannedTimely(query: (String, String)) = {
-    val ((prepareFirst, planFirst), (prepareAvg, planAvg)) = plan(NO_RUNS)(query)
+  def plan(times: Int)(query: String): PlanningResult = {
+    val prepareAndPlanTimes = (1 to times).map(i => plan(query)).toArray
 
-    (prepareAvg + planAvg) shouldBe < (fromSeconds(1.0))
-    (prepareFirst + planFirst) shouldBe < (fromSeconds(1.0))
+    val totalTimes = prepareAndPlanTimes.map(t => t._1 + t._2)
+    val prepareTimes = prepareAndPlanTimes.map(_._1)
+    val planTimes = prepareAndPlanTimes.map(_._2)
+
+    val (prepareFirst, planFirst) = prepareAndPlanTimes(0)
+
+    val totalMedian = median(totalTimes)
+    val prepareMedian = median(prepareTimes)
+    val planMedian = median(planTimes)
+
+    val description =
+      s"""
+         |* Planned query:\n\n${indent(query)}\n
+         |  * First prepare time: ${ms(prepareFirst)}
+         |  * First plan time: ${ms(planFirst)}
+         |  * First total time: ${ms(prepareFirst + planFirst)}
+         |  * Number of runs: $times
+         |  * Median prepare time: ${ms(prepareMedian)}
+         |  * Median planning time: ${ms(planMedian)}
+         |  * Median total time: ${ms(totalMedian)}
+         |
+         |  * Prepare times: ${ms(prepareTimes)}
+         |  * Plan times: ${ms(planTimes)}
+         |  * Total times: ${ms(totalTimes)}
+         """.stripMargin
+
+    PlanningResult(description, totalTimes(0), totalMedian)
   }
 
-  def fromSeconds(seconds: Double) = seconds * 1000000000.0
+  def ms(valueNanos: Long): String = valueNanos.nanos.toMillis + "ms"
 
-  def toSeconds(nanoSeconds: Double) = nanoSeconds / 1000000000.0
+  def ms(valuesNanos: Seq[Long]): String = valuesNanos.map(ms).mkString(", ")
 
-  def plan(times: Int)(queryWithTag: (String, String)): ((Double, Double), (Double, Double)) = {
-    val (tag, query) = queryWithTag
-    var (prepareTotal, planTotal) = (0.0d, 0.0d)
-    val (prepareFirst, planFirst) = plan(query)
-
-    var count = 2
-    while (count <= times) {
-      val (prepareTime, planTime) = plan(query)
-      prepareTotal = prepareTotal + prepareTime
-      planTotal = planTotal + planTime
-      count += 1
-    }
-    val prepareAvg = (prepareTotal + prepareFirst) / times
-    val planAvg = (planTotal + planFirst) / times
-
-    if (VERBOSE) {
-      println(s"* Planned query '$tag':\n\n${indent(query)}\n")
-      println(s"  * First prepare time: ${toSeconds(prepareFirst)}")
-      println(s"  * First plan time: ${toSeconds(planFirst)}")
-      println(s"  * First total time: ${toSeconds(prepareFirst + planFirst)}")
-      println(s"  * Number of runs: $times")
-      println(s"  * Average prepare time: ${toSeconds(prepareAvg)} (excluding first ${toSeconds(prepareTotal / (times-1))})")
-      println(s"  * Average planning time: ${toSeconds(planAvg)} (excluding first ${toSeconds(planTotal / (times-1))})")
-      println(s"  * Average total time: ${toSeconds(prepareAvg + planAvg)} (excluding first ${toSeconds((prepareTotal + planTotal) / (times-1))})")
-      println()
-    }
-
-    ((prepareFirst, planFirst), (prepareAvg, planAvg))
+  def median(values: Seq[Long]): Long = {
+    val sorted = values.sorted
+    val mid = sorted.size / 2
+    if (sorted.size % 2 != 0)
+      sorted(mid)
+    else
+      (sorted(mid - 1) + sorted(mid)) / 2
   }
 
   def indent(text: String, indent: String = "    ") =
     indent + text.replace("\n", s"\n$indent")
 
-  def plan(query: String): (Double, Double) = {
+  def plan(query: String): (Long, Long) = {
     val compiler = createCurrentCompiler
-    val (prepareTime, preparedQuery) = measure(compiler.prepareQuery(query, query, devNullLogger))
-    val (planTime, _) = graph.inTx {
-      measure(compiler.executionPlanBuilder.build(planContext, preparedQuery))
+    val (preparedSyntacticQueryTime, preparedSyntacticQuery) = measure(compiler.prepareSyntacticQuery(query, query, devNullLogger))
+    val planTime = graph.inTx {
+      val (semanticTime, semanticQuery) = measure(compiler.prepareSemanticQuery(preparedSyntacticQuery, planContext, None, CompilationPhaseTracer.NO_TRACING))
+      val (planTime, _) = measure(compiler.executionPlanBuilder.build(planContext, semanticQuery))
+      planTime + semanticTime
     }
-    (prepareTime, planTime)
+    (preparedSyntacticQueryTime, planTime)
   }
 
   def measure[T](f: => T): (Long, T) = {
@@ -169,11 +182,8 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
   }
 
   def createCurrentCompiler = {
-    val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
-
     CypherCompilerFactory.costBasedCompiler(
       graph = graph,
-      new EntityAccessorWrapper2_3(nodeManager),
       CypherCompilerConfiguration(
         queryCacheSize = 1,
         statsDivergenceThreshold = DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD,
@@ -181,18 +191,25 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
         useErrorsOverWarnings = false,
         idpMaxTableSize = 128,
         idpIterationDuration = 1000,
+        errorIfShortestPathFallbackUsedAtRuntime = false,
         nonIndexedLabelWarningThreshold = 10000L
       ),
       clock = CLOCK,
-      monitors = new WrappedMonitors2_3(kernelMonitors),
+      structure = GeneratedQueryStructure,
+      monitors = new WrappedMonitors3_1(kernelMonitors),
       logger = DEV_NULL,
       rewriterSequencer = RewriterStepSequencer.newPlain,
-      plannerName = Some(GreedyPlannerName),
-      runtimeName = Some(InterpretedRuntimeName)
+      plannerName = Some(IDPPlannerName),
+      runtimeName = Some(CompiledRuntimeName),
+      updateStrategy = None,
+      publicTypeConverter = identity
     )
   }
 
   object DEV_NULL extends InfoLogger {
     def info(message: String){}
   }
+
+  case class PlanningResult(description: String, prepareAndPlanFirstNanos: Long, prepareAndPlanMedianNanos: Long)
+
 }

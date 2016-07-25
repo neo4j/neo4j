@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.state;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
-import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 /**
  * Represents the transactional changes that involve a particular label:
@@ -126,7 +126,7 @@ public abstract class LabelState
         }
     }
 
-    static abstract class Defaults extends StateDefaults<Integer, LabelState, Mutable>
+    abstract static class Defaults extends StateDefaults<Integer, LabelState, Mutable>
     {
         @Override
         Mutable createValue( Integer key, TxState state )

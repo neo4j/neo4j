@@ -30,55 +30,69 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 public class RelationshipLinkbackProcessor implements RecordProcessor<RelationshipRecord>
 {
     private final NodeRelationshipCache cache;
+    private final boolean denseNodes;
 
-    public RelationshipLinkbackProcessor( NodeRelationshipCache cache )
+    public RelationshipLinkbackProcessor( NodeRelationshipCache cache, boolean denseNodes )
     {
         this.cache = cache;
+        this.denseNodes = denseNodes;
     }
 
     @Override
     public boolean process( RelationshipRecord record )
     {
         boolean isLoop = record.getFirstNode() == record.getSecondNode();
+        boolean firstIsDense = cache.isDense( record.getFirstNode() );
+        boolean changed = false;
         if ( isLoop )
         {
-            long prevRel = cache.getAndPutRelationship( record.getFirstNode(),
-                    record.getType(), Direction.BOTH, record.getId(), false );
-            if ( prevRel == -1 )
-            {   // First one
-                record.setFirstInFirstChain( true );
-                record.setFirstInSecondChain( true );
-                prevRel = cache.getCount( record.getFirstNode(),
-                        record.getType(), Direction.BOTH );
+            if ( firstIsDense == denseNodes )
+            {
+                long prevRel = cache.getAndPutRelationship( record.getFirstNode(),
+                        Direction.BOTH, record.getId(), false );
+                if ( prevRel == -1 )
+                {   // First one
+                    record.setFirstInFirstChain( true );
+                    record.setFirstInSecondChain( true );
+                    prevRel = cache.getCount( record.getFirstNode(), Direction.BOTH );
+                }
+                record.setFirstPrevRel( prevRel );
+                record.setSecondPrevRel( prevRel );
+                changed = true;
             }
-            record.setFirstPrevRel( prevRel );
-            record.setSecondPrevRel( prevRel );
         }
         else
         {
             // Start node
-            long firstPrevRel = cache.getAndPutRelationship( record.getFirstNode(),
-                    record.getType(), Direction.OUTGOING, record.getId(), false );
-            if ( firstPrevRel == -1 )
-            {   // First one
-                record.setFirstInFirstChain( true );
-                firstPrevRel = cache.getCount( record.getFirstNode(),
-                        record.getType(), Direction.OUTGOING );
+            if ( firstIsDense == denseNodes )
+            {
+                long firstPrevRel = cache.getAndPutRelationship( record.getFirstNode(),
+                        Direction.OUTGOING, record.getId(), false );
+                if ( firstPrevRel == -1 )
+                {   // First one
+                    record.setFirstInFirstChain( true );
+                    firstPrevRel = cache.getCount( record.getFirstNode(), Direction.OUTGOING );
+                }
+                record.setFirstPrevRel( firstPrevRel );
+                changed = true;
             }
-            record.setFirstPrevRel( firstPrevRel );
 
             // End node
-            long secondPrevRel = cache.getAndPutRelationship( record.getSecondNode(),
-                    record.getType(), Direction.INCOMING, record.getId(), false );
-            if ( secondPrevRel == -1 )
-            {   // First one
-                record.setFirstInSecondChain( true );
-                secondPrevRel = cache.getCount( record.getSecondNode(),
-                        record.getType(), Direction.INCOMING );
+            boolean secondIsDense = cache.isDense( record.getSecondNode() );
+            if ( secondIsDense == denseNodes )
+            {
+                long secondPrevRel = cache.getAndPutRelationship( record.getSecondNode(),
+                        Direction.INCOMING, record.getId(), false );
+                if ( secondPrevRel == -1 )
+                {   // First one
+                    record.setFirstInSecondChain( true );
+                    secondPrevRel = cache.getCount( record.getSecondNode(), Direction.INCOMING );
+                }
+                record.setSecondPrevRel( secondPrevRel );
+                changed = true;
             }
-            record.setSecondPrevRel( secondPrevRel );
         }
-        return true;
+        return changed;
     }
 
     @Override

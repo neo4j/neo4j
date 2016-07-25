@@ -21,9 +21,10 @@ package org.neo4j.kernel.impl.ha;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
@@ -43,46 +44,48 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.client.Cluster;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.ClusterClientModule;
-import org.neo4j.cluster.client.Clusters;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.consistency.store.StoreAssertions;
-import org.neo4j.function.Function;
-import org.neo4j.function.IntFunction;
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
+import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -90,6 +93,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -106,8 +110,14 @@ import static org.neo4j.io.fs.FileUtils.copyRecursively;
 public class ClusterManager
         extends LifecycleAdapter
 {
-    private static final int CLUSTER_MIN_PORT = 10_000;
-    private static final int CLUSTER_MAX_PORT = 20_000;
+    /*
+     * The following ports are used by cluster instances to setup listening sockets. It is important that the range
+     * used remains below 30000, since that is where the ephemeral ports start in some linux kernels. If they are
+     * used, they can conflict with ephemeral sockets and result in address already in use errors, resulting in
+     * false failures.
+     */
+    private static final int CLUSTER_MIN_PORT = 11_000;
+    private static final int CLUSTER_MAX_PORT = 21_000;
     private static final int HA_MIN_PORT = CLUSTER_MAX_PORT + 1;
     private static final int HA_MAX_PORT = HA_MIN_PORT + 10_000;
 
@@ -126,20 +136,13 @@ public class ClusterManager
         IN;
     }
 
+    public static final long DEFAULT_TIMEOUT_SECONDS = 60L;
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
             GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
 
     public interface StoreDirInitializer
     {
         void initializeStoreDir( int serverId, File storeDir ) throws IOException;
-    }
-
-    /**
-     * Provides a specification of which clusters to start in {@link ClusterManager#start()}.
-     */
-    public interface Provider
-    {
-        Clusters clusters() throws Throwable;
     }
 
     public interface RepairKit
@@ -149,25 +152,18 @@ public class ClusterManager
 
     public static IntFunction<String> constant( final String value )
     {
-        return new IntFunction<String>()
-        {
-            @Override
-            public String apply( int ignored )
-            {
-                return value;
-            }
-        };
+        return ignored -> value;
     }
 
     private final String localAddress;
     private final File root;
     private final Map<String,IntFunction<String>> commonConfig;
-    private final Map<String,ManagedCluster> clusterMap = new HashMap<>();
-    private final Provider clustersProvider;
+    private final Supplier<Cluster> clustersProvider;
     private final HighlyAvailableGraphDatabaseFactory dbFactory;
     private final StoreDirInitializer storeDirInitializer;
     private final Listener<GraphDatabaseService> initialDatasetCreator;
     private final List<Predicate<ManagedCluster>> availabilityChecks;
+    private ManagedCluster managedCluster;
     private final boolean consistencyCheck;
     LifeSupport life;
 
@@ -215,7 +211,7 @@ public class ClusterManager
      *
      * @param memberCount the total number of members in the cluster to start.
      */
-    public static Provider clusterOfSize( int memberCount )
+    public static Supplier<Cluster> clusterOfSize( int memberCount )
     {
         return clusterOfSize( getLocalAddress(), memberCount );
     }
@@ -226,67 +222,28 @@ public class ClusterManager
      * @param hostname the hostname/ip-address to bind to
      * @param memberCount the total number of members in the cluster to start.
      */
-    public static Provider clusterOfSize( String hostname, int memberCount )
+    public static Supplier<Cluster> clusterOfSize( String hostname, int memberCount )
     {
-        //noinspection unchecked
-        return clustersOfSize( Pair.of( hostname, memberCount ) );
-    }
+        return () -> {
+            final Cluster cluster = new Cluster();
 
-    /**
-     * Provides cluster specifications with default values, but unique names/ports
-     * @param clusterSizes the sizes of the clusters
-     */
-    public static Provider clustersOfSize( final int... clusterSizes )
-    {
-        Pair[] clusters = new Pair[clusterSizes.length];
-        for ( int i = 0; i < clusterSizes.length; i++ )
-        {
-            clusters[i] = Pair.of( getLocalAddress(), clusterSizes[i] );
-        }
-        //noinspection unchecked
-        return clustersOfSize( clusters );
-    }
-
-    /**
-     * /**
-     * Provides cluster specifications with default values, but unique names/ports
-     * @param clusterHostsAndSizes the hostnames and sizes of the clusters
-     */
-    public static Provider clustersOfSize( Pair<String, Integer>... clusterHostsAndSizes )
-    {
-        final Clusters clusters = new Clusters();
-        HashSet<Integer> takenPorts = new HashSet<>();
-
-        for (int clusterCount = 0; clusterCount < clusterHostsAndSizes.length; clusterCount++)
-        {
-            Clusters.Cluster cluster;
-            // Just to avoid having to fix lots of hardcoded tests
-            if (clusterCount == 0) {
-                cluster = new Clusters.Cluster( "neo4j.ha" );
-            } else {
-                cluster = new Clusters.Cluster( "neo4j.ha" + clusterCount );
-            }
-
-            String hostname = clusterHostsAndSizes[clusterCount].first();
-            int memberCount = clusterHostsAndSizes[clusterCount].other();
-
+            HashSet<Integer> takenPorts = new HashSet<>();
             try
             {
                 for ( int i = 0; i < memberCount; i++ )
                 {
                     int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
                     takenPorts.add( port );
-                    cluster.getMembers().add( new Clusters.Member( hostname + ":" + port, true ) );
+                    cluster.getMembers().add( new Cluster.Member( hostname + ":" + port, true ) );
                 }
-                clusters.getClusters().add( cluster );
             }
             catch ( IOException e )
             {
                 // you can't throw a normal exception in a TestRule
                 throw new AssertionError( "Failed to find an open port" );
             }
-        }
-        return provided( clusters );
+            return cluster;
+        };
     }
 
     /**
@@ -308,17 +265,47 @@ public class ClusterManager
                 // This port is already taken but not bound yet, ignore it
                 continue;
             }
+
             try
             {
-                ServerSocket socket = new ServerSocket( port );
-                // Port is available, return it
+                // try binding it at wildcard
+                ServerSocket ss = new ServerSocket();
+                ss.setReuseAddress( false );
+                ss.bind( new InetSocketAddress( port ) );
+                ss.close();
+            }
+            catch ( IOException e )
+            {
+                except.add( port );
+                continue;
+            }
+
+            try
+            {
+                // try binding it at loopback
+                ServerSocket ss = new ServerSocket();
+                ss.setReuseAddress( false );
+                ss.bind( new InetSocketAddress( InetAddress.getLoopbackAddress(), port ) );
+                ss.close();
+            }
+            catch ( IOException e )
+            {
+                except.add( port );
+                continue;
+            }
+
+            try
+            {
+                // try connecting to it at loopback
+                Socket socket = new Socket( InetAddress.getLoopbackAddress(), port );
                 socket.close();
-                return port;
+                except.add( port );
+                continue;
             }
             catch ( IOException ex )
             {
-                // Port was already bound, try the next one
-                except.add( port );
+                // Port very likely free!
+                return port;
             }
         }
 
@@ -330,35 +317,35 @@ public class ClusterManager
      *
      * @param haMemberCount the total number of members in the cluster to start.
      */
-    public static Provider clusterWithAdditionalClients( int haMemberCount, int additionalClientCount )
+    public static Supplier<Cluster> clusterWithAdditionalClients( int haMemberCount, int additionalClientCount )
     {
-        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
-        HashSet<Integer> takenPorts = new HashSet<>();
+        return () -> {
+            Cluster cluster = new Cluster();
+            HashSet<Integer> takenPorts = new HashSet<>();
 
-        try
-        {
-            for ( int i = 0; i < haMemberCount; i++ )
+            try
             {
-                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                takenPorts.add( port );
-                cluster.getMembers().add( new Clusters.Member( port, true ) );
+                for ( int i = 0; i < haMemberCount; i++ )
+                {
+                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                    takenPorts.add( port );
+                    cluster.getMembers().add( new Cluster.Member( port, true ) );
+                }
+                for ( int i = 0; i < additionalClientCount; i++ )
+                {
+                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                    takenPorts.add( port );
+                    cluster.getMembers().add( new Cluster.Member( port, false ) );
+                }
             }
-            for ( int i = 0; i < additionalClientCount; i++ )
+            catch ( IOException e )
             {
-                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                takenPorts.add( port );
-                cluster.getMembers().add( new Clusters.Member( port, false ) );
+                // you can't throw a normal exception in a TestRule
+                throw new AssertionError( "Failed to find an open port" );
             }
-        }
-        catch ( IOException e )
-        {
-            // you can't throw a normal exception in a TestRule
-            throw new AssertionError( "Failed to find an open port" );
-        }
 
-        final Clusters clusters = new Clusters();
-        clusters.getClusters().add( cluster );
-        return provided( clusters );
+            return cluster;
+        };
     }
 
     /**
@@ -366,45 +353,33 @@ public class ClusterManager
      *
      * @param haMemberCount the total number of members in the cluster to start.
      */
-    public static Provider clusterWithAdditionalArbiters( int haMemberCount, int arbiterCount )
+    public static Supplier<Cluster> clusterWithAdditionalArbiters( int haMemberCount, int arbiterCount )
     {
-        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
-        HashSet<Integer> takenPorts = new HashSet<>();
+        return () -> {
+            Cluster cluster = new Cluster();
+            HashSet<Integer> takenPorts = new HashSet<>();
 
-        try
-        {
-            for ( int i = 0; i < arbiterCount; i++ )
+            try
             {
-                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                takenPorts.add( port );
-                cluster.getMembers().add( new Clusters.Member( port, false ) );
+                for ( int i = 0; i < arbiterCount; i++ )
+                {
+                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                    takenPorts.add( port );
+                    cluster.getMembers().add( new Cluster.Member( port, false ) );
+                }
+                for ( int i = 0; i < haMemberCount; i++ )
+                {
+                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                    takenPorts.add( port );
+                    cluster.getMembers().add( new Cluster.Member( port, true ) );
+                }
             }
-            for ( int i = 0; i < haMemberCount; i++ )
+            catch ( IOException e )
             {
-                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                takenPorts.add( port );
-                cluster.getMembers().add( new Clusters.Member( port, true ) );
+                // you can't throw a normal exception in a TestRule
+                throw new AssertionError( "Failed to find an open port" );
             }
-        }
-        catch ( IOException e )
-        {
-            // you can't throw a normal exception in a TestRule
-            throw new AssertionError( "Failed to find an open port" );
-        }
-        final Clusters clusters = new Clusters();
-        clusters.getClusters().add( cluster );
-        return provided( clusters );
-    }
-
-    public static Provider provided( final Clusters clusters )
-    {
-        return new Provider()
-        {
-            @Override
-            public Clusters clusters() throws Throwable
-            {
-                return clusters;
-            }
+            return cluster;
         };
     }
 
@@ -468,16 +443,9 @@ public class ClusterManager
             public boolean test( ManagedCluster cluster )
             {
                 Predicate<HighlyAvailableGraphDatabase> filterMasterPredicate =
-                        new Predicate<HighlyAvailableGraphDatabase>()
-                        {
-                            @Override
-                            public boolean test( HighlyAvailableGraphDatabase node )
-                            {
-                                return !excludedNodes.contains( node ) &&
-                                       node.isAvailable( 0 ) &&
-                                       node.isMaster();
-                            }
-                        };
+                        node -> !excludedNodes.contains( node ) &&
+                               node.isAvailable( 0 ) &&
+                               node.isMaster();
                 return Iterables.filter( filterMasterPredicate, cluster.getAllMembers() ).iterator().hasNext();
             }
 
@@ -532,7 +500,7 @@ public class ClusterManager
 
                     for ( ClusterMember clusterMember : members.getMembers() )
                     {
-                        if ( clusterMember.getHARole().equals( HighAvailabilityModeSwitcher.UNKNOWN ) )
+                        if ( !cluster.isAvailable( clusterMember ) )
                         {
                             return false;
                         }
@@ -540,9 +508,10 @@ public class ClusterManager
                 }
 
                 // Everyone sees everyone else as available!
-                for( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
+                for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
                 {
-                    Log log = database.getDependencyResolver().resolveDependency( LogService.class ).getInternalLog( getClass() );
+                    Log log = database.getDependencyResolver().resolveDependency( LogService.class ).getInternalLog(
+                            getClass() );
                     log.debug( this.toString() );
                 }
                 return true;
@@ -597,24 +566,19 @@ public class ClusterManager
 
     public static Predicate<ManagedCluster> allAvailabilityGuardsReleased()
     {
-        return new Predicate<ManagedCluster>()
-        {
-            @Override
-            public boolean test( ManagedCluster item )
+        return item -> {
+            for ( HighlyAvailableGraphDatabase member : item.getAllMembers())
             {
-                for ( HighlyAvailableGraphDatabase member : item.getAllMembers())
+                try
                 {
-                    try
-                    {
-                        member.beginTx().close();
-                    }
-                    catch ( TransactionFailureException e )
-                    {
-                        return false;
-                    }
+                    member.beginTx().close();
                 }
-                return true;
+                catch ( TransactionFailureException e )
+                {
+                    return false;
+                }
             }
+            return true;
         };
     }
 
@@ -646,37 +610,51 @@ public class ClusterManager
     public static Predicate<ManagedCluster> memberSeesOtherMemberAsFailed(
             final HighlyAvailableGraphDatabase observer, final HighlyAvailableGraphDatabase observed )
     {
-        return new Predicate<ManagedCluster>()
-        {
-            @Override
-            public boolean test( ManagedCluster cluster )
+        return cluster -> {
+            InstanceId observedServerId = observed.getDependencyResolver().resolveDependency( Config.class )
+                    .get( ClusterSettings.server_id );
+            for ( ClusterMember member : observer.getDependencyResolver().resolveDependency(
+                    ClusterMembers.class ).getMembers() )
             {
-                InstanceId observedServerId = observed.getDependencyResolver().resolveDependency( Config.class )
-                        .get( ClusterSettings.server_id );
-                for ( ClusterMember member : observer.getDependencyResolver().resolveDependency(
-                        ClusterMembers.class ).getMembers() )
+                if ( member.getInstanceId().equals( observedServerId ) )
+                {
+                    return !member.isAlive();
+                }
+            }
+            throw new IllegalStateException( observed + " not a member according to " + observer );
+        };
+    }
+
+    public static Predicate<ManagedCluster> entireClusterSeesMemberAsNotAvailable(
+            final HighlyAvailableGraphDatabase observed )
+    {
+        return cluster -> {
+            InstanceId observedServerId = observed.getDependencyResolver().resolveDependency( Config.class ).get(
+                    ClusterSettings.server_id );
+
+            for ( HighlyAvailableGraphDatabase observer : cluster.getAllMembers( observed ) )
+            {
+                for ( ClusterMember member : observer.getDependencyResolver().resolveDependency( ClusterMembers.class )
+                        .getMembers() )
                 {
                     if ( member.getInstanceId().equals( observedServerId ) )
                     {
-                        return !member.isAlive();
+                        if ( cluster.isAvailable( member ) )
+                        {
+                            return false;
+                        } // else, keep looping to see if anyone else sees it as alive
                     }
                 }
-                throw new IllegalStateException( observed + " not a member according to " + observer );
             }
+            // No one could see it as alive
+            return true;
         };
     }
 
     public static Predicate<ManagedCluster> memberThinksItIsRole(
             final HighlyAvailableGraphDatabase member, final String role )
     {
-        return new Predicate<ManagedCluster>()
-        {
-            @Override
-            public boolean test( ManagedCluster cluster )
-            {
-                return role.equals( member.role() );
-            }
-        };
+        return cluster -> role.equals( member.role() );
     }
 
     public static String stateToString( ManagedCluster cluster )
@@ -696,11 +674,10 @@ public class ClusterManager
         return buf.toString();
     }
 
-
     @Override
     public void start() throws Throwable
     {
-        Clusters clusters = clustersProvider.clusters();
+        Cluster cluster = clustersProvider.get();
 
         life = new LifeSupport();
 
@@ -708,22 +685,15 @@ public class ClusterManager
         // shutdown() or stop()ped properly
         life.start();
 
-        for ( Clusters.Cluster cluster : clusters.getClusters())
+        managedCluster = new ManagedCluster( cluster );
+        life.add( managedCluster );
+
+        availabilityChecks.forEach( managedCluster::await );
+
+        if ( initialDatasetCreator != null )
         {
-            ManagedCluster managedCluster = new ManagedCluster( cluster );
-            clusterMap.put( cluster.getName(), managedCluster );
-            life.add( managedCluster );
-
-            for ( Predicate<ManagedCluster> availabilityCheck : availabilityChecks )
-            {
-                managedCluster.await( availabilityCheck );
-            }
-
-            if ( initialDatasetCreator != null )
-            {
-                initialDatasetCreator.receive( managedCluster.getMaster() );
-                managedCluster.sync();
-            }
+            initialDatasetCreator.receive( managedCluster.getMaster() );
+            managedCluster.sync();
         }
     }
 
@@ -756,46 +726,9 @@ public class ClusterManager
         }
     }
 
-    @SuppressWarnings( "unchecked" )
-    private <T> T instance( Class<T> classToFind, Iterable<?> from )
+    public ManagedCluster getCluster()
     {
-        for ( Object item : from )
-        {
-            if ( classToFind.isAssignableFrom( item.getClass() ) )
-            {
-                return (T) item;
-            }
-        }
-        throw new AssertionError( "Couldn't find the network instance to fail. "
-                + "Internal field, so fragile sensitive to changes though" );
-    }
-
-    private Field accessible( Field field )
-    {
-        field.setAccessible( true );
-        return field;
-    }
-
-    public ManagedCluster getCluster( String name )
-    {
-        if ( !clusterMap.containsKey( name ) )
-        {
-            throw new IllegalArgumentException( name );
-        }
-        return clusterMap.get( name );
-    }
-
-    public ManagedCluster getDefaultCluster()
-    {
-        return getCluster( "neo4j.ha" );
-    }
-
-    protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
-    {
-    }
-
-    protected void insertInitialData( GraphDatabaseService db, String name, InstanceId serverId )
-    {
+        return managedCluster;
     }
 
     public interface ClusterBuilder<SELF>
@@ -808,7 +741,7 @@ public class ClusterManager
 
         SELF withDbFactory( HighlyAvailableGraphDatabaseFactory dbFactory );
 
-        SELF withProvider( Provider provider );
+        SELF withCluster( Supplier<Cluster> provider );
 
         /**
          * Supplies configuration where config values, as opposed to {@link #withSharedConfig(Map)},
@@ -858,7 +791,7 @@ public class ClusterManager
     public static class Builder implements ClusterBuilder<Builder>
     {
         private File root;
-        private Provider provider = clusterOfSize( 3 );
+        private Supplier<Cluster> provider = clusterOfSize( 3 );
         private final Map<String,IntFunction<String>> commonConfig = new HashMap<>();
         private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
         private StoreDirInitializer initializer;
@@ -887,14 +820,7 @@ public class ClusterManager
         @Override
         public Builder withSeedDir( final File seedDir )
         {
-            return withStoreDirInitializer( new StoreDirInitializer()
-            {
-                @Override
-                public void initializeStoreDir( int serverId, File storeDir ) throws IOException
-                {
-                    copyRecursively( seedDir, storeDir );
-                }
-            } );
+            return withStoreDirInitializer( ( serverId, storeDir ) -> copyRecursively( seedDir, storeDir ) );
         }
 
         @Override
@@ -912,7 +838,7 @@ public class ClusterManager
         }
 
         @Override
-        public Builder withProvider( Provider provider )
+        public Builder withCluster( Supplier<Cluster> provider )
         {
             this.provider = provider;
             return this;
@@ -985,31 +911,24 @@ public class ClusterManager
     {
         private final ExecutorService executor;
         private GraphDatabaseService result;
-        private Future<GraphDatabaseService> untilThen;
+        private final Future<GraphDatabaseService> untilThen;
 
         public HighlyAvailableGraphDatabaseProxy( final GraphDatabaseBuilder graphDatabaseBuilder )
         {
-            Callable<GraphDatabaseService> starter = new Callable<GraphDatabaseService>()
-            {
-                @Override
-                public GraphDatabaseService call() throws Exception
-                {
-                    return graphDatabaseBuilder.newGraphDatabase();
-                }
-            };
+            Callable<GraphDatabaseService> starter = graphDatabaseBuilder::newGraphDatabase;
             executor = Executors.newFixedThreadPool( 1 );
             untilThen = executor.submit( starter );
         }
 
-        public HighlyAvailableGraphDatabase get()
+        public HighlyAvailableGraphDatabase get( long timeoutSeconds )
         {
             if ( result == null )
             {
                 try
                 {
-                    result = untilThen.get();
+                    result = untilThen.get( timeoutSeconds, TimeUnit.SECONDS );
                 }
-                catch ( InterruptedException | ExecutionException e )
+                catch ( InterruptedException | ExecutionException | TimeoutException e )
                 {
                     throw new RuntimeException( e );
                 }
@@ -1037,21 +956,16 @@ public class ClusterManager
         @Override
         public void init() throws Throwable
         {
-            currentFuture = starter.submit( new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+            currentFuture = starter.submit( (Callable<Void>) () -> {
+                try
                 {
-                    try
-                    {
-                        wrapped.init();
-                    }
-                    catch ( Throwable throwable )
-                    {
-                        throw new RuntimeException( throwable );
-                    }
-                    return null;
+                    wrapped.init();
                 }
+                catch ( Throwable throwable )
+                {
+                    throw new RuntimeException( throwable );
+                }
+                return null;
             } );
         }
 
@@ -1059,21 +973,16 @@ public class ClusterManager
         public void start() throws Throwable
         {
             currentFuture.get();
-            currentFuture = starter.submit( new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+            currentFuture = starter.submit( (Callable<Void>) () -> {
+                try
                 {
-                    try
-                    {
-                        wrapped.start();
-                    }
-                    catch ( Throwable throwable )
-                    {
-                        throw new RuntimeException( throwable );
-                    }
-                    return null;
+                    wrapped.start();
                 }
+                catch ( Throwable throwable )
+                {
+                    throw new RuntimeException( throwable );
+                }
+                return null;
             } );
         }
 
@@ -1081,42 +990,32 @@ public class ClusterManager
         public void stop() throws Throwable
         {
             currentFuture.get();
-            currentFuture = starter.submit( new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+            currentFuture = starter.submit( (Callable<Void>) () -> {
+                try
                 {
-                    try
-                    {
-                        wrapped.stop();
-                    }
-                    catch ( Throwable throwable )
-                    {
-                        throw new RuntimeException( throwable );
-                    }
-                    return null;
+                    wrapped.stop();
                 }
+                catch ( Throwable throwable )
+                {
+                    throw new RuntimeException( throwable );
+                }
+                return null;
             } );
         }
 
         @Override
         public void shutdown() throws Throwable
         {
-            currentFuture = starter.submit( new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+            currentFuture = starter.submit( (Callable<Void>) () -> {
+                try
                 {
-                    try
-                    {
-                        wrapped.shutdown();
-                    }
-                    catch ( Throwable throwable )
-                    {
-                        throw new RuntimeException( throwable );
-                    }
-                    return null;
+                    wrapped.shutdown();
                 }
+                catch ( Throwable throwable )
+                {
+                    throw new RuntimeException( throwable );
+                }
+                return null;
             } );
             currentFuture.get();
             starter.shutdownNow();
@@ -1129,14 +1028,14 @@ public class ClusterManager
      */
     public class ManagedCluster extends LifecycleAdapter
     {
-        private final Clusters.Cluster spec;
+        private final Cluster spec;
         private final String name;
         private final Map<InstanceId,HighlyAvailableGraphDatabaseProxy> members = new ConcurrentHashMap<>();
         private final List<ObservedClusterMembers> arbiters = new ArrayList<>();
         private final Set<RepairKit> pendingRepairs = Collections.synchronizedSet( new HashSet<RepairKit>() );
         private final HashSet<Integer> takenHaPorts = new HashSet<>();
 
-        ManagedCluster( Clusters.Cluster spec ) throws URISyntaxException, IOException
+        ManagedCluster( Cluster spec ) throws URISyntaxException, IOException
         {
             this.spec = spec;
             this.name = spec.getName();
@@ -1146,8 +1045,8 @@ public class ClusterManager
             }
             for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
             {
-                insertInitialData( member.get(), name, member.get().getDependencyResolver().resolveDependency( Config
-                        .class ).get( ClusterSettings.server_id ) );
+                HighlyAvailableGraphDatabase graphDatabase = member.get( DEFAULT_TIMEOUT_SECONDS );
+                Config config = graphDatabase.getDependencyResolver().resolveDependency( Config.class );
             }
         }
 
@@ -1169,7 +1068,7 @@ public class ClusterManager
         {
             for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
             {
-                HighlyAvailableGraphDatabase memberDb = member.get();
+                HighlyAvailableGraphDatabase memberDb = member.get( DEFAULT_TIMEOUT_SECONDS );
                 File storeDir = memberDb.getStoreDirectory();
                 memberDb.shutdown();
                 if ( consistencyCheck )
@@ -1187,21 +1086,42 @@ public class ClusterManager
         /**
          * @return all started members in this cluster.
          */
-        public Iterable<HighlyAvailableGraphDatabase> getAllMembers()
+        public Iterable<HighlyAvailableGraphDatabase> getAllMembers( HighlyAvailableGraphDatabase... except )
         {
-            return Iterables.map( new Function<HighlyAvailableGraphDatabaseProxy,HighlyAvailableGraphDatabase>()
-            {
-                @Override
-                public HighlyAvailableGraphDatabase apply( HighlyAvailableGraphDatabaseProxy from )
-                {
-                    return from.get();
-                }
-            }, members.values() );
+            Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<>( asList( except ) );
+
+            return members.values().stream().map( proxy -> proxy.get( DEFAULT_TIMEOUT_SECONDS ) )
+                    .filter( db -> !exceptSet.contains( db ) ).collect( Collectors.toList());
         }
 
         public Iterable<ObservedClusterMembers> getArbiters()
         {
             return arbiters;
+        }
+
+        public boolean isArbiter( ClusterMember clusterMember )
+        {
+            for ( ObservedClusterMembers arbiter : arbiters )
+            {
+                if ( arbiter.getCurrentMember().getInstanceId().equals( clusterMember.getInstanceId() ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public boolean isAvailable( ClusterMember clusterMember )
+        {
+            if ( isArbiter( clusterMember ) )
+            {
+                return clusterMember.isAlive();
+            }
+            else
+            {
+                return clusterMember.isAlive() && !clusterMember.getHARole().equals(
+                        HighAvailabilityModeSwitcher.UNKNOWN );
+            }
         }
 
         /**
@@ -1247,7 +1167,7 @@ public class ClusterManager
          */
         public HighlyAvailableGraphDatabase getMemberByServerId( InstanceId serverId )
         {
-            HighlyAvailableGraphDatabase db = members.get( serverId ).get();
+            HighlyAvailableGraphDatabase db = members.get( serverId ).get( DEFAULT_TIMEOUT_SECONDS );
             if ( db == null )
             {
                 throw new IllegalStateException( "Db " + serverId + " not found at the moment in " + name +
@@ -1258,7 +1178,8 @@ public class ClusterManager
 
         /**
          * Shuts down a member of this cluster. A {@link RepairKit} is returned
-         * which is able to restore the instance (i.e. start it again).
+         * which is able to restore the instance (i.e. start it again). This method
+         * does not return until the rest of the cluster sees the member as not available.
          *
          * @param db the {@link HighlyAvailableGraphDatabase} to shut down.
          * @return a {@link RepairKit} which can start it again.
@@ -1272,13 +1193,7 @@ public class ClusterManager
             members.remove( serverId );
             life.remove( db );
             db.shutdown();
-            // Sleep a little to help ensure that the shutdown thread has completed before we return
-            try
-            {
-                Thread.sleep( 50L );
-            }
-            catch ( InterruptedException ignored )
-            {}
+            await( entireClusterSeesMemberAsNotAvailable( db ) );
             return wrap( new StartDatabaseAgainKit( this, serverId ) );
         }
 
@@ -1286,7 +1201,7 @@ public class ClusterManager
         {
             for ( HighlyAvailableGraphDatabaseProxy highlyAvailableGraphDatabaseProxy : members.values() )
             {
-                if ( highlyAvailableGraphDatabaseProxy.get().equals( db ) )
+                if ( highlyAvailableGraphDatabaseProxy.get( DEFAULT_TIMEOUT_SECONDS ).equals( db ) )
                 {
                     return;
                 }
@@ -1295,23 +1210,49 @@ public class ClusterManager
                                                 stateToString( this ) );
         }
 
+        /**
+         * Fails a member of this cluster by making it not receive/respond to heartbeats.
+         * A {@link RepairKit} is returned which is able to repair the instance  (i.e start the network) again. This
+         * method does not return until the rest of the cluster sees the member as not available.
+         *
+         * @param db the {@link HighlyAvailableGraphDatabase} to fail.
+         * @return a {@link RepairKit} which can repair the failure.
+         */
         public RepairKit fail( HighlyAvailableGraphDatabase db ) throws Throwable
         {
             return fail( db, NetworkFlag.values() );
         }
 
         /**
-         * WARNING: beware of hacks.
-         * <p>
-         * Fails a member of this cluster by making it not respond to heart beats.
-         * A {@link RepairKit} is returned which is able to repair the instance
-         * (i.e start the network) again.
+         * Fails a member of this cluster by making it either not respond to heartbeats, or not receive them, or both.
+         * A {@link RepairKit} is returned which is able to repair the instance  (i.e start the network) again.
+         * This method does not return until the rest of the cluster sees the member as not available.
          *
          * @param db the {@link HighlyAvailableGraphDatabase} to fail.
+         * @param flags which part of networking to fail (IN/OUT/BOTH)
          * @return a {@link RepairKit} which can repair the failure.
          * @throws IllegalArgumentException if the given db isn't a member of this cluster.
          */
         public RepairKit fail( HighlyAvailableGraphDatabase db, NetworkFlag... flags ) throws Throwable
+        {
+            return fail( db, true, flags );
+        }
+
+        /**
+         * WARNING: beware of hacks.
+         * <p>
+         * Fails a member of this cluster by making it either not respond to heartbeats, or not receive them, or both.
+         * A {@link RepairKit} is returned which is able to repair the instance  (i.e start the network) again.
+         * This method optionally does not return until the rest of the cluster sees the member as not available.
+         *
+         * @param db the {@link HighlyAvailableGraphDatabase} to fail.
+         * @param waitUntilDown if true, will not return until rest of cluster reports member as not available
+         * @param flags which part of networking to fail (IN/OUT)
+         * @return a {@link RepairKit} which can repair the failure.
+         * @throws IllegalArgumentException if the given db isn't a member of this cluster.
+         */
+        public RepairKit fail( HighlyAvailableGraphDatabase db, boolean waitUntilDown, NetworkFlag... flags )
+                throws Throwable
         {
             assertMember( db );
 
@@ -1327,32 +1268,31 @@ public class ClusterManager
                 networkSender.setPaused( true );
             }
 
+            if ( waitUntilDown )
+            {
+                await( entireClusterSeesMemberAsNotAvailable( db ) );
+            }
             return wrap( new StartNetworkAgainKit( db, networkReceiver, networkSender, flags ) );
         }
 
         private RepairKit wrap( final RepairKit actual )
         {
             pendingRepairs.add( actual );
-            return new RepairKit()
-            {
-                @Override
-                public HighlyAvailableGraphDatabase repair() throws Throwable
+            return () -> {
+                try
                 {
-                    try
-                    {
-                        return actual.repair();
-                    }
-                    finally
-                    {
-                        pendingRepairs.remove( actual );
-                    }
+                    return actual.repair();
+                }
+                finally
+                {
+                    pendingRepairs.remove( actual );
                 }
             };
         }
 
         private void startMember( InstanceId serverId ) throws URISyntaxException, IOException
         {
-            Clusters.Member member = spec.getMembers().get( serverId.toIntegerIndex() - 1 );
+            Cluster.Member member = spec.getMembers().get( serverId.toIntegerIndex() - 1 );
             StringBuilder initialHosts = new StringBuilder();
             for ( int i = 0; i < spec.getMembers().size(); i++ )
             {
@@ -1383,8 +1323,7 @@ public class ClusterManager
                 {
                     storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), storeDir );
                 }
-                GraphDatabaseBuilder builder =
-                        dbFactory.newHighlyAvailableDatabaseBuilder( storeDir.getAbsolutePath() );
+                GraphDatabaseBuilder builder = dbFactory.newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() );
                 builder.setConfig( ClusterSettings.cluster_name, name );
                 builder.setConfig( ClusterSettings.initial_hosts, initialHosts.toString() );
                 builder.setConfig( ClusterSettings.server_id, serverId + "" );
@@ -1396,10 +1335,8 @@ public class ClusterManager
                     builder.setConfig( conf.getKey(), conf.getValue().apply( serverId.toIntegerIndex() ) );
                 }
 
-                config( builder, name, serverId );
-
-                final HighlyAvailableGraphDatabaseProxy graphDatabase = new HighlyAvailableGraphDatabaseProxy(
-                        builder );
+                final HighlyAvailableGraphDatabaseProxy graphDatabase =
+                        new HighlyAvailableGraphDatabaseProxy( builder );
 
                 members.put( serverId, graphDatabase );
 
@@ -1408,7 +1345,7 @@ public class ClusterManager
                     @Override
                     public void stop() throws Throwable
                     {
-                        graphDatabase.get().shutdown();
+                        graphDatabase.get( DEFAULT_TIMEOUT_SECONDS ).shutdown();
                     }
                 } );
             }
@@ -1542,7 +1479,8 @@ public class ClusterManager
             {
                 if ( !exceptSet.contains( db ) )
                 {
-                    db.getDependencyResolver().resolveDependency( StoreFlusher.class ).forceEverything();
+                    IOLimiter limiter = IOLimiter.unlimited();
+                    db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( limiter );
                 }
             }
         }
@@ -1557,7 +1495,7 @@ public class ClusterManager
             }
         }
 
-        public void applyOnAll( org.neo4j.function.Function<GraphDatabaseService,Void> function )
+        public void applyOnAll( Function<GraphDatabaseService,Void> function )
         {
             for ( HighlyAvailableGraphDatabase db : getAllMembers() )
             {

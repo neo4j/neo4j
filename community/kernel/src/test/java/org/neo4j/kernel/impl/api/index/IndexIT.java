@@ -24,9 +24,9 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
@@ -38,8 +38,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class IndexIT extends KernelIntegrationTest
 {
@@ -76,7 +76,7 @@ public class IndexIT extends KernelIntegrationTest
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             assertEquals( asSet( expectedRule ),
                           asSet( statement.indexesGetForLabel( labelId ) ) );
-            assertEquals( expectedRule, statement.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
+            assertEquals( expectedRule, statement.indexGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
             commit();
         }
     }
@@ -132,7 +132,7 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldRemoveAConstraintIndexWithoutOwnerInRecovery() throws Exception
     {
         // given
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.singleton( kernel ), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
         creator.createConstraintIndex( labelId, propertyKeyId );
 
         // when
@@ -220,13 +220,13 @@ public class IndexIT extends KernelIntegrationTest
         {
             Set<IndexDefinition> indexes;
             IndexDefinition index;
-            indexes = asSet( db.schema().getIndexes() );
+            indexes = Iterables.asSet( db.schema().getIndexes() );
 
             // then
             assertEquals( 1, indexes.size() );
             index = indexes.iterator().next();
             assertEquals( "Label1", index.getLabel().name() );
-            assertEquals( asSet( "property1" ), asSet( index.getPropertyKeys() ) );
+            assertEquals( asSet( "property1" ), Iterables.asSet( index.getPropertyKeys() ) );
             assertTrue( "index should be a constraint index", index.isConstraintIndex() );
 
             // when

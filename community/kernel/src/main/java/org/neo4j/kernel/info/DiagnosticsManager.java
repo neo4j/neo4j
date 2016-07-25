@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.info.DiagnosticsExtractor.VisitableDiagnostics;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -81,7 +80,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
     {
         synchronized ( providers )
         {
-            @SuppressWarnings( "hiding" ) State state = this.state;
+            @SuppressWarnings( "hiding" )
+            State state = this.state;
             if ( !state.startup( this ) ) return;
         }
         dumpAll( DiagnosticsPhase.INITIALIZED, getTargetLog() );
@@ -91,7 +91,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
     {
         synchronized ( providers )
         {
-            @SuppressWarnings( "hiding" ) State state = this.state;
+            @SuppressWarnings( "hiding" )
+            State state = this.state;
             if ( !state.startup( this ) ) return;
         }
         dumpAll( DiagnosticsPhase.STARTED, getTargetLog() );
@@ -103,7 +104,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
     {
         synchronized ( providers )
         {
-            @SuppressWarnings( "hiding" ) State state = this.state;
+            @SuppressWarnings( "hiding" )
+            State state = this.state;
             if ( !state.shutdown( this ) ) return;
         }
         dumpAll( DiagnosticsPhase.STOPPING, getTargetLog() );
@@ -114,7 +116,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
     {
         synchronized ( providers )
         {
-            @SuppressWarnings( "hiding" ) State state = this.state;
+            @SuppressWarnings( "hiding" )
+            State state = this.state;
             if ( !state.shutdown( this ) ) return;
         }
         dumpAll( DiagnosticsPhase.SHUTDOWN, getTargetLog() );
@@ -171,33 +174,23 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 
     public void dumpAll( Log log )
     {
-        log.bulk( new Consumer<Log>()
-        {
-            @Override
-            public void accept( Log bulkLog )
+        log.bulk( bulkLog -> {
+            for ( DiagnosticsProvider provider : providers )
             {
-                for ( DiagnosticsProvider provider : providers )
-                {
-                    dump( provider, DiagnosticsPhase.EXPLICIT, bulkLog );
-                }
+                dump( provider, DiagnosticsPhase.EXPLICIT, bulkLog );
             }
         } );
     }
 
     public void extract( final String identifier, Log log )
     {
-        log.bulk( new Consumer<Log>()
-        {
-            @Override
-            public void accept( Log bulkLog )
+        log.bulk( bulkLog -> {
+            for ( DiagnosticsProvider provider : providers )
             {
-                for ( DiagnosticsProvider provider : providers )
+                if ( identifier.equals( provider.getDiagnosticsIdentifier() ) )
                 {
-                    if ( identifier.equals( provider.getDiagnosticsIdentifier() ) )
-                    {
-                        dump( provider, DiagnosticsPhase.EXPLICIT, bulkLog );
-                        return;
-                    }
+                    dump( provider, DiagnosticsPhase.EXPLICIT, bulkLog );
+                    return;
                 }
             }
         } );
@@ -205,18 +198,13 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 
     private void dumpAll( final DiagnosticsPhase phase, Log log )
     {
-        log.bulk( new Consumer<Log>()
-        {
-            @Override
-            public void accept( Log bulkLog )
+        log.bulk( bulkLog -> {
+            phase.emitStart( bulkLog );
+            for ( DiagnosticsProvider provider : providers )
             {
-                phase.emitStart( bulkLog );
-                for ( DiagnosticsProvider provider : providers )
-                {
-                    dump( provider, phase, bulkLog );
-                }
-                phase.emitDone( bulkLog );
+                dump( provider, phase, bulkLog );
             }
+            phase.emitDone( bulkLog );
         } );
     }
 
@@ -235,7 +223,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 
     public void prependProvider( DiagnosticsProvider provider )
     {
-        @SuppressWarnings( "hiding" ) State state = this.state;
+        @SuppressWarnings( "hiding" )
+        State state = this.state;
         if ( state == State.STOPPED ) return;
         providers.add( 0, provider );
         if ( state == State.STARTED ) dump( DiagnosticsPhase.STARTED, provider, getTargetLog() );
@@ -243,7 +232,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 
     public void appendProvider( DiagnosticsProvider provider )
     {
-        @SuppressWarnings( "hiding" ) State state = this.state;
+        @SuppressWarnings( "hiding" )
+        State state = this.state;
         if ( state == State.STOPPED ) return;
         providers.add( provider );
         if ( state == State.STARTED ) dump( DiagnosticsPhase.STARTED, provider, getTargetLog() );

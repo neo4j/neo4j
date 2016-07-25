@@ -29,6 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -37,10 +38,14 @@ import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.NullLogProvider;
+
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class PropertyDeduplicator
 {
@@ -65,16 +70,14 @@ public class PropertyDeduplicator
 
     public void deduplicateProperties() throws IOException
     {
-        final StoreFactory storeFactory =
-                new StoreFactory( fileSystem, workingDir, pageCache, NullLogProvider.getInstance() );
-        try ( NeoStores neoStores = storeFactory.openNeoStores( NeoStores.StoreType.PROPERTY, NeoStores.StoreType
-                .NODE, NeoStores.StoreType.SCHEMA) )
+        StoreFactory factory = new StoreFactory( workingDir, pageCache, fileSystem, NullLogProvider.getInstance() );
+        try ( NeoStores neoStores = factory.openNeoStores( StoreType.PROPERTY, StoreType.NODE, StoreType.SCHEMA) )
         {
             PropertyStore propertyStore = neoStores.getPropertyStore();
             NodeStore nodeStore = neoStores.getNodeStore();
             SchemaStore schemaStore = neoStores.getSchemaStore();
             PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters = collectConflictingProperties( propertyStore );
-            resolveConflicts( duplicateClusters, propertyStore, nodeStore, schemaStore );
+            resolveConflicts( duplicateClusters, propertyStore, nodeStore, schemaStore, neoStores.getStoreDir() );
         }
     }
 
@@ -83,12 +86,13 @@ public class PropertyDeduplicator
         final PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters = Primitive.longObjectMap();
 
         long highId = store.getHighId();
+        PropertyRecord head = store.newRecord(), tail = store.newRecord();
         for ( long headRecordId = 0; headRecordId < highId; ++headRecordId )
         {
-            PropertyRecord record = store.forceGetRecord( headRecordId );
+            store.getRecord( headRecordId, head, FORCE );
             // Skip property propertyRecordIds that are not in use.
             // Skip property propertyRecordIds that are not at the start of a chain.
-            if ( !record.inUse() || record.getPrevProp() != Record.NO_NEXT_PROPERTY.intValue() )
+            if ( !head.inUse() || head.getPrevProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
                 continue;
             }
@@ -96,12 +100,12 @@ public class PropertyDeduplicator
             long propertyId = headRecordId;
             while ( propertyId != Record.NO_NEXT_PROPERTY.intValue() )
             {
-                record = store.getRecord( propertyId );
+                store.getRecord( propertyId, tail, NORMAL );
 
-                Iterable<PropertyBlock> propertyBlocks = record;
+                Iterable<PropertyBlock> propertyBlocks = tail;
                 scanForDuplicates( propertyId, propertyBlocks );
 
-                propertyId = record.getNextProp();
+                propertyId = tail.getNextProp();
             }
 
             final long localHeadRecordId = headRecordId;
@@ -158,7 +162,7 @@ public class PropertyDeduplicator
             final PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters,
             PropertyStore propertyStore,
             final NodeStore nodeStore,
-            SchemaStore schemaStore ) throws IOException
+            SchemaStore schemaStore, File storeDir) throws IOException
     {
         if ( duplicateClusters.isEmpty() )
         {
@@ -175,13 +179,16 @@ public class PropertyDeduplicator
         // First find and resolve the duplicateClusters for all properties whose nodes are indexed.
         // The duplicateClusters are indexed by the propertyRecordId of the head-record in the property chain, so any node
         // whose nextProp() is amongst our duplicateClusters is potentially interesting.
-        try ( IndexLookup indexLookup = new IndexLookup( schemaStore, schemaIndexProvider );
-              IndexedConflictsResolver indexedConflictsResolver =
-                      new IndexedConflictsResolver( duplicateClusters, indexLookup, nodeStore, propertyStore ) )
+        if ( !isIndexStorageEmpty( storeDir ) )
         {
-            if ( indexLookup.hasAnyIndexes() )
+            try ( IndexLookup indexLookup = new IndexLookup( schemaStore, schemaIndexProvider );
+                  IndexedConflictsResolver indexedConflictsResolver =
+                          new IndexedConflictsResolver( duplicateClusters, indexLookup, nodeStore, propertyStore ) )
             {
-                nodeStore.scanAllRecords( indexedConflictsResolver );
+                if ( indexLookup.hasAnyIndexes() )
+                {
+                    nodeStore.scanAllRecords( indexedConflictsResolver );
+                }
             }
         }
 
@@ -191,4 +198,11 @@ public class PropertyDeduplicator
         NonIndexedConflictResolver resolver = new NonIndexedConflictResolver( keyTokenStore, propertyStore );
         duplicateClusters.visitEntries( resolver );
     }
+
+    private boolean isIndexStorageEmpty( File storeDir ) throws IOException
+    {
+        File storageDirectory = schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir );
+        return FileUtils.isEmptyDirectory( storageDirectory );
+    }
+
 }

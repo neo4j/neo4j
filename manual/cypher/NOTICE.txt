@@ -1,5 +1,5 @@
 Neo4j
-Copyright © 2002-2015 Network Engine for Objects in Lund AB (referred to
+Copyright © 2002-2016 Network Engine for Objects in Lund AB (referred to
 in this notice as "Neo Technology")
    [http://neotechnology.com]
 
@@ -42,7 +42,6 @@ BSD - Scala License
 BSD License
   ASM Core
   Scala Compiler
-  scala-parser-combinators
 
 HSQLDB License, a BSD open source license
   HyperSQL Database

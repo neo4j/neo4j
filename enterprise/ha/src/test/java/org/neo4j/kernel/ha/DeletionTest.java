@@ -29,7 +29,7 @@ import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertNotNull;
 
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 /**
@@ -56,7 +56,7 @@ public class DeletionTest
 {
     @ClassRule
     public static ClusterRule clusterRule = new ClusterRule( DeletionTest.class )
-            .withProvider( clusterOfSize( 2 ) );
+            .withCluster( clusterOfSize( 2 ) );
 
     /**
      * The problem would manifest even if the transaction was performed on the Master, it would then occur when the

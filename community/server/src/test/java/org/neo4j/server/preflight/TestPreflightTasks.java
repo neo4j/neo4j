@@ -21,15 +21,16 @@ package org.neo4j.server.preflight;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.test.SuppressOutput.suppressAll;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class TestPreflightTasks
 {

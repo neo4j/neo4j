@@ -21,11 +21,16 @@ package org.neo4j.adversaries.pagecache;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.Objects;
 
 import org.neo4j.adversaries.Adversary;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.PagedReadableByteChannel;
+import org.neo4j.io.pagecache.impl.PagedWritableByteChannel;
 
 /**
  * A {@linkplain PagedFile paged file} that wraps another paged file and an {@linkplain Adversary adversary} to provide
@@ -35,12 +40,12 @@ import org.neo4j.io.pagecache.PagedFile;
  * or {@link IOException} like {@link FileNotFoundException}.
  */
 @SuppressWarnings( "unchecked" )
-class AdversarialPagedFile implements PagedFile
+public class AdversarialPagedFile implements PagedFile
 {
     private final PagedFile delegate;
     private final Adversary adversary;
 
-    AdversarialPagedFile( PagedFile delegate, Adversary adversary )
+    public AdversarialPagedFile( PagedFile delegate, Adversary adversary )
     {
         this.delegate = Objects.requireNonNull( delegate );
         this.adversary = Objects.requireNonNull( adversary );
@@ -51,7 +56,7 @@ class AdversarialPagedFile implements PagedFile
     {
         adversary.injectFailure( IllegalStateException.class );
         PageCursor pageCursor = delegate.io( pageId, pf_flags );
-        if ( (pf_flags & PF_SHARED_LOCK) == PF_SHARED_LOCK )
+        if ( (pf_flags & PF_SHARED_READ_LOCK) == PF_SHARED_READ_LOCK )
         {
             return new AdversarialReadPageCursor( pageCursor, adversary );
         }
@@ -72,6 +77,13 @@ class AdversarialPagedFile implements PagedFile
     }
 
     @Override
+    public void flushAndForce( IOLimiter limiter ) throws IOException
+    {
+        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
+        delegate.flushAndForce( limiter );
+    }
+
+    @Override
     public long getLastPageId() throws IOException
     {
         adversary.injectFailure( IllegalStateException.class );
@@ -83,5 +95,17 @@ class AdversarialPagedFile implements PagedFile
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
         delegate.close();
+    }
+
+    @Override
+    public ReadableByteChannel openReadableByteChannel() throws IOException
+    {
+        return new PagedReadableByteChannel( this );
+    }
+
+    @Override
+    public WritableByteChannel openWritableByteChannel() throws IOException
+    {
+        return new PagedWritableByteChannel( this );
     }
 }

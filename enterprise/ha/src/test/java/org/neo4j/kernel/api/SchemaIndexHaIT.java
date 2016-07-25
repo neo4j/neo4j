@@ -25,12 +25,13 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,19 +43,20 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.api.impl.index.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
@@ -63,25 +65,23 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.register.Register.DoubleLong;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterRule;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.asUniqueSet;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
@@ -159,7 +159,7 @@ public class SchemaIndexHaIT
         assertEquals( "Unexpected new master", aSlave, newMaster );
         try ( Transaction tx = newMaster.beginTx() )
         {
-            IndexDefinition index = single( newMaster.schema().getIndexes() );
+            IndexDefinition index = Iterables.single( newMaster.schema().getIndexes() );
             awaitIndexOnline( index, newMaster, data );
             tx.success();
         }
@@ -200,12 +200,10 @@ public class SchemaIndexHaIT
             createIndex( master );
             dbFactory.awaitPopulationStarted( master );
 
-
             // WHEN the slave comes online before population has finished on the master
             slave = slaveDown.repair();
             cluster.await( allSeesAllAsAvailable(), 180 );
             cluster.sync();
-
 
             // THEN, population should finish successfully on both master and slave
             dbFactory.triggerFinish( master );
@@ -214,7 +212,7 @@ public class SchemaIndexHaIT
             IndexDefinition index;
             try ( Transaction tx = master.beginTx())
             {
-                index = single( master.schema().getIndexes() );
+                index = Iterables.single( master.schema().getIndexes() );
                 awaitIndexOnline( index, master, data );
                 tx.success();
             }
@@ -269,17 +267,15 @@ public class SchemaIndexHaIT
         IndexDefinition index;
         try ( Transaction tx = master.beginTx())
         {
-            index = single( master.schema().getIndexes() );
+            index = Iterables.single( master.schema().getIndexes() );
             awaitIndexOnline( index, master, data );
             tx.success();
         }
-
 
         // WHEN the slave comes online after population has finished on the master
         slave = slaveDown.repair();
         cluster.await( allSeesAllAsAvailable() );
         cluster.sync();
-
 
         // THEN the index should work on the slave
         dbFactory.triggerFinish( slave );
@@ -314,14 +310,8 @@ public class SchemaIndexHaIT
         return slaveDown;
     }
 
-    public static final Predicate<GraphDatabaseService> IS_MASTER = new Predicate<GraphDatabaseService>()
-    {
-        @Override
-        public boolean test( GraphDatabaseService item )
-        {
-            return item instanceof HighlyAvailableGraphDatabase && ((HighlyAvailableGraphDatabase) item).isMaster();
-        }
-    };
+    public static final Predicate<GraphDatabaseService> IS_MASTER =
+            item -> item instanceof HighlyAvailableGraphDatabase && ((HighlyAvailableGraphDatabase) item).isMaster();
 
     private final String key = "key";
     private final Label label = label( "label" );
@@ -402,7 +392,7 @@ public class SchemaIndexHaIT
         for ( Map.Entry<Object, Node> entry : expectedData.entrySet() )
         {
             assertEquals( asSet( entry.getValue() ),
-                    asUniqueSet( db.findNodes( index.getLabel(), single( index.getPropertyKeys() ), entry.getKey() ) ) );
+                    asUniqueSet( db.findNodes( index.getLabel(), Iterables.single( index.getPropertyKeys() ), entry.getKey() ) ) );
         }
     }
 
@@ -442,10 +432,10 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void add( long nodeId, Object propertyValue )
-                throws IndexEntryConflictException, IOException, IndexCapacityExceededException
+        public void add( Collection<NodePropertyUpdate> updates )
+                throws IndexEntryConflictException, IOException
         {
-            delegate.add(nodeId, propertyValue);
+            delegate.add( updates );
             latch.startAndAwaitFinish();
         }
 
@@ -463,7 +453,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully ) throws IOException, IndexCapacityExceededException
+        public void close( boolean populationCompletedSuccessfully ) throws IOException
         {
             delegate.close(populationCompletedSuccessfully);
             assertTrue( "Expected population to succeed :(", populationCompletedSuccessfully );
@@ -477,15 +467,20 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public long sampleResult( DoubleLong.Out result )
+        public void includeSample( NodePropertyUpdate update )
         {
-            return delegate.sampleResult( result );
+            delegate.includeSample( update );
+        }
+
+        @Override
+        public IndexSample sampleResult()
+        {
+            return delegate.sampleResult();
         }
     }
 
     public static final SchemaIndexProvider.Descriptor CONTROLLED_PROVIDER_DESCRIPTOR =
             new SchemaIndexProvider.Descriptor( "controlled", "1.0" );
-
 
     private static class ControlledSchemaIndexProvider extends SchemaIndexProvider
     {
@@ -520,9 +515,10 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
+                LabelScanStoreProvider labelScanStoreProvider )
         {
-            return delegate.storeMigrationParticipant( fs, pageCache );
+            return delegate.storeMigrationParticipant( fs, pageCache, labelScanStoreProvider );
         }
 
         @Override
@@ -586,10 +582,10 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public GraphDatabaseBuilder newHighlyAvailableDatabaseBuilder(String path)
+        public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File file )
         {
             getCurrentState().addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( factory ) );
-            return super.newHighlyAvailableDatabaseBuilder( path );
+            return super.newEmbeddedDatabaseBuilder( file );
         }
 
         void awaitPopulationStarted( GraphDatabaseService db )

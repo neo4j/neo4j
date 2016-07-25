@@ -26,8 +26,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
-import org.neo4j.function.BooleanSupplier;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -39,16 +39,14 @@ import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.stresstest.workload.Runner;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 
 public class TransactionAppenderStressTest
 {
@@ -80,14 +78,7 @@ public class TransactionAppenderStressTest
         public static BooleanSupplier untilTimeExpired( long duration, TimeUnit unit )
         {
             final long endTimeInMilliseconds = currentTimeMillis() + unit.toMillis( duration );
-            return new BooleanSupplier()
-            {
-                @Override
-                public boolean getAsBoolean()
-                {
-                    return currentTimeMillis() <= endTimeInMilliseconds;
-                }
-            };
+            return () -> currentTimeMillis() <= endTimeInMilliseconds;
         }
 
         public Builder with( BooleanSupplier condition )
@@ -129,10 +120,9 @@ public class TransactionAppenderStressTest
             long txId = -1;
             try ( ReadableLogChannel channel = openLogFile( fs, 0 ) )
             {
-                LogEntryReader<ReadableLogChannel> reader =
-                        new VersionAwareLogEntryReader<>( LogEntryVersion.CURRENT.byteCode() );
+                LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>();
                 LogEntry logEntry = reader.readLogEntry( channel );
-                for (; logEntry != null; logEntry = reader.readLogEntry( channel ) )
+                for ( ; logEntry != null; logEntry = reader.readLogEntry( channel ) )
                 {
                     if ( logEntry.getType() == LogEntryByteCodes.TX_1P_COMMIT )
                     {
@@ -147,8 +137,7 @@ public class TransactionAppenderStressTest
         {
             PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fs );
             PhysicalLogVersionedStoreChannel channel = PhysicalLogFile.openForVersion( logFiles, fs, version );
-            return new ReadAheadLogChannel( channel, new ReaderLogVersionBridge( fs, logFiles ),
-                    DEFAULT_READ_AHEAD_SIZE );
+            return new ReadAheadLogChannel( channel, new ReaderLogVersionBridge( fs, logFiles ) );
         }
     }
 }

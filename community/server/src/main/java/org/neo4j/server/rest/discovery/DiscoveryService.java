@@ -28,10 +28,11 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.web.ServerInternalSettings;
 
 /**
  * Used to discover the rest of the server URIs through a HTTP GET request to
@@ -53,17 +54,18 @@ public class DiscoveryService
     @Produces( MediaType.APPLICATION_JSON )
     public Response getDiscoveryDocument() throws URISyntaxException
     {
-        String webAdminManagementUri = configuration.get( ServerInternalSettings.management_api_path ).getPath() + "/";
-        String dataUri = configuration.get( ServerInternalSettings.rest_api_path ).getPath() + "/";
+        String managementUri = configuration.get( ServerSettings.management_api_path ).getPath() + "/";
+        String dataUri = configuration.get( ServerSettings.rest_api_path ).getPath() + "/";
+        String boltAddress = configuration.get( GraphDatabaseSettings.bolt_advertised_address ).toString();
 
-        return outputFormat.ok( new DiscoveryRepresentation( webAdminManagementUri, dataUri ) );
+        return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri, boltAddress ) );
     }
 
     @GET
     @Produces( MediaType.WILDCARD )
     public Response redirectToBrowser()
     {
-        return outputFormat.seeOther( configuration.get( ServerInternalSettings.browser_path ) );
+        return outputFormat.seeOther( configuration.get( ServerSettings.browser_path ) );
 
     }
 }

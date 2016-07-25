@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.spi.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.spi.TokenContext
+import org.neo4j.cypher.internal.compiler.v3_1.spi.TokenContext
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.exceptions.{LabelNotFoundKernelException, PropertyKeyNotFoundException, RelationshipTypeNotFoundException}
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations
 
-abstract class TransactionBoundTokenContext(protected var statement: Statement) extends TokenContext {
+abstract class TransactionBoundTokenContext(statement: => Statement) extends TokenContext {
   def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = {
     val propertyId: Int = statement.readOperations().propertyKeyGetForName(propertyKeyName)
     if (propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY) None

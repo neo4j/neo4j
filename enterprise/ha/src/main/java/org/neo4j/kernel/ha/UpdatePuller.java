@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-
 /**
  * Puller of transactions updates from a different store. Pulls for updates and applies them into a current store.
  * <p>
@@ -38,7 +37,6 @@ public interface UpdatePuller
      * @throws InterruptedException in case if interrupted while waiting for updates
      */
     void pullUpdates() throws InterruptedException;
-
 
     /**
      * Try to pull all updates

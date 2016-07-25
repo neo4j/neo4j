@@ -26,12 +26,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.com.StoreIdTestFactory;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
@@ -59,7 +59,7 @@ public class ResponsePackerTest
         final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( targetTransactionId, 0,
                 BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
         ResponsePacker packer = new ResponsePacker( transactionStore, transactionIdStore,
-                Suppliers.singleton( new StoreId() ) );
+                Suppliers.singleton( StoreIdTestFactory.newStoreIdForCurrentVersion() ) );
 
         // WHEN
         Response<Object> response = packer.packTransactionStreamResponse( requestContextStartingAt( 5L ), null );
@@ -73,12 +73,12 @@ public class ResponsePackerTest
             }
 
             @Override
-            public Visitor<CommittedTransactionRepresentation, IOException> transactions()
+            public Visitor<CommittedTransactionRepresentation,Exception> transactions()
             {
-                return new Visitor<CommittedTransactionRepresentation, IOException>()
+                return new Visitor<CommittedTransactionRepresentation,Exception>()
                 {
                     @Override
-                    public boolean visit( CommittedTransactionRepresentation element ) throws IOException
+                    public boolean visit( CommittedTransactionRepresentation element )
                     {
                         // THEN
                         long txId = element.getCommitEntry().getTxId();
@@ -87,8 +87,8 @@ public class ResponsePackerTest
 
                         // Move the target transaction id forward one step, effectively always keeping it out of reach
                         transactionIdStore.setLastCommittedAndClosedTransactionId(
-                                transactionIdStore.getLastCommittedTransactionId()+1, 0,
-                                BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
+                                transactionIdStore.getLastCommittedTransactionId() + 1, 0, BASE_TX_COMMIT_TIMESTAMP,
+                                3, 4 );
                         return true;
                     }
                 };

@@ -79,6 +79,11 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
+    public void closeAndDelete() throws IOException
+    {
+    }
+
+    @Override
     public long read( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
     {
         return 0;

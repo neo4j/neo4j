@@ -25,7 +25,7 @@ import java.util.Set;
 
 import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class DiskLayerSchemaWithPECTest extends DiskLayerTest
 {
@@ -131,7 +131,7 @@ public class DiskLayerSchemaWithPECTest extends DiskLayerTest
         Set<RelationshipPropertyConstraint> constraints = asSet( disk.constraintsGetForRelationshipType( relTypeId ) );
 
         // Then
-        Set<RelationshipPropertyConstraint> expectedConstraints = IteratorUtil.<RelationshipPropertyConstraint>asSet(
+        Set<RelationshipPropertyConstraint> expectedConstraints = Iterators.<RelationshipPropertyConstraint>asSet(
                 new RelationshipPropertyExistenceConstraint( relTypeId, propertyKeyId( propertyKey ) ),
                 new RelationshipPropertyExistenceConstraint( relTypeId, propertyKeyId( otherPropertyKey ) ) );
 
@@ -155,7 +155,7 @@ public class DiskLayerSchemaWithPECTest extends DiskLayerTest
                 disk.constraintsGetForRelationshipTypeAndPropertyKey( relTypeId, propKeyId ) );
 
         // Then
-        Set<RelationshipPropertyConstraint> expectedConstraints = IteratorUtil.<RelationshipPropertyConstraint>asSet(
+        Set<RelationshipPropertyConstraint> expectedConstraints = Iterators.<RelationshipPropertyConstraint>asSet(
                 new RelationshipPropertyExistenceConstraint( relTypeId, propKeyId ) );
 
         assertEquals( expectedConstraints, constraints );

@@ -21,10 +21,11 @@ package org.neo4j.kernel.api.properties;
 
 import java.util.concurrent.Callable;
 
-import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.StorageProperty;
 
-public abstract class Property
+public abstract class Property implements StorageProperty
 {
     public static Property noNodeProperty( long nodeId, int propertyKeyId )
     {
@@ -58,17 +59,22 @@ public abstract class Property
         this.propertyKeyId = propertyKeyId;
     }
 
+    @Override
     public final int propertyKeyId()
     {
         return propertyKeyId;
     }
 
+    @Override
     public abstract boolean valueEquals( Object other );
 
+    @Override
     public abstract Object value() throws PropertyNotFoundException;
 
+    @Override
     public abstract Object value( Object defaultValue );
 
+    @Override
     public abstract String valueAsString() throws PropertyNotFoundException;
 
     @Override
@@ -77,6 +83,7 @@ public abstract class Property
     @Override
     public abstract int hashCode();
 
+    @Override
     public abstract boolean isDefined();
 
     // direct factory methods

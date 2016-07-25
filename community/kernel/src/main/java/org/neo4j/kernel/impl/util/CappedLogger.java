@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.util;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
@@ -42,7 +44,7 @@ public class CappedLogger
     // We use the filter indirection so we can atomically update the configuration without locking
     private volatile Filter filter;
 
-    public CappedLogger( Log delegate )
+    public CappedLogger( @Nonnull Log delegate )
     {
         if ( delegate == null )
         {
@@ -52,7 +54,7 @@ public class CappedLogger
         this.delegate = delegate;
     }
 
-    public void debug( String msg )
+    public void debug( @Nonnull String msg )
     {
         if ( filter.accept( msg, null ) )
         {
@@ -60,15 +62,15 @@ public class CappedLogger
         }
     }
 
-    public void debug( String msg, Throwable cause )
+    public void debug( @Nonnull String msg, @Nonnull Throwable cause )
     {
         if ( filter.accept( msg, cause ) )
         {
             delegate.debug( msg, cause );
         }
     }
-    
-    public void info( String msg )
+
+    public void info( @Nonnull String msg )
     {
         if ( filter.accept( msg, null ) )
         {
@@ -76,15 +78,15 @@ public class CappedLogger
         }
     }
 
-    public void info( String msg, Throwable cause )
+    public void info( @Nonnull String msg, @Nonnull Throwable cause )
     {
         if ( filter.accept( msg, cause ) )
         {
             delegate.info( msg, cause );
         }
     }
-    
-    public void warn( String msg )
+
+    public void warn( @Nonnull String msg )
     {
         if ( filter.accept( msg, null ) )
         {
@@ -92,15 +94,15 @@ public class CappedLogger
         }
     }
 
-    public void warn( String msg, Throwable cause )
+    public void warn( @Nonnull String msg, @Nonnull Throwable cause )
     {
         if ( filter.accept( msg, cause ) )
         {
             delegate.warn( msg, cause );
         }
     }
-    
-    public void error( String msg )
+
+    public void error( @Nonnull String msg )
     {
         if ( filter.accept( msg, null ) )
         {
@@ -108,7 +110,7 @@ public class CappedLogger
         }
     }
 
-    public void error( String msg, Throwable cause )
+    public void error( @Nonnull String msg, @Nonnull Throwable cause )
     {
         if ( filter.accept( msg, cause ) )
         {
@@ -158,7 +160,7 @@ public class CappedLogger
      * @param unit The time unit.
      * @param clock The clock to use for reading the current time when checking this limit.
      */
-    public CappedLogger setTimeLimit( long time, TimeUnit unit, Clock clock )
+    public CappedLogger setTimeLimit( long time, @Nonnull TimeUnit unit, @Nonnull Clock clock )
     {
         if ( time < 1 )
         {
@@ -248,7 +250,7 @@ public class CappedLogger
             return new Filter( true, limit, currentCount, timeLimitMillis, lastCheck, clock, filterDuplicates );
         }
 
-        public boolean accept( String msg, Throwable cause )
+        public boolean accept( @Nonnull String msg, @Nullable Throwable cause )
         {
             return (!hasCountLimit || (getAndIncrementCurrentCount() < countLimit))
                     && (clock == null || !checkExpiredAndSetLastCheckTime())
@@ -278,8 +280,8 @@ public class CappedLogger
             }
             return false;
         }
-        
-        private synchronized boolean checkDuplicate( String msg, Throwable cause )
+
+        private synchronized boolean checkDuplicate( @Nonnull String msg, @Nullable Throwable cause )
         {
             String last = lastMessage;
             Throwable exc = lastException;
@@ -297,7 +299,7 @@ public class CappedLogger
             }
         }
 
-        private boolean sameMsg( Throwable cause, Throwable exc )
+        private boolean sameMsg( @Nullable Throwable cause, @Nullable Throwable exc )
         {
             return ( cause == null && exc == null ) ||
                     ( cause != null && exc != null && stringEqual( exc.getMessage(), cause.getMessage() ) );
@@ -308,7 +310,7 @@ public class CappedLogger
             return a == null ? b == null : a.equals( b );
         }
 
-        private boolean sameClass( Throwable cause, Throwable exc )
+        private boolean sameClass( @Nullable Throwable cause, @Nullable Throwable exc )
         {
             return ( cause == null && exc == null ) ||
                     ( cause != null && exc != null && exc.getClass().equals( cause.getClass() ) );
@@ -324,7 +326,7 @@ public class CappedLogger
             return new Filter( false, 0, currentCount, timeLimitMillis, lastCheck, clock, filterDuplicates );
         }
 
-        public Filter setTimeLimit( long time, TimeUnit unit, Clock clock )
+        public Filter setTimeLimit( long time, @Nonnull TimeUnit unit, @Nonnull Clock clock )
         {
             return new Filter(
                     hasCountLimit, countLimit, currentCount, unit.toMillis( time ), lastCheck, clock, filterDuplicates );

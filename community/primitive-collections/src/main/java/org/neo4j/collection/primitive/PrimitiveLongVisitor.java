@@ -31,12 +31,5 @@ public interface PrimitiveLongVisitor<E extends Exception>
      */
     boolean visited( long value ) throws E;
 
-    public static final PrimitiveLongVisitor<RuntimeException> EMPTY = new PrimitiveLongVisitor<RuntimeException>()
-    {
-        @Override
-        public boolean visited( long value ) throws RuntimeException
-        {
-            return false;
-        }
-    };
+    PrimitiveLongVisitor<RuntimeException> EMPTY = value -> false;
 }

@@ -28,27 +28,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanderBuilder;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.traversal.BranchState;
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.OrderedByTypeExpander;
-import org.neo4j.kernel.Traversal;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -62,8 +57,9 @@ import org.neo4j.shell.impl.AbstractApp;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.shell.util.json.JSONArray;
 import org.neo4j.shell.util.json.JSONException;
-import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.kernel.api.security.AccessMode.Static.FULL;
 import static org.neo4j.shell.ShellException.stackTraceAsString;
 
 /**
@@ -75,32 +71,22 @@ public abstract class TransactionProvidingApp extends AbstractApp
     private static final Label[] EMPTY_LABELS = new Label[0];
     private static final RelationshipType[] EMPTY_REL_TYPES = new RelationshipType[0];
 
-    private static final Function<String[],Label[]> CREATE_LABELS = new Function<String[],Label[]>()
-    {
-        @Override
-        public Label[] apply( String[] values )
+    private static final Function<String[],Label[]> CREATE_LABELS = values -> {
+        Label[] labels = new Label[values.length];
+        for ( int i = 0; i < values.length; i++ )
         {
-            Label[] labels = new Label[values.length];
-            for ( int i = 0; i < values.length; i++ )
-            {
-                labels[i] = DynamicLabel.label( values[i] );
-            }
-            return labels;
+            labels[i] = Label.label( values[i] );
         }
+        return labels;
     };
 
-    private static final Function<String[],RelationshipType[]> CREATE_REL_TYPES = new Function<String[],RelationshipType[]>()
-    {
-        @Override
-        public RelationshipType[] apply( String[] values )
+    private static final Function<String[],RelationshipType[]> CREATE_REL_TYPES = values -> {
+        RelationshipType[] types = new RelationshipType[values.length];
+        for ( int i = 0; i < values.length; i++ )
         {
-            RelationshipType[] types = new RelationshipType[values.length];
-            for ( int i = 0; i < values.length; i++ )
-            {
-                types[i] = DynamicRelationshipType.withName( values[i] );
-            }
-            return types;
+            types[i] = RelationshipType.withName( values[i] );
         }
+        return types;
     };
 
     protected static final String[] STANDARD_EVAL_IMPORTS = new String[] {
@@ -180,12 +166,12 @@ public abstract class TransactionProvidingApp extends AbstractApp
     @Override
     public GraphDatabaseShellServer getServer()
     {
-        return ( GraphDatabaseShellServer ) super.getServer();
+        return (GraphDatabaseShellServer) super.getServer();
     }
 
     protected static RelationshipType getRelationshipType( String name )
     {
-        return DynamicRelationshipType.withName( name );
+        return RelationshipType.withName( name );
     }
 
     protected static Direction getDirection( String direction ) throws ShellException
@@ -244,10 +230,9 @@ public abstract class TransactionProvidingApp extends AbstractApp
     }
 
     @Override
-    public Continuation execute( AppCommandParser parser, Session session,
-        Output out ) throws Exception
+    public Continuation execute( AppCommandParser parser, Session session, Output out ) throws Exception
     {
-        try (Transaction tx = getServer().getDb().beginTx())
+        try ( Transaction tx = getServer().getDb().beginTransaction( implicit, FULL ) )
         {
             getServer().registerTopLevelTransactionInProgress( session.getId() );
             Continuation result = this.exec( parser, session, out );
@@ -744,7 +729,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
             boolean looseFilters ) throws ShellException
     {
         Map<String, Direction> matches = new TreeMap<String, Direction>();
-        for ( RelationshipType type : GlobalGraphOperations.at( db ).getAllRelationshipTypes() )
+        for ( RelationshipType type : db.getAllRelationshipTypes() )
         {
             Direction direction = null;
             if ( filterMap == null || filterMap.isEmpty() )
@@ -779,17 +764,17 @@ public abstract class TransactionProvidingApp extends AbstractApp
         defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
         Map<String, Direction> matches = filterMapToTypes( db, defaultDirection, relationshipTypes,
                 caseInsensitiveFilters, looseFilters );
-        Expander expander = Traversal.emptyExpander();
         if ( matches == null )
         {
-            return EMPTY_EXPANDER;
+            return PathExpanderBuilder.empty().build();
         }
+        PathExpanderBuilder expander = PathExpanderBuilder.empty();
         for ( Map.Entry<String, Direction> entry : matches.entrySet() )
         {
-            expander = expander.add( DynamicRelationshipType.withName( entry.getKey() ),
+            expander = expander.add( RelationshipType.withName( entry.getKey() ),
                     entry.getValue() );
         }
-        return (PathExpander) expander;
+        return expander.build();
     }
 
     protected static PathExpander toSortedExpander( GraphDatabaseService db, Direction defaultDirection,
@@ -798,29 +783,14 @@ public abstract class TransactionProvidingApp extends AbstractApp
         defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
         Map<String, Direction> matches = filterMapToTypes( db, defaultDirection, relationshipTypes,
                 caseInsensitiveFilters, looseFilters );
-        Expander expander = new OrderedByTypeExpander();
+        PathExpanderBuilder expander = PathExpanderBuilder.emptyOrderedByType();
         for ( Map.Entry<String, Direction> entry : matches.entrySet() )
         {
-            expander = expander.add( DynamicRelationshipType.withName( entry.getKey() ),
+            expander = expander.add( RelationshipType.withName( entry.getKey() ),
                     entry.getValue() );
         }
-        return (PathExpander) expander;
+        return expander.build();
     }
-
-    private static final PathExpander EMPTY_EXPANDER = new PathExpander()
-    {
-        @Override
-        public PathExpander reverse()
-        {
-            return this;
-        }
-
-        @Override
-        public Iterable<Relationship> expand( Path path, BranchState state )
-        {
-            return Collections.emptyList();
-        }
-    };
 
     protected Label[] parseLabels( AppCommandParser parser )
     {

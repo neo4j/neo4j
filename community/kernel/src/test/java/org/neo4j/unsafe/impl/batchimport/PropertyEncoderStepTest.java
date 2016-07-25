@@ -32,8 +32,8 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.staging.Step;
@@ -44,13 +44,14 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
 public class PropertyEncoderStepTest
 {
-    public final @Rule EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    public final @Rule PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
     private NeoStores neoStores;
     private PageCache pageCache;
 
@@ -59,9 +60,8 @@ public class PropertyEncoderStepTest
     {
         File storeDir = new File( "dir" );
         pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        StoreFactory storeFactory =
-                new StoreFactory( fsRule.get(), storeDir, pageCache, NullLogProvider.getInstance() );
-        neoStores = storeFactory.openAllNeoStores( true );
+        StoreFactory factory = new StoreFactory( storeDir, pageCache, fsRule.get(), NullLogProvider.getInstance() );
+        neoStores = factory.openAllNeoStores( true );
     }
 
     @After
@@ -78,7 +78,7 @@ public class PropertyEncoderStepTest
         // GIVEN
         StageControl control = mock( StageControl.class );
         BatchingPropertyKeyTokenRepository tokens =
-                new BatchingPropertyKeyTokenRepository( neoStores.getPropertyKeyTokenStore(), 0 );
+                new BatchingPropertyKeyTokenRepository( neoStores.getPropertyKeyTokenStore() );
         Step<Batch<InputNode,NodeRecord>> step =
                 new PropertyEncoderStep<>( control, DEFAULT, tokens, neoStores.getPropertyStore() );
         @SuppressWarnings( "rawtypes" )

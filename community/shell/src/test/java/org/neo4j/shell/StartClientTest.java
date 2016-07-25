@@ -19,26 +19,30 @@
  */
 package org.neo4j.shell;
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 
+import org.apache.commons.lang3.StringUtils;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -51,7 +55,9 @@ import static org.mockito.Mockito.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.test.SuppressOutput.suppressAll;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
+
 
 public class StartClientTest
 {
@@ -71,7 +77,7 @@ public class StartClientTest
     @Before
     public void startDatabase()
     {
-        db.getGraphDatabaseService();
+        db.getGraphDatabaseAPI();
     }
 
     @Test
@@ -84,9 +90,9 @@ public class StartClientTest
         StartClient.main(new String[]{"-file", getClass().getResource( "/testshell.txt" ).getFile()});
 
         // Then
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
         {
-            assertThat( (String) db.getGraphDatabaseService().getNodeById( 0 ).getProperty( "foo" ),
+            assertThat( (String) db.getGraphDatabaseAPI().getNodeById( 0 ).getProperty( "foo" ),
                     equalTo( "bar" ) );
             tx.success();
         }
@@ -111,9 +117,9 @@ public class StartClientTest
         }
 
         // Then
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
         {
-            assertThat( (String) db.getGraphDatabaseService().getNodeById( 0 ).getProperty( "foo" ),
+            assertThat( (String) db.getGraphDatabaseAPI().getNodeById( 0 ).getProperty( "foo" ),
                     equalTo( "bar" ) );
             tx.success();
         }
@@ -159,8 +165,7 @@ public class StartClientTest
         StartClient startClient = new StartClient( out, err )
         {
             @Override
-            protected GraphDatabaseShellServer getGraphDatabaseShellServer( String dbPath, boolean readOnly,
-                    String configFile ) throws RemoteException
+            protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly, String configFile ) throws RemoteException
             {
                 return databaseShellServer;
             }
@@ -186,11 +191,11 @@ public class StartClientTest
 
         // when
         client.start( new String[]{"-path", db.getGraphDatabaseAPI().getStoreDir(),
-                "-c", "dbinfo -g Configuration edition"}, ctrlCHandler );
+                "-c", "dbinfo -g Configuration unsupported.dbms.edition"}, ctrlCHandler );
 
         // then
         assertEquals( 0, err.size() );
-        assertThat( out.toString(), containsString( "\"edition\": \"Community\"" ) );
+        assertThat( out.toString(), containsString( "\"unsupported.dbms.edition\": \"community\"" ) );
     }
 
     @Test
@@ -210,6 +215,32 @@ public class StartClientTest
         assertEquals( 0, err.size() );
         String version = out.toString();
         assertThat( version, startsWith( "Neo4j Community, version " ) );
+    }
+
+    @Test
+    public void shouldNotStartBolt() throws IOException
+    {
+        // Given
+        AssertableLogProvider log = new AssertableLogProvider();
+
+        // When
+        new StartClient( System.out, System.err )
+        {
+            @Override
+            protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly, String
+                    configFile ) throws RemoteException
+            {
+                return new GraphDatabaseShellServer(
+                        new GraphDatabaseFactory().setUserLogProvider( log ), path, readOnly, configFile );
+            }
+        }.start( new String[]{
+                        "-c", "RETURN 1;",
+                        "-path", db.getGraphDatabaseAPI().getStoreDir(),
+                        "-config", getClass().getResource( "/config-with-bolt-connector.conf" ).getFile()},
+                mock( CtrlCHandler.class ) );
+
+        // Then
+        log.assertNone( inLog( startsWith( Sessions.class.getPackage().getName() ) ).any() );
     }
 
     private String runAndCaptureOutput( String[] arguments )

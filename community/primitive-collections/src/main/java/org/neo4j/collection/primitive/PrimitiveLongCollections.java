@@ -19,17 +19,21 @@
  */
 package org.neo4j.collection.primitive;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.LongFunction;
+import java.util.function.LongPredicate;
 
 import org.neo4j.collection.primitive.base.Empty;
-import org.neo4j.function.LongPredicate;
-import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
-import org.neo4j.function.primitive.PrimitiveLongPredicate;
+import org.neo4j.graphdb.Resource;
 
 import static java.util.Arrays.copyOf;
-
 import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
 
 /**
@@ -45,7 +49,7 @@ public class PrimitiveLongCollections
     /**
      * Base iterator for simpler implementations of {@link PrimitiveLongIterator}s.
      */
-    public static abstract class PrimitiveLongBaseIterator implements PrimitiveLongIterator
+    public abstract static class PrimitiveLongBaseIterator implements PrimitiveLongIterator
     {
         private boolean hasNext;
         protected long next;
@@ -75,7 +79,7 @@ public class PrimitiveLongCollections
         protected abstract boolean fetchNext();
 
         /**
-         * Called from inside an implementation of {@link #computeNext()} if a next item was found.
+         * Called from inside an implementation of {@link #fetchNext()} if a next item was found.
          * This method returns {@code true} so that it can be used in short-hand conditionals
          * (TODO what are they called?), like:
          * <pre>
@@ -86,7 +90,6 @@ public class PrimitiveLongCollections
          * }
          * </pre>
          * @param nextItem the next item found.
-         * @see #end()
          */
         protected boolean next( long nextItem )
         {
@@ -131,6 +134,11 @@ public class PrimitiveLongCollections
     }
 
     // Concating
+    public static PrimitiveLongIterator concat( Iterable<PrimitiveLongIterator> primitiveLongIterators )
+    {
+        return new PrimitiveLongConcatingIterator( primitiveLongIterators.iterator() );
+    }
+
     public static PrimitiveLongIterator concat( Iterator<PrimitiveLongIterator> iterators )
     {
         return new PrimitiveLongConcatingIterator( iterators );
@@ -242,28 +250,12 @@ public class PrimitiveLongCollections
         }
     }
 
-    /**
-     * @deprecated use {@link #filter(PrimitiveLongIterator, LongPredicate)} instead
-     */
-    @Deprecated
-    public static PrimitiveLongIterator filter( PrimitiveLongIterator source, final PrimitiveLongPredicate filter )
-    {
-        return new PrimitiveLongFilteringIterator( source )
-        {
-            @Override
-            public boolean accept( long item )
-            {
-                return filter.accept( item );
-            }
-        };
-    }
-
     public static PrimitiveLongIterator filter( PrimitiveLongIterator source, final LongPredicate filter )
     {
         return new PrimitiveLongFilteringIterator( source )
         {
             @Override
-            public boolean accept( long item )
+            public boolean test( long item )
             {
                 return filter.test( item );
             }
@@ -277,7 +269,7 @@ public class PrimitiveLongCollections
             private final PrimitiveLongSet visited = Primitive.longSet();
 
             @Override
-            public boolean accept( long testItem )
+            public boolean test( long testItem )
             {
                 return visited.add( testItem );
             }
@@ -289,7 +281,7 @@ public class PrimitiveLongCollections
         return new PrimitiveLongFilteringIterator( source )
         {
             @Override
-            public boolean accept( long testItem )
+            public boolean test( long testItem )
             {
                 return testItem != disallowedValue;
             }
@@ -303,7 +295,7 @@ public class PrimitiveLongCollections
             private int skipped = 0;
 
             @Override
-            public boolean accept( long item )
+            public boolean test( long item )
             {
                 if ( skipped < skipTheFirstNItems )
                 {
@@ -315,8 +307,8 @@ public class PrimitiveLongCollections
         };
     }
 
-    public static abstract class PrimitiveLongFilteringIterator extends PrimitiveLongBaseIterator
-            implements PrimitiveLongPredicate
+    public abstract static class PrimitiveLongFilteringIterator extends PrimitiveLongBaseIterator
+            implements LongPredicate
     {
         private final PrimitiveLongIterator source;
 
@@ -331,7 +323,7 @@ public class PrimitiveLongCollections
             while ( source.hasNext() )
             {
                 long testItem = source.next();
-                if ( accept( testItem ) )
+                if ( test( testItem ) )
                 {
                     return next( testItem );
                 }
@@ -339,12 +331,8 @@ public class PrimitiveLongCollections
             return false;
         }
 
-        /**
-         * @deprecated use {@link LongPredicate} instead
-         */
-        @Deprecated
         @Override
-        public abstract boolean accept( long testItem );
+        public abstract boolean test( long testItem );
     }
 
     // Limitinglic
@@ -729,8 +717,7 @@ public class PrimitiveLongCollections
         return set;
     }
 
-    public static <T> Iterator<T> map( final FunctionFromPrimitiveLong<T> mapFunction,
-            final PrimitiveLongIterator source )
+    public static <T> Iterator<T> map( final LongFunction<T> mapFunction, final PrimitiveLongIterator source )
     {
         return new Iterator<T>()
         {
@@ -770,5 +757,126 @@ public class PrimitiveLongCollections
     public static <T> PrimitiveLongObjectMap<T> emptyObjectMap()
     {
         return Empty.EMPTY_PRIMITIVE_LONG_OBJECT_MAP;
+    }
+
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
+     * @param iterator the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<Long>> C addToCollection( PrimitiveLongIterator iterator, C collection )
+    {
+        while ( iterator.hasNext() )
+        {
+            collection.add( iterator.next() );
+        }
+        return collection;
+    }
+
+    /**
+     * Pulls all items from the {@code iterator} and puts them into a {@link List}, boxing each long.
+     *
+     * @param iterator {@link PrimitiveLongIterator} to pull values from.
+     * @return a {@link List} containing all items.
+     */
+    public static List<Long> asList( PrimitiveLongIterator iterator )
+    {
+        List<Long> out = new ArrayList<>();
+        while(iterator.hasNext())
+        {
+            out.add(iterator.next());
+        }
+        return out;
+    }
+
+    @SuppressWarnings("UnusedDeclaration"/*Useful when debugging in tests, but not used outside of debugging sessions*/)
+    public static Iterator<Long> toIterator( final PrimitiveLongIterator primIterator )
+    {
+        return new Iterator<Long>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return primIterator.hasNext();
+            }
+
+            @Override
+            public Long next()
+            {
+                return primIterator.next();
+            }
+
+            @Override
+            public void remove()
+            {
+                throw new UnsupportedOperationException(  );
+            }
+        };
+    }
+
+    /**
+     * Wraps a {@link PrimitiveLongIterator} in a {@link PrimitiveLongResourceIterator} which closes
+     * the provided {@code resource} in {@link PrimitiveLongResourceIterator#close()}.
+     *
+     * @param iterator {@link PrimitiveLongIterator} to convert
+     * @param resource {@link Resource} to close in {@link PrimitiveLongResourceIterator#close()}
+     * @return Wrapped {@link PrimitiveLongIterator}.
+     */
+    public static PrimitiveLongResourceIterator resourceIterator( final PrimitiveLongIterator iterator,
+            final Resource resource )
+    {
+        return new PrimitiveLongResourceIterator()
+        {
+            @Override
+            public void close()
+            {
+                if ( resource != null )
+                {
+                    resource.close();
+                }
+            }
+
+            @Override
+            public long next()
+            {
+                return iterator.next();
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return iterator.hasNext();
+            }
+        };
+    }
+
+    /**
+     * Pulls all items from the {@code iterator} and puts them into a {@link Set}, boxing each long.
+     * Any duplicate value will throw {@link IllegalStateException}.
+     *
+     * @param iterator {@link PrimitiveLongIterator} to pull values from.
+     * @return a {@link Set} containing all items.
+     * @throws IllegalStateException for the first encountered duplicate.
+     */
+    public static Set<Long> toSet( PrimitiveLongIterator iterator )
+    {
+        Set<Long> set = new HashSet<>();
+        while ( iterator.hasNext() )
+        {
+            addUnique( set, iterator.next() );
+        }
+        return set;
+    }
+
+    private static <T, C extends Collection<T>> void addUnique( C collection, T item )
+    {
+        if ( !collection.add( item ) )
+        {
+            throw new IllegalStateException( "Encountered an already added item:" + item +
+                    " when adding items uniquely to a collection:" + collection );
+        }
     }
 }

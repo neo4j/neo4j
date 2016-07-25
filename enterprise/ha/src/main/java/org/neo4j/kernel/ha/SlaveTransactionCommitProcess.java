@@ -29,11 +29,11 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 /**
  * Commit process on slaves in HA. Transactions aren't committed here, but sent to the master, committed
@@ -51,11 +51,17 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
     }
 
     @Override
-    public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent,
+    public long commit( TransactionToApply batch, CommitEvent commitEvent,
                         TransactionApplicationMode mode ) throws TransactionFailureException
     {
+        if ( batch.next() != null )
+        {
+            throw new IllegalArgumentException( "Only supports single-commit on slave --> master" );
+        }
+
         try
         {
+            TransactionRepresentation representation = batch.transactionRepresentation();
             RequestContext context = requestContextFactory.newRequestContext( representation.getLockSessionId() );
             try ( Response<Long> response = master.commit( context, representation ) )
             {
@@ -65,7 +71,7 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
         catch ( IOException e )
         {
             throw new TransactionFailureException(
-                    Status.Transaction.CouldNotCommit, e, "Could not commit transaction on the master" );
+                    Status.Transaction.TransactionCommitFailed, e, "Could not commit transaction on the master" );
         }
         catch ( ComException e )
         {

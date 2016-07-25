@@ -20,11 +20,11 @@
 package org.neo4j.kernel.impl.api.cursor;
 
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Consumer;
-import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.storageengine.api.NodeItem;
 
 /**
  * Overlays transaction state on a {@link NodeItem} cursor.
@@ -61,7 +61,6 @@ public class TxIteratorNodeCursor
             {
                 id = cursor.get().id();
 
-
                 if ( state.nodeIsDeletedInThisTx( id ) )
                 {
                     id = -1;
@@ -89,5 +88,4 @@ public class TxIteratorNodeCursor
             return false;
         }
     }
-
 }

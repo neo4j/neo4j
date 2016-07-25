@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
 
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 
 public class NodePropertyExistenceConstraintRule extends NodePropertyConstraintRule
 {

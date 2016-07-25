@@ -35,6 +35,17 @@ public class Race
     private final List<Contestant> contestants = new ArrayList<>();
     private volatile CountDownLatch readySet;
     private final CountDownLatch go = new CountDownLatch( 1 );
+    private final boolean addSomeMinorRandomStartDelays;
+
+    public Race()
+    {
+        this( false );
+    }
+
+    public Race( boolean addSomeMinorRandomStartDelays )
+    {
+        this.addSomeMinorRandomStartDelays = addSomeMinorRandomStartDelays;
+    }
 
     public void addContestant( Runnable contestant )
     {
@@ -109,7 +120,10 @@ public class Race
                 return;
             }
 
-            randomlyDelaySlightly();
+            if ( addSomeMinorRandomStartDelays )
+            {
+                randomlyDelaySlightly();
+            }
 
             try
             {

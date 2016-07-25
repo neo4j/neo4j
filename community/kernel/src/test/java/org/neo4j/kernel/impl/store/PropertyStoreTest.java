@@ -33,18 +33,21 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.JumpingIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class PropertyStoreTest
 {
@@ -70,14 +73,15 @@ public class PropertyStoreTest
     {
         // given
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
-        Config config = new Config();
-        config.setProperty( PropertyStore.Configuration.rebuild_idgenerators_fast.name(), "true" );
+        Config config =
+                new Config( singletonMap( PropertyStore.Configuration.rebuild_idgenerators_fast.name(), "true" ));
 
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 
         final PropertyStore store = new PropertyStore( path, config, new JumpingIdGeneratorFactory( 1 ), pageCache,
                 NullLogProvider.getInstance(), stringPropertyStore,
-                mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class )  );
+                mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
+                RecordFormatSelector.defaultFormat() );
         store.initialise( true );
 
         try
@@ -97,7 +101,7 @@ public class PropertyStoreTest
                 @Override
                 public Object answer( InvocationOnMock invocation ) throws Throwable
                 {
-                    PropertyRecord recordBeforeWrite = store.forceGetRecord( propertyRecordId );
+                    PropertyRecord recordBeforeWrite = store.getRecord( propertyRecordId, store.newRecord(), FORCE );
                     assertFalse( recordBeforeWrite.inUse() );
                     return null;
                 }
@@ -131,7 +135,6 @@ public class PropertyStoreTest
         propertyBlock.setSingleBlock( key.getId() | (((long) PropertyType.STRING.intValue()) << 24) | (dynamicRecord
                 .getId() << 28) );
         propertyBlock.addValueRecord( dynamicRecord );
-
 
         return propertyBlock;
     }

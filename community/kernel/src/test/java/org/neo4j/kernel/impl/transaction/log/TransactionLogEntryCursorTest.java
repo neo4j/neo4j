@@ -119,3 +119,4 @@ public class TransactionLogEntryCursorTest
         return logEntry;
     }
 }
+

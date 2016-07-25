@@ -21,10 +21,41 @@ package org.neo4j.kernel.impl.storemigration.monitoring;
 
 public interface MigrationProgressMonitor
 {
-    void started();
     /**
-     * @param percent 0..100
+     * Signals that the migration process has started.
      */
-    void percentComplete(int percent);
-    void finished();
+    void started();
+
+    /**
+     * Signals that migration goes into section with given {@code name}.
+     *
+     * @param name descriptive name of the section to migration.
+     * @return {@link Section} which should be notified about progress in the given section.
+     */
+    Section startSection( String name );
+
+    /**
+     * The migration process has completed successfully.
+     */
+    void completed();
+
+    interface Section
+    {
+        /**
+         * @param max max progress, which {@link #progress(long)} moves towards.
+         */
+        void start( long max );
+
+        /**
+         * Percentage completeness for the current section.
+         *
+         * @param add progress to add towards a maximum.
+         */
+        void progress( long add );
+
+        /**
+         * Called if this section was completed successfully.
+         */
+        void completed();
+    }
 }

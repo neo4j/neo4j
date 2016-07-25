@@ -32,8 +32,7 @@ import java.util.Set;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
@@ -42,15 +41,19 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.Token;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil.findTokenFor;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil.replacePropertyKey;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil
+        .findTokenFor;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil
+        .replacePropertyKey;
 
 public class NonIndexedConflictResolverTest
 {
@@ -100,8 +103,7 @@ public class NonIndexedConflictResolverTest
         }
 
         DependencyResolver resolver = api.getDependencyResolver();
-        NeoStoresSupplier neoStoresSupplier = resolver.resolveDependency( NeoStoresSupplier.class );
-        NeoStores neoStores = neoStoresSupplier.get();
+        NeoStores neoStores = resolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         nodeStore = neoStores.getNodeStore();
         propertyStore = neoStores.getPropertyStore();
         propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
@@ -112,10 +114,10 @@ public class NonIndexedConflictResolverTest
         Token tokenD = findTokenFor( propertyKeyTokenStore, propKeyD );
         Token tokenE = findTokenFor( propertyKeyTokenStore, propKeyE );
 
-        replacePropertyKey( propertyStore, nodeStore.getRecord( nodeIdA ), tokenB, tokenA );
-        replacePropertyKey( propertyStore, nodeStore.getRecord( nodeIdB ), tokenB, tokenA );
+        replacePropertyKey( propertyStore, nodeStore.getRecord( nodeIdA, nodeStore.newRecord(), FORCE ), tokenB, tokenA );
+        replacePropertyKey( propertyStore, nodeStore.getRecord( nodeIdB, nodeStore.newRecord(), FORCE ), tokenB, tokenA );
 
-        NodeRecord nodeRecordC = nodeStore.getRecord( nodeIdC );
+        NodeRecord nodeRecordC = nodeStore.getRecord( nodeIdC, nodeStore.newRecord(), FORCE );
         replacePropertyKey( propertyStore, nodeRecordC, tokenB, tokenA );
         replacePropertyKey( propertyStore, nodeRecordC, tokenC, tokenA );
         replacePropertyKey( propertyStore, nodeRecordC, tokenD, tokenA );
@@ -145,12 +147,12 @@ public class NonIndexedConflictResolverTest
     private long addDuplicateCluster( long nodeId, List<DuplicateCluster> clusters )
     {
         DuplicateCluster cluster = new DuplicateCluster( tokenA.id() );
-        long propertyId = nodeStore.getRecord( nodeId ).getNextProp();
+        long propertyId = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE ).getNextProp();
         long headPropertyId = propertyId;
         while ( propertyId != Record.NO_NEXT_PROPERTY.intValue() )
         {
             cluster.add( propertyId );
-            propertyId = propertyStore.getRecord( propertyId ).getNextProp();
+            propertyId = propertyStore.getRecord( propertyId, propertyStore.newRecord(), FORCE ).getNextProp();
         }
         clusters.add( cluster );
         return headPropertyId;
@@ -219,9 +221,10 @@ public class NonIndexedConflictResolverTest
     private Set<Integer> collectPropertyKeyIds( long propertyId )
     {
         Set<Integer> result = new HashSet<>();
+        PropertyRecord record = propertyStore.newRecord();
         while ( propertyId != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord record = propertyStore.getRecord( propertyId );
+            propertyStore.getRecord( propertyId, record, FORCE );
             for ( PropertyBlock propertyBlock : record )
             {
                 int propertyKeyId = propertyBlock.getKeyIndexId();

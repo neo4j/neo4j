@@ -23,11 +23,11 @@ import org.neo4j.graphdb.PropertyContainer;
 
 interface TitleGetter<E extends PropertyContainer>
 {
-	/**
-	 * Get the title for a node or a relationship.
-	 * @param container
-	 *            the node or relationship to get the title for.
-	 * @return the title for the node/relationship.
-	 */
-	String getTitle( E container );
+    /**
+     * Get the title for a node or a relationship.
+     * @param container
+     *            the node or relationship to get the title for.
+     * @return the title for the node/relationship.
+     */
+    String getTitle( E container );
 }

@@ -34,7 +34,7 @@ public class TransactionMetadataCacheTest
     public void shouldReturnNullWhenMissingATxInTheCache()
     {
         // given
-        final TransactionMetadataCache cache = new TransactionMetadataCache( 2, 2 );
+        final TransactionMetadataCache cache = new TransactionMetadataCache( 2 );
 
         // when
         final TransactionMetadataCache.TransactionMetadata metadata = cache.getTransactionMetadata( 42 );
@@ -47,7 +47,7 @@ public class TransactionMetadataCacheTest
     public void shouldReturnTheTxValueTIfInTheCached()
     {
         // given
-        final TransactionMetadataCache cache = new TransactionMetadataCache( 2, 2 );
+        final TransactionMetadataCache cache = new TransactionMetadataCache( 2 );
         final LogPosition position = new LogPosition( 3, 4 );
         final int txId = 42;
         final int masterId = 0;
@@ -69,7 +69,7 @@ public class TransactionMetadataCacheTest
     public void shouldThrowWhenCachingATxWithNegativeOffsetPosition()
     {
         // given
-        final TransactionMetadataCache cache = new TransactionMetadataCache( 2, 2 );
+        final TransactionMetadataCache cache = new TransactionMetadataCache( 2 );
         final LogPosition position = new LogPosition( 3, -1 );
         final int txId = 42;
         final int masterId = 0;
@@ -88,37 +88,10 @@ public class TransactionMetadataCacheTest
     }
 
     @Test
-    public void shouldReturnNegativeNumberWhenThereIsNoHeaderInTheCache()
+    public void shouldClearTheCache()
     {
         // given
-        final TransactionMetadataCache cache = new TransactionMetadataCache( 2, 2 );
-
-        // when
-        final long logHeader = cache.getLogHeader( 5 );
-
-        // then
-        assertEquals( -1, logHeader );
-    }
-
-    @Test
-    public void shouldReturnTheHeaderIfInTheCache()
-    {
-        // given
-        final TransactionMetadataCache cache = new TransactionMetadataCache( 2, 2 );
-
-        // when
-        cache.putHeader( 5, 3 );
-        final long logHeader = cache.getLogHeader( 5 );
-
-        // then
-        assertEquals( 3, logHeader );
-    }
-
-    @Test
-    public void shouldClearTheCaches()
-    {
-        // given
-        final TransactionMetadataCache cache = new TransactionMetadataCache( 2, 2 );
+        final TransactionMetadataCache cache = new TransactionMetadataCache( 2 );
         final LogPosition position = new LogPosition( 3, 4 );
         final int txId = 42;
         final int masterId = 0;
@@ -128,13 +101,10 @@ public class TransactionMetadataCacheTest
 
         // when
         cache.cacheTransactionMetadata( txId, position, masterId, authorId, checksum, timestamp );
-        cache.putHeader( 5, 3 );
         cache.clear();
-        final long logHeader = cache.getLogHeader( 5 );
         final TransactionMetadataCache.TransactionMetadata metadata = cache.getTransactionMetadata( txId );
 
         // then
-        assertEquals( -1, logHeader );
         assertNull( metadata );
     }
 }

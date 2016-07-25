@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
-import org.neo4j.graphdb.DynamicLabel
+import org.neo4j.graphdb.Label
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
 class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport with SoftReset {
@@ -44,7 +44,7 @@ class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
       text = "To delete a node, use the +DELETE+ clause.",
       queryText = "match (n:Useless) delete n",
       optionalResultExplanation = "",
-      prepare = db => db.inTx(db.createNode(DynamicLabel.label("Useless"))),
+      prepare = db => db.inTx(db.createNode(Label.label("Useless"))),
       assertions = p => assertStats(p, nodesDeleted = 1))
   }
 

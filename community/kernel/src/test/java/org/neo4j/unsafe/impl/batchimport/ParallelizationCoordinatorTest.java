@@ -28,7 +28,7 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.test.OtherThreadExecutor.WaitDetails;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.OtherThreadRule;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 public class ParallelizationCoordinatorTest
 {
@@ -121,5 +121,6 @@ public class ParallelizationCoordinatorTest
         };
     }
 
-    public final @Rule OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    @Rule
+    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
 }

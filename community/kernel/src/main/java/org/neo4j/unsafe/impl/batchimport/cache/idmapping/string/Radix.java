@@ -19,12 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+
 import org.neo4j.function.Factory;
-import org.neo4j.register.Register.IntRegister;
 
 import static java.lang.Math.pow;
-
-import static org.neo4j.register.Registers.newIntRegister;
 
 /**
  * Calculates and keeps radix counts. Uses a {@link RadixCalculator} to calculate an integer radix value
@@ -90,12 +89,12 @@ public abstract class Radix
 
     public static class Long extends Radix
     {
-        private final IntRegister radixShift;
+        private final MutableInt radixShift;
         private final RadixCalculator calculator;
 
         public Long()
         {
-            this.radixShift = newIntRegister( 0 );
+            this.radixShift = new MutableInt();
             this.calculator = new RadixCalculator.Long( radixShift );
         }
 
@@ -114,12 +113,12 @@ public abstract class Radix
 
         private void radixOverflow( long val )
         {
-            long shiftVal = ((val & ~RadixCalculator.LENGTH_BITS) >> (RadixCalculator.RADIX_BITS - 1 + radixShift.read()));
+            long shiftVal = ((val & ~RadixCalculator.LENGTH_BITS) >> (RadixCalculator.RADIX_BITS - 1 + radixShift.intValue()));
             if ( shiftVal > 0 )
             {
                 while ( shiftVal > 0 )
                 {
-                    radixShift.increment( 1 );
+                    radixShift.increment();
                     compressRadixIndex();
                     shiftVal = shiftVal >> 1;
                 }

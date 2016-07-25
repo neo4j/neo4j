@@ -26,11 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.Validator;
-
-import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
 
 /**
  * Parses a String[] argument from a main-method. It expects values to be either
@@ -113,16 +112,11 @@ public class Args
         }
     }
 
-    private static final Function<String,Option<String>> DEFAULT_OPTION_PARSER = new Function<String,Option<String>>()
-    {
-        @Override
-        public Option<String> apply( String from )
-        {
-            int metadataStartIndex = from.indexOf( OPTION_METADATA_DELIMITER );
-            return metadataStartIndex == -1
-                    ? new Option<>( from, null )
-                    : new Option<>( from.substring( 0, metadataStartIndex ), from.substring( metadataStartIndex + 1 ) );
-        }
+    private static final Function<String,Option<String>> DEFAULT_OPTION_PARSER = from -> {
+        int metadataStartIndex = from.indexOf( OPTION_METADATA_DELIMITER );
+        return metadataStartIndex == -1
+                ? new Option<>( from, null )
+                : new Option<>( from.substring( 0, metadataStartIndex ), from.substring( metadataStartIndex + 1 ) );
     };
 
     private final String[] args;
@@ -187,7 +181,7 @@ public class Args
         Map<String,String> result = new HashMap<>();
         for ( Map.Entry<String,List<Option<String>>> entry : map.entrySet() )
         {
-            Option<String> value = firstOrNull( entry.getValue() );
+            Option<String> value = Iterables.firstOrNull( entry.getValue() );
             result.put( entry.getKey(), value != null ? value.value() : null );
         }
         return result;
@@ -218,6 +212,11 @@ public class Args
         return values.get( 0 ).value();
     }
 
+    /**
+     * Get a config option by name.
+     * @param key name of the option, without any `-` or `--` prefix, eg. "o".
+     * @return the string value of the option, or null if the user has not specified it
+     */
     public String get( String key )
     {
         return getSingleOptionOrNull( key );
@@ -271,6 +270,10 @@ public class Args
     /**
      * Like calling {@link #getBoolean(String, Boolean, Boolean)} with {@code true} for
      * {@code defaultValueIfNoValue}, i.e. specifying {@code --myarg} will interpret it as {@code true}.
+     *
+     * @param key argument key.
+     * @param defaultValueIfNotSpecified used if argument not specified.
+     * @return argument boolean value depending on what was specified, see above.
      */
     public Boolean getBoolean( String key, Boolean defaultValueIfNotSpecified )
     {
@@ -322,11 +325,21 @@ public class Args
         throw new IllegalArgumentException( "No enum instance '" + raw + "' in " + enumClass.getName() );
     }
 
+    /**
+     * Orphans are arguments specified without options flags, eg:
+     *
+     * <pre>myprogram -o blah orphan1 orphan2</pre>
+     *
+     * Would yield a list here of {@code "orphan1"} and {@code "orphan2"}.
+     *
+     * @return list of orphan arguments
+     */
     public List<String> orphans()
     {
         return new ArrayList<>( this.orphans );
     }
 
+    /** @see #orphans() **/
     public String[] orphansAsArray()
     {
         return orphans.toArray( new String[orphans.size()] );

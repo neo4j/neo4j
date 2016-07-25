@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -165,7 +165,7 @@ public class TestIndexProviderStore
         when( tempChannel = fs.open( file, "rw" ) ).then( new Answer<StoreChannel>()
         {
             @Override
-            public StoreChannel answer( InvocationOnMock _ ) throws Throwable
+            public StoreChannel answer( InvocationOnMock ignored ) throws Throwable
             {
                 StoreChannel channel = fileSystem.open( file, "rw" );
                 if ( channelUsedToCreateFile[0] == null )

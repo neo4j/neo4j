@@ -19,19 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import java.util.Iterator;
-
 import org.junit.Test;
+
+import java.util.Iterator;
 
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.storageengine.api.Token;
 
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertThat;
-
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.Iterators.asCollection;
 
 public class LabelIT extends KernelIntegrationTest
 {

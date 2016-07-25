@@ -41,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.backup.OnlineBackup;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -49,13 +48,13 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.UpdatePuller;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertTrue;
@@ -73,8 +72,8 @@ public class RollingUpgradeIT
 {
     private static final int CLUSTER_SIZE = 3;
 
-    public static final RelationshipType type1 = DynamicRelationshipType.withName( "type1" );
-    public static final RelationshipType type2 = DynamicRelationshipType.withName( "type2" );
+    public static final RelationshipType type1 = RelationshipType.withName( "type1" );
+    public static final RelationshipType type2 = RelationshipType.withName( "type2" );
 
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
@@ -147,7 +146,7 @@ public class RollingUpgradeIT
         ConsistencyCheckService service = new ConsistencyCheckService();
         for ( String storeDir : storeDirs )
         {
-            service.runFullConsistencyCheck( storeDir, new Config(),
+            service.runFullConsistencyCheck( storeDir, Config.defaults(),
                     ProgressMonitorFactory.textual(System.out), StringLogger.SYSTEM );
         }
 */
@@ -315,11 +314,11 @@ public class RollingUpgradeIT
             break;
         }
 
-        startStandaloneDbToRunUpgrade( storeDir, i );
+        startStandaloneDbToRunUpgrade( storeDirFile, i );
 
         // start that db up in this JVM
         newDbs[i] = (GraphDatabaseAPI) new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( storeDir )
+                .newEmbeddedDatabaseBuilder( storeDirFile )
                 .setConfig( config( i ) )
                 .newGraphDatabase();
         debug( "Started " + i + " as current version" );
@@ -356,7 +355,7 @@ public class RollingUpgradeIT
         }
     }
 
-    private void startStandaloneDbToRunUpgrade( String storeDir, int dbIndex )
+    private void startStandaloneDbToRunUpgrade( File storeDir, int dbIndex )
     {
         GraphDatabaseService tempDbForUpgrade = null;
         try

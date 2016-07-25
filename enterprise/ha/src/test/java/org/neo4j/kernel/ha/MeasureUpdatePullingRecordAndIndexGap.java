@@ -28,13 +28,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterRule;
 
@@ -228,7 +227,7 @@ public class MeasureUpdatePullingRecordAndIndexGap
 
     private Label label( int i )
     {
-        return DynamicLabel.label( "Label" + i );
+        return Label.label( "Label" + i );
     }
 
     private void startLoadOn( final GraphDatabaseService db, final AtomicBoolean halter, final AtomicLong[] highIdNodes,

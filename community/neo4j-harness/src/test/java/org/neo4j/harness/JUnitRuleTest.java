@@ -19,56 +19,53 @@
  */
 package org.neo4j.harness;
 
-import java.util.List;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.model.Statement;
 
-import org.neo4j.function.Function;
-import org.neo4j.graphdb.DynamicLabel;
+import java.util.List;
+
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4jRule;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.test.SuppressOutput;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.test.TargetDirectory.testDirForTest;
+import static org.neo4j.server.ServerTestUtils.getRelativePath;
+import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
+import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class JUnitRuleTest
 {
     @Rule
+    public TargetDirectory.TestDirectory testDirectory = testDirForTest( getClass() );
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
     public Neo4jRule neo4j = new Neo4jRule()
             .withFixture( "CREATE (u:User)" )
-            .withFixture( new Function<GraphDatabaseService, Void>()
-            {
-                @Override
-                public Void apply( GraphDatabaseService graphDatabaseService ) throws RuntimeException
+            .withConfig( ServerSettings.certificates_directory.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.certificates_directory ) )
+            .withFixture( graphDatabaseService -> {
+                try ( Transaction tx = graphDatabaseService.beginTx() )
                 {
-                    try ( Transaction tx = graphDatabaseService.beginTx() )
-                    {
-                        graphDatabaseService.createNode( DynamicLabel.label( "User" ));
-                        tx.success();
-                    }
-                    return null;
+                    graphDatabaseService.createNode( Label.label( "User" ) );
+                    tx.success();
                 }
+                return null;
             } )
             .withExtension( "/test", MyUnmanagedExtension.class );
-
-    @Rule
-    public TargetDirectory.TestDirectory testDirectory = testDirForTest( getClass() );
-
-    @Rule public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldExtensionWork() throws Exception
@@ -78,7 +75,7 @@ public class JUnitRuleTest
         // When I run this test
 
         // Then
-        assertThat( HTTP.GET( neo4j.httpURI().resolve("test/myExtension").toString() ).status(), equalTo( 234 ) );
+        assertThat( HTTP.GET( neo4j.httpURI().resolve( "test/myExtension" ).toString() ).status(), equalTo( 234 ) );
     }
 
     @Test
@@ -92,7 +89,7 @@ public class JUnitRuleTest
         HTTP.Response response = HTTP.POST( neo4j.httpURI().toString() + "db/data/transaction/commit",
                 quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
-        assertThat( response.get( "results" ).get(0).get("data").size(), equalTo(2));
+        assertThat( response.get( "results" ).get( 0 ).get( "data" ).size(), equalTo( 2 ) );
     }
 
     @Test
@@ -103,7 +100,7 @@ public class JUnitRuleTest
         // When I run this test
 
         // Then
-        assertEquals( 2, IteratorUtil.count(
+        assertEquals( 2, Iterators.count(
                 neo4j.getGraphDatabaseService().execute( "MATCH (n:User) RETURN n" )
         ) );
     }
@@ -113,10 +110,14 @@ public class JUnitRuleTest
     {
         // given
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.absolutePath() );
+        GraphDatabaseService db = new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( testDirectory.directory() )
+                .newGraphDatabase();
         try {
             db.execute( "create ()" );
-        } finally {
+        }
+        finally
+        {
             db.shutdown();
         }
 
@@ -129,11 +130,11 @@ public class JUnitRuleTest
             {
                 // Then the database is not empty
                 Result result = ruleWithDirectory.getGraphDatabaseService().execute( "match (n) return count(n) as " +
-                        "count" );
+                                                                                     "count" );
 
-                List<Object> column = IteratorUtil.asList( result.columnAs( "count" ) );
-                assertEquals(1, column.size());
-                assertEquals(1, column.get(0));
+                List<Object> column = Iterators.asList( result.columnAs( "count" ) );
+                assertEquals( 1, column.size() );
+                assertEquals( 1, column.get( 0 ) );
             }
         }, null );
     }

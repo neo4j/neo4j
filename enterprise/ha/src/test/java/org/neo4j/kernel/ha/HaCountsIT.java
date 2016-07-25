@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -34,7 +33,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.ha.ClusterRule;
@@ -43,11 +42,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.register.Registers.newDoubleLongRegister;
-import static org.neo4j.tooling.GlobalGraphOperations.at;
 
 public class HaCountsIT
 {
-    private static final Label LABEL = DynamicLabel.label( "label" );
+    private static final Label LABEL = Label.label( "label" );
     private static final String PROPERTY_NAME = "prop";
     private static final String PROPERTY_VALUE = "value";
 
@@ -82,7 +80,7 @@ public class HaCountsIT
 
         try ( Transaction tx = master.beginTx() )
         {
-            for ( Node node : at( master ).getAllNodes() )
+            for ( Node node : master.getAllNodes() )
             {
                 for ( Relationship relationship : node.getRelationships() )
                 {
@@ -223,7 +221,8 @@ public class HaCountsIT
 
     private CountsTracker counts( HighlyAvailableGraphDatabase db )
     {
-        return db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+        return db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                .testAccessNeoStores().getCounts();
     }
 
     private Statement statement( HighlyAvailableGraphDatabase db )

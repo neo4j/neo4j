@@ -30,7 +30,7 @@ import org.neo4j.helpers.collection.ArrayIterator;
  */
 public abstract class PropertyTypeDispatcher<K, T>
 {
-    public static abstract class PropertyArray<A, T> implements Iterable<T>
+    public abstract static class PropertyArray<A, T> implements Iterable<T>
     {
         private PropertyArray()
         {
@@ -55,10 +55,10 @@ public abstract class PropertyTypeDispatcher<K, T>
     @SuppressWarnings( "boxing" )
     public final T dispatch( Object property, K param )
     {
-        if( property == null) 
+        if( property == null)
         {
             return dispatchNullProperty( param );
-        } else if ( property instanceof String ) 
+        } else if ( property instanceof String )
         {
             return dispatchStringProperty( (String) property, param );
         }
@@ -213,7 +213,7 @@ public abstract class PropertyTypeDispatcher<K, T>
     protected T dispatchNullProperty( K param ) {
         return null;
     }
-    
+
     @SuppressWarnings( "boxing" )
     protected abstract T dispatchByteProperty( byte property, K param );
 
@@ -237,7 +237,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     @SuppressWarnings( "boxing" )
     protected abstract T dispatchBooleanProperty( boolean property, K param );
-    
+
     protected T dispatchOtherProperty( Object property, K param) {
         throw new IllegalArgumentException( "Unsupported property type: "
                 + property.getClass() );
@@ -688,7 +688,7 @@ public abstract class PropertyTypeDispatcher<K, T>
         throw new UnsupportedOperationException( "Unhandled array type: " + array.getType() );
     }
 
-    private static abstract class BoxedArray<A, T> extends PropertyArray<A, T>
+    private abstract static class BoxedArray<A, T> extends PropertyArray<A, T>
     {
         private final T[] array;
 
@@ -716,7 +716,7 @@ public abstract class PropertyTypeDispatcher<K, T>
         }
     }
 
-    private static abstract class PrimitiveArray<A, T> extends PropertyArray<A, T>
+    private abstract static class PrimitiveArray<A, T> extends PropertyArray<A, T>
     {
         @Override
         public Iterator<T> iterator()

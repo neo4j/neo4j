@@ -41,6 +41,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
@@ -277,12 +279,9 @@ public class FileUtils
     {
         //noinspection ResultOfMethodCallIgnored
         dstFile.getParentFile().mkdirs();
-        FileInputStream input = null;
-        FileOutputStream output = null;
-        try
+        try ( FileInputStream input = new FileInputStream( srcFile );
+              FileOutputStream output = new FileOutputStream( dstFile ); )
         {
-            input = new FileInputStream( srcFile );
-            output = new FileOutputStream( dstFile );
             int bufferSize = 1024;
             byte[] buffer = new byte[bufferSize];
             int bytesRead;
@@ -295,17 +294,6 @@ public class FileUtils
         {
             // Because the message from this cause may not mention which file it's about
             throw new IOException( "Could not copy '" + srcFile + "' to '" + dstFile + "'", e );
-        }
-        finally
-        {
-            if ( input != null )
-            {
-                input.close();
-            }
-            if ( output != null )
-            {
-                output.close();
-            }
         }
     }
 
@@ -340,7 +328,7 @@ public class FileUtils
             target.createNewFile();
         }
 
-        try ( Writer out = new OutputStreamWriter( new FileOutputStream( target, append ), "UTF-8" ) )
+        try ( Writer out = new OutputStreamWriter( new FileOutputStream( target, append ), StandardCharsets.UTF_8 ) )
         {
             out.write( text );
         }
@@ -560,6 +548,32 @@ public class FileUtils
     public static InputStream openAsInputStream( Path path ) throws IOException
     {
         return Files.newInputStream( path, READ );
+    }
+
+    /**
+     * Check if directory is empty.
+     * @param directory - directory to check
+     * @return false if directory exists and empty, true otherwise.
+     * @throws IllegalArgumentException if specified directory represent a file
+     * @throws IOException if some problem encountered during reading directory content
+     */
+    public static boolean isEmptyDirectory( File directory ) throws IOException
+    {
+        if ( directory.exists() )
+        {
+            if ( !directory.isDirectory() )
+            {
+                throw new IllegalArgumentException( "Expected directory, but was file: " + directory );
+            }
+            else
+            {
+                try ( DirectoryStream<Path> directoryStream = Files.newDirectoryStream( directory.toPath() ) )
+                {
+                    return !directoryStream.iterator().hasNext();
+                }
+            }
+        }
+        return true;
     }
 
     public static OutputStream openAsOutputStream( Path path, boolean append ) throws IOException

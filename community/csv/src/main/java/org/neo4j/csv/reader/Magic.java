@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,9 +50,9 @@ public class Magic
     /** A couple of BOM magics */
     public static final Magic BOM_UTF_32_BE = define( "BOM_UTF_32_BE", forName( "UTF-32" ), 0x0, 0x0, 0xFE, 0xFF );
     public static final Magic BOM_UTF_32_LE = define( "BOM_UTF_32_LE", forName( "UTF-32" ), 0xFF, 0xFE, 0x0, 0x0 );
-    public static final Magic BOM_UTF_16_BE = define( "BOM_UTF_16_BE", forName( "UTF-16" ), 0xFE, 0xFF );
-    public static final Magic BOM_UTF_16_LE = define( "BOM_UTF_16_LE", forName( "UTF-16" ), 0xFF, 0xFE );
-    public static final Magic BOM_UTF_8 = define( "BOM_UTF8", forName( "UTF-8" ), 0xEF, 0xBB, 0xBF );
+    public static final Magic BOM_UTF_16_BE = define( "BOM_UTF_16_BE", StandardCharsets.UTF_16BE, 0xFE, 0xFF );
+    public static final Magic BOM_UTF_16_LE = define( "BOM_UTF_16_LE", StandardCharsets.UTF_16LE, 0xFF, 0xFE );
+    public static final Magic BOM_UTF_8 = define( "BOM_UTF8", StandardCharsets.UTF_8, 0xEF, 0xBB, 0xBF );
 
     /**
      * Defines a magic signature which can later be detected in {@link #of(File)} and {@link #of(byte[])}.

@@ -43,13 +43,13 @@ import org.neo4j.kernel.ha.cluster.DefaultConversationSPI;
 import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
 import org.neo4j.kernel.ha.com.master.MasterImpl.SPI;
 import org.neo4j.kernel.impl.locking.Locks.Client;
-import org.neo4j.kernel.impl.locking.Locks.ResourceType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.OtherThreadRule;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -65,6 +65,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 public class MasterImplTest
 {
@@ -106,7 +107,7 @@ public class MasterImplTest
         MasterImpl instance = new MasterImpl( spi, mock(
                 ConversationManager.class ), mock( MasterImpl.Monitor.class ), config );
         instance.start();
-        HandshakeResult handshake = instance.handshake( 1, new StoreId() ).response();
+        HandshakeResult handshake = instance.handshake( 1, newStoreIdForCurrentVersion() ).response();
 
         // When
         try
@@ -135,7 +136,7 @@ public class MasterImplTest
 
         MasterImpl instance = new MasterImpl( spi, conversationManager, mock( MasterImpl.Monitor.class ), config );
         instance.start();
-        Response<HandshakeResult> response = instance.handshake( 1, new StoreId() );
+        Response<HandshakeResult> response = instance.handshake( 1, newStoreIdForCurrentVersion() );
         HandshakeResult handshake = response.response();
 
         // When
@@ -169,15 +170,15 @@ public class MasterImplTest
     public void shouldNotEndLockSessionWhereThereIsAnActiveLockAcquisition() throws Throwable
     {
         // GIVEN
-        final CountDownLatch latch = new CountDownLatch( 1 );
+        CountDownLatch latch = new CountDownLatch( 1 );
         try
         {
             Client client = newWaitingLocksClient( latch );
-            final MasterImpl master = newMasterWithLocksClient( client );
-            HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
+            MasterImpl master = newMasterWithLocksClient( client );
+            HandshakeResult handshake = master.handshake( 1, newStoreIdForCurrentVersion() ).response();
 
             // WHEN
-            final RequestContext context = new RequestContext( handshake.epoch(), 1, 2, 0, 0 );
+            RequestContext context = new RequestContext( handshake.epoch(), 1, 2, 0, 0 );
             master.newLockSession( context );
             Future<Void> acquireFuture = otherThread.execute( new WorkerCommand<Void,Void>()
             {
@@ -208,15 +209,15 @@ public class MasterImplTest
     public void shouldStopLockSessionOnFailureWhereThereIsAnActiveLockAcquisition() throws Throwable
     {
         // GIVEN
-        final CountDownLatch latch = new CountDownLatch( 1 );
+        CountDownLatch latch = new CountDownLatch( 1 );
         try
         {
             Client client = newWaitingLocksClient( latch );
-            final MasterImpl master = newMasterWithLocksClient( client );
-            HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
+            MasterImpl master = newMasterWithLocksClient( client );
+            HandshakeResult handshake = master.handshake( 1, newStoreIdForCurrentVersion() ).response();
 
             // WHEN
-            final RequestContext context = new RequestContext( handshake.epoch(), 1, 2, 0, 0 );
+            RequestContext context = new RequestContext( handshake.epoch(), 1, 2, 0, 0 );
             master.newLockSession( context );
             Future<Void> acquireFuture = otherThread.execute( new WorkerCommand<Void,Void>()
             {
@@ -289,7 +290,7 @@ public class MasterImplTest
 
         MasterImpl master = new MasterImpl( spi, conversationManager, mock( MasterImpl.Monitor.class ), config );
         master.start();
-        HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
+        HandshakeResult handshake = master.handshake( 1, newStoreIdForCurrentVersion() ).response();
 
         RequestContext ctx = new RequestContext( handshake.epoch(), 1, 2, 0, 0 );
 
@@ -324,7 +325,7 @@ public class MasterImplTest
 
         MasterImpl master = new MasterImpl( spi, conversationManager, mock( MasterImpl.Monitor.class ), config );
         master.start();
-        HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
+        HandshakeResult handshake = master.handshake( 1, newStoreIdForCurrentVersion() ).response();
 
         int no_lock_session = -1;
         RequestContext ctx = new RequestContext( handshake.epoch(), 1, no_lock_session, 0, 0 );
@@ -353,7 +354,7 @@ public class MasterImplTest
         when( spi.isAccessible() ).thenReturn( true );
         when( conversationSpi.acquireClient() ).thenReturn( client );
         master.start();
-        HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
+        HandshakeResult handshake = master.handshake( 1, newStoreIdForCurrentVersion() ).response();
         RequestContext requestContext = new RequestContext( handshake.epoch(), machineId, 0, 0, 0);
 
         // When
@@ -385,7 +386,8 @@ public class MasterImplTest
         verifyNoMoreInteractions( conversationManager );
     }
 
-    public final @Rule OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
+    @Rule
+    public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     private Config config( int lockReadTimeout )
     {

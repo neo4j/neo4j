@@ -22,12 +22,13 @@ package org.neo4j.kernel.api.properties;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.storageengine.api.StorageProperty;
 
 public class PropertyKeyIdIterator implements PrimitiveIntIterator
 {
-    private final Iterator<? extends Property> properties;
+    private final Iterator<? extends StorageProperty> properties;
 
-    public PropertyKeyIdIterator( Iterator<? extends Property> properties )
+    public PropertyKeyIdIterator( Iterator<? extends StorageProperty> properties )
     {
         this.properties = properties;
     }
@@ -41,6 +42,6 @@ public class PropertyKeyIdIterator implements PrimitiveIntIterator
     @Override
     public int next()
     {
-        return properties.next().propertyKeyId;
+        return properties.next().propertyKeyId();
     }
 }

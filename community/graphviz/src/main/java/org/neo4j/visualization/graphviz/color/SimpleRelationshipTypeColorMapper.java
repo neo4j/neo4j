@@ -33,7 +33,7 @@ public class SimpleRelationshipTypeColorMapper implements
 
     /**
      * Map relationship types represented as strings to colors.
-     * 
+     *
      * @param mappings relationship type names to color mappings
      */
     public SimpleRelationshipTypeColorMapper( Map<String, Color> mappings )

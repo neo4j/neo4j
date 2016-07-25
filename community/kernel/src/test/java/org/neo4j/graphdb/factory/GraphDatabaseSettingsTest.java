@@ -41,7 +41,7 @@ public class GraphDatabaseSettingsTest
     @Test
     public void mustHaveReasonableDefaultPageCacheMemorySizeInBytes() throws Exception
     {
-        long bytes = new Config().get( GraphDatabaseSettings.pagecache_memory );
+        long bytes = Config.defaults().get( GraphDatabaseSettings.pagecache_memory );
         assertThat( bytes, greaterThanOrEqualTo( ByteUnit.mebiBytes( 32 ) ) );
         assertThat( bytes, lessThanOrEqualTo( ByteUnit.tebiBytes( 1 ) ) );
     }
@@ -58,7 +58,7 @@ public class GraphDatabaseSettingsTest
     @Test( expected = InvalidSettingException.class )
     public void pageCacheSettingMustRejectOverlyConstrainedMemorySetting() throws Exception
     {
-        long pageSize = new Config().get( GraphDatabaseSettings.mapped_memory_page_size );
+        long pageSize = Config.defaults().get( GraphDatabaseSettings.mapped_memory_page_size );
         Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
         String name = setting.name();
         // We configure the page cache to have one byte less than two pages worth of memory. This must throw:

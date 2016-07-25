@@ -19,12 +19,9 @@
  */
 package org.neo4j.jmx.impl;
 
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Hashtable;
-
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -32,11 +29,13 @@ import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.ManagementInterface;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.internal.KernelData;
+
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
 public class ManagementSupport
 {
-    final static ManagementSupport load()
+    static final ManagementSupport load()
     {
         ManagementSupport support = new ManagementSupport();
         for ( ManagementSupport candidate : Service.load( ManagementSupport.class ) )

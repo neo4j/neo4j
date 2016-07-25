@@ -24,7 +24,6 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -46,7 +45,7 @@ import static org.mockito.Mockito.when;
 public class NodeProxySingleRelationshipTest
 {
     private static final long REL_ID = 1;
-    private static final RelationshipType loves = DynamicRelationshipType.withName( "LOVES" );
+    private static final RelationshipType loves = RelationshipType.withName( "LOVES" );
 
     /**
      * This behaviour is a workaround until we have proper concurrency support in the kernel.
@@ -80,7 +79,7 @@ public class NodeProxySingleRelationshipTest
             node.getSingleRelationship( loves, Direction.OUTGOING );
             fail("expected exception");
         }
-        catch ( NotFoundException expected )
+        catch ( NotFoundException ignored )
         {
         }
     }
@@ -97,7 +96,7 @@ public class NodeProxySingleRelationshipTest
             node.getSingleRelationship( loves, Direction.OUTGOING );
             fail();
         }
-        catch ( NotFoundException expected )
+        catch ( NotFoundException ignored )
         {
         }
     }
@@ -106,14 +105,6 @@ public class NodeProxySingleRelationshipTest
     {
         NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
         final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
-        when( nodeActions.newRelationshipProxy( anyLong() ) ).thenAnswer( new Answer<RelationshipProxy>()
-        {
-            @Override
-            public RelationshipProxy answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new RelationshipProxy( relActions, (Long)invocation.getArguments()[0] );
-            }
-        } );
         when( nodeActions.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) ).then(
                 new Answer<Relationship>()
                 {

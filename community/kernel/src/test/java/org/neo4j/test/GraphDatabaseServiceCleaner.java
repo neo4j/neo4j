@@ -25,7 +25,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 public class GraphDatabaseServiceCleaner
 {
@@ -52,12 +51,12 @@ public class GraphDatabaseServiceCleaner
 
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+            for ( Relationship relationship : db.getAllRelationships() )
             {
                 relationship.delete();
             }
 
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 node.delete();
             }

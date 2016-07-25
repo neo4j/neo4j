@@ -30,15 +30,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.kernel.api.index.ParameterizedSuiteRunner;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.OtherThreadRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.test.runner.ParameterizedSuiteRunner;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.test.OtherThreadRule.isWaiting;
+import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
 
 /** Base for locking tests. */
 @RunWith(ParameterizedSuiteRunner.class)
@@ -54,7 +56,7 @@ public abstract class LockingCompatibilityTestSuite
 {
     protected abstract Locks createLockManager();
 
-    public static abstract class Compatibility
+    public abstract static class Compatibility
     {
         @Rule
         public OtherThreadRule<Void> threadA = new OtherThreadRule<>();
@@ -137,7 +139,7 @@ public abstract class LockingCompatibilityTestSuite
 
         protected LockCommand acquireExclusive(
                 final Locks.Client client,
-                final Locks.ResourceType resourceType,
+                final ResourceType resourceType,
                 final long key )
         {
             return new LockCommand(clientToThreadMap.get( client ), client)
@@ -152,7 +154,7 @@ public abstract class LockingCompatibilityTestSuite
 
         protected LockCommand acquireShared(
                 Locks.Client client,
-                final Locks.ResourceType resourceType,
+                final ResourceType resourceType,
                 final long key )
         {
             return new LockCommand(clientToThreadMap.get( client ), client)
@@ -167,7 +169,7 @@ public abstract class LockingCompatibilityTestSuite
 
         protected LockCommand release(
                 final Locks.Client client,
-                final Locks.ResourceType resourceType,
+                final ResourceType resourceType,
                 final long key )
         {
             return new LockCommand(clientToThreadMap.get( client ), client)

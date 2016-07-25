@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.locking;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
-import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
+import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.storageengine.api.lock.WaitStrategy;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
 
-public enum ResourceTypes implements Locks.ResourceType
+public enum ResourceTypes implements ResourceType
 {
     NODE        (0, LockWaitStrategies.INCREMENTAL_BACKOFF),
     RELATIONSHIP(1, LockWaitStrategies.INCREMENTAL_BACKOFF),
@@ -39,16 +39,9 @@ public enum ResourceTypes implements Locks.ResourceType
     INDEX_ENTRY (4, LockWaitStrategies.INCREMENTAL_BACKOFF),
 
     LEGACY_INDEX(5, LockWaitStrategies.INCREMENTAL_BACKOFF),
-
-    /**
-     * Procedure lock is used to keep multiple actors from creating procedures with conflicting names.
-     * Dropping procedures is done with the protection of an exclusive schema lock, meaning procedure creation
-     * is expected to be done holding both this lock and a shared schema lock.
-     */
-    PROCEDURE   (6, LockWaitStrategies.INCREMENTAL_BACKOFF)
     ;
 
-    private final static Map<Integer, Locks.ResourceType> idToType = new HashMap<>();
+    private static final Map<Integer, ResourceType> idToType = new HashMap<>();
     static
     {
         for ( ResourceTypes resourceTypes : ResourceTypes.values() )
@@ -61,7 +54,7 @@ public enum ResourceTypes implements Locks.ResourceType
 
     private final WaitStrategy waitStrategy;
 
-    private ResourceTypes( int typeId, WaitStrategy waitStrategy )
+    ResourceTypes( int typeId, WaitStrategy waitStrategy )
     {
         this.typeId = typeId;
         this.waitStrategy = waitStrategy;
@@ -107,11 +100,6 @@ public enum ResourceTypes implements Locks.ResourceType
         // concern.
     }
 
-    public static long procedureResourceId( ProcedureName procedureName )
-    {
-        return procedureName.name().hashCode();
-    }
-
     private static int hash( long value )
     {
         return DEFAULT_HASHING.hash( value );
@@ -119,15 +107,15 @@ public enum ResourceTypes implements Locks.ResourceType
 
     public static long graphPropertyResource()
     {
-        return 0l;
+        return 0L;
     }
 
     public static long schemaResource()
     {
-        return 0l;
+        return 0L;
     }
 
-    public static Locks.ResourceType fromId( int typeId )
+    public static ResourceType fromId( int typeId )
     {
         return idToType.get( typeId );
     }

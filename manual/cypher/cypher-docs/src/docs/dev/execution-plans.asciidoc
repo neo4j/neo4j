@@ -31,9 +31,9 @@ include::execution-plan-groups/starting-query.asciidoc[]
 
 include::execution-plan-groups/expand.asciidoc[]
 
-:leveloffset: 1
+:leveloffset: 2
 
-include::execution-plan-groups/combining.asciidoc[]
+include::execution-plan-groups/combining-operators.adoc[]
 
 :leveloffset: 1
 
@@ -42,3 +42,8 @@ include::execution-plan-groups/row.asciidoc[]
 :leveloffset: 1
 
 include::execution-plan-groups/update.asciidoc[]
+
+:leveloffset: 2
+
+include::execution-plan-groups/query-shortestpath-planning.adoc[]
+

@@ -21,15 +21,13 @@ package org.neo4j.io.pagecache.randomharness;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 public class StandardRecordFormat extends RecordFormat
 {
-    private static final Charset CHARSET = Charset.forName( "UTF-8" );
-
     @Override
     public int getRecordSize()
     {
@@ -78,9 +76,10 @@ public class StandardRecordFormat extends RecordFormat
     public void write( Record record, PageCursor cursor )
     {
         StandardRecord r = (StandardRecord) record;
+        byte[] pathBytes = r.file.getPath().getBytes( StandardCharsets.UTF_8 );
+        byte fileByte = pathBytes[pathBytes.length - 1];
         cursor.putByte( r.type );
-        byte[] pathBytes = r.file.getPath().getBytes( CHARSET );
-        cursor.putByte( pathBytes[pathBytes.length - 1] );
+        cursor.putByte( fileByte );
         cursor.putShort( r.fill1 );
         cursor.putInt( r.recordId );
         cursor.putLong( r.fill2 );
@@ -149,8 +148,8 @@ public class StandardRecordFormat extends RecordFormat
                 return false;
             }
             // We only look at the last letter of the path, because that's all that we can store in the record.
-            byte[] thisPath = file.getPath().getBytes( CHARSET );
-            byte[] thatPath = record.file.getPath().getBytes( CHARSET );
+            byte[] thisPath = file.getPath().getBytes( StandardCharsets.UTF_8 );
+            byte[] thatPath = record.file.getPath().getBytes( StandardCharsets.UTF_8 );
             return thisPath[thisPath.length - 1] == thatPath[thatPath.length - 1];
         }
 

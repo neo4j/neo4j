@@ -24,21 +24,20 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.CombiningIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
 public class ConfigurationParser
@@ -46,13 +45,13 @@ public class ConfigurationParser
     @SuppressWarnings( "unchecked" )
     public ConfigurationParser( File configFile, String... format )
     {
-        this( IteratorUtil.asIterable( new CombiningIterator<String>( Arrays.asList(
+        this( Iterators.asIterable( new CombiningIterator<String>( Arrays.asList(
                 new LineIterator( configFile ), new ArrayIterator<String>( format ) ) ) ) );
     }
 
     public ConfigurationParser( String... format )
     {
-        this( IteratorUtil.asIterable( new ArrayIterator<String>( format ) ) );
+        this( Iterators.asIterable( new ArrayIterator<String>( format ) ) );
     }
 
     public ConfigurationParser( Iterable<String> format )
@@ -76,7 +75,7 @@ public class ConfigurationParser
                     try
                     {
                         method = type.getMethod( name, String.class );
-                        args = new String[] { parts[1] };
+                        args = new String[]{parts[1]};
                     }
                     catch ( NoSuchMethodException nsm )
                     {
@@ -126,7 +125,10 @@ public class ConfigurationParser
 
     public final StyleParameter[] styles( StyleParameter... params )
     {
-        if ( params == null ) params = new StyleParameter[0];
+        if ( params == null )
+        {
+            params = new StyleParameter[0];
+        }
         StyleParameter[] result = styles.toArray( new StyleParameter[styles.size() + params.length] );
         System.arraycopy( params, 0, result, styles.size(), params.length );
         return result;
@@ -159,11 +161,13 @@ public class ConfigurationParser
     public void nodePropertyFilter( String nodeProperties )
     {
         final String nodePropertiesString = nodeProperties;
-        styles.add( new StyleParameter.NodePropertyFilter() {
-          public boolean acceptProperty(String key) {
-            return Arrays.asList(nodePropertiesString.split(",")).contains(key);
-          }
-        });
+        styles.add( new StyleParameter.NodePropertyFilter()
+        {
+            public boolean acceptProperty( String key )
+            {
+                return Arrays.asList( nodePropertiesString.split( "," ) ).contains( key );
+            }
+        } );
     }
 
     public void reverseOrder( String... typeNames )
@@ -172,7 +176,7 @@ public class ConfigurationParser
         RelationshipType[] types = new RelationshipType[typeNames.length];
         for ( int i = 0; i < typeNames.length; i++ )
         {
-            types[i] = DynamicRelationshipType.withName( typeNames[i] );
+            types[i] = RelationshipType.withName( typeNames[i] );
         }
         styles.add( new StyleParameter.ReverseOrderRelationshipTypes( types ) );
     }
@@ -242,18 +246,18 @@ public class ConfigurationParser
             {
                 if ( container instanceof Node )
                 {
-                    return "" + ( (Node) container ).getId();
+                    return "" + ((Node) container).getId();
                 }
                 else if ( container instanceof Relationship )
                 {
-                    return "" + ( (Relationship) container ).getId();
+                    return "" + ((Relationship) container).getId();
                 }
             }
             else if ( attribute.equals( "type" ) )
             {
                 if ( container instanceof Relationship )
                 {
-                    return ( (Relationship) container ).getType().name();
+                    return ((Relationship) container).getType().name();
                 }
             }
             return "@" + attribute;
@@ -278,15 +282,12 @@ public class ConfigurationParser
         {
             try
             {
-                return new BufferedReader( new InputStreamReader( new FileInputStream( file ), "UTF-8" ) );
+                return new BufferedReader(
+                        new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) );
             }
             catch ( FileNotFoundException e )
             {
                 return null;
-            }
-            catch ( UnsupportedEncodingException e )
-            {
-                throw new RuntimeException( e );
             }
         }
 

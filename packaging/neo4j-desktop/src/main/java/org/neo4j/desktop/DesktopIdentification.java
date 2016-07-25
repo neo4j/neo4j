@@ -23,6 +23,6 @@ public final class DesktopIdentification
 {
     public static void register()
     {
-        System.setProperty( "neo4j.ext.udc.source", "desktop" );
+        System.setProperty( "unsupported.dbms.udc.source", "desktop" );
     }
 }

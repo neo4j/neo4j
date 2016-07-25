@@ -14,22 +14,3 @@ See link:javadocs/deprecated-list.html[Deprecated list in Javadoc].
 
 Graph Matching::
 The graph-matching component will be removed in future releases.
-
-Windows scripts::
-The `.bat` files used to operate the database and tools on Windows are being phased out and will be removed in future releases, in favor of modern, equivalent PowerShell scripts.
-For more information, see <<powershell>>.
-
-`STR()` function::
-The `STR()` function is deprecated from Neo4j version 2.3 and onwards.
-
-`HAS()` function::
-The `HAS()` function is deprecated from Neo4j version 2.3 and onwards.
-Please use `EXISTS()` instead.
-
-Bare node patterns::
-The usage of node identifiers without enclosing them in parentheses, such as in `MATCH n-->m RETURN n.prop`, is deprecated from Neo4j version 2.3 and onwards.
-Please use `MATCH (n)-->(m) RETURN n.prop` instead.
-
-Create nodes from a parameter list of maps::
-The syntax `CREATE (:X {param})`, where `param` is a list of maps, is deprecated in Neo4j version 2.3 and onwards.
-To achieve the same functionality, use +UNWIND+ instead: `UNWIND {param} as props CREATE (n:X) SET n = props`

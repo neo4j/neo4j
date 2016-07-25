@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.kernel.impl.api.store.PropertyBlockCursor;
+
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
 
 /**
  * PropertyRecord is a container for PropertyBlocks. PropertyRecords form
@@ -36,17 +38,32 @@ import org.neo4j.kernel.impl.api.store.PropertyBlockCursor;
  * variable length, a full PropertyRecord can be holding just one
  * PropertyBlock.
  */
-public class PropertyRecord extends Abstract64BitRecord implements Iterable<PropertyBlock>, Iterator<PropertyBlock>
+public class PropertyRecord extends AbstractBaseRecord implements Iterable<PropertyBlock>, Iterator<PropertyBlock>
 {
-    private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
-    private long prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
+    private static final byte TYPE_NODE = 1;
+    private static final byte TYPE_REL = 2;
+
+    private long nextProp;
+    private long prevProp;
+    // Holds the purely physical representation of the loaded properties in this record. This is so that
+    // StorePropertyCursor is able to use this raw data without the rather heavy and bloated data structures
+    // of PropertyBlock and thereabouts. So when a property record is loaded only these blocks are read,
+    // the construction of all PropertyBlock instances are loaded lazile when they are first needed, loaded
+    // by ensureBlocksLoaded().
+    // Modifications to a property record are still done on the PropertyBlock abstraction and so it's also
+    // that data that gets written to the log and record when it's time to do so.
+    private final long[] blocks = new long[PropertyType.getPayloadSizeLongs()];
+    private int blocksCursor;
+
+    // These MUST ONLY be populated if we're accessing PropertyBlocks. On just loading this record only the
+    // next/prev and blocks should be filled.
     private final PropertyBlock[] blockRecords =
             new PropertyBlock[PropertyType.getPayloadSizeLongs() /*we can have at most these many*/];
+    private boolean blocksLoaded;
     private int blockRecordsCursor;
-    private long entityId = -1;
-    private Boolean nodeIdSet;
+    private long entityId;
+    private byte entityType;
     private List<DynamicRecord> deletedRecords;
-    private String malformedMessage;
 
     // state for the Iterator aspect of this class.
     private int blockRecordsIteratorCursor;
@@ -60,30 +77,53 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
     public PropertyRecord( long id, PrimitiveRecord primitive )
     {
         super( id );
-        setCreated();
         primitive.setIdTo( this );
+    }
+
+    public PropertyRecord initialize( boolean inUse, long prevProp, long nextProp )
+    {
+        super.initialize( inUse );
+        this.prevProp = prevProp;
+        this.nextProp = nextProp;
+        this.deletedRecords = null;
+        this.blockRecordsCursor = blocksCursor = 0;
+        this.blocksLoaded = false;
+        return this;
+    }
+
+    @Override
+    public void clear()
+    {
+        super.initialize( false );
+        this.entityId = -1;
+        this.entityType = 0;
+        this.prevProp = NO_PREVIOUS_PROPERTY.intValue();
+        this.nextProp = NO_NEXT_PROPERTY.intValue();
+        this.deletedRecords = null;
+        this.blockRecordsCursor = blocksCursor = 0;
+        this.blocksLoaded = false;
     }
 
     public void setNodeId( long nodeId )
     {
-        nodeIdSet = true;
+        entityType = TYPE_NODE;
         entityId = nodeId;
     }
 
     public void setRelId( long relId )
     {
-        nodeIdSet = false;
+        entityType = TYPE_REL;
         entityId = relId;
     }
 
     public boolean isNodeSet()
     {
-        return Boolean.TRUE.equals( nodeIdSet );
+        return entityType == TYPE_NODE;
     }
 
     public boolean isRelSet()
     {
-        return Boolean.FALSE.equals( nodeIdSet );
+        return entityType == TYPE_REL;
     }
 
     public long getNodeId()
@@ -109,6 +149,7 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
      */
     public int size()
     {
+        ensureBlocksLoaded();
         int result = 0;
         for ( int i = 0; i < blockRecordsCursor; i++ )
         {
@@ -119,12 +160,14 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
 
     public int numberOfProperties()
     {
+        ensureBlocksLoaded();
         return blockRecordsCursor;
     }
 
     @Override
     public Iterator<PropertyBlock> iterator()
     {
+        ensureBlocksLoaded();
         blockRecordsIteratorCursor = 0;
         canRemoveFromIterator = false;
         return this;
@@ -180,27 +223,37 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
 
     public void addPropertyBlock( PropertyBlock block )
     {
-        if ( size() + block.getSize() > PropertyType.getPayloadSize() )
-        {
-            malformedMessage = "Exceeded capacity of PropertyRecord[" + getId() + "]. " +
-                               "PropertyRecord size is " + size() + ". " +
-                               "The added block of type " + block.forceGetType() + " has size " + block.getSize();
-        }
+        ensureBlocksLoaded();
+        assert size() + block.getSize() <= PropertyType.getPayloadSize() :
+                "Exceeded capacity of property record " + this
+                + ". My current size is reported as " + size() + "The added block was " + block +
+                " (note that size is " + block.getSize() + ")";
 
         blockRecords[blockRecordsCursor++] = block;
     }
 
-    public void verifyRecordIsWellFormed()
+    /**
+     * Reads blocks[] and constructs {@link PropertyBlock} instances from them, making that abstraction
+     * available to the outside. Done the first time any PropertyBlock is needed or manipulated.
+     */
+    private void ensureBlocksLoaded()
     {
-        if ( malformedMessage != null )
+        if ( !blocksLoaded )
         {
-            throw new InvalidRecordException( malformedMessage );
+            assert blockRecordsCursor == 0;
+            // We haven't loaded the blocks yet, please do so now
+            int index = 0;
+            while ( index < blocksCursor )
+            {
+                PropertyType type = PropertyType.getPropertyTypeOrThrow( blocks[index] );
+                PropertyBlock block = new PropertyBlock();
+                int length = type.calculateNumberOfBlocksUsed( blocks[index] );
+                block.setValueBlocks( Arrays.copyOfRange( blocks, index, index + length ) );
+                blockRecords[blockRecordsCursor++] = block;
+                index += length;
+            }
+            blocksLoaded = true;
         }
-    }
-
-    public void setMalformedMessage( String message )
-    {
-        malformedMessage = message;
     }
 
     public void setPropertyBlock( PropertyBlock block )
@@ -211,6 +264,7 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
 
     public PropertyBlock getPropertyBlock( int keyIndex )
     {
+        ensureBlocksLoaded();
         for ( int i = 0; i < blockRecordsCursor; i++ )
         {
             PropertyBlock block = blockRecords[i];
@@ -224,6 +278,7 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
 
     public PropertyBlock removePropertyBlock( int keyIndex )
     {
+        ensureBlocksLoaded();
         for ( int i = 0; i < blockRecordsCursor; i++ )
         {
             if ( blockRecords[i].getKeyIndexId() == keyIndex )
@@ -260,21 +315,32 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
         StringBuilder buf = new StringBuilder();
         buf.append( "Property[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",prev=" ).append(
                 prevProp ).append( ",next=" ).append( nextProp );
+
         if ( entityId != -1 )
         {
-            buf.append( nodeIdSet ? ",node=" : ",rel=" ).append( entityId );
+            buf.append( entityType == TYPE_NODE? ",node=" : ",rel=" ).append( entityId );
         }
-        for ( int i = 0; i < blockRecordsCursor; i++ )
+
+        if ( blocksLoaded )
         {
-            buf.append( ',' ).append( blockRecords[i] );
+            for ( int i = 0; i < blockRecordsCursor; i++ )
+            {
+                buf.append( ',' ).append( blockRecords[i] );
+            }
         }
+        else
+        {
+            buf.append( ", (blocks not loaded)" );
+        }
+
         if ( deletedRecords != null )
         {
             for ( DynamicRecord dyn : deletedRecords )
             {
-                buf.append( ",del:" ).append( dyn );
+                buf.append( ", del:" ).append( dyn );
             }
         }
+
         buf.append( "]" );
         return buf.toString();
     }
@@ -297,17 +363,19 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
     @Override
     public PropertyRecord clone()
     {
-        PropertyRecord result = new PropertyRecord( getLongId() );
-        result.setInUse( inUse() );
+        PropertyRecord result = (PropertyRecord) new PropertyRecord( getId() ).initialize( inUse() );
         result.nextProp = nextProp;
         result.prevProp = prevProp;
         result.entityId = entityId;
-        result.nodeIdSet = nodeIdSet;
+        result.entityType = entityType;
+        System.arraycopy( blocks, 0, result.blocks, 0, blocks.length );
+        result.blocksCursor = blocksCursor;
         for ( int i = 0; i < blockRecordsCursor; i++ )
         {
             result.blockRecords[i] = blockRecords[i].clone();
         }
         result.blockRecordsCursor = blockRecordsCursor;
+        result.blocksLoaded = blocksLoaded;
         if ( deletedRecords != null )
         {
             for ( DynamicRecord deletedRecord : deletedRecords )
@@ -318,10 +386,24 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
         return result;
     }
 
-    public PropertyBlockCursor getPropertyBlockCursor(PropertyBlockCursor cursor)
+    public long[] getBlocks()
     {
-        cursor.init(blockRecords, blockRecordsCursor);
+        return blocks;
+    }
 
-        return cursor;
+    public void addLoadedBlock( long block )
+    {
+        assert blocksCursor + 1 <= blocks.length : "Capacity of " + blocks.length + " exceeded";
+        blocks[blocksCursor++] = block;
+    }
+
+    public int getBlockCapacity()
+    {
+        return blocks.length;
+    }
+
+    public int getNumberOfBlocks()
+    {
+        return blocksCursor;
     }
 }

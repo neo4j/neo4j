@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
+import org.neo4j.storageengine.api.CommandReaderFactory;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.EMPTY_ADDITIONAL_ARRAY;
 
@@ -35,8 +35,8 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     EMPTY
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
-                        LogPositionMarker marker, CommandReader commandReader ) throws IOException
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
+                        LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
                     return null;
@@ -58,8 +58,8 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     TX_PREPARE
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
-                        LogPositionMarker marker, CommandReader commandReader ) throws IOException
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
+                        LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
                     // we ignore this we do not this in the new log format, just parse data to be skipped in the
@@ -86,8 +86,8 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     TX_START
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
-                        LogPositionMarker marker, CommandReader commandReader ) throws IOException
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
+                        LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
                     LogPosition position = marker.newPosition();
@@ -127,12 +127,12 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     COMMAND
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
-                        LogPositionMarker marker, CommandReader commandReader ) throws IOException
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
+                        LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
                     int identifier = channel.getInt();
-                    Command command = commandReader.read( channel );
+                    StorageCommand command = commandReader.byVersion( version.byteCode() ).read( channel );
                     return command == null
                             ? null
                             : new IdentifiableLogEntry( new LogEntryCommand( version, command ), identifier );
@@ -153,8 +153,8 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     DONE
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
-                        LogPositionMarker marker, CommandReader commandReader ) throws IOException
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
+                        LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
                     // we ignore this we do not this in the new log format, just parse data to be skipped in the
@@ -179,8 +179,8 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     TX_1P_COMMIT
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
-                        LogPositionMarker marker, CommandReader commandReader ) throws IOException
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
+                        LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
                     int identifier = channel.getInt();
@@ -204,8 +204,8 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     TX_2P_COMMIT
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
-                        LogPositionMarker marker, CommandReader commandReader ) throws IOException
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
+                        LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
                     int identifier = channel.getInt();

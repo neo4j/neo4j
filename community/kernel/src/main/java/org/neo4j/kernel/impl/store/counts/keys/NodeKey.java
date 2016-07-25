@@ -32,6 +32,11 @@ public final class NodeKey implements CountsKey
         this.labelId = labelId;
     }
 
+    public int getLabelId()
+    {
+        return labelId;
+    }
+
     @Override
     public String toString()
     {

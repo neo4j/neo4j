@@ -22,6 +22,6 @@ package org.neo4j.collection.primitive;
 public interface PrimitiveLongIterator
 {
     boolean hasNext();
-    
+
     long next();
 }

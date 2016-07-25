@@ -20,6 +20,10 @@
 package org.neo4j.test;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -27,16 +31,18 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.AbstractLogService;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -61,10 +67,10 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return newImpermanentDatabaseBuilder( storeDir ).newGraphDatabase();
     }
 
-    public GraphDatabaseService newImpermanentDatabase( Map<Setting<?>, String> config )
+    public GraphDatabaseService newImpermanentDatabase( Map<Setting<?>,String> config )
     {
         GraphDatabaseBuilder builder = newImpermanentDatabaseBuilder();
-        for ( Map.Entry<Setting<?>, String> entry : config.entrySet() )
+        for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
         {
             builder.setConfig( entry.getKey(), entry.getValue() );
         }
@@ -76,12 +82,13 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return newImpermanentDatabaseBuilder( ImpermanentGraphDatabase.PATH );
     }
 
-    @Override
-    protected void configure( GraphDatabaseBuilder builder )
+    private void configure( GraphDatabaseBuilder builder, File storeDir )
     {
         super.configure( builder );
         // Reduce the default page cache memory size to 8 mega-bytes for test databases.
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
+        builder.setConfig( GraphDatabaseSettings.auth_store, tempFile( "auth" ).toString() );
+        builder.setConfig( GraphDatabaseSettings.logs_directory, new File( storeDir, "logs" ).getAbsolutePath() );
     }
 
     @Override
@@ -107,7 +114,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return this;
     }
 
-    public GraphDatabaseFactory setMonitors( Monitors monitors )
+    public TestGraphDatabaseFactory setMonitors( Monitors monitors )
     {
         getCurrentState().setMonitors( monitors );
         return this;
@@ -125,16 +132,21 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return this;
     }
 
-    @Override
     public TestGraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
     {
-        return (TestGraphDatabaseFactory) super.addKernelExtensions( newKernelExtensions );
+        getCurrentState().addKernelExtensions( newKernelExtensions );
+        return this;
     }
 
-    @Override
     public TestGraphDatabaseFactory addKernelExtension( KernelExtensionFactory<?> newKernelExtension )
     {
-        return (TestGraphDatabaseFactory) super.addKernelExtension( newKernelExtension );
+        return addKernelExtensions( Collections.singletonList( newKernelExtension ) );
+    }
+
+    public TestGraphDatabaseFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    {
+        getCurrentState().setKernelExtensions( newKernelExtensions );
+        return this;
     }
 
     @Override
@@ -149,31 +161,33 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         GraphDatabaseBuilder.DatabaseCreator creator =
                 createImpermanentDatabaseCreator( storeDir, state );
         TestGraphDatabaseBuilder builder = createImpermanentGraphDatabaseBuilder( creator );
-        configure( builder );
+        configure( builder, storeDir );
         return builder;
     }
 
-    protected TestGraphDatabaseBuilder createImpermanentGraphDatabaseBuilder(
+    private TestGraphDatabaseBuilder createImpermanentGraphDatabaseBuilder(
             GraphDatabaseBuilder.DatabaseCreator creator )
     {
         return new TestGraphDatabaseBuilder( creator );
     }
 
     protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
-                                                                                     final TestGraphDatabaseFactoryState state )
+            final TestGraphDatabaseFactoryState state )
     {
         return new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
-            @SuppressWarnings("deprecation")
-            public GraphDatabaseService newDatabase( Map<String, String> config )
+            @SuppressWarnings( "deprecation" )
+            public GraphDatabaseService newDatabase( Map<String,String> config )
             {
-                return new CommunityFacadeFactory()
+                return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
                     @Override
-                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                    protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+                            Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                     {
-                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, databaseInfo,
+                                dependencies, graphDatabaseFacade )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()
@@ -190,12 +204,12 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                             }
 
                             @Override
-                            protected LogService createLogService(LogProvider logProvider)
+                            protected LogService createLogService( LogProvider logProvider )
                             {
                                 final LogProvider internalLogProvider = state.getInternalLogProvider();
                                 if ( internalLogProvider == null )
                                 {
-                                    return super.createLogService(logProvider);
+                                    return super.createLogService( logProvider );
                                 }
 
                                 final LogProvider userLogProvider = state.databaseDependencies().userLogProvider();
@@ -217,8 +231,22 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 
                         };
                     }
-                }.newFacade( storeDir, config, GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+                }.newFacade( storeDir, config,
+                        GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
             }
         };
+    }
+
+    private Path tempFile( String name )
+    {
+        try
+        {
+            return Files.createTempFile( name, "tmp" );
+
+        }
+        catch ( IOException e )
+        {
+            throw new AssertionError( e );
+        }
     }
 }

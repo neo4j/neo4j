@@ -23,8 +23,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 
 /**
@@ -50,7 +50,6 @@ public class DependenciesProxy
                 new ProxyHandler(dependencyResolver) );
     }
 
-
     private static class ProxyHandler
             implements InvocationHandler
     {
@@ -69,7 +68,8 @@ public class DependenciesProxy
                 if (method.getReturnType().equals( Supplier.class ))
                 {
                     return dependencyResolver.provideDependency( (Class)((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0] );
-                } else
+                }
+                else
                 {
                     return dependencyResolver.resolveDependency( method.getReturnType() );
                 }

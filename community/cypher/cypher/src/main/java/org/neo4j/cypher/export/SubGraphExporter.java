@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
 
 public class SubGraphExporter
@@ -50,12 +49,32 @@ public class SubGraphExporter
 
     public void export( PrintWriter out )
     {
-        appendIndexes( out );
-        appendConstraints( out );
-        appendNodes( out );
-        appendRelationships( out );
+        export(out, null, null);
     }
 
+    public void export( PrintWriter out, String begin, String commit )
+    {
+        output( out, begin );
+        appendIndexes( out );
+        appendConstraints( out );
+        output( out, commit, begin );
+        long nodes = appendNodes( out );
+        long relationships = appendRelationships( out );
+        if ( nodes + relationships > 0 )
+        {
+            out.println( ";" );
+        }
+        output( out, commit );
+    }
+
+    private void output( PrintWriter out, String ... commands )
+    {
+        for ( String command : commands )
+        {
+            if ( command == null ) continue;
+            out.println( command );
+        }
+    }
     private Collection<String> exportIndexes()
     {
         final List<String> result = new ArrayList<>();
@@ -66,8 +85,7 @@ public class SubGraphExporter
                 Iterator<String> propertyKeys = index.getPropertyKeys().iterator();
                 if ( !propertyKeys.hasNext() )
                 {
-                    throw new ThisShouldNotHappenError( "Chris",
-                            "indexes should have at least one property key" );
+                    throw new IllegalStateException( "Indexes should have at least one property key" );
                 }
                 String key = quote( propertyKeys.next() );
                 if ( propertyKeys.hasNext() )
@@ -96,8 +114,7 @@ public class SubGraphExporter
             Iterator<String> propertyKeys = constraint.getPropertyKeys().iterator();
             if ( !propertyKeys.hasNext() )
             {
-                throw new ThisShouldNotHappenError( "Chris",
-                        "constraints should have at least one property key" );
+                throw new IllegalStateException( "Constraints should have at least one property key" );
             }
             String key = quote( propertyKeys.next() );
             if ( propertyKeys.hasNext() )
@@ -143,7 +160,8 @@ public class SubGraphExporter
     {
         for ( String line : exportIndexes() )
         {
-            out.println( line );
+            out.print( line );
+            out.println( ";" );
         }
     }
 
@@ -151,39 +169,46 @@ public class SubGraphExporter
     {
         for ( String line : exportConstraints() )
         {
-            out.println( line );
+            out.print( line );
+            out.println( ";" );
         }
     }
 
-    private void appendRelationships( PrintWriter out )
+    private long appendRelationships( PrintWriter out )
     {
+        long relationships = 0;
         for ( Node node : graph.getNodes() )
         {
             for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
             {
                 appendRelationship( out, rel );
+                relationships++;
             }
         }
+        return relationships;
     }
 
     private void appendRelationship( PrintWriter out, Relationship rel )
     {
-        out.print( "create " );
+        out.print( "create (" );
         out.print( identifier( rel.getStartNode() ) );
-        out.print( "-[:" );
+        out.print( ")-[:" );
         out.print( quote( rel.getType().name() ) );
         formatProperties( out, rel );
-        out.print( "]->" );
+        out.print( "]->(" );
         out.print( identifier( rel.getEndNode() ) );
-        out.println();
+        out.println( ")" );
     }
 
-    private void appendNodes( PrintWriter out )
+    private long appendNodes( PrintWriter out )
     {
+        long nodes = 0;
         for ( Node node : graph.getNodes() )
         {
             appendNode( out, node );
+            nodes++;
         }
+        return nodes;
     }
 
     private void appendNode( PrintWriter out, Node node )
@@ -213,7 +238,7 @@ public class SubGraphExporter
     private String formatProperties( PropertyContainer pc )
     {
         StringBuilder result = new StringBuilder();
-        List<String> keys = Iterables.toList( pc.getPropertyKeys() );
+        List<String> keys = Iterables.asList( pc.getPropertyKeys() );
         Collections.sort( keys );
         for ( String prop : keys )
         {

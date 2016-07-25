@@ -26,9 +26,12 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Function;
+import org.neo4j.cursor.Cursor;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -38,9 +41,14 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.api.Kernel;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.NodeItem;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
@@ -51,49 +59,14 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class KernelIT extends KernelIntegrationTest
 {
     // TODO: Split this into area-specific tests, see PropertyIT.
 
-    /**
-     * While we transition ownership from the Beans API to the Kernel API for core database
-     * interactions, there will be a bit of a mess. Our first goal is an architecture like this:
-     * <p>
-     * Users
-     * /    \
-     * Beans API   Cypher
-     * \    /
-     * Kernel API
-     * |
-     * Kernel Implementation
-     * <p>
-     * But our current intermediate architecture looks like this:
-     * <p>
-     * Users
-     * /        \
-     * Beans API <--- Cypher
-     * |    \    /
-     * |  Kernel API
-     * |      |
-     * Kernel Implementation
-     * <p>
-     * Meaning Kernel API and Beans API both manipulate the underlying kernel, causing lots of corner cases. Most
-     * notably, those corner cases are related to Transactions, and the interplay between three transaction APIs:
-     * - The Beans API
-     * - The JTA Transaction Manager API
-     * - The Kernel TransactionContext API
-     * <p>
-     * In the long term, the goal is for JTA compliant stuff to live outside of the kernel, as an addon. The Kernel
-     * API will rule supreme over the land of transactions. We are a long way away from there, however, so as a first
-     * intermediary step, the JTA transaction manager rules supreme, and the Kernel API piggybacks on it.
-     * <p>
-     * This test shows us how to use both the Kernel API and the Beans API together in the same transaction,
-     * during the transition phase.
-     */
     @Test
     public void mixingBeansApiWithKernelAPI() throws Exception
     {
@@ -116,15 +89,6 @@ public class KernelIT extends KernelIntegrationTest
         // 5: Commit through the beans API
         transaction.success();
         transaction.close();
-
-
-        // NOTE: Transactions are still thread-bound right now, because we use JTA to "own" transactions,
-        // meaning if you use
-        // both the Kernel API to create transactions while a Beans API transaction is running in the same
-        // thread, the results are undefined.
-
-        // When the Kernel API implementation is done, the Kernel API transaction implementation is not meant
-        // to be bound to threads.
     }
 
     @Test
@@ -146,29 +110,32 @@ public class KernelIT extends KernelIntegrationTest
     public void changesInTransactionContextShouldBeRolledBackWhenTxIsRolledBack() throws Exception
     {
         // GIVEN
-        Transaction tx = db.beginTx();
-        Statement statement = statementContextSupplier.get();
+        Node node;
+        int labelId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Statement statement = statementContextSupplier.get();
 
-        // WHEN
-        Node node = db.createNode();
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
-        statement.close();
-        tx.close();
+            // WHEN
+            node = db.createNode();
+            labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
+            statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
+            statement.close();
+        }
 
         // THEN
-        tx = db.beginTx();
-        statement = statementContextSupplier.get();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
-            statement.readOperations().nodeHasLabel( node.getId(), labelId );
-            fail( "should have thrown exception" );
+            try ( Statement statement = statementContextSupplier.get() )
+            {
+                statement.readOperations().nodeHasLabel( node.getId(), labelId );
+                fail( "should have thrown exception" );
+            }
+            catch ( EntityNotFoundException e )
+            {
+                // Yay!
+            }
         }
-        catch ( EntityNotFoundException e )
-        {
-            // Yay!
-        }
-
     }
 
     @Test
@@ -234,7 +201,8 @@ public class KernelIT extends KernelIntegrationTest
         // THEN
         tx = db.beginTx();
         statement = statementContextSupplier.get();
-        assertEquals( asSet( labelId1 ), asSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
+        assertEquals( asSet( labelId1 ),
+                PrimitiveIntCollections.toSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
         tx.close();
 
     }
@@ -255,7 +223,8 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertFalse( statement.readOperations().nodeHasLabel( node.getId(), labelId2 ) );
-        assertEquals( asSet( labelId1 ), asSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
+        assertEquals( asSet( labelId1 ),
+                PrimitiveIntCollections.toSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
 
         statement.close();
         tx.success();
@@ -286,7 +255,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         PrimitiveIntIterator labelsIterator = statement.readOperations().nodeGetLabels( node.getId() );
-        Set<Integer> labels = asSet( labelsIterator );
+        Set<Integer> labels = PrimitiveIntCollections.toSet( labelsIterator );
         assertFalse( statement.readOperations().nodeHasLabel( node.getId(), labelId2 ) );
         assertEquals( asSet( labelId1 ), labels );
         statement.close();
@@ -307,7 +276,6 @@ public class KernelIT extends KernelIntegrationTest
         tx.success();
         tx.close();
 
-
         // WHEN
         tx = db.beginTx();
         statement = statementContextSupplier.get();
@@ -325,7 +293,7 @@ public class KernelIT extends KernelIntegrationTest
         tx.success();
         tx.close();
 
-        assertThat( asSet( labels ), equalTo( Collections.<Integer>emptySet() ) );
+        assertThat( PrimitiveIntCollections.toSet( labels ), equalTo( Collections.<Integer>emptySet() ) );
     }
 
     @Test
@@ -456,7 +424,7 @@ public class KernelIT extends KernelIntegrationTest
             // Ok
         }
 
-        Set<Long> nodes = asSet( statement.readOperations().nodesGetForLabel( labelId ) );
+        Set<Long> nodes = PrimitiveLongCollections.toSet( statement.readOperations().nodesGetForLabel( labelId ) );
 
         statement.close();
 
@@ -487,7 +455,7 @@ public class KernelIT extends KernelIntegrationTest
         Statement statement = statementContextSupplier.get();
         int labelId = statement.readOperations().labelGetForName( label.name() );
         PrimitiveLongIterator nodes = statement.readOperations().nodesGetForLabel( labelId );
-        Set<Long> nodeSet = asSet( nodes );
+        Set<Long> nodeSet = PrimitiveLongCollections.toSet( nodes );
         tx.success();
         tx.close();
 
@@ -544,16 +512,119 @@ public class KernelIT extends KernelIntegrationTest
         assumeThat(kernel, instanceOf( Kernel.class ));
 
         // Then
-        try ( KernelTransaction tx = kernel.newTransaction() )
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ ) )
         {
             ((Kernel)kernel).stop();
-            tx.acquireStatement().readOperations().nodeExists( 0l );
+            tx.acquireStatement().readOperations().nodeExists( 0L );
             fail("Should have been terminated.");
         }
         catch( TransactionTerminatedException e )
         {
             // Success
         }
+    }
+
+    @Test
+    public void txReturnsCorrectIdWhenCommitted() throws Exception
+    {
+        executeDummyTxs( db, 42 );
+
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            statement.dataWriteOperations().nodeCreate();
+        }
+        tx.success();
+
+        long previousCommittedTxId = lastCommittedTxId( db );
+
+        assertEquals( previousCommittedTxId + 1, tx.closeTransaction() );
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void txReturnsCorrectIdWhenRolledBack() throws Exception
+    {
+        executeDummyTxs( db, 42 );
+
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            statement.dataWriteOperations().nodeCreate();
+        }
+        tx.failure();
+
+        assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void txReturnsCorrectIdWhenMarkedForTermination() throws Exception
+    {
+        executeDummyTxs( db, 42 );
+
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            statement.dataWriteOperations().nodeCreate();
+        }
+        tx.markForTermination( Status.Transaction.Terminated );
+
+        assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void txReturnsCorrectIdWhenFailedlAndMarkedForTermination() throws Exception
+    {
+        executeDummyTxs( db, 42 );
+
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            statement.dataWriteOperations().nodeCreate();
+        }
+        tx.failure();
+        tx.markForTermination( Status.Transaction.Terminated );
+
+        assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void txReturnsCorrectIdWhenReadOnly() throws Exception
+    {
+        executeDummyTxs( db, 42 );
+
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        try ( Statement statement = tx.acquireStatement();
+              Cursor<NodeItem> cursor = statement.readOperations().nodeCursor( 1 ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.close();
+        }
+        tx.success();
+
+        assertEquals( KernelTransaction.READ_ONLY, tx.closeTransaction() );
+        assertFalse( tx.isOpen() );
+    }
+
+    private static void executeDummyTxs( GraphDatabaseService db, int count )
+    {
+        for ( int i = 0; i < count; i++ )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.createNode();
+                tx.success();
+            }
+        }
+    }
+
+    private static long lastCommittedTxId( GraphDatabaseAPI db )
+    {
+        TransactionIdStore txIdStore = db.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        return txIdStore.getLastCommittedTransactionId();
     }
 
     private IndexDescriptor createIndex( SchemaWriteOperations schemaWriteOperations ) throws SchemaKernelException
@@ -567,14 +638,7 @@ public class KernelIT extends KernelIntegrationTest
         try ( Transaction tx = db.beginTx() )
         {
             Statement statement = statementContextSupplier.get();
-            String state = statement.readOperations().schemaStateGetOrCreate( key, new Function<String,String>()
-            {
-                @Override
-                public String apply( String s )
-                {
-                    return maybeSetThisState;
-                }
-            } );
+            String state = statement.readOperations().schemaStateGetOrCreate( key, s -> maybeSetThisState );
             tx.success();
             return state;
         }
@@ -586,14 +650,9 @@ public class KernelIT extends KernelIntegrationTest
         {
             Statement statement = statementContextSupplier.get();
             final AtomicBoolean result = new AtomicBoolean( true );
-            statement.readOperations().schemaStateGetOrCreate( key, new Function<String,Object>()
-            {
-                @Override
-                public Object apply( String s )
-                {
-                    result.set( false );
-                    return null;
-                }
+            statement.readOperations().schemaStateGetOrCreate( key, s -> {
+                result.set( false );
+                return null;
             } );
             tx.success();
             return result.get();

@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 public interface DynamicRecordAllocator
 {
-    int dataSize();
+    int getRecordDataSize();
 
     DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst );
 }

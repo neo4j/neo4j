@@ -80,7 +80,7 @@ public class WeightedPathImpl implements WeightedPath
     {
         return path.nodes();
     }
-    
+
     @Override
     public Iterable<Node> reverseNodes()
     {
@@ -91,7 +91,7 @@ public class WeightedPathImpl implements WeightedPath
     {
         return path.relationships();
     }
-    
+
     @Override
     public Iterable<Relationship> reverseRelationships()
     {

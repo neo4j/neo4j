@@ -23,13 +23,13 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandReader;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 public class LogEntryParserV2_1Test
 {
     private final LogEntryVersion version = LogEntryVersion.V2_1;
-    private final CommandReader commandReader = version.newCommandReader();
+    private final CommandReaderFactory commandReader = new RecordStorageCommandReaderFactory();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 37 );
 
@@ -48,7 +48,7 @@ public class LogEntryParserV2_1Test
     {
         // given
         final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, 4, new byte[]{}, position );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         // ignored part
         channel.put( (byte) 1 ); // globalId length
@@ -84,7 +84,7 @@ public class LogEntryParserV2_1Test
     {
         // given
         final LogEntryCommit commit = new OnePhaseCommit( version, 42, 21 );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         // ignored data
         channel.putInt( 123 ); // identifier
@@ -108,7 +108,7 @@ public class LogEntryParserV2_1Test
     {
         // given
         final LogEntryCommit commit = new OnePhaseCommit( version, 42, 21 );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         // ignored data
         channel.putInt( 123 ); // identifier
@@ -131,15 +131,14 @@ public class LogEntryParserV2_1Test
     public void shouldParseCommandsUsingAGivenFactory() throws IOException
     {
         // given
-        final Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( new NodeRecord( 0 ), new NodeRecord( 0 ) );
+        final Command.NodeCommand nodeCommand = new Command.NodeCommand( new NodeRecord( 0 ), new NodeRecord( 0 ) );
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         // ignored data
         channel.putInt( 123 ); // identifier
         // actual read data
-        new CommandWriter( channel ).visitNodeCommand( nodeCommand );
+        nodeCommand.serialize( channel );
 
         channel.getCurrentPosition( marker );
 
@@ -157,7 +156,7 @@ public class LogEntryParserV2_1Test
     {
         // when
         final LogEntryParser<LogEntry> parser = version.entryParser( LogEntryByteCodes.EMPTY );
-        final LogEntry logEntry = parser.parse( version, new InMemoryLogChannel(), marker, commandReader );
+        final LogEntry logEntry = parser.parse( version, new InMemoryClosableChannel(), marker, commandReader );
 
         // then
         assertNull( logEntry );
@@ -169,7 +168,7 @@ public class LogEntryParserV2_1Test
     {
         // given
         final byte nextByte = (byte) 7;
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
         // ignored
         channel.putInt( 123 ); // identifier
         channel.putLong( 456 ); // timeWritten
@@ -193,7 +192,7 @@ public class LogEntryParserV2_1Test
     {
         // given
         final byte nextByte = (byte) 7;
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
         // ignored
         channel.putInt( 123 ); // identifier
         // data available after

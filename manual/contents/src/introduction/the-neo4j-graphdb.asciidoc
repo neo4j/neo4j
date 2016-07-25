@@ -193,7 +193,7 @@ The supported property values are:
 * Numeric values,
 * String values,
 * Boolean values,
-* Collections of any other type of value.
+* Lists of any other type of value.
 
 [NOTE]
 .`NULL` is not a valid property value.

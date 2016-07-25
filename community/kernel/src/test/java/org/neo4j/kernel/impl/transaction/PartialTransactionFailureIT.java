@@ -19,40 +19,43 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -71,7 +74,7 @@ public class PartialTransactionFailureIT
     {
         final ClassGuardedAdversary adversary = new ClassGuardedAdversary(
                 new CountingAdversary( 1, false ),
-                "org.neo4j.kernel.impl.nioneo.xa.Command$RelationshipCommand" );
+                Command.RelationshipCommand.class );
         adversary.disable();
 
         File storeDir = dir.graphDbDir();
@@ -81,12 +84,12 @@ public class PartialTransactionFailureIT
             @Override
             protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
-                new CommunityFacadeFactory()
+                new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
                     @Override
                     protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                     {
-                        return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                        return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()
@@ -95,10 +98,9 @@ public class PartialTransactionFailureIT
                             }
                         };
                     }
-                }.newFacade( storeDir, params, dependencies, this );
+                }.initFacade( storeDir, params, dependencies, this );
             }
         };
-
 
         Node a, b, c, d;
         try ( Transaction tx = db.beginTx() )
@@ -182,7 +184,7 @@ public class PartialTransactionFailureIT
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    x.createRelationshipTo( y, DynamicRelationshipType.withName( "r" ) );
+                    x.createRelationshipTo( y, RelationshipType.withName( "r" ) );
                     tx.success();
                     latch.await();
                     db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();

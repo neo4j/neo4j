@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2015 "Neo Technology,"
+# Copyright (c) 2002-2016 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # This file is part of Neo4j.
@@ -25,39 +25,29 @@ Stop a Neo4j Server Windows Service
 Stop a Neo4j Server Windows Service
 
 .PARAMETER Neo4jServer
-An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
-
-.PARAMETER ServiceName
-The name of the Neo4j Server service.  If no name is specified, the name is determined from the Neo4j Configuration files (default)
-
-.PARAMETER PassThru
-Pass through the Neo4j Server object instead of the result of the stop operation
+An object representing a valid Neo4j Server object
 
 .EXAMPLE
-'C:\Neo4j\neo4j-enterprise' | Stop-Neo4jServer
+Stop-Neo4jServer -Neo4jServer $ServerObject
 
-Stop the Neo4j Server Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise'
+Stop the Neo4j Windows Windows Service for the Neo4j installation at $ServerObject
 
 .OUTPUTS
-System.Management.Automation.PSCustomObject
-Neo4j Server object
+System.Int32
+0 = Service was stopped and not running
+non-zero = an error occured
 
-System.ServiceProcess.ServiceController
-Windows Service object
+.NOTES
+This function is private to the powershell module
 
 #>
 Function Stop-Neo4jServer
 {
   [cmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Medium')]
   param (
-    [Parameter(Mandatory=$false,ValueFromPipeline=$true)]
-    [object]$Neo4jServer = ''
+    [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
+    [PSCustomObject]$Neo4jServer
 
-    ,[Parameter(Mandatory=$false)]
-    [switch]$PassThru   
-    
-    ,[Parameter(Mandatory=$false)]
-    [string]$ServiceName = ''
   )
   
   Begin
@@ -66,40 +56,19 @@ Function Stop-Neo4jServer
 
   Process
   {
-    # Get the Neo4j Server information
-    if ($Neo4jServer -eq $null) { $Neo4jServer = '' }
-    switch ($Neo4jServer.GetType().ToString())
-    {
-      'System.Management.Automation.PSCustomObject'
-      {
-        if (-not (Confirm-Neo4jServerObject -Neo4jServer $Neo4jServer))
-        {
-          Write-Error "The specified Neo4j Server object is not valid"
-          return
-        }
-        $thisServer = $Neo4jServer
-      }      
-      default
-      {
-        $thisServer = Get-Neo4jServer -Neo4jHome $Neo4jServer
-      }
-    }
-    if ($thisServer -eq $null) { return }
+    $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
+
+    Write-Verbose "Stopping the service.  This can take some time..."
+    $result = Stop-Service -Name $ServiceName -PassThru -ErrorAction Stop
     
-    if ($ServiceName -eq '')
-    {
-      $setting = ($thisServer | Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'wrapper.name')
-      if ($setting -ne $null) { $ServiceName = $setting.Value }
+    if ($result.Status -eq 'Stopped') {
+      Write-Host "Neo4j windows service stopped"
+      return 0
     }
-
-    if ($ServiceName -eq '')
-    {
-      Write-Error 'Could not find the Windows Service Name for Neo4j'
-      return
+    else {
+      Write-Host "Neo4j windows was sent the Stop command but is currently $($result.Status)"
+      return 2
     }
-
-    $result = Stop-Service -Name $ServiceName -PassThru
-    if ($PassThru) { Write-Output $thisServer } else { Write-Output $result }
   }
   
   End

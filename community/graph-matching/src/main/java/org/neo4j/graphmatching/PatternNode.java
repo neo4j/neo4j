@@ -45,21 +45,21 @@ public class PatternNode extends AbstractPatternObject<Node>
         };
     }*/;
 
-	private LinkedList<PatternRelationship> relationships =
-		new LinkedList<PatternRelationship>();
-	private LinkedList<PatternRelationship> optionalRelationships =
-		new LinkedList<PatternRelationship>();
+    private LinkedList<PatternRelationship> relationships =
+        new LinkedList<PatternRelationship>();
+    private LinkedList<PatternRelationship> optionalRelationships =
+        new LinkedList<PatternRelationship>();
 
-	private final PatternGroup group;
+    private final PatternGroup group;
 
     /**
      * Create a new pattern node in the default {@link PatternGroup} with a
      * blank label.
      */
-	public PatternNode()
-	{
-	    this( DEFAULT_PATTERN_GROUP, "" );
-	}
+    public PatternNode()
+    {
+        this( DEFAULT_PATTERN_GROUP, "" );
+    }
 
     /**
      * Create a new pattern node in the default {@link PatternGroup} with the
@@ -67,10 +67,10 @@ public class PatternNode extends AbstractPatternObject<Node>
      *
      * @param label the label of this pattern node.
      */
-	public PatternNode( String label )
-	{
-	    this( DEFAULT_PATTERN_GROUP, label );
-	}
+    public PatternNode( String label )
+    {
+        this( DEFAULT_PATTERN_GROUP, label );
+    }
 
     /**
      * Create a new pattern node in the specified {@link PatternGroup} with a
@@ -78,10 +78,10 @@ public class PatternNode extends AbstractPatternObject<Node>
      *
      * @param group the {@link PatternGroup} of this pattern node.
      */
-	public PatternNode( PatternGroup group )
-	{
-	    this( group, "" );
-	}
+    public PatternNode( PatternGroup group )
+    {
+        this( group, "" );
+    }
 
     /**
      * Create a new pattern node in the specified {@link PatternGroup} with the
@@ -90,21 +90,21 @@ public class PatternNode extends AbstractPatternObject<Node>
      * @param group the {@link PatternGroup} of this pattern node.
      * @param label the label of this pattern node.
      */
-	public PatternNode( PatternGroup group, String label )
-	{
-	    this.group = group;
-	    this.label = label;
-	}
+    public PatternNode( PatternGroup group, String label )
+    {
+        this.group = group;
+        this.label = label;
+    }
 
     /**
      * Get the {@link PatternGroup} of this pattern node.
      *
      * @return the {@link PatternGroup} this pattern node belongs to.
      */
-	public PatternGroup getGroup()
-	{
-	    return this.group;
-	}
+    public PatternGroup getGroup()
+    {
+        return this.group;
+    }
 
     /**
      * Get all {@link PatternRelationship}s associated with this pattern node.
@@ -114,15 +114,15 @@ public class PatternNode extends AbstractPatternObject<Node>
      * @return the {@link PatternRelationship}s associated with this pattern
      *         node.
      */
-	public Iterable<PatternRelationship> getAllRelationships()
-	{
-		LinkedList<PatternRelationship> allRelationships =
-			new LinkedList<PatternRelationship>();
-		allRelationships.addAll( relationships );
-		allRelationships.addAll( optionalRelationships );
+    public Iterable<PatternRelationship> getAllRelationships()
+    {
+        LinkedList<PatternRelationship> allRelationships =
+            new LinkedList<PatternRelationship>();
+        allRelationships.addAll( relationships );
+        allRelationships.addAll( optionalRelationships );
 
-		return allRelationships;
-	}
+        return allRelationships;
+    }
 
     /**
      * Get the optional or the required {@link PatternRelationship}s associated
@@ -132,35 +132,35 @@ public class PatternNode extends AbstractPatternObject<Node>
      *            {@link PatternRelationship}s, else return only the required.
      * @return the set of optional or required {@link PatternRelationship}s.
      */
-	public Iterable<PatternRelationship> getRelationships( boolean optional )
-	{
-		return optional ? optionalRelationships : relationships;
-	}
+    public Iterable<PatternRelationship> getRelationships( boolean optional )
+    {
+        return optional ? optionalRelationships : relationships;
+    }
 
-	void addRelationship( PatternRelationship relationship, boolean optional )
-	{
-		if ( optional )
-		{
-			optionalRelationships.add( relationship );
-		}
-		else
-		{
-			relationships.add( relationship );
-		}
-	}
+    void addRelationship( PatternRelationship relationship, boolean optional )
+    {
+        if ( optional )
+        {
+            optionalRelationships.add( relationship );
+        }
+        else
+        {
+            relationships.add( relationship );
+        }
+    }
 
-	void removeRelationship(
-		PatternRelationship relationship, boolean optional )
-	{
-		if ( optional )
-		{
-			optionalRelationships.remove( relationship );
-		}
-		else
-		{
-			relationships.remove( relationship );
-		}
-	}
+    void removeRelationship(
+        PatternRelationship relationship, boolean optional )
+    {
+        if ( optional )
+        {
+            optionalRelationships.remove( relationship );
+        }
+        else
+        {
+            relationships.remove( relationship );
+        }
+    }
 
     /**
      * Create a directed, required {@link PatternRelationship} from this node,
@@ -205,11 +205,11 @@ public class PatternNode extends AbstractPatternObject<Node>
      * @param type the {@link RelationshipType} of the relationship.
      * @return the newly created {@link PatternRelationship}.
      */
-	public PatternRelationship createRelationshipTo(
-		PatternNode otherNode, RelationshipType type )
-	{
-		return this.createRelationshipTo( otherNode, type, false, true );
-	}
+    public PatternRelationship createRelationshipTo(
+        PatternNode otherNode, RelationshipType type )
+    {
+        return this.createRelationshipTo( otherNode, type, false, true );
+    }
 
     /**
      * Create a required {@link PatternRelationship} of the specified
@@ -325,9 +325,9 @@ public class PatternNode extends AbstractPatternObject<Node>
         return relationship;
     }
 
-	@Override
-	public String toString()
-	{
-		return this.label;
-	}
+    @Override
+    public String toString()
+    {
+        return this.label;
+    }
 }

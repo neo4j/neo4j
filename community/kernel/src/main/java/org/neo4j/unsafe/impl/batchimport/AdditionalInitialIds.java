@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.storemigration.StoreMigrator;
+import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 /**
@@ -37,12 +37,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
  */
 public interface AdditionalInitialIds
 {
-    int highLabelTokenId();
-
-    int highRelationshipTypeTokenId();
-
-    int highPropertyKeyTokenId();
-
     long lastCommittedTransactionId();
 
     long lastCommittedTransactionChecksum();
@@ -56,24 +50,6 @@ public interface AdditionalInitialIds
      */
     AdditionalInitialIds EMPTY = new AdditionalInitialIds()
     {
-        @Override
-        public int highRelationshipTypeTokenId()
-        {
-            return 0;
-        }
-
-        @Override
-        public int highPropertyKeyTokenId()
-        {
-            return 0;
-        }
-
-        @Override
-        public int highLabelTokenId()
-        {
-            return 0;
-        }
-
         @Override
         public long lastCommittedTransactionId()
         {

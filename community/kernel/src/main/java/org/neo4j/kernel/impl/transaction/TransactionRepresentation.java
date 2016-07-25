@@ -19,24 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import java.io.IOException;
-
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.storageengine.api.CommandStream;
 
 /**
  * Representation of a transaction that can be written to a {@link TransactionAppender} and read back later.
  */
-public interface TransactionRepresentation
+public interface TransactionRepresentation extends CommandStream
 {
-    /**
-     * Accepts a visitor into the commands making up this transaction.
-     * @param visitor {@link Visitor} which will see the commands.
-     * @throws IOException if there were any problem reading the commands.
-     */
-    void accept( Visitor<Command, IOException> visitor ) throws IOException;
-
     /**
      * @return an additional header of this transaction. Just arbitrary bytes that means nothing
      * to this transaction representation.
@@ -71,7 +62,8 @@ public interface TransactionRepresentation
     long getTimeCommitted();
 
     /**
-     * @return the identifier for the lock session associated with this transaction, or {@link #NO_LOCK_SESSION} if none. This is only used for slave commits.
+     * @return the identifier for the lock session associated with this transaction, or {@value Locks.Client#NO_LOCK_SESSION_ID} if none.
+     * This is only used for slave commits.
      */
     int getLockSessionId();
 }

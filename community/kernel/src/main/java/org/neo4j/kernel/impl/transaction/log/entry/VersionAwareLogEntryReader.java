@@ -21,15 +21,15 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.command.CommandReader;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadPastEndException;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.storageengine.api.CommandReaderFactory;
+import org.neo4j.storageengine.api.ReadPastEndException;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.withMessage;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.NO_PARTICULAR_LOG_HEADER_FORMAT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVersion;
 
 /**
@@ -41,26 +41,18 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVers
  *
  * Read all about it at {@link LogEntryVersion}.
  */
-public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> implements LogEntryReader<SOURCE>
+public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionAwareChannel> implements LogEntryReader<SOURCE>
 {
-    private final LogPositionMarker positionMarker = new LogPositionMarker();
-
-    // Exists for backwards compatibility until we drop support for one of the two versions (1.9 and 2.0)
-    // that doesn't have log entry version in its format.
-    private final byte logHeaderFormatVersion;
-
-    // Caching of CommandReader instance, we use the LogEntryVersion instance for comparison
-    private LogEntryVersion lastVersion;
-    private CommandReader currentCommandReader;
-
-    public VersionAwareLogEntryReader( byte logHeaderFormatVersion )
-    {
-        this.logHeaderFormatVersion = logHeaderFormatVersion;
-    }
+    private final CommandReaderFactory commandReaderFactory;
 
     public VersionAwareLogEntryReader()
     {
-        this( NO_PARTICULAR_LOG_HEADER_FORMAT_VERSION );
+        this( new RecordStorageCommandReaderFactory() );
+    }
+
+    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
+    {
+        this.commandReaderFactory = commandReaderFactory;
     }
 
     @Override
@@ -68,12 +60,12 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> imple
     {
         try
         {
+            LogPositionMarker positionMarker = new LogPositionMarker();
             channel.getCurrentPosition( positionMarker );
             while ( true )
             {
                 LogEntryVersion version = null;
                 LogEntryParser<LogEntry> entryReader;
-                CommandReader commandReader;
                 try
                 {
                     /*
@@ -88,9 +80,8 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> imple
                         typeCode = channel.get();
                     }
 
-                    version = byVersion( versionCode, logHeaderFormatVersion );
+                    version = byVersion( versionCode );
                     entryReader = version.entryParser( typeCode );
-                    commandReader = commandReader( version );
                 }
                 catch ( ReadPastEndException e )
                 {   // Make these exceptions slip by straight out to the outer handler
@@ -104,7 +95,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> imple
                     throw launderedException( IOException.class, e );
                 }
 
-                LogEntry entry = entryReader.parse( version, channel, positionMarker, commandReader );
+                LogEntry entry = entryReader.parse( version, channel, positionMarker, commandReaderFactory );
                 if ( !entryReader.skip() )
                 {
                     return entry;
@@ -115,15 +106,5 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> imple
         {
             return null;
         }
-    }
-
-    private CommandReader commandReader( LogEntryVersion version )
-    {
-        if ( version != lastVersion )
-        {
-            lastVersion = version;
-            currentCommandReader = version.newCommandReader();
-        }
-        return currentCommandReader;
     }
 }

@@ -23,14 +23,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.Supplier;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -39,7 +39,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 /**
  * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
  */
-public class PhysicalLogFile extends LifecycleAdapter implements LogFile
+public class PhysicalLogFile implements LogFile, Lifecycle
 {
     public interface Monitor
     {
@@ -60,34 +60,34 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     public static final String REGEX_DEFAULT_VERSION_SUFFIX = "\\.";
     private final long rotateAtSize;
     private final FileSystemAbstraction fileSystem;
-    private final TransactionIdStore transactionIdStore;
+    private final Supplier<Long> lastCommittedId;
     private final PhysicalLogFiles logFiles;
-    private final TransactionMetadataCache transactionMetadataCache;
+    private final LogHeaderCache logHeaderCache;
     private final Monitor monitor;
     private final ByteBuffer headerBuffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
-    private PhysicalWritableLogChannel writer;
+    private PositionAwarePhysicalFlushableChannel writer;
     private final LogVersionRepository logVersionRepository;
     private final LogVersionBridge readerLogVersionBridge;
 
     private volatile PhysicalLogVersionedStoreChannel channel;
 
     public PhysicalLogFile( FileSystemAbstraction fileSystem, PhysicalLogFiles logFiles, long rotateAtSize,
-            TransactionIdStore transactionIdStore,
-            LogVersionRepository logVersionRepository, Monitor monitor,
-            TransactionMetadataCache transactionMetadataCache )
+                            Supplier<Long> lastCommittedId, LogVersionRepository logVersionRepository,
+                            Monitor monitor, LogHeaderCache logHeaderCache
+    )
     {
         this.fileSystem = fileSystem;
         this.rotateAtSize = rotateAtSize;
-        this.transactionIdStore = transactionIdStore;
+        this.lastCommittedId = lastCommittedId;
         this.logVersionRepository = logVersionRepository;
         this.monitor = monitor;
-        this.transactionMetadataCache = transactionMetadataCache;
+        this.logHeaderCache = logHeaderCache;
         this.logFiles = logFiles;
         this.readerLogVersionBridge = new ReaderLogVersionBridge( fileSystem, logFiles );
     }
 
     @Override
-    public void init() throws Throwable
+    public void init() throws IOException
     {
         // Make sure at least a bare bones log file is available before recovery
         long lastLogVersionUsed = logVersionRepository.getCurrentLogVersion();
@@ -96,7 +96,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws IOException
     {
         // Recovery has taken place before this, so the log file has been truncated to last known good tx
         // Just read header and move to the end
@@ -106,14 +106,20 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         // Move to the end
         channel.position( channel.size() );
 
-        writer = new PhysicalWritableLogChannel( channel );
+        writer = new PositionAwarePhysicalFlushableChannel( channel );
+    }
+
+    @Override
+    public void stop()
+    {
+        // nothing to stop
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence
     // we will close channel and writer only during shutdown phase when all pending changes (like last
     // checkpoint) are already in
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown() throws IOException
     {
         if ( writer != null )
         {
@@ -171,9 +177,9 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         if ( header == null )
         {
             // Either the header is not there in full or the file was new. Don't care
-            long lastTxId = transactionIdStore.getLastCommittedTransactionId();
+            long lastTxId = lastCommittedId.get();
             writeLogHeader( headerBuffer, forVersion, lastTxId );
-            transactionMetadataCache.putHeader( forVersion, lastTxId );
+            logHeaderCache.putHeader( forVersion, lastTxId );
             storeChannel.writeAll( headerBuffer );
             monitor.opened( toOpen, forVersion, lastTxId, true );
         }
@@ -182,17 +188,17 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public WritableLogChannel getWriter()
+    public FlushablePositionAwareChannel getWriter()
     {
         return writer;
     }
 
     @Override
-    public ReadableVersionableLogChannel getReader( LogPosition position ) throws IOException
+    public ReadableLogChannel getReader( LogPosition position ) throws IOException
     {
         PhysicalLogVersionedStoreChannel logChannel = openForVersion( logFiles, fileSystem, position.getLogVersion() );
         logChannel.position( position.getByteOffset() );
-        return new ReadAheadLogChannel( logChannel, readerLogVersionBridge, DEFAULT_READ_AHEAD_SIZE );
+        return new ReadAheadLogChannel( logChannel, readerLogVersionBridge );
     }
 
     public static PhysicalLogVersionedStoreChannel openForVersion( PhysicalLogFiles logFiles,
@@ -225,7 +231,6 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
     }
 
-
     public static PhysicalLogVersionedStoreChannel tryOpenForVersion( PhysicalLogFiles logFiles,
             FileSystemAbstraction fileSystem, long version )
     {
@@ -242,7 +247,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     @Override
     public void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException
     {
-        try ( ReadableVersionableLogChannel reader = getReader( startingFromPosition ) )
+        try ( ReadableLogChannel reader = getReader( startingFromPosition ) )
         {
             visitor.visit( startingFromPosition, reader );
         }
@@ -253,15 +258,15 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     {
         // Start from the where we're currently at and go backwards in time (versions)
         long logVersion = logFiles.getHighestLogVersion();
-        long highTransactionId = transactionIdStore.getLastCommittedTransactionId();
+        long highTransactionId = lastCommittedId.get();
         while ( logFiles.versionExists( logVersion ) )
         {
-            long previousLogLastTxId = transactionMetadataCache.getLogHeader( logVersion );
-            if ( previousLogLastTxId == -1 )
+            Long previousLogLastTxId = logHeaderCache.getLogHeader( logVersion );
+            if ( previousLogLastTxId == null )
             {
                 LogHeader header = readLogHeader( fileSystem, logFiles.getLogFileForVersion( logVersion ) );
                 assert logVersion == header.logVersion;
-                transactionMetadataCache.putHeader( header.logVersion, header.lastCommittedTxId );
+                logHeaderCache.putHeader( header.logVersion, header.lastCommittedTxId );
                 previousLogLastTxId = header.lastCommittedTxId;
             }
 

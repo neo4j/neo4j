@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.helpers.ThisShouldNotHappenError
+import java.lang.System.lineSeparator
+
 import org.neo4j.kernel.api.exceptions.Status
 
 class SyntaxException(message: String, val query:String,  val offset: Option[Int], cause: Throwable) extends CypherException(message, cause) {
@@ -29,31 +30,33 @@ class SyntaxException(message: String, val query:String,  val offset: Option[Int
   def this(message:String) = this(message,"",None,null)
 
   override def toString = offset match {
-    case Some(idx) =>message + "\n" + findErrorLine(idx, query.split('\n').toList)
+    case Some(idx) =>
+      //split can be empty if query = '\n'
+      val split = query.split("\r?\n").toList
+      message + lineSeparator() + findErrorLine(idx, if (split.nonEmpty) split else List(""))
     case None => message
   }
 
   override def getMessage = toString
 
-  override val status = Status.Statement.InvalidSyntax
+  override val status = Status.Statement.SyntaxError
 
   private def findErrorLine(idx: Int, message: List[String]): String =
     message.toList match {
-      case Nil => throw new ThisShouldNotHappenError("Andrés & Tobias", "message converted to empty list")
+      case Nil => throw new IllegalArgumentException("message converted to empty list")
 
-      case List(x) => {
-        val spaces = if (x.size > idx)
+      case List(x) =>
+        val spaces = if (x.length > idx)
           idx
         else
-          x.size
+          x.length
 
-        "\"" + x + "\"\n" + " " * spaces + " ^"
-      }
+        "\"" + x + "\"" + lineSeparator() +  " " * spaces + " ^"
 
-      case head :: tail => if (head.size > idx) {
+      case head :: tail => if (head.length > idx) {
         "\"" + head + "\"\n" + " " * idx + " ^"
       } else {
-        findErrorLine(idx - head.size - 1, tail) //The extra minus one is there for the now missing \n
+        findErrorLine(idx - head.length - 1, tail) //The extra minus one is there for the now missing \n
       }
     }
 }

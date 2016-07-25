@@ -19,12 +19,14 @@
  */
 package org.neo4j.test;
 
-import org.junit.Test;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import org.junit.Test;
+
+import org.neo4j.helpers.FakeClock;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.spy;
@@ -35,7 +37,7 @@ public class InputStreamAwaiterTest
     public void shouldWaitForALineWithoutBlocking() throws Exception
     {
         // given
-        ArtificialClock clock = new ArtificialClock();
+        FakeClock clock = new FakeClock();
         InputStream inputStream = spy( new MockInputStream( clock.progressor( 5, TimeUnit.MILLISECONDS ),
                                                             lines( "important message" ) ) );
         InputStreamAwaiter awaiter = new InputStreamAwaiter( clock, inputStream );
@@ -48,7 +50,7 @@ public class InputStreamAwaiterTest
     public void shouldTimeoutWhenDifferentContentProvided() throws Exception
     {
         // given
-        ArtificialClock clock = new ArtificialClock();
+        FakeClock clock = new FakeClock();
         InputStream inputStream = spy( new MockInputStream( clock.progressor( 1, TimeUnit.SECONDS ),
                                                             lines( "different content" ),
                                                             lines( "different message" ) ) );
@@ -71,7 +73,7 @@ public class InputStreamAwaiterTest
     public void shouldTimeoutWhenNoContentProvided() throws Exception
     {
         // given
-        ArtificialClock clock = new ArtificialClock();
+        FakeClock clock = new FakeClock();
         InputStream inputStream = spy( new MockInputStream( clock.progressor( 1, TimeUnit.SECONDS ) ) );
         InputStreamAwaiter awaiter = new InputStreamAwaiter( clock, inputStream );
 
@@ -101,10 +103,10 @@ public class InputStreamAwaiterTest
     private static class MockInputStream extends InputStream
     {
         private final byte[][] chunks;
-        private final ArtificialClock.Progressor progressor;
+        private final FakeClock.Progressor progressor;
         private int chunk = 0;
 
-        MockInputStream( ArtificialClock.Progressor progressor, String... chunks )
+        MockInputStream( FakeClock.Progressor progressor, String... chunks )
         {
             this.progressor = progressor;
             this.chunks = new byte[chunks.length][];

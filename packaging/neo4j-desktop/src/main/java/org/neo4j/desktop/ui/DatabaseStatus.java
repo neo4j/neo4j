@@ -25,6 +25,8 @@ import java.awt.FlowLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import org.neo4j.desktop.model.DesktopModel;
+
 import static org.neo4j.desktop.ui.Components.createPanel;
 import static org.neo4j.desktop.ui.Components.ellipsis;
 import static org.neo4j.desktop.ui.Components.withBackground;
@@ -67,12 +69,7 @@ public enum DatabaseStatus
     {
         final JLabel link = new JLabel( "http://localhost:7474/" );
 
-        model.register( new DesktopModelListener() {
-            @Override
-            public void desktopModelChanged(DesktopModel model) {
-                link.setText("http://localhost:" + model.getServerPort() +  "/");
-            }
-        });
+        model.register( model1 -> link.setText("http://" + model1.getServerAddress() +  "/") );
 
         link.setFont( Components.underlined( link.getFont() ) );
         link.addMouseListener( new OpenBrowserMouseListener( link, model ) );

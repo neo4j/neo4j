@@ -19,31 +19,32 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
-import org.neo4j.graphdb.index.Index
-import org.junit.Test
-import scala.collection.JavaConverters._
-import java.io.{ File, FileOutputStream, OutputStreamWriter, PrintWriter, Writer }
-import org.neo4j.graphdb._
-import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.visualization.asciidoc.AsciidocHelper
-import org.neo4j.cypher.javacompat.GraphImpl
+import java.io.{File, FileOutputStream, OutputStreamWriter, PrintWriter, Writer}
+import java.nio.charset.StandardCharsets
+
+import org.junit.{After, Before, Test}
 import org.neo4j.cypher._
-import org.neo4j.test.{GraphDatabaseServiceCleaner, ImpermanentGraphDatabase, TestGraphDatabaseFactory,
-GraphDescription}
-import org.scalatest.Assertions
-import org.junit.Before
-import org.junit.After
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.prettifier.Prettifier
 import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.internal.javacompat.GraphImpl
+import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionResult, RewindableExecutionResult}
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.graphdb._
+import org.neo4j.graphdb.index.Index
+import org.neo4j.kernel.impl.query.QueryEngineProvider
+import org.neo4j.test.{GraphDescription, GraphDatabaseServiceCleaner, TestGraphDatabaseFactory}
+import org.neo4j.visualization.asciidoc.AsciidocHelper
+import org.scalatest.Assertions
+
+import scala.collection.JavaConverters._
 
 /*
 Use this base class for refcard tests
  */
 abstract class RefcardTest extends Assertions with DocumentationHelper with GraphIcing {
 
-  var db: GraphDatabaseAPI = null
+  var db: GraphDatabaseCypherService = null
   implicit var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
   var nodeIndex: Index[Node] = null
@@ -52,6 +53,10 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   var generateConsole: Boolean = true
   var dir: File = createDir(section)
   var allQueriesWriter: Writer = null
+
+  // these 2 methods are need by ExecutionEngineHelper to do its job
+  override def graph = db
+  override def eengine = engine
 
   def title: String
   def linkId: String = null
@@ -76,7 +81,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     val fullQuerySnippet = AsciidocHelper.createCypherSnippetFromPreformattedQuery(Prettifier(docQuery), true)
     allQueriesWriter.append(fullQuerySnippet).append("\n\n")
 
-    val result = engine.execute(testQuery, params)
+    val result = engine.execute(testQuery, params, db.session())
     result
   } catch {
     case e: CypherException => throw new InternalException(queryText, e)
@@ -219,10 +224,11 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   @Before
   def init() {
     dir = createDir(section)
-    allQueriesWriter = new OutputStreamWriter(new FileOutputStream(new File("target/all-queries.asciidoc"), true), "UTF-8")
-    db = newTestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
+    allQueriesWriter = new OutputStreamWriter(new FileOutputStream(new File("target/all-queries.asciidoc"), true),
+      StandardCharsets.UTF_8)
+    db = new GraphDatabaseCypherService(newTestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase())
 
-    GraphDatabaseServiceCleaner.cleanDatabaseContent(db)
+    GraphDatabaseServiceCleaner.cleanDatabaseContent(db.getGraphDatabaseService)
 
     db.inTx {
       nodeIndex = db.index().forNodes("nodeIndexName")
@@ -230,7 +236,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
       val g = new GraphImpl(graphDescription.toArray[String])
       val description = GraphDescription.create(g)
 
-      nodes = description.create(db).asScala.map {
+      nodes = description.create(db.getGraphDatabaseService).asScala.map {
         case (name, node) => name -> node.getId
       }.toMap
 

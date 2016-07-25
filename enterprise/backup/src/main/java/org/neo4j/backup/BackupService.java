@@ -31,7 +31,6 @@ import java.util.Map;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.monitor.RequestMonitor;
-import org.neo4j.com.storecopy.DefaultUnpackerDependencies;
 import org.neo4j.com.storecopy.ExternallyManagedPageCache;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
@@ -42,16 +41,16 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -59,9 +58,10 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
@@ -70,6 +70,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.com.RequestContext.anonymous;
+import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 /**
@@ -110,6 +111,7 @@ class BackupService
     private final LogProvider logProvider;
     private final Log log;
     private final Monitors monitors;
+    private final VersionAwareLogEntryReader entryReader;
 
     BackupService()
     {
@@ -122,6 +124,7 @@ class BackupService
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.monitors = monitors;
+        this.entryReader = new VersionAwareLogEntryReader<>();
     }
 
     BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, File targetDirectory,
@@ -148,7 +151,7 @@ class BackupService
                 {
                     client = new BackupClient( sourceHostNameOrIp, sourcePort, null, NullLogProvider.getInstance(),
                             StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, monitors.newMonitor(
-                            ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ) );
+                            ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ), entryReader );
                     client.start();
                     return client.fullBackup( writer, forensics );
                 }
@@ -160,7 +163,7 @@ class BackupService
                 }
             }, CancellationRequest.NEVER_CANCELLED );
 
-            bumpMessagesDotLogFile( targetDirectory, timestamp );
+            bumpDebugDotLogFileVersion( targetDirectory, timestamp );
             boolean consistent = false;
             try
             {
@@ -174,9 +177,9 @@ class BackupService
             clearIdFiles( targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
-            throw new RuntimeException( e );
+            throw Exceptions.launderedException( e );
         }
     }
 
@@ -203,7 +206,7 @@ class BackupService
             {
                 targetDb.shutdown();
             }
-            bumpMessagesDotLogFile( targetDirectory, backupStartTime );
+            bumpDebugDotLogFileVersion( targetDirectory, backupStartTime );
             clearIdFiles( targetDirectory );
             return outcome;
         }
@@ -301,13 +304,13 @@ class BackupService
 
         ProgressTxHandler handler = new ProgressTxHandler();
         TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
-                new DefaultUnpackerDependencies( resolver, 0 ) );
+                resolver, DEFAULT_BATCH_SIZE, 0 );
 
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         LogProvider logProvider = resolver.resolveDependency( LogService.class ).getInternalLogProvider();
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, null, logProvider, targetDb.storeId(),
                 timeout, unpacker, monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ),
-                monitors.newMonitor( RequestMonitor.class, BackupClient.class ) );
+                monitors.newMonitor( RequestMonitor.class, BackupClient.class ), entryReader );
 
         boolean consistent = false;
         try
@@ -357,7 +360,7 @@ class BackupService
         return new BackupOutcome( handler.getLastSeenTransactionId(), consistent );
     }
 
-    private static boolean bumpMessagesDotLogFile( File dbDirectory, long toTimestamp )
+    private static boolean bumpDebugDotLogFileVersion( File dbDirectory, long toTimestamp )
     {
         File[] candidates = dbDirectory.listFiles( new FilenameFilter()
         {
@@ -412,10 +415,10 @@ class BackupService
         private long lastSeenTransactionId;
 
         @Override
-        public void accept( CommittedTransactionRepresentation tx )
+        public void accept( long transactionId )
         {
             progress.add( 1 );
-            lastSeenTransactionId = tx.getCommitEntry().getTxId();
+            lastSeenTransactionId = transactionId;
         }
 
         @Override

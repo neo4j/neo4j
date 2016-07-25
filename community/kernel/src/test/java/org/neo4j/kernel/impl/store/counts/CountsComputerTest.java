@@ -26,32 +26,33 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CountsComputer;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
@@ -86,9 +87,9 @@ public class CountsComputerTest
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( DynamicLabel.label( "A" ) );
-            db.createNode( DynamicLabel.label( "C" ) );
-            db.createNode( DynamicLabel.label( "D" ) );
+            db.createNode( Label.label( "A" ) );
+            db.createNode( Label.label( "C" ) );
+            db.createNode( Label.label( "D" ) );
             db.createNode();
             tx.success();
         }
@@ -117,9 +118,9 @@ public class CountsComputerTest
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( DynamicLabel.label( "A" ) );
-            db.createNode( DynamicLabel.label( "C" ) );
-            Node node = db.createNode( DynamicLabel.label( "D" ) );
+            db.createNode( Label.label( "A" ) );
+            db.createNode( Label.label( "C" ) );
+            Node node = db.createNode( Label.label( "D" ) );
             db.createNode();
             node.delete();
             tx.success();
@@ -149,10 +150,10 @@ public class CountsComputerTest
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            Node nodeA = db.createNode( DynamicLabel.label( "A" ) );
-            Node nodeC = db.createNode( DynamicLabel.label( "C" ) );
-            Relationship rel = nodeA.createRelationshipTo( nodeC, DynamicRelationshipType.withName( "TYPE1" ) );
-            nodeC.createRelationshipTo( nodeA, DynamicRelationshipType.withName( "TYPE2" ) );
+            Node nodeA = db.createNode( Label.label( "A" ) );
+            Node nodeC = db.createNode( Label.label( "C" ) );
+            Relationship rel = nodeA.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE1" ) );
+            nodeC.createRelationshipTo( nodeA, RelationshipType.withName( "TYPE2" ) );
             rel.delete();
             tx.success();
         }
@@ -183,12 +184,12 @@ public class CountsComputerTest
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            Node nodeA = db.createNode( DynamicLabel.label( "A" ) );
-            Node nodeC = db.createNode( DynamicLabel.label( "C" ) );
-            Node nodeD = db.createNode( DynamicLabel.label( "D" ) );
+            Node nodeA = db.createNode( Label.label( "A" ) );
+            Node nodeC = db.createNode( Label.label( "C" ) );
+            Node nodeD = db.createNode( Label.label( "D" ) );
             Node node = db.createNode();
-            nodeA.createRelationshipTo( nodeD, DynamicRelationshipType.withName( "TYPE" ) );
-            node.createRelationshipTo( nodeC, DynamicRelationshipType.withName( "TYPE2" ) );
+            nodeA.createRelationshipTo( nodeD, RelationshipType.withName( "TYPE" ) );
+            node.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE2" ) );
             tx.success();
         }
         long lastCommittedTransactionId = getLastTxId( db );
@@ -223,13 +224,13 @@ public class CountsComputerTest
                 setConfig( GraphDatabaseSettings.dense_node_threshold, "2" ).newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            Node nodeA = db.createNode( DynamicLabel.label( "A" ) );
-            Node nodeC = db.createNode( DynamicLabel.label( "C" ) );
-            Node nodeD = db.createNode( DynamicLabel.label( "D" ) );
-            nodeA.createRelationshipTo( nodeA, DynamicRelationshipType.withName( "TYPE1" ) );
-            nodeA.createRelationshipTo( nodeC, DynamicRelationshipType.withName( "TYPE2" ) );
-            nodeA.createRelationshipTo( nodeD, DynamicRelationshipType.withName( "TYPE3" ) );
-            nodeD.createRelationshipTo( nodeC, DynamicRelationshipType.withName( "TYPE4" ) );
+            Node nodeA = db.createNode( Label.label( "A" ) );
+            Node nodeC = db.createNode( Label.label( "C" ) );
+            Node nodeD = db.createNode( Label.label( "D" ) );
+            nodeA.createRelationshipTo( nodeA, RelationshipType.withName( "TYPE1" ) );
+            nodeA.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE2" ) );
+            nodeA.createRelationshipTo( nodeD, RelationshipType.withName( "TYPE3" ) );
+            nodeD.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE4" ) );
             tx.success();
         }
         long lastCommittedTransactionId = getLastTxId( db );
@@ -271,7 +272,6 @@ public class CountsComputerTest
     private File dir;
     private GraphDatabaseBuilder dbBuilder;
     private PageCache pageCache;
-    private Config emptyConfig;
 
     @Before
     public void setup()
@@ -280,7 +280,6 @@ public class CountsComputerTest
         dir = testDir.directory( "dir" ).getAbsoluteFile();
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );
-        emptyConfig = new Config();
     }
 
     private static final String COUNTS_STORE_BASE = MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
@@ -297,7 +296,7 @@ public class CountsComputerTest
 
     private long getLastTxId( @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db )
     {
-        return db.getDependencyResolver().resolveDependency( NeoStores.class ).getMetaDataStore().getLastCommittedTransactionId();
+        return db.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastCommittedTransactionId();
 
     }
 
@@ -310,14 +309,14 @@ public class CountsComputerTest
     private CountsTracker createCountsTracker()
     {
         return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
-                emptyConfig, new File( dir, COUNTS_STORE_BASE ) );
+                Config.empty(), new File( dir, COUNTS_STORE_BASE ) );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId ) throws IOException
     {
         cleanupCountsForRebuilding();
 
-        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( dir, pageCache, fs, NullLogProvider.getInstance() );
         try ( Lifespan life = new Lifespan();
               NeoStores neoStores = storeFactory.openAllNeoStores() )
         {

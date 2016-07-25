@@ -23,16 +23,22 @@ import java.util.List;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.TokenFactory;
 
 /**
  * Keeps a cache of tokens using {@link InMemoryTokenCache}.
  * When asked for a token that isn't in the cache, delegates to a TokenCreator to create the token,
  * then stores it in the cache.
  */
-public class DelegatingTokenHolder<TOKEN extends Token> extends LifecycleAdapter implements TokenHolder<TOKEN>
+public abstract class DelegatingTokenHolder<TOKEN extends Token> extends LifecycleAdapter implements TokenHolder<TOKEN>
 {
-    protected InMemoryTokenCache<TOKEN> tokenCache = new InMemoryTokenCache<>(this.getClass());
+    protected InMemoryTokenCache<TOKEN> tokenCache = new InMemoryTokenCache<>( tokenType() );
+
+    protected abstract String tokenType();
+
     private final TokenCreator tokenCreator;
     private final TokenFactory<TOKEN> tokenFactory;
 
@@ -70,14 +76,23 @@ public class DelegatingTokenHolder<TOKEN extends Token> extends LifecycleAdapter
             id = createToken( name );
             return id;
         }
+        catch ( ReadOnlyDbException e )
+        {
+            throw new TransactionFailureException( e.getMessage(), e );
+        }
         catch ( Throwable e )
         {
             throw new TransactionFailureException( "Could not create token", e );
         }
     }
 
-    private synchronized int createToken( String name )
-            throws KernelException
+    /**
+     * Create and put new token in cache.
+     * @param name token name
+     * @return newly created token id
+     * @throws KernelException
+     */
+    private synchronized int createToken( String name ) throws KernelException
     {
         Integer id = tokenCache.getId( name );
         if ( id != null )
@@ -129,5 +144,11 @@ public class DelegatingTokenHolder<TOKEN extends Token> extends LifecycleAdapter
     public Iterable<TOKEN> getAllTokens()
     {
         return tokenCache.allTokens();
+    }
+
+    @Override
+    public int size()
+    {
+        return tokenCache.size();
     }
 }

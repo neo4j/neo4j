@@ -19,6 +19,8 @@
  */
 package org.neo4j.logging;
 
+import javax.annotation.Nonnull;
+
 /**
  * An abstract implementation of {@link Log}, providing implementations
  * for the shortcut methods (debug, info, warn, error) that delegate
@@ -29,73 +31,73 @@ package org.neo4j.logging;
 public abstract class AbstractLog implements Log
 {
     @Override
-    public void debug( String message )
+    public void debug( @Nonnull String message )
     {
         debugLogger().log( message );
     }
 
     @Override
-    public void debug( String message, Throwable throwable )
+    public void debug( @Nonnull String message, @Nonnull Throwable throwable )
     {
         debugLogger().log( message, throwable );
     }
 
     @Override
-    public void debug( String format, Object... arguments )
+    public void debug( @Nonnull String format, @Nonnull Object... arguments )
     {
         debugLogger().log( format, arguments );
     }
 
     @Override
-    public void info( String message )
+    public void info( @Nonnull String message )
     {
         infoLogger().log( message );
     }
 
     @Override
-    public void info( String message, Throwable throwable )
+    public void info( @Nonnull String message, @Nonnull Throwable throwable )
     {
         infoLogger().log( message, throwable );
     }
 
     @Override
-    public void info( String format, Object... arguments )
+    public void info( @Nonnull String format, @Nonnull Object... arguments )
     {
         infoLogger().log( format, arguments );
     }
 
     @Override
-    public void warn( String message )
+    public void warn( @Nonnull String message )
     {
         warnLogger().log( message );
     }
 
     @Override
-    public void warn( String message, Throwable throwable )
+    public void warn( @Nonnull String message, @Nonnull Throwable throwable )
     {
         warnLogger().log( message, throwable );
     }
 
     @Override
-    public void warn( String format, Object... arguments )
+    public void warn( @Nonnull String format, @Nonnull Object... arguments )
     {
         warnLogger().log( format, arguments );
     }
 
     @Override
-    public void error( String message )
+    public void error( @Nonnull String message )
     {
         errorLogger().log( message );
     }
 
     @Override
-    public void error( String message, Throwable throwable )
+    public void error( @Nonnull String message, @Nonnull Throwable throwable )
     {
         errorLogger().log( message, throwable );
     }
 
     @Override
-    public void error( String format, Object... arguments )
+    public void error( @Nonnull String format, @Nonnull Object... arguments )
     {
         errorLogger().log( format, arguments );
     }

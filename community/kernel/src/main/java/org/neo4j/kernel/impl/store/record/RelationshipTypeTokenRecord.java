@@ -27,8 +27,29 @@ public class RelationshipTypeTokenRecord extends TokenRecord
     }
 
     @Override
+    public RelationshipTypeTokenRecord initialize( boolean inUse, int nameId )
+    {
+        super.initialize( inUse, nameId );
+        return this;
+    }
+
+    @Override
     protected String simpleName()
     {
         return "RelationshipType";
+    }
+
+    @Override
+    public RelationshipTypeTokenRecord clone()
+    {
+        RelationshipTypeTokenRecord relationshipTypeTokenRecord = new RelationshipTypeTokenRecord( getIntId() );
+        relationshipTypeTokenRecord.setInUse( inUse() );
+        if ( isCreated() )
+        {
+            relationshipTypeTokenRecord.setCreated();
+        }
+        relationshipTypeTokenRecord.setNameId( getNameId() );
+        relationshipTypeTokenRecord.addNameRecords( getNameRecords() );
+        return relationshipTypeTokenRecord;
     }
 }

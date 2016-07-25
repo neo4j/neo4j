@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import java.io.IOException;
-
 import org.codehaus.jackson.JsonGenerator;
+
+import java.io.IOException;
 
 import org.neo4j.graphdb.Result;
 
@@ -35,11 +35,12 @@ class AggregatingWriter implements ResultDataContentWriter
     }
 
     @Override
-    public void write( JsonGenerator out, Iterable<String> columns, Result.ResultRow row ) throws IOException
+    public void write( JsonGenerator out, Iterable<String> columns, Result.ResultRow row,
+            TransactionStateChecker txStateChecker ) throws IOException
     {
         for ( ResultDataContentWriter writer : writers )
         {
-            writer.write( out, columns, row );
+            writer.write( out, columns, row, txStateChecker );
         }
     }
 }

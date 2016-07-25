@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.repair;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -31,16 +32,19 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class RelationshipChainExplorerTest
 {
@@ -74,7 +78,7 @@ public class RelationshipChainExplorerTest
         int relationshipIdInMiddleOfChain = 10;
         RecordSet<RelationshipRecord> records = new RelationshipChainExplorer( relationshipStore )
                 .exploreRelationshipRecordChainsToDepthTwo(
-                        relationshipStore.getRecord( relationshipIdInMiddleOfChain ) );
+                        relationshipStore.getRecord( relationshipIdInMiddleOfChain, relationshipStore.newRecord(), NORMAL ) );
 
         // then
         assertEquals( NDegreeTwoNodes * 2, records.size() );
@@ -91,7 +95,7 @@ public class RelationshipChainExplorerTest
         int relationshipIdInMiddleOfChain = 10;
         RecordSet<RelationshipRecord> records = new RelationshipChainExplorer( relationshipStore )
                 .exploreRelationshipRecordChainsToDepthTwo(
-                        relationshipStore.getRecord( relationshipIdInMiddleOfChain ) );
+                        relationshipStore.getRecord( relationshipIdInMiddleOfChain, relationshipStore.newRecord(), NORMAL ) );
 
         // then
         int recordsInaccessibleBecauseOfBrokenChain = 3;
@@ -112,7 +116,10 @@ public class RelationshipChainExplorerTest
     private StoreAccess createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( int nDegreeTwoNodes )
     {
         File storeDirectory = storeLocation.graphDbDir();
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory );
+        GraphDatabaseService database = new TestGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( storeDirectory )
+                .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .newGraphDatabase();
 
         try ( Transaction transaction = database.beginTx() )
         {
@@ -135,6 +142,13 @@ public class RelationshipChainExplorerTest
         }
         database.shutdown();
         PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
-        return new StoreAccess( pageCache, storeDirectory ).initialize();
+        StoreAccess storeAccess = new StoreAccess( new DefaultFileSystemAbstraction(), pageCache, storeDirectory,
+                Config.empty() );
+        return storeAccess.initialize();
+    }
+
+    protected String getRecordFormatName()
+    {
+        return StringUtils.EMPTY;
     }
 }

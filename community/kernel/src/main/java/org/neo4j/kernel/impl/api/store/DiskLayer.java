@@ -20,16 +20,16 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Factory;
-import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.api.EntityType;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -39,47 +39,45 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
-import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 import org.neo4j.register.Register;
+import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.schema.IndexSchemaRule;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 /**
@@ -88,56 +86,33 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
 public class DiskLayer implements StoreReadLayer
 {
     private static final Function<PropertyConstraintRule, PropertyConstraint> RULE_TO_CONSTRAINT =
-            new Function<PropertyConstraintRule, PropertyConstraint>()
-            {
-                @Override
-                public PropertyConstraint apply( PropertyConstraintRule rule )
-                {
-                    // We can use propertyKeyId straight up here, without reading from the record, since we have
-                    // verified that it has that propertyKeyId in the predicate. And since we currently only support
-                    // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
-                    return rule.toConstraint();
-                }
-            };
+            // We can use propertyKeyId straight up here, without reading from the record, since we have
+            // verified that it has that propertyKeyId in the predicate. And since we currently only support
+            // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
+            PropertyConstraintRule::toConstraint;
 
     private static final Function<NodePropertyConstraintRule,NodePropertyConstraint> NODE_RULE_TO_CONSTRAINT =
-            new Function<NodePropertyConstraintRule,NodePropertyConstraint>()
-            {
-                @Override
-                public NodePropertyConstraint apply( NodePropertyConstraintRule rule )
-                {
-                    return rule.toConstraint();
-                }
-            };
+            NodePropertyConstraintRule::toConstraint;
 
     private static final Function<RelationshipPropertyConstraintRule,RelationshipPropertyConstraint> REL_RULE_TO_CONSTRAINT =
-            new Function<RelationshipPropertyConstraintRule,RelationshipPropertyConstraint>()
-            {
-                @Override
-                public RelationshipPropertyConstraint apply( RelationshipPropertyConstraintRule rule )
-                {
-                    return rule.toConstraint();
-                }
-            };
+            RelationshipPropertyConstraintRule::toConstraint;
 
     // These token holders should perhaps move to the cache layer.. not really any reason to have them here?
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTokenHolder;
-
     private final NeoStores neoStores;
     private final IndexingService indexService;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
     private final SchemaStorage schemaStorage;
-    private final CountsAccessor counts;
+    private final CountsTracker counts;
     private final PropertyLoader propertyLoader;
-
-    private final Factory<StoreStatement> statementProvider;
+    private final Supplier<StorageStatement> statementProvider;
 
     public DiskLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
-            IndexingService indexService, Factory<StoreStatement> statementProvider )
+            IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
@@ -145,7 +120,7 @@ public class DiskLayer implements StoreReadLayer
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
         this.neoStores = neoStores;
-        this.statementProvider = statementProvider;
+        this.statementProvider = storeStatementSupplier;
         this.nodeStore = this.neoStores.getNodeStore();
         this.relationshipStore = this.neoStores.getRelationshipStore();
         this.counts = neoStores.getCounts();
@@ -153,9 +128,9 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public StoreStatement acquireStatement()
+    public StorageStatement newStatement()
     {
-        return statementProvider.newInstance();
+        return statementProvider.get();
     }
 
     @Override
@@ -200,63 +175,13 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId )
+    public PrimitiveLongIterator nodesGetForLabel( StorageStatement statement, int labelId )
     {
-        return state.getLabelScanReader().nodesWithLabel( labelId );
+        return statement.getLabelScanReader().nodesWithLabel( labelId );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getIndexReader( index );
-        return reader.seek( value );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromInclusiveNumericIndexRangeSeek( KernelStatement statement,
-            IndexDescriptor index,
-            Number lower,
-            Number upper )
-            throws IndexNotFoundKernelException
-
-    {
-        IndexReader reader = statement.getIndexReader( index );
-        return reader.rangeSeekByNumberInclusive( lower, upper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement statement,
-                                                                     IndexDescriptor index,
-                                                                     String lower, boolean includeLower,
-                                                                     String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-
-    {
-        IndexReader reader = statement.getIndexReader( index );
-        return reader.rangeSeekByString( lower, includeLower, upper, includeUpper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
-                                                                     IndexDescriptor index,
-                                                                     String prefix )
-            throws IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getIndexReader( index );
-        return reader.rangeSeekByPrefix( prefix );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index ) throws
-            IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getIndexReader( index );
-        return reader.scan();
-    }
-
-    @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
+    public IndexDescriptor indexGetForLabelAndPropertyKey( int labelId, int propertyKey )
     {
         return descriptor( schemaStorage.indexRule( labelId, propertyKey ) );
     }
@@ -279,66 +204,36 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId )
+    public Iterator<IndexDescriptor> uniquenessIndexesGetForLabel( int labelId )
     {
         return getIndexDescriptorsFor( constraintIndexRules( labelId ) );
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetAll()
+    public Iterator<IndexDescriptor> uniquenessIndexesGetAll()
     {
         return getIndexDescriptorsFor( CONSTRAINT_INDEX_RULES );
     }
 
     private static Predicate<SchemaRule> indexRules( final int labelId )
     {
-        return new Predicate<SchemaRule>()
-        {
-
-            @Override
-            public boolean test( SchemaRule rule )
-            {
-                return rule.getLabel() == labelId && rule.getKind() == SchemaRule.Kind.INDEX_RULE;
-            }
-        };
+        return rule -> rule.getLabel() == labelId && rule.getKind() == SchemaRule.Kind.INDEX_RULE;
     }
 
     private static Predicate<SchemaRule> constraintIndexRules( final int labelId )
     {
-        return new Predicate<SchemaRule>()
-        {
-
-            @Override
-            public boolean test( SchemaRule rule )
-            {
-                return rule.getLabel() == labelId && rule.getKind() == SchemaRule.Kind.CONSTRAINT_INDEX_RULE;
-            }
-        };
+        return rule -> rule.getLabel() == labelId && rule.getKind() == SchemaRule.Kind.CONSTRAINT_INDEX_RULE;
     }
 
-    private static final Predicate<SchemaRule> INDEX_RULES = new Predicate<SchemaRule>()
-    {
-
-        @Override
-        public boolean test( SchemaRule rule )
-        {
-            return rule.getKind() == SchemaRule.Kind.INDEX_RULE;
-        }
-    }, CONSTRAINT_INDEX_RULES = new Predicate<SchemaRule>()
-    {
-
-        @Override
-        public boolean test( SchemaRule rule )
-        {
-            return rule.getKind() == SchemaRule.Kind.CONSTRAINT_INDEX_RULE;
-        }
-    };
+    private static final Predicate<SchemaRule> INDEX_RULES = rule -> rule.getKind() == SchemaRule.Kind.INDEX_RULE;
+    private static final Predicate<SchemaRule> CONSTRAINT_INDEX_RULES =
+            rule -> rule.getKind() == SchemaRule.Kind.CONSTRAINT_INDEX_RULE;
 
     private Iterator<IndexDescriptor> getIndexDescriptorsFor( Predicate<SchemaRule> filter )
     {
-        Iterator<SchemaRule> filtered = filter( filter, neoStores.getSchemaStore().loadAllSchemaRules() );
+        Iterator<SchemaRule> filtered = Iterators.filter( filter, neoStores.getSchemaStore().loadAllSchemaRules() );
 
-        return map( new Function<SchemaRule, IndexDescriptor>()
+        return Iterators.map( new Function<SchemaRule, IndexDescriptor>()
         {
 
             @Override
@@ -357,13 +252,13 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public IndexRule indexRule( IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
+    public IndexSchemaRule indexRule( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
     {
-        throw new UnsupportedOperationException();
+        return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() );
     }
 
     @Override
-    public long indexGetCommittedId( IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
+    public long indexGetCommittedId( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
             throws SchemaRuleNotFoundException
     {
         return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getId();
@@ -374,6 +269,13 @@ public class DiskLayer implements StoreReadLayer
             throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor ).getState();
+    }
+
+    @Override
+    public PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
+    {
+        return indexService.getIndexProxy( descriptor ).getIndexPopulationProgress();
     }
 
     @Override
@@ -390,18 +292,6 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<ProcedureDescriptor> proceduresGetAll()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ProcedureDescriptor procedureGet( ProcedureSignature.ProcedureName name )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor ).getPopulationFailure().asString();
@@ -411,14 +301,7 @@ public class DiskLayer implements StoreReadLayer
     public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, final int propertyKeyId )
     {
         return schemaStorage.schemaRulesForNodes( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class,
-                labelId, new Predicate<NodePropertyConstraintRule>()
-                {
-                    @Override
-                    public boolean test( NodePropertyConstraintRule rule )
-                    {
-                        return rule.containsPropertyKeyId( propertyKeyId );
-                    }
-                } );
+                labelId, rule -> rule.containsPropertyKeyId( propertyKeyId ) );
     }
 
     @Override
@@ -433,14 +316,7 @@ public class DiskLayer implements StoreReadLayer
             final int propertyKeyId )
     {
         return schemaStorage.schemaRulesForRelationships( REL_RULE_TO_CONSTRAINT,
-                RelationshipPropertyConstraintRule.class, typeId, new Predicate<RelationshipPropertyConstraintRule>()
-                {
-                    @Override
-                    public boolean test( RelationshipPropertyConstraintRule rule )
-                    {
-                        return rule.containsPropertyKeyId( propertyKeyId );
-                    }
-                } );
+                RelationshipPropertyConstraintRule.class, typeId, rule -> rule.containsPropertyKeyId( propertyKeyId ) );
     }
 
     @Override
@@ -455,19 +331,6 @@ public class DiskLayer implements StoreReadLayer
     public Iterator<PropertyConstraint> constraintsGetAll()
     {
         return schemaStorage.schemaRules( RULE_TO_CONSTRAINT, PropertyConstraintRule.class );
-    }
-
-    @Override
-    public PrimitiveLongResourceIterator nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor descriptor,
-            Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
-    {
-        /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
-         * since subsequent filtering will happen outside, but at the same time have the ability to
-         * close the IndexReader when done iterating over the lookup result. This is because we get
-         * a fresh reader that isn't associated with the current transaction and hence will not be
-         * automatically closed. */
-        IndexReader reader = state.getFreshIndexReader( descriptor );
-        return resourceIterator( reader.seek( value ), reader );
     }
 
     @Override
@@ -497,7 +360,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
+    public PrimitiveIntIterator graphGetPropertyKeys()
     {
         return new PropertyKeyIdIterator( propertyLoader.graphLoadProperties( new IteratingPropertyReceiver() ) );
     }
@@ -509,7 +372,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<DefinedProperty> graphGetAllProperties()
+    public Iterator<StorageProperty> graphGetAllProperties()
     {
         return propertyLoader.graphLoadProperties( new IteratingPropertyReceiver() );
     }
@@ -524,6 +387,13 @@ public class DiskLayer implements StoreReadLayer
     public Iterator<Token> labelsGetAllTokens()
     {
         return labelTokenHolder.getAllTokens().iterator();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public Iterator<Token> relationshipTypeGetAllTokens()
+    {
+        return (Iterator)relationshipTokenHolder.getAllTokens().iterator();
     }
 
     @Override
@@ -556,22 +426,12 @@ public class DiskLayer implements StoreReadLayer
             RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION
     {
         // TODO Please don't create a record for this, it's ridiculous
-        RelationshipRecord record;
-        try
-        {
-            record = relationshipStore.getRecord( relationshipId );
-        }
-        catch ( InvalidRecordException e )
+        RelationshipRecord record = relationshipStore.newRecord();
+        if ( !relationshipStore.getRecord( relationshipId, record, FORCE ).inUse() )
         {
             throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
         }
         relationshipVisitor.visit( relationshipId, record.getType(), record.getFirstNode(), record.getSecondNode() );
-    }
-
-    @Override
-    public long highestNodeIdInUse()
-    {
-        return nodeStore.getHighestPossibleIdInUse();
     }
 
     @Override
@@ -581,7 +441,7 @@ public class DiskLayer implements StoreReadLayer
         {
             private long highId = nodeStore.getHighestPossibleIdInUse();
             private long currentId;
-            private final NodeRecord reusableNodeRecord = new NodeRecord( -1 ); // reused
+            private final NodeRecord record = new NodeRecord( -1 ); // reused
 
             @Override
             protected boolean fetchNext()
@@ -592,8 +452,8 @@ public class DiskLayer implements StoreReadLayer
                     {
                         try
                         {
-                            NodeRecord record = nodeStore.loadRecord( currentId, reusableNodeRecord );
-                            if ( record != null && record.inUse() )
+                            nodeStore.getRecord( currentId, record, RecordLoad.CHECK );
+                            if ( record.inUse() )
                             {
                                 return next( record.getId() );
                             }
@@ -637,7 +497,7 @@ public class DiskLayer implements StoreReadLayer
                     {
                         try
                         {
-                            if ( relationshipStore.fillRecord( currentId, reusableRecord, CHECK ) && reusableRecord.inUse() )
+                            if ( relationshipStore.getRecord( currentId, reusableRecord, CHECK ).inUse() )
                             {
                                 return next( reusableRecord.getId() );
                             }
@@ -710,5 +570,53 @@ public class DiskLayer implements StoreReadLayer
             throw new UnsupportedOperationException( "not implemented" );
         }
         return counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() ).readSecond();
+    }
+
+    @Override
+    public long nodesGetCount()
+    {
+        return nodeStore.getNumberOfIdsInUse();
+    }
+
+    @Override
+    public long relationshipsGetCount()
+    {
+        return relationshipStore.getNumberOfIdsInUse();
+    }
+
+    @Override
+    public int labelCount()
+    {
+        return labelTokenHolder.size();
+    }
+
+    @Override
+    public int propertyKeyCount()
+    {
+        return propertyKeyTokenHolder.size();
+    }
+
+    @Override
+    public int relationshipTypeCount()
+    {
+        return relationshipTokenHolder.size();
+    }
+
+    @Override
+    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
+    {
+        return counts.indexUpdatesAndSize( index.getLabelId(), index.getPropertyKeyId(), target );
+    }
+
+    @Override
+    public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
+    {
+        return counts.indexSample( index.getLabelId(), index.getPropertyKeyId(), target );
+    }
+
+    @Override
+    public boolean nodeExists( long id )
+    {
+        return nodeStore.isInUse( id );
     }
 }

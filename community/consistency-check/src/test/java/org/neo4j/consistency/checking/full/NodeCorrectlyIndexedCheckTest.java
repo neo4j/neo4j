@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -36,10 +35,9 @@ import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -47,7 +45,8 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
@@ -159,10 +158,8 @@ public class NodeCorrectlyIndexedCheckTest
     {
         IndexAccessorStub reader = new IndexAccessorStub( entries );
         IndexAccessors indexes = mock( IndexAccessors.class );
-        when( indexes.accessorFor( any( IndexRule.class ) ) )
-                .thenReturn( reader );
-        when (indexes.rules() )
-                .thenReturn( asList(indexRule) );
+        when( indexes.accessorFor( any( IndexRule.class ) ) ).thenReturn( reader );
+        when( indexes.rules() ).thenReturn( asList( indexRule ) );
         return indexes;
     }
 
@@ -254,17 +251,29 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
-                public int countIndexedNodes( long nodeId, Object propertyValue )
+                public PrimitiveLongIterator containsString( String exactTerm )
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public PrimitiveLongIterator endsWith( String suffix )
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public long countIndexedNodes( long nodeId, Object propertyValue )
                 {
                     long[] candidates = entries.get( propertyValue );
                     if ( candidates == null )
                     {
                         return 0;
                     }
-                    int count = 0;
-                    for ( int i = 0; i < candidates.length; i++ )
+                    long count = 0;
+                    for ( long candidate : candidates )
                     {
-                        if ( candidates[i] == nodeId )
+                        if ( candidate == nodeId )
                         {
                             count++;
                         }
@@ -273,18 +282,11 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
-                public Set<Class> valueTypesInIndex()
+                public IndexSampler createSampler()
                 {
                     throw new UnsupportedOperationException();
                 }
 
-                @Override
-                public long sampleIndex( Register.DoubleLong.Out sampler )
-                {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
                 public void close()
                 {
                 }

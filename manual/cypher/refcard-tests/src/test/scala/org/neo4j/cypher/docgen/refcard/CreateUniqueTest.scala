@@ -21,18 +21,18 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class CreateUniqueTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "CREATE UNIQUE"
-  val css = "col carddeprecation c2-1 c3-3 c4-4 c5-5 c6-6"
+  val css = "col carddeprecation c2-2 c3-3 c4-4 c5-1 c6-3"
   override val linkId = "query-create-unique"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "create" =>
-        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 1)
+        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesWritten = 1)
         assert(result.toList.size === 1)
     }
   }
@@ -53,7 +53,7 @@ class CreateUniqueTest extends RefcardTest with QueryStatisticsTestSupport {
   def text = """
 ###assertion=create parameters=aname
 //
-MATCH n WHERE id(n) = %A%
+MATCH (n)  WHERE id(n) = %A%
 
 CREATE UNIQUE
     (n)-[:KNOWS]->(m {property: {value}})

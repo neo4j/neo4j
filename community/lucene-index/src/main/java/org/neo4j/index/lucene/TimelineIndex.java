@@ -29,7 +29,7 @@ import org.neo4j.graphdb.index.IndexHits;
  * to the timeline and then queried given a time period, w/ or w/o lower/upper
  * bounds, for example "Give me all entities before this given timestamp" or
  * "Give me all nodes between these two timestamps".
- * 
+ *
  * Please note that the timestamps don't need to represent actual points in
  * time, any <code>long</code> that identifies the indexed {@link Node} or
  * {@link Relationship} and defines its global order is fine.
@@ -51,7 +51,7 @@ public interface TimelineIndex<T extends PropertyContainer>
     /**
      * Removes an entity from the timeline. The timestamp should be the same
      * as when it was added.
-     * 
+     *
      * @param entity the entity to remove from this timeline.
      * @param timestamp the timestamp this entity was added with.
      */
@@ -59,7 +59,7 @@ public interface TimelineIndex<T extends PropertyContainer>
 
     /**
      * Adds an entity to this timeline with the given {@code timestamp}.
-     * 
+     *
      * @param entity the entity to add to this timeline.
      * @param timestamp the timestamp to use.
      */
@@ -69,7 +69,7 @@ public interface TimelineIndex<T extends PropertyContainer>
      * Query the timeline with optional lower/upper bounds and get back
      * entities within that range, ordered by date. If {@code reversed} is
      * {@code true} the order of the result is reversed.
-     * 
+     *
      * @param startTimestampOrNull the start timestamp, entities with greater
      * timestamp value will be returned (exclusive). Will be ignored if {@code null}.
      * @param endTimestampOrNull the end timestamp, entities with lesser timestamp
@@ -79,11 +79,11 @@ public interface TimelineIndex<T extends PropertyContainer>
      * by timestamp.
      */
     IndexHits<T> getBetween( Long startTimestampOrNull, Long endTimestampOrNull, boolean reversed );
-    
+
     /**
      * Query the timeline with optional lower/upper bounds and get back
      * entities within that range, ordered by date with lowest first.
-     * 
+     *
      * @param startTimestampOrNull the start timestamp, entities with greater
      * timestamp value will be returned (exclusive). Will be ignored if {@code null}.
      * @param endTimestampOrNull the end timestamp, entities with lesser timestamp

@@ -21,7 +21,6 @@ package org.neo4j.kernel.extension;
 
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 
-
 public class UnsatisfiedDependencyStrategies
 {
     public static UnsatisfiedDependencyStrategy fail()
@@ -35,7 +34,7 @@ public class UnsatisfiedDependencyStrategies
             }
         };
     }
-    
+
     public static UnsatisfiedDependencyStrategy ignore()
     {
         return new UnsatisfiedDependencyStrategy()

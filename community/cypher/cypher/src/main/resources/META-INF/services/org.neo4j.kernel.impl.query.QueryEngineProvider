@@ -1,1 +1,1 @@
-org.neo4j.cypher.javacompat.internal.CypherEngineProvider
+org.neo4j.cypher.internal.javacompat.CypherEngineProvider

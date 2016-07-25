@@ -30,18 +30,18 @@ public class CsvFileReader extends PrefetchingIterator<String[]>
 {
     private final BufferedReader reader;
     private String delimiter;
-    
+
     public CsvFileReader( File file ) throws IOException
     {
         this( file, null );
     }
-    
+
     public CsvFileReader( File file, String delimiter ) throws IOException
     {
         this.delimiter = delimiter;
         this.reader = new BufferedReader( new FileReader( file ) );
     }
-    
+
     @Override
     protected String[] fetchNextOrNull()
     {
@@ -53,7 +53,7 @@ public class CsvFileReader extends PrefetchingIterator<String[]>
                 close();
                 return null;
             }
-            
+
             if ( delimiter == null )
             {
                 delimiter = figureOutDelimiter( line );

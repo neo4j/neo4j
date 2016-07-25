@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.util;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileUtils;
@@ -28,7 +27,7 @@ import org.neo4j.io.fs.FileUtils;
 public class StoreUtil
 {
     // Branched directories will end up in <dbStoreDir>/branched/<timestamp>/
-    public final static String BRANCH_SUBDIRECTORY = "branched";
+    public static final String BRANCH_SUBDIRECTORY = "branched";
 
     public static void cleanStoreDir( File storeDir ) throws IOException
     {
@@ -45,15 +44,16 @@ public class StoreUtil
             return new File[0];
         }
 
-        return storeDir.listFiles( new FileFilter()
-        {
-            @Override
-            public boolean accept( File file )
+        return storeDir.listFiles(file -> {
+            for ( String directory : new String[] {"metrics", "logs", "certificates"} )
             {
-                return !file.getName().startsWith( "metrics" ) && !file.getName().startsWith( "messages." ) &&
-                       !isBranchedDataRootDirectory( file );
+                if ( file.getName().equals( directory ) )
+                {
+                    return false;
+                }
             }
-        } );
+            return !isBranchedDataRootDirectory( file );
+        });
     }
 
     public static File newBranchedDataDir( File storeDir )

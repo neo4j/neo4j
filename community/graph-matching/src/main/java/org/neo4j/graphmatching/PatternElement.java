@@ -31,29 +31,29 @@ import org.neo4j.graphdb.Relationship;
 @Deprecated
 public class PatternElement
 {
-	private PatternNode pNode;
-	private Node node;
+    private PatternNode pNode;
+    private Node node;
     private PatternRelationship prevPatternRel = null;
     private Relationship prevRel = null;
 
-	PatternElement( PatternNode pNode, PatternRelationship pRel,
+    PatternElement( PatternNode pNode, PatternRelationship pRel,
         Node node, Relationship rel )
-	{
-		this.pNode = pNode;
-		this.node = node;
+    {
+        this.pNode = pNode;
+        this.node = node;
         this.prevPatternRel = pRel;
         this.prevRel = rel;
-	}
+    }
 
-	/**
-	 * Returns the {@link PatternNode} corresponding to the matching
-	 * {@link Node}.
-	 * @return the {@link PatternNode} corresponsing to matching {@link Node}.
-	 */
-	public PatternNode getPatternNode()
-	{
-		return pNode;
-	}
+    /**
+     * Returns the {@link PatternNode} corresponding to the matching
+     * {@link Node}.
+     * @return the {@link PatternNode} corresponsing to matching {@link Node}.
+     */
+    public PatternNode getPatternNode()
+    {
+        return pNode;
+    }
 
     /**
      * Returns the matching {@link Node} which is just one part of the whole
@@ -61,16 +61,16 @@ public class PatternElement
      * @return the matching {@link Node} which is just one part of the whole
      * match.
      */
-	public Node getNode()
-	{
-		return node;
-	}
+    public Node getNode()
+    {
+        return node;
+    }
 
-	@Override
-	public String toString()
-	{
-		return pNode.toString();
-	}
+    @Override
+    public String toString()
+    {
+        return pNode.toString();
+    }
 
     /**
      * Returns the {@link PatternRelationship} corresponding to the matching
@@ -92,12 +92,12 @@ public class PatternElement
     {
         return prevRel;
     }
-    
+
     public int hashCode()
     {
         return pNode.hashCode();
     }
-    
+
     public boolean equals( Object o )
     {
         if ( o instanceof PatternElement )

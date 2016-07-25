@@ -1,0 +1,2 @@
+org.neo4j.harness.JavaProceduresTest$MyExtensionThatAddsInjectable
+org.neo4j.harness.JavaProceduresTest$MyExtensionThatAddsAlternativeCoreAPI

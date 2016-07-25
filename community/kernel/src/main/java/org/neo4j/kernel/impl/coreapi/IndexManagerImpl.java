@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.coreapi;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Node;
@@ -34,17 +35,16 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 
 public class IndexManagerImpl implements IndexManager
 {
-
-    private final ThreadToStatementContextBridge transactionBridge;
+    private final Supplier<Statement> transactionBridge;
     private final IndexProvider provider;
     private final AutoIndexer<Node> nodeAutoIndexer;
     private final RelationshipAutoIndexer relAutoIndexer;
 
-    public IndexManagerImpl( ThreadToStatementContextBridge bridge,
+    public IndexManagerImpl( Supplier<Statement> bridge,
                              IndexProvider provider,
                              AutoIndexer<Node> nodeAutoIndexer,
                              RelationshipAutoIndexer relAutoIndexer )
@@ -81,9 +81,9 @@ public class IndexManagerImpl implements IndexManager
         Index<Node> toReturn = provider.getOrCreateNodeIndex( indexName, customConfiguration );
 
         // TODO move this into kernel layer
-        if ( NodeAutoIndexerImpl.NODE_AUTO_INDEX.equals( indexName ) )
+        if ( InternalAutoIndexing.NODE_AUTO_INDEX.equals( indexName ) )
         {
-            toReturn = new AbstractAutoIndexerImpl.ReadOnlyIndexToIndexAdapter<Node>( toReturn );
+            return new ReadOnlyIndexFacade<>( toReturn );
         }
         return toReturn;
     }
@@ -124,9 +124,9 @@ public class IndexManagerImpl implements IndexManager
         RelationshipIndex toReturn = provider.getOrCreateRelationshipIndex( indexName, customConfiguration );
 
         // TODO move this into kernel layer
-        if ( RelationshipAutoIndexerImpl.RELATIONSHIP_AUTO_INDEX.equals( indexName ) )
+        if ( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX.equals( indexName ) )
         {
-            toReturn = new RelationshipAutoIndexerImpl.RelationshipReadOnlyIndexToIndexAdapter( toReturn );
+            return new RelationshipReadOnlyIndexFacade( toReturn );
         }
         return toReturn;
     }

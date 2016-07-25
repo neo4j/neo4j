@@ -21,15 +21,11 @@ To gain good performance, these are the things to look into first:
 
 See the <<performance-guide>> chapter for more information on how to tune Neo4j.
 
-== How to add configuration settings ==
+== Configuring Neo4j ==
 
 When the database is given no configuration, it will try to use reasonable defaults.
 This is seldom optimal, however, because the database and the JVM have no knowledge about your workload or your performance requirements.
 
 The way you configure Neo4j depend on your mode of deployment; whether you are using the database as an embedded library, or as a server.
 
-Embedded::
-When creating the embedded Neo4j instance it is possible to pass in parameters contained in a map where keys and values are strings, see <<tutorials-java-embedded-setup-config>> for an example.
-
-Server::
-When using the Neo4j REST server, see <<server-configuration>> for how to add configuration settings for the database to the server.
+See <<configuration-settings>> for further details.

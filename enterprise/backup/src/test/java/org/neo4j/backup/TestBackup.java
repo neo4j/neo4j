@@ -24,28 +24,35 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -53,49 +60,61 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.subprocess.SubProcess;
 
+import static java.lang.Integer.parseInt;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.Integer.parseInt;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
+@RunWith( Parameterized.class )
 public class TestBackup
 {
+    private final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( TestBackup.class );
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    @Rule
+    public final RuleChain ruleChain = RuleChain.outerRule( testDir )
+            .around( pageCacheRule )
+            .around( SuppressOutput.suppressAll() );
+
+    @Parameter
+    public String recordFormatName;
+
     private File serverPath;
     private File otherServerPath;
     private File backupPath;
     private List<ServerInterface> servers;
 
-    @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( TestBackup.class );
-
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    @Parameters( name = "{0}" )
+    public static List<String> recordFormatNames()
+    {
+        return Arrays.asList( StandardV3_0.NAME, HighLimit.NAME );
+    }
 
     @Before
     public void before() throws Exception
     {
         servers = new ArrayList<>();
-        File base = testDir.directory();
-        serverPath = new File( base, "server" );
-        otherServerPath = new File( base, "server2" );
-        backupPath = new File( base, "backuedup-serverdb" );
+        serverPath = testDir.directory( "server" );
+        otherServerPath = testDir.directory( "server2" );
+        backupPath = testDir.directory( "backedup-serverdb" );
     }
 
     @After
@@ -194,7 +213,7 @@ public class TestBackup
         backup.full( backupPath.getPath() );
         assertTrue( "Should be consistent", backup.isConsistent() );
         // END SNIPPET: onlineBackup
-        assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
+        assertEquals( initialDataSetRepresentation, getDbRepresentation() );
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = addMoreData( serverPath );
@@ -203,7 +222,7 @@ public class TestBackup
         backup.incremental( backupPath.getPath() );
         // END SNIPPET: onlineBackup
         assertTrue( "Should be consistent", backup.isConsistent() );
-        assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
+        assertEquals( furtherRepresentation, getDbRepresentation() );
         shutdownServer( server );
     }
 
@@ -279,9 +298,7 @@ public class TestBackup
         GraphDatabaseService db = null;
         try
         {
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
-                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
-                newGraphDatabase();
+            db = getEmbeddedTestDataBaseService();
 
             Index<Node> index;
             try ( Transaction tx = db.beginTx() )
@@ -326,9 +343,7 @@ public class TestBackup
         GraphDatabaseService db = null;
         try
         {
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
-                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
-                newGraphDatabase();
+            db = getEmbeddedTestDataBaseService();
 
             try ( Transaction transaction = db.beginTx() )
             {
@@ -361,9 +376,7 @@ public class TestBackup
     {
         String key = "name";
         String value = "Neo";
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
-            setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
-            newGraphDatabase();
+        GraphDatabaseService db = getEmbeddedTestDataBaseService();
 
         try
         {
@@ -378,11 +391,11 @@ public class TestBackup
             }
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
             assertTrue( "Should be consistent", backup.isConsistent() );
-            assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+            assertEquals( DbRepresentation.of( db ), getDbRepresentation() );
             FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
             backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
             assertTrue( "Should be consistent", backup.isConsistent() );
-            assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+            assertEquals( DbRepresentation.of( db ), getDbRepresentation() );
 
             try ( Transaction tx = db.beginTx() )
             {
@@ -392,7 +405,7 @@ public class TestBackup
             FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
             backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
             assertTrue( "Should be consistent", backup.isConsistent() );
-            assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+            assertEquals( DbRepresentation.of( db ), getDbRepresentation() );
         }
         finally
         {
@@ -403,12 +416,12 @@ public class TestBackup
     @Test
     public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase() throws Exception
     {
-        String sourcePath = "target/var/serverdb-lock";
-        FileUtils.deleteDirectory( new File( sourcePath ) );
+        File sourcePath = testDir.directory( "serverdb-lock" );
 
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourcePath ).
-            setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
-            newGraphDatabase();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourcePath )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.record_format, recordFormatName )
+                .newGraphDatabase();
         try
         {
             assertStoreIsLocked( sourcePath );
@@ -434,7 +447,7 @@ public class TestBackup
 
             DbRepresentation representation = addLotsOfData( db );
             backup.incremental( backupPath.getPath() );
-            assertEquals( representation, DbRepresentation.of( backupPath ) );
+            assertEquals( representation, getDbRepresentation() );
         }
         finally
         {
@@ -456,7 +469,7 @@ public class TestBackup
 
             DbRepresentation representation = addLotsOfData( db );
             backup.incremental( backupPath.getPath() );
-            assertEquals( representation, DbRepresentation.of( backupPath ) );
+            assertEquals( representation, getDbRepresentation() );
             ensureStoresHaveIdFiles( backupPath );
         }
         finally
@@ -494,11 +507,11 @@ public class TestBackup
         return DbRepresentation.of( db );
     }
 
-    private static void assertStoreIsLocked( String path )
+    private static void assertStoreIsLocked( File path )
     {
         try
         {
-            new TestGraphDatabaseFactory().newEmbeddedDatabase( path).shutdown();
+            new TestGraphDatabaseFactory().newEmbeddedDatabase( path ).shutdown();
             fail( "Could start up database in same process, store not locked" );
         }
         catch ( RuntimeException ex )
@@ -523,7 +536,7 @@ public class TestBackup
     }
 
     @SuppressWarnings( "serial" )
-    private static class LockProcess extends SubProcess<StartupChecker, String> implements StartupChecker
+    private static class LockProcess extends SubProcess<StartupChecker, File> implements StartupChecker
     {
         private volatile Object state;
 
@@ -540,7 +553,7 @@ public class TestBackup
         }
 
         @Override
-        protected void startup( String path ) throws Throwable
+        protected void startup( File path ) throws Throwable
         {
             GraphDatabaseService db = null;
             try
@@ -576,7 +589,7 @@ public class TestBackup
 
     private ServerInterface startServer( File path ) throws Exception
     {
-        ServerInterface server = new EmbeddedServer( path.getPath(), "127.0.0.1:6362" );
+        ServerInterface server = new EmbeddedServer( path, "127.0.0.1:6362" );
         server.awaitStarted();
         servers.add( server );
         return server;
@@ -597,7 +610,7 @@ public class TestBackup
             Node node = db.createNode();
             node.setProperty( "backup", "Is great" );
             db.createNode().createRelationshipTo( node,
-                    DynamicRelationshipType.withName( "LOVES" ) );
+                    RelationshipType.withName( "LOVES" ) );
             tx.success();
         }
         finally
@@ -616,13 +629,8 @@ public class TestBackup
             protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
                     GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
-                return new CommunityFacadeFactory()
-                {
-
-                    @Override
-                    protected EditionModule createEdition( PlatformModule platformModule )
-                    {
-                        return new CommunityEditionModule( platformModule )
+                Function<PlatformModule,EditionModule> factory =
+                        ( platformModule ) -> new CommunityEditionModule( platformModule )
                         {
 
                             @Override
@@ -638,14 +646,15 @@ public class TestBackup
                                 };
                             }
                         };
-                    }
-                }.newFacade( storeDir, config, dependencies );
+                return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, factory )
+                        .newFacade( storeDir, config, dependencies );
             }
         };
-        return dbFactory.newEmbeddedDatabaseBuilder( storeDir ).
-            setConfig( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) ).
-            setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
-            newGraphDatabase();
+        return dbFactory.newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) )
+                .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.record_format, recordFormatName )
+                .newGraphDatabase();
     }
 
     private DbRepresentation createInitialDataSet( File path )
@@ -667,13 +676,25 @@ public class TestBackup
         // 4 transactions: THE transaction, "mykey" property key, "db-index" index, "KNOWS" rel type.
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( DynamicLabel.label( "Me" ) );
+            Node node = db.createNode( Label.label( "Me" ) );
             node.setProperty( "myKey", "myValue" );
             Index<Node> nodeIndex = db.index().forNodes( "db-index" );
             nodeIndex.add( node, "myKey", "myValue" );
-            db.createNode().createRelationshipTo( node,
-                    DynamicRelationshipType.withName( "KNOWS" ) );
+            db.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
             tx.success();
         }
+    }
+
+    private GraphDatabaseService getEmbeddedTestDataBaseService()
+    {
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.record_format, recordFormatName )
+                .newGraphDatabase();
+    }
+
+    private DbRepresentation getDbRepresentation()
+    {
+        return DbRepresentation.of( backupPath );
     }
 }

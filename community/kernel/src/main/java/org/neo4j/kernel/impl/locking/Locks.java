@@ -20,8 +20,10 @@
 package org.neo4j.kernel.impl.locking;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
+import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.storageengine.api.lock.WaitStrategy;
 
 /**
  * API for managing locks.
@@ -42,7 +44,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  * Each call to acquire a lock must be accompanied by a call to release that same lock. A user can call acquire on the
  * same lock multiple times, thus requiring an equal number of calls to release those locks.
  */
-public interface Locks extends Lifecycle
+public interface Locks
 {
     abstract class Factory extends Service
     {
@@ -62,18 +64,13 @@ public interface Locks extends Lifecycle
                 long lockIdentityHashCode );
     }
 
-    /** Locks are split by resource types. It is up to the implementation to define the contract for these. */
-    interface ResourceType
+    interface Client extends ResourceLocker, AutoCloseable
     {
-        /** Must be unique among all existing resource types, should preferably be a sequence starting at 0. */
-        int typeId();
+        /**
+         * Represents the fact that no lock session is used because no locks are taken.
+         */
+        int NO_LOCK_SESSION_ID = -1;
 
-        /** What to do if the lock cannot immediately be acquired. */
-        WaitStrategy waitStrategy();
-    }
-
-    interface Client extends AutoCloseable
-    {
         /**
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
          * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
@@ -85,6 +82,7 @@ public interface Locks extends Lifecycle
          * while one client holds an exclusive lock. If the lock cannot be acquired,
          * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
          */
+        @Override
         void acquireExclusive( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException;
 
         /** Try grabbing exclusive lock, not waiting and returning a boolean indicating if we got the lock. */
@@ -118,10 +116,12 @@ public interface Locks extends Lifecycle
      * A client is able to grab and release locks, and compete with other clients for them. This can be re-used until
      * you call {@link Locks.Client#close()}.
      *
-     * @throws IllegalStateException if this instance has been closed, i.e has had {@link #shutdown()} called.
+     * @throws IllegalStateException if this instance has been closed, i.e has had {@link #close()} called.
      */
     Client newClient();
 
     /** Visit all held locks. */
     void accept(Visitor visitor);
+
+    void close();
 }

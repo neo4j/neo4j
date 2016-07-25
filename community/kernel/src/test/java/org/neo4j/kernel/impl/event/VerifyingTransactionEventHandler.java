@@ -21,8 +21,7 @@ package org.neo4j.kernel.impl.event;
 
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import org.neo4j.helpers.collection.Iterables;
 
 public class VerifyingTransactionEventHandler implements
         TransactionEventHandler<Object>
@@ -35,7 +34,7 @@ public class VerifyingTransactionEventHandler implements
     {
         this.expectedData = expectedData;
     }
-    
+
     @Override
     public void afterCommit( TransactionData data, Object state )
     {
@@ -52,16 +51,16 @@ public class VerifyingTransactionEventHandler implements
     {
         return verify( data );
     }
-    
+
     private Object verify( TransactionData data )
     {
         // TODO Hmm, makes me think... should we really call transaction event handlers
         // for these relationship type / property index transactions?
-        if ( count( data.createdNodes() ) == 0 )
+        if ( Iterables.count( data.createdNodes() ) == 0 )
         {
             return null;
         }
-        
+
         try
         {
             this.expectedData.compareTo( data );
@@ -79,7 +78,7 @@ public class VerifyingTransactionEventHandler implements
     {
         return this.hasBeenCalled;
     }
-    
+
     Throwable failure()
     {
         return this.failure;

@@ -38,6 +38,6 @@ abstract class AbstractConstraintCreator
 
     protected final void assertInUnterminatedTransaction()
     {
-        actions.assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
     }
 }

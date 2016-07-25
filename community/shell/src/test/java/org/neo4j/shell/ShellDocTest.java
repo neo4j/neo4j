@@ -28,12 +28,11 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.System.lineSeparator;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -135,7 +134,7 @@ public class ShellDocTest
         doc.add( "mknode --cd", "", "Create a node");
         doc.add( "pwd", "", "where are we?" );
         doc.add( "set name \"Jon\"", "", "On the current node, set the key \"name\" to value \"Jon\"" );
-        doc.add( "match n where id(n) = 0 return n;", "Jon", "send a cypher query" );
+        doc.add( "match (n) where id(n) = 0 return n;", "Jon", "send a cypher query" );
         doc.add( "mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "make an incoming relationship of type " +
                 "LIKES, create the end node with the node properties specified." );
         doc.add( "ls", "1", "where are we?" );
@@ -185,9 +184,11 @@ public class ShellDocTest
         doc.add( "create index on :Person(name);", "", "create an index" );
         doc.add( "create (m:Person:Hacker {name:'Mattias'}), (m)-[:KNOWS]->(m);", "", "create one labeled node and a relationship" );
         doc.add( "dump", "begin" +
-                lineSeparator() + "create index on :`Person`(`name`)" +
+                lineSeparator() + "create index on :`Person`(`name`);" +
+                lineSeparator() + "commit" +
+                lineSeparator() + "begin" +
                 lineSeparator() + "create (_0:`Person`:`Hacker` {`name`:\"Mattias\"})" +
-                lineSeparator() + "create _0-[:`KNOWS`]->_0" +
+                lineSeparator() + "create (_0)-[:`KNOWS`]->(_0)" +
                 lineSeparator() + ";" +
                 lineSeparator() + "commit", "Export the whole database including indexes" );
         doc.run();
@@ -244,30 +245,19 @@ public class ShellDocTest
 
         doc.add( "", "", "" );
         doc.add( "start morpheus = node:node_auto_index(name='Morpheus') " +
-                "match morpheus-[:KNOWS]-zionist " +
+                "match (morpheus)-[:KNOWS]-(zionist) " +
                 "return zionist.name;",
                 "Trinity",
                 "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
-        doc.add( "cypher 2.2 start morpheus = node:node_auto_index(name='Morpheus') " +
-                "match morpheus-[:KNOWS]-zionist " +
-                "return zionist.name;",
-                "Cypher",
-                "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
-//        doc.add( "profile start morpheus = node:node_auto_index(name='Morpheus') " +
-//                "match morpheus-[:KNOWS]-zionist " +
-//                "return zionist.name;",
-//                "ColumnFilter",
-//                "profile the query by displaying more query execution information" );
         doc.run(); // wrapping this in a tx will cause problems, so we don't
         server.shutdown();
 
         try (Transaction tx = db.beginTx())
         {
-            assertEquals( 7, Iterables.count( GlobalGraphOperations.at( db ).getAllRelationships() ) );
-            assertEquals( 7, Iterables.count( GlobalGraphOperations.at( db ).getAllNodes() ) );
+            assertEquals( 7, Iterables.count( db.getAllRelationships() ) );
+            assertEquals( 7, Iterables.count( db.getAllNodes() ) );
             boolean foundRootAndNeoRelationship = false;
-            for ( Relationship relationship : GlobalGraphOperations.at( db )
-                    .getAllRelationships() )
+            for ( Relationship relationship : db.getAllRelationships() )
             {
                 if ( relationship.getType().name().equals( "ROOT" ) )
                 {

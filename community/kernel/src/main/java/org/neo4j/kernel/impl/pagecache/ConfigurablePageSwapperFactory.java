@@ -25,7 +25,7 @@ import org.neo4j.kernel.configuration.Config;
 /**
  * A PageSwapperFactory that can take additional configurations.
  *
- * The configuration options should be name-spaced under <code>dbms.pagecache.swapper.{implementationName}</code>.
+ * The configuration options should be name-spaced under <code>dbms.memory.pagecache.swapper.{implementationName}</code>.
  */
 public interface ConfigurablePageSwapperFactory extends PageSwapperFactory
 {

@@ -163,7 +163,7 @@ public abstract class IntArrayBasedKeyTable<VALUE> extends PowerOfTwoQuantizedTa
     @Override
     public void clear()
     {
-        if ( size > 0 )
+        if ( !isEmpty() )
         {
             clearTable();
         }

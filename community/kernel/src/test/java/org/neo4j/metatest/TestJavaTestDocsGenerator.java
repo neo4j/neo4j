@@ -37,9 +37,9 @@ import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.JavaTestDocsGenerator;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -47,11 +47,12 @@ import static org.junit.Assert.assertTrue;
 public class TestJavaTestDocsGenerator implements GraphHolder
 {
     private static GraphDatabaseService graphdb;
-    public @Rule
-    TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
-    public @Rule
-    TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
-    public @Rule TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
+    @Rule
+    public TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     private final String sectionName = "testsection";
     private File directory;
@@ -141,9 +142,11 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     public static String readFileAsString( File file ) throws java.io.IOException
     {
         byte[] buffer = new byte[(int) file.length()];
-        BufferedInputStream f = new BufferedInputStream( new FileInputStream( file ) );
-        f.read( buffer );
-        return new String( buffer );
+        try ( BufferedInputStream f = new BufferedInputStream( new FileInputStream( file ) ) )
+        {
+            f.read( buffer );
+            return new String( buffer );
+        }
     }
 
     @Override

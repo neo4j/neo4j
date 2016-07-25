@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
+
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
@@ -44,7 +45,9 @@ public class LegacyIndexIT extends ExclusiveServerTestBase
 {
     private CommunityNeoServer server;
 
-    public static @DataPoints String[] candidates = {"", "get_or_create", "create_or_fail"};
+    @DataPoints
+    @SuppressWarnings( "unused" ) // accessed by reflection
+    public static String[] candidates = {"", "get_or_create", "create_or_fail"};
 
     @After
     public void stopTheServer()
@@ -56,9 +59,10 @@ public class LegacyIndexIT extends ExclusiveServerTestBase
     public void startServer() throws NoSuchAlgorithmException, KeyManagementException, IOException
     {
         server = server().withHttpsEnabled()
-                .withProperty( "remote_shell_enabled", "false" )
+                .withProperty( "dbms.shell.enabled", "false" )
                 .withProperty( "dbms.security.auth_enabled", "false" )
-                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .withProperty( ServerSettings.maximum_response_header_size.name(), "5000" )
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
     }
 
@@ -66,7 +70,6 @@ public class LegacyIndexIT extends ExclusiveServerTestBase
     public void shouldRejectIndexValueLargerThanConfiguredSize(String uniqueness) throws Exception
     {
         //Given
-        server.getConfiguration().setProperty( ServerSettings.maximum_response_header_size.name(), "5000" );
         server.start();
 
         // When
@@ -90,7 +93,6 @@ public class LegacyIndexIT extends ExclusiveServerTestBase
     public void shouldNotRejectIndexValueThatIsJustSmallerThanConfiguredSize(String uniqueness) throws Exception
     {
         //Given
-        server.getConfiguration().setProperty( ServerSettings.maximum_response_header_size.name(), "5000" );
         server.start();
 
         // When

@@ -22,21 +22,21 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 
 public class GuardingStatementOperations implements
         EntityWriteOperations,
@@ -75,24 +75,27 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    public void nodeDelete( KernelStatement state, long nodeId )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         guard.check();
         entityWriteDelegate.nodeDelete( state, nodeId );
     }
 
     @Override
-    public int nodeDetachDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
-    {
-        guard.check();
-        return entityWriteDelegate.nodeDetachDelete( state, nodeId );
-    }
-
-    @Override
-    public void relationshipDelete( KernelStatement state, long relationshipId ) throws EntityNotFoundException
+    public void relationshipDelete( KernelStatement state, long relationshipId )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         guard.check();
         entityWriteDelegate.relationshipDelete( state, relationshipId );
+    }
+
+    @Override
+    public int nodeDetachDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException,
+            AutoIndexingKernelException, InvalidTransactionTypeKernelException, KernelException
+    {
+        guard.check();
+        return entityWriteDelegate.nodeDetachDelete( state, nodeId );
     }
 
     @Override
@@ -112,7 +115,8 @@ public class GuardingStatementOperations implements
 
     @Override
     public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
-            throws ConstraintValidationKernelException, EntityNotFoundException
+            throws ConstraintValidationKernelException, EntityNotFoundException, AutoIndexingKernelException,
+            InvalidTransactionTypeKernelException
     {
         guard.check();
         return entityWriteDelegate.nodeSetProperty( state, nodeId, property );
@@ -121,7 +125,7 @@ public class GuardingStatementOperations implements
     @Override
     public Property relationshipSetProperty( KernelStatement state,
             long relationshipId,
-            DefinedProperty property ) throws EntityNotFoundException
+            DefinedProperty property ) throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         guard.check();
         return entityWriteDelegate.relationshipSetProperty( state, relationshipId, property );
@@ -136,7 +140,7 @@ public class GuardingStatementOperations implements
 
     @Override
     public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
-            throws EntityNotFoundException
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         guard.check();
         return entityWriteDelegate.nodeRemoveProperty( state, nodeId, propertyKeyId );
@@ -145,7 +149,7 @@ public class GuardingStatementOperations implements
     @Override
     public Property relationshipRemoveProperty( KernelStatement state,
             long relationshipId,
-            int propertyKeyId ) throws EntityNotFoundException
+            int propertyKeyId ) throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         guard.check();
         return entityWriteDelegate.relationshipRemoveProperty( state, relationshipId, propertyKeyId );
@@ -216,11 +220,35 @@ public class GuardingStatementOperations implements
     }
 
     @Override
+    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, IndexDescriptor index,
+            String term ) throws IndexNotFoundKernelException
+    {
+        guard.check();
+        return entityReadDelegate.nodesGetFromIndexContainsScan( state, index, term );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, IndexDescriptor index,
+            String suffix ) throws IndexNotFoundKernelException
+    {
+        guard.check();
+        return entityReadDelegate.nodesGetFromIndexEndsWithScan( state, index, suffix );
+    }
+
+    @Override
     public long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         guard.check();
         return entityReadDelegate.nodeGetFromUniqueIndexSeek( state, index, value );
+    }
+
+    @Override
+    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        guard.check();
+        return entityReadDelegate.nodesCountIndexed( statement, index, nodeId, value );
     }
 
     @Override
@@ -282,13 +310,6 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursor( TxStateHolder txStateHolder, StoreStatement statement, long nodeId )
-    {
-        guard.check();
-        return entityReadDelegate.nodeCursor( txStateHolder, statement, nodeId );
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
             throws EntityNotFoundException
     {
@@ -301,15 +322,6 @@ public class GuardingStatementOperations implements
     {
         guard.check();
         return entityReadDelegate.relationshipCursor( statement, relId );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipCursor( TxStateHolder txStateHolder,
-            StoreStatement statement,
-            long relId )
-    {
-        guard.check();
-        return entityReadDelegate.relationshipCursor( txStateHolder, statement, relId );
     }
 
     @Override
@@ -400,35 +412,24 @@ public class GuardingStatementOperations implements
         return entityReadDelegate.nodeCursorGetFromUniqueIndexSeek( statement, index, value );
     }
 
-    private static class GuardedRelationshipIterator implements RelationshipIterator
+    @Override
+    public long nodesGetCount( KernelStatement statement )
     {
-        private final Guard guard;
-        private final RelationshipIterator iterator;
+        guard.check();
+        return entityReadDelegate.nodesGetCount( statement );
+    }
 
-        public GuardedRelationshipIterator( Guard guard, RelationshipIterator iterator )
-        {
-            this.guard = guard;
-            this.iterator = iterator;
-        }
+    @Override
+    public long relationshipsGetCount( KernelStatement statement )
+    {
+        guard.check();
+        return entityReadDelegate.relationshipsGetCount( statement );
+    }
 
-        @Override
-        public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
-                RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
-        {
-            guard.check();
-            return iterator.relationshipVisit( relationshipId, visitor );
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return iterator.hasNext();
-        }
-
-        @Override
-        public long next()
-        {
-            return iterator.next();
-        }
+    @Override
+    public boolean nodeExists( KernelStatement statement, long id )
+    {
+        guard.check();
+        return entityReadDelegate.nodeExists( statement, id );
     }
 }

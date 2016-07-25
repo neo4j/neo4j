@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.neo4j.adversaries.Adversary;
+import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
@@ -34,14 +35,15 @@ import org.neo4j.io.pagecache.PageCursor;
  * Depending on the adversary each read and write operation can throw either {@link RuntimeException} like
  * {@link SecurityException} or {@link IOException} like {@link FileNotFoundException}.
  * <p>
- * Read operations will always return a consistent value because the underlying page is exclusively write locked.
- * See {@link org.neo4j.io.pagecache.PagedFile#PF_EXCLUSIVE_LOCK} flag.
+ * Read operations will always return a consistent value because the underlying page is write locked.
+ * See {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_WRITE_LOCK} flag.
  */
 @SuppressWarnings( "unchecked" )
-class AdversarialWritePageCursor implements PageCursor
+class AdversarialWritePageCursor extends PageCursor
 {
     private final PageCursor delegate;
     private final Adversary adversary;
+    private AdversarialWritePageCursor linkedCursor;
 
     AdversarialWritePageCursor( PageCursor delegate, Adversary adversary )
     {
@@ -131,20 +133,6 @@ class AdversarialWritePageCursor implements PageCursor
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
         delegate.putInt( offset, value );
-    }
-
-    @Override
-    public long getUnsignedInt()
-    {
-        adversary.injectFailure( IndexOutOfBoundsException.class );
-        return delegate.getUnsignedInt();
-    }
-
-    @Override
-    public long getUnsignedInt( int offset )
-    {
-        adversary.injectFailure( IndexOutOfBoundsException.class );
-        return delegate.getUnsignedInt( offset );
     }
 
     @Override
@@ -260,6 +248,7 @@ class AdversarialWritePageCursor implements PageCursor
     public void close()
     {
         delegate.close();
+        linkedCursor = null;
     }
 
     @Override
@@ -267,6 +256,50 @@ class AdversarialWritePageCursor implements PageCursor
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class,
                 IllegalStateException.class );
-        return delegate.shouldRetry();
+        boolean retry = delegate.shouldRetry();
+        return retry || (linkedCursor != null && linkedCursor.shouldRetry());
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
+    {
+        adversary.injectFailure( IndexOutOfBoundsException.class );
+        return delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
+    }
+
+    @Override
+    public boolean checkAndClearBoundsFlag()
+    {
+        return delegate.checkAndClearBoundsFlag() || (linkedCursor != null && linkedCursor.checkAndClearBoundsFlag());
+    }
+
+    @Override
+    public void checkAndClearCursorException() throws CursorException
+    {
+        delegate.checkAndClearCursorException();
+    }
+
+    @Override
+    public void raiseOutOfBounds()
+    {
+        delegate.raiseOutOfBounds();
+    }
+
+    @Override
+    public void setCursorException( String message )
+    {
+        delegate.setCursorException( message );
+    }
+
+    @Override
+    public void clearCursorException()
+    {
+        delegate.clearCursorException();
+    }
+
+    @Override
+    public PageCursor openLinkedCursor( long pageId )
+    {
+        return linkedCursor = new AdversarialWritePageCursor( delegate.openLinkedCursor( pageId ), adversary );
     }
 }

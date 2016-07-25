@@ -20,8 +20,9 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.util.function.Predicate;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.cursor.IOCursor;
 
 /**
  * {@link IOCursor} implementation that uses a predicate to decide on what to keep and what to skip
@@ -52,7 +53,7 @@ public class FilteringIOCursor<T> implements IOCursor<T>
             {
                 return false;
             }
-        } while ( !toKeep.accept( delegate.get() ) );
+        } while ( !toKeep.test( delegate.get() ) );
         return true;
     }
 

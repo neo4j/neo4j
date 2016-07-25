@@ -13,8 +13,8 @@ configuration is supplied is:
 
 [source]
 ----
-keep_logical_logs=<true/false>
-keep_logical_logs=<amount> <type>
+dbms.tx_log.rotation.retention_policy=<true/false>
+dbms.tx_log.rotation.retention_policy=<amount> <type>
 ----
 
 For example:
@@ -22,16 +22,16 @@ For example:
 [source]
 ----
 # Will keep logical logs indefinitely
-keep_logical_logs=true
+dbms.tx_log.rotation.retention_policy=true
 
 # Will keep only the most recent non-empty log
-keep_logical_logs=false
+dbms.tx_log.rotation.retention_policy=false
 
 # Will keep logical logs which contains any transaction committed within 30 days
-keep_logical_logs=30 days
+dbms.tx_log.rotation.retention_policy=30 days
 
 # Will keep logical logs which contains any of the most recent 500 000 transactions
-keep_logical_logs=500k txs
+dbms.tx_log.rotation.retention_policy=500k txs
 ----
 
 Full list:

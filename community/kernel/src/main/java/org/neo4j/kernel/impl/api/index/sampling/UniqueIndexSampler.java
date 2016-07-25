@@ -19,20 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import static org.neo4j.register.Register.DoubleLong;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 public class UniqueIndexSampler
 {
-    long count = 0;
+    private long count;
 
-    public void increment( int count )
+    public void increment( long count )
     {
-        this.count += count;
+        this.count = Math.addExact( this.count, count );
     }
 
-    public long result( DoubleLong.Out register )
+    public IndexSample result()
     {
-        register.write( count, count );
-        return count;
+        return new IndexSample( count, count, count );
     }
 }

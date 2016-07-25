@@ -27,7 +27,10 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Test implementation of Clock that increments time by given amount on each call to currentTimeMillis.
+ *
+ * @deprecated Please base your TickingClock on {@link java.time.Clock} instead
  */
+@Deprecated
 public class TickingClock implements Clock
 {
     private long currentNanoTime;

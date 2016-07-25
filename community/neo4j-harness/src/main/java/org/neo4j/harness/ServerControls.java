@@ -20,14 +20,19 @@
 package org.neo4j.harness;
 
 import java.net.URI;
+import java.util.Optional;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.config.Configuration;
 
 /**
  * Control panel for a Neo4j test instance.
  */
 public interface ServerControls extends AutoCloseable
 {
+    /** Returns the URI to the Bolt Protocol connector of the instance. */
+    URI boltURI();
+
     /** Returns the URI to the root resource of the instance. For example, http://localhost:7474/ */
     URI httpURI();
 
@@ -35,7 +40,7 @@ public interface ServerControls extends AutoCloseable
      * Returns ths URI to the root resource of the instance using the https protocol.
      * For example, https://localhost:7475/.
      */
-    URI httpsURI();
+    Optional<URI> httpsURI();
 
     /** Stop the test instance and delete all files related to it on disk. */
     @Override
@@ -43,4 +48,7 @@ public interface ServerControls extends AutoCloseable
 
     /** Access the {@link org.neo4j.graphdb.GraphDatabaseService} used by the server */
     GraphDatabaseService graph();
+
+    /** Returns the server's configuration */
+    Configuration config();
 }

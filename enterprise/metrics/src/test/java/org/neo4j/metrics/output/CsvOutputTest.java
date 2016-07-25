@@ -19,25 +19,30 @@
  */
 package org.neo4j.metrics.output;
 
+import java.io.File;
+import java.nio.file.Files;
+
 import com.codahale.metrics.MetricRegistry;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLog;
 import org.neo4j.metrics.MetricsSettings;
-import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.fail;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -48,78 +53,51 @@ public class CsvOutputTest
     @Rule
     public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
-    @Test
-    public void shouldHaveMetricsCsvPathEndUpRelativeToGraphDbDirectoryIfRelativePathSpecified() throws Exception
+    private KernelContext kernelContext;
+
+    @Before
+    public void setup()
     {
-        // GIVEN
         File storeDir = directory.directory();
-        String name = "metrics.csv";
-        CsvOutput output = life.add( new CsvOutput( config(
-                MetricsSettings.csvEnabled.name(), "true",
-                MetricsSettings.csvInterval.name(), "10ms",
-                MetricsSettings.csvPath.name(), name ),
-                new MetricRegistry(), NullLog.getInstance(), kerneContext( storeDir ) ) );
-
-        // WHEN
-        life.start();
-
-        // THEN
-        waitForFileToAppear( new File( storeDir, name ) );
+        kernelContext = new SimpleKernelContext( new DefaultFileSystemAbstraction(), storeDir,
+                DatabaseInfo.UNKNOWN, new Dependencies() );
     }
 
     @Test
-    public void shouldHaveRelativeMetricsCsvPathBeRelativeToGraphDbDirectory() throws Exception
+    public void shouldHaveRelativeMetricsCsvPathBeRelativeToNeo4jHome() throws Exception
     {
         // GIVEN
-        File storeDir = directory.directory();
-        CsvOutput output = life.add( new CsvOutput( config(
+        File home = directory.absolutePath();
+        Config config = config(
                 MetricsSettings.csvEnabled.name(), "true",
                 MetricsSettings.csvInterval.name(), "10ms",
-                MetricsSettings.csvPath.name(), "test.csv" ),
-                new MetricRegistry(), NullLog.getInstance(), kerneContext( storeDir ) ) );
+                MetricsSettings.csvPath.name(), "the-metrics-dir",
+                GraphDatabaseSettings.neo4j_home.name(), home.getAbsolutePath() );
+        life.add( new CsvOutput( config, new MetricRegistry(), NullLog.getInstance(), kernelContext ) );
 
         // WHEN
         life.start();
 
         // THEN
-        waitForFileToAppear( new File( storeDir, "test.csv" ) );
+        waitForFileToAppear( new File( home, "the-metrics-dir" ) );
     }
 
     @Test
     public void shouldHaveAbsoluteMetricsCsvPathBeAbsolute() throws Exception
     {
         // GIVEN
-        File storeDir = directory.directory();
-        File file = File.createTempFile( "neo4j", "csvoutput" );
-        CsvOutput output = life.add( new CsvOutput( config(
+        File outputFPath = Files.createTempDirectory( "output" ).toFile();
+        Config config = config(
                 MetricsSettings.csvEnabled.name(), "true",
                 MetricsSettings.csvInterval.name(), "10ms",
-                MetricsSettings.csvPath.name(), file.getAbsolutePath() ),
-                new MetricRegistry(), NullLog.getInstance(), kerneContext( storeDir ) ) );
+                MetricsSettings.csvPath.name(), outputFPath.getAbsolutePath() );
+        life.add( new CsvOutput( config, new MetricRegistry(), NullLog.getInstance(), kernelContext ) );
 
         // WHEN
         life.start();
 
         // THEN
-        waitForFileToAppear( file );
-    }
-
-    private KernelContext kerneContext( final File storeDir )
-    {
-        return new KernelContext()
-        {
-            @Override
-            public File storeDir()
-            {
-                return storeDir;
-            }
-
-            @Override
-            public FileSystemAbstraction fileSystem()
-            {
-                return new DefaultFileSystemAbstraction();
-            }
-        };
+        waitForFileToAppear( outputFPath );
     }
 
     private Config config( String... keysValues )

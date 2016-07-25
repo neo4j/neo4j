@@ -48,10 +48,11 @@ import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.RegexMatcher;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.mockito.matcher.RegexMatcher;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -131,7 +132,7 @@ public class UdcExtensionImplTest
     {
         // When
         graphdb = new TestGraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( path.directory( "should-record-failures" ).getPath() ).
+                newEmbeddedDatabaseBuilder( path.directory( "should-record-failures" ) ).
                 loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) ).
                 setConfig( UdcSettings.first_delay, "100" ).
                 setConfig( UdcSettings.udc_host, "127.0.0.1:1" ).
@@ -248,7 +249,6 @@ public class UdcExtensionImplTest
                 }
             }
         } );
-
 
         t.run();
 
@@ -573,7 +573,8 @@ public class UdcExtensionImplTest
 
     private GraphDatabaseService createDatabase( Map<String, String> config ) throws IOException
     {
-        GraphDatabaseBuilder graphDatabaseBuilder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder();
+        GraphDatabaseBuilder graphDatabaseBuilder =
+                new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabaseBuilder();
         graphDatabaseBuilder.loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) );
 
         if ( config != null )
@@ -594,12 +595,11 @@ public class UdcExtensionImplTest
     {
         if(gdb != null)
         {
-            @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db = (GraphDatabaseAPI) gdb;
+            GraphDatabaseAPI db = (GraphDatabaseAPI) gdb;
             gdb.shutdown();
             FileUtils.deleteDirectory( new File( db.getStoreDir() ) );
         }
     }
-
 
     private static class PointerTo<T>
     {

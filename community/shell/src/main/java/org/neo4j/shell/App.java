@@ -28,66 +28,66 @@ import java.util.List;
  */
 public interface App
 {
-	/**
-	 * @return the name of the application. 
-	 */
-	String getName();
-	
-	/**
-	 * @param option the name of the option. An option could be like this:
-	 * "ls -l" where "l" is an option.
-	 * @return the option definition for {@code option}.
-	 */
-	OptionDefinition getOptionDefinition( String option );
-	
-	/**
-	 * @return the available options.
-	 */
-	String[] getAvailableOptions();
-	
-	/**
-	 * The actual code for the application.
-	 * @param parser holds the options (w/ or w/o values) as well as arguments.  
-	 * @param session the client session (sort of like the environment
-	 * for the execution).
-	 * @param out the output channel for the execution, just like System.out.
-	 * @return the result of the execution. It is up to the client to interpret
-	 * this string, one example is that all apps returns null and the "exit"
-	 * app returns "e" so that the server interprets the "e" as a sign that
-	 * it should exit. 
-	 * @throws Exception if the execution fails.
-	 */
-	Continuation execute( AppCommandParser parser, Session session, Output out )
-		throws Exception;
-	
-	/**
-	 * Returns the server this app runs in.
-	 * @return the server this app runs in.
-	 */
-	AppShellServer getServer();
-	
-	/**
-	 * @return a general description of this application.
-	 */
-	String getDescription();
-	
-	/**
-	 * @param option the option to get the description for.
-	 * @return a description of a certain option.
-	 */
-	String getDescription( String option );
-	
-	/**
-	 * Put code here which will need to run before the shell server is shut down
-	 */
-	void shutdown();
-	
-	/**
+    /**
+     * @return the name of the application.
+     */
+    String getName();
+
+    /**
+     * @param option the name of the option. An option could be like this:
+     * "ls -l" where "l" is an option.
+     * @return the option definition for {@code option}.
+     */
+    OptionDefinition getOptionDefinition( String option );
+
+    /**
+     * @return the available options.
+     */
+    String[] getAvailableOptions();
+
+    /**
+     * The actual code for the application.
+     * @param parser holds the options (w/ or w/o values) as well as arguments.
+     * @param session the client session (sort of like the environment
+     * for the execution).
+     * @param out the output channel for the execution, just like System.out.
+     * @return the result of the execution. It is up to the client to interpret
+     * this string, one example is that all apps returns null and the "exit"
+     * app returns "e" so that the server interprets the "e" as a sign that
+     * it should exit.
+     * @throws Exception if the execution fails.
+     */
+    Continuation execute( AppCommandParser parser, Session session, Output out )
+        throws Exception;
+
+    /**
+     * Returns the server this app runs in.
+     * @return the server this app runs in.
+     */
+    AppShellServer getServer();
+
+    /**
+     * @return a general description of this application.
+     */
+    String getDescription();
+
+    /**
+     * @param option the option to get the description for.
+     * @return a description of a certain option.
+     */
+    String getDescription( String option );
+
+    /**
+     * Put code here which will need to run before the shell server is shut down
+     */
+    void shutdown();
+
+    /**
      * Tries to complete the {@code partOfLine} with likely candidates,
      * think of this as a hook for writing TAB-completion. Returned candidates
      * should contain the supplied part as well as possible completions.
      * Implementing this is optional and it's OK to just return an empty list.
-     * 
+     *
      * @param partOfLine the part of the line which the client wants to complete
      * using TAB-completion.
      * @param session the {@link Session} from the client caller.
@@ -96,7 +96,7 @@ public interface App
      * or if the implementing class chooses not to implement it properly.
      * @throws ShellException if the execution fails
      */
-	List<String> completionCandidates( String partOfLine, Session session ) throws ShellException;
+    List<String> completionCandidates( String partOfLine, Session session ) throws ShellException;
 
     boolean takesOptions();
 }

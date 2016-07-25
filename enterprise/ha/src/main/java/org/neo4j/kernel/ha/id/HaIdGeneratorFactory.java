@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha.id;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -28,27 +27,26 @@ import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.IdTypeConfiguration;
-import org.neo4j.kernel.IdTypeConfigurationProvider;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.kernel.ha.id.IdRangeIterator.EMPTY_ID_RANGE_ITERATOR;
 
 public class HaIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final Map<IdType,HaIdGenerator> generators = new EnumMap<>( IdType.class );
+    private final Map<IdType, HaIdGenerator> generators = new EnumMap<>( IdType.class );
     private final FileSystemAbstraction fs;
-    private IdTypeConfigurationProvider idTypeConfigurationProvider;
+    private final IdTypeConfigurationProvider idTypeConfigurationProvider;
     private final IdGeneratorFactory localFactory;
     private final DelegateInvocationHandler<Master> master;
     private final Log log;
@@ -67,14 +65,14 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, long highId )
+    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-        return open( filename, idTypeConfiguration.getGrabSize(), idType, highId );
+        return open( filename, idTypeConfiguration.getGrabSize(), idType, highId, maxId );
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
     {
         HaIdGenerator previous = generators.remove( idType );
         if ( previous != null )
@@ -86,7 +84,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         switch ( globalState )
         {
         case MASTER:
-            initialIdGenerator = localFactory.open( fileName, grabSize, idType, highId );
+            initialIdGenerator = localFactory.open( fileName, grabSize, idType, highId, maxId );
             break;
         case SLAVE:
             // Initially we may call switchToSlave() before calling open, so we need this additional
@@ -97,7 +95,8 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         default:
             throw new IllegalStateException( globalState.name() );
         }
-        HaIdGenerator haIdGenerator = new HaIdGenerator( initialIdGenerator, fs, fileName, grabSize, idType, globalState );
+        HaIdGenerator haIdGenerator = new HaIdGenerator( initialIdGenerator, fileName, grabSize, idType,
+                                    globalState, maxId );
         generators.put( idType, haIdGenerator );
         return haIdGenerator;
     }
@@ -145,8 +144,6 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         }
     }
 
-    static final long VALUE_REPRESENTING_NULL = -1;
-
     private enum IdGeneratorState
     {
         PENDING, SLAVE, MASTER;
@@ -155,21 +152,21 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     private class HaIdGenerator implements IdGenerator
     {
         private volatile IdGenerator delegate;
-        private final FileSystemAbstraction fs;
         private final File fileName;
         private final int grabSize;
         private final IdType idType;
         private volatile IdGeneratorState state;
+        private long maxId;
 
-        HaIdGenerator( IdGenerator initialDelegate, FileSystemAbstraction fs, File fileName, int grabSize,
-                       IdType idType, IdGeneratorState initialState )
+        HaIdGenerator( IdGenerator initialDelegate, File fileName, int grabSize,
+                IdType idType, IdGeneratorState initialState, long maxId )
         {
             delegate = initialDelegate;
-            this.fs = fs;
             this.fileName = fileName;
             this.grabSize = grabSize;
             this.idType = idType;
             this.state = initialState;
+            this.maxId = maxId;
             log.debug( "Instantiated HaIdGenerator for " + initialDelegate + " " + idType + ", " + initialState );
         }
 
@@ -192,7 +189,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                 delegate.delete();
 
                 localFactory.create( fileName, highId, false );
-                delegate = localFactory.open( fileName, grabSize, idType, highId );
+                delegate = localFactory.open( fileName, grabSize, idType, highId, maxId );
                 log.debug( "Instantiated master delegate " + delegate + " of type " + idType + " with highid " + highId );
             }
             else
@@ -297,7 +294,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     {
         private volatile long highestIdInUse;
         private volatile long defragCount;
-        private volatile IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
+        private volatile IdRangeIterator idQueue;
         private final Master master;
         private final IdType idType;
         private final Log log;
@@ -311,6 +308,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             this.master = master;
             this.log = log;
             this.requestContextFactory = requestContextFactory;
+            idQueue = EMPTY_ID_RANGE_ITERATOR;
         }
 
         @Override
@@ -345,7 +343,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         public synchronized long nextId()
         {
             long nextId = nextLocalId();
-            if ( nextId == VALUE_REPRESENTING_NULL )
+            if ( nextId == IdRangeIterator.VALUE_REPRESENTING_NULL )
             {
                 // If we don't have anymore grabbed ids from master, grab a bunch
                 try ( Response<IdAllocation> response =
@@ -407,64 +405,4 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             return getClass().getSimpleName() + "[" + this.idQueue + "]";
         }
     }
-
-    static class IdRangeIterator
-    {
-        private int position = 0;
-        private final long[] defrag;
-        private final long start;
-        private final int length;
-
-        IdRangeIterator( IdRange idRange )
-        {
-            this.defrag = idRange.getDefragIds();
-            this.start = idRange.getRangeStart();
-            this.length = idRange.getRangeLength();
-        }
-
-        long next()
-        {
-            try
-            {
-                if ( position < defrag.length )
-                {
-                    return defrag[position];
-                }
-
-                long candidate = nextRangeCandidate();
-                if ( candidate == IdGeneratorImpl.INTEGER_MINUS_ONE )
-                {
-                    position++;
-                    candidate = nextRangeCandidate();
-                }
-                return candidate;
-            }
-            finally
-            {
-                ++position;
-            }
-        }
-
-        private long nextRangeCandidate()
-        {
-            int offset = position - defrag.length;
-            return (offset < length) ? (start + offset) : VALUE_REPRESENTING_NULL;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "IdRangeIterator[start:" + start + ", length:" + length + ", position:" + position + ", defrag:" + Arrays.toString( defrag ) + "]";
-        }
-    }
-
-    private static IdRangeIterator EMPTY_ID_RANGE_ITERATOR =
-            new IdRangeIterator( new IdRange( EMPTY_LONG_ARRAY, 0, 0 ) )
-            {
-                @Override
-                long next()
-                {
-                    return VALUE_REPRESENTING_NULL;
-                }
-            };
 }

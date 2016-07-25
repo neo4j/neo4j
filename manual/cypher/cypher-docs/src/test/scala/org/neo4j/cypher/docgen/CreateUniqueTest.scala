@@ -26,9 +26,9 @@ import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class CreateUniqueTest extends DocumentingTestBase with QueryStatisticsTestSupport with SoftReset {
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
-  
+
   override def graphDescription = List(
     "root X A",
     "root X B",
@@ -65,7 +65,7 @@ class CreateUniqueTest extends DocumentingTestBase with QueryStatisticsTestSuppo
       queryText = "match (root {name: 'root'}) create unique (root)-[:X]-(leaf {name:'D'} ) return leaf",
       optionalResultExplanation = "No node connected with the root node has the name +D+, and so a new node is created to " +
         "match the pattern.",
-      assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1))
+      assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1, propertiesWritten = 1))
   }
 
   @Test def create_relationship_with_values() {
@@ -76,7 +76,7 @@ class CreateUniqueTest extends DocumentingTestBase with QueryStatisticsTestSuppo
       optionalResultExplanation = "In this example, we want the relationship to have a value, and since no such relationship can be found," +
         " a new node and relationship are created. Note that since we are not interested in the created node, we don't " +
         "name it.",
-      assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1))
+      assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1, propertiesWritten = 1))
   }
 
   @Test def commad_separated_pattern() {

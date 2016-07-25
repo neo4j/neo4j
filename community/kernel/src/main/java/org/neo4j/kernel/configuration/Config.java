@@ -20,57 +20,63 @@
 package org.neo4j.kernel.configuration;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Functions;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.logging.BufferingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
-import static java.lang.Character.isDigit;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
+import static org.neo4j.helpers.collection.Iterables.concat;
 
 /**
- * This class holds the overall configuration of a Neo4j database instance. Use the accessors
- * to convert the internal key-value settings to other types.
+ * This class holds the overall configuration of a Neo4j database instance. Use the accessors to convert the internal
+ * key-value settings to other types.
  * <p>
- * Users can assume that old settings have been migrated to their new counterparts, and that defaults
- * have been applied.
- * <p>
- * UI's can change configuration by calling applyChanges. Any listener, such as services that use
- * this configuration, can be notified of changes by implementing the {@link ConfigurationChangeListener} interface.
+ * Users can assume that old settings have been migrated to their new counterparts, and that defaults have been
+ * applied.
  */
-public class Config implements DiagnosticsProvider
+public class Config implements DiagnosticsProvider, Configuration
 {
-    private final List<ConfigurationChangeListener> listeners = new CopyOnWriteArrayList<>();
-    private final Map<String, String> params = new ConcurrentHashMap<>(  );
-    private final Function<String, String> settingsFunction;
+    private final Map<String, String> params = new ConcurrentHashMap<>();
+    private final Iterable<Class<?>> settingsClasses;
+    private final ConfigurationMigrator migrator;
+    private final ConfigurationValidator validator;
 
-    // Messages to this log get replayed into a real logger once logging has been
-    // instantiated.
+    private ConfigValues settingsFunction;
+
+    // Messages to this log get replayed into a real logger once logging has been instantiated.
     private final BufferingLog bufferedLog = new BufferingLog();
     private Log log = bufferedLog;
 
-    private Iterable<Class<?>> settingsClasses = emptyList();
-    private ConfigurationMigrator migrator;
-    private ConfigurationValidator validator;
-
-    public Config()
+    public static Config empty()
     {
-        this( new HashMap<String, String>(), Collections.<Class<?>>emptyList() );
+        return new Config();
+    }
+
+    public static Config defaults()
+    {
+        return new Config();
+    }
+
+    private Config()
+    {
+        this( new HashMap<>() );
     }
 
     public Config( Map<String, String> inputParams )
@@ -83,24 +89,32 @@ public class Config implements DiagnosticsProvider
         this( inputParams, asList( settingsClasses ) );
     }
 
-    public Config( Map<String, String> inputParams, Iterable<Class<?>> settingsClasses )
+    public Config( Map<String, String> params, Iterable<Class<?>> settingsClasses )
     {
-        this.settingsFunction = Functions.map( params );
-        this.params.putAll( inputParams );
-        registerSettingsClasses( settingsClasses );
+        this( Optional.empty(), params, settings -> {}, ( classes ) -> settingsClasses );
     }
 
-    /** Add more settings classes. */
-    public Config registerSettingsClasses( Iterable<Class<?>> settingsClasses )
+    public Config( Optional<File> configFile, Map<String, String> overriddenSettings,
+            Consumer<Map<String, String>> settingsPostProcessor,
+            Function<Map<String, String> ,Iterable<Class<?>>> settingClassesProvider)
     {
-        this.settingsClasses = Iterables.concat( settingsClasses, this.settingsClasses );
-        this.migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
-        this.validator = new ConfigurationValidator( settingsClasses );
+        Map<String,String> settings = initSettings( configFile, settingsPostProcessor, overriddenSettings );
+        this.settingsClasses = settingClassesProvider.apply( settings );
+        migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
+        validator = new ConfigurationValidator( settingsClasses );
+        replaceSettings( settings );
+    }
 
-        // Apply the requirements and changes the new settings classes introduce
-        this.applyChanges( getParams() );
-
-        return this;
+    /**
+     * Returns a copy of this config with the given modifications.
+     *
+     * @return a new modified config, leaves this config unchanged.
+     */
+    public Config with( Map<String, String> additionalConfig, Class<?>... settingsClasses )
+    {
+        Map<String, String> newParams = getParams(); // copy is returned
+        newParams.putAll( additionalConfig );
+        return new Config( newParams, concat( this.settingsClasses, asList( settingsClasses ) ) );
     }
 
     // TODO: Get rid of this, to allow us to have something more
@@ -114,97 +128,33 @@ public class Config implements DiagnosticsProvider
     /**
      * Retrieve a configuration property.
      */
+    @Override
     public <T> T get( Setting<T> setting )
     {
         return setting.apply( settingsFunction );
     }
 
     /**
-     * Use {@link Config#applyChanges(java.util.Map)} instead, so changes are applied in
-     * bulk and the ConfigurationChangeListeners can process the changes in one go.
+     * Unlike the public {@link Setting} instances, the function passed in here has access to
+     * the raw setting data, meaning it can provide functionality that cross multiple settings
+     * and other more advanced use cases.
      */
-    @Deprecated
-    public Config setProperty( String key, Object value )
+    public <T> T view( Function<ConfigValues, T> projection )
     {
-        // This method here is for supporting legacy server configurator api.
-        // None should call this except external users,
-        // as "ideally" properties should not be changed once they are loaded.
-        this.params.put( key, value.toString() );
-        this.applyChanges( new HashMap<>( params ) );
-        return this;
+        return projection.apply( settingsFunction );
     }
 
     /**
      * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
      * non-overlapping ones.
+     *
      * @param changes settings to add and override
      */
-    public Config augment( Map<String,String> changes )
+    public Config augment( Map<String, String> changes )
     {
-        Map<String,String> params = getParams();
+        Map<String, String> params = getParams();
         params.putAll( changes );
-        applyChanges( params );
-        return this;
-    }
-
-    /**
-     * Replace the current set of configuration parameters with another one.
-     */
-    public synchronized Config applyChanges( Map<String, String> newConfiguration )
-    {
-        newConfiguration = migrator.apply( newConfiguration, log );
-
-        // Make sure all changes are valid
-        validator.validate( newConfiguration );
-
-        // Figure out what changed
-        if ( listeners.isEmpty() )
-        {
-            // Make the change
-            params.clear();
-            params.putAll( newConfiguration );
-        }
-        else
-        {
-            List<ConfigurationChange> configurationChanges = new ArrayList<>();
-            for ( Map.Entry<String, String> stringStringEntry : newConfiguration.entrySet() )
-            {
-                String oldValue = params.get( stringStringEntry.getKey() );
-                String newValue = stringStringEntry.getValue();
-                if ( !(oldValue == null && newValue == null) &&
-                        (oldValue == null || newValue == null || !oldValue.equals( newValue )) )
-                {
-                    configurationChanges.add( new ConfigurationChange( stringStringEntry.getKey(), oldValue,
-                            newValue ) );
-                }
-            }
-
-            if ( configurationChanges.isEmpty() )
-            {
-                // Don't bother... nothing changed.
-                return this;
-            }
-
-            // Make the change
-            params.clear();
-            for ( Map.Entry<String, String> entry : newConfiguration.entrySet() )
-            {
-                // Filter out nulls because we are using a ConcurrentHashMap under the covers, which doesn't support
-                // null keys or values.
-                String value = entry.getValue();
-                if ( value != null )
-                {
-                    params.put( entry.getKey(), value );
-                }
-            }
-
-            // Notify listeners
-            for ( ConfigurationChangeListener listener : listeners )
-            {
-                listener.notifyConfigurationChanges( configurationChanges );
-            }
-        }
-
+        replaceSettings( params );
         return this;
     }
 
@@ -220,16 +170,6 @@ public class Config implements DiagnosticsProvider
             bufferedLog.replayInto( log );
         }
         this.log = log;
-    }
-
-    public void addConfigurationChangeListener( ConfigurationChangeListener listener )
-    {
-        listeners.add( listener );
-    }
-
-    public void removeConfigurationChangeListener( ConfigurationChangeListener listener )
-    {
-        listeners.remove( listener );
     }
 
     @Override
@@ -271,78 +211,40 @@ public class Config implements DiagnosticsProvider
         return output.toString();
     }
 
-    public static long parseLongWithUnit( String numberWithPotentialUnit )
+    private synchronized void replaceSettings( Map<String, String> newSettings )
     {
-        int firstNonDigitIndex = findFirstNonDigit( numberWithPotentialUnit );
-        String number = numberWithPotentialUnit.substring( 0, firstNonDigitIndex );
+        Map<String,String> migratedSettings = migrator.apply( newSettings, log );
+        validator.validate( migratedSettings );
+        params.clear();
+        params.putAll( migratedSettings );
+        settingsFunction = new ConfigValues( params );
+    }
 
-        long multiplier = 1;
-        if ( firstNonDigitIndex < numberWithPotentialUnit.length() )
+    private Map<String,String> initSettings( Optional<File> configFile,
+            Consumer<Map<String,String>> settingsPostProcessor, Map<String,String> overriddenSettings )
+    {
+        Map<String,String> settings = new HashMap<>();
+        configFile.ifPresent( file -> settings.putAll( loadFromFile( file) ) );
+        settingsPostProcessor.accept( settings );
+        settings.putAll( overriddenSettings );
+        return settings;
+    }
+
+    private Map<String, String> loadFromFile( File file )
+    {
+        if ( !file.exists() )
         {
-            String unit = numberWithPotentialUnit.substring( firstNonDigitIndex );
-            if ( unit.equalsIgnoreCase( "k" ) )
-            {
-                multiplier = 1024;
-            }
-            else if ( unit.equalsIgnoreCase( "m" ) )
-            {
-                multiplier = 1024 * 1024;
-            }
-            else if ( unit.equalsIgnoreCase( "g" ) )
-            {
-                multiplier = 1024 * 1024 * 1024;
-            }
-            else
-            {
-                throw new IllegalArgumentException(
-                        "Illegal unit '" + unit + "' for number '" + numberWithPotentialUnit + "'" );
-            }
+            log.warn( "Config file [%s] does not exist.", file );
+            return new HashMap<>();
         }
-
-        return Long.parseLong( number ) * multiplier;
-    }
-
-    /**
-     * @return index of first non-digit character in {@code numberWithPotentialUnit}. If all digits then
-     * {@code numberWithPotentialUnit.length()} is returned.
-     */
-    private static int findFirstNonDigit( String numberWithPotentialUnit )
-    {
-        int firstNonDigitIndex = numberWithPotentialUnit.length();
-        for ( int i = 0; i < numberWithPotentialUnit.length(); i++ )
+        try
         {
-            if ( !isDigit( numberWithPotentialUnit.charAt( i ) ) )
-            {
-                firstNonDigitIndex = i;
-                break;
-            }
+            return MapUtil.load( file );
         }
-        return firstNonDigitIndex;
-    }
-
-    /**
-     * Returns a copy of this config with the given modifications.
-     * @return a new modified config, leaves this config unchanged.
-     */
-    public Config with( Map<String, String> additionalConfig )
-    {
-        Map<String, String> newParams = getParams(); // copy is returned
-        newParams.putAll( additionalConfig );
-        return new Config( newParams );
-    }
-
-    /**
-     * Looks at configured file {@code absoluteOrRelativeFile} and just returns it if absolute, otherwise
-     * returns a {@link File} with {@code baseDirectoryIfRelative} as parent.
-     *
-     * @param baseDirectoryIfRelative base directory to use as parent if {@code absoluteOrRelativeFile}
-     * is relative, otherwise unused.
-     * @param absoluteOrRelativeFile file to return as absolute or relative to {@code baseDirectoryIfRelative}.
-     */
-    public static File absoluteFileOrRelativeTo( File baseDirectoryIfRelative, File absoluteOrRelativeFile )
-    {
-        return absoluteOrRelativeFile.isAbsolute()
-                ? absoluteOrRelativeFile
-                : new File( baseDirectoryIfRelative, absoluteOrRelativeFile.getPath() );
+        catch ( IOException e )
+        {
+            log.error( "Unable to load config file [%s]: %s", file, e.getMessage() );
+            return new HashMap<>();
+        }
     }
 }

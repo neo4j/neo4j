@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.util.dbstructure;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.Pair.of;
-import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.helpers.collection.Pair.of;
 
 public class DbStructureCollectorTest
 {
@@ -42,9 +42,9 @@ public class DbStructureCollectorTest
         collector.visitPropertyKey( 2, "income" );
         collector.visitRelationshipType( 1, "LIVES_IN" );
         collector.visitRelationshipType( 2, "FRIEND" );
-        collector.visitUniqueIndex( new IndexDescriptor( 1, 1 ), ":Person(name)", 1.0d, 1l );
+        collector.visitUniqueIndex( new IndexDescriptor( 1, 1 ), ":Person(name)", 1.0d, 1L );
         collector.visitUniqueConstraint( new UniquenessConstraint( 2, 1 ), ":Person(name)" );
-        collector.visitIndex( new IndexDescriptor( 2, 2 ), ":City(income)", 0.2d, 1l );
+        collector.visitIndex( new IndexDescriptor( 2, 2 ), ":City(income)", 0.2d, 1L );
         collector.visitAllNodesCount( 50 );
         collector.visitNodeCount( 1, "Person", 20 );
         collector.visitNodeCount( 2, "City", 30 );
@@ -54,13 +54,13 @@ public class DbStructureCollectorTest
         DbStructureLookup lookup = collector.lookup();
 
         // THEN
-        assertEquals( asList( of( 1, "Person" ), of( 2, "City" ) ), toList( lookup.labels() ) );
-        assertEquals( asList( of( 1, "name" ), of( 2, "income" ) ), toList( lookup.properties() ) );
-        assertEquals( asList( of( 1, "LIVES_IN" ), of( 2, "FRIEND" ) ), toList( lookup.relationshipTypes() ) );
+        assertEquals( asList( of( 1, "Person" ), of( 2, "City" ) ), Iterators.asList( lookup.labels() ) );
+        assertEquals( asList( of( 1, "name" ), of( 2, "income" ) ), Iterators.asList( lookup.properties() ) );
+        assertEquals( asList( of( 1, "LIVES_IN" ), of( 2, "FRIEND" ) ), Iterators.asList( lookup.relationshipTypes() ) );
 
-        assertEquals( asList( of( "City", "name" ) ), toList( lookup.knownUniqueConstraints() ) );
-        assertEquals( asList( of( "Person", "name" ) ), toList( lookup.knownUniqueIndices() ) );
-        assertEquals( asList( of( "City", "income" ) ), toList( lookup.knownIndices() ) );
+        assertEquals( asList( of( "City", "name" ) ), Iterators.asList( lookup.knownUniqueConstraints() ) );
+        assertEquals( asList( of( "Person", "name" ) ), Iterators.asList( lookup.knownUniqueIndices() ) );
+        assertEquals( asList( of( "City", "income" ) ), Iterators.asList( lookup.knownIndices() ) );
 
         assertEquals( 50, lookup.nodesWithLabelCardinality( -1 ) );
         assertEquals( 20, lookup.nodesWithLabelCardinality( 1 ) );

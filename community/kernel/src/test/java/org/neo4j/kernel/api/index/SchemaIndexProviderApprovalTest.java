@@ -19,34 +19,33 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import org.neo4j.function.Function;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.ObjectUtil;
+import org.neo4j.helpers.Strings;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
 
 /*
  * The purpose of this test class is to make sure all index providers produce the same results.
@@ -70,8 +69,8 @@ public abstract class SchemaIndexProviderApprovalTest
         CHAR_LOWER_A( 'a' ),
         INT_42( 42 ),
         LONG_42( (long) 42 ),
-        LARGE_LONG_1( 4611686018427387905l ),
-        LARGE_LONG_2( 4611686018427387907l ),
+        LARGE_LONG_1( 4611686018427387905L ),
+        LARGE_LONG_2( 4611686018427387907L ),
         BYTE_42( (byte) 42 ),
         DOUBLE_42( (double) 42 ),
         DOUBLE_42andAHalf( 42.5d ),
@@ -80,10 +79,10 @@ public abstract class SchemaIndexProviderApprovalTest
         FLOAT_42andAHalf( 42.5f ),
         ARRAY_OF_INTS( new int[]{1, 2, 3} ),
         ARRAY_OF_LONGS( new long[]{1, 2, 3} ),
-        ARRAY_OF_LARGE_LONGS_1( new long[] { 4611686018427387905l } ),
-        ARRAY_OF_LARGE_LONGS_2( new long[] { 4611686018427387906l } ),
-        ARRAY_OF_LARGE_LONGS_3( new Long[] { 4611686018425387907l } ),
-        ARRAY_OF_LARGE_LONGS_4( new Long[] { 4611686018425387908l } ),
+        ARRAY_OF_LARGE_LONGS_1( new long[] { 4611686018427387905L } ),
+        ARRAY_OF_LARGE_LONGS_2( new long[] { 4611686018427387906L } ),
+        ARRAY_OF_LARGE_LONGS_3( new Long[] { 4611686018425387907L } ),
+        ARRAY_OF_LARGE_LONGS_4( new Long[] { 4611686018425387908L } ),
         ARRAY_OF_BOOL_LIKE_STRING( new String[]{"true", "false", "true"} ),
         ARRAY_OF_BOOLS( new boolean[]{true, false, true} ),
         ARRAY_OF_DOUBLES( new double[]{1, 2, 3} ),
@@ -117,17 +116,9 @@ public abstract class SchemaIndexProviderApprovalTest
     }
 
     @Parameters(name = "{0}")
-    public static Collection<Object[]> data()
+    public static Collection<TestValue> data()
     {
-        Iterable<TestValue> testValues = asIterable( TestValue.values() );
-        return asCollection( map( new Function<TestValue, Object[]>()
-        {
-            @Override
-            public Object[] apply( TestValue testValue )
-            {
-                return new Object[]{testValue};
-            }
-        }, testValues ) );
+        return Arrays.asList( TestValue.values() );
     }
 
     @BeforeClass
@@ -147,25 +138,20 @@ public abstract class SchemaIndexProviderApprovalTest
 
     public static final String LABEL = "Person";
     public static final String PROPERTY_KEY = "name";
-    public static final Function<Node, Object> PROPERTY_EXTRACTOR = new Function<Node, Object>()
-    {
-        @Override
-        public Object apply( Node node )
+    public static final Function<Node, Object> PROPERTY_EXTRACTOR = node -> {
+        Object value = node.getProperty( PROPERTY_KEY );
+        if ( value.getClass().isArray() )
         {
-            Object value = node.getProperty( PROPERTY_KEY );
-            if ( value.getClass().isArray() )
-            {
-                return new ArrayEqualityObject( value );
-            }
-            return value;
+            return new ArrayEqualityObject( value );
         }
+        return value;
     };
 
     @Test
     public void test()
     {
-        Set<Object> noIndexResult = asSet( noIndexRun.get( currentValue ) );
-        Set<Object> indexResult = asSet( indexRun.get( currentValue ) );
+        Set<Object> noIndexResult = Iterables.asSet( noIndexRun.get( currentValue ) );
+        Set<Object> indexResult = Iterables.asSet( indexRun.get( currentValue ) );
 
         String errorMessage = currentValue.toString();
 
@@ -201,7 +187,7 @@ public abstract class SchemaIndexProviderApprovalTest
                                       TestValue value )
     {
         ResourceIterator<Node> foundNodes = db.findNodes( label( LABEL ), PROPERTY_KEY, value.value );
-        Set<Object> propertyValues = asSet( map( PROPERTY_EXTRACTOR, foundNodes ) );
+        Set<Object> propertyValues = asSet( Iterators.map( PROPERTY_EXTRACTOR, foundNodes ) );
         results.put( value, propertyValues );
     }
 
@@ -229,7 +215,7 @@ public abstract class SchemaIndexProviderApprovalTest
         @Override
         public String toString()
         {
-            return ObjectUtil.toString( array );
+            return Strings.prettyPrint( array );
         }
     }
 }

@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 
 @SuppressWarnings( "rawtypes" )
@@ -40,14 +40,7 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
 
     public Dependencies( final DependencyResolver parent )
     {
-        this.parent = new Supplier<DependencyResolver>()
-        {
-            @Override
-            public DependencyResolver get()
-            {
-                return parent;
-            }
-        };
+        this.parent = () -> parent;
     }
 
     public Dependencies( Supplier<DependencyResolver> parent )
@@ -80,26 +73,12 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
 
     public <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector)
     {
-        return new Supplier<T>()
-        {
-            @Override
-            public T get()
-            {
-                return resolveDependency( type, selector );
-            }
-        };
+        return () -> resolveDependency( type, selector );
     }
 
     public <T> Supplier<T> provideDependency( final Class<T> type )
     {
-        return new Supplier<T>()
-        {
-            @Override
-            public T get()
-            {
-                return resolveDependency( type );
-            }
-        };
+        return () -> resolveDependency( type );
     }
 
     @Override

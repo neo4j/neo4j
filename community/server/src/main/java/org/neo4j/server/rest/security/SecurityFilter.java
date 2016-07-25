@@ -126,7 +126,6 @@ public class SecurityFilter implements Filter
         chain.doFilter( request, response );
     }
 
-
     private void validateRequestType( ServletRequest request ) throws ServletException
     {
         if ( !(request instanceof HttpServletRequest) )
@@ -158,7 +157,6 @@ public class SecurityFilter implements Filter
         HttpServletResponse httpServletResponse = (HttpServletResponse) response;
         httpServletResponse.setStatus(403);
     }
-
 
     @Override
     public synchronized void destroy()

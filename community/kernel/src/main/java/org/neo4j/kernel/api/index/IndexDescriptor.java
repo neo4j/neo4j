@@ -20,13 +20,14 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
 
 /**
- * Description of a single index as needed by the {@link org.neo4j.kernel.impl.api.index.IndexProxy} cake
- * <p>
- * This is a IndexContext cake level representation of {@link org.neo4j.kernel.impl.store.record.IndexRule}
+ * Description of a single index.
+ *
+ * @see SchemaRule
  */
 public class IndexDescriptor
 {
@@ -63,11 +64,17 @@ public class IndexDescriptor
         return result;
     }
 
+    /**
+     * @return label token id this index is for.
+     */
     public int getLabelId()
     {
         return labelId;
     }
 
+    /**
+     * @return property key token id this index is for.
+     */
     public int getPropertyKeyId()
     {
         return propertyKeyId;
@@ -79,6 +86,10 @@ public class IndexDescriptor
         return format( ":label[%d](property[%d])", labelId, propertyKeyId );
     }
 
+    /**
+     * @param tokenNameLookup used for looking up names for token ids.
+     * @return a user friendly description of what this index indexes.
+     */
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
         return format( ":%s(%s)",

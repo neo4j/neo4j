@@ -26,10 +26,11 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
@@ -38,20 +39,20 @@ class TransactionRepresentationFactory
 {
     private final CommandGenerator commandGenerator = new CommandGenerator();
 
-    public TransactionRepresentation nextTransaction( long txId )
+    TransactionToApply nextTransaction( long txId )
     {
         PhysicalTransactionRepresentation representation =
                 new PhysicalTransactionRepresentation( createRandomCommands() );
         TransactionHeaderInformation headerInfo = DEFAULT.create();
         representation.setHeader( headerInfo.getAdditionalHeader(), headerInfo.getMasterId(),
                 headerInfo.getAuthorId(), headerInfo.getAuthorId(), txId, currentTimeMillis(), 42 );
-        return representation;
+        return new TransactionToApply( representation );
     }
 
-    private Collection<Command> createRandomCommands()
+    private Collection<StorageCommand> createRandomCommands()
     {
         int commandNum = ThreadLocalRandom.current().nextInt( 1, 17 );
-        List<Command> commands = new ArrayList<>( commandNum );
+        List<StorageCommand> commands = new ArrayList<>( commandNum );
         for ( int i = 0; i < commandNum; i++ )
         {
             commands.add( commandGenerator.nextCommand() );
@@ -63,18 +64,16 @@ class TransactionRepresentationFactory
     {
         private NodeRecordGenerator nodeRecordGenerator = new NodeRecordGenerator();
 
-        public Command nextCommand()
+        Command nextCommand()
         {
-            Command.NodeCommand nodeCommand = new Command.NodeCommand();
-            nodeCommand.init( nodeRecordGenerator.nextRecord(), nodeRecordGenerator.nextRecord() );
-            return nodeCommand;
+            return new Command.NodeCommand(nodeRecordGenerator.nextRecord(), nodeRecordGenerator.nextRecord());
         }
     }
 
     private static class NodeRecordGenerator
     {
 
-        public NodeRecord nextRecord()
+        NodeRecord nextRecord()
         {
             ThreadLocalRandom random = ThreadLocalRandom.current();
             return new NodeRecord( random.nextLong(), random.nextBoolean(), random.nextBoolean(),

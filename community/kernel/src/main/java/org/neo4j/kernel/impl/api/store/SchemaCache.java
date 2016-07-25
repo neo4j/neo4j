@@ -26,18 +26,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.function.Predicate;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 
@@ -80,82 +79,45 @@ public class SchemaCache
 
     public Iterable<SchemaRule> schemaRulesForLabel( final int label )
     {
-        return filter( new Predicate<SchemaRule>()
-        {
-            @Override
-            public boolean test( SchemaRule schemaRule )
-            {
-                return schemaRule.getKind() != SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT &&
-                       schemaRule.getLabel() == label;
-            }
-        }, schemaRules() );
+        return filter(
+                schemaRule -> schemaRule.getKind() != SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT &&
+                       schemaRule.getLabel() == label, schemaRules() );
     }
 
     public Iterable<SchemaRule> schemaRulesForRelationshipType( final int typeId )
     {
-        return filter( new Predicate<SchemaRule>()
-        {
-            @Override
-            public boolean test( SchemaRule schemaRule )
-            {
-                return schemaRule.getKind() == SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT &&
-                       schemaRule.getRelationshipType() == typeId;
-            }
-        }, schemaRules() );
+        return filter(
+                schemaRule -> schemaRule.getKind() == SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT &&
+                       schemaRule.getRelationshipType() == typeId, schemaRules() );
     }
 
     public Iterator<PropertyConstraint> constraints()
     {
-        return Iterables.concat( nodeConstraints.iterator(), relationshipConstraints.iterator() );
+        return Iterators.concat( nodeConstraints.iterator(), relationshipConstraints.iterator() );
     }
 
     public Iterator<NodePropertyConstraint> constraintsForLabel( final int label )
     {
-        return filter( new Predicate<NodePropertyConstraint>()
-        {
-            @Override
-            public boolean test( NodePropertyConstraint constraint )
-            {
-                return constraint.label() == label;
-            }
-        }, nodeConstraints.iterator() );
+        return Iterators.filter( constraint -> constraint.label() == label, nodeConstraints.iterator() );
     }
 
     public Iterator<NodePropertyConstraint> constraintsForLabelAndProperty( final int label, final int property )
     {
-        return filter( new Predicate<NodePropertyConstraint>()
-        {
-            @Override
-            public boolean test( NodePropertyConstraint constraint )
-            {
-                return constraint.label() == label && constraint.propertyKey() == property;
-            }
-        }, nodeConstraints.iterator() );
+        return Iterators.filter( constraint -> constraint.label() == label &&
+                                     constraint.propertyKey() == property, nodeConstraints.iterator() );
     }
 
     public Iterator<RelationshipPropertyConstraint> constraintsForRelationshipType( final int typeId )
     {
-        return filter( new Predicate<RelationshipPropertyConstraint>()
-        {
-            @Override
-            public boolean test( RelationshipPropertyConstraint constraint )
-            {
-                return constraint.relationshipType() == typeId;
-            }
-        }, relationshipConstraints.iterator() );
+        return Iterators.filter( constraint -> constraint.relationshipType() == typeId, relationshipConstraints.iterator() );
     }
 
     public Iterator<RelationshipPropertyConstraint> constraintsForRelationshipTypeAndProperty( final int typeId,
             final int propertyKeyId )
     {
-        return filter( new Predicate<RelationshipPropertyConstraint>()
-        {
-            @Override
-            public boolean test( RelationshipPropertyConstraint constraint )
-            {
-                return constraint.relationshipType() == typeId && constraint.propertyKey() == propertyKeyId;
-            }
-        }, relationshipConstraints.iterator() );
+        return Iterators.filter(
+                constraint -> constraint.relationshipType() == typeId &&
+                              constraint.propertyKey() == propertyKeyId, relationshipConstraints.iterator() );
     }
 
     public void addSchemaRule( SchemaRule rule )

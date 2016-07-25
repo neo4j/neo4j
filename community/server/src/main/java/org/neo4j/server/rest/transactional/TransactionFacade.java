@@ -23,10 +23,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
-import org.neo4j.server.rest.web.QuerySessionProvider;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 /**
@@ -65,9 +65,10 @@ public class TransactionFacade
         this.logProvider = logProvider;
     }
 
-    public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme ) throws TransactionLifecycleException
+    public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction, AccessMode mode )
+            throws TransactionLifecycleException
     {
-        return new TransactionHandle( kernel, engine, registry, uriScheme, logProvider, QuerySessionProvider.provider );
+        return new TransactionHandle( kernel, engine, registry, uriScheme, implicitTransaction, mode, logProvider );
     }
 
     public TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException
@@ -87,6 +88,6 @@ public class TransactionFacade
 
     public ExecutionResultSerializer serializer( OutputStream output, URI baseUri )
     {
-        return new ExecutionResultSerializer( output, baseUri, logProvider );
+        return new ExecutionResultSerializer( output, baseUri, logProvider, kernel );
     }
 }

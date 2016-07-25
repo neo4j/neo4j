@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.storageengine.api.EntityType;
 
 public class EntitySchemaRuleNotFoundException extends SchemaRuleNotFoundException
 {
@@ -28,7 +28,7 @@ public class EntitySchemaRuleNotFoundException extends SchemaRuleNotFoundExcepti
             "%s for label '%s' and property '%s' not found.";
     private static final String RELATIONSHIP_RULE_NOT_FOUND_MESSAGE_TEMPLATE =
             "%s for relationship type '%s' and property '%s' not found.";
-    private EntityType entityType;
+    private final EntityType entityType;
 
     public EntitySchemaRuleNotFoundException( EntityType entityType, int labelId, int propertyKeyId )
     {

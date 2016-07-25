@@ -23,20 +23,21 @@ import java.util.concurrent.TimeUnit
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.internal.{ExecutionEngine, RewindableExecutionResult}
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-
 case class ExpectedException[T <: Throwable](e: T) {
   def messageContains(s: String) = assertThat(e.getMessage, containsString(s))
 }
 
-trait ExecutionEngineTestSupport extends CypherTestSupport {
+trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineHelper {
   self: CypherFunSuite with GraphDatabaseTestSupport =>
 
   var eengine: ExecutionEngine = null
@@ -46,24 +47,13 @@ trait ExecutionEngineTestSupport extends CypherTestSupport {
     eengine = new ExecutionEngine(graph)
   }
 
-  def execute(q: String, params: (String, Any)*): InternalExecutionResult =
-    RewindableExecutionResult(eengine.execute(q, params.toMap))
-
-  def profile(q: String, params: (String, Any)*): InternalExecutionResult =
-    RewindableExecutionResult(eengine.profile(q, params.toMap))
-
   def runAndFail[T <: Throwable : Manifest](q: String): ExpectedException[T] =
     ExpectedException(intercept[T](execute(q)))
 
-  def executeScalar[T](q: String, params: (String, Any)*): T = scalar(eengine.execute(q, params.toMap).toList)
-
-  def scalar[T](input: List[Map[String, Any]]) = input match {
-    case m :: Nil =>
-      if (m.size!=1)
-        fail(s"expected scalar value: $m")
-      else
-        m.head._2.asInstanceOf[T]
-    case _ => fail(s"expected to get a single row back")
+  override def executeScalar[T](q: String, params: (String, Any)*): T = try {
+    super.executeScalar[T](q, params: _*)
+  } catch {
+    case e: ScalarFailureException => fail(e.getMessage)
   }
 
   protected def timeOutIn(length: Int, timeUnit: TimeUnit)(f: => Unit) {
@@ -73,4 +63,34 @@ trait ExecutionEngineTestSupport extends CypherTestSupport {
 
     Await.result(future, Duration.apply(length, timeUnit))
   }
+}
+
+trait ExecutionEngineHelper {
+  self: GraphIcing =>
+
+  def graph: GraphDatabaseCypherService
+
+  def eengine: ExecutionEngine
+
+  def execute(q: String, params: (String, Any)*): InternalExecutionResult =
+    RewindableExecutionResult(eengine.execute(q, params.toMap, graph.session()))
+
+  def profile(q: String, params: (String, Any)*): InternalExecutionResult =
+    RewindableExecutionResult(eengine.profile(q, params.toMap, graph.session()))
+
+  def executeScalar[T](q: String, params: (String, Any)*): T =
+    scalar[T](eengine.execute(q, params.toMap, graph.session()).toList)
+
+  private def scalar[T](input: List[Map[String, Any]]): T = input match {
+    case m :: Nil =>
+      if (m.size != 1)
+        throw new ScalarFailureException(s"expected scalar value: $m")
+      else {
+        val value: Any = m.head._2
+        value.asInstanceOf[T]
+      }
+    case _ => throw new ScalarFailureException(s"expected to get a single row back")
+  }
+
+  protected class ScalarFailureException(msg: String) extends RuntimeException(msg)
 }

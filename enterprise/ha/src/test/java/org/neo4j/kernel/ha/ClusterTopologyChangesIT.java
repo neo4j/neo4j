@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.net.UnknownHostException;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -54,19 +53,16 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.test.CleanupRule;
 import org.neo4j.test.RepeatRule;
-import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.SuppressOutput;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
-import static org.neo4j.function.Predicates.not;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
@@ -157,7 +153,7 @@ public class ClusterTopologyChangesIT
         assertTrue( slave2Left.await( 60, SECONDS ) );
 
         // master loses quorum and goes to PENDING, cluster is unavailable
-        cluster.await( not( masterAvailable() ) );
+        cluster.await( masterAvailable().negate() );
         assertEquals( HighAvailabilityMemberState.PENDING, master.getInstanceState() );
 
         // WHEN: both slaves are repaired, majority restored, quorum can be achieved
@@ -277,11 +273,11 @@ public class ClusterTopologyChangesIT
         Config config = new Config( configMap, GraphDatabaseFacadeFactory.Configuration.class,
                 GraphDatabaseSettings.class );
 
-        SimpleLogService logService = new SimpleLogService( FormattedLogProvider.toOutputStream( System.out ),
-                FormattedLogProvider.toOutputStream( System.out ) );
+        FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
+        SimpleLogService logService = new SimpleLogService( logProvider, logProvider );
 
-        return new ClusterClientModule( life, new Dependencies(), new Monitors(),
-                config, logService, new NotElectableElectionCredentialsProvider() );
+        return new ClusterClientModule( life, new Dependencies(), new Monitors(), config, logService,
+                new NotElectableElectionCredentialsProvider() );
     }
 
     private static void attemptTransactions( HighlyAvailableGraphDatabase... dbs )

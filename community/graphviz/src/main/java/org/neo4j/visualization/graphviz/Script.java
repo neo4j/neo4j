@@ -41,7 +41,7 @@ public class Script extends ConfigurationParser
         super( format );
     }
 
-    protected String storeDir;
+    protected File storeDir;
 
     public static <S extends Script> S initialize( Class<S> scriptClass, String... args )
     {
@@ -115,7 +115,7 @@ public class Script extends ConfigurationParser
         {
             throw new UnsupportedOperationException( "Could not initialize script", e );
         }
-        script.storeDir = args[0];
+        script.storeDir = new File( args[0] );
         return script;
     }
 
@@ -154,7 +154,7 @@ public class Script extends ConfigurationParser
         }
     }
 
-    protected String storeDir()
+    protected File storeDir()
     {
         return storeDir;
     }

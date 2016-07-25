@@ -26,13 +26,15 @@ import java.io.ObjectOutput;
 import java.security.SecureRandom;
 import java.util.Random;
 
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 
 public final class StoreId implements Externalizable
 {
-    public static final long CURRENT_STORE_VERSION = versionStringToLong( MetaDataStore.ALL_STORES_VERSION );
+    public static final long CURRENT_STORE_VERSION = versionStringToLong( StandardV3_0.STORE_VERSION );
 
-    public static final StoreId DEFAULT = new StoreId( -1, -1, -1, -1 );
+    public static final StoreId DEFAULT = new StoreId( -1, -1, -1, -1, -1 );
 
     private static final Random r = new SecureRandom();
 
@@ -42,22 +44,21 @@ public final class StoreId implements Externalizable
     private long upgradeTime;
     private long upgradeId;
 
-    public StoreId()
+    private StoreId()
+    {
+        //For the readExternal method.
+    }
+
+    public StoreId( long storeVersion )
     {
         // If creationTime == upgradeTime && randomNumber == upgradeId then store has never been upgraded
         long currentTimeMillis = System.currentTimeMillis();
         long randomLong = r.nextLong();
-
+        this.storeVersion = storeVersion;
         this.creationTime = currentTimeMillis;
         this.randomId = randomLong;
-        this.storeVersion = CURRENT_STORE_VERSION;
         this.upgradeTime = currentTimeMillis;
         this.upgradeId = randomLong;
-    }
-
-    public StoreId( long creationTime, long randomId, long upgradeTime, long upgradeId )
-    {
-        this( creationTime, randomId, CURRENT_STORE_VERSION, upgradeTime, upgradeId );
     }
 
     public StoreId( long creationTime, long randomId, long storeVersion, long upgradeTime, long upgradeId )
@@ -151,12 +152,12 @@ public final class StoreId implements Externalizable
     public String toString()
     {
         return "StoreId{" +
-               "creationTime=" + creationTime +
-               ", randomId=" + randomId +
-               ", storeVersion=" + storeVersion +
-               ", upgradeTime=" + upgradeTime +
-               ", upgradeId=" + upgradeId +
-               '}';
+                "creationTime=" + creationTime +
+                ", randomId=" + randomId +
+                ", storeVersion=" + storeVersion +
+                ", upgradeTime=" + upgradeTime +
+                ", upgradeId=" + upgradeId +
+                '}';
     }
 
     private static boolean equal( long first, long second )

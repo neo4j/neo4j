@@ -28,13 +28,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
-import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Iterables;
 
 import static org.neo4j.helpers.collection.Iterables.append;
-import static org.neo4j.helpers.collection.Iterables.toArray;
+import static org.neo4j.helpers.collection.Iterables.asArray;
 
 /**
  * This can be used to create monitor instances using a Dynamic Proxy, which when invoked can delegate to any number of
@@ -58,6 +58,8 @@ import static org.neo4j.helpers.collection.Iterables.toArray;
  */
 public class Monitors
 {
+    public static final AtomicBoolean FALSE = new AtomicBoolean(false);
+
     public interface Monitor
     {
         void monitorCreated( Class<?> monitorClass, String... tags );
@@ -82,9 +84,15 @@ public class Monitors
     // while look-ups and reads are performed concurrently. The methodMonitorListerners lists (the map values) are
     // read concurrently by the proxies, while changing the listener set always produce new lists that atomically
     // replace the ones already in the methodMonitorListeners map.
+    /** Monitor interface method -> Listeners */
     private final Map<Method, List<MonitorListenerInvocationHandler>> methodMonitorListeners = new ConcurrentHashMap<>();
-    private final List<Class<?>> monitoredInterfaces = new ArrayList<>();
+
+    /** Monitor interface -> Has Listeners? */
+    private final Map<Class<?>,AtomicBoolean> monitoredInterfaces = new ConcurrentHashMap<>();
+
+    /** Listener predicate -> Listener */
     private final Map<Predicate<Method>, MonitorListenerInvocationHandler> monitorListeners = new ConcurrentHashMap<>();
+
     private final Monitor monitorsMonitor;
 
     public Monitors()
@@ -95,15 +103,15 @@ public class Monitors
     public synchronized <T> T newMonitor( Class<T> monitorClass, Class<?> owningClass, String... tags )
     {
         Iterable<String> tagIer = append( owningClass.getName(), Iterables.<String,String>iterable( tags ) );
-        String[] tagArray = toArray( String.class, tagIer );
+        String[] tagArray = asArray( String.class, tagIer );
         return newMonitor( monitorClass, tagArray );
     }
 
     public synchronized <T> T newMonitor( Class<T> monitorClass, String... tags )
     {
-        if ( !monitoredInterfaces.contains( monitorClass ) )
+        if ( !monitoredInterfaces.containsKey( monitorClass ) )
         {
-            monitoredInterfaces.add( monitorClass );
+            monitoredInterfaces.put( monitorClass, new AtomicBoolean(false) );
 
             for ( Method method : monitorClass.getMethods() )
             {
@@ -138,7 +146,7 @@ public class Monitors
             for ( final Method method : monitorInterface.getMethods() )
             {
                 monitorListeners.put(
-                        Predicates.equalTo( method ),
+                        Predicate.isEqual( method ),
                         monitorListenerInvocationHandler );
 
                 recalculateMethodListeners( method );
@@ -169,39 +177,42 @@ public class Monitors
         recalculateAllMethodListeners();
     }
 
+    // TODO: This is a *very* specialized API that adds sugar for monitoring a single
+    //       method in a way that seems, from an end-user POV, would be much easier
+    //       to do by just implementing the regular monitor interface, rather than
+    //       dealing with reflection and predicates. It also seems to be used exclusively
+    //       by tests. Maybe we can remove this? It seems it would simplify Monitors a lot.
     public synchronized void addMonitorListener(
             MonitorListenerInvocationHandler invocationHandler, Predicate<Method> methodSpecification )
     {
         monitorListeners.put( methodSpecification, invocationHandler );
-
         recalculateAllMethodListeners();
     }
 
-    public synchronized void removeMonitorListener( MonitorListenerInvocationHandler invocationHandler )
+    /**
+     * While the intention is that the monitoring infrastructure itself should not
+     * be a bottleneck (if it is, we should optimize it), components that use the
+     * monitors may incur overhead in calculating whatever data they expose through
+     * their monitors. If no-one is listening, this overhead is wasteful.
+     *
+     * This is a fast (single hash-map lookup) way to find out if there are
+     * currently any listeners to a given monitor interface.
+     */
+    public boolean hasListeners( Class<?> monitorClass )
     {
-        Iterator<Map.Entry<Predicate<Method>, MonitorListenerInvocationHandler>> iter =
-                monitorListeners.entrySet().iterator();
-
-        while ( iter.hasNext() )
-        {
-            Map.Entry<Predicate<Method>, MonitorListenerInvocationHandler> handlerEntry = iter.next();
-            if ( handlerEntry.getValue() == invocationHandler )
-            {
-                iter.remove();
-                recalculateAllMethodListeners();
-                return;
-            }
-        }
+        return monitoredInterfaces.getOrDefault( monitorClass, FALSE ).get();
     }
 
     private void recalculateMethodListeners( Method method )
     {
+        Class<?> monitorClass = method.getDeclaringClass();
         List<MonitorListenerInvocationHandler> listeners = new ArrayList<>();
         for ( Map.Entry<Predicate<Method>, MonitorListenerInvocationHandler> handlerEntry : monitorListeners.entrySet() )
         {
             if ( handlerEntry.getKey().test( method ) )
             {
                 listeners.add( handlerEntry.getValue() );
+                markMonitorHasListener( monitorClass );
             }
         }
         methodMonitorListeners.put( method, listeners );
@@ -209,6 +220,8 @@ public class Monitors
 
     private void recalculateAllMethodListeners()
     {
+        // Mark all monitored interfaces as having no listeners
+        monitoredInterfaces.values().forEach( (b) -> b.set( false ) );
         for ( Method method : methodMonitorListeners.keySet() )
         {
             recalculateMethodListeners( method );
@@ -224,6 +237,12 @@ public class Monitors
             aClass = aClass.getSuperclass();
         }
         return interfaces;
+    }
+
+    private void markMonitorHasListener( Class<?> monitorClass )
+    {
+        monitoredInterfaces.getOrDefault( monitorClass, new AtomicBoolean() )
+                .set( true );
     }
 
     private static class UntaggedMonitorListenerInvocationHandler implements MonitorListenerInvocationHandler

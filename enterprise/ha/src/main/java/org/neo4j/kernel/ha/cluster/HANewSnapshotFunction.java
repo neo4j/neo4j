@@ -22,22 +22,24 @@ package org.neo4j.kernel.ha.cluster;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.BiFunction;
 
 import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
-import org.neo4j.helpers.Function2;
 import org.neo4j.helpers.collection.Iterables;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
 
 /*
  * Filters existing events in a snapshot while adding new ones. Ensures that the snapshot is consistent in the
  * face of failures of instances in the cluster.
  */
-public class HANewSnapshotFunction
-        implements Function2<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>>, Serializable
+public class HANewSnapshotFunction implements Serializable,
+        BiFunction<Iterable<MemberIsAvailable>,MemberIsAvailable,Iterable<MemberIsAvailable>>
 {
+    private static final long serialVersionUID = -8065136460852260734L;
+
     @Override
     public Iterable<MemberIsAvailable> apply( Iterable<MemberIsAvailable> previousSnapshot,
             final MemberIsAvailable newMessage )

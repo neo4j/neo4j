@@ -19,32 +19,53 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.ext.udc.UdcConstants;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.StartupStatistics;
+import org.neo4j.kernel.impl.factory.Edition;
+import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.udc.UsageDataKeys.Features.bolt;
 
 public class DefaultUdcInformationCollectorTest
 {
-    private final UsageData usageData = new UsageData();
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
     private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector(
-            new Config(), null,
+            Config.empty(), null,
             new StubIdGeneratorFactory(), mock( StartupStatistics.class ), usageData );
 
     @Test
@@ -100,12 +121,12 @@ public class DefaultUdcInformationCollectorTest
     {
         // Given
         usageData.set( UsageDataKeys.version, "1.2.3" );
-        usageData.set( UsageDataKeys.edition, UsageDataKeys.Edition.advanced );
-        usageData.set( UsageDataKeys.operationalMode, UsageDataKeys.OperationalMode.ha );
+        usageData.set( UsageDataKeys.edition, Edition.enterprise );
+        usageData.set( UsageDataKeys.operationalMode, OperationalMode.ha );
 
         // When & Then
         assertEquals( "1.2.3", collector.getUdcParams().get( UdcConstants.VERSION ) );
-        assertEquals( "advanced", collector.getUdcParams().get( UdcConstants.EDITION ) );
+        assertEquals( "enterprise", collector.getUdcParams().get( UdcConstants.EDITION ) );
         assertEquals( "ha", collector.getUdcParams().get( UdcConstants.DATABASE_MODE ) );
     }
 
@@ -126,25 +147,80 @@ public class DefaultUdcInformationCollectorTest
         }
     }
 
+    @Test
+    public void shouldIncludePopularFeatures() throws Throwable
+    {
+        // Given
+        usageData.get( UsageDataKeys.features ).flag( bolt );
+
+        // When & Then
+        assertEquals( "1000", collector.getUdcParams().get( UdcConstants.FEATURES ) );
+    }
+
+    @Test
+    public void shouldReportStoreSizes() throws Throwable
+    {
+        DataSourceManager dataSourceManager = new DataSourceManager();
+        NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
+        dataSourceManager.start();
+
+        UdcInformationCollector collector = new DefaultUdcInformationCollector(
+                Config.empty(),
+                dataSourceManager,
+                new StubIdGeneratorFactory(),
+                mock(StartupStatistics.class),
+                usageData
+        );
+
+        when( dataSource.getStoreId() ).thenReturn( StoreId.DEFAULT );
+        dataSourceManager.register( dataSource );
+
+        when( dataSource.listStoreFiles( false ) ).thenReturn( asResourceIterator( testFiles().iterator() ) );
+        Map<String, String> udcParams = collector.getUdcParams();
+
+        assertThat( udcParams.get( "storesize" ), is( "152" ) );
+    }
+
+    private Set<File> testFiles() throws Exception
+    {
+        File foo = testDirectory.file( "neostore.foo.db" );
+        File bar = testDirectory.file( "neostore.bar.keys" );
+        File baz = testDirectory.file( "neostore.baz.names" );
+
+        ensureSize( foo, 23 );
+        ensureSize( bar, 42 );
+        ensureSize( baz, 87 );
+
+        return new HashSet<>( asList( foo, bar, baz ) );
+    }
+
+    private void ensureSize( File foo, int size ) throws IOException
+    {
+        try ( FileOutputStream fos = new FileOutputStream( foo ) )
+        {
+            fos.write( new byte[size] );
+        }
+    }
+
     private static class StubIdGeneratorFactory implements IdGeneratorFactory
     {
         private final Map<IdType, Long> idsInUse = new HashMap<>();
 
         {
-            idsInUse.put( IdType.NODE, 100l );
-            idsInUse.put( IdType.RELATIONSHIP, 200l );
-            idsInUse.put( IdType.LABEL_TOKEN, 300l );
-            idsInUse.put( IdType.PROPERTY, 400l );
+            idsInUse.put( IdType.NODE, 100L );
+            idsInUse.put( IdType.RELATIONSHIP, 200L );
+            idsInUse.put( IdType.LABEL_TOKEN, 300L );
+            idsInUse.put( IdType.PROPERTY, 400L );
         }
 
         @Override
-        public IdGenerator open( File filename, IdType idType, long highId )
+        public IdGenerator open( File filename, IdType idType, long highId, long maxId )
         {
-            return open( filename, 0, idType, highId );
+            return open( filename, 0, idType, highId, maxId );
         }
 
         @Override
-        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
+        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
         {
             return get( idType );
         }
@@ -165,7 +241,7 @@ public class DefaultUdcInformationCollectorTest
     {
         private final long numberOfIdsInUse;
 
-        public StubIdGenerator( long numberOfIdsInUse )
+        private StubIdGenerator( long numberOfIdsInUse )
         {
             this.numberOfIdsInUse = numberOfIdsInUse;
         }

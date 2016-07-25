@@ -28,30 +28,29 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
-import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
@@ -63,38 +62,35 @@ public class BigJumpingStoreIT
 {
     private static final int SIZE_PER_JUMP = 1000;
     private static final File PATH = new File( "target/var/bigjump" );
-    private static final RelationshipType TYPE = DynamicRelationshipType.withName( "KNOWS" );
-    private static final RelationshipType TYPE2 = DynamicRelationshipType.withName( "DROP_KICKS" );
+    private static final RelationshipType TYPE = RelationshipType.withName( "KNOWS" );
+    private static final RelationshipType TYPE2 = RelationshipType.withName( "DROP_KICKS" );
     private GraphDatabaseService db;
 
     @Before
     public void doBefore()
     {
         deleteFileOrDirectory( PATH );
-        db = new CommunityFacadeFactory()
-        {
-            @Override
-            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
-            {
-                return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
-                {
-                    protected FileSystemAbstraction createFileSystemAbstraction()
-                    {
-                        return new JumpingFileSystemAbstraction( SIZE_PER_JUMP );
-                    }
-                };
-            }
-
-            @Override
-            protected EditionModule createEdition( PlatformModule platformModule )
-            {
-                return new CommunityEditionModule( platformModule )
+        Function<PlatformModule,EditionModule> factory =
+                ( platformModule ) -> new CommunityEditionModule( platformModule )
                 {
                     @Override
                     protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs,
                             IdTypeConfigurationProvider idTypeConfigurationProvider )
                     {
                         return new JumpingIdGeneratorFactory( SIZE_PER_JUMP );
+                    }
+                };
+        db = new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, factory )
+        {
+            @Override
+            protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+                    Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            {
+                return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
+                {
+                    protected FileSystemAbstraction createFileSystemAbstraction()
+                    {
+                        return new JumpingFileSystemAbstraction( SIZE_PER_JUMP );
                     }
                 };
             }
@@ -156,7 +152,7 @@ public class BigJumpingStoreIT
             {
                 node = db.getNodeById( node.getId() );
                 assertProperties( map( "number", nodeCount++, "string", stringValue, "array", arrayValue ), node );
-                relCount += count( node.getRelationships( Direction.OUTGOING ) );
+                relCount += Iterables.count( node.getRelationships( Direction.OUTGOING ) );
             }
         }
         assertEquals( numberOfRels, relCount );
@@ -193,14 +189,16 @@ public class BigJumpingStoreIT
                         node.setProperty( "string", "asjdkasdjkasjdkasjdkasdjkasdj" );
                         node.setProperty( "string", stringValue );
                     }
+                default:
+                    throw new AssertionError( "Illegal value: " + i );
             }
 
-            if ( count( node.getRelationships() ) > 50 )
+            if ( Iterables.count( node.getRelationships() ) > 50 )
             {
                 if ( i % 2 == 0 )
                 {
-                    deleteIfNotNull( firstOrNull( node.getRelationships() ) );
-                    deleteIfNotNull( lastOrNull( node.getRelationships() ) );
+                    deleteIfNotNull( Iterables.firstOrNull( node.getRelationships() ) );
+                    deleteIfNotNull( Iterables.lastOrNull( node.getRelationships() ) );
                 }
                 else
                 {
@@ -239,7 +237,7 @@ public class BigJumpingStoreIT
                         assertProperties( map( "number", nodeCount, "string", stringValue ), node );
                         break;
                     case 3:
-                        assertEquals( 0, count( node.getPropertyKeys() ) );
+                        assertEquals( 0, Iterables.count( node.getPropertyKeys() ) );
                         break;
                     case 4:
                         assertProperties( map( "number", nodeCount, "string", stringValue, "array", arrayValue,

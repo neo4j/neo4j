@@ -25,11 +25,6 @@ package org.neo4j.kernel.impl.locking.community;
  */
 public class LockException extends RuntimeException
 {
-    public LockException()
-    {
-        super();
-    }
-
     public LockException( String message )
     {
         super( message );

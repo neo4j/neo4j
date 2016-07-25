@@ -27,30 +27,30 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.kernel.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.IdTypeConfiguration;
-import org.neo4j.kernel.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 
 public class EphemeralIdGenerator implements IdGenerator
 {
     public static class Factory implements IdGeneratorFactory
     {
-        protected final Map<IdType,IdGenerator> generators = new EnumMap<>( IdType.class );
+        protected final Map<IdType, IdGenerator> generators = new EnumMap<>( IdType.class );
         private IdTypeConfigurationProvider
                 idTypeConfigurationProvider = new CommunityIdTypeConfigurationProvider();
 
         @Override
-        public IdGenerator open( File filename, IdType idType, long highId )
+        public IdGenerator open( File filename, IdType idType, long highId, long maxId )
         {
-            return open( filename, 0, idType, highId );
+            return open( filename, 0, idType, highId, maxId );
         }
 
         @Override
-        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
+        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
         {
             IdGenerator generator = generators.get( idType );
             if ( generator == null )
@@ -82,7 +82,7 @@ public class EphemeralIdGenerator implements IdGenerator
     public EphemeralIdGenerator( IdType idType, IdTypeConfiguration idTypeConfiguration )
     {
         this.idType = idType;
-        this.freeList = idType != null && idTypeConfiguration.allowAggressiveReuse() ? new ConcurrentLinkedQueue<Long>() : null;
+        this.freeList = idType != null && idTypeConfiguration.allowAggressiveReuse() ? new ConcurrentLinkedQueue<>() : null;
     }
 
     @Override

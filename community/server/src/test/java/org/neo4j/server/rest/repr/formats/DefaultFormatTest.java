@@ -19,23 +19,23 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
+
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.DefaultFormat;
+import org.neo4j.server.rest.repr.MediaTypeNotSupportedException;
+
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.DefaultFormat;
-import org.neo4j.server.rest.repr.MediaTypeNotSupportedException;
 
 public class DefaultFormatTest
 {
@@ -77,7 +77,8 @@ public class DefaultFormatTest
         assertTrue( "map contained extra values", map.size() == 1 );
         Object nested = map.get( "nested" );
         assertThat( nested, instanceOf( Map.class ) );
-        @SuppressWarnings( "unchecked" ) Map<String, String> nestedMap = (Map<String, String>) nested;
+        @SuppressWarnings( "unchecked" )
+        Map<String, String> nestedMap = (Map<String, String>) nested;
         assertThat( nestedMap, hasEntry( "key", "valuable" ) );
     }
 

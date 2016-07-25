@@ -33,7 +33,7 @@ public final class IdAllocation
         this.highestIdInUse = highestIdInUse;
         this.defragCount = defragCount;
     }
-    
+
     public long getHighestIdInUse()
     {
         return highestIdInUse;
@@ -48,7 +48,7 @@ public final class IdAllocation
     {
         return this.idRange;
     }
-    
+
     @Override
     public String toString()
     {

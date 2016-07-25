@@ -114,6 +114,6 @@ public class IndexDefinitionImpl implements IndexDefinition
 
     protected void assertInUnterminatedTransaction()
     {
-        actions.assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
     }
 }

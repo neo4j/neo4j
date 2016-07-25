@@ -36,6 +36,10 @@ class WhereTest extends DocumentingTestBase {
     "Peter"  -> Map[String, Any]("age" -> 34l, "email" -> "peter_n@example.com")
   )
 
+  override val setupQueries = List(
+    "MATCH (andres {name: 'Andres'})-[r:KNOWS]->(tobias {name: 'Tobias'}) SET r.since = 2012",
+    "MATCH (andres {name: 'Andres'})-[r:KNOWS]->(peter {name: 'Peter'}) SET r.since = 1999")
+
   override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
@@ -50,13 +54,22 @@ class WhereTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
 
-  @Test def filter_on_property() {
+  @Test def filter_on_node_property() {
     testQuery(
       title = "Filter on node property",
-      text = "To filter on a property, write your clause after the `WHERE` keyword. Filtering on relationship properties works just the same way.",
+      text = "To filter on a node property, write your clause after the `WHERE` keyword.",
       queryText = """match (n) where n.age < 30 return n""",
       optionalResultExplanation = """"+Tobias+" is returned because he is younger than 30.""",
       assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
+  }
+
+  @Test def filter_on_relationship_property() {
+    testQuery(
+      title = "Filter on relationship property",
+      text = "To filter on a relationship property, write your clause after the `WHERE` keyword.",
+      queryText = """match (n)-[k:KNOWS]->(f) where k.since < 2000 return f""",
+      optionalResultExplanation = """"+Peter+" is returned because Andres knows him since before 2000.""",
+      assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("f").toList))
   }
 
   @Test def filter_on_dynamic_property() {
@@ -151,7 +164,7 @@ class WhereTest extends DocumentingTestBase {
         """"+Andres+" will be returned because he is the only one with a `belt` property.
           |
           |[IMPORTANT]
-          |The `HAS()` function has been superseded by `EXISTS()` and will be removed in a future release.
+          |The `HAS()` function has been superseded by `EXISTS()` and has been removed.
           |
         """.stripMargin,
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
@@ -190,7 +203,7 @@ class WhereTest extends DocumentingTestBase {
   @Test def filter_on_null() {
     testQuery(
       title = "Filter on NULL",
-      text = "Sometimes you might want to test if a value or an identifier is +NULL+. This is done just like SQL does it, " +
+      text = "Sometimes you might want to test if a value or a variable is +NULL+. This is done just like SQL does it, " +
         "with `IS NULL`. Also like SQL, the negative is `IS NOT NULL`, although `NOT(IS NULL x)` also works.",
       queryText = """match (person) where person.name = 'Peter' AND person.belt is null return person""",
       optionalResultExplanation = "Nodes that have name `Peter` but no belt property are returned.",
@@ -200,14 +213,14 @@ class WhereTest extends DocumentingTestBase {
   @Test def filter_on_patterns() {
     testQuery(
       title = "Filter on patterns",
-      text = """Patterns are expressions in Cypher, expressions that return a collection of paths. Collection
-expressions are also predicates -- an empty collection represents `false`, and a non-empty represents `true`.
+      text = """Patterns are expressions in Cypher, expressions that return a list of paths. List
+expressions are also predicates -- an empty list represents `false`, and a non-empty represents `true`.
 
 So, patterns are not only expressions, they are also predicates. The only limitation to your pattern is that you must be
 able to express it in a single path. You can not use commas between multiple paths like you do in `MATCH`. You can achieve
 the same effect by combining multiple patterns with `AND`.
 
-Note that you can not introduce new identifiers here. Although it might look very similar to the `MATCH` patterns, the
+Note that you can not introduce new variables here. Although it might look very similar to the `MATCH` patterns, the
 `WHERE` clause is all about eliminating matched subgraphs. `MATCH (a)-[*]->(b)` is very different from `WHERE (a)-[*]->(b)`; the
 first will produce a subgraph for every path it can find between `a` and `b`, and the latter will eliminate any matched
 subgraphs where `a` and `b` do not have a directed relationship chain between them.
@@ -238,9 +251,9 @@ subgraphs where `a` and `b` do not have a directed relationship chain between th
   @Test def in_operator() {
     testQuery(
       title = "IN operator",
-      text = "To check if an element exists in a collection, you can use the `IN` operator.",
+      text = "To check if an element exists in a list, you can use the `IN` operator.",
       queryText = """match (a) where a.name IN ["Peter", "Tobias"] return a""",
-      optionalResultExplanation = "This query shows how to check if a property exists in a literal collection.",
+      optionalResultExplanation = "This query shows how to check if a property exists in a literal list.",
       assertions = (p) => assertEquals(List(node("Tobias"),node("Peter")), p.columnAs[Node]("a").toList))
   }
 

@@ -33,10 +33,8 @@ import org.neo4j.consistency.statistics.AccessStatsKeepingStoreAccess;
 import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
-import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
@@ -44,22 +42,28 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
-import org.neo4j.kernel.api.impl.index.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 public class ConsistencyCheckService
 {
@@ -122,20 +126,16 @@ public class ConsistencyCheckService
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
 
         ConsistencySummaryStatistics summary;
-        final File reportFile = chooseReportPath( storeDir, tuningConfiguration );
-        Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( new Supplier<PrintWriter>()
-        {
-            @Override
-            public PrintWriter get()
+        // With the added neo4j_home config the logs directory will end up in db location
+        final File reportFile = chooseReportPath( tuningConfiguration, storeDir );
+        Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( () -> {
+            try
             {
-                try
-                {
-                    return new PrintWriter( createOrOpenAsOuputStream( fileSystem, reportFile, true ) );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                return new PrintWriter( createOrOpenAsOuputStream( fileSystem, reportFile, true ) );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
             }
         } ) );
 
@@ -144,8 +144,10 @@ public class ConsistencyCheckService
             LabelScanStore labelScanStore = null;
             try
             {
+                IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
                 labelScanStore = new LuceneLabelScanStoreBuilder(
-                        storeDir, neoStores, fileSystem, logProvider ).build();
+                        storeDir, fullStoreLabelUpdateStream( () -> indexStoreView ),
+                        fileSystem, logProvider ).build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         fileSystem,
                         DirectoryFactory.PERSISTENT,
@@ -194,20 +196,16 @@ public class ConsistencyCheckService
         return Result.SUCCESS;
     }
 
-    private File chooseReportPath( File storeDir, Config tuningConfiguration )
+    private File chooseReportPath( Config tuningConfiguration, File storeDir )
     {
-        final File reportPath = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_report_file );
-        if ( reportPath == null )
+        if ( tuningConfiguration.get( GraphDatabaseSettings.neo4j_home ) == null )
         {
-            return new File( storeDir, defaultLogFileName( timestamp ) );
+            tuningConfiguration = tuningConfiguration.with(
+                    stringMap( GraphDatabaseSettings.neo4j_home.name(), storeDir.getAbsolutePath() ) );
         }
 
-        if ( reportPath.isDirectory() )
-        {
-            return new File( reportPath, defaultLogFileName( timestamp ) );
-        }
-
-        return reportPath;
+        final File reportPath = tuningConfiguration.get( GraphDatabaseSettings.logs_directory );
+        return new File( reportPath, defaultLogFileName( timestamp ) );
     }
 
     public static String defaultLogFileName( Date date )

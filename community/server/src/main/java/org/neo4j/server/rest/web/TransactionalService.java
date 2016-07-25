@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-
+import java.util.Collections;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -31,7 +31,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -39,15 +38,18 @@ import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 import org.neo4j.server.rest.transactional.ExecutionResultSerializer;
 import org.neo4j.server.rest.transactional.TransactionFacade;
 import org.neo4j.server.rest.transactional.TransactionHandle;
 import org.neo4j.server.rest.transactional.TransactionTerminationHandle;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
+import org.neo4j.udc.UsageData;
 
-import static java.util.Arrays.asList;
-
+import static org.neo4j.udc.UsageDataKeys.Features.http_tx_endpoint;
+import static org.neo4j.udc.UsageDataKeys.features;
 
 /**
  * This does basic mapping from HTTP to {@link org.neo4j.server.rest.transactional.TransactionFacade}, and should not
@@ -57,11 +59,13 @@ import static java.util.Arrays.asList;
 public class TransactionalService
 {
     private final TransactionFacade facade;
+    private final UsageData usage;
     private final TransactionUriScheme uriScheme;
 
-    public TransactionalService( @Context TransactionFacade facade, @Context UriInfo uriInfo )
+    public TransactionalService( @Context TransactionFacade facade, @Context UriInfo uriInfo, @Context UsageData usage )
     {
         this.facade = facade;
+        this.usage = usage;
         this.uriScheme = new TransactionUriBuilder( uriInfo );
     }
 
@@ -73,7 +77,9 @@ public class TransactionalService
     {
         try
         {
-            TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme );
+            usage.get( features ).flag( http_tx_endpoint );
+            AccessMode accessMode = AuthorizedRequestWrapper.getAccessModeFromHttpServletRequest( request );
+            TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme, false, accessMode );
             return createdResponse( transactionHandle, executeStatements( input, transactionHandle, uriInfo.getBaseUri(), request ) );
         }
         catch ( TransactionLifecycleException e )
@@ -117,7 +123,7 @@ public class TransactionalService
         {
             return invalidTransaction( e, uriInfo.getBaseUri() );
         }
-        return okResponse( executeStatementsAndCommit( input, transactionHandle, uriInfo.getBaseUri(), false, request ) );
+        return okResponse( executeStatementsAndCommit( input, transactionHandle, uriInfo.getBaseUri(), request ) );
     }
 
     @POST
@@ -130,16 +136,15 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = facade.newTransactionHandle( uriScheme );
+            AccessMode accessMode = AuthorizedRequestWrapper.getAccessModeFromHttpServletRequest( request );
+            transactionHandle = facade.newTransactionHandle( uriScheme, true, accessMode );
         }
         catch ( TransactionLifecycleException e )
         {
             return invalidTransaction( e, uriInfo.getBaseUri() );
         }
-        final StreamingOutput streamingResults = executeStatementsAndCommit( input,
-                transactionHandle,
-                uriInfo.getBaseUri(),
-                true, request );
+        final StreamingOutput streamingResults =
+                executeStatementsAndCommit( input, transactionHandle, uriInfo.getBaseUri(), request );
         return okResponse( streamingResults );
     }
 
@@ -184,62 +189,40 @@ public class TransactionalService
     private StreamingOutput executeStatements( final InputStream input, final TransactionHandle transactionHandle,
                                                final URI baseUri, final HttpServletRequest request )
     {
-        return new StreamingOutput()
-        {
-            @Override
-            public void write( OutputStream output ) throws IOException, WebApplicationException
-            {
-                transactionHandle.execute( facade.deserializer( input ), facade.serializer( output, baseUri ),
-                        request );
-            }
-        };
+        return output -> transactionHandle.execute(
+                facade.deserializer( input ), facade.serializer( output, baseUri ), request );
     }
 
     private StreamingOutput executeStatementsAndCommit( final InputStream input,
                                                         final TransactionHandle transactionHandle,
                                                         final URI baseUri,
-                                                        final boolean pristine,
                                                         final HttpServletRequest request )
     {
-        return new StreamingOutput()
-        {
-            @Override
-            public void write( OutputStream output ) throws IOException, WebApplicationException
-            {
-                OutputStream wrappedOutput = pristine ? new InterruptingOutputStream( output,
-                        transactionHandle ) : output;
-                transactionHandle.commit( facade.deserializer( input ), facade.serializer( wrappedOutput,
-                        baseUri ), pristine, request );
-            }
+        return output -> {
+            OutputStream wrappedOutput = transactionHandle.isImplicit()
+                                         ? new InterruptingOutputStream( output, transactionHandle )
+                                         : output;
+            transactionHandle.commit(
+                    facade.deserializer( input ), facade.serializer( wrappedOutput, baseUri ), request );
         };
     }
 
     private StreamingOutput rollback( final TransactionHandle transactionHandle, final URI baseUri )
     {
-        return new StreamingOutput()
-        {
-            @Override
-            public void write( OutputStream output ) throws IOException, WebApplicationException
+        return output -> {
+            if ( transactionHandle != null )
             {
-                if ( transactionHandle != null )
-                {
-                    transactionHandle.rollback( facade.serializer( output, baseUri ) );
-                }
+                transactionHandle.rollback( facade.serializer( output, baseUri ) );
             }
         };
     }
 
     private StreamingOutput serializeError( final Neo4jError neo4jError, final URI baseUri )
     {
-        return new StreamingOutput()
-        {
-            @Override
-            public void write( OutputStream output ) throws IOException, WebApplicationException
-            {
-                ExecutionResultSerializer serializer = facade.serializer( output, baseUri );
-                serializer.errors( asList( neo4jError ) );
-                serializer.finish();
-            }
+        return output -> {
+            ExecutionResultSerializer serializer = facade.serializer( output, baseUri );
+            serializer.errors( Collections.singletonList( neo4jError ) );
+            serializer.finish();
         };
     }
 

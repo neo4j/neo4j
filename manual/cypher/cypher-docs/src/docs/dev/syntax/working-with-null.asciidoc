@@ -36,9 +36,9 @@ Here is the truth table for +AND+, +OR+ and +XOR+.
 
 == The IN operator and NULL ==
 
-The +IN+ operator follows similar logic.
-If Cypher knows that something exists in a collection, the result will be +TRUE+.
-Any collection that contains a +NULL+ and doesn't have a matching element will return +NULL+.
+The `IN` operator follows similar logic.
+If Cypher knows that something exists in a list, the result will be `true`.
+Any list that contains a `NULL` and doesn't have a matching element will return `NULL`.
 Otherwise, the result will be false.
 Here is a table with examples:
 
@@ -61,7 +61,7 @@ Otherwise +NULL+ is produced.
 
 == Expressions that return NULL ==
 
-* Getting a missing element from a collection: +[][0]+, +head([])+
+* Getting a missing element from a list: `[][0]`, `head([])`
 * Trying to access a property that does not exist on a node or relationship: +n.missingProperty+
 * Comparisons when either side is +NULL+: +`1 < NULL`+
 * Arithmetic expressions containing +NULL+: +`1 + NULL`+

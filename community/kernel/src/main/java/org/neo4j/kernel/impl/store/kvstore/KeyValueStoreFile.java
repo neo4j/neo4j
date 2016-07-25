@@ -25,9 +25,9 @@ import java.util.Arrays;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.buffer;
 import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.compare;
 
@@ -82,7 +82,7 @@ public class KeyValueStoreFile implements Closeable
         {
             return false;
         }
-        try ( PageCursor cursor = file.io( page, PF_NO_GROW | PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = file.io( page, PF_SHARED_READ_LOCK ) )
         {
             if ( !cursor.next() )
             {
@@ -104,7 +104,7 @@ public class KeyValueStoreFile implements Closeable
     public DataProvider dataProvider() throws IOException
     {
         int pageId = headerEntries * (keySize + valueSize) / file.pageSize();
-        final PageCursor cursor = file.io( pageId, PF_NO_GROW | PF_SHARED_LOCK );
+        final PageCursor cursor = file.io( pageId, PF_SHARED_READ_LOCK );
         return new DataProvider()
         {
             int offset = headerEntries * (keySize + valueSize);
@@ -161,7 +161,6 @@ public class KeyValueStoreFile implements Closeable
         file.close();
     }
 
-
     @Override
     public String toString()
     {
@@ -172,7 +171,7 @@ public class KeyValueStoreFile implements Closeable
             EntryVisitor<? super Buffer> visitor, Buffer key, Buffer value ) throws IOException
     {
         boolean visitHeaders = !(visitor instanceof KeyValueVisitor);
-        try ( PageCursor cursor = file.io( startOffset / file.pageSize(), PF_NO_GROW | PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = file.io( startOffset / file.pageSize(), PF_SHARED_READ_LOCK ) )
         {
             if ( !cursor.next() )
             {
@@ -219,6 +218,20 @@ public class KeyValueStoreFile implements Closeable
             value.getFrom( cursor );
         }
         while ( cursor.shouldRetry() );
+        if ( cursor.checkAndClearBoundsFlag() )
+        {
+            throwOutOfBounds( cursor, offset );
+        }
+    }
+
+    private static void throwOutOfBounds( PageCursor cursor, int offset )
+    {
+        long pageId = cursor.getCurrentPageId();
+        int pageSize = cursor.getCurrentPageSize();
+        String file = cursor.getCurrentFile().getAbsolutePath();
+        throw new UnderlyingStorageException(
+                "Out of page bounds when reading key-value pair from offset " + offset + " into page " +
+                pageId + " (with a size of " + pageSize + " bytes) of file " + file );
     }
 
     /**

@@ -32,10 +32,11 @@ import org.neo4j.kernel.AvailabilityGuard.UnavailableException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -59,8 +60,8 @@ class SlaveLocksClient implements Locks.Client
     private final AvailabilityGuard availabilityGuard;
 
     // Using atomic ints to avoid creating garbage through boxing.
-    private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> sharedLocks;
-    private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> exclusiveLocks;
+    private final Map<ResourceType, Map<Long, AtomicInteger>> sharedLocks;
+    private final Map<ResourceType, Map<Long, AtomicInteger>> exclusiveLocks;
     private final Log log;
     private final boolean txTerminationAwareLocks;
     private boolean initialized;
@@ -87,8 +88,8 @@ class SlaveLocksClient implements Locks.Client
     }
 
     private Map<Long, AtomicInteger> getLockMap(
-            Map<Locks.ResourceType, Map<Long, AtomicInteger>> resourceMap,
-            Locks.ResourceType resourceType )
+            Map<ResourceType, Map<Long, AtomicInteger>> resourceMap,
+            ResourceType resourceType )
     {
         Map<Long, AtomicInteger> lockMap = resourceMap.get( resourceType );
         if ( lockMap == null )
@@ -100,7 +101,7 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( Locks.ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
+    public void acquireShared( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
     {
         assertNotStopped();
 
@@ -126,7 +127,7 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void acquireExclusive( Locks.ResourceType resourceType, long resourceId ) throws
+    public void acquireExclusive( ResourceType resourceType, long resourceId ) throws
             AcquireLockTimeoutException
     {
         assertNotStopped();
@@ -153,19 +154,19 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public boolean tryExclusiveLock( Locks.ResourceType resourceType, long resourceId )
+    public boolean tryExclusiveLock( ResourceType resourceType, long resourceId )
     {
         throw newUnsupportedDirectTryLockUsageException();
     }
 
     @Override
-    public boolean trySharedLock( Locks.ResourceType resourceType, long resourceId )
+    public boolean trySharedLock( ResourceType resourceType, long resourceId )
     {
         throw newUnsupportedDirectTryLockUsageException();
     }
 
     @Override
-    public void releaseShared( Locks.ResourceType resourceType, long resourceId )
+    public void releaseShared( ResourceType resourceType, long resourceId )
     {
         assertNotStopped();
 
@@ -184,7 +185,7 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void releaseExclusive( Locks.ResourceType resourceType, long resourceId )
+    public void releaseExclusive( ResourceType resourceType, long resourceId )
     {
         assertNotStopped();
 
@@ -268,7 +269,7 @@ class SlaveLocksClient implements Locks.Client
         }
     }
 
-    private boolean getReadLockOnMaster( Locks.ResourceType resourceType, long resourceId )
+    private boolean getReadLockOnMaster( ResourceType resourceType, long resourceId )
     {
         if ( resourceType == ResourceTypes.NODE
                 || resourceType == ResourceTypes.RELATIONSHIP
@@ -293,7 +294,7 @@ class SlaveLocksClient implements Locks.Client
         }
     }
 
-    private boolean acquireExclusiveOnMaster( Locks.ResourceType resourceType, long resourceId )
+    private boolean acquireExclusiveOnMaster( ResourceType resourceType, long resourceId )
     {
         makeSureTxHasBeenInitialized();
         RequestContext requestContext = newRequestContextFor( this );
@@ -314,7 +315,7 @@ class SlaveLocksClient implements Locks.Client
         switch ( result.getStatus() )
         {
             case DEAD_LOCKED:
-                throw new DeadlockDetectedException( result.getDeadlockMessage() );
+                throw new DeadlockDetectedException( result.getMessage() );
             case NOT_LOCKED:
                 throw new UnsupportedOperationException();
             case OK_LOCKED:
@@ -367,17 +368,17 @@ class SlaveLocksClient implements Locks.Client
         return requestContextFactory.newRequestContext( client.getLockSessionId() );
     }
 
-    private UnsupportedOperationException newUnsupportedDirectTryLockUsageException()
-    {
-        return new UnsupportedOperationException(
-                "Distributed tryLocks are not supported. They only work with local lock managers." );
-    }
-
     private void assertNotStopped()
     {
         if ( stopped )
         {
             throw new LockClientStoppedException( this );
         }
+    }
+
+    private UnsupportedOperationException newUnsupportedDirectTryLockUsageException()
+    {
+        return new UnsupportedOperationException(
+                "Distributed tryLocks are not supported. They only work with local lock managers." );
     }
 }

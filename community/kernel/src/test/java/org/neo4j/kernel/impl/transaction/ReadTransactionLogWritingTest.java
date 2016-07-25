@@ -31,19 +31,18 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.LogTestUtils.CountingLogHook;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 /**
@@ -51,23 +50,8 @@ import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
  */
 public class ReadTransactionLogWritingTest
 {
-    @Test
-    public void shouldNotWriteAnyLogCommandInPureReadTransaction() throws Exception
-    {
-        // WHEN
-        executeTransaction( getRelationships() );
-        executeTransaction( getProperties() );
-        executeTransaction( getById() );
-        executeTransaction( getNodesFromRelationship() );
-
-        // THEN
-        long actualCount = countLogEntries();
-        assertEquals( "There were " + (actualCount-logEntriesWrittenBeforeReadOperations) +
-                " log entries written during one or more pure read transactions",
-                logEntriesWrittenBeforeReadOperations, actualCount );
-    }
-
-    public final @Rule DatabaseRule dbr = new ImpermanentDatabaseRule();
+    @Rule
+    public final DatabaseRule dbr = new ImpermanentDatabaseRule();
 
     private final Label label = label( "Test" );
     private Node node;
@@ -91,6 +75,22 @@ public class ReadTransactionLogWritingTest
         logEntriesWrittenBeforeReadOperations = countLogEntries();
     }
 
+    @Test
+    public void shouldNotWriteAnyLogCommandInPureReadTransaction() throws Exception
+    {
+        // WHEN
+        executeTransaction( getRelationships() );
+        executeTransaction( getProperties() );
+        executeTransaction( getById() );
+        executeTransaction( getNodesFromRelationship() );
+
+        // THEN
+        long actualCount = countLogEntries();
+        assertEquals( "There were " + (actualCount-logEntriesWrittenBeforeReadOperations) +
+                " log entries written during one or more pure read transactions",
+                logEntriesWrittenBeforeReadOperations, actualCount );
+    }
+
     private long countLogEntries()
     {
         GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
@@ -102,7 +102,7 @@ public class ReadTransactionLogWritingTest
             filterNeostoreLogicalLog( fs, storeDir.getPath(), logicalLogCounter );
 
             long txLogRecordCount = db.getDependencyResolver()
-                    .resolveDependency( LogFileInformation.class ).getLastCommittedTxId();
+                    .resolveDependency( LogFileInformation.class ).getLastEntryId();
 
             return logicalLogCounter.getCount() + txLogRecordCount;
         }
@@ -130,7 +130,7 @@ public class ReadTransactionLogWritingTest
 
     private void executeTransaction( Runnable runnable, boolean success )
     {
-        try ( Transaction tx = dbr.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbr.getGraphDatabaseAPI().beginTx() )
         {
             runnable.run();
             if ( success )
@@ -142,41 +142,24 @@ public class ReadTransactionLogWritingTest
 
     private Runnable getRelationships()
     {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                assertEquals( 1, count( node.getRelationships() ) );
-            }
-        };
+        return () -> assertEquals( 1, Iterables.count( node.getRelationships() ) );
     }
 
     private Runnable getNodesFromRelationship()
     {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                relationship.getEndNode();
-                relationship.getStartNode();
-                relationship.getNodes();
-                relationship.getOtherNode( node );
-            }
+        return () -> {
+            relationship.getEndNode();
+            relationship.getStartNode();
+            relationship.getNodes();
+            relationship.getOtherNode( node );
         };
     }
 
     private Runnable getById()
     {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                dbr.getGraphDatabaseService().getNodeById( node.getId() );
-                dbr.getGraphDatabaseService().getRelationshipById( relationship.getId() );
-            }
+        return () -> {
+            dbr.getGraphDatabaseAPI().getNodeById( node.getId() );
+            dbr.getGraphDatabaseAPI().getRelationshipById( relationship.getId() );
         };
     }
 

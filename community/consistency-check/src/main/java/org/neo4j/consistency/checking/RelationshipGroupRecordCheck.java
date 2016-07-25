@@ -37,7 +37,7 @@ import static java.util.Arrays.asList;
 public class RelationshipGroupRecordCheck implements
         RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>
 {
-    private final static List<RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>> fields;
+    private static final List<RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>> fields;
     static
     {
         List<RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>> list = new ArrayList<>();

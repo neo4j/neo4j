@@ -23,64 +23,125 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
+import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
-import org.neo4j.kernel.impl.storemigration.StoreMigrator;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
+import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
-import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
-import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
+import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
+
+@RunWith( Parameterized.class )
 public class StoreMigratorFrom20IT
 {
-    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    @Rule
+    public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
+    private PageCache pageCache;
+    private final LifeSupport life = new LifeSupport();
+    private UpgradableDatabase upgradableDatabase;
+    private SchemaIndexProvider schemaIndexProvider;
+    private LabelScanStoreProvider labelScanStoreProvider;
+
+    @Parameter
+    public String recordFormatName;
+    @Parameter( 1 )
+    public RecordFormats recordFormat;
+
+    @Parameters( name = "{0}" )
+    public static List<Object[]> recordFormats()
+    {
+        return Arrays.asList(
+                new Object[]{StandardV3_0.NAME, StandardV3_0.RECORD_FORMATS},
+                new Object[]{HighLimit.NAME, HighLimit.RECORD_FORMATS} );
+    }
+
+    @Before
+    public void setUp()
+    {
+        pageCache = pageCacheRule.getPageCache( fs );
+
+        schemaIndexProvider = new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, storeDir.directory() );
+        labelScanStoreProvider = new LabelScanStoreProvider( new InMemoryLabelScanStore(), 1 );
+
+        upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
+                new LegacyStoreVersionCheck( fs ), recordFormat );
+    }
+
+    @After
+    public void tearDown()
+    {
+        life.shutdown();
+    }
 
     @Test
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
         // WHEN
-        StoreMigrator storeMigrator = new StoreMigrator( monitor, fs, pageCache, config, NullLogService.getInstance() );
-        upgrader( storeMigrator ).migrateIfNeeded(
-                find20FormatStoreDirectory( storeDir.directory() ), upgradableDatabase, schemaIndexProvider );
+        StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, getConfig(), NullLogService.getInstance(),
+                schemaIndexProvider );
+        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fs, schemaIndexProvider, labelScanStoreProvider );
+        upgrader( indexMigrator, storeMigrator ).migrateIfNeeded( find20FormatStoreDirectory( storeDir.directory() ) );
 
         // THEN
-        assertEquals( 100, monitor.eventSize() );
+        assertEquals( 2, monitor.progresses().size() );
         assertTrue( monitor.isStarted() );
         assertTrue( monitor.isFinished() );
 
-        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.absolutePath() );
+        GraphDatabaseService database = new EnterpriseGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( storeDir.absolutePath() )
+                .newGraphDatabase();
         try
         {
             verifyDatabaseContents( database );
@@ -91,6 +152,8 @@ public class StoreMigratorFrom20IT
             database.shutdown();
         }
 
+        LogProvider logProvider = NullLogProvider.getInstance();
+        StoreFactory storeFactory = new StoreFactory( storeDir.directory(), pageCache, fs, logProvider );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
         {
             verifyNeoStore( neoStores );
@@ -105,9 +168,12 @@ public class StoreMigratorFrom20IT
         File legacyStoreDir = find20FormatStoreDirectory( storeDir.directory() );
 
         // When
-        StoreMigrator storeMigrator = new StoreMigrator( monitor, fs, pageCache, config, NullLogService.getInstance() );
-        upgrader( storeMigrator ).migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider );
-        ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );
+        StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, getConfig(), NullLogService.getInstance(),
+                schemaIndexProvider );
+        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fs, schemaIndexProvider, labelScanStoreProvider );
+        upgrader( indexMigrator, storeMigrator ).migrateIfNeeded( legacyStoreDir );
+        ClusterManager.ManagedCluster cluster =
+                buildClusterWithMasterDirIn( fs, legacyStoreDir, life, getConfig().getParams() );
         cluster.await( allSeesAllAsAvailable() );
         cluster.sync();
 
@@ -122,11 +188,29 @@ public class StoreMigratorFrom20IT
     {
         DatabaseContentVerifier verifier = new DatabaseContentVerifier( database, 2 );
         verifyNumberOfNodesAndRelationships( verifier );
-        verifier.verifyNodeIdsReused();
-        verifier.verifyRelationshipIdsReused();
+        createNewNode( database );
+        createNewRelationship( database );
         verifier.verifyLegacyIndex();
         verifier.verifyIndex();
         verifier.verifyJohnnyLabels();
+    }
+
+    private static void createNewNode( GraphDatabaseService database )
+    {
+        try ( Transaction tx = database.beginTx() )
+        {
+            database.createNode();
+            tx.success();
+        }
+    }
+
+    private static void createNewRelationship( GraphDatabaseService database )
+    {
+        try ( Transaction tx = database.beginTx() )
+        {
+            database.createNode().createRelationshipTo( database.createNode(), MyRelTypes.TEST );
+            tx.success();
+        }
     }
 
     private static void verifySlaveContents( HighlyAvailableGraphDatabase haDb )
@@ -141,50 +225,30 @@ public class StoreMigratorFrom20IT
         verifier.verifyRelationships( 500 );
     }
 
-    public static void verifyNeoStore( NeoStores neoStores )
+    public void verifyNeoStore( NeoStores neoStores )
     {
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         assertEquals( 1317392957120L, metaDataStore.getCreationTime() );
-        assertEquals( -472309512128245482l, metaDataStore.getRandomNumber() );
-        assertEquals( 5l, metaDataStore.getCurrentLogVersion() );
-        assertEquals( ALL_STORES_VERSION, MetaDataStore.versionLongToString(
-                metaDataStore.getStoreVersion() ) );
-        assertEquals( 1042l, metaDataStore.getLastCommittedTransactionId() );
+        assertEquals( -472309512128245482L, metaDataStore.getRandomNumber() );
+        assertEquals( 5L, metaDataStore.getCurrentLogVersion() );
+        assertEquals( recordFormat.storeVersion(),
+                MetaDataStore.versionLongToString( metaDataStore.getStoreVersion() ) );
+        assertEquals( 1042L, metaDataStore.getLastCommittedTransactionId() );
     }
 
-    private StoreUpgrader upgrader( StoreMigrator storeMigrator )
+    private StoreUpgrader upgrader( SchemaIndexMigrator indexMigrator, StoreMigrator storeMigrator )
     {
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
+        Config config = getConfig().augment( stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), "true" ) );
+        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, monitor, config, fs,
+                NullLogProvider.getInstance() );
+        upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( storeMigrator );
         return upgrader;
     }
 
-    @Rule
-    public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-
-    private final Config config = MigrationTestUtils.defaultConfig();
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
-    private StoreFactory storeFactory;
-    private PageCache pageCache;
-    private final LifeSupport life = new LifeSupport();
-    private UpgradableDatabase upgradableDatabase;
-
-    @Before
-    public void setUp()
+    private Config getConfig()
     {
-        pageCache = pageCacheRule.getPageCache( fs );
-        storeFactory = new StoreFactory( storeDir.directory(), config, new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, NullLogProvider.getInstance() );
-        upgradableDatabase =
-                new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
-    }
-
-    @After
-    public void tearDown()
-    {
-        life.shutdown();
+        return new Config( stringMap( GraphDatabaseSettings.record_format.name(), recordFormatName ),
+                GraphDatabaseSettings.class );
     }
 }

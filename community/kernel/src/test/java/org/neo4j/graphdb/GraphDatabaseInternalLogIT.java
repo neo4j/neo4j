@@ -23,21 +23,22 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.Files;
+import java.util.stream.Stream;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.junit.Assert.assertEquals;
 
 public class GraphDatabaseInternalLogIT
 {
@@ -48,57 +49,39 @@ public class GraphDatabaseInternalLogIT
     public void shouldWriteToInternalDiagnosticsLog() throws Exception
     {
         // Given
-        new TestGraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() ).shutdown();
-        final File internalLog = new File( testDir.graphDbDir(), StoreLogService.INTERNAL_LOG_NAME );
+        new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
+                .newGraphDatabase().shutdown();
+        File internalLog = new File( testDir.directory( "logs" ), StoreLogService.INTERNAL_LOG_NAME );
 
         // Then
         assertThat( internalLog.isFile(), is( true ) );
         assertThat( internalLog.length(), greaterThan( 0L ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, "UTF-8" ), new Predicate<String>()
-        {
-            @Override
-            public boolean test( String line )
-            {
-                return line.contains( "Database is now ready" );
-            }
-        } ), is( 1 ) );
-
-        assertThat( IteratorUtil.count( asIterable( internalLog, "UTF-8" ), new Predicate<String>()
-        {
-            @Override
-            public boolean test( String line )
-            {
-                return line.contains( "Database is now unavailable" );
-            }
-        } ), is( 1 ) );
+        assertEquals( 1, countOccurrences( internalLog, "Database is now ready" ) );
+        assertEquals( 1, countOccurrences( internalLog, "Database is now unavailable" ) );
     }
 
     @Test
     public void shouldNotWriteDebugToInternalDiagnosticsLogByDefault() throws Exception
     {
         // Given
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
+                .newGraphDatabase();
 
         // When
         LogService logService = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( LogService.class );
         logService.getInternalLog( getClass() ).debug( "A debug entry" );
 
         db.shutdown();
-        final File internalLog = new File( testDir.graphDbDir(), StoreLogService.INTERNAL_LOG_NAME );
+        File internalLog = new File( testDir.directory( "logs" ), StoreLogService.INTERNAL_LOG_NAME );
 
         // Then
         assertThat( internalLog.isFile(), is( true ) );
         assertThat( internalLog.length(), greaterThan( 0L ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, "UTF-8" ), new Predicate<String>()
-        {
-            @Override
-            public boolean test( String line )
-            {
-                return line.contains( "A debug entry" );
-            }
-        } ), is( 0 ) );
+        assertEquals( 0, countOccurrences( internalLog, "A debug entry" ) );
     }
 
     @Test
@@ -107,6 +90,7 @@ public class GraphDatabaseInternalLogIT
         // Given
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.store_internal_debug_contexts, getClass().getName() + ",java.io" )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
                 .newGraphDatabase();
 
         // When
@@ -116,37 +100,22 @@ public class GraphDatabaseInternalLogIT
         logService.getInternalLog( StringWriter.class ).debug( "A SW debug entry" );
 
         db.shutdown();
-        final File internalLog = new File( testDir.graphDbDir(), StoreLogService.INTERNAL_LOG_NAME );
+        File internalLog = new File( testDir.directory( "logs" ), StoreLogService.INTERNAL_LOG_NAME );
 
         // Then
         assertThat( internalLog.isFile(), is( true ) );
         assertThat( internalLog.length(), greaterThan( 0L ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, "UTF-8" ), new Predicate<String>()
-        {
-            @Override
-            public boolean test( String line )
-            {
-                return line.contains( "A debug entry" );
-            }
-        } ), is( 1 ) );
+        assertEquals( 1, countOccurrences( internalLog, "A debug entry" ) );
+        assertEquals( 0, countOccurrences( internalLog, "A GDS debug entry" ) );
+        assertEquals( 1, countOccurrences( internalLog, "A SW debug entry" ) );
+    }
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, "UTF-8" ), new Predicate<String>()
+    private static long countOccurrences( File file, String substring ) throws IOException
+    {
+        try ( Stream<String> lines = Files.lines( file.toPath() ) )
         {
-            @Override
-            public boolean test( String line )
-            {
-                return line.contains( "A GDS debug entry" );
-            }
-        } ), is( 0 ) );
-
-        assertThat( IteratorUtil.count( asIterable( internalLog, "UTF-8" ), new Predicate<String>()
-        {
-            @Override
-            public boolean test( String line )
-            {
-                return line.contains( "A SW debug entry" );
-            }
-        } ), is( 1 ) );
+            return lines.filter( line -> line.contains( substring ) ).count();
+        }
     }
 }

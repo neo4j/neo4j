@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -43,13 +42,11 @@ public class IndexAccessors implements Closeable
 {
     private final Map<Long,IndexAccessor> accessors = new HashMap<>();
     private final List<IndexRule> indexRules = new ArrayList<>();
-    private final IndexSamplingConfig samplingConfig;
 
     public IndexAccessors( SchemaIndexProvider provider,
                            RecordStore<DynamicRecord> schemaStore,
-                           IndexSamplingConfig samplingConfig ) throws IOException, MalformedSchemaRuleException
+                           IndexSamplingConfig samplingConfig ) throws IOException
     {
-        this.samplingConfig = samplingConfig;
         Iterator<IndexRule> rules = loadAllIndexRules( schemaStore ).iterator();
         for (; ; )
         {
@@ -80,7 +77,7 @@ public class IndexAccessors implements Closeable
         for ( IndexRule indexRule : indexRules )
         {
             long indexId = indexRule.getId();
-            IndexConfiguration indexConfig = new IndexConfiguration( indexRule.isConstraintIndex() );
+            IndexConfiguration indexConfig = IndexConfiguration.of( indexRule );
             accessors.put( indexId, provider.getOnlineAccessor( indexId, indexConfig, samplingConfig ) );
         }
     }

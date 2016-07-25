@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.util.logging.Level;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.client.Clusters;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -46,12 +45,12 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.test.rule.LoggerRule;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.test.LoggerRule;
-import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -65,7 +64,6 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalArbiters;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
-import static org.neo4j.kernel.impl.ha.ClusterManager.provided;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
 
@@ -82,18 +80,18 @@ public class ClusterTest
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "testCluster" ) )
                 .withSharedConfig(
                     MapUtil.stringMap(
-                            HaSettings.ha_server.name(), "localhost:6001-6005",
+                            HaSettings.ha_server.name(), "localhost:6001-9999",
                             HaSettings.tx_push_factor.name(), "2" ) )
-                .withProvider( clusterOfSize( 3 ) )
+                .withCluster( clusterOfSize( 3 ) )
                 .build();
         try
         {
             clusterManager.start();
 
-            clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
+            clusterManager.getCluster().await( allSeesAllAsAvailable() );
 
             long nodeId;
-            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
+            HighlyAvailableGraphDatabase master = clusterManager.getCluster().getMaster();
             try ( Transaction tx = master.beginTx() )
             {
                 Node node = master.createNode();
@@ -102,8 +100,7 @@ public class ClusterTest
                 tx.success();
             }
 
-
-            HighlyAvailableGraphDatabase slave = clusterManager.getDefaultCluster().getAnySlave();
+            HighlyAvailableGraphDatabase slave = clusterManager.getCluster().getAnySlave();
             try ( Transaction transaction = slave.beginTx() )
             {
                 Node node = slave.getNodeById( nodeId );
@@ -119,28 +116,19 @@ public class ClusterTest
     @Test
     public void testClusterWithHostnames() throws Throwable
     {
-        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
-        for ( int i = 0; i < 3; i++ )
-        {
-            cluster.getMembers().add( new Clusters.Member( "localhost:" + (5001 + i), true ) );
-        }
-
-        final Clusters clusters = new Clusters();
-        clusters.getClusters().add( cluster );
-
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory(  "testCluster" ) )
-                .withProvider( provided( clusters ) )
+                .withCluster( clusterOfSize( "localhost", 3 ) )
                 .withSharedConfig( stringMap(
-                        HaSettings.ha_server.name(), "localhost:6001-6005",
+                        HaSettings.ha_server.name(), "localhost:6001-9999",
                         HaSettings.tx_push_factor.name(), "2" ) ).build();
         try
         {
             clusterManager.start();
 
-            clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
+            clusterManager.getCluster().await( allSeesAllAsAvailable() );
 
             long nodeId;
-            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
+            HighlyAvailableGraphDatabase master = clusterManager.getCluster().getMaster();
             try ( Transaction tx = master.beginTx() )
             {
                 Node node = master.createNode();
@@ -149,7 +137,7 @@ public class ClusterTest
                 tx.success();
             }
 
-            HighlyAvailableGraphDatabase anySlave = clusterManager.getDefaultCluster().getAnySlave();
+            HighlyAvailableGraphDatabase anySlave = clusterManager.getCluster().getAnySlave();
             try ( Transaction ignore = anySlave.beginTx() )
             {
                 Node node = anySlave.getNodeById( nodeId );
@@ -165,28 +153,19 @@ public class ClusterTest
     @Test
     public void testClusterWithWildcardIP() throws Throwable
     {
-        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
-        for ( int i = 0; i < 3; i++ )
-        {
-            cluster.getMembers().add( new Clusters.Member( (5001 + i), true ) );
-        }
-
-        final Clusters clusters = new Clusters();
-        clusters.getClusters().add( cluster );
-
-        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory(  "testCluster" ) )
-                .withProvider( provided( clusters ) )
+        ClusterManager clusterManager =
+                new ClusterManager.Builder( testDirectory.directory(  "testClusterWithWildcardIP" ) )
                 .withSharedConfig( stringMap(
-                        HaSettings.ha_server.name(), "0.0.0.0:6001-6005",
+                        HaSettings.ha_server.name(), "0.0.0.0:6001-9999",
                         HaSettings.tx_push_factor.name(), "2" ) ).build();
         try
         {
             clusterManager.start();
 
-            clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
+            clusterManager.getCluster().await( allSeesAllAsAvailable() );
 
             long nodeId;
-            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
+            HighlyAvailableGraphDatabase master = clusterManager.getCluster().getMaster();
             try ( Transaction tx = master.beginTx() )
             {
                 Node node = master.createNode();
@@ -195,7 +174,7 @@ public class ClusterTest
                 tx.success();
             }
 
-            HighlyAvailableGraphDatabase anySlave = clusterManager.getDefaultCluster().getAnySlave();
+            HighlyAvailableGraphDatabase anySlave = clusterManager.getCluster().getAnySlave();
             try ( Transaction ignore = anySlave.beginTx() )
             {
                 Node node = anySlave.getNodeById( nodeId );
@@ -208,17 +187,19 @@ public class ClusterTest
         }
     }
 
-    @Test @Ignore("JH: Ignored for by CG in March 2013, needs revisit. I added @ignore instead of commenting out to list this in static analysis.")
+    @Test
+    @Ignore( "JH: Ignored for by CG in March 2013, needs revisit. I added @ignore instead of commenting out to list " +
+            "this in static analysis." )
     public void testArbiterStartsFirstAndThenTwoInstancesJoin() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "testCluster" ) )
-                .withProvider( clusterWithAdditionalArbiters( 2, 1 ) ).build();
+                .withCluster( clusterWithAdditionalArbiters( 2, 1 ) ).build();
         try
         {
             clusterManager.start();
-            clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
+            clusterManager.getCluster().await( allSeesAllAsAvailable() );
 
-            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
+            HighlyAvailableGraphDatabase master = clusterManager.getCluster().getMaster();
             try ( Transaction tx = master.beginTx() )
             {
                 master.createNode();
@@ -237,10 +218,10 @@ public class ClusterTest
         HighlyAvailableGraphDatabase first = null;
         try
         {
-            String masterStoreDir =
-                    testDirectory.directory( "testConflictingClusterPortsMaster" ).getAbsolutePath();
+            File masterStoreDir =
+                    testDirectory.directory( "testConflictingClusterPortsMaster" );
             first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( masterStoreDir )
+                    newEmbeddedDatabaseBuilder( masterStoreDir )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
                     .setConfig( ClusterSettings.server_id, "1" )
@@ -249,10 +230,10 @@ public class ClusterTest
 
             try
             {
-                String slaveStoreDir =
-                        testDirectory.directory( "testConflictingClusterPortsSlave" ).getAbsolutePath();
+                File slaveStoreDir =
+                        testDirectory.directory( "testConflictingClusterPortsSlave" );
                 HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                        newHighlyAvailableDatabaseBuilder( slaveStoreDir )
+                        newEmbeddedDatabaseBuilder( slaveStoreDir )
                         .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                         .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
                         .setConfig( ClusterSettings.server_id, "2" )
@@ -281,10 +262,10 @@ public class ClusterTest
         HighlyAvailableGraphDatabase first = null;
         try
         {
-            String storeDir =
-                    testDirectory.directory( "testConflictingHaPorts" ).getAbsolutePath();
+            File storeDir =
+                    testDirectory.directory( "testConflictingHaPorts" );
              first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( storeDir )
+                     newEmbeddedDatabaseBuilder( storeDir )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
                     .setConfig( ClusterSettings.server_id, "1" )
@@ -294,7 +275,7 @@ public class ClusterTest
             try
             {
                 HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                        newHighlyAvailableDatabaseBuilder( storeDir )
+                        newEmbeddedDatabaseBuilder( storeDir )
                         .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                         .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5002" )
                         .setConfig( ClusterSettings.server_id, "2" )
@@ -321,11 +302,11 @@ public class ClusterTest
     public void given4instanceClusterWhenMasterGoesDownThenElectNewMaster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "4instances" ) )
-                .withProvider( ClusterManager.clusterOfSize( 4 ) ).build();
+                .withCluster( ClusterManager.clusterOfSize( 4 ) ).build();
         try
         {
             clusterManager.start();
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+            ClusterManager.ManagedCluster cluster = clusterManager.getCluster();
             cluster.await( allSeesAllAsAvailable() );
 
             logging.getLogger().info( "STOPPING MASTER" );
@@ -355,8 +336,7 @@ public class ClusterTest
     public void givenEmptyHostListWhenClusterStartupThenFormClusterWithSingleInstance() throws Exception
     {
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( testDirectory.directory(
-                        "singleinstance" ).getAbsolutePath() ).
+                newEmbeddedDatabaseBuilder( testDirectory.directory( "singleinstance" ) ).
                 setConfig( ClusterSettings.server_id, "1" ).
                 setConfig( ClusterSettings.initial_hosts, "" ).
                 newGraphDatabase();
@@ -375,11 +355,11 @@ public class ClusterTest
     public void givenClusterWhenMasterGoesDownAndTxIsRunningThenDontWaitToSwitch() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "waitfortx" ) )
-                .withProvider( ClusterManager.clusterOfSize( 3 ) ).build();
+                .withCluster( ClusterManager.clusterOfSize( 3 ) ).build();
         try
         {
             clusterManager.start();
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+            ClusterManager.ManagedCluster cluster = clusterManager.getCluster();
             cluster.await( allSeesAllAsAvailable() );
 
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
@@ -421,12 +401,12 @@ public class ClusterTest
     public void lastTxCommitTimestampShouldGetInitializedOnSlaveIfNotPresent() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "lastTxTimestamp" ) )
-                .withProvider( ClusterManager.clusterOfSize( 3 ) ).build();
+                .withCluster( ClusterManager.clusterOfSize( 3 ) ).build();
 
         try
         {
             clusterManager.start();
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+            ClusterManager.ManagedCluster cluster = clusterManager.getCluster();
             cluster.await( allSeesAllAsAvailable() );
 
             runSomeTransactions( cluster.getMaster() );
@@ -454,12 +434,12 @@ public class ClusterTest
     public void lastTxCommitTimestampShouldBeUnknownAfterStartIfNoFiledOrLogsPresent() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "lastTxTimestamp" ) )
-                .withProvider( ClusterManager.clusterOfSize( 3 ) ).build();
+                .withCluster( ClusterManager.clusterOfSize( 3 ) ).build();
 
         try
         {
             clusterManager.start();
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+            ClusterManager.ManagedCluster cluster = clusterManager.getCluster();
             cluster.await( allSeesAllAsAvailable() );
 
             runSomeTransactions( cluster.getMaster() );

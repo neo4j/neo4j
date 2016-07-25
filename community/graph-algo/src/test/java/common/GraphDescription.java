@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -49,7 +48,7 @@ public class GraphDescription implements GraphDefinition
                                                     + "\"" );
             }
             start = parts[0];
-            type = DynamicRelationshipType.withName( parts[1] );
+            type = RelationshipType.withName( parts[1] );
             end = parts[2];
         }
 

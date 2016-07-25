@@ -25,17 +25,18 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -147,7 +148,7 @@ public class DatabaseRebuildTool
 
     private static GraphDatabaseBuilder newDbBuilder( File path, Args args )
     {
-        GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path.getAbsolutePath() );
+        GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path );
         for ( Map.Entry<String, String> entry : args.asMap().entrySet() )
         {
             if ( entry.getKey().startsWith( "D" ) )
@@ -169,7 +170,8 @@ public class DatabaseRebuildTool
         public Store( GraphDatabaseBuilder dbBuilder )
         {
             this.db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
-            this.access = new StoreAccess( db ).initialize();
+            this.access = new StoreAccess( db.getDependencyResolver()
+                    .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores() ).initialize();
             this.storeDir = new File( db.getStoreDir() );
         }
 
@@ -188,22 +190,8 @@ public class DatabaseRebuildTool
         // should be restored. The commands has references to providers of things to accommodate for this.
         final AtomicReference<Store> store =
                 new AtomicReference<>( new Store( dbBuilder ) );
-        final Provider<StoreAccess> storeAccess = new Provider<StoreAccess>()
-        {
-            @Override
-            public StoreAccess instance()
-            {
-                return store.get().access;
-            }
-        };
-        final Provider<GraphDatabaseAPI> dbAccess = new Provider<GraphDatabaseAPI>()
-        {
-            @Override
-            public GraphDatabaseAPI instance()
-            {
-                return store.get().db;
-            }
-        };
+        final Supplier<StoreAccess> storeAccess = () -> store.get().access;
+        final Supplier<GraphDatabaseAPI> dbAccess = () -> store.get().db;
 
         ConsoleInput consoleInput = life.add( new ConsoleInput( in, out, prompt ) );
         consoleInput.add( "apply", new ApplyTransactionsCommand( fromPath, dbAccess ) );
@@ -218,7 +206,7 @@ public class DatabaseRebuildTool
                 try
                 {
                     Result result = new ConsistencyCheckService().runFullConsistencyCheck( storeDir,
-                            new Config(), ProgressMonitorFactory.textual( out ),
+                            Config.defaults(), ProgressMonitorFactory.textual( out ),
                             FormattedLogProvider.toOutputStream( System.out ), false );
                     out.println( (result.isSuccessful() ? "consistent" : "INCONSISTENT") );
                 }

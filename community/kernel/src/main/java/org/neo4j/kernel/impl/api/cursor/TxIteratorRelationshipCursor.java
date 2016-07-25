@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.cursor;
 
+import java.util.function.Consumer;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Consumer;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.storageengine.api.RelationshipItem;
 
 /**
  * Overlays transaction state on a {@link RelationshipItem} cursor. This additionally knows how to traverse added

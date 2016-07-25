@@ -26,11 +26,11 @@ public abstract class FlipFailedKernelException extends KernelException
 {
     public FlipFailedKernelException( Throwable cause, String message, Object... parameters )
     {
-        super( Status.Schema.IndexCreationFailure, cause, message, parameters );
+        super( Status.Schema.IndexCreationFailed, cause, message, parameters );
     }
 
     public FlipFailedKernelException( String message, Object... parameters )
     {
-        super( Status.Schema.IndexCreationFailure, message, parameters );
+        super( Status.Schema.IndexCreationFailed, message, parameters );
     }
 }

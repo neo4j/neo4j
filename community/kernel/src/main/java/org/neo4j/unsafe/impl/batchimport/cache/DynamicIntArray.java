@@ -31,7 +31,7 @@ public class DynamicIntArray extends DynamicNumberArray<IntArray> implements Int
 
     public DynamicIntArray( NumberArrayFactory factory, long chunkSize, int defaultValue )
     {
-        super( factory, chunkSize );
+        super( factory, chunkSize, new IntArray[0] );
         this.defaultValue = defaultValue;
     }
 
@@ -39,13 +39,13 @@ public class DynamicIntArray extends DynamicNumberArray<IntArray> implements Int
     public int get( long index )
     {
         IntArray chunk = chunkOrNullAt( index );
-        return chunk != null ? chunk.get( index( index ) ) : defaultValue;
+        return chunk != null ? chunk.get( index ) : defaultValue;
     }
 
     @Override
     public void set( long index, int value )
     {
-        ensureChunkAt( index ).set( index( index ), value );
+        at( index ).set( index, value );
     }
 
     @Override
@@ -61,14 +61,8 @@ public class DynamicIntArray extends DynamicNumberArray<IntArray> implements Int
     }
 
     @Override
-    protected IntArray addChunk( long chunkSize )
+    protected IntArray addChunk( long chunkSize, long base )
     {
-        return factory.newIntArray( chunkSize, defaultValue );
-    }
-
-    @Override
-    public IntArray fixate()
-    {
-        return new FixedIntArray( chunks, chunkSize, defaultValue );
+        return factory.newIntArray( chunkSize, defaultValue, base );
     }
 }

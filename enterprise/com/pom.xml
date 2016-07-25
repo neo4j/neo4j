@@ -3,12 +3,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-com</artifactId>
-  <version>2.3.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
 
   <name>Neo4j - Communication Package</name>
   <packaging>jar</packaging>
@@ -21,7 +21,9 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/neo4j/tree/master/enterprise/com</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
   <licenses>
@@ -84,6 +86,13 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-common</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

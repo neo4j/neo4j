@@ -1,5 +1,5 @@
 [[query-general]]
-= General Clauses =
+= General Clauses
 
 :leveloffset: 2
 
@@ -31,6 +31,6 @@ include::ql/union/index.asciidoc[]
 
 :leveloffset: 2
 
-include::ql/using/index.asciidoc[]
+include::ql/call/index.asciidoc[]
 
 :leveloffset: 0

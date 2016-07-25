@@ -18,25 +18,30 @@
  */
 package org.neo4j.harness.doc;
 
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.function.Function;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.function.Function;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.ServerControls;
+import org.neo4j.harness.TestServerBuilder;
 import org.neo4j.harness.TestServerBuilders;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.Iterators.count;
+import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 
 public class ExtensionTestingDocTest
 {
@@ -58,12 +63,13 @@ public class ExtensionTestingDocTest
     public void testMyExtension() throws Exception
     {
         // Given
-        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
+        try ( ServerControls server = getServerBuilder()
                 .withExtension( "/myExtension", MyUnmanagedExtension.class )
                 .newServer() )
         {
             // When
-            HTTP.Response response = HTTP.GET( server.httpURI().resolve( "myExtension" ).toString() );
+            HTTP.Response response = HTTP.GET(
+                    HTTP.GET( server.httpURI().resolve( "myExtension" ).toString() ).location() );
 
             // Then
             assertEquals( 200, response.status() );
@@ -74,7 +80,7 @@ public class ExtensionTestingDocTest
     public void testMyExtensionWithFunctionFixture() throws Exception
     {
         // Given
-        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
+        try ( ServerControls server = getServerBuilder()
                 .withExtension( "/myExtension", MyUnmanagedExtension.class )
                 .withFixture( new Function<GraphDatabaseService, Void>()
                 {
@@ -83,7 +89,7 @@ public class ExtensionTestingDocTest
                     {
                         try ( Transaction tx = graphDatabaseService.beginTx() )
                         {
-                            graphDatabaseService.createNode( DynamicLabel.label( "User" ) );
+                            graphDatabaseService.createNode( Label.label( "User" ) );
                             tx.success();
                         }
                         return null;
@@ -95,8 +101,16 @@ public class ExtensionTestingDocTest
             Result result = server.graph().execute( "MATCH (n:User) return n" );
 
             // Then
-            assertEquals( 1, IteratorUtil.count( result ) );
+            assertEquals( 1, count( result ) );
         }
     }
     // END SNIPPET: testExtension
+
+    private TestServerBuilder getServerBuilder( ) throws IOException
+    {
+        TestServerBuilder serverBuilder = TestServerBuilders.newInProcessBuilder();
+        serverBuilder.withConfig( ServerSettings.certificates_directory.name(),
+                ServerTestUtils.getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.certificates_directory ) );
+        return serverBuilder;
+    }
 }

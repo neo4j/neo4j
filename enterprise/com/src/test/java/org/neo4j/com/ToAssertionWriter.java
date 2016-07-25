@@ -28,7 +28,7 @@ import java.nio.channels.ReadableByteChannel;
 public class ToAssertionWriter implements MadeUpWriter
 {
     private int index;
-    
+
     @Override
     public void write( ReadableByteChannel data )
     {

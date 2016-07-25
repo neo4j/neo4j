@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
 
 /**
  * A {@code TriggerInfo} contains the information about the events that are triggering a check point.
  *
- * The {@link org.neo4j.function.Consumer<String>#accept(String)} method can be used to enrich the description with
+ * The {@link Consumer<String>#accept(String)} method can be used to enrich the description with
  * extra information. As an example, when the events triggering the check point are conditionalized wrt to a threshold,
  * thi can be used for adding the information about the threshold that actually allowed the check point to happen.
  */

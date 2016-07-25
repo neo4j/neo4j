@@ -36,27 +36,27 @@ public class PatternUtil
      * @param startNode the root of the pattern graph.
      * @param out the stream to print to.
      */
-	public static void printGraph( PatternNode startNode, PrintStream out )
-	{
-		printGraph( startNode, "", new HashSet<PatternNode>(), out );
-	}
+    public static void printGraph( PatternNode startNode, PrintStream out )
+    {
+        printGraph( startNode, "", new HashSet<PatternNode>(), out );
+    }
 
-	private static void printGraph( PatternNode startNode, String prefix,
-		Set<PatternNode> visited, PrintStream out )
-	{
-		visited.add( startNode );
-		out.println( prefix + startNode + ": " );
-		for ( PatternRelationship relationship :
-			startNode.getAllRelationships() )
-		{
-			out.print( prefix + "\t" + relationship );
-			out.println( ": " +
-				relationship.getOtherNode( startNode ) );
-			if ( !visited.contains( relationship.getOtherNode( startNode ) ) )
-			{
-				printGraph( relationship.getOtherNode( startNode ),
-					prefix + "\t\t", visited, out );
-			}
-		}
-	}
+    private static void printGraph( PatternNode startNode, String prefix,
+        Set<PatternNode> visited, PrintStream out )
+    {
+        visited.add( startNode );
+        out.println( prefix + startNode + ": " );
+        for ( PatternRelationship relationship :
+            startNode.getAllRelationships() )
+        {
+            out.print( prefix + "\t" + relationship );
+            out.println( ": " +
+                relationship.getOtherNode( startNode ) );
+            if ( !visited.contains( relationship.getOtherNode( startNode ) ) )
+            {
+                printGraph( relationship.getOtherNode( startNode ),
+                    prefix + "\t\t", visited, out );
+            }
+        }
+    }
 }

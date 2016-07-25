@@ -3,8 +3,13 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
+  Apache Commons Lang
   ConcurrentLinkedHashMap
+  Lucene codecs
+  Lucene Common Analyzers
   Lucene Core
+  Lucene Memory
+  Lucene QueryParsers
   opencsv
   parboiled-core
   parboiled-scala
@@ -257,6 +262,7 @@ SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 BSD License
+  ASM Core
   Scala Compiler
 ------------------------------------------------------------------------------
 

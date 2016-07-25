@@ -20,9 +20,8 @@
 package org.neo4j.kernel.impl.locking.community;
 
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class CommunityLockManger extends LifecycleAdapter implements Locks
+public class CommunityLockManger implements Locks
 {
     private final LockManagerImpl manager = new LockManagerImpl( new RagManager() );
     private volatile boolean closed;
@@ -43,25 +42,20 @@ public class CommunityLockManger extends LifecycleAdapter implements Locks
     @Override
     public void accept( final Visitor visitor )
     {
-        manager.accept( new org.neo4j.helpers.collection.Visitor<RWLock, RuntimeException>()
-        {
-            @Override
-            public boolean visit( RWLock element ) throws RuntimeException
+        manager.accept( element -> {
+            Object resource = element.resource();
+            if ( resource instanceof LockResource )
             {
-                Object resource = element.resource();
-                if(resource instanceof LockResource)
-                {
-                    LockResource lockResource = (LockResource)resource;
-                    visitor.visit( lockResource.type(), lockResource.resourceId(),
-                            element.describe(), element.maxWaitTime(), System.identityHashCode( lockResource ) );
-                }
-                return false;
+                LockResource lockResource = (LockResource) resource;
+                visitor.visit( lockResource.type(), lockResource.resourceId(),
+                        element.describe(), element.maxWaitTime(), System.identityHashCode( lockResource ) );
             }
+            return false;
         } );
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void close()
     {
         closed = true;
     }

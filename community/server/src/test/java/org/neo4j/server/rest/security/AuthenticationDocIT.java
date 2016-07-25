@@ -19,28 +19,19 @@
  */
 package org.neo4j.server.rest.security;
 
-import com.sun.jersey.core.util.Base64;
 import org.codehaus.jackson.JsonNode;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import javax.ws.rs.core.HttpHeaders;
 
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestData;
-import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.RawPayload;
 
@@ -48,10 +39,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class AuthenticationDocIT extends ExclusiveServerTestBase
+public class AuthenticationDocIT extends CommunityServerTestBase
 {
-    public @Rule TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
-    private CommunityNeoServer server;
+    @Rule
+    public TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     @Before
     public void setUp()
@@ -72,14 +63,14 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         RESTDocsGenerator.ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 401 )
-                .expectedHeader( "WWW-Authenticate", "None" )
+                .expectedHeader( "WWW-Authenticate", "Basic realm=\"Neo4j\"" )
                 .get( dataURL() );
 
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
         JsonNode firstError = data.get( "errors" ).get( 0 );
-        assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.AuthorizationFailed" ) );
-        assertThat( firstError.get( "message" ).asText(), equalTo( "No authorization header supplied." ) );
+        assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.Unauthorized" ) );
+        assertThat( firstError.get( "message" ).asText(), equalTo( "No authentication header supplied." ) );
     }
 
     @Test
@@ -121,13 +112,13 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
                 .noGraph()
                 .expectedStatus( 401 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "incorrect" ) )
-                .expectedHeader( "WWW-Authenticate", "None" )
+                .expectedHeader( "WWW-Authenticate", "Basic realm=\"Neo4j\"" )
                 .post( dataURL() );
 
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
         JsonNode firstError = data.get( "errors" ).get( 0 );
-        assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.AuthorizationFailed" ) );
+        assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.Unauthorized" ) );
         assertThat( firstError.get( "message" ).asText(), equalTo( "Invalid username or password." ) );
     }
 
@@ -153,7 +144,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
         JsonNode firstError = data.get( "errors" ).get( 0 );
-        assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.AuthorizationFailed" ) );
+        assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.Forbidden" ) );
         assertThat( firstError.get( "message" ).asText(), equalTo( "User is required to change their password." ) );
         assertThat( data.get( "password_change" ).asText(), equalTo( passwordURL( "neo4j" ) ) );
     }
@@ -186,11 +177,11 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         // Then
         assertThat( response.status(), equalTo( 400 ) );
         assertThat( response.get( "errors" ).get( 0 ).get( "code" ).asText(), equalTo( "Neo.ClientError.Request.InvalidFormat" ) );
-        assertThat( response.get( "errors" ).get( 0 ).get( "message" ).asText(), equalTo( "Invalid Authorization header." ) );
+        assertThat( response.get( "errors" ).get( 0 ).get( "message" ).asText(), equalTo( "Invalid authentication header." ) );
     }
 
     @Test
-    public void shouldNotAllowDataAccess() throws Exception
+    public void shouldAllowDataAccess() throws Exception
     {
         // Given
         startServerWithConfiguredUser();
@@ -201,7 +192,6 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         assertAuthorizationRequired( "POST", "db/data/transaction/commit", RawPayload.quotedJson(
                 "{'statements':[{'statement':'MATCH (n) RETURN n'}]}" ), 200 );
 
-        assertEquals(200, HTTP.GET( server.baseUri().resolve( "browser" ).toString() ).status());
         assertEquals(200, HTTP.GET( server.baseUri().resolve( "" ).toString() ).status() );
     }
 
@@ -249,6 +239,30 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         assertThat( firstError.get( "message" ).asText(), equalTo( "Too many failed authentication requests. Please wait 5 seconds and try again." ) );
     }
 
+    @Test
+    public void shouldNotAllowDataAccessForUnauthorizedUser() throws Exception
+    {
+        // Given
+        startServer( true ); // The user should not have read access before changing the password
+
+        // When
+        HTTP.Response response =
+                HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "neo4j" ) ).POST(
+                        server.baseUri().resolve( "authentication" ).toString(),
+                        HTTP.RawPayload.quotedJson( "{'username':'neo4j', 'password':'neo4j'}" )
+                );
+
+        // When & then
+        assertEquals( 403, HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "neo4j" ) )
+                .POST( server.baseUri().resolve( "db/data/node" ).toString(),
+                        RawPayload.quotedJson( "{'name':'jake'}" ) ).status() );
+        assertEquals( 403, HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "neo4j" ) )
+                .GET( server.baseUri().resolve( "db/data/node/1234" ).toString() ).status() );
+        assertEquals( 403, HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "neo4j" ) )
+                .POST( server.baseUri().resolve( "db/data/transaction/commit" ).toString(),
+                        RawPayload.quotedJson( "{'statements':[{'statement':'MATCH (n) RETURN n'}]}" ) ).status() );
+    }
+
     private void assertAuthorizationRequired( String method, String path, int expectedAuthorizedStatus ) throws JsonParseException
     {
         assertAuthorizationRequired( method, path, null, expectedAuthorizedStatus );
@@ -259,32 +273,26 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         // When no header
         HTTP.Response response = HTTP.request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(401));
-        assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.AuthorizationFailed"));
-        assertThat(response.get("errors").get(0).get("message").asText(), equalTo("No authorization header supplied."));
-        assertThat(response.header( HttpHeaders.WWW_AUTHENTICATE ), equalTo("None"));
+        assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.Unauthorized"));
+        assertThat(response.get("errors").get(0).get("message").asText(), equalTo("No authentication header supplied."));
+        assertThat(response.header( HttpHeaders.WWW_AUTHENTICATE ), equalTo("Basic realm=\"Neo4j\""));
 
         // When malformed header
         response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, "This makes no sense" ).request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(400));
         assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Request.InvalidFormat"));
-        assertThat(response.get("errors").get(0).get( "message" ).asText(), equalTo("Invalid Authorization header."));
+        assertThat(response.get("errors").get(0).get( "message" ).asText(), equalTo("Invalid authentication header."));
 
         // When invalid credential
         response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "incorrect" ) ).request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(401));
-        assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.AuthorizationFailed"));
+        assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.Unauthorized"));
         assertThat(response.get("errors").get(0).get("message").asText(), equalTo("Invalid username or password."));
-        assertThat(response.header(HttpHeaders.WWW_AUTHENTICATE ), equalTo("None"));
+        assertThat(response.header(HttpHeaders.WWW_AUTHENTICATE ), equalTo("Basic realm=\"Neo4j\""));
 
         // When authorized
         response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) ).request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(expectedAuthorizedStatus));
-    }
-
-    @After
-    public void cleanup()
-    {
-        if(server != null) {server.stop();}
     }
 
     public void startServerWithConfiguredUser() throws IOException
@@ -296,40 +304,5 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
                 RawPayload.quotedJson( "{'password':'secret'}" )
         );
         assertEquals( 200, post.status() );
-    }
-
-    public void startServer( boolean authEnabled ) throws IOException
-    {
-        FileUtils.deleteFile( new File( "neo4j-home/data/dbms/authorization" ) ); // TODO: Implement a common component for managing Neo4j file structure and use that here
-        server = CommunityServerBuilder.server()
-                .withProperty( ServerSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
-                .build();
-        server.start();
-    }
-
-    private String challengeResponse( String username, String password )
-    {
-        return "Basic " + base64( username + ":" + password );
-    }
-
-    private String dataURL()
-    {
-        return server.baseUri().resolve( "db/data/" ).toString();
-    }
-
-    private String userURL( String username )
-    {
-        return server.baseUri().resolve( "user/" + username ).toString();
-    }
-
-    private String passwordURL( String username )
-    {
-        return server.baseUri().resolve( "user/" + username + "/password" ).toString();
-    }
-
-    private String base64(String value)
-    {
-        return new String( Base64.encode( value ), Charset
-                .forName( "UTF-8" ));
     }
 }

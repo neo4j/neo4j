@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.plugins;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.Representation;
 
@@ -59,7 +59,6 @@ public abstract class PluginPoint
     public abstract Representation invoke( GraphDatabaseAPI graphDb, Object context,
             ParameterList params ) throws BadInputException, BadPluginInvocationException,
             PluginInvocationFailureException;
-
 
     protected void describeParameters( ParameterDescriptionConsumer consumer )
     {

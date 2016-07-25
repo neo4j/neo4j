@@ -22,11 +22,15 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -69,10 +73,6 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
  * <pre>
  * Relationship format:
  * - properties (see "Properties format")
- * - specific id:
- *   - 1B specific id boolean, {@link #SPECIFIC_ID} or {@link #UNSPECIFIED_ID}
- *     IF {@link #SPECIFIC_ID}
- *     - 8B specific relationship id
  * - start node group (see "Group format")
  * - end node group (see "Group format")
  * - start node id
@@ -86,9 +86,14 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
  *     ELSE IF {@link #NEW_TYPE}
  *     4B token id
  * </pre>
+ *
+ * The format stores entities in batches, each batch having a small header containing number of bytes
+ * and number of entities.
  */
 public class InputCache implements Closeable
 {
+    public static final String MAIN = "main";
+
     private static final String HEADER = "-header";
     private static final String NODES = "nodes";
     private static final String RELATIONSHIPS = "relationships";
@@ -97,80 +102,123 @@ public class InputCache implements Closeable
 
     static final byte SAME_GROUP = 0;
     static final byte NEW_GROUP = 1;
-    static final byte TOKEN = 1;
+    static final byte PROPERTY_KEY_TOKEN = 0;
+    static final byte LABEL_TOKEN = 1;
+    static final byte RELATIONSHIP_TYPE_TOKEN = 2;
+    static final byte GROUP_TOKEN = 3;
+    static final byte HIGH_TOKEN_TYPE = 4;
     static final short HAS_FIRST_PROPERTY_ID = -1;
     static final byte HAS_LABEL_FIELD = 3;
     static final byte LABEL_REMOVAL = 1;
     static final byte LABEL_ADDITION = 2;
     static final byte END_OF_LABEL_CHANGES = 0;
-    static final byte SPECIFIC_ID = 1;
-    static final byte UNSPECIFIED_ID = 0;
     static final byte HAS_TYPE_ID = 2;
     static final byte SAME_TYPE = 0;
     static final byte NEW_TYPE = 1;
-    static final byte END_OF_HEADER = 0;
-    static final short END_OF_ENTITIES = -2;
+    static final byte END_OF_HEADER = -2;
+    static final short END_OF_ENTITIES = -3;
+    static final int NO_ENTITIES = 0;
+    static final long END_OF_CACHE = 0L;
 
     private final FileSystemAbstraction fs;
     private final File cacheDirectory;
-    private final int bufferSize;
+    private final RecordFormats recordFormats;
+    private final Configuration config;
 
-    public InputCache( FileSystemAbstraction fs, File cacheDirectory )
+    private final int bufferSize;
+    private final Set<String> subTypes = new HashSet<>();
+    private final int batchSize;
+
+    public InputCache( FileSystemAbstraction fs, File cacheDirectory, RecordFormats recordFormats,
+            Configuration config )
     {
-        this( fs, cacheDirectory, (int) ByteUnit.kibiBytes( 512 ) );
+        this( fs, cacheDirectory, recordFormats, config, (int) ByteUnit.kibiBytes( 512 ), 10_000 );
     }
 
-    public InputCache( FileSystemAbstraction fs, File cacheDirectory, int bufferSize )
+    /**
+     * @param fs {@link FileSystemAbstraction} to use
+     * @param cacheDirectory directory for placing the cached files
+     * @param config import configuration
+     * @param bufferSize buffer size for writing/reading cache files
+     * @param batchSize number of entities in each batch
+     */
+    public InputCache( FileSystemAbstraction fs, File cacheDirectory, RecordFormats recordFormats,
+            Configuration config, int bufferSize, int batchSize )
     {
         this.fs = fs;
         this.cacheDirectory = cacheDirectory;
+        this.recordFormats = recordFormats;
+        this.config = config;
         this.bufferSize = bufferSize;
+        this.batchSize = batchSize;
     }
 
-    public Receiver<InputNode[],IOException> cacheNodes() throws IOException
+    public Receiver<InputNode[],IOException> cacheNodes( String subType ) throws IOException
     {
-        return new InputNodeCacher( channel( NODES, "rw" ), channel( NODES_HEADER, "rw" ), bufferSize );
+        return new InputNodeCacher( channel( NODES, subType, "rw" ), channel( NODES_HEADER, subType, "rw" ),
+                recordFormats, bufferSize, batchSize );
     }
 
-    public Receiver<InputRelationship[],IOException> cacheRelationships() throws IOException
+    public Receiver<InputRelationship[],IOException> cacheRelationships( String subType ) throws
+            IOException
     {
-        return new InputRelationshipCacher( channel( RELATIONSHIPS, "rw" ),
-                channel( RELATIONSHIPS_HEADER, "rw" ), bufferSize );
+        return new InputRelationshipCacher( channel( RELATIONSHIPS, subType, "rw" ),
+                channel( RELATIONSHIPS_HEADER, subType, "rw" ), recordFormats, bufferSize, batchSize );
     }
 
-    private StoreChannel channel( String type, String mode ) throws IOException
+    private StoreChannel channel( String type, String subType, String mode ) throws IOException
     {
-        return fs.open( file( type ), mode );
+        return fs.open( file( type, subType ), mode );
     }
 
-    private File file( String type )
+    private File file( String type, String subType )
     {
-        return new File( cacheDirectory, "input-" + type );
+        subTypes.add( subType );
+        return new File( cacheDirectory, "input-" + type + "-" + subType );
     }
 
-    public InputIterable<InputNode> nodes()
+    public InputIterable<InputNode> nodes( String subType, boolean deleteAfterUse )
     {
         return entities( new ThrowingSupplier<InputIterator<InputNode>, IOException>()
         {
             @Override
             public InputIterator<InputNode> get() throws IOException
             {
-                return new InputNodeReader( channel( NODES, "r" ), channel( NODES_HEADER, "r" ), bufferSize );
+                return new InputNodeReader( channel( NODES, subType, "r" ), channel( NODES_HEADER, subType, "r" ),
+                        bufferSize, deleteAction( deleteAfterUse, NODES, NODES_HEADER, subType ),
+                        config.maxNumberOfProcessors() );
             }
         } );
     }
 
-    public InputIterable<InputRelationship> relationships()
+    public InputIterable<InputRelationship> relationships( String subType, boolean deleteAfterUse )
     {
         return entities( new ThrowingSupplier<InputIterator<InputRelationship>, IOException>()
         {
             @Override
             public InputIterator<InputRelationship> get() throws IOException
             {
-                return new InputRelationshipReader( channel( RELATIONSHIPS, "r" ),
-                        channel( RELATIONSHIPS_HEADER, "r" ), bufferSize );
+                return new InputRelationshipReader( channel( RELATIONSHIPS, subType, "r" ),
+                        channel( RELATIONSHIPS_HEADER, subType, "r" ), bufferSize,
+                        deleteAction( deleteAfterUse, RELATIONSHIPS, RELATIONSHIPS_HEADER, subType ),
+                        config.maxNumberOfProcessors() );
             }
         } );
+    }
+
+    protected Runnable deleteAction( boolean deleteAfterUse, String type, String header, String subType )
+    {
+        if ( !deleteAfterUse )
+        {
+            return () -> {};
+        }
+
+        return () ->
+        {
+            fs.deleteFile( file( type, subType ) );
+            fs.deleteFile( file( header, subType ) );
+            subTypes.remove( subType );
+        };
     }
 
     private <T extends InputEntity> InputIterable<T> entities(
@@ -202,9 +250,12 @@ public class InputCache implements Closeable
     @Override
     public void close() throws IOException
     {
-        fs.deleteFile( file( NODES ) );
-        fs.deleteFile( file( RELATIONSHIPS ) );
-        fs.deleteFile( file( NODES_HEADER ) );
-        fs.deleteFile( file( RELATIONSHIPS_HEADER ) );
+        for ( String subType : subTypes )
+        {
+            fs.deleteFile( file( NODES, subType ) );
+            fs.deleteFile( file( RELATIONSHIPS, subType ) );
+            fs.deleteFile( file( NODES_HEADER, subType ) );
+            fs.deleteFile( file( RELATIONSHIPS_HEADER, subType ) );
+        }
     }
 }

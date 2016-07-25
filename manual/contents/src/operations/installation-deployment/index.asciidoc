@@ -18,6 +18,10 @@ include::{importdir}/neo4j-server-docs-jar/ops/server-installation.asciidoc[]
 
 :leveloffset: 2
 
+include::file-locations.asciidoc[]
+
+:leveloffset: 2
+
 include::{importdir}/neo4j-server-docs-jar/ops/powershell.asciidoc[]
 
 :leveloffset: 2

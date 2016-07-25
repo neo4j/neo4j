@@ -19,14 +19,15 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 
 /**
  * {@link IdSequence} w/o any synchronization, purely a long incrementing.
  */
 public class BatchingIdSequence implements IdSequence
 {
+    private final long startId;
     private long nextId = 0;
 
     public BatchingIdSequence()
@@ -34,9 +35,10 @@ public class BatchingIdSequence implements IdSequence
         this( 0 );
     }
 
-    public BatchingIdSequence( long startingId )
+    public BatchingIdSequence( long startId )
     {
-        nextId = startingId;
+        this.startId = startId;
+        this.nextId = startId;
     }
 
     @Override
@@ -49,7 +51,7 @@ public class BatchingIdSequence implements IdSequence
 
     public void reset()
     {
-        nextId = 0;
+        nextId = startId;
     }
 
     public void set( long nextId )
@@ -59,7 +61,7 @@ public class BatchingIdSequence implements IdSequence
 
     public long peek()
     {
-        if ( nextId == IdGeneratorImpl.INTEGER_MINUS_ONE )
+        if ( IdValidator.isReservedId( nextId ) )
         {
             nextId++;
         }

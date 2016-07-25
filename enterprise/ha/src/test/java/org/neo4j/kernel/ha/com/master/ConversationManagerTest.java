@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
@@ -41,7 +40,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-
 @RunWith( MockitoJUnitRunner.class )
 public class ConversationManagerTest
 {
@@ -56,7 +54,7 @@ public class ConversationManagerTest
     public void testStart() throws Exception
     {
         JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
-        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1l );
+        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1L );
         when( conversationSPI.scheduleRecurringJob( any( JobScheduler.Group.class ), any( Long.class ),
                 any( Runnable.class ) ) ).thenReturn( reaperJobHandle );
         conversationManager = getConversationManager();
@@ -72,7 +70,7 @@ public class ConversationManagerTest
     public void testStop() throws Exception
     {
         JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
-        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1l );
+        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1L );
         when( conversationSPI.scheduleRecurringJob( any( JobScheduler.Group.class ), any( Long.class ),
                 any( Runnable.class ) ) ).thenReturn( reaperJobHandle );
         conversationManager = getConversationManager();
@@ -88,7 +86,7 @@ public class ConversationManagerTest
     public void testConversationWorkflow() throws Exception
     {
         JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
-        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1l );
+        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1L );
         when( conversationSPI.scheduleRecurringJob( any( JobScheduler.Group.class ), any( Long.class ),
                 any( Runnable.class ) ) ).thenReturn( reaperJobHandle );
         RequestContext requestContext = getRequestContext();
@@ -107,7 +105,6 @@ public class ConversationManagerTest
         conversationOrder.verify(conversationStorage).release( requestContext );
         conversationOrder.verify(conversationStorage).end( requestContext );
     }
-
 
     @Test
     public void testConversationStop()
@@ -130,7 +127,7 @@ public class ConversationManagerTest
 
     private RequestContext getRequestContext()
     {
-        return new RequestContext( 1l, 1, 1, 1l, 1l );
+        return new RequestContext( 1L, 1, 1, 1L, 1L );
     }
 
     private ConversationManager getConversationManager()

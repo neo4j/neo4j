@@ -19,14 +19,15 @@
  */
 package upgrade;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 
 public class ListAccumulatorMigrationProgressMonitor implements MigrationProgressMonitor
 {
-    private final List<Integer> events = new ArrayList<>();
+    private final Map<String,AtomicLong> events = new HashMap<>();
     private boolean started = false;
     private boolean finished = false;
 
@@ -37,20 +38,44 @@ public class ListAccumulatorMigrationProgressMonitor implements MigrationProgres
     }
 
     @Override
-    public void percentComplete( int percent )
+    public Section startSection( String name )
     {
-        events.add( percent );
+        final AtomicLong progress = new AtomicLong();
+        assert events.put( name, progress ) == null;
+        return new Section()
+        {
+            @Override
+            public void progress( long add )
+            {
+                progress.addAndGet( add );
+            }
+
+            @Override
+            public void start( long max )
+            {
+            }
+
+            @Override
+            public void completed()
+            {
+            }
+        };
     }
 
     @Override
-    public void finished()
+    public void completed()
     {
         finished = true;
     }
 
-    public int eventSize()
+    public Map<String,Long> progresses()
     {
-        return events.size();
+        Map<String,Long> result = new HashMap<>();
+        for ( Map.Entry<String,AtomicLong> entry : events.entrySet() )
+        {
+            result.put( entry.getKey(), entry.getValue().longValue() );
+        }
+        return result;
     }
 
     public boolean isStarted()

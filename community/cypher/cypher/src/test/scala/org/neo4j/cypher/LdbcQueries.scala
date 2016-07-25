@@ -267,7 +267,7 @@ object LdbcQueries {
 
     val query = """MATCH (:Person {id:{1}})-[:KNOWS]-(friend:Person)<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message)
                   |WHERE message.creationDate <= {2} AND (message:Post OR message:Comment)
-                  |RETURN friend.id AS personId, friend.firstName AS personFirstName, friend.lastName AS personLastName, message.id AS messageId, CASE has(message.content) WHEN true THEN message.content ELSE message.imageFile END AS messageContent,
+                  |RETURN friend.id AS personId, friend.firstName AS personFirstName, friend.lastName AS personLastName, message.id AS messageId, CASE exists(message.content) WHEN true THEN message.content ELSE message.imageFile END AS messageContent,
                   | message.creationDate AS messageDate
                   |ORDER BY messageDate DESC, messageId ASC
                   |LIMIT {3}""".stripMargin
@@ -756,7 +756,7 @@ object LdbcQueries {
                   |      WITH liker, head(collect({msg: message, likeTime: likeCreationDate})) AS latestLike, person
                   |    RETURN liker.id AS personId, liker.firstName AS personFirstName, liker.lastName AS personLastName,
                   |    latestLike.likeTime AS likeTime, not((liker)-[:KNOWS]-(person)) AS isNew, latestLike.msg.id AS messageId,
-                  |    CASE has(latestLike.msg.content) WHEN true THEN latestLike.msg.content
+                  |    CASE exists(latestLike.msg.content) WHEN true THEN latestLike.msg.content
                   |    ELSE latestLike.msg.imageFile END AS messageContent, latestLike.likeTime - latestLike.msg.creationDate AS latencyAsMilli
                   |    ORDER BY likeTime DESC, personId ASC
                   |      LIMIT {2}""".stripMargin
@@ -963,7 +963,7 @@ object LdbcQueries {
 
     val query = """MATCH (:Person {id:{1}})-[:KNOWS*1..2]-(friend:Person)<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message)
                   |WHERE message.creationDate < {2}
-                  |RETURN DISTINCT message.id AS messageId, CASE has(message.content) WHEN true THEN message.content ELSE message.imageFile END AS messageContent,
+                  |RETURN DISTINCT message.id AS messageId, CASE exists(message.content) WHEN true THEN message.content ELSE message.imageFile END AS messageContent,
                   | message.creationDate AS messageCreationDate, friend.id AS personId, friend.firstName AS personFirstName, friend.lastName AS personLastName
                   |ORDER BY message.creationDate DESC, message.id ASC
                   |LIMIT {3}""".stripMargin

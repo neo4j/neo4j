@@ -128,8 +128,9 @@ public final class Components
     static JTextField createUnmodifiableTextField( String text, int columns )
     {
         JTextField textField = new JTextField( text, columns );
-        textField.setEditable( false );
         textField.setForeground( Color.GRAY );
+        textField.setEditable( false );
+
         return textField;
     }
 

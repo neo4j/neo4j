@@ -47,6 +47,6 @@ public enum UpdateMode
             return binarySearch( before, label ) >= 0;
         }
     };
-    
+
     public abstract boolean forLabel( long[] before, long[] after, long label );
 }

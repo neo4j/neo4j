@@ -22,10 +22,11 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.IOException;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_TYPE;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.RELATIONSHIP_TYPE_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SPECIFIC_ID;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_TYPE_ID;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
@@ -34,45 +35,42 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
  */
 public class InputRelationshipReader extends InputEntityReader<InputRelationship>
 {
-    private String previousType;
-
-    public InputRelationshipReader( StoreChannel channel, StoreChannel header, int bufferSize ) throws IOException
+    public InputRelationshipReader( StoreChannel channel, StoreChannel header, int bufferSize, Runnable closeAction,
+            int maxNbrOfProcessors ) throws IOException
     {
-        super( channel, header, bufferSize, 2 );
+        super( channel, header, bufferSize, closeAction, maxNbrOfProcessors );
     }
 
     @Override
-    protected InputRelationship readNextOrNull( Object properties ) throws IOException
+    protected InputRelationship readNextOrNull( Object properties, ProcessorState state ) throws IOException
     {
-        // id
-        long specificId = channel.get() == SPECIFIC_ID ? channel.getLong() : -1;
+        ReadableClosablePositionAwareChannel channel = state.batchChannel;
 
         // groups
-        Group startNodeGroup = readGroup( 0 );
-        Group endNodeGroup = readGroup( 1 );
+        Group startNodeGroup = readGroup( 0, state );
+        Group endNodeGroup = readGroup( 1, state );
 
         // ids
-        Object startNodeId = readValue();
-        Object endNodeId = readValue();
+        Object startNodeId = readValue( channel );
+        Object endNodeId = readValue( channel );
 
         // type
         byte typeMode = channel.get();
         Object type;
         switch ( typeMode )
         {
-        case SAME_TYPE: type = previousType; break;
-        case NEW_TYPE: type = previousType = readToken(); break;
+        case SAME_TYPE: type = state.previousType; break;
+        case NEW_TYPE: type = state.previousType = (String) readToken( RELATIONSHIP_TYPE_TOKEN, channel ); break;
         case HAS_TYPE_ID: type = channel.getInt(); break;
         default: throw new IllegalArgumentException( "Unrecognized type mode " + typeMode );
         }
 
-        InputRelationship relationship = new InputRelationship( sourceDescription(), lineNumber(), position(),
+        return new InputRelationship( sourceDescription(), lineNumber(), position(),
                 properties.getClass().isArray() ? (Object[]) properties : NO_PROPERTIES,
                 properties.getClass().isArray() ? null : (Long) properties,
                 startNodeGroup, startNodeId,
                 endNodeGroup, endNodeId,
                 type instanceof String ? (String) type : null,
                 type instanceof String ? null : (Integer) type );
-        return specificId != -1 ? relationship.setSpecificId( specificId ) : relationship;
     }
 }

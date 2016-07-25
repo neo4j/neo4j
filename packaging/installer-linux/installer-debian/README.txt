@@ -59,23 +59,18 @@ the Oracle servers seems to serve up the file with an ending of only
 `.gz`, which the packaging scripts do not accept, so you will have to
 rename the file like so:
 
-  mv jdk-7u25-linux-x64.gz jdk-7u25-linux-x64.tar.gz
+  mv jdk-<version>-linux-x64.gz jdk-<version>-linux-x64.tar.gz
 
 Packaging the JDK requires the `java-package` package to be
-installed. `java-package` is a "contrib" package, so "contrib" has
-to be added to:
-
-  /etc/apt/sources.list
-
-Then you can install `java-package`:
+installed. You can install `java-package`:
 
   sudo apt-get update
   sudo apt-get install java-package
 
 Now you are ready to package the JRE or JDK:
 
-  make-jpkg jdk-7u25-linux-x64.tar.gz
+  make-jpkg jdk-<version>-linux-x64.tar.gz
 
 Now you can install the Oracle JDK or JRE, preferably with `gdebi`:
 
-  sudo gdebi oracle-j2sdk1.7_1.7.0+update25_amd64.deb
+  sudo gdebi <name of jdk package>.deb

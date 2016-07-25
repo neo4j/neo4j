@@ -115,7 +115,7 @@ public class TestData<T> implements TestRule
     {
         this.producer = producer;
     }
-    
+
     @Override
     public Statement apply( final Statement base, final Description description )
     {

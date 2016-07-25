@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.withCause;
 
@@ -175,7 +174,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         return handler.report();
     }
 
-    public static abstract class ReportInvocationHandler
+    public abstract static class ReportInvocationHandler
             <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
             implements CheckerEngine<RECORD, REPORT>, InvocationHandler
     {
@@ -341,7 +340,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         @Override
         long recordId()
         {
-            return record.getLongId();
+            return record.getId();
         }
 
         @Override
@@ -394,7 +393,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         @Override
         long recordId()
         {
-            return newRecord.getLongId();
+            return newRecord.getId();
         }
 
         @Override

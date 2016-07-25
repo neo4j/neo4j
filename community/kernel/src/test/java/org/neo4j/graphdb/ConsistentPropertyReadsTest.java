@@ -27,9 +27,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.Race;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertTrue;
 

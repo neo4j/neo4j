@@ -23,12 +23,17 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.AbstractNeoServer;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 public class InProcessServerControls implements ServerControls
 {
@@ -44,13 +49,20 @@ public class InProcessServerControls implements ServerControls
     }
 
     @Override
+    public URI boltURI()
+    {
+        HostnamePort address = server.getConfig().get( boltConnector( "0" ).address );
+        return URI.create( "bolt://" + address.getHost() + ":" + address.getPort() );
+    }
+
+    @Override
     public URI httpURI()
     {
         return server.baseUri();
     }
 
     @Override
-    public URI httpsURI()
+    public Optional<URI> httpsURI()
     {
         return server.httpsUri();
     }
@@ -92,8 +104,15 @@ public class InProcessServerControls implements ServerControls
         return name.length() == 32;
     }
 
+    @Override
     public GraphDatabaseService graph()
     {
         return server.getDatabase().getGraph();
+    }
+
+    @Override
+    public Configuration config()
+    {
+        return server.getConfig();
     }
 }

@@ -19,18 +19,17 @@
  */
 package examples;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Function;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.TransactionTemplate;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 public class DeadlockDocTest
 {
@@ -46,28 +45,23 @@ public class DeadlockDocTest
     @Test
     public void transactionWithTemplate() throws InterruptedException
     {
-        GraphDatabaseService graphDatabaseService = rule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabaseService = rule.getGraphDatabaseAPI();
 
         // START SNIPPET: template
         TransactionTemplate template = new TransactionTemplate(  ).retries( 5 ).backoff( 3, TimeUnit.SECONDS );
         // END SNIPPET: template
 
         // START SNIPPET: usage-template
-        Object result = template.with(graphDatabaseService).execute( new Function<Transaction, Object>()
-        {
-            @Override
-            public Object apply( Transaction transaction ) throws RuntimeException
-            {
-                Object result = null;
-                return result;
-            }
+        Object result = template.with(graphDatabaseService).execute( transaction -> {
+            Object result1 = null;
+            return result1;
         } );
         // END SNIPPET: usage-template
     }
 
     private Object transactionWithRetry()
     {
-        GraphDatabaseService graphDatabaseService = rule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabaseService = rule.getGraphDatabaseAPI();
 
         // START SNIPPET: retry
         Throwable txEx = null;

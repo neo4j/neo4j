@@ -19,20 +19,18 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.util.Iterator;
-
-import org.neo4j.kernel.impl.store.DynamicBlockSize;
-import org.neo4j.kernel.impl.store.ExistingThenNewRecordAllocator;
-import org.neo4j.kernel.impl.store.id.IdSequence;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-
 import org.junit.Test;
 
-import static java.util.Arrays.asList;
+import java.util.Iterator;
+
+import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static java.util.Arrays.asList;
 
 public class ExistingThenNewRecordAllocatorTest
 {
@@ -43,8 +41,7 @@ public class ExistingThenNewRecordAllocatorTest
         IdSequence mock = mock( IdSequence.class );
         when( mock.nextId() ).thenReturn( 3L ).thenReturn( 4L );
 
-        ExistingThenNewRecordAllocator allocator = new ExistingThenNewRecordAllocator(
-                mock( DynamicBlockSize.class ), mock );
+        ExistingThenNewRecordAllocator allocator = new ExistingThenNewRecordAllocator( 10, mock );
         Iterator<DynamicRecord> existing = asList( new DynamicRecord( 1 ), new DynamicRecord( 2 ) ).iterator();
 
         // when

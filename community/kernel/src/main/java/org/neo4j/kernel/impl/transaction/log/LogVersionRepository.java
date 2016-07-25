@@ -25,9 +25,9 @@ public interface LogVersionRepository
 {
     long INITIAL_LOG_VERSION = 0;
 
-	/**
-	 * Returns the current log version. It is non blocking.
-	 */
+    /**
+     * Returns the current log version. It is non blocking.
+     */
     long getCurrentLogVersion();
 
     /**

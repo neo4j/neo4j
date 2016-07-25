@@ -51,7 +51,7 @@ Cypher is a textual, declarative query language.
 It uses a form of {WP_AA}[ASCII art] to represent graph-related patterns.
 SQL-like clauses and keywords (eg, `MATCH`, `WHERE`, `DELETE`) are used to combine these patterns and specify desired actions.
 
-This combination tells Neo4j which patterns to match and what to do with the matching items (eg, nodes, relationships, paths, collections).
+This combination tells Neo4j which patterns to match and what to do with the matching items (eg, nodes, relationships, paths, lists).
 However, as a {WP_DP}[declarative] language, Cypher does _not_ tell Neo4j how to find nodes, traverse relationships, etc.
 (This level of control is available from Neo4j's {WP_Java}[Java] {WP_API}[APIs], see <<server-unmanaged-extensions>>)
 
@@ -76,9 +76,9 @@ Here are some ASCII-art encodings for example Neo4j nodes, providing varying typ
 ----
 
 The simplest form, `()`, represents an anonymous, uncharacterized node.
-If we want to refer to the node elsewhere, we can add an identifier, eg: `(matrix)`.
-Identifiers are restricted (ie, scoped) to a single statement:
-an identifier may have different (or no) meaning in another statement.
+If we want to refer to the node elsewhere, we can add a variable, eg: `(matrix)`.
+Variables are restricted (ie, scoped) to a single statement:
+a variable may have different (or no) meaning in another statement.
 
 The `Movie` label (prefixed in use with a colon) declares the node's type.
 This restricts the pattern, keeping it from matching (say) a structure with an `Actor` node in this position.
@@ -93,7 +93,7 @@ For example, we could match nodes whose `title` is "The Matrix".
 Cypher uses a pair of dashes (`--`) to represent an undirected relationship.
 Directed relationships have an arrowhead at one end (eg, `<--`, `-->`).
 Bracketed expressions (eg: `[...]`) can be used to add details.
-This may include identifiers, properties, and/or type information, eg:
+This may include variables, properties, and/or type information, eg:
 
 [source,cypher]
 ----
@@ -105,7 +105,7 @@ This may include identifiers, properties, and/or type information, eg:
 ----
 
 The syntax and semantics found within a relationship's bracket pair are very similar to those used between a node's parentheses.
-An identifier (eg, `role`) can be defined, to be used elsewhere in the statement.
+A variable (eg, `role`) can be defined, to be used elsewhere in the statement.
 The relationship's type (eg, `ACTED_IN`) is analogous to the node's label.
 The properties (eg, `roles`) are entirely equivalent to node properties.
 (Note that the value of a property may be an array.)
@@ -123,7 +123,7 @@ The following could be a simple pattern (or fact) in this domain:
 ----
 
 Like with node labels, the relationship type `ACTED_IN` is added as a symbol, prefixed with a colon: `:ACTED_IN`.
-Identifiers (eg, `role`) can be used elsewhere in the statement to refer to the relationship.
+Variables (eg, `role`) can be used elsewhere in the statement to refer to the relationship.
 Node and relationship properties use the same notation.
 In this case, we used an array property for the `roles`, allowing multiple roles to be specified.
 
@@ -134,9 +134,9 @@ When a node is used in a pattern, it _describes_ zero or more nodes in the datab
 Similarly, each pattern describes zero or more paths of nodes and relationships.
 ====
 
-=== Pattern Identifiers
+=== Pattern Variables
 
-To increase modularity and reduce repetition, Cypher allows patterns to be  assigned to identifiers.
+To increase modularity and reduce repetition, Cypher allows patterns to be assigned to variables.
 This allow the matching paths to be inspected, used in other expressions, etc.
 
 [source,cypher]

@@ -25,11 +25,11 @@ import org.junit.Test;
 import java.util.Set;
 
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
-import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class PropertyChangesTest
 {
@@ -38,16 +38,16 @@ public class PropertyChangesTest
     {
         // Given
         PropertyChanges changes = new PropertyChanges();
-        changes.changeProperty( 1l, 2, "from", "to" );
-        changes.addProperty( 1l, 3, "from" );
-        changes.removeProperty( 2l, 2, "to" );
+        changes.changeProperty( 1L, 2, "from", "to" );
+        changes.addProperty( 1L, 3, "from" );
+        changes.removeProperty( 2L, 2, "to" );
 
         // When & Then
-        assertThat( changes.changesForProperty( 2, "to" ), isDiffSets( asSet( 1l ), asSet( 2l ) ) );
+        assertThat( changes.changesForProperty( 2, "to" ), isDiffSets( asSet( 1L ), asSet( 2L ) ) );
 
-        assertThat( changes.changesForProperty( 3, "from" ), isDiffSets( asSet( 1l ), null ) );
+        assertThat( changes.changesForProperty( 3, "from" ), isDiffSets( asSet( 1L ), null ) );
 
-        assertThat( changes.changesForProperty( 2, "from" ), isDiffSets( null, asSet( 1l ) ) );
+        assertThat( changes.changesForProperty( 2, "from" ), isDiffSets( null, asSet( 1L ) ) );
     }
 
     @SuppressWarnings( "unchecked" )

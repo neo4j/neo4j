@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.function.Consumer;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Cursor for iterating a set of nodes. It is attached to an iterator, typically from
@@ -39,9 +43,10 @@ public class StoreIteratorNodeCursor extends StoreAbstractNodeCursor
             NeoStores neoStores,
             StoreStatement storeStatement,
             Consumer<StoreIteratorNodeCursor> instanceCache,
+            RecordCursors cursors,
             LockService lockService )
     {
-        super( nodeRecord, neoStores, storeStatement, lockService );
+        super( nodeRecord, neoStores, storeStatement, cursors, lockService );
         this.instanceCache = instanceCache;
     }
 
@@ -56,8 +61,7 @@ public class StoreIteratorNodeCursor extends StoreAbstractNodeCursor
     {
         while ( iterator != null && iterator.hasNext() )
         {
-            NodeRecord record = nodeStore.loadRecord( iterator.next(), nodeRecord );
-            if ( record != null && record.inUse() )
+            if ( cursors.node().next( iterator.next(), nodeRecord, CHECK ) )
             {
                 return true;
             }

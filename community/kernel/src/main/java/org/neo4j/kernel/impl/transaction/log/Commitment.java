@@ -19,35 +19,60 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 
 /**
- * A way to mark a transaction as committed after
- * {@link TransactionAppender#append(org.neo4j.kernel.impl.transaction.TransactionRepresentation, long) appended}
- * and manually {@link TransactionAppender#force() forced} and later closed after
- * {@link org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier#apply(
- * org.neo4j.kernel.impl.transaction.TransactionRepresentation, org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates,
- *  org.neo4j.kernel.impl.locking.LockGroup, long, org.neo4j.kernel.impl.api.TransactionApplicationMode)} .
+ * Represents a commitment that invoking {@link TransactionAppender#append(TransactionToApply, LogAppendEvent)}
+ * means. As a transaction is carried through the {@link TransactionCommitProcess} this commitment is updated
+ * when {@link #publishAsCommitted() committed} (which happens when appending to log), but also
+ * when {@link #publishAsClosed() closing}.
  */
 public interface Commitment
 {
+    Commitment NO_COMMITMENT = new Commitment()
+    {
+        @Override
+        public void publishAsCommitted()
+        {
+        }
+
+        @Override
+        public void publishAsClosed()
+        {
+        }
+
+        @Override
+        public boolean markedAsCommitted()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean hasLegacyIndexChanges()
+        {
+            return false;
+        }
+    };
+
     /**
-     * <p>
-     *     Marks the transaction as committed and makes this fact public.
-     * </p>
+     * Marks the transaction as committed and makes this fact public.
      */
     void publishAsCommitted();
 
     /**
-     * <p>
-     *     Marks the transaction as closed and makes this fact public.
-     * </p>
+     * Marks the transaction as closed and makes this fact public.
      */
-    void publishAsApplied();
+    void publishAsClosed();
 
     /**
-     * @return the commitment transaction id
+     * @return whether or not {@link #publishAsCommitted()} have been called.
      */
-    long transactionId();
-
     boolean markedAsCommitted();
+
+    /**
+     * @return whether or not this transaction contains legacy index changes.
+     */
+    boolean hasLegacyIndexChanges();
 }

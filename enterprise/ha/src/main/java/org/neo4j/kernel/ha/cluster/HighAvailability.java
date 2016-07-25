@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha.cluster;
 /**
  * A place to register {@link HighAvailabilityMemberListener listeners}
  * that will receive events about (high) availability and roles in a cluster.
- * 
+ *
  * @author Mattias Persson
  */
 public interface HighAvailability

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.kernel.impl.util.statistics.LocalIntCounter;
@@ -42,13 +41,11 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
 {
     private Map<KEY, RecordProxy<KEY,RECORD,ADDITIONAL>> recordChanges = new HashMap<>();
     private final Loader<KEY,RECORD,ADDITIONAL> loader;
-    private final boolean manageBeforeState;
     private final IntCounter changeCounter;
 
-    public RecordChanges( Loader<KEY,RECORD,ADDITIONAL> loader, boolean manageBeforeState, IntCounter globalCounter )
+    public RecordChanges( Loader<KEY,RECORD,ADDITIONAL> loader, IntCounter globalCounter )
     {
         this.loader = loader;
-        this.manageBeforeState = manageBeforeState;
         this.changeCounter = new LocalIntCounter( globalCounter );
     }
 
@@ -72,8 +69,8 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         RecordProxy<KEY, RECORD, ADDITIONAL> result = recordChanges.get( key );
         if ( result == null )
         {
-            result = new RecordChange<>( recordChanges, changeCounter, key,
-                    loader.load( key, additionalData ), loader, manageBeforeState, false, additionalData );
+            RECORD record = loader.load( key, additionalData );
+            result = new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData );
         }
         return result;
     }
@@ -81,8 +78,8 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
     @Override
     public void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
     {
-        RecordChange<KEY, RECORD, ADDITIONAL> recordChange = new RecordChange<>( recordChanges, changeCounter,
-                key, newRecord, loader, manageBeforeState, false, additionalData );
+        RecordChange<KEY, RECORD, ADDITIONAL> recordChange =
+                new RecordChange<>( recordChanges, changeCounter, key, newRecord, loader, false, additionalData );
         recordChanges.put( key, recordChange );
         recordChange.forChangingData();
     }
@@ -117,8 +114,8 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         }
 
         RECORD record = loader.newUnused( key, additionalData );
-        RecordChange<KEY, RECORD, ADDITIONAL> change = new RecordChange<>(
-                recordChanges, changeCounter, key, record, loader, manageBeforeState, true, additionalData);
+        RecordChange<KEY, RECORD, ADDITIONAL> change =
+                new RecordChange<>( recordChanges, changeCounter, key, record, loader,  true, additionalData);
         recordChanges.put( key, change );
         return change;
     }
@@ -126,14 +123,7 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
     @Override
     public Iterable<RecordProxy<KEY,RECORD,ADDITIONAL>> changes()
     {
-        return Iterables.filter( new Predicate<RecordProxy<KEY,RECORD,ADDITIONAL>>()
-        {
-            @Override
-            public boolean test( RecordProxy<KEY, RECORD, ADDITIONAL> item )
-            {
-                return item.isChanged();
-            }
-        }, recordChanges.values() );
+        return Iterables.filter( RecordProxy::isChanged, recordChanges.values() );
     }
 
     public static class RecordChange<KEY,RECORD,ADDITIONAL> implements RecordProxy<KEY, RECORD, ADDITIONAL>
@@ -146,21 +136,19 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         private final RECORD record;
         private final boolean created;
         private final KEY key;
-        private final boolean manageBeforeState;
 
         private RECORD before;
         private boolean changed;
 
         public RecordChange(Map<KEY, RecordProxy<KEY, RECORD, ADDITIONAL>> allChanges, IntCounter changeCounter,
-                            KEY key, RECORD record,
-                            Loader<KEY, RECORD, ADDITIONAL> loader, boolean manageBeforeState, boolean created, ADDITIONAL additionalData)
+                KEY key, RECORD record, Loader<KEY, RECORD, ADDITIONAL> loader, boolean created,
+                ADDITIONAL additionalData)
         {
             this.allChanges = allChanges;
             this.changeCounter = changeCounter;
             this.key = key;
             this.record = record;
             this.loader = loader;
-            this.manageBeforeState = manageBeforeState;
             this.created = created;
             this.additionalData = additionalData;
         }
@@ -246,16 +234,12 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         public RECORD getBefore()
         {
             ensureHasBeforeRecordImage();
-            if ( !manageBeforeState )
-            {
-                throw new UnsupportedOperationException( "This RecordChanges instance doesn't manage before-state" );
-            }
             return before;
         }
 
         private void ensureHasBeforeRecordImage()
         {
-            if ( manageBeforeState && this.before == null )
+            if ( before == null )
             {
                 this.before = loader.clone( record );
             }

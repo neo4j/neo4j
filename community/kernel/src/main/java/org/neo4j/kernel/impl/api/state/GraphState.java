@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.kernel.api.EntityType;
-
-class GraphState extends PropertyContainerState.Mutable
+class GraphState extends PropertyContainerStateImpl
 {
     GraphState()
     {
-        super( -1, EntityType.GRAPH );
+        super( -1 );
     }
 }

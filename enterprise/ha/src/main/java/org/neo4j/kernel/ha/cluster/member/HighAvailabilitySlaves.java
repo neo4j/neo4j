@@ -21,15 +21,14 @@ package org.neo4j.kernel.ha.cluster.member;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.function.Functions;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.com.master.Slaves;
@@ -37,7 +36,6 @@ import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import static org.neo4j.helpers.Functions.withDefaults;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.inRole;
@@ -67,21 +65,16 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
 
     private Function<ClusterMember, Slave> slaveForMember()
     {
-        return new Function<ClusterMember, Slave>()
-        {
-            @Override
-            public Slave apply( ClusterMember from )
+        return from -> {
+            synchronized ( HighAvailabilitySlaves.this )
             {
-                synchronized ( HighAvailabilitySlaves.this )
+                Slave presentSlave = slaves.get( from );
+                if ( presentSlave == null )
                 {
-                    Slave presentSlave = slaves.get( from );
-                    if ( presentSlave == null )
-                    {
-                        presentSlave = slaveFactory.newSlave( life, from, me.getHost(), me.getPort() );
-                        slaves.put( from, presentSlave );
-                    }
-                    return presentSlave;
+                    presentSlave = slaveFactory.newSlave( life, from, me.getHost(), me.getPort() );
+                    slaves.put( from, presentSlave );
                 }
+                return presentSlave;
             }
         };
     }
@@ -91,9 +84,18 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
     {
         // Return all cluster members which are currently SLAVEs,
         // are alive, and convert to Slave with a cache if possible
-        return map( withDefaults( slaveForMember(), Functions.map( slaves ) ),
-                        filter( inRole( HighAvailabilityModeSwitcher.SLAVE ),
-                                clusterMembers.getAliveMembers() ) );
+        return map( clusterMember -> {
+            Slave slave = slaveForMember().apply( clusterMember );
+
+            if ( slave == null )
+            {
+                return slaves.get( clusterMember );
+            }
+            else
+            {
+                return slave;
+            }
+        }, filter( inRole( HighAvailabilityModeSwitcher.SLAVE ), clusterMembers.getAliveMembers() ) );
     }
 
     @Override

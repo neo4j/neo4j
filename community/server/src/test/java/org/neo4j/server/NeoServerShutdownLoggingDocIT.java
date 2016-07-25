@@ -55,6 +55,6 @@ public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
     public void shouldLogShutdown() throws Exception
     {
         server.stop();
-        logProvider.assertContainsMessageContaining( "Successfully shutdown database" );
+        logProvider.assertContainsMessageContaining( "Stopped." );
     }
 }

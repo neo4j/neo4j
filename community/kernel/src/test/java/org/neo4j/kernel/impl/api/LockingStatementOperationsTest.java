@@ -21,17 +21,17 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 import org.mockito.InOrder;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -42,6 +42,8 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.storageengine.api.StorageStatement;
 
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
@@ -51,7 +53,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
-import static org.neo4j.function.Functions.constant;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class LockingStatementOperationsTest
@@ -64,7 +65,8 @@ public class LockingStatementOperationsTest
     private final Locks.Client locks = mock( Locks.Client.class );
     private final InOrder order;
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-    private final KernelStatement state = new KernelStatement( transaction, null, null, null, locks, null, null );
+    private final KernelStatement state = new KernelStatement( transaction, null, null,
+            mock( StorageStatement.class ), new Procedures() );
     private final SchemaStateOperations schemaStateOps;
 
     public LockingStatementOperationsTest()
@@ -78,6 +80,8 @@ public class LockingStatementOperationsTest
         lockingOps = new LockingStatementOperations(
                 entityReadOps, entityWriteOps, schemaReadOps, schemaWriteOps, schemaStateOps
         );
+        state.initialize( locks );
+        state.acquire();
     }
 
     @Test
@@ -143,7 +147,8 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeDeletingNode() throws EntityNotFoundException
+    public void shouldAcquireEntityWriteLockBeforeDeletingNode()
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         // WHEN
         lockingOps.nodeDelete( state, 123 );
@@ -281,7 +286,7 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeUpdatingSchemaState() throws Exception
     {
         // given
-        Function<Object,Object> creator = constant( null );
+        Function<Object,Object> creator = from -> null;
 
         // when
         lockingOps.schemaStateGetOrCreate( state, null, creator );
@@ -355,16 +360,11 @@ public class LockingStatementOperationsTest
 
         {
             // and GIVEN
-            doAnswer( new Answer<Void>()
-            {
-                @Override
-                public Void answer( InvocationOnMock invocation ) throws Throwable
-                {
-                    RelationshipVisitor<RuntimeException> visitor =
-                            (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
-                    visitor.visit( relationshipId, 0, lowId, highId );
-                    return null;
-                }
+            doAnswer( invocation -> {
+                RelationshipVisitor<RuntimeException> visitor =
+                        (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
+                visitor.visit( relationshipId, 0, lowId, highId );
+                return null;
             } ).when( entityReadOps ).relationshipVisit( any( KernelStatement.class ), anyLong(),
                     any( RelationshipVisitor.class ) );
 
@@ -382,16 +382,11 @@ public class LockingStatementOperationsTest
 
         {
             // and GIVEN
-            doAnswer( new Answer<Void>()
-            {
-                @Override
-                public Void answer( InvocationOnMock invocation ) throws Throwable
-                {
-                    RelationshipVisitor<RuntimeException> visitor =
-                            (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
-                    visitor.visit( relationshipId, 0, highId, lowId );
-                    return null;
-                }
+            doAnswer( invocation -> {
+                RelationshipVisitor<RuntimeException> visitor =
+                        (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
+                visitor.visit( relationshipId, 0, highId, lowId );
+                return null;
             } ).when( entityReadOps ).relationshipVisit( any( KernelStatement.class ), anyLong(),
                     any( RelationshipVisitor.class ) );
 

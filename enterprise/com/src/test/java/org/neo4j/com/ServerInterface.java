@@ -22,6 +22,6 @@ package org.neo4j.com;
 public interface ServerInterface
 {
     void shutdown();
-    
+
     void awaitStarted();
 }

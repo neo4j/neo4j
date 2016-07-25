@@ -24,21 +24,20 @@ import java.util.Collections;
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
 
 public class NodeAutoIndexRepresentation extends IndexRepresentation {
-	
-	public NodeAutoIndexRepresentation() {
-		super("", Collections.EMPTY_MAP);
-	}
 
-	@Override
+    public NodeAutoIndexRepresentation() {
+        super("", Collections.EMPTY_MAP);
+    }
+
+    @Override
     protected String path()
     {
         return RestfulGraphDatabase.PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.NODE_AUTO_INDEX_TYPE) + "/";
     }
-	
-	@Override
-	protected String propertyContainerType() {
-		return null;
-	}
 
+    @Override
+    protected String propertyContainerType() {
+        return null;
+    }
 
 }

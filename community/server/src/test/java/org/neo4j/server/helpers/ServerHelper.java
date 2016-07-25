@@ -25,17 +25,16 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.NeoServer;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 public class ServerHelper
 {
@@ -77,6 +76,13 @@ public class ServerHelper
         return createServer( CommunityServerBuilder.server(), false, null );
     }
 
+    public static NeoServer createNonPersistentReadOnlyServer() throws IOException
+    {
+        CommunityServerBuilder builder = CommunityServerBuilder.server();
+        builder.withProperty( GraphDatabaseSettings.read_only.name(), "true" );
+        return createServer( builder, false, null );
+    }
+
     public static NeoServer createNonPersistentServer( LogProvider logProvider ) throws IOException
     {
         return createServer( CommunityServerBuilder.server( logProvider ), false, null );
@@ -87,26 +93,15 @@ public class ServerHelper
         return createServer( builder, false, null );
     }
 
-    public static NeoServer createPersistentServer( File path ) throws IOException
-    {
-        return createServer( CommunityServerBuilder.server(), true, path );
-    }
-
-    public static NeoServer createPersistentServer(File path, LogProvider logProvider) throws IOException
-    {
-        return createServer( CommunityServerBuilder.server( logProvider ), true, path );
-    }
-
     private static NeoServer createServer( CommunityServerBuilder builder, boolean persistent, File path )
             throws IOException
     {
-        configureHostname( builder );
         if ( persistent )
         {
             builder = builder.persistent();
         }
         NeoServer server = builder
-                .usingDatabaseDir( path != null ? path.getAbsolutePath() : null )
+                .usingDataDir( path != null ? path.getAbsolutePath() : null )
                 .build();
 
         checkServerCanStart( server.baseUri().getHost(), server.baseUri().getPort() );
@@ -135,15 +130,6 @@ public class ServerHelper
         }
     }
 
-    private static void configureHostname( CommunityServerBuilder builder )
-    {
-        String hostName = System.getProperty( "neo-server.test.hostname" );
-        if ( StringUtils.isNotEmpty( hostName ) )
-        {
-            builder.onHost( hostName );
-        }
-    }
-
     private static void rollbackAllOpenTransactions( NeoServer server )
     {
         server.getTransactionRegistry().rollbackAllSuspendedTransactions();
@@ -167,7 +153,7 @@ public class ServerHelper
 
         private void deleteAllNodesAndRelationships()
         {
-            Iterable<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes();
+            Iterable<Node> allNodes = db.getAllNodes();
             for ( Node n : allNodes )
             {
                 Iterable<Relationship> relationships = n.getRelationships();

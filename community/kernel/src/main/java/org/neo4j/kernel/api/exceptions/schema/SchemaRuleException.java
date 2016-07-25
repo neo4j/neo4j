@@ -25,7 +25,6 @@ import static java.lang.String.format;
 
 public class SchemaRuleException extends SchemaKernelException
 {
-
     protected final int ruleEntityId;
     protected final int propertyKeyId;
     protected final String messageTemplate;

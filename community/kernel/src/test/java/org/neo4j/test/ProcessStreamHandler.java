@@ -42,7 +42,7 @@ public class ProcessStreamHandler
 
     /**
      * Convenience constructor assuming the local output streams are
-     * {@link System.out} and {@link System.err} for the process's OutputStream
+     * {@link System#out} and {@link System#err} for the process's OutputStream
      * and ErrorStream respectively.
      *
      * Set quiet to true if you just want to consume the output to avoid locking up the process.
@@ -53,13 +53,13 @@ public class ProcessStreamHandler
     {
         this( process, quiet, "", quiet ? IGNORE_FAILURES : PRINT_FAILURES );
     }
-    
+
     public ProcessStreamHandler( Process process, boolean quiet, String prefix,
             StreamExceptionHandler failureHandler )
     {
         this( process, quiet, prefix, failureHandler, System.out, System.err );
     }
-    
+
     public ProcessStreamHandler( Process process, boolean quiet, String prefix,
             StreamExceptionHandler failureHandler, PrintStream out, PrintStream err )
     {

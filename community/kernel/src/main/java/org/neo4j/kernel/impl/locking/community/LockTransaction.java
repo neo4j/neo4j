@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.locking.Locks;
  */
 public class LockTransaction
 {
-    private final static AtomicInteger IDS = new AtomicInteger( 0 );
+    private static final AtomicInteger IDS = new AtomicInteger( 0 );
 
     private final int id = IDS.getAndIncrement();
 

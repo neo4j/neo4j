@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.docgen.refcard
 
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
-import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.graphdb.DynamicLabel
 import java.util.concurrent.TimeUnit
+
+import org.neo4j.cypher.QueryStatisticsTestSupport
+import org.neo4j.cypher.docgen.RefcardTest
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class IndexTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A:Person KNOWS B:Person")
@@ -85,7 +85,7 @@ MATCH (n:Person) WHERE n.name IN [{value}]
 RETURN n
 ###
 
-An index can be automatically used for the IN collection checks.
+An index can be automatically used for the `IN` list checks.
 
 ###assertion=match parameters=aname
 //

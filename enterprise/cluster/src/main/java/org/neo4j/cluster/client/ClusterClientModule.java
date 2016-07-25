@@ -19,15 +19,14 @@
  */
 package org.neo4j.cluster.client;
 
+import org.jboss.netty.logging.InternalLoggerFactory;
+
 import java.net.URI;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
-import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
@@ -56,11 +55,8 @@ import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -80,9 +76,6 @@ import static org.neo4j.helpers.NamedThreadFactory.daemon;
  */
 public class ClusterClientModule
 {
-    public static final Setting<Long> clusterJoinTimeout = Settings.setting( "ha.cluster_join_timeout",
-            Settings.DURATION, "0s" );
-
     public final ClusterClient clusterClient;
     private final ProtocolServer server;
 
@@ -136,7 +129,7 @@ public class ClusterClientModule
 
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {
-            volatile private StateTransitionLogger logger = null;
+            private volatile StateTransitionLogger logger = null;
 
             @Override
             public void listeningAt( URI me )
@@ -180,17 +173,9 @@ public class ClusterClientModule
             }
         }, receiver, logging ));
 
-        ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
-        {
-            @Override
-            public ExecutorService newInstance()
-            {
-                return Executors.newSingleThreadExecutor( new NamedThreadFactory( "State machine", monitors
-                        .newMonitor( NamedThreadFactory.Monitor.class ) ) );
-            }
-        } );
-
-
+        ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter(
+                () -> Executors.newSingleThreadExecutor( new NamedThreadFactory( "State machine", monitors
+                        .newMonitor( NamedThreadFactory.Monitor.class ) ) ) );
 
         AcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
 
@@ -229,7 +214,7 @@ public class ClusterClientModule
             @Override
             public long getClusterJoinTimeout()
             {
-                return config.get( clusterJoinTimeout );
+                return config.get( ClusterSettings.join_timeout );
             }
         }, server, logService ) );
 
@@ -238,8 +223,8 @@ public class ClusterClientModule
 
     private static class TimeoutTrigger implements Lifecycle
     {
-        private ProtocolServer server;
-        private Monitors monitors;
+        private final ProtocolServer server;
+        private final Monitors monitors;
 
         private ScheduledExecutorService scheduler;
         private ScheduledFuture<?> tickFuture;
@@ -262,15 +247,10 @@ public class ClusterClientModule
             scheduler = Executors.newSingleThreadScheduledExecutor(
                     daemon( "timeout-clusterClient", monitors.newMonitor( NamedThreadFactory.Monitor.class ) ) );
 
-            tickFuture = scheduler.scheduleWithFixedDelay( new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    long now = System.currentTimeMillis();
+            tickFuture = scheduler.scheduleWithFixedDelay( () -> {
+                long now = System.currentTimeMillis();
 
-                    server.getTimeouts().tick( now );
-                }
+                server.getTimeouts().tick( now );
             }, 0, 10, TimeUnit.MILLISECONDS );
         }
 

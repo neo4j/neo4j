@@ -19,6 +19,8 @@
  */
 package org.neo4j.codegen;
 
+import java.util.function.Consumer;
+
 class InvalidState implements MethodEmitter
 {
     public static final ClassEmitter CLASS_DONE = new ClassEmitter()
@@ -81,25 +83,37 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
-    public void assign( TypeReference type, String name, Expression value )
+    public void assign( LocalVariable variable, Expression value )
     {
         throw new IllegalStateException( reason );
     }
 
     @Override
-    public void beginWhile( Expression test )
+    public void beginWhile( Expression...tests )
     {
         throw new IllegalStateException( reason );
     }
 
     @Override
-    public void beginIf( Expression test )
+    public void beginIf( Expression...tests )
     {
         throw new IllegalStateException( reason );
     }
 
     @Override
-    public void beginFinally()
+    public void beginIfNot( Expression...tests )
+    {
+        throw new IllegalStateException( reason );
+    }
+
+    @Override
+    public void beginIfNull( Expression...tests )
+    {
+        throw new IllegalStateException( reason );
+    }
+
+    @Override
+    public void beginIfNonNull( Expression...tests )
     {
         throw new IllegalStateException( reason );
     }
@@ -111,7 +125,7 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
-    public void beginTry( Resource... resources )
+    public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block )
     {
         throw new IllegalStateException( reason );
     }
@@ -123,26 +137,15 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
-    public void beginCatch( Parameter exception )
-    {
-        throw new IllegalStateException( reason );
-    }
-
-    @Override
     public void declare( LocalVariable local )
     {
         throw new IllegalStateException( reason );
     }
 
     @Override
-    public void assign( LocalVariable local, Expression value )
+    public void assignVariableInScope( LocalVariable local, Expression value )
     {
         throw new IllegalStateException( reason );
     }
 
-    @Override
-    public void beginForEach( Parameter local, Expression iterable )
-    {
-        throw new IllegalStateException( reason );
-    }
 }

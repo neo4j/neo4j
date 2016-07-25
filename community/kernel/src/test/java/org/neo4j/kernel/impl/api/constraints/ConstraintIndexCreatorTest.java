@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -35,6 +34,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
@@ -70,17 +71,17 @@ public class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
 
         when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor, CONSTRAINT ) )
-                .thenReturn( 2468l );
+                .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
-        when( indexingService.getIndexProxy( 2468l ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.<KernelAPI>singleton( kernel ), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
 
         // when
         long indexId = creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), 123, 456 );
 
         // then
-        assertEquals( 2468l, indexId );
+        assertEquals( 2468L, indexId );
         assertEquals( 1, kernel.statements.size() );
         verify( kernel.statements.get( 0 ).txState() ).constraintIndexRuleDoAdd( descriptor );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
@@ -102,14 +103,14 @@ public class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
 
         when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor, CONSTRAINT ) )
-                .thenReturn( 2468l );
+                .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
-        when( indexingService.getIndexProxy( 2468l ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
         PreexistingIndexEntryConflictException cause = new PreexistingIndexEntryConflictException("a", 2, 1);
         doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause) )
                 .when(indexProxy).awaitStoreScanCompleted();
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.<KernelAPI>singleton( kernel ), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
 
         // when
         try
@@ -144,7 +145,7 @@ public class ConstraintIndexCreatorTest
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.<KernelAPI>singleton( kernel ), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
 
         // when
         creator.dropUniquenessConstraintIndex( descriptor );
@@ -160,7 +161,7 @@ public class ConstraintIndexCreatorTest
         private final List<KernelStatement> statements = new ArrayList<>();
 
         @Override
-        public KernelTransaction newTransaction()
+        public KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode )
         {
             return new KernelTransaction()
             {
@@ -175,8 +176,9 @@ public class ConstraintIndexCreatorTest
                 }
 
                 @Override
-                public void close() throws TransactionFailureException
+                public long closeTransaction() throws TransactionFailureException
                 {
+                    return ROLLBACK;
                 }
 
                 @Override
@@ -198,6 +200,11 @@ public class ConstraintIndexCreatorTest
                 }
 
                 @Override
+                public AccessMode mode()
+                {
+                    throw new UnsupportedOperationException();
+                }
+
                 public Status getReasonIfTerminated()
                 {
                     return null;
@@ -218,6 +225,18 @@ public class ConstraintIndexCreatorTest
                 public void registerCloseListener( CloseListener listener )
                 {
                 }
+
+                @Override
+                public Type transactionType()
+                {
+                    return null;
+                }
+
+                @Override
+                public Revertable restrict( AccessMode read )
+                {
+                    return null;
+                }
             };
         }
 
@@ -231,6 +250,12 @@ public class ConstraintIndexCreatorTest
         public void unregisterTransactionHook( TransactionHook hook )
         {
             throw new UnsupportedOperationException( "Please implement" );
+        }
+
+        @Override
+        public void registerProcedure( CallableProcedure signature )
+        {
+            throw new UnsupportedOperationException();
         }
     }
 }

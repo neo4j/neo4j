@@ -31,7 +31,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 
 public class LabelRecoveryTest
 {

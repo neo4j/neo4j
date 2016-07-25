@@ -19,9 +19,10 @@
  */
 package org.neo4j.server.rest.paging;
 
+import org.junit.Test;
+
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
 import org.neo4j.helpers.FakeClock;
 
 import static org.junit.Assert.assertNotNull;
@@ -37,7 +38,7 @@ public class LeaseManagerTest
     {
         FakeClock fakeClock = new FakeClock();
         LeaseManager manager = new LeaseManager( fakeClock );
-        assertNull( manager.createLease( -1l, mock( PagedTraverser.class ) ) );
+        assertNull( manager.createLease( -1L, mock( PagedTraverser.class ) ) );
         assertNull( manager.createLease( Long.MAX_VALUE + 1, mock( PagedTraverser.class ) ) );
     }
 
@@ -100,7 +101,7 @@ public class LeaseManagerTest
     {
         FakeClock fakeClock = new FakeClock();
         LeaseManager manager = new LeaseManager( fakeClock );
-        Lease lease = manager.createLease( 101l, mock( PagedTraverser.class ) );
+        Lease lease = manager.createLease( 101L, mock( PagedTraverser.class ) );
 
         manager.remove( lease.getId() );
 

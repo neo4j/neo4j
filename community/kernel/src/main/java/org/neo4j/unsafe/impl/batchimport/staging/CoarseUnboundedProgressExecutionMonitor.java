@@ -21,12 +21,11 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.io.PrintStream;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
 import static java.lang.Math.max;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
-import static org.neo4j.helpers.collection.IteratorUtil.last;
 
 /**
  * {@link ExecutionMonitor} that prints progress, e.g. a dot every N batches completed.
@@ -68,7 +67,7 @@ public class CoarseUnboundedProgressExecutionMonitor extends ExecutionMonitor.Ad
 
     private int n( StageExecution execution )
     {
-        long doneBatches = last( execution.steps() ).stats().stat( Keys.done_batches ).asLong();
+        long doneBatches = Iterables.last( execution.steps() ).stats().stat( Keys.done_batches ).asLong();
         int batchSize = execution.getConfig().batchSize();
         long amount = doneBatches*batchSize;
         int n = (int) (amount/dotEveryN);

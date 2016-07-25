@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright (c) 2002-2015 "Neo Technology,"
+    Copyright (c) 2002-2016 "Neo Technology,"
     Network Engine for Objects in Lund AB [http://neotechnology.com]
 
     This file is part of Neo4j.
@@ -74,7 +74,7 @@
       <license>Public Domain - RGB Color</license>
     </artifact>
     <artifact id="seedrandom.js" name="seedrandom.js">
-      <license>BSD - seedrandom.js License</license>
+      <license>BSD - seedrandom.js</license>
     </artifact>
     <artifact id="glyphish" name="Glyphish Icons Free">
       <license>Creative Commons - Glyphish</license>

@@ -38,12 +38,9 @@ public enum AcceptorState
                 )
                         throws Throwable
                 {
-                    switch ( message.getMessageType() )
+                    if ( message.getMessageType() == AcceptorMessage.join )
                     {
-                        case join:
-                        {
-                            return acceptor;
-                        }
+                        return acceptor;
                     }
 
                     return this;
@@ -131,6 +128,9 @@ public enum AcceptorState
                             context.leave();
                             return start;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;

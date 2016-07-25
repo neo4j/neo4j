@@ -22,12 +22,12 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.IOException;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_TYPE;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SPECIFIC_ID;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_TYPE_ID;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.UNSPECIFIED_ID;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_TYPE;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.RELATIONSHIP_TYPE_TOKEN;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
 
 /**
  * Caches {@link InputRelationship} to disk using a binary format.
@@ -36,9 +36,11 @@ public class InputRelationshipCacher extends InputEntityCacher<InputRelationship
 {
     private String previousType;
 
-    public InputRelationshipCacher( StoreChannel channel, StoreChannel header, int bufferSize ) throws IOException
+    public InputRelationshipCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats,
+            int bufferSize, int batchSize )
+            throws IOException
     {
-        super( channel, header, bufferSize, 2 );
+        super( channel, header, recordFormats, bufferSize, batchSize, 2 );
     }
 
     @Override
@@ -46,17 +48,6 @@ public class InputRelationshipCacher extends InputEntityCacher<InputRelationship
     {
         // properties
         super.writeEntity( relationship );
-
-        // id
-        if ( relationship.hasSpecificId() )
-        {
-            channel.put( SPECIFIC_ID );
-            channel.putLong( relationship.specificId() );
-        }
-        else
-        {
-            channel.put( UNSPECIFIED_ID );
-        }
 
         // groups
         writeGroup( relationship.startNodeGroup(), 0 );
@@ -81,8 +72,15 @@ public class InputRelationshipCacher extends InputEntityCacher<InputRelationship
             else
             {
                 channel.put( NEW_TYPE );
-                writeToken( previousType = relationship.type() );
+                writeToken( RELATIONSHIP_TYPE_TOKEN, previousType = relationship.type() );
             }
         }
+    }
+
+    @Override
+    protected void clearState()
+    {
+        previousType = null;
+        super.clearState();
     }
 }

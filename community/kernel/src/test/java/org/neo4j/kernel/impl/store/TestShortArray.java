@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 import java.lang.reflect.Array;
 
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class TestShortArray
 {
@@ -56,7 +56,7 @@ public class TestShortArray
     @Test
     public void testCannotEncodeMarginal() throws Exception
     {
-        assertCanNotEncode( new long[] { 1l << 15, 1, 1, 1, 1, 1, 1, 1, 1,
+        assertCanNotEncode( new long[] { 1L << 15, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1 } );
     }
 

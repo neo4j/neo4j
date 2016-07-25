@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.helpers.ProcessFailureException;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static java.lang.System.lineSeparator;
 import static java.util.concurrent.TimeUnit.SECONDS;

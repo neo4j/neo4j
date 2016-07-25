@@ -23,6 +23,8 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 
 /**
@@ -43,11 +45,11 @@ import org.neo4j.logging.Log;
  *     components to distribute throughout the database instance.
  * </p>
  * <p>
- *     The tracing implementation is determined by the {@code dbms.tracer} setting. Two built-in implementations
+ *     The tracing implementation is determined by the {@code unsupported.dbms.tracer} setting. Two built-in implementations
  *     exist: {@code default} and {@code null}. Alternative implementations can be loaded from the
  *     classpath by referencing their {@link org.neo4j.kernel.monitoring.tracing.TracerFactory} in a
  *     {@code META-INF/services/org.neo4j.kernel.monitoring.tracing.TracerFactory}, and setting
- *     {@code dbms.tracer} to the appropriate value.
+ *     {@code unsupported.dbms.tracer} to the appropriate value.
  * </p>
  * <h2>Designing and implementing tracers</h2>
  * <p>
@@ -105,8 +107,10 @@ public class Tracers
      * @param desiredImplementationName The name of the desired {@link org.neo4j.kernel.monitoring.tracing
      * .TracerFactory} implementation, as given by its {@link TracerFactory#getImplementationName()} method.
      * @param msgLog A {@link Log} for logging when the desired implementation cannot be created.
+     * @param monitors the monitoring manager
+     * @param jobScheduler a scheduler for async jobs
      */
-    public Tracers( String desiredImplementationName, Log msgLog )
+    public Tracers( String desiredImplementationName, Log msgLog, Monitors monitors, JobScheduler jobScheduler )
     {
         if ( "null".equalsIgnoreCase( desiredImplementationName ) )
         {
@@ -141,9 +145,9 @@ public class Tracers
                 msgLog.warn( "Using default tracer implementations instead of '%s'", desiredImplementationName );
             }
 
-            pageCacheTracer = foundFactory.createPageCacheTracer();
-            transactionTracer = foundFactory.createTransactionTracer();
-            checkPointTracer = foundFactory.createCheckPointTracer();
+            pageCacheTracer = foundFactory.createPageCacheTracer( monitors, jobScheduler );
+            transactionTracer = foundFactory.createTransactionTracer( monitors, jobScheduler );
+            checkPointTracer = foundFactory.createCheckPointTracer( monitors, jobScheduler );
         }
     }
 }

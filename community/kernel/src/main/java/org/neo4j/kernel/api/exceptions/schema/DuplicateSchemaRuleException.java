@@ -29,6 +29,6 @@ public abstract class DuplicateSchemaRuleException extends SchemaRuleException
     protected DuplicateSchemaRuleException( String messageTemplate, int ruleEntityId, int propertyKeyId, String
             messagePrefix )
     {
-        super( Status.Schema.DuplicateSchemaRule, messageTemplate, ruleEntityId, propertyKeyId, messagePrefix );
+        super( Status.Schema.SchemaRuleDuplicateFound, messageTemplate, ruleEntityId, propertyKeyId, messagePrefix );
     }
 }

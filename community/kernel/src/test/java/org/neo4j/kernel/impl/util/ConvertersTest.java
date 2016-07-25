@@ -25,16 +25,16 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
-
 import static org.neo4j.kernel.impl.util.Converters.regexFiles;
 
 public class ConvertersTest
 {
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void shouldSortFilesByNumberCleverly() throws Exception

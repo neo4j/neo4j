@@ -83,8 +83,8 @@ public enum ClusterState
                         {
                             // Send configuration request to all instances
                             Object[] args = message.<Object[]>getPayload();
-                            String name = ( String ) args[0];
-                            URI[] clusterInstanceUris = ( URI[] ) args[1];
+                            String name = (String) args[0];
+                            URI[] clusterInstanceUris = (URI[]) args[1];
                             context.joining( name, Iterables.<URI,URI>iterable( clusterInstanceUris ) );
 
                             for ( URI potentialClusterInstanceUri : clusterInstanceUris )
@@ -114,6 +114,9 @@ public enum ClusterState
                                                     1 ) ) );
                             return discovery;
                         }
+
+                        default:
+                            break;
                     }
                     return this;
                 }
@@ -321,6 +324,9 @@ public enum ClusterState
                             context.joinDenied( (ClusterMessage.ConfigurationResponseState) message.getPayload() );
                             return this;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;
@@ -389,6 +395,9 @@ public enum ClusterState
                             // This causes an exception from the join() method
                             return start;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;
@@ -499,6 +508,9 @@ public enum ClusterState
                                 return leaving;
                             }
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;
@@ -541,6 +553,9 @@ public enum ClusterState
                             context.left();
                             return start;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;

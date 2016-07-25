@@ -33,7 +33,7 @@ import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL
 
 public class PositionToRecoverFromTest
 {
-    private final long logVersion = 2l;
+    private final long logVersion = 2L;
     private final LatestCheckPointFinder finder = mock( LatestCheckPointFinder.class );
 
     @Test
@@ -53,7 +53,7 @@ public class PositionToRecoverFromTest
     public void shouldReturnLogPositionToRecoverFromIfNeeded() throws Throwable
     {
         // given
-        LogPosition checkPointLogPosition = new LogPosition( 1l, 4242 );
+        LogPosition checkPointLogPosition = new LogPosition( 1L, 4242 );
         when( finder.find( logVersion ) )
                 .thenReturn( new LatestCheckPoint( new CheckPoint( checkPointLogPosition ), true, logVersion ) );
 
@@ -81,7 +81,7 @@ public class PositionToRecoverFromTest
     public void shouldFailIfThereAreNoCheckPointsAndOldestLogVersionInNotZero() throws Throwable
     {
         // given
-        long oldestLogVersionFound = 1l;
+        long oldestLogVersionFound = 1L;
         when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, true, oldestLogVersionFound ) );
 
         // when

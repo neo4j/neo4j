@@ -28,20 +28,21 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
-import org.neo4j.kernel.impl.store.AbstractDynamicStore;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.RelationshipGroupRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstraction
 {
@@ -91,15 +92,15 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
     }
 
     @Override
-    public Reader openAsReader( File fileName, String encoding ) throws IOException
+    public Reader openAsReader( File fileName, Charset charset ) throws IOException
     {
-        return new InputStreamReader( openAsInputStream( fileName ), encoding );
+        return new InputStreamReader( openAsInputStream( fileName ), charset );
     }
 
     @Override
-    public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
+    public Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException
     {
-        return new OutputStreamWriter( openAsOutputStream( fileName, append ), encoding );
+        return new OutputStreamWriter( openAsOutputStream( fileName, append ), charset );
     }
 
     @Override
@@ -108,37 +109,42 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
         return open( fileName, "rw" );
     }
 
+    public static int getRecordSize( int dataSize )
+    {
+        return dataSize + DynamicRecordFormat.RECORD_HEADER_SIZE;
+    }
+
     private int recordSizeFor( File fileName )
     {
         if ( fileName.getName().endsWith( "nodestore.db" ) )
         {
-            return NodeStore.RECORD_SIZE;
+            return NodeRecordFormat.RECORD_SIZE;
         }
         else if ( fileName.getName().endsWith( "relationshipstore.db" ) )
         {
-            return RelationshipStore.RECORD_SIZE;
+            return RelationshipRecordFormat.RECORD_SIZE;
         }
         else if ( fileName.getName().endsWith( "propertystore.db.strings" ) ||
                 fileName.getName().endsWith( "propertystore.db.arrays" ) )
         {
-            return AbstractDynamicStore.getRecordSize( PropertyStore.DEFAULT_DATA_BLOCK_SIZE );
+            return getRecordSize( PropertyRecordFormat.DEFAULT_DATA_BLOCK_SIZE );
         }
         else if ( fileName.getName().endsWith( "propertystore.db" ) )
         {
-            return PropertyStore.RECORD_SIZE;
+            return PropertyRecordFormat.RECORD_SIZE;
         }
         else if ( fileName.getName().endsWith( "nodestore.db.labels" ) )
         {
             return Integer.parseInt( GraphDatabaseSettings.label_block_size.getDefaultValue() ) +
-                    AbstractDynamicStore.BLOCK_HEADER_SIZE;
+                    DynamicRecordFormat.RECORD_HEADER_SIZE;
         }
         else if ( fileName.getName().endsWith( "schemastore.db" ) )
         {
-            return AbstractDynamicStore.getRecordSize( SchemaStore.BLOCK_SIZE );
+            return getRecordSize( SchemaStore.BLOCK_SIZE );
         }
         else if ( fileName.getName().endsWith( "relationshipgroupstore.db" ) )
         {
-            return AbstractDynamicStore.getRecordSize( RelationshipGroupStore.RECORD_SIZE );
+            return getRecordSize( RelationshipGroupRecordFormat.RECORD_SIZE );
         }
         throw new IllegalArgumentException( fileName.getPath() );
     }

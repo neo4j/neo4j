@@ -22,10 +22,12 @@ package org.neo4j.unsafe.impl.batchimport.store;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.NodeLabelsField;
+import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class BatchingTokenRepositoryTest
 {
@@ -33,7 +35,8 @@ public class BatchingTokenRepositoryTest
     public void shouldDedupLabelIds() throws Exception
     {
         // GIVEN
-        BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( null, 0 );
+        @SuppressWarnings( "unchecked" )
+        BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( mock( TokenStore.class ) );
 
         // WHEN
         long[] ids = repo.getOrCreateIds( new String[] {"One", "Two", "One"} );
@@ -46,7 +49,8 @@ public class BatchingTokenRepositoryTest
     public void shouldSortLabelIds() throws Exception
     {
         // GIVEN
-        BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( null, 0 );
+        @SuppressWarnings( "unchecked" )
+        BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( mock( TokenStore.class ) );
         long[] expected = new long[] {
                 repo.getOrCreateId( "One" ),
                 repo.getOrCreateId( "Two" ),

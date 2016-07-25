@@ -22,10 +22,9 @@ package org.neo4j.kernel.impl.store.id;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.LinkedList;
-
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Predicate;
-import org.neo4j.function.Supplier;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static java.util.Arrays.copyOf;
 
@@ -61,7 +60,7 @@ public class DelayedBuffer<T>
     private final Supplier<T> thresholdSupplier;
     private final Predicate<T> safeThreshold;
     private final Consumer<long[]> chunkConsumer;
-    private final Deque<Chunk> chunks = new LinkedList<>();
+    private final Deque<Chunk<T>> chunks = new LinkedList<>();
     private final int chunkSize;
 
     private final long[] chunk;

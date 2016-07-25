@@ -28,8 +28,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -38,10 +38,13 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
@@ -52,9 +55,12 @@ public class GraphDbStructureGuideTest
     {
         // GIVEN
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
-        int personLabelId = createLabel( "Person" );
-        int partyLabelId = createLabel( "Party" );
-        int animalLabelId = createLabel( "Animal" );
+        graph.createNode( label("Person") );
+        graph.createNode( label("Party") );
+        graph.createNode( label("Animal") );
+        int personLabelId = read().labelGetForName( "Person" );
+        int partyLabelId = read().labelGetForName( "Party" );
+        int animalLabelId = read().labelGetForName( "Animal" );
 
         // WHEN
         accept( visitor );
@@ -88,9 +94,13 @@ public class GraphDbStructureGuideTest
     {
         // GIVEN
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
-        int knowsId = createRelTypeId( "KNOWS" );
-        int lovesId = createRelTypeId( "LOVES" );
-        int fawnsAtId = createRelTypeId( "FAWNS_AT" );
+        Node lhs = graph.createNode(), rhs = graph.createNode();
+        lhs.createRelationshipTo( rhs, withName( "KNOWS" ) );
+        lhs.createRelationshipTo( rhs, withName( "LOVES" ) );
+        lhs.createRelationshipTo( rhs, withName( "FAWNS_AT" ) );
+        int knowsId = read().relationshipTypeGetForName( "KNOWS" );
+        int lovesId = read().relationshipTypeGetForName( "LOVES" );
+        int fawnsAtId = read().relationshipTypeGetForName( "FAWNS_AT" );
 
         // WHEN
         accept( visitor );
@@ -116,7 +126,7 @@ public class GraphDbStructureGuideTest
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitIndex( descriptor, ":Person(name)", 1.0d, 0l );
+        verify( visitor ).visitIndex( descriptor, ":Person(name)", 1.0d, 0L );
     }
 
     @Test
@@ -135,7 +145,7 @@ public class GraphDbStructureGuideTest
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitUniqueIndex( descriptor, ":Person(name)", 1.0d, 0l );
+        verify( visitor ).visitUniqueIndex( descriptor, ":Person(name)", 1.0d, 0L );
         verify( visitor ).visitUniqueConstraint( constraint, "CONSTRAINT ON ( person:Person ) ASSERT person.name IS " +
                 "UNIQUE" );
     }
@@ -175,32 +185,33 @@ public class GraphDbStructureGuideTest
         long partyNode = createLabeledNode( partyLabelId );
 
         createRel( personNode, knowsId, personNode );
+        createRel( personNode, lovesId, partyNode );
 
         // WHEN
         accept( visitor );
 
         // THEN
         verify( visitor ).visitRelCount( ANY_LABEL, knowsId, ANY_LABEL, "MATCH ()-[:KNOWS]->() RETURN count(*)", 1L );
-        verify( visitor ).visitRelCount( ANY_LABEL, lovesId, ANY_LABEL, "MATCH ()-[:LOVES]->() RETURN count(*)", 0L );
-        verify( visitor ).visitRelCount( ANY_LABEL, ANY_LABEL, ANY_LABEL, "MATCH ()-[]->() RETURN count(*)", 1L );
+        verify( visitor ).visitRelCount( ANY_LABEL, lovesId, ANY_LABEL, "MATCH ()-[:LOVES]->() RETURN count(*)", 1L );
+        verify( visitor ).visitRelCount( ANY_LABEL, ANY_LABEL, ANY_LABEL, "MATCH ()-[]->() RETURN count(*)", 2L );
 
         verify( visitor ).visitRelCount( personLabelId, knowsId, ANY_LABEL, "MATCH (:Person)-[:KNOWS]->() RETURN count(*)", 1L );
         verify( visitor ).visitRelCount( ANY_LABEL, knowsId, personLabelId, "MATCH ()-[:KNOWS]->(:Person) RETURN count(*)", 1L );
 
-        verify( visitor ).visitRelCount( personLabelId, lovesId, ANY_LABEL, "MATCH (:Person)-[:LOVES]->() RETURN count(*)", 0L );
+        verify( visitor ).visitRelCount( personLabelId, lovesId, ANY_LABEL, "MATCH (:Person)-[:LOVES]->() RETURN count(*)", 1L );
         verify( visitor ).visitRelCount( ANY_LABEL, lovesId, personLabelId, "MATCH ()-[:LOVES]->(:Person) RETURN count(*)", 0L );
 
-        verify( visitor ).visitRelCount( personLabelId, ANY_RELATIONSHIP_TYPE, ANY_LABEL, "MATCH (:Person)-[]->() RETURN count(*)", 1L );
+        verify( visitor ).visitRelCount( personLabelId, ANY_RELATIONSHIP_TYPE, ANY_LABEL, "MATCH (:Person)-[]->() RETURN count(*)", 2L );
         verify( visitor ).visitRelCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, personLabelId, "MATCH ()-[]->(:Person) RETURN count(*)", 1L );
 
         verify( visitor ).visitRelCount( partyLabelId, knowsId, ANY_LABEL, "MATCH (:Party)-[:KNOWS]->() RETURN count(*)", 0L );
         verify( visitor ).visitRelCount( ANY_LABEL, knowsId, partyLabelId, "MATCH ()-[:KNOWS]->(:Party) RETURN count(*)", 0L );
 
         verify( visitor ).visitRelCount( partyLabelId, lovesId, ANY_LABEL, "MATCH (:Party)-[:LOVES]->() RETURN count(*)", 0L );
-        verify( visitor ).visitRelCount( ANY_LABEL, lovesId, partyLabelId, "MATCH ()-[:LOVES]->(:Party) RETURN count(*)", 0L );
+        verify( visitor ).visitRelCount( ANY_LABEL, lovesId, partyLabelId, "MATCH ()-[:LOVES]->(:Party) RETURN count(*)", 1L );
 
         verify( visitor ).visitRelCount( partyLabelId, ANY_RELATIONSHIP_TYPE, ANY_LABEL, "MATCH (:Party)-[]->() RETURN count(*)", 0L );
-        verify( visitor ).visitRelCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, partyLabelId, "MATCH ()-[]->(:Party) RETURN count(*)", 0L );
+        verify( visitor ).visitRelCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, partyLabelId, "MATCH ()-[]->(:Party) RETURN count(*)", 1L );
     }
 
     private void createRel( long startId, int relTypeId, long endId ) throws Exception

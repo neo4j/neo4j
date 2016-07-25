@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Supplier;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Caches single instances. This is meant to be used within a single thread, where

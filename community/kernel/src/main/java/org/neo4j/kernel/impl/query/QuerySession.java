@@ -30,6 +30,11 @@ import java.util.Map;
  */
 public abstract class QuerySession
 {
+    public QuerySession( TransactionalContext context )
+    {
+        put( TransactionalContext.METADATA_KEY, context );
+    }
+
     private final Map<MetadataKey<?>, Object> metadata = new HashMap<>();
 
     /**

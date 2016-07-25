@@ -19,22 +19,22 @@
  */
 package org.neo4j.server.rest.paging;
 
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
+
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpanders;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -50,7 +50,7 @@ public class PagedTraverserTest
     @Before
     public void clearDb() throws Throwable
     {
-        createLinkedList( LIST_LENGTH, dbRule.getGraphDatabaseService() );
+        createLinkedList( LIST_LENGTH, dbRule.getGraphDatabaseAPI() );
     }
 
     private void createLinkedList( int listLength, GraphDatabaseService db )
@@ -64,7 +64,7 @@ public class PagedTraverserTest
 
                 if ( previous != null )
                 {
-                    previous.createRelationshipTo( current, DynamicRelationshipType.withName( "NEXT" ) );
+                    previous.createRelationshipTo( current, RelationshipType.withName( "NEXT" ) );
                 }
                 else
                 {
@@ -93,7 +93,7 @@ public class PagedTraverserTest
     @SuppressWarnings( "unused" )
     private int iterateThroughPagedTraverser( PagedTraverser traversalPager )
     {
-        try ( Transaction transaction = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction transaction = dbRule.getGraphDatabaseAPI().beginTx() )
         {
             int count = 0;
             for ( List<Path> paths : traversalPager )
@@ -120,8 +120,8 @@ public class PagedTraverserTest
 
     private Traverser simpleListTraverser()
     {
-        return Traversal.description()
-                .expand( Traversal.expanderForTypes( DynamicRelationshipType.withName( "NEXT" ), Direction.OUTGOING ) )
+        return dbRule.traversalDescription()
+                .expand( PathExpanders.forTypeAndDirection( RelationshipType.withName( "NEXT" ), Direction.OUTGOING ) )
                 .depthFirst()
                 .uniqueness( Uniqueness.NODE_GLOBAL )
                 .traverse( startNode );

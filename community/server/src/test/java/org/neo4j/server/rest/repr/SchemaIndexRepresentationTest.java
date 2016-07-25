@@ -27,7 +27,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 
 public class SchemaIndexRepresentationTest
 {

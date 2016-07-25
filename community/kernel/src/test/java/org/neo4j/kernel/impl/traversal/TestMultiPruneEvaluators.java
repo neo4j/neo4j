@@ -34,12 +34,9 @@ import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.Traversal.traversal;
+import static org.neo4j.helpers.collection.Iterators.count;
 
 public class TestMultiPruneEvaluators extends TraversalTestBase
 {
@@ -66,7 +63,7 @@ public class TestMultiPruneEvaluators extends TraversalTestBase
             }
         };
 
-        TraversalDescription description = traversal().evaluator( Evaluators.all() )
+        TraversalDescription description = getGraphDb().traversalDescription().evaluator( Evaluators.all() )
                 .evaluator( toDepth( 1 ) ).evaluator( lessThanThreeRels );
         Set<String> expectedNodes = new HashSet<String>(
                 asList( "a", "b", "c", "d", "e" ) );

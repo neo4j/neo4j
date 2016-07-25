@@ -26,14 +26,13 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
+import org.neo4j.kernel.impl.api.index.updater.UniquePropertyIndexUpdater;
 
 class UniqueInMemoryIndex extends InMemoryIndex
 {
@@ -70,6 +69,8 @@ class UniqueInMemoryIndex extends InMemoryIndex
                         case CHANGED:
                         case REMOVED:
                             UniqueInMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
+                        default:
+                            break;
                     }
                 }
                 for ( NodePropertyUpdate update : updates )
@@ -79,14 +80,10 @@ class UniqueInMemoryIndex extends InMemoryIndex
                         case ADDED:
                         case CHANGED:
                             add( update.getNodeId(), update.getValueAfter(), IndexUpdateMode.ONLINE == mode );
+                        default:
+                            break;
                     }
                 }
-            }
-
-            @Override
-            public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
-            {
-                return Reservation.EMPTY;
             }
 
             @Override

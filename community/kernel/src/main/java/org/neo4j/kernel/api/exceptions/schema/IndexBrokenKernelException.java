@@ -26,6 +26,6 @@ public class IndexBrokenKernelException extends KernelException
 {
     public IndexBrokenKernelException( String indexFailureCause )
     {
-        super( Status.General.FailedIndex, "The index is in a failed state: '%s'.", indexFailureCause );
+        super( Status.General.IndexCorruptionDetected, "The index is in a failed state: '%s'.", indexFailureCause );
     }
 }

@@ -28,18 +28,16 @@ import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
-
-import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.neo4j.kernel.impl.store.DynamicNodeLabels.allocateRecordsForDynamicLabels;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
-import static org.neo4j.kernel.impl.store.NodeStore.allocateRecordsForDynamicLabels;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
 public class NodeRecordTest
@@ -48,12 +46,12 @@ public class NodeRecordTest
     public void cloneShouldProduceExactCopy() throws Exception
     {
         // Given
-        long relId = 1337l;
-        long propId = 1338l;
-        long inlinedLabels = 12l;
+        long relId = 1337L;
+        long propId = 1338L;
+        long inlinedLabels = 12L;
 
-        NodeRecord node = new NodeRecord( 1l, false, relId, propId );
-        node.setLabelField( inlinedLabels, asList( new DynamicRecord( 1l ), new DynamicRecord( 2l ) ) );
+        NodeRecord node = new NodeRecord( 1L, false, relId, propId );
+        node.setLabelField( inlinedLabels, asList( new DynamicRecord( 1L ), new DynamicRecord( 2L ) ) );
         node.setInUse( true );
 
         // When
@@ -73,10 +71,10 @@ public class NodeRecordTest
     {
         // Given
         NodeRecord node = new NodeRecord( 1, false, -1, -1 );
-        long inlinedLabels = 12l;
-        DynamicRecord dynamic1 = dynamicRecord( 1l, true );
-        DynamicRecord dynamic2 = dynamicRecord( 2l, true );
-        DynamicRecord dynamic3 = dynamicRecord( 3l, true );
+        long inlinedLabels = 12L;
+        DynamicRecord dynamic1 = dynamicRecord( 1L, true );
+        DynamicRecord dynamic2 = dynamicRecord( 2L, true );
+        DynamicRecord dynamic3 = dynamicRecord( 3L, true );
 
         node.setLabelField( inlinedLabels, asList( dynamic1, dynamic2, dynamic3 ) );
 
@@ -86,18 +84,16 @@ public class NodeRecordTest
         Iterable<DynamicRecord> usedRecords = node.getUsedDynamicLabelRecords();
 
         // Then
-        assertThat( toList( usedRecords ), equalTo( asList( dynamic1, dynamic2 ) ) );
+        assertThat( asList( usedRecords ), equalTo( asList( dynamic1, dynamic2 ) ) );
     }
 
     @Test
     public void shouldToStringBothUsedAndUnusedDynamicLabelRecords() throws Exception
     {
         // GIVEN
-        DynamicBlockSize blockSize = mock( DynamicBlockSize.class );
-        when( blockSize.getBlockSize() ).thenReturn( 30 );
         IdSequence ids = mock( IdSequence.class );
         when( ids.nextId() ).thenReturn( 1L, 2L );
-        DynamicRecordAllocator allocator = new ExistingThenNewRecordAllocator( blockSize, ids );
+        DynamicRecordAllocator allocator = new ExistingThenNewRecordAllocator( 30, ids );
         NodeRecord node = newUsedNodeRecord( 0 );
         long labelId = 10_123;
         // A dynamic label record

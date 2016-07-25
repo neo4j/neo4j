@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -40,13 +40,15 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 {
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
 
-    public PhysicalLogicalTransactionStore( LogFile logFile, TransactionMetadataCache transactionMetadataCache )
+    public PhysicalLogicalTransactionStore( LogFile logFile, TransactionMetadataCache transactionMetadataCache,
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
     {
         this.logFile = logFile;
         this.transactionMetadataCache = transactionMetadataCache;
+        this.logEntryReader = logEntryReader;
     }
-
 
     @Override
     public IOCursor<CommittedTransactionRepresentation> getTransactions( final long transactionIdToStartFrom )
@@ -57,11 +59,10 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         {
             TransactionMetadataCache.TransactionMetadata transactionMetadata =
                     transactionMetadataCache.getTransactionMetadata( transactionIdToStartFrom );
-            LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
             if ( transactionMetadata != null )
             {
                 // we're good
-                ReadableVersionableLogChannel channel = logFile.getReader( transactionMetadata.getStartPosition() );
+                ReadableLogChannel channel = logFile.getReader( transactionMetadata.getStartPosition() );
                 return new PhysicalTransactionCursor<>( channel, logEntryReader );
             }
 
@@ -129,19 +130,19 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     public static class TransactionPositionLocator implements LogFile.LogFileVisitor
     {
         private final long startTransactionId;
-        private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
+        private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
         private LogEntryStart startEntryForFoundTransaction;
         private long commitTimestamp;
 
         public TransactionPositionLocator( long startTransactionId,
-                LogEntryReader<ReadableVersionableLogChannel> logEntryReader )
+                LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
         {
             this.startTransactionId = startTransactionId;
             this.logEntryReader = logEntryReader;
         }
 
         @Override
-        public boolean visit( LogPosition position, ReadableVersionableLogChannel channel ) throws IOException
+        public boolean visit( LogPosition position, ReadableClosablePositionAwareChannel channel ) throws IOException
         {
             LogEntry logEntry;
             LogEntryStart startEntry = null;

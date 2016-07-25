@@ -30,6 +30,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
@@ -103,7 +104,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalDo
             HttpResponse response = httpclient.execute( httpget );
             HttpEntity entity = response.getEntity();
 
-            String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+            String entityBody = IOUtils.toString( entity.getContent(), StandardCharsets.UTF_8 );
 
             System.out.println( entityBody );
 
@@ -128,7 +129,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalDo
             HttpResponse response = httpclient.execute( httpget );
             HttpEntity entity = response.getEntity();
 
-            String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+            String entityBody = IOUtils.toString( entity.getContent(), StandardCharsets.UTF_8 );
 
             assertThat( entityBody, containsString( "http://localhost:7474/db/data/relationship/" + likes ) );
         }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.HashMap;
@@ -31,55 +31,77 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class NeoStoreIndexStoreViewTest
 {
     @Rule
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
 
-    Label label = DynamicLabel.label( "Person" );
+    private Map<Long, Lock> lockMocks = new HashMap<>();
+    private Label label = Label.label( "Person" );
 
-    GraphDatabaseAPI graphDb;
-    NeoStoreIndexStoreView storeView;
+    private GraphDatabaseAPI graphDb;
+    private NeoStoreIndexStoreView storeView;
 
-    int labelId;
-    int propertyKeyId;
+    private long labelId;
+    private int propertyKeyId;
 
-    Node alistair;
-    Node stefan;
-    LockService locks;
-    NeoStores neoStores;
-    CountsTracker counts;
+    private Node alistair;
+    private Node stefan;
+    private LockService locks;
+    private NeoStores neoStores;
+
+    @Before
+    public void before() throws KernelException
+    {
+        graphDb = dbRule.getGraphDatabaseAPI();
+
+        createAlistairAndStefanNodes();
+        getOrCreateIds();
+
+        neoStores = graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        locks = mock( LockService.class, (Answer) invocation -> {
+            Long nodeId = (Long) invocation.getArguments()[0];
+            Lock lock = lockMocks.get( nodeId );
+            if ( lock == null )
+            {
+                lockMocks.put( nodeId, lock = mock( Lock.class ) );
+            }
+            return lock;
+        } );
+        storeView = new NeoStoreIndexStoreView( locks, neoStores );
+    }
 
     @Test
     public void shouldScanExistingNodesForALabel() throws Exception
@@ -89,7 +111,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-            storeView.visitNodes( new int[] { labelId }, new int[] { propertyKeyId }, visitor, labelVisitor );
+            storeView.visitNodes( (id) -> id == labelId, (id) -> id == propertyKeyId, visitor, labelVisitor );
 
         // when
         storeScan.run();
@@ -112,7 +134,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-                storeView.visitNodes( new int[] { labelId }, new int[] { propertyKeyId }, visitor, labelVisitor );
+                storeView.visitNodes( (id) -> id == labelId, (id) -> id == propertyKeyId, visitor, labelVisitor );
 
         // when
         storeScan.run();
@@ -126,9 +148,10 @@ public class NeoStoreIndexStoreViewTest
     {
         // given
         @SuppressWarnings("unchecked")
-        Visitor<NodePropertyUpdate, Exception> visitor = mock( Visitor.class );
-        StoreScan<Exception> storeScan = storeView
-                .visitNodesWithPropertyAndLabel( new IndexDescriptor( labelId, propertyKeyId ), visitor );
+        Visitor<NodePropertyUpdates, Exception> visitor = mock( Visitor.class );
+        StoreScan<Exception> storeScan = storeView.visitNodes(
+                (id) -> id == labelId, (id) -> id == propertyKeyId,
+                visitor, null );
 
         // when
         storeScan.run();
@@ -154,33 +177,24 @@ public class NeoStoreIndexStoreViewTest
         assertTrue( property.valueEquals( "Alistair" ) );
     }
 
-    Map<Long, Lock> lockMocks = new HashMap<>();
-
-    @Before
-    public void before() throws KernelException
+    @Test
+    public void processAllNodeProperties() throws Exception
     {
-        graphDb = dbRule.getGraphDatabaseAPI();
+        CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
+        NeoStoreIndexStoreView.StoreViewNodeStoreScan storeViewNodeStoreScan =
+                new NeoStoreIndexStoreView.StoreViewNodeStoreScan( neoStores.getNodeStore(), locks,
+                        neoStores.getPropertyStore(), null, propertyUpdateVisitor,
+                        id -> id == labelId, id -> true );
 
-        createAlistairAndStefanNodes();
-        getOrCreateIds();
+        NodeRecord nodeRecord = new NodeRecord( -1 );
+        neoStores.getNodeStore().getRecord( 1L, nodeRecord, RecordLoad.FORCE );
 
-        neoStores = new StoreAccess( graphDb ).getRawNeoStores();
-        counts = neoStores.getCounts();
-        locks = mock( LockService.class, new Answer()
-        {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                Long nodeId = (Long) invocation.getArguments()[0];
-                Lock lock = lockMocks.get( nodeId );
-                if ( lock == null )
-                {
-                    lockMocks.put( nodeId, lock = mock( Lock.class ) );
-                }
-                return lock;
-            }
-        } );
-        storeView = new NeoStoreIndexStoreView( locks, neoStores );
+        storeViewNodeStoreScan.process( nodeRecord );
+
+        NodePropertyUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
+        assertNotNull( "Visitor should containts container with 2 updates.", propertyUpdates );
+        assertThat( "Node should have 2 property and we should get 2 updates",
+                propertyUpdates.getPropertyUpdates(), Matchers.hasSize(2) );
     }
 
     private void createAlistairAndStefanNodes()
@@ -189,8 +203,10 @@ public class NeoStoreIndexStoreViewTest
         {
             alistair = graphDb.createNode( label );
             alistair.setProperty( "name", "Alistair" );
+            alistair.setProperty( "country", "UK" );
             stefan = graphDb.createNode( label );
             stefan.setProperty( "name", "Stefan" );
+            stefan.setProperty( "country", "Deutschland" );
             tx.success();
         }
     }
@@ -221,14 +237,34 @@ public class NeoStoreIndexStoreViewTest
         }
     }
 
-    class NodeUpdateCollectingVisitor implements Visitor<NodePropertyUpdate, Exception>
+    private static class CopyUpdateVisitor implements Visitor<NodePropertyUpdates,RuntimeException>
+    {
+
+        private NodePropertyUpdates propertyUpdates;
+
+        @Override
+        public boolean visit( NodePropertyUpdates element ) throws RuntimeException
+        {
+            propertyUpdates = new NodePropertyUpdates();
+            propertyUpdates.initForNodeId( element.getNodeId() );
+            propertyUpdates.addAll(element.getPropertyUpdates());
+            return true;
+        }
+
+        public NodePropertyUpdates getPropertyUpdates()
+        {
+            return propertyUpdates;
+        }
+    }
+
+    class NodeUpdateCollectingVisitor implements Visitor<NodePropertyUpdates, Exception>
     {
         private final Set<NodePropertyUpdate> updates = new HashSet<>();
 
         @Override
-        public boolean visit( NodePropertyUpdate element ) throws Exception
+        public boolean visit( NodePropertyUpdates propertyUpdates ) throws Exception
         {
-            updates.add( element );
+            updates.addAll( propertyUpdates.getPropertyUpdates() );
             return false;
         }
 

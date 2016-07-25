@@ -19,8 +19,6 @@
  */
 package org.neo4j.logging;
 
-import org.neo4j.function.Function;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Function;
 
 /**
  * A {@link LogProvider} implementation that duplicates all messages to other LogProvider instances
@@ -68,26 +67,16 @@ public class DuplicatingLogProvider extends AbstractLogProvider<DuplicatingLog>
     @Override
     protected DuplicatingLog buildLog( final Class loggingClass )
     {
-        return buildLog( new Function<LogProvider, Log>()
-        {
-            @Override
-            public Log apply( LogProvider logProvider )
-            {
-                return logProvider.getLog( loggingClass );
-            }
+        return buildLog( logProvider -> {
+            return logProvider.getLog( loggingClass );
         } );
     }
 
     @Override
     protected DuplicatingLog buildLog( final String name )
     {
-        return buildLog( new Function<LogProvider, Log>()
-        {
-            @Override
-            public Log apply( LogProvider logProvider )
-            {
-                return logProvider.getLog( name );
-            }
+        return buildLog( logProvider -> {
+            return logProvider.getLog( name );
         } );
     }
 

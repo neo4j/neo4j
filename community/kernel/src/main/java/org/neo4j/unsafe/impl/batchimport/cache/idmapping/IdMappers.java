@@ -74,6 +74,11 @@ public class IdMappers
         {
             return getClass().getSimpleName();
         }
+
+        @Override
+        public void close()
+        {   // Nothing to close
+        }
     }
 
     /**

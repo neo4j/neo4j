@@ -28,11 +28,11 @@ import static java.lang.String.format;
 public class IndexBelongsToConstraintException extends SchemaKernelException
 {
     private final IndexDescriptor index;
-    private final static String message = "Index belongs to constraint: %s";
+    private static final String message = "Index belongs to constraint: %s";
 
     public IndexBelongsToConstraintException( IndexDescriptor index )
     {
-        super( Status.Schema.IndexBelongsToConstraint, format( "Index belongs to constraint: %s", index ) );
+        super( Status.Schema.ForbiddenOnConstraintIndex, format( "Index belongs to constraint: %s", index ) );
         this.index = index;
     }
 

@@ -20,13 +20,13 @@
 package org.neo4j.kernel.impl.api.operations;
 
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 public interface LockOperations
 {
-    void acquireExclusive( KernelStatement state, Locks.ResourceType resourceType, long resourceId );
-    void acquireShared( KernelStatement state, Locks.ResourceType resourceType, long resourceId );
+    void acquireExclusive( KernelStatement state, ResourceType resourceType, long resourceId );
+    void acquireShared( KernelStatement state, ResourceType resourceType, long resourceId );
 
-    void releaseExclusive( KernelStatement statement, Locks.ResourceType type, long id );
-    void releaseShared( KernelStatement statement, Locks.ResourceType type, long id );
+    void releaseExclusive( KernelStatement statement, ResourceType type, long id );
+    void releaseShared( KernelStatement statement, ResourceType type, long id );
 }

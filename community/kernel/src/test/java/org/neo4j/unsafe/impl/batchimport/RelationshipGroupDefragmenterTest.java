@@ -1,0 +1,240 @@
+/*
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.unsafe.impl.batchimport;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+
+import java.io.IOException;
+import java.util.BitSet;
+import java.util.Collection;
+
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import static java.util.Arrays.asList;
+
+import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+
+@RunWith( Parameterized.class )
+public class RelationshipGroupDefragmenterTest
+{
+    private static final Configuration CONFIG = Configuration.DEFAULT;
+
+    @Parameters
+    public static Collection<Object[]> formats()
+    {
+        return asList(
+                new Object[] {StandardV3_0.RECORD_FORMATS, 1},
+                new Object[] {new ForcedSecondaryUnitRecordFormats( StandardV3_0.RECORD_FORMATS ), 2} );
+    }
+
+    @Rule
+    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final RandomRule random = new RandomRule();
+
+    @Parameter( 0 )
+    public RecordFormats format;
+    @Parameter( 1 )
+    public int units;
+
+    private BatchingNeoStores stores;
+
+    @Before
+    public void start()
+    {
+        stores = new BatchingNeoStores( new DefaultFileSystemAbstraction(),
+                directory.absolutePath(), format, CONFIG, NullLogService.getInstance(),
+                AdditionalInitialIds.EMPTY, Config.defaults() );
+    }
+
+    @After
+    public void stop() throws IOException
+    {
+        stores.close();
+    }
+
+    @Test
+    public void shouldDefragmentRelationshipGroupsWhenAllDense() throws Exception
+    {
+        // GIVEN some nodes which has their groups scattered
+        int nodeCount = 10_000;
+        int relationshipTypeCount = 50;
+        RecordStore<RelationshipGroupRecord> groupStore = stores.getRelationshipGroupStore();
+        RelationshipGroupRecord groupRecord = groupStore.newRecord();
+        RecordStore<NodeRecord> nodeStore = stores.getNodeStore();
+        NodeRecord nodeRecord = nodeStore.newRecord();
+        long cursor = 0;
+        for ( int typeId = relationshipTypeCount-1; typeId >= 0; typeId-- )
+        {
+            for ( long nodeId = 0; nodeId < nodeCount; nodeId++, cursor++ )
+            {
+                // next doesn't matter at all, as we're rewriting it anyway
+                // firstOut/In/Loop we could use in verification phase later
+                groupRecord.initialize( true, typeId, cursor, cursor+1, cursor+2, nodeId, 4 );
+                groupRecord.setId( groupStore.nextId() );
+                groupStore.updateRecord( groupRecord );
+
+                if ( typeId == 0 )
+                {
+                    // first round also create the nodes
+                    nodeRecord.initialize( true, -1, true, groupRecord.getId(), 0 );
+                    nodeRecord.setId( nodeId );
+                    nodeStore.updateRecord( nodeRecord );
+                }
+            }
+        }
+
+        // WHEN
+        defrag( nodeCount );
+
+        // THEN all groups should sit sequentially in the store
+        verifyGroupsAreSequentiallyOrderedByNode();
+    }
+
+    @Test
+    public void shouldDefragmentRelationshipGroupsWhenSomeDense() throws Exception
+    {
+        // GIVEN some nodes which has their groups scattered
+        int nodeCount = 10_000;
+        int relationshipTypeCount = 50;
+        RecordStore<RelationshipGroupRecord> groupStore = stores.getRelationshipGroupStore();
+        RelationshipGroupRecord groupRecord = groupStore.newRecord();
+        RecordStore<NodeRecord> nodeStore = stores.getNodeStore();
+        NodeRecord nodeRecord = nodeStore.newRecord();
+        long cursor = 0;
+        BitSet initializedNodes = new BitSet();
+        for ( int typeId = relationshipTypeCount-1; typeId >= 0; typeId-- )
+        {
+            for ( int nodeId = 0; nodeId < nodeCount; nodeId++, cursor++ )
+            {
+                // Reasoning behind this thing is that we want to have roughly 10% of the nodes dense
+                // right from the beginning and then some stray dense nodes coming into this in the
+                // middle of the type range somewhere
+                double comparison = typeId == 0 || initializedNodes.get( nodeId ) ? 0.1 : 0.001;
+
+                if ( random.nextDouble() < comparison )
+                {
+                    // next doesn't matter at all, as we're rewriting it anyway
+                    // firstOut/In/Loop we could use in verification phase later
+                    groupRecord.initialize( true, typeId, cursor, cursor+1, cursor+2, nodeId, 4 );
+                    groupRecord.setId( groupStore.nextId() );
+                    groupStore.updateRecord( groupRecord );
+
+                    if ( !initializedNodes.get( nodeId ) )
+                    {
+                        nodeRecord.initialize( true, -1, true, groupRecord.getId(), 0 );
+                        nodeRecord.setId( nodeId );
+                        nodeStore.updateRecord( nodeRecord );
+                        initializedNodes.set( nodeId );
+                    }
+                }
+            }
+        }
+
+        // WHEN
+        defrag( nodeCount );
+
+        // THEN all groups should sit sequentially in the store
+        verifyGroupsAreSequentiallyOrderedByNode();
+    }
+
+    private void defrag( long nodeCount )
+    {
+        RelationshipGroupDefragmenter defragmenter = new RelationshipGroupDefragmenter( CONFIG,
+                ExecutionMonitors.invisible() );
+        defragmenter.run( mebiBytes( 1 ), stores, nodeCount );
+    }
+
+    private void verifyGroupsAreSequentiallyOrderedByNode()
+    {
+        RecordStore<RelationshipGroupRecord> store = stores.getReplacementNeoStores().getRelationshipGroupStore();
+        long firstId = store.getNumberOfReservedLowIds();
+        long groupCount = store.getHighId() - firstId;
+        RelationshipGroupRecord groupRecord = store.newRecord();
+        RecordCursor<RelationshipGroupRecord> groupCursor =
+                store.newRecordCursor( groupRecord ).acquire( firstId, CHECK );
+        long highGroupId = store.getHighId();
+        long currentNodeId = -1;
+        int currentTypeId = -1;
+        int newGroupCount = 0;
+        int currentGroupLength = 0;
+        for ( long id = firstId; id < highGroupId; id++, newGroupCount++ )
+        {
+            if ( !groupCursor.next( id ) )
+            {
+                // This will be the case if we have double record units, just assert that fact
+                assertTrue( units > 1 );
+                assertTrue( currentGroupLength > 0 );
+                currentGroupLength--;
+                continue;
+            }
+
+            long nodeId = groupRecord.getOwningNode();
+            assertTrue(
+                    "Expected a group for node >= " + currentNodeId + ", but was " + nodeId + " in " + groupRecord,
+                    nodeId >= currentNodeId );
+            if ( nodeId != currentNodeId )
+            {
+                currentNodeId = nodeId;
+                currentTypeId = -1;
+                if ( units > 1 )
+                {
+                    assertEquals( 0, currentGroupLength );
+                }
+                currentGroupLength = 0;
+            }
+            currentGroupLength++;
+
+            assertTrue( "Expected this group to have a next of current + " + units + " OR NULL, " +
+                    "but was " + groupRecord.toString(),
+                    groupRecord.getNext() == groupRecord.getId() + 1 ||
+                    groupRecord.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() );
+            assertTrue( "Expected " + groupRecord + " to have type > " + currentTypeId,
+                    groupRecord.getType() > currentTypeId );
+            currentTypeId = groupRecord.getType();
+        }
+        assertEquals( groupCount, newGroupCount );
+    }
+}

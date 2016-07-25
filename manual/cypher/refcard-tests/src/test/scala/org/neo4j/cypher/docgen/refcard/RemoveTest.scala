@@ -21,12 +21,12 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class RemoveTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A:Person", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "REMOVE"
-  val css = "write c2-2 c4-3 c5-4 c6-2"
+  val css = "write c2-2 c4-3 c5-4 c6-1"
   override val linkId = "query-remove"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -35,7 +35,7 @@ class RemoveTest extends RefcardTest with QueryStatisticsTestSupport {
         assertStats(result, labelsRemoved = 1)
         assert(result.toList.size === 0)
       case "remove-prop" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 2)
+        assertStats(result, nodesCreated = 1, propertiesWritten = 2)
         assert(result.toList.size === 0)
     }
   }

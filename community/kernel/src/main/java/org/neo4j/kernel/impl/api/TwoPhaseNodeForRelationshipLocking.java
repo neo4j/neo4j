@@ -23,41 +23,39 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Consumer;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.NodeItem;
 
 class TwoPhaseNodeForRelationshipLocking
 {
     private final PrimitiveLongSet nodeIds = Primitive.longSet();
     private final EntityReadOperations reads;
-    private final Consumer<Long> relIdAction;
+    private final ThrowingConsumer<Long,KernelException> relIdAction;
+
+    private boolean retry = true;
+    private long firstRelId;
+    private boolean first;
 
     private final RelationshipVisitor<RuntimeException> collectNodeIdVisitor =
-            new RelationshipVisitor<RuntimeException>()
-            {
-                @Override
-                public void visit( long relId, int type, long startNode, long endNode )
+            (relId, type, startNode, endNode) -> {
+                if ( firstRelId == -1 )
                 {
-                    if ( firstRelId == -1 )
-                    {
-                        firstRelId = relId;
-                    }
-                    nodeIds.add( startNode );
-                    nodeIds.add( endNode );
+                    firstRelId = relId;
                 }
+                nodeIds.add( startNode );
+                nodeIds.add( endNode );
             };
 
-    private final RelationshipVisitor<RuntimeException> relationshipConsumingVisitor =
-            new RelationshipVisitor<RuntimeException>()
+    private final RelationshipVisitor<KernelException> relationshipConsumingVisitor =
+            new RelationshipVisitor<KernelException>()
             {
                 @Override
-                public void visit( long relId, int type, long startNode, long endNode )
+                public void visit( long relId, int type, long startNode, long endNode ) throws KernelException
                 {
                     if ( first )
                     {
@@ -75,17 +73,13 @@ class TwoPhaseNodeForRelationshipLocking
                 }
             };
 
-    private boolean retry = true;
-    private long firstRelId;
-    private boolean first;
-
-    TwoPhaseNodeForRelationshipLocking( EntityReadOperations reads, Consumer<Long> relIdAction )
+    TwoPhaseNodeForRelationshipLocking( EntityReadOperations reads, ThrowingConsumer<Long,KernelException> relIdAction )
     {
         this.reads = reads;
         this.relIdAction = relIdAction;
     }
 
-    void lockAllNodesAndConsumeRelationships( long nodeId, final KernelStatement state ) throws EntityNotFoundException
+    void lockAllNodesAndConsumeRelationships( long nodeId, final KernelStatement state ) throws KernelException
     {
         while ( retry )
         {
@@ -102,6 +96,7 @@ class TwoPhaseNodeForRelationshipLocking
                     reads.relationshipVisit( state, relationships.next(), collectNodeIdVisitor );
                 }
             }
+
             {
                 PrimitiveLongIterator iterator = nodeIds.iterator();
                 while ( iterator.hasNext() )

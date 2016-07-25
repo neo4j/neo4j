@@ -47,9 +47,7 @@ public class PageCacheStressTesting
     {
         int durationInMinutes = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_DURATION", "1" ) );
         int numberOfPages = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_NUMBER_OF_PAGES", "10000" ) );
-        int recordsPerPage = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_RECORDS_PER_PAGE", "113" ) );
         int numberOfThreads = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_NUMBER_OF_THREADS", "8" ) );
-        int cachePagePadding = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_CACHE_PAGE_PADDING", "56" ) );
         int numberOfCachePages = parseInt( fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_NUMBER_OF_CACHE_PAGES", "1000" ) );
 
         String workingDirectory = fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_WORKING_DIRECTORY", getProperty( "java.io.tmpdir" ) );
@@ -59,21 +57,19 @@ public class PageCacheStressTesting
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
                 .with( timePeriod( durationInMinutes, MINUTES ) )
                 .withNumberOfPages( numberOfPages )
-                .withRecordsPerPage( recordsPerPage )
                 .withNumberOfThreads( numberOfThreads )
-                .withCachePagePadding( cachePagePadding )
                 .withNumberOfCachePages( numberOfCachePages )
-                .withWorkingDirectory(workingDirectory)
+                .withWorkingDirectory( workingDirectory )
                 .with( monitor )
                 .build();
 
         runner.run();
 
-        long faults = monitor.countFaults();
-        long evictions = monitor.countEvictions();
-        long pins = monitor.countPins();
-        long unpins = monitor.countUnpins();
-        long flushes = monitor.countFlushes();
+        long faults = monitor.faults();
+        long evictions = monitor.evictions();
+        long pins = monitor.pins();
+        long unpins = monitor.unpins();
+        long flushes = monitor.flushes();
         System.out.printf( " - page faults: %d%n - evictions: %d%n - pins: %d%n - unpins: %d%n - flushes: %d%n",
                 faults, evictions, pins, unpins, flushes );
     }

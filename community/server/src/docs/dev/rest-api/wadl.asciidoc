@@ -11,11 +11,11 @@ RESTful APIs cannot be modeled by static interface description languages like WS
 However for some use cases, developers may wish to expose WADL descriptions of the Neo4j REST API, particularly when
 using tooling that expects such.
 
-In those cases WADL generation may be enabled by adding to your server's _conf/neo4j.properties_ file:
+In those cases WADL generation may be enabled by adding to _neo4j.conf_:
 
 [source]
 ----
-unsupported_wadl_generation_enabled=true
+unsupported.dbms.wadl_generation_enabled=true
 ----
 
 [CAUTION]

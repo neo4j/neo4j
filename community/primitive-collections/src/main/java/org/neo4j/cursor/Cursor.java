@@ -19,8 +19,6 @@
  */
 package org.neo4j.cursor;
 
-import org.neo4j.function.Supplier;
-
 /**
  * A cursor is an object that moves to point to different locations in a data structure.
  * The abstraction originally comes from mechanical slide rules, which have a "cursor" which
@@ -32,18 +30,11 @@ import org.neo4j.function.Supplier;
  * {@link #next()} has been done, or if it returned false, then such accessor methods throw {@link
  * IllegalStateException}.
  */
-public interface Cursor<T> extends Supplier<T>, AutoCloseable
+public interface Cursor<T> extends RawCursor<T,RuntimeException>
 {
-    /**
-     * Move the cursor to the next row.
-     * Return false if there are no more valid positions, generally indicating that the end of the data structure
-     * has been reached.
-     */
+    @Override
     boolean next();
 
-    /**
-     * Signal that the cursor is no longer needed.
-     */
     @Override
     void close();
 }

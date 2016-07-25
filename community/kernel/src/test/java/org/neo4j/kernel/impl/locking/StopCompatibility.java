@@ -39,6 +39,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.storageengine.api.lock.ResourceType;
+
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -52,7 +54,7 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
-    private static final Locks.ResourceType RESOURCE_TYPE = ResourceTypes.NODE;
+    private static final ResourceType RESOURCE_TYPE = ResourceTypes.NODE;
     private static final long RESOURCE_ID = 42;
     private static final long OTHER_RESOURCE_ID = 4242;
 
@@ -538,16 +540,8 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         final List<Long> expectedLockedIds = Arrays.asList( expectedResourceIds );
         final List<Long> seenLockedIds = new ArrayList<>();
 
-        locks.accept( new Locks.Visitor()
-        {
-            @Override
-            public void visit( Locks.ResourceType resourceType, long resourceId, String description,
-                    long estimatedWaitTime,
-                    long lockIdentityHashCode )
-            {
-                seenLockedIds.add( resourceId );
-            }
-        } );
+        locks.accept( ( resourceType, resourceId, description, estimatedWaitTime, lockIdentityHashCode ) ->
+                seenLockedIds.add( resourceId ) );
 
         Collections.sort( expectedLockedIds );
         Collections.sort( seenLockedIds );
@@ -556,16 +550,8 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
 
     private void assertNoLocksHeld()
     {
-        locks.accept( new Locks.Visitor()
-        {
-            @Override
-            public void visit( Locks.ResourceType resourceType, long resourceId, String description,
-                    long estimatedWaitTime,
-                    long lockIdentityHashCode )
-            {
-                fail( "Unexpected lock on " + resourceType + " " + resourceId );
-            }
-        } );
+        locks.accept( ( resourceType, resourceId, description, estimatedWaitTime, lockIdentityHashCode ) ->
+                fail( "Unexpected lock on " + resourceType + " " + resourceId ) );
     }
 
     private void assertThreadIsWaitingForLock( LockAcquisition lockAcquisition ) throws Exception
@@ -680,10 +666,10 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         final Locks.Client client;
         final boolean shared;
-        final Locks.ResourceType resourceType;
+        final ResourceType resourceType;
         final long resourceId;
 
-        AcquiredLock( Locks.Client client, boolean shared, Locks.ResourceType resourceType, long resourceId )
+        AcquiredLock( Locks.Client client, boolean shared, ResourceType resourceType, long resourceId )
         {
             this.client = client;
             this.shared = shared;
@@ -691,12 +677,12 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             this.resourceId = resourceId;
         }
 
-        static AcquiredLock shared( Locks.Client client, Locks.ResourceType resourceType, long resourceId )
+        static AcquiredLock shared( Locks.Client client, ResourceType resourceType, long resourceId )
         {
             return new AcquiredLock( client, true, resourceType, resourceId );
         }
 
-        static AcquiredLock exclusive( Locks.Client client, Locks.ResourceType resourceType, long resourceId )
+        static AcquiredLock exclusive( Locks.Client client, ResourceType resourceType, long resourceId )
         {
             return new AcquiredLock( client, false, resourceType, resourceId );
         }

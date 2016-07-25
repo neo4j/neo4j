@@ -32,7 +32,7 @@ public abstract class Indicator
         }
     };
 
-    public static abstract class OpenEnded extends Indicator
+    public abstract static class OpenEnded extends Indicator
     {
         public OpenEnded( int reportResolution )
         {
@@ -79,7 +79,7 @@ public abstract class Indicator
         // default: do nothing
     }
 
-    public static abstract class Decorator extends Indicator.OpenEnded
+    public abstract static class Decorator extends Indicator.OpenEnded
     {
         private final Indicator indicator;
 

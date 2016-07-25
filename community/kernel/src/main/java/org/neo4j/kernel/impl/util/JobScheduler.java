@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.util;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -91,8 +92,8 @@ public interface JobScheduler extends Lifecycle
      * This is an exhaustive list of job types that run in the database. It should be expanded as needed for new groups
      * of jobs.
      *
-     * For now, this does naming only, but it will allow us to define per-group configuration, such as how to handle
-     * failures, shared threads and (later on) affinity strategies.
+     * For now, this does minimal configuration, but opens up for things like common
+     * failure handling, shared threads and affinity strategies.
      */
     class Groups
     {
@@ -142,9 +143,24 @@ public interface JobScheduler extends Lifecycle
         public static final Group checkPoint = new Group( "CheckPoint", POOLED );
 
         /**
+         * Raft Log pruning
+         */
+        public static final Group raftLogPruning = new Group( "RaftLogPruning", POOLED );
+
+        /**
          * Network IO threads for the Bolt protocol.
          */
         public static final Group boltNetworkIO = new Group( "BoltNetworkIO", NEW_THREAD );
+
+        /**
+         * Reporting thread for Metrics events
+         */
+        public static final Group metricsEvent = new Group( "MetricsEvent", POOLED );
+
+        /**
+         * UDC timed events.
+         */
+        public static Group udc  = new Group( "UsageDataCollection", POOLED );
 
         /**
          * Storage maintenance.
@@ -155,6 +171,8 @@ public interface JobScheduler extends Lifecycle
     interface JobHandle
     {
         void cancel( boolean mayInterruptIfRunning );
+
+        void waitTermination() throws InterruptedException, ExecutionException;
     }
 
     /** Expose a group scheduler as an {@link Executor} */

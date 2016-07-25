@@ -27,7 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -36,7 +36,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -54,7 +53,7 @@ public class ClusterTransactionIT
     @Before
     public void setUp() throws Exception
     {
-        cluster = clusterRule.withProvider( clusterOfSize( 3 ) )
+        cluster = clusterRule.withCluster( clusterOfSize( 3 ) )
                              .withSharedSetting( HaSettings.ha_server, ":6001-6005" )
                              .withSharedSetting( HaSettings.tx_push_factor, "2" ).startCluster();
 
@@ -157,8 +156,7 @@ public class ClusterTransactionIT
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         try ( Transaction tx = master.beginTx() )
         {
-            GlobalGraphOperations gops = GlobalGraphOperations.at( master );
-            assertThat( IteratorUtil.count( gops.getAllNodes() ), is( 3 ) );
+            assertThat( Iterables.count( master.getAllNodes() ), is( 3L ) );
         }
     }
 }

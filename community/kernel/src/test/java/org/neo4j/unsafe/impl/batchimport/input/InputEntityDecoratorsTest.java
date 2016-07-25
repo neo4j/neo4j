@@ -22,7 +22,8 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import org.neo4j.function.Function;
+import java.util.function.Function;
+
 import org.neo4j.helpers.ArrayUtil;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -32,8 +33,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class InputEntityDecoratorsTest
 {

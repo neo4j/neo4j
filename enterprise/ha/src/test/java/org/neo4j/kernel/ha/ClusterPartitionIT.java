@@ -34,8 +34,8 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.NetworkFlag;
-import org.neo4j.test.LoggerRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.LoggerRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -67,7 +67,7 @@ public class ClusterPartitionIT
         int clusterSize = 3;
 
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
-                .withProvider( ClusterManager.clusterOfSize( clusterSize ) )
+                .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                         ClusterSettings.heartbeat_interval.name(), "1" ) )
                 .build();
@@ -75,7 +75,7 @@ public class ClusterPartitionIT
         try
         {
             manager.start();
-            ClusterManager.ManagedCluster cluster = manager.getDefaultCluster();
+            ClusterManager.ManagedCluster cluster = manager.getCluster();
 
             cluster.await( allSeesAllAsAvailable() );
             cluster.await( masterAvailable() );
@@ -112,7 +112,7 @@ public class ClusterPartitionIT
         int clusterSize = 3;
 
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
-                .withProvider( ClusterManager.clusterOfSize( clusterSize ) )
+                .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                         ClusterSettings.heartbeat_interval.name(), "1" ) )
                 .build();
@@ -120,7 +120,7 @@ public class ClusterPartitionIT
         try
         {
             manager.start();
-            ClusterManager.ManagedCluster cluster = manager.getDefaultCluster();
+            ClusterManager.ManagedCluster cluster = manager.getCluster();
 
             cluster.await( allSeesAllAsAvailable() );
             cluster.await( masterAvailable() );
@@ -158,7 +158,7 @@ public class ClusterPartitionIT
         assumeTrue( TestRunConditions.shouldRunAtClusterSize( clusterSize ) );
 
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
-                .withProvider( ClusterManager.clusterOfSize( clusterSize ) )
+                .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                         ClusterSettings.heartbeat_interval.name(), "1",
 //                        ClusterSettings.heartbeat_timeout.name(), "3",
@@ -168,7 +168,7 @@ public class ClusterPartitionIT
         try
         {
             manager.start();
-            ClusterManager.ManagedCluster cluster = manager.getDefaultCluster();
+            ClusterManager.ManagedCluster cluster = manager.getCluster();
 
             cluster.await( allSeesAllAsAvailable() );
             cluster.await( masterAvailable() );
@@ -239,7 +239,7 @@ public class ClusterPartitionIT
         assumeTrue( TestRunConditions.shouldRunAtClusterSize( clusterSize ) );
 
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
-                .withProvider( ClusterManager.clusterOfSize( clusterSize ) )
+                .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                         ClusterSettings.heartbeat_interval.name(), "1",
 //                        ClusterSettings.heartbeat_timeout.name(), "3",
@@ -249,7 +249,7 @@ public class ClusterPartitionIT
         try
         {
             manager.start();
-            ClusterManager.ManagedCluster cluster = manager.getDefaultCluster();
+            ClusterManager.ManagedCluster cluster = manager.getCluster();
 
             cluster.await( allSeesAllAsAvailable() );
             cluster.await( masterAvailable() );
@@ -342,7 +342,6 @@ public class ClusterPartitionIT
 
         return firstFailure;
     }
-
 
     private void addSomeData( HighlyAvailableGraphDatabase instance )
     {

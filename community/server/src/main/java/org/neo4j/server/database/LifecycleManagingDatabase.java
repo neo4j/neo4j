@@ -21,12 +21,12 @@ package org.neo4j.server.database;
 
 import java.io.File;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.Result;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.Log;
-import org.neo4j.server.web.ServerInternalSettings;
 
 /**
  * Wraps a neo4j database in lifecycle management. This is intermediate, and will go away once we have an internal
@@ -39,19 +39,12 @@ public class LifecycleManagingDatabase implements Database
 
     public interface GraphFactory
     {
-        GraphDatabaseAPI newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies );
+        GraphDatabaseFacade newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies );
     }
 
     public static Database.Factory lifecycleManagingDatabase( final GraphFactory graphDbFactory )
     {
-        return new Factory()
-        {
-            @Override
-            public Database newDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
-            {
-                return new LifecycleManagingDatabase( config, graphDbFactory, dependencies );
-            }
-        };
+        return ( config, dependencies ) -> new LifecycleManagingDatabase( config, graphDbFactory, dependencies );
     }
 
     private final Config config;
@@ -60,7 +53,7 @@ public class LifecycleManagingDatabase implements Database
     private final Log log;
 
     private boolean isRunning = false;
-    private GraphDatabaseAPI graph;
+    private GraphDatabaseFacade graph;
 
     public LifecycleManagingDatabase( Config config, GraphFactory dbFactory,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
@@ -74,12 +67,12 @@ public class LifecycleManagingDatabase implements Database
     @Override
     public String getLocation()
     {
-        File file = config.get( ServerInternalSettings.legacy_db_location );
+        File file = config.get( DatabaseManagementSystemSettings.database_path );
         return file.getAbsolutePath();
     }
 
     @Override
-    public GraphDatabaseAPI getGraph()
+    public GraphDatabaseFacade getGraph()
     {
         return graph;
     }
@@ -92,6 +85,7 @@ public class LifecycleManagingDatabase implements Database
     @Override
     public void start() throws Throwable
     {
+        log.info( "Starting..." );
         this.graph = dbFactory.newGraphDatabase( config, dependencies );
         // in order to speed up testing, they should not run the preload, but in production it pays to do it.
         if ( !isInTestMode() )
@@ -100,7 +94,7 @@ public class LifecycleManagingDatabase implements Database
         }
 
         isRunning = true;
-        log.info( "Successfully started database" );
+        log.info( "Started." );
     }
 
     @Override
@@ -108,10 +102,11 @@ public class LifecycleManagingDatabase implements Database
     {
         if ( graph != null )
         {
+            log.info( "Stopping..." );
             graph.shutdown();
             isRunning = false;
             graph = null;
-            log.info( "Successfully stopped database" );
+            log.info( "Stopped." );
         }
     }
 

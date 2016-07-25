@@ -26,14 +26,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
  */
 public interface IdReuseEligibility
 {
-    IdReuseEligibility ALWAYS = new IdReuseEligibility()
-    {
-        @Override
-        public boolean isEligible( KernelTransactionsSnapshot snapshot )
-        {
-            return true;
-        }
-    };
+    IdReuseEligibility ALWAYS = snapshot -> true;
 
     boolean isEligible( KernelTransactionsSnapshot snapshot );
 }

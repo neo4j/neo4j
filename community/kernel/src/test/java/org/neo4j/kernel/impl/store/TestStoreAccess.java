@@ -31,9 +31,9 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
 
@@ -51,7 +51,7 @@ public class TestStoreAccess
     {
         EphemeralFileSystemAbstraction snapshot = produceUncleanStore();
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
-        File messages = new File( storeDir, "messages.log" );
+        File messages = new File( storeDir, "debug.log" );
         snapshot.deleteFile( messages );
 
         PageCache pageCache = pageCacheRule.getPageCache( snapshot );

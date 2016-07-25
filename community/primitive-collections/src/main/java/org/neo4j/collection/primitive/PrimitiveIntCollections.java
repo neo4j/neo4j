@@ -19,18 +19,19 @@
  */
 package org.neo4j.collection.primitive;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.function.IntFunction;
+import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.base.Empty;
-import org.neo4j.function.IntPredicate;
-import org.neo4j.function.IntPredicates;
-import org.neo4j.function.primitive.FunctionFromPrimitiveInt;
-import org.neo4j.function.primitive.PrimitiveIntPredicate;
 
 import static java.util.Arrays.copyOf;
-
 import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
 
 /**
@@ -44,7 +45,7 @@ public class PrimitiveIntCollections
     /**
      * Base iterator for simpler implementations of {@link PrimitiveIntIterator}s.
      */
-    public static abstract class PrimitiveIntBaseIterator implements PrimitiveIntIterator
+    public abstract static class PrimitiveIntBaseIterator implements PrimitiveIntIterator
     {
         private boolean hasNext;
         private int next;
@@ -240,28 +241,12 @@ public class PrimitiveIntCollections
         }
     }
 
-    /**
-     * @deprecated use {@link #filter(PrimitiveIntIterator, IntPredicate)} instead
-     */
-    @Deprecated
-    public static PrimitiveIntIterator filter( PrimitiveIntIterator source, final PrimitiveIntPredicate filter )
-    {
-        return new PrimitiveIntFilteringIterator( source )
-        {
-            @Override
-            public boolean accept( int item )
-            {
-                return filter.accept( item );
-            }
-        };
-    }
-
     public static PrimitiveIntIterator filter( PrimitiveIntIterator source, final IntPredicate filter )
     {
         return new PrimitiveIntFilteringIterator( source )
         {
             @Override
-            public boolean accept( int item )
+            public boolean test( int item )
             {
                 return filter.test( item );
             }
@@ -275,7 +260,7 @@ public class PrimitiveIntCollections
             private final PrimitiveIntSet visited = Primitive.intSet();
 
             @Override
-            public boolean accept( int testItem )
+            public boolean test( int testItem )
             {
                 return visited.add( testItem );
             }
@@ -287,7 +272,7 @@ public class PrimitiveIntCollections
         return new PrimitiveIntFilteringIterator( source )
         {
             @Override
-            public boolean accept( int testItem )
+            public boolean test( int testItem )
             {
                 return testItem != disallowedValue;
             }
@@ -301,7 +286,7 @@ public class PrimitiveIntCollections
             private int skipped = 0;
 
             @Override
-            public boolean accept( int item )
+            public boolean test( int item )
             {
                 if ( skipped < skipTheFirstNItems )
                 {
@@ -313,8 +298,7 @@ public class PrimitiveIntCollections
         };
     }
 
-    public static abstract class PrimitiveIntFilteringIterator extends PrimitiveIntBaseIterator
-            implements PrimitiveIntPredicate
+    public abstract static class PrimitiveIntFilteringIterator extends PrimitiveIntBaseIterator implements IntPredicate
     {
         private final PrimitiveIntIterator source;
 
@@ -329,7 +313,7 @@ public class PrimitiveIntCollections
             while ( source.hasNext() )
             {
                 int testItem = source.next();
-                if ( accept( testItem ) )
+                if ( test( testItem ) )
                 {
                     return next( testItem );
                 }
@@ -337,12 +321,8 @@ public class PrimitiveIntCollections
             return false;
         }
 
-        /**
-         * @deprecated use {@link IntPredicate} instead
-         */
-        @Deprecated
         @Override
-        public abstract boolean accept( int testItem );
+        public abstract boolean test( int testItem );
     }
 
     // Limitinglic
@@ -729,8 +709,7 @@ public class PrimitiveIntCollections
         };
     }
 
-    public static <T> Iterator<T> map( final FunctionFromPrimitiveInt<T> mapFunction,
-            final PrimitiveIntIterator source )
+    public static <T> Iterator<T> map( final IntFunction<T> mapFunction, final PrimitiveIntIterator source )
     {
         return new Iterator<T>()
         {
@@ -754,24 +733,6 @@ public class PrimitiveIntCollections
         };
     }
 
-    private static final PrimitiveIntPredicate TRUE = new PrimitiveIntPredicate()
-    {
-        @Override
-        public boolean accept( int value )
-        {
-            return true;
-        }
-    };
-
-    /**
-     * @deprecated use {@link IntPredicates#alwaysTrue()} instead
-     */
-    @Deprecated
-    public static PrimitiveIntPredicate alwaysTrue()
-    {
-        return TRUE;
-    }
-
     public static PrimitiveIntIterator constant( final int value )
     {
         return new PrimitiveIntBaseIterator()
@@ -792,5 +753,77 @@ public class PrimitiveIntCollections
             set.add( value );
         }
         return set;
+    }
+
+    public static boolean contains( int[] values, int candidate )
+    {
+        for ( int i = 0; i < values.length; i++ )
+        {
+            if ( values[i] == candidate )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
+     * @param iterator the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<Integer>> C addToCollection( PrimitiveIntIterator iterator, C collection )
+    {
+        while ( iterator.hasNext() )
+        {
+            collection.add( iterator.next() );
+        }
+        return collection;
+    }
+
+    /**
+     * Pulls all items from the {@code iterator} and puts them into a {@link List}, boxing each int.
+     *
+     * @param iterator {@link PrimitiveIntIterator} to pull values from.
+     * @return a {@link List} containing all items.
+     */
+    public static List<Integer> toList( PrimitiveIntIterator iterator )
+    {
+        List<Integer> out = new ArrayList<>();
+        while(iterator.hasNext())
+        {
+            out.add(iterator.next());
+        }
+        return out;
+    }
+
+    /**
+     * Pulls all items from the {@code iterator} and puts them into a {@link Set}, boxing each int.
+     * Any duplicate value will throw {@link IllegalStateException}.
+     *
+     * @param iterator {@link PrimitiveIntIterator} to pull values from.
+     * @return a {@link Set} containing all items.
+     * @throws IllegalStateException for the first encountered duplicate.
+     */
+    public static Set<Integer> toSet( PrimitiveIntIterator iterator )
+    {
+        Set<Integer> set = new HashSet<>();
+        while ( iterator.hasNext() )
+        {
+            addUnique( set, iterator.next() );
+        }
+        return set;
+    }
+
+    private static <T, C extends Collection<T>> void addUnique( C collection, T item )
+    {
+        if ( !collection.add( item ) )
+        {
+            throw new IllegalStateException( "Encountered an already added item:" + item +
+                    " when adding items uniquely to a collection:" + collection );
+        }
     }
 }

@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -51,10 +52,10 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
+import static org.neo4j.helpers.collection.Iterators.single;
 
 public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT<UniquenessConstraint>
 {
@@ -256,7 +257,7 @@ public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT
 
     private NeoStores neoStores()
     {
-        return db.getDependencyResolver().resolveDependency( NeoStores.class );
+        return db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
     }
 
     @Test

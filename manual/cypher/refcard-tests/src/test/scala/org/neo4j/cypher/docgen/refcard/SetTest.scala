@@ -21,24 +21,24 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class SetTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A")
   val title = "SET"
-  val css = "write c2-2 c4-3 c5-4 c6-2"
+  val css = "write c2-1 c4-3 c5-4 c6-1"
   override val linkId = "query-set"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "set" =>
-        assertStats(result, propertiesSet = 2)
+        assertStats(result, propertiesWritten = 2)
         assert(result.dumpToString().contains("a value"))
       case "set-label" =>
         assertStats(result, nodesCreated = 1, labelsAdded = 1)
         assert(result.dumpToString().contains("Person"))
       case "map" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 1)
+        assertStats(result, nodesCreated = 1, propertiesWritten = 1)
         assert(result.dumpToString().contains("a value"))
     }
   }

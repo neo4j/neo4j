@@ -36,8 +36,6 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlavePriorities;
@@ -45,12 +43,11 @@ import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcher;
 import org.neo4j.logging.NullLog;
-import org.neo4j.test.CleanupRule;
+import org.neo4j.test.rule.CleanupRule;
 
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsString;
@@ -59,12 +56,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 
 public class TestMasterCommittingAtSlave
 {
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
     private static final int MasterServerId = 0;
 
     private Iterable<Slave> slaves;
@@ -76,7 +76,7 @@ public class TestMasterCommittingAtSlave
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
         propagator.committed( 2, MasterServerId );
-        assertCalls( (FakeSlave) slaves.iterator().next(), 2l );
+        assertCalls( (FakeSlave) slaves.iterator().next(), 2L );
         logProvider.assertNone( communicationLogMessage );
     }
 
@@ -255,9 +255,6 @@ public class TestMasterCommittingAtSlave
         return slaves;
     }
 
-    private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
-    public final @Rule CleanupRule cleanup = new CleanupRule();
-
     private static class FakeSlave implements Slave
     {
         private volatile Queue<Long> calledWithTxId = new LinkedList<Long>();
@@ -279,7 +276,8 @@ public class TestMasterCommittingAtSlave
             }
 
             calledWithTxId.add( txId );
-            return new TransactionStreamResponse<>( null, new StoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+            return new TransactionStreamResponse<>( null, newStoreIdForCurrentVersion(), TransactionStream.EMPTY,
+                    ResourceReleaser.NO_OP );
         }
 
         Long popCalledTx()

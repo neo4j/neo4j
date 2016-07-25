@@ -3,10 +3,9 @@
 :neo4j-buildnumber: {neo4j-version}
 :neo4j-git-tag: {gitversion}
 
-:lucene-version: 3_6_2
-:lucene-version-printed: 3.6.2
+:lucene-version: 5_4_0
+:lucene-version-printed: 5.4.0
 :lucene-base-uri: http://lucene.apache.org/core/{lucene-version}
-:lucene-api-base-uri: {lucene-base-uri}/api/core
 
 ${additional-document-attributes}
 

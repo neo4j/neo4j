@@ -24,14 +24,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.index.IndexCommandFactory;
-import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
@@ -44,8 +41,11 @@ import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.spi.legacyindex.IndexCommandFactory;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
+import org.neo4j.kernel.spi.legacyindex.LegacyIndexProviderTransaction;
+import org.neo4j.storageengine.api.StorageCommand;
 
 /**
  * Provides access to {@link LegacyIndex indexes}. Holds transaction state for all providers in a transaction.
@@ -108,7 +108,7 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
     }
 
     @Override
-    public void extractCommands( Collection<Command> target )
+    public void extractCommands( Collection<StorageCommand> target )
     {
         if ( defineCommand != null )
         {
@@ -123,7 +123,7 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
         }
     }
 
-    private void extractCommands( Collection<Command> target, Map<String, List<IndexCommand>> commandMap )
+    private void extractCommands( Collection<StorageCommand> target, Map<String, List<IndexCommand>> commandMap )
     {
         if ( commandMap != null )
         {
@@ -240,24 +240,5 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
     public boolean hasChanges()
     {
         return defineCommand != null;
-    }
-
-    /** Set this data structure to it's initial state, allowing it to be re-used as if it had just been new'ed up. */
-    @Override
-    public void clear()
-    {
-        if ( !transactions.isEmpty() )
-        {
-            transactions.clear();
-        }
-        defineCommand = null;
-        if ( !nodeCommands.isEmpty() )
-        {
-            nodeCommands.clear();
-        }
-        if ( !relationshipCommands.isEmpty() )
-        {
-            relationshipCommands.clear();
-        }
     }
 }

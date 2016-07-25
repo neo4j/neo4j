@@ -46,6 +46,8 @@ public enum SnapshotMessage
     public static class SnapshotState
             implements Serializable
     {
+        private static final long serialVersionUID = 1518479578399690929L;
+
         private long lastDeliveredInstanceId = -1;
         transient SnapshotProvider provider;
 

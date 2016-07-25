@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -36,29 +37,28 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.Configuration.Default;
@@ -71,7 +71,7 @@ import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -88,7 +88,7 @@ public class CsvInputBatchImportIT
     {
         // GIVEN
         BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(),
-                smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), new Config() );
+                smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), Config.empty() );
         List<InputNode> nodeData = randomNodeData();
         List<InputRelationship> relationshipData = randomRelationshipData( nodeData );
 
@@ -172,7 +172,7 @@ public class CsvInputBatchImportIT
     private File relationshipDataAsFile( List<InputRelationship> relationshipData ) throws IOException
     {
         File file = directory.file( "relationships.csv" );
-        try ( Writer writer = fs.openAsWriter( file, "utf-8", false ) )
+        try ( Writer writer = fs.openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
             println( writer, ":start_id,:end_id,:type" );
@@ -189,7 +189,7 @@ public class CsvInputBatchImportIT
     private File nodeDataAsFile( List<InputNode> nodeData ) throws IOException
     {
         File file = directory.file( "nodes.csv" );
-        try ( Writer writer = fs.openAsWriter( file, "utf-8", false ) )
+        try ( Writer writer = fs.openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
             println( writer, "id:ID,name,some-labels:LABEL" );
@@ -261,7 +261,7 @@ public class CsvInputBatchImportIT
         try ( Transaction tx = db.beginTx() )
         {
             // Verify nodes
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 String name = (String) node.getProperty( "name" );
                 String[] labels = expectedNodeNames.remove( name );
@@ -270,7 +270,7 @@ public class CsvInputBatchImportIT
             assertEquals( 0, expectedNodeNames.size() );
 
             // Verify relationships
-            for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+            for ( Relationship relationship : db.getAllRelationships() )
             {
                 String startNodeName = (String) relationship.getStartNode().getProperty( "name" );
                 Map<String, Map<String, AtomicInteger>> inner = expectedRelationships.get( startNodeName );
@@ -296,7 +296,7 @@ public class CsvInputBatchImportIT
 
             // Verify counts, TODO how to get counts store other than this way?
             NeoStores neoStores = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
-                    NeoStoresSupplier.class ).get();
+                    RecordStorageEngine.class ).testAccessNeoStores();
             Function<String, Integer> labelTranslationTable =
                     translationTable( neoStores.getLabelTokenStore(), ReadOperations.ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
@@ -485,7 +485,8 @@ public class CsvInputBatchImportIT
     }
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private final long seed = currentTimeMillis();
     private final Random random = new Random( seed );
 }

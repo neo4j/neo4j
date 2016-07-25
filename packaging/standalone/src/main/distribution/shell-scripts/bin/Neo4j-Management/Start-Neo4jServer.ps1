@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2015 "Neo Technology,"
+# Copyright (c) 2002-2016 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # This file is part of Neo4j.
@@ -25,60 +25,34 @@ Starts a Neo4j Server instance
 Starts a Neo4j Server instance either as a java console application or Windows Service
 
 .PARAMETER Neo4jServer
-An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
-
-.PARAMETER Console
-Start the Neo4j Server instance as a java console application
-
-.PARAMETER ServiceName
-The name of the Neo4j Server Windows Service.  If no name is specified, the name is determined from the Neo4j Configuration files (default)
-
-.PARAMETER Wait
-Wait for the java console application to finish execution
-
-.PARAMETER PassThru
-Pass through the Neo4j Server object instead of the result of the start operation
+An object representing a valid Neo4j Server object
 
 .EXAMPLE
-'C:\Neo4j\neo4j-enterprise' | Start-Neo4jServer
+Start-Neo4jServer -Neo4jServer $ServerObject
 
-Start the Neo4j Server Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise'
-Assumes the Neo4j Windows Service has already been installed
-
-.EXAMPLE
-'C:\Neo4j\neo4j-enterprise' | Start-Neo4jServer -Console -Wait
-
-Start the Neo4j Server for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise' and wait for the execution to complete
+Start the Neo4j Windows Windows Service for the Neo4j installation at $ServerObject
 
 .OUTPUTS
-System.Management.Automation.PSCustomObject
-Neo4j Server object
+System.Int32
+0 = Service was started and is running
+non-zero = an error occured
 
-System.Int
-Process ExitCode for the console application
-
-System.ServiceProcess.ServiceController
-Windows Service object
+.NOTES
+This function is private to the powershell module
 
 #>
 Function Start-Neo4jServer
 {
-  [cmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Medium',DefaultParameterSetName='WindowsService')]
+  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low',DefaultParameterSetName='WindowsService')]
   param (
-    [Parameter(Mandatory=$false,ValueFromPipeline=$true)]
-    [object]$Neo4jServer = ''
+    [Parameter(Mandatory=$true,ValueFromPipeline=$false)]
+    [PSCustomObject]$Neo4jServer
 
     ,[Parameter(Mandatory=$true,ParameterSetName='Console')]
     [switch]$Console
 
-    ,[Parameter(Mandatory=$false,ParameterSetName='Console')]
-    [switch]$Wait
-
-    ,[Parameter(Mandatory=$false)]
-    [switch]$PassThru   
-    
-    ,[Parameter(Mandatory=$false,ParameterSetName='WindowsService')]
-    [string]$ServiceName = ''
+    ,[Parameter(Mandatory=$true,ParameterSetName='WindowsService')]
+    [switch]$Service   
   )
   
   Begin
@@ -87,60 +61,39 @@ Function Start-Neo4jServer
 
   Process
   {
-    # Get the Neo4j Server information
-    if ($Neo4jServer -eq $null) { $Neo4jServer = '' }
-    switch ($Neo4jServer.GetType().ToString())
-    {
-      'System.Management.Automation.PSCustomObject'
-      {
-        if (-not (Confirm-Neo4jServerObject -Neo4jServer $Neo4jServer))
-        {
-          Write-Error "The specified Neo4j Server object is not valid"
-          return
-        }
-        $thisServer = $Neo4jServer
-      }      
-      default
-      {
-        $thisServer = Get-Neo4jServer -Neo4jHome $Neo4jServer
-      }
-    }
-    if ($thisServer -eq $null) { return }
-    
+    # Running Neo4j as a console app
     if ($PsCmdlet.ParameterSetName -eq 'Console')
-    {    
-      $JavaCMD = Get-Java -Neo4jServer $thisServer -ForServer
+    {      
+      $JavaCMD = Get-Java -Neo4jServer $Neo4jServer -ForServer -ErrorAction Stop
       if ($JavaCMD -eq $null)
       {
         Write-Error 'Unable to locate Java'
-        return
+        return 255
       }
 
-      $result = 0
-      if ($PSCmdlet.ShouldProcess("$($JavaCMD.java) $($JavaCMD.args)", 'Start Neo4j'))
-      {
-        $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $JavaCMD.args -Wait:$Wait -NoNewWindow:$Wait -PassThru -WorkingDirectory $thisServer.Home)
-      }
-      
-      if ($PassThru) { Write-Output $thisServer } else { Write-Output $result.ExitCode }
+      Write-Verbose "Starting Neo4j as a console with command line $($JavaCMD.java) $($JavaCMD.args)"
+      $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $JavaCMD.args -Wait -NoNewWindow -PassThru -WorkingDirectory $Neo4jServer.Home)
+      Write-Verbose "Returned exit code $($result.ExitCode)"
+
+      Write-Output $result.ExitCode
     }
     
+    # Running Neo4j as a windows service
     if ($PsCmdlet.ParameterSetName -eq 'WindowsService')
     {
-      if ($ServiceName -eq '')
-      {
-        $setting = ($thisServer | Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'wrapper.name')
-        if ($setting -ne $null) { $ServiceName = $setting.Value }
-      }
+      $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
 
-      if ($ServiceName -eq '')
-      {
-        Write-Error 'Could not find the Windows Service Name for Neo4j'
-        return
+      Write-Verbose "Starting the service.  This can take some time..."
+      $result = Start-Service -Name $ServiceName -PassThru -ErrorAction Stop
+      
+      if ($result.Status -eq 'Running') {
+        Write-Host "Neo4j windows service started"
+        return 0
       }
-
-      $result = Start-Service -Name $ServiceName -PassThru
-      if ($PassThru) { Write-Output $thisServer } else { Write-Output $result }
+      else {
+        Write-Host "Neo4j windows was started but is not running"
+        return 2
+      }
     }
   }
   

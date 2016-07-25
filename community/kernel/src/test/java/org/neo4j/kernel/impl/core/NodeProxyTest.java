@@ -29,13 +29,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -86,7 +85,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     @Test
     public void createDropNodeLongStringProperty()
     {
-        Label markerLabel = DynamicLabel.label( "marker" );
+        Label markerLabel = Label.label( "marker" );
         String testPropertyKey = "testProperty";
         String propertyValue = RandomStringUtils.randomAscii( 255 );
 
@@ -99,21 +98,21 @@ public class NodeProxyTest extends PropertyContainerProxyTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = IteratorUtil.single( db.findNodes( markerLabel ) );
+            Node node = Iterators.single( db.findNodes( markerLabel ) );
             assertEquals( propertyValue, node.getProperty( testPropertyKey ) );
             tx.success();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = IteratorUtil.single( db.findNodes( markerLabel ) );
+            Node node = Iterators.single( db.findNodes( markerLabel ) );
             node.removeProperty( testPropertyKey );
             tx.success();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = IteratorUtil.single( db.findNodes( markerLabel ) );
+            Node node = Iterators.single( db.findNodes( markerLabel ) );
             assertFalse( node.hasProperty( testPropertyKey ) );
             tx.success();
         }
@@ -122,7 +121,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     @Test
     public void createDropNodeLongArrayProperty()
     {
-        Label markerLabel = DynamicLabel.label( "marker" );
+        Label markerLabel = Label.label( "marker" );
         String testPropertyKey = "testProperty";
         byte[] propertyValue = RandomUtils.nextBytes( 1024 );
 
@@ -135,21 +134,21 @@ public class NodeProxyTest extends PropertyContainerProxyTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = IteratorUtil.single( db.findNodes( markerLabel ) );
+            Node node = Iterators.single( db.findNodes( markerLabel ) );
             assertArrayEquals( propertyValue, (byte[]) node.getProperty( testPropertyKey ) );
             tx.success();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = IteratorUtil.single( db.findNodes( markerLabel ) );
+            Node node = Iterators.single( db.findNodes( markerLabel ) );
             node.removeProperty( testPropertyKey );
             tx.success();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = IteratorUtil.single( db.findNodes( markerLabel ) );
+            Node node = Iterators.single( db.findNodes( markerLabel ) );
             assertFalse( node.hasProperty( testPropertyKey ) );
             tx.success();
         }
@@ -300,7 +299,6 @@ public class NodeProxyTest extends PropertyContainerProxyTest
                 }
             }
         };
-
 
         Future<?> readerFuture = executor.submit( reader );
         Future<?> writerFuture = executor.submit( writer );

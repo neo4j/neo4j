@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright (c) 2002-2015 "Neo Technology,"
+  Copyright (c) 2002-2016 "Neo Technology,"
   Network Engine for Objects in Lund AB [http://neotechnology.com]
 
   This file is part of Neo4j.
@@ -23,13 +23,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-kernel</artifactId>
-  <version>2.3.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
 
   <name>Neo4j - Graph Database Kernel</name>
   <description>
@@ -50,7 +50,9 @@
   <packaging>jar</packaging>
 
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/community/kernel</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
   <licenses>
@@ -78,7 +80,7 @@ the relevant Commercial Agreement.
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-          <argLine>-Xmx300m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true -XX:-OmitStackTraceInFastThrow</argLine>
+          <argLine>-Xmx300m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.CHECK_NATIVE_ACCESS=true -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields -XX:-OmitStackTraceInFastThrow</argLine>
         </configuration>
       </plugin>
       <plugin>
@@ -118,31 +120,6 @@ the relevant Commercial Agreement.
         </configuration>
       </plugin>
       <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-source-based-documentation</id>
-            <phase>${generate-config-docs-phase}</phase>
-            <configuration>
-              <target>
-                <java classname="org.neo4j.tooling.GenerateConfigDocumentation" classpathref="maven.test.classpath" failonerror="true">
-                  <arg value="org.neo4j.graphdb.factory.GraphDatabaseSettings" />
-                  <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
-                </java>
-              </target>
-            </configuration>
-            <goals><goal>run</goal></goals>
-          </execution>
-        </executions>
-        <dependencies>
-          <dependency>
-            <groupId>org.apache.ant</groupId>
-            <artifactId>ant-launcher</artifactId>
-            <version>1.8.4</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-      <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
           <excludePackageNames>org.neo4j.kernel,*.impl.*</excludePackageNames>
@@ -152,12 +129,12 @@ the relevant Commercial Agreement.
               <packages>org.neo4j.graphdb:org.neo4j.graphdb.*</packages>
             </group>
             <group>
-              <title>Helpers</title>
-              <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
+              <title>Procedures</title>
+              <packages>org.neo4j.procedure:org.neo4j.procedure.*</packages>
             </group>
             <group>
-              <title>Tooling</title>
-              <packages>org.neo4j.tooling:org.neo4j.tooling.*</packages>
+              <title>Helpers</title>
+              <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
             </group>
           </groups>
         </configuration>
@@ -181,58 +158,15 @@ the relevant Commercial Agreement.
            need to fix that.
            OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4
             -->
-          <comparisonVersion>2.0.4</comparisonVersion>
+          <comparisonVersion>3.0.1</comparisonVersion>
           <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
           <includes>
             <include>org/neo4j/graphdb/**</include>
           </includes>
-
-          <!-- Allowed breaking changes in Neo4j 2.0 -->
-          <!-- These rules should be looked over and modified appropriately in 2.1 -->
           <excludeMessageCodes>
             <param>6006</param><!-- Field was made final. -->
             <param>7012</param><!-- Method added to interface -->
           </excludeMessageCodes>
-          <excludes>
-            <!-- Ignore known breaking changes introduced in 2.0 -->
-
-            <!-- Remove reference node -->
-            <exclude>org/neo4j/graphdb/GraphDatabaseService</exclude>
-
-            <!-- Removal of JTA breaks old index implementations -->
-            <exclude>org/neo4j/graphdb/index/IndexImplementation</exclude>
-
-            <!-- Changes to isolate state per builder to avoid race conditions -->
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseFactory</exclude>
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseFactory$1</exclude>
-
-            <!-- TransactionInterceptorProviders are not present anymore -->
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseFactoryState</exclude>
-
-            <!-- Prepping for last cleanup of public config stuff. -->
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSettings*</exclude>
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSetting*</exclude>
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSetting*</exclude>
-            <exclude>org/neo4j/graphdb/factory/Title*</exclude>
-            <exclude>org/neo4j/graphdb/factory/Default*</exclude>
-
-            <!-- Batch inserter indexing interfaces moved to org.neo4j.unsafe.batchinsert -->
-            <exclude>org/neo4j/graphdb/index/BatchInserterIndex</exclude>
-            <exclude>org/neo4j/graphdb/index/BatchInserterIndexProvider</exclude>
-
-            <!-- IndexProvider replaced by KernelExtension -->
-            <exclude>org/neo4j/graphdb/index/IndexProvider</exclude>
-            <exclude>org/neo4j/graphdb/index/IndexIterable</exclude>
-
-            <!-- #getPropertyValues() deprecated in favour of #getPropertyKeys() + #getProperty() -->
-            <exclude>org/neo4j/graphdb/PropertyContainer</exclude>
-
-            <!-- Traverser changed to be a ResourceIterable -->
-            <exclude>org/neo4j/graphdb/traversal/Traverser</exclude>
-
-            <!-- ResourceIterator extends Resource (which extends AutoCloseable), instead of Closeable -->
-            <exclude>org/neo4j/graphdb/ResourceIterator</exclude>
-          </excludes>
         </configuration>
       </plugin>
     </plugins>
@@ -240,6 +174,21 @@ the relevant Commercial Agreement.
 
   <dependencies>
     <!-- main dependencies, internal -->
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graphdb-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-collections</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-primitive-collections</artifactId>
@@ -259,6 +208,16 @@ the relevant Commercial Agreement.
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-logging</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-lucene-upgrade</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>annotations</artifactId>
     </dependency>
 
     <!-- test dependencies -->
@@ -291,6 +250,13 @@ the relevant Commercial Agreement.
 
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-common</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
@@ -301,18 +267,6 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-logging</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-api-mockito</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>geronimo-spec</groupId>
-      <artifactId>geronimo-spec-j2ee</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

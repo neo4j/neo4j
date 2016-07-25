@@ -25,53 +25,75 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
+@RunWith( Parameterized.class )
 public class BackupEmbeddedIT
 {
     @ClassRule
-    public static TargetDirectory.TestDirectory testDirectory =
-            TargetDirectory.testDirForTest( BackupEmbeddedIT.class );
+    public static final TargetDirectory.TestDirectory testDirectory = testDirForTest( BackupEmbeddedIT.class );
 
-    public final File backupPath = testDirectory.directory( "backup-db" );
+    private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( testDirectory.directory( "db" ) ).startLazily();
 
     @Rule
-    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( testDirectory.directory( "db" ) ).startLazily();
-    private String ip;
+    public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( db );
+
+    private static final String ip = "127.0.0.1";
+    private final File backupPath = testDirectory.directory( "backup-db" );
+
+    @Parameter
+    public String recordFormat;
+
+    @Parameters( name = "{0}" )
+    public static List<String> recordFormats()
+    {
+        return Arrays.asList( StandardV3_0.NAME, HighLimit.NAME );
+    }
 
     @Before
     public void before() throws Exception
     {
-        if ( SystemUtils.IS_OS_WINDOWS ) return;
+        if ( SystemUtils.IS_OS_WINDOWS )
+        {
+            return;
+        }
         FileUtils.deleteDirectory( backupPath );
-        ip = InetAddress.getLocalHost().getHostAddress();
     }
 
-    @SuppressWarnings("deprecation")
     public static DbRepresentation createSomeData( GraphDatabaseService db )
     {
         try (Transaction tx = db.beginTx())
         {
             Node node = db.createNode();
             node.setProperty( "name", "Neo" );
-            db.createNode().createRelationshipTo( node, DynamicRelationshipType.withName( "KNOWS" ) );
+            db.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
             tx.success();
         }
         return DbRepresentation.of( db );
@@ -87,13 +109,13 @@ public class BackupEmbeddedIT
                 runBackupToolFromOtherJvmToGetExitCode( "-from",
                         BackupTool.DEFAULT_SCHEME + "://" + ip, "-to",
                         backupPath.getPath() ) );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
         createSomeData( db );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://"+ ip,
                         "-to", backupPath.getPath() ) );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
     }
 
     @Test
@@ -112,18 +134,19 @@ public class BackupEmbeddedIT
                 runBackupToolFromOtherJvmToGetExitCode( "-from",
                         BackupTool.DEFAULT_SCHEME + "://" + ip + ":" + port,
                         "-to", backupPath.getPath() ) );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
         createSomeData( db );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://"+ ip +":"
                                  + port, "-to",
                         backupPath.getPath() ) );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
     }
 
     private void startDb( String backupPort )
     {
+        db.setConfig( GraphDatabaseSettings.record_format, recordFormat );
         db.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
         if(backupPort != null)
         {
@@ -136,10 +159,21 @@ public class BackupEmbeddedIT
     public static int runBackupToolFromOtherJvmToGetExitCode( String... args )
             throws Exception
     {
-        List<String> allArgs = new ArrayList<>( Arrays.asList( "java", "-cp", System.getProperty( "java.class.path" ), BackupTool.class.getName() ) );
+        List<String> allArgs = new ArrayList<>( Arrays.asList(
+                ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(), BackupTool.class.getName() ) );
         allArgs.addAll( Arrays.asList( args ) );
 
         Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ));
         return new ProcessStreamHandler( process, false ).waitForResult();
+    }
+
+    private DbRepresentation getDbRepresentation()
+    {
+        return DbRepresentation.of( db );
+    }
+
+    private DbRepresentation getBackupDbRepresentation()
+    {
+        return DbRepresentation.of( backupPath );
     }
 }

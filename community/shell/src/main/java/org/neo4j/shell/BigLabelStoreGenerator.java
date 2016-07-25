@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Random;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -38,7 +37,7 @@ import static java.lang.String.format;
  * Builds a store in the path at $GRAPH_DB of $NUM_NODES nodes, where each node has at most
  * $NUM_LABELS randomly selected labels.
  *
- * keep_logical_logs=false
+ * dbms.tx_log.rotation.retention_policy=false
  * neostore.nodestore.db.mapped_memory=28000M
  * neostore.nodestore.db.labels.mapped_memory=14000M
  *
@@ -54,7 +53,7 @@ public class BigLabelStoreGenerator
         long batchSize = parseLong( withDefault( System.getenv().get( "BATCH_SIZE" ), "100000" ) );
         long numNodes = parseLong( withDefault( System.getenv( "NUM_NODES" ), "1000000" ) );
         int numLabels = parseInt( withDefault( System.getenv( "NUM_LABELS" ), "5" ) );
-        String graphDbPath = System.getenv( "GRAPH_DB" );
+        File graphDbPath = new File( System.getenv( "GRAPH_DB" ) );
 
         System.out.println( format( "# BATCH_SIZE: %d, NUM_NODES: %d, NUM_LABELS: %d, GRAPH_DB: '%s'",
                 batchSize, numNodes, numLabels, graphDbPath ) );
@@ -99,19 +98,19 @@ public class BigLabelStoreGenerator
         System.out.println( format( "nodes: %d, ratio: %d, labelings: %d, duration: %d", numNodes, 100, labelings, duration ) );
     }
 
-    private static GraphDatabaseService createGraphDatabaseService( String graphDbPath )
+    private static GraphDatabaseService createGraphDatabaseService( File graphDbPath )
     {
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
         GraphDatabaseBuilder graphBuilder = factory.newEmbeddedDatabaseBuilder( graphDbPath );
-        File propertiesFile = new File( graphDbPath, "neo4j.properties");
-        if ( propertiesFile.exists() && propertiesFile.isFile() && propertiesFile.canRead() )
+        File configFile = new File( graphDbPath, "neo4j.conf");
+        if ( configFile.exists() && configFile.isFile() && configFile.canRead() )
         {
-            System.out.println( format( "# Loading properties file '%s'", propertiesFile.getAbsolutePath() ) );
-            graphBuilder.loadPropertiesFromFile( propertiesFile.getAbsolutePath() );
+            System.out.println( format( "# Loading config file '%s'", configFile.getAbsolutePath() ) );
+            graphBuilder.loadPropertiesFromFile( configFile.getAbsolutePath() );
         }
         else
         {
-            System.out.println( format( "# No properties file found at '%s'", propertiesFile.getAbsolutePath() ) );
+            System.out.println( format( "# No config file found at '%s'", configFile.getAbsolutePath() ) );
         }
         return graphBuilder.newGraphDatabase();
     }
@@ -128,10 +127,10 @@ public class BigLabelStoreGenerator
 
     private static Label[] createLabels( int numLabels )
     {
-        Label[] labels = new DynamicLabel[numLabels];
+        Label[] labels = new Label[numLabels];
         for ( int i = 0; i < numLabels; i++ )
         {
-            labels[i] = DynamicLabel.label( format( "LABEL_%d", i ) );
+            labels[i] = Label.label( format( "LABEL_%d", i ) );
         }
         return labels;
     }

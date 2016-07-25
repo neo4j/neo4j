@@ -28,10 +28,10 @@ import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
@@ -96,7 +96,7 @@ public class ExtensionInitializerTest
         @Override
         public Collection<Injectable<?>> start( GraphDatabaseService graphDatabaseService, Configuration config )
         {
-            return Iterables.toList( Iterables.map( new StringToInjectableFunction(), config.getKeys() ) );
+            return Iterators.asList( Iterators.map( new StringToInjectableFunction(), config.getKeys() ) );
         }
 
         @Override

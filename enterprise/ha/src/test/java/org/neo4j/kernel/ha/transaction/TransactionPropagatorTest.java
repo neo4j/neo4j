@@ -28,7 +28,6 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.Response;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
@@ -109,7 +108,7 @@ public class TransactionPropagatorTest
         Iterable<Slave> prioritize = strategy.prioritize( asList( slave( 1 ), slave( 0 ), slave( 2 ) ) );
 
         // THEN
-        assertThat( Iterables.toList( prioritize ), equalTo( asList( slave( 0 ), slave( 1 ), slave( 2 ) ) ) );
+        assertThat( Iterables.asList( prioritize ), equalTo( asList( slave( 0 ), slave( 1 ), slave( 2 ) ) ) );
     }
 
     @Test
@@ -123,21 +122,7 @@ public class TransactionPropagatorTest
         Iterable<Slave> prioritize = strategy.prioritize( asList( slave( 1 ), slave( 0 ), slave( 2 ) ) );
 
         // THEN
-        assertThat( Iterables.toList(prioritize), equalTo( asList( slave( 2 ), slave( 1 ), slave( 0 ) ) ) );
-    }
-
-    @Test
-    public void shouldWorkWithOldFixedKeyword() throws Exception
-    {
-        // GIVEN
-        Configuration propagator = TransactionPropagator.from( new Config( stringMap( tx_push_strategy.name(), "fixed" ), HaSettings.class ));
-        SlavePriority strategy = propagator.getReplicationStrategy();
-
-        // WHEN
-        Iterable<Slave> prioritize = strategy.prioritize( asList( slave( 1 ), slave( 0 ), slave( 2 ) ) );
-
-        // THEN
-        assertThat( Iterables.toList(prioritize), equalTo( asList( slave( 2 ), slave( 1 ), slave( 0 ) ) ) );
+        assertThat( Iterables.asList(prioritize), equalTo( asList( slave( 2 ), slave( 1 ), slave( 0 ) ) ) );
     }
 
     private Slave slave( final int id )

@@ -23,9 +23,11 @@ import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 
@@ -49,6 +51,12 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     public IndexPopulationFailure getPopulationFailure()
     {
         return populationFailure;
+    }
+
+    @Override
+    public PopulationProgress getIndexPopulationProgress()
+    {
+        return PopulationProgress.NONE;
     }
 
     @Override

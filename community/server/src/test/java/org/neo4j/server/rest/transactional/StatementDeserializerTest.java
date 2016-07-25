@@ -19,18 +19,21 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
-import org.junit.Test;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.string.UTF8;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
@@ -44,7 +47,7 @@ public class StatementDeserializerTest
         String json = createJsonFrom( map( "statements", asList( map( "statement", "Blah blah", "parameters", map( "one", 12 ) ) ) ) );
 
         // When
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) ) );
+        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
 
         // Then
         assertThat( de.hasNext(), equalTo( true ) );
@@ -80,7 +83,7 @@ public class StatementDeserializerTest
                 "totally invalid json is totally ignored";
 
         // When
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) ) );
+        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
 
         // Then
         assertThat( de.hasNext(), equalTo( true ) );
@@ -98,7 +101,7 @@ public class StatementDeserializerTest
         String json =  "{ \"statements\" : [ { \"a\" : \"\", \"b\" : { \"k\":1 }, \"statement\" : \"blah\" } ] }";
 
         // When
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) ) );
+        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
 
         // Then
         assertThat( de.hasNext(), equalTo( true ) );
@@ -114,7 +117,7 @@ public class StatementDeserializerTest
         String json =  "{ \"statements\" : [ { \"a\" : \"\", \"parameters\" : { \"k\":1 }, \"statement\" : \"blah\"}]}";
 
         // When
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) ) );
+        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
 
         // Then
         assertThat( de.hasNext(), equalTo( true ) );
@@ -125,7 +128,6 @@ public class StatementDeserializerTest
 
         assertThat( de.hasNext(), equalTo( false ) );
     }
-
 
     @Test
     public void shouldTreatEmptyInputStreamAsEmptyStatementList() throws Exception
@@ -151,7 +153,7 @@ public class StatementDeserializerTest
                 map( "statement", "Blah bluh", "parameters", map( "asd", asList( "one, two" ) ) ) ) ) );
 
         // When
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) ) );
+        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
 
         // Then
         assertThat( de.hasNext(), equalTo( true ) );
@@ -177,7 +179,6 @@ public class StatementDeserializerTest
                         "deserialize request. " +
                         "Expected [START_OBJECT, FIELD_NAME, START_ARRAY], " +
                         "found [START_OBJECT, END_OBJECT, null]." ) ) );
-
 
         assertYieldsErrors( "{ \"statements\":\"WAIT WAT A STRING NOO11!\" }",
                 new Neo4jError( Status.Request.InvalidFormat, new DeserializationException( "Unable to " +
@@ -212,7 +213,7 @@ public class StatementDeserializerTest
 
     private void assertYieldsErrors( String json, Neo4jError... expectedErrors ) throws UnsupportedEncodingException
     {
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) )
+        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) )
         {
             @Override
             public String toString()

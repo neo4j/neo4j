@@ -106,10 +106,10 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     // It's ok if there are more transactions, since these worker threads doesn't
     // do any actual work themselves, but spawn off other worker threads doing the
     // actual work. So this is more like a core Netty I/O pool worker size.
-    public final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
+    public static final int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
     static final byte INTERNAL_PROTOCOL_VERSION = 2;
     private final T requestTarget;
-    private IdleChannelReaper connectedSlaveChannels;
+    private final IdleChannelReaper connectedSlaveChannels;
     private final Log msgLog;
     private final Map<Channel,PartialRequest> partialRequests = new ConcurrentHashMap<>();
     private final Configuration config;
@@ -617,10 +617,10 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
 
         @Override
-        public Visitor<CommittedTransactionRepresentation,IOException> transactions()
+        public Visitor<CommittedTransactionRepresentation,Exception> transactions()
         {
             targetBuffer.writeByte( 1 );
-            return new CommittedTransactionSerializer( targetBuffer );
+            return new CommittedTransactionSerializer( new NetworkFlushableChannel(  targetBuffer ) );
         }
     }
 

@@ -26,20 +26,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 public class NeoStoresIT
 {
-    public final @Rule DatabaseRule db = new EmbeddedDatabaseRule()
+    @Rule
+    public final DatabaseRule db = new EmbeddedDatabaseRule()
     {
         @Override
         protected void configure( GraphDatabaseBuilder builder )
@@ -49,7 +50,7 @@ public class NeoStoresIT
         }
     };
 
-    private static final DynamicRelationshipType FRIEND = DynamicRelationshipType.withName( "FRIEND" );
+    private static final RelationshipType FRIEND = RelationshipType.withName( "FRIEND" );
 
     private static final String LONG_STRING_VALUE =
             "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA"
@@ -82,7 +83,6 @@ public class NeoStoresIT
             +
             "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALONG!!";
 
-
     @Test
     public void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord()
             throws InterruptedException
@@ -113,7 +113,7 @@ public class NeoStoresIT
         {
             try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
             {
-                Node node = db.getGraphDatabaseService().getNodeById( latestNodeId[0] );
+                Node node = db.getGraphDatabaseAPI().getNodeById( latestNodeId[0] );
 
                 for ( String propertyKey : node.getPropertyKeys() )
                 {
@@ -162,7 +162,7 @@ public class NeoStoresIT
         {
             try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
             {
-                Node node = db.getGraphDatabaseService().getNodeById( latestNodeId[0] );
+                Node node = db.getGraphDatabaseAPI().getNodeById( latestNodeId[0] );
 
                 for ( String propertyKey : node.getPropertyKeys() )
                 {
@@ -213,8 +213,8 @@ public class NeoStoresIT
                 {
                     try ( Transaction tx = db.beginTx() )
                     {
-                        Node node1 = db.getGraphDatabaseService().getNodeById( node1Id );
-                        Node node2 = db.getGraphDatabaseService().getNodeById( node2Id );
+                        Node node1 = db.getGraphDatabaseAPI().getNodeById( node1Id );
+                        Node node2 = db.getGraphDatabaseAPI().getNodeById( node2Id );
 
                         Relationship rel = node1.createRelationshipTo( node2, FRIEND );
                         latestRelationshipId[0] = rel.getId();
@@ -230,7 +230,7 @@ public class NeoStoresIT
         {
             try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
             {
-                Relationship rel = db.getGraphDatabaseService().getRelationshipById( latestRelationshipId[0] );
+                Relationship rel = db.getGraphDatabaseAPI().getRelationshipById( latestRelationshipId[0] );
 
                 for ( String propertyKey : rel.getPropertyKeys() )
                 {

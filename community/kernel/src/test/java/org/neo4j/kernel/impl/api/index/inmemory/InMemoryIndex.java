@@ -22,26 +22,26 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.register.Register.DoubleLong;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 
 class InMemoryIndex
 {
@@ -131,9 +131,12 @@ class InMemoryIndex
         }
 
         @Override
-        public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
+        public void add( Collection<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
         {
-            InMemoryIndex.this.add( nodeId, propertyValue, false );
+            for ( NodePropertyUpdate update : updates )
+            {
+                InMemoryIndex.this.add( update.getNodeId(), update.getValueAfter(), false );
+            }
         }
 
         @Override
@@ -171,11 +174,16 @@ class InMemoryIndex
         }
 
         @Override
-        public long sampleResult( DoubleLong.Out result )
+        public void includeSample( NodePropertyUpdate update )
+        {
+        }
+
+        @Override
+        public IndexSample sampleResult()
         {
             try
             {
-                return indexData.sampleIndex( result );
+                return indexData.createSampler().sampleIndex();
             }
             catch ( IndexNotFoundKernelException e )
             {
@@ -248,12 +256,6 @@ class InMemoryIndex
         private InMemoryIndexUpdater( boolean applyIdempotently )
         {
             this.applyIdempotently = applyIdempotently;
-        }
-
-        @Override
-        public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
-        {
-            return Reservation.EMPTY;
         }
 
         @Override

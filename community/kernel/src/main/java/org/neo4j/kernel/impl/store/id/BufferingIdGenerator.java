@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Predicate;
-import org.neo4j.function.Supplier;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 
 class BufferingIdGenerator extends IdGenerator.Delegate
@@ -36,15 +36,11 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     void initialize( Supplier<KernelTransactionsSnapshot> boundaries,
             Predicate<KernelTransactionsSnapshot> safeThreshold )
     {
-        buffer = new DelayedBuffer<>( boundaries, safeThreshold, 10_000, new Consumer<long[]>()
+        buffer = new DelayedBuffer<>( boundaries, safeThreshold, 10_000, freedIds ->
         {
-            @Override
-            public void accept( long[] freedIds )
+            for ( long id : freedIds )
             {
-                for ( long id : freedIds )
-                {
-                    actualFreeId( id );
-                }
+                actualFreeId( id );
             }
         } );
     }

@@ -34,13 +34,13 @@ import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 /**
  * Checks nodes and how they're indexed in one go. Reports any found inconsistencies.
@@ -168,15 +168,12 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             IndexRule indexRule,
             IndexReader reader )
     {
-        int count = reader.countIndexedNodes( nodeId, propertyValue );
+        long count = reader.countIndexedNodes( nodeId, propertyValue );
         if ( count == 0 )
         {
             engine.report().notIndexed( indexRule, propertyValue );
         }
-        else if ( count == 1 )
-        {   // Nothing to report, all good
-        }
-        else
+        else if ( count != 1 )
         {
             engine.report().indexedMultipleTimes( indexRule, propertyValue, count );
         }

@@ -19,13 +19,12 @@
  */
 package org.neo4j.cursor;
 
-import org.neo4j.function.IntSupplier;
+import java.util.function.IntSupplier;
 
 /**
  * Mutable implementation of IntSupplier.
  */
-public class IntValue
-    implements IntSupplier
+public class IntValue implements IntSupplier
 {
     private int value;
 

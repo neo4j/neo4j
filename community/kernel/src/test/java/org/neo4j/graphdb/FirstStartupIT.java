@@ -22,9 +22,10 @@ package org.neo4j.graphdb;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.test.TargetDirectory;
+import java.io.File;
+
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -38,19 +39,17 @@ public class FirstStartupIT
     public void shouldBeEmptyWhenFirstStarted() throws Exception
     {
         // When
-        String storeDir = testDir.absolutePath();
+        File storeDir = testDir.absolutePath();
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
         // Then
         try(Transaction ignore = db.beginTx())
         {
-            GlobalGraphOperations global = GlobalGraphOperations.at( db );
-
-            assertEquals(0, count( global.getAllNodes() ));
-            assertEquals(0, count( global.getAllRelationships() ));
-            assertEquals(0, count( global.getAllRelationshipTypes() ));
-            assertEquals(0, count( global.getAllLabels() ));
-            assertEquals(0, count( global.getAllPropertyKeys() ));
+            assertEquals(0, count( db.getAllNodes() ));
+            assertEquals(0, count( db.getAllRelationships() ));
+            assertEquals(0, count( db.getAllRelationshipTypes() ));
+            assertEquals(0, count( db.getAllLabels() ));
+            assertEquals(0, count( db.getAllPropertyKeys() ));
         }
 
         db.shutdown();

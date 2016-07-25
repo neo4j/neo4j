@@ -40,11 +40,7 @@ public class Configuration extends ExternalResource
 
     public Configuration with( Setting<?> setting, String value )
     {
-        return with( setting.name(), value );
-    }
-
-    public Configuration with( String key, String value )
-    {
+        String key = setting.name();
         if ( value == null )
         {
             configuration.remove( key );

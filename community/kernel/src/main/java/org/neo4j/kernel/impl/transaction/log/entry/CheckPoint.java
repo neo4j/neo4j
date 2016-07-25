@@ -42,7 +42,6 @@ public class CheckPoint extends AbstractLogEntry
         return (T) this;
     }
 
-
     public LogPosition getLogPosition()
     {
         return logPosition;

@@ -28,7 +28,7 @@ import static java.lang.String.format;
 
 public class AlreadyConstrainedException extends SchemaKernelException
 {
-    private final static String NO_CONTEXT_FORMAT = "Already constrained %s.";
+    private static final String NO_CONTEXT_FORMAT = "Already constrained %s.";
 
     private static final String ALREADY_CONSTRAINED_MESSAGE_PREFIX = "Constraint already exists: ";
 

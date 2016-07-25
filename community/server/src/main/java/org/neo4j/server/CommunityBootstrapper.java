@@ -19,34 +19,22 @@
  */
 package org.neo4j.server;
 
+import java.util.List;
+import java.util.Map;
+
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.configuration.ServerSettings;
 
-/**
- * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
- * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
- */
-@Deprecated
-public class CommunityBootstrapper extends Bootstrapper
+import static java.util.Arrays.asList;
+
+public class CommunityBootstrapper extends ServerBootstrapper
 {
-    public static void main( String[] args )
-    {
-        int exit = start( new CommunityBootstrapper(), args );
-        if ( exit != 0 )
-        {
-            System.exit( exit );
-        }
-    }
-
-    /**
-     * Start a bootstrapper with the specified command-line arguments, returns a status code indicating success or failure outcomes.
-     */
-    public static int start( Bootstrapper boot, String[] argv )
-    {
-        ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );
-        return boot.start( args.configFile(), args.configOverrides() );
-    }
+    public static final List<Class<?>> settingsClasses =
+            asList( ServerSettings.class, GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class );
 
     @Override
     protected NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
@@ -54,4 +42,11 @@ public class CommunityBootstrapper extends Bootstrapper
     {
         return new CommunityNeoServer( config, dependencies, logProvider );
     }
+
+    @Override
+    protected Iterable<Class<?>> settingsClasses( Map<String, String> settings )
+    {
+        return settingsClasses;
+    }
+
 }

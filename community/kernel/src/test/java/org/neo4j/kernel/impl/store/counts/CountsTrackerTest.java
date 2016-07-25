@@ -26,9 +26,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-import org.neo4j.function.Function;
 import org.neo4j.function.IOFunction;
-import org.neo4j.function.Predicate;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
@@ -36,11 +35,11 @@ import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
-import org.neo4j.kernel.impl.store.kvstore.Resources;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.register.Registers;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.rule.Resources;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -50,8 +49,8 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.kernel.impl.store.kvstore.Resources.InitialLifecycle.STARTED;
-import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
+import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
+import static org.neo4j.test.rule.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
 
 public class CountsTrackerTest
 {
@@ -203,7 +202,7 @@ public class CountsTrackerTest
             final Barrier.Control barrier = new Barrier.Control();
             CountsTracker tracker = life.add( new CountsTracker(
                     resourceManager.logProvider(), resourceManager.fileSystem(), resourceManager.pageCache(),
-                    new Config(), resourceManager.testPath() )
+                    Config.empty(), resourceManager.testPath() )
             {
                 @Override
                 protected boolean include( CountsKey countsKey, ReadableBuffer value )
@@ -212,22 +211,17 @@ public class CountsTrackerTest
                     return super.include( countsKey, value );
                 }
             } );
-            Future<Void> task = threading.execute( new Function<CountsTracker, Void>()
-            {
-                @Override
-                public Void apply( CountsTracker tracker )
+            Future<Void> task = threading.execute( (ThrowingFunction<CountsTracker,Void,RuntimeException>) t -> {
+                try
                 {
-                    try
-                    {
-                        delta.update( tracker, secondTransaction );
-                        tracker.rotate( secondTransaction );
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new AssertionError( e );
-                    }
-                    return null;
+                    delta.update( t, secondTransaction );
+                    t.rotate( secondTransaction );
                 }
+                catch ( IOException e )
+                {
+                    throw new AssertionError( e );
+                }
+                return null;
             }, tracker );
 
             // then
@@ -303,21 +297,16 @@ public class CountsTrackerTest
         }
 
         // when
-        Future<Long> rotated = threading.executeAndAwait( new Rotation( 2 ), tracker, new Predicate<Thread>()
-        {
-            @Override
-            public boolean test( Thread thread )
+        Future<Long> rotated = threading.executeAndAwait( new Rotation( 2 ), tracker, thread -> {
+            switch ( thread.getState() )
             {
-                switch ( thread.getState() )
-                {
-                case BLOCKED:
-                case WAITING:
-                case TIMED_WAITING:
-                case TERMINATED:
-                    return true;
-                default:
-                    return false;
-                }
+            case BLOCKED:
+            case WAITING:
+            case TIMED_WAITING:
+            case TERMINATED:
+                return true;
+            default:
+                return false;
             }
         }, 10, SECONDS );
         try ( CountsAccessor.Updater tx = tracker.apply( 5 ).get() )
@@ -348,7 +337,7 @@ public class CountsTrackerTest
     private CountsTracker newTracker()
     {
         return new CountsTracker( resourceManager.logProvider(), resourceManager.fileSystem(),
-                resourceManager.pageCache(), new Config(), resourceManager.testPath() )
+                resourceManager.pageCache(), Config.empty(), resourceManager.testPath() )
                 .setInitializer( new DataInitializer<CountsAccessor.Updater>()
                 {
                     @Override
@@ -375,8 +364,8 @@ public class CountsTrackerTest
         oracle.relationship( n1, 1, n3 );
         oracle.relationship( n1, 1, n2 );
         oracle.relationship( n0, 1, n3 );
-        oracle.indexUpdatesAndSize( 1, 2, 0l, 50l );
-        oracle.indexSampling( 1, 2, 25l, 50l );
+        oracle.indexUpdatesAndSize( 1, 2, 0L, 50L );
+        oracle.indexSampling( 1, 2, 25L, 50L );
         return oracle;
     }
 

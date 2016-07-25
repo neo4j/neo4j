@@ -202,18 +202,18 @@ enum RelationshipConnection
             return rel.isFirstInSecondChain();
         }
     };
-    
+
     abstract long get( RelationshipRecord rel );
-    
+
     abstract boolean isFirstInChain( RelationshipRecord rel );
 
     abstract void set( RelationshipRecord rel, long id, boolean isFirst );
-    
+
     abstract long compareNode( RelationshipRecord rel );
-    
+
     abstract RelationshipConnection otherSide();
-    
+
     abstract RelationshipConnection start();
-    
+
     abstract RelationshipConnection end();
 }

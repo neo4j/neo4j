@@ -22,11 +22,11 @@ package org.neo4j.harness.internal;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
@@ -41,19 +41,14 @@ public class Fixtures
 
     private final String cypherSuffix = "cyp";
 
-    private final FileFilter cypherFileOrDirectoryFilter = new FileFilter()
-    {
-        @Override
-        public boolean accept( File file )
+    private final FileFilter cypherFileOrDirectoryFilter = file -> {
+        if(file.isDirectory())
         {
-            if(file.isDirectory())
-            {
-                return true;
-            }
-            String[] split = file.getName().split( "\\." );
-            String suffix = split[split.length-1];
-            return suffix.equals( cypherSuffix );
+            return true;
         }
+        String[] split = file.getName().split( "\\." );
+        String suffix = split[split.length-1];
+        return suffix.equals( cypherSuffix );
     };
 
     public void add( File fixturePath )
@@ -68,7 +63,7 @@ public class Fixtures
                 }
                 return;
             }
-            add( FileUtils.readTextFile( fixturePath, Charset.forName( "UTF-8" ) ) );
+            add( FileUtils.readTextFile( fixturePath, StandardCharsets.UTF_8 ) );
         }
         catch ( IOException e )
         {
@@ -83,7 +78,6 @@ public class Fixtures
             fixtureStatements.add( statement );
         }
     }
-
 
     public void add( Function<GraphDatabaseService,Void> fixtureFunction )
     {

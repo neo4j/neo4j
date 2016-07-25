@@ -27,11 +27,10 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
@@ -39,8 +38,8 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -48,6 +47,7 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 
 public class IndexConsultedPropertyBlockSweeperTest
 {
@@ -77,7 +77,7 @@ public class IndexConsultedPropertyBlockSweeperTest
         nonIndexedPropKey = "notIndexed";
         indexedPropKey = "indexed";
 
-        Label usedLabel = DynamicLabel.label( "UsedLabel" );
+        Label usedLabel = Label.label( "UsedLabel" );
 
         try ( Transaction transaction = api.beginTx() )
         {
@@ -99,14 +99,13 @@ public class IndexConsultedPropertyBlockSweeperTest
         }
 
         DependencyResolver resolver = api.getDependencyResolver();
-        NeoStoresSupplier neoStoresSupplier = resolver.resolveDependency( NeoStoresSupplier.class );
-        NeoStores neoStores = neoStoresSupplier.get();
+        NeoStores neoStores = resolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         nodeStore = neoStores.getNodeStore();
         PropertyKeyTokenStore propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
         propertyKeys = PropertyDeduplicatorTestUtil.indexPropertyKeys( propertyKeyTokenStore );
 
         propertyStore = neoStores.getPropertyStore();
-        nodeRecord = nodeStore.getRecord( nodeId );
+        nodeRecord = getRecord( nodeStore, nodeId );
         propertyId = nodeRecord.getNextProp();
 
         indexMock = mock( IndexLookup.Index.class );
@@ -124,7 +123,7 @@ public class IndexConsultedPropertyBlockSweeperTest
         assertFalse( sweeper.visited( propertyId ) );
 
         // Verify that the property is still there
-        PropertyRecord propertyRecord = propertyStore.getRecord( propertyId );
+        PropertyRecord propertyRecord = getRecord( propertyStore, propertyId );
         assertNotNull( propertyRecord.getPropertyBlock( propertyKeyId ) );
     }
 
@@ -137,7 +136,7 @@ public class IndexConsultedPropertyBlockSweeperTest
         assertFalse( sweeper.visited( propertyId ) );
 
         // Verify that the property block was removed
-        PropertyRecord propertyRecord = propertyStore.getRecord( propertyId );
+        PropertyRecord propertyRecord = getRecord( propertyStore, propertyId );
         assertNull( propertyRecord.getPropertyBlock( propertyKeyId ) );
     }
 
@@ -145,7 +144,7 @@ public class IndexConsultedPropertyBlockSweeperTest
     public void shouldFixThePropertyChainAfterAllTheBlocksInRecordAreRemoved() throws IOException
     {
         int propertyKeyId = propertyKeys.get( indexedPropKey );
-        PropertyRecord propertyRecord = propertyStore.getRecord( propertyId );
+        PropertyRecord propertyRecord = getRecord( propertyStore, propertyId );
         for ( PropertyBlock propertyBlock : propertyRecord )
         {
             long[] valueBlocks = propertyBlock.getValueBlocks();

@@ -18,30 +18,37 @@
  */
 package org.neo4j.harness.doc;
 
-import java.net.URI;
-
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Function;
-import org.neo4j.graphdb.DynamicLabel;
+import java.net.URI;
+import java.util.function.Function;
+
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.junit.Neo4jRule;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.Iterators.count;
+import static org.neo4j.server.ServerTestUtils.getRelativePath;
+import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
+
 
 public class JUnitDocTest
 {
-    @Rule public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     // START SNIPPET: useJUnitRule
     @Rule
     public Neo4jRule neo4j = new Neo4jRule()
             .withFixture( "CREATE (admin:Admin)" )
+            .withConfig( ServerSettings.certificates_directory.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.certificates_directory ) )
             .withFixture( new Function<GraphDatabaseService, Void>()
             {
                 @Override
@@ -49,7 +56,7 @@ public class JUnitDocTest
                 {
                     try (Transaction tx = graphDatabaseService.beginTx())
                     {
-                        graphDatabaseService.createNode( DynamicLabel.label( "Admin" ));
+                        graphDatabaseService.createNode( Label.label( "Admin" ) );
                         tx.success();
                     }
                     return null;
@@ -70,9 +77,7 @@ public class JUnitDocTest
 
         // and we have access to underlying GraphDatabaseService
         try (Transaction tx = neo4j.getGraphDatabaseService().beginTx()) {
-            assertEquals( 2, IteratorUtil.count(
-                    neo4j.getGraphDatabaseService().findNodes( DynamicLabel.label( "Admin" ) )
-            ));
+            assertEquals( 2, count(neo4j.getGraphDatabaseService().findNodes( Label.label( "Admin" ) ) ));
             tx.success();
         }
     }

@@ -27,9 +27,9 @@ import java.io.IOException;
 import javax.ws.rs.core.Response.Status;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -47,8 +47,8 @@ import org.neo4j.test.TestData.Title;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class RelationshipDocIT extends AbstractRestFunctionalDocTestBase
 {
@@ -83,7 +83,7 @@ public class RelationshipDocIT extends AbstractRestFunctionalDocTestBase
         try ( Transaction transaction = node.getGraphDatabase().beginTx() )
         {
             relationship = node.getSingleRelationship(
-                    DynamicRelationshipType.withName( "know" ),
+                    RelationshipType.withName( "know" ),
                     Direction.OUTGOING );
         }
         String response = gen().expectedStatus(
@@ -135,9 +135,10 @@ public class RelationshipDocIT extends AbstractRestFunctionalDocTestBase
     {
         data.get();
         Relationship loves = getFirstRelationshipFromRomeoNode();
-        gen().withHeader( StreamingFormat.STREAM_HEADER, "true" ).expectedStatus( Status.NOT_FOUND.getStatusCode
-                () ).delete(
-                getPropertiesUri( loves ) + "/non-existent" ).entity();
+        gen().withHeader( StreamingFormat.STREAM_HEADER, "true" )
+                .expectedStatus( Status.NOT_FOUND.getStatusCode() )
+                .delete( getPropertiesUri( loves ) + "/non-existent" )
+                .entity();
     }
 
     @Test

@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.junit.After;
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -26,10 +30,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.DeadlockDetectedException;
 
 import static org.neo4j.kernel.impl.locking.Locks.Client;
@@ -55,24 +56,24 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
     public void shouldDetectTwoClientExclusiveDeadlock() throws Exception
     {
         assertDetectsDeadlock(
-                acquireExclusive( clientA, NODE, 1l ),
-                acquireExclusive( clientB, NODE, 2l ),
+                acquireExclusive( clientA, NODE, 1L ),
+                acquireExclusive( clientB, NODE, 2L ),
 
-                acquireExclusive( clientB, NODE, 1l ),
-                acquireExclusive( clientA, NODE, 2l ) );
+                acquireExclusive( clientB, NODE, 1L ),
+                acquireExclusive( clientA, NODE, 2L ) );
     }
 
     @Test
     public void shouldDetectThreeClientExclusiveDeadlock() throws Exception
     {
         assertDetectsDeadlock(
-                acquireExclusive( clientA, NODE, 1l ),
-                acquireExclusive( clientB, NODE, 2l ),
-                acquireExclusive( clientC, NODE, 3l ),
+                acquireExclusive( clientA, NODE, 1L ),
+                acquireExclusive( clientB, NODE, 2L ),
+                acquireExclusive( clientC, NODE, 3L ),
 
-                acquireExclusive( clientB, NODE, 1l ),
-                acquireExclusive( clientC, NODE, 2l ),
-                acquireExclusive( clientA, NODE, 3l ) );
+                acquireExclusive( clientB, NODE, 1L ),
+                acquireExclusive( clientC, NODE, 2L ),
+                acquireExclusive( clientA, NODE, 3L ) );
     }
 
     @Test
@@ -80,11 +81,11 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
     {
         assertDetectsDeadlock(
 
-                acquireShared( clientA, NODE, 1l ),
-                acquireExclusive( clientB, NODE, 2l ),
+                acquireShared( clientA, NODE, 1L ),
+                acquireExclusive( clientB, NODE, 2L ),
 
-                acquireExclusive( clientB, NODE, 1l ),
-                acquireShared( clientA, NODE, 2l ) );
+                acquireExclusive( clientB, NODE, 1L ),
+                acquireShared( clientA, NODE, 2L ) );
     }
 
     private void assertDetectsDeadlock( LockCommand... commands )

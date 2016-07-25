@@ -48,7 +48,7 @@ import org.neo4j.shell.TextUtil;
  * {@link App} interface will be available to execute.
  */
 public abstract class AbstractAppServer extends SimpleAppServer
-	implements AppShellServer
+    implements AppShellServer
 {
     private final Map<String, App> apps = new TreeMap<>();
 
@@ -58,10 +58,10 @@ public abstract class AbstractAppServer extends SimpleAppServer
         this( true );
     }
 
-	/**
-	 * Constructs a new server.
-	 * @throws RemoteException if there's an RMI error.
-	 */
+    /**
+     * Constructs a new server.
+     * @throws RemoteException if there's an RMI error.
+     */
     public AbstractAppServer( boolean addFromServiceLoading )
         throws RemoteException
     {
@@ -90,27 +90,27 @@ public abstract class AbstractAppServer extends SimpleAppServer
 
     @Override
     public App findApp( String command )
-	{
+    {
         return apps.get( command );
-	}
+    }
 
-	@Override
-	public void shutdown() throws RemoteException
-	{
-	    for ( App app : this.apps.values() )
-	    {
-	        app.shutdown();
-	    }
+    @Override
+    public void shutdown() throws RemoteException
+    {
+        for ( App app : this.apps.values() )
+        {
+            app.shutdown();
+        }
 
-	    super.shutdown();
-	}
+        super.shutdown();
+    }
 
-	@Override
-	public Response interpretLine( Serializable clientId, String line, Output out )
-		throws ShellException
-	{
+    @Override
+    public Response interpretLine( Serializable clientId, String line, Output out )
+        throws ShellException
+    {
         Session session = getClientSession( clientId );
-		if ( line == null || line.trim().length() == 0 )
+        if ( line == null || line.trim().length() == 0 )
         {
             return new Response( getPrompt( session ), Continuation.INPUT_COMPLETE );
         }
@@ -131,31 +131,31 @@ public abstract class AbstractAppServer extends SimpleAppServer
         {
             throw wrapException( e );
         }
-	}
+    }
 
     protected String replaceAlias( String line, Session session )
     {
-	    boolean changed = true;
-	    Set<String> appNames = new HashSet<>();
-	    while ( changed )
-	    {
-	        changed = false;
-    	    String appName = AppCommandParser.parseOutAppName( line );
+        boolean changed = true;
+        Set<String> appNames = new HashSet<>();
+        while ( changed )
+        {
+            changed = false;
+            String appName = AppCommandParser.parseOutAppName( line );
             String alias = session.getAlias( appName );
-    	    if ( alias != null && appNames.add( alias ) )
-    	    {
-    	        changed = true;
-    	        line = alias + line.substring( appName.length() );
-    	    }
-	    }
-	    return line;
+            if ( alias != null && appNames.add( alias ) )
+            {
+                changed = true;
+                line = alias + line.substring( appName.length() );
+            }
+        }
+        return line;
     }
 
     @Override
-	public String[] getAllAvailableCommands()
-	{
-		return apps.keySet().toArray( new String[apps.size()] );
-	}
+    public String[] getAllAvailableCommands()
+    {
+        return apps.keySet().toArray( new String[apps.size()] );
+    }
 
     @Override
     public TabCompletion tabComplete( Serializable clientID, String partOfLine )

@@ -28,11 +28,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.IdTypeConfiguration;
-import org.neo4j.kernel.IdTypeConfigurationProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
+import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -45,13 +45,10 @@ public class EnterpriseIdTypeConfigurationProviderTest
     private IdType reusableType;
 
     @Parameterized.Parameters
-    public static List<Object[]> data()
+    public static List<IdType> data()
     {
-        return Arrays.asList( new Object[]{IdType.PROPERTY},
-                new Object[]{IdType.STRING_BLOCK},
-                new Object[]{IdType.ARRAY_BLOCK},
-                new Object[]{IdType.RELATIONSHIP},
-                new Object[]{IdType.NODE_LABELS} );
+        return Arrays.asList( IdType.PROPERTY, IdType.STRING_BLOCK, IdType.ARRAY_BLOCK,
+                IdType.RELATIONSHIP, IdType.NODE_LABELS );
     }
 
     public EnterpriseIdTypeConfigurationProviderTest( IdType reusableType )

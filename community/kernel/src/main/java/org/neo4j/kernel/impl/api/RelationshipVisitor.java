@@ -19,13 +19,29 @@
  */
 package org.neo4j.kernel.impl.api;
 
+/**
+ * Visitor of relationship data.
+ *
+ * @param <EXCEPTION> exception thrown from the {@link #visit(long, int, long, long)} method.
+ */
 public interface RelationshipVisitor<EXCEPTION extends Exception>
 {
+    /**
+     * Objects which can accept these {@link RelationshipVisitor visitors} should implement this interface.
+     */
     interface Home
     {
         <EXCEPTION extends Exception> boolean relationshipVisit( long relId,
                 RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION;
     }
 
-    void visit( long relId, int type, long startNode, long endNode ) throws EXCEPTION;
+    /**
+     * Visits data about a relationship.
+     *
+     * @param relationshipId relationship id to visit data for.
+     * @param typeId relationship type id for the relationship.
+     * @param startNodeId id of start node of the relationship.
+     * @param endNodeId id of the end node of the relationship.
+     */
+    void visit( long relationshipId, int typeId, long startNodeId, long endNodeId ) throws EXCEPTION;
 }

@@ -19,13 +19,11 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.neo4j.consistency.checking.full.MandatoryProperties;
 import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.consistency.checking.full.Stage;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordAccessStub;
-import org.neo4j.function.Functions;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -115,7 +113,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
     public static PrimitiveRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> dummyNeoStoreCheck()
     {
         return new NeoStoreCheck( new PropertyChain<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport>(
-                Functions.<NeoStoreRecord,MandatoryProperties.Check<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport>>nullFunction() ) )
+                from -> null ) )
         {
             @Override
             public void check( NeoStoreRecord record,

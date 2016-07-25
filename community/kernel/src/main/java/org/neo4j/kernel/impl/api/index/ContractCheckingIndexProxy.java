@@ -24,9 +24,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 
 /**
  * {@link IndexProxy} layer that enforces the dynamic contract of {@link IndexProxy} (cf. Test)
@@ -53,7 +53,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
      * to prevent calls to close() or drop() to go through while there are pending
      * commits.
      **/
-    private static enum State
+    private enum State
     {
         INIT, STARTING, STARTED, CLOSED
     }
@@ -97,7 +97,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
             return new DelegatingIndexUpdater( super.newUpdater( mode ) )
             {
                 @Override
-                public void close() throws IOException, IndexEntryConflictException, IndexCapacityExceededException
+                public void close() throws IOException, IndexEntryConflictException
                 {
                     try
                     {

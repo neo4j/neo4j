@@ -25,8 +25,8 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.configuration.Obsoleted;
 
+import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -35,12 +35,6 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description( "Metrics settings" )
 public class MetricsSettings
 {
-    public enum CsvFile
-    {
-        single, // Use a single file for all metrics, with one metric per column
-        split // Use one file per metric
-    }
-
     // Common settings
     @Description( "A common prefix for the reported metrics field names. By default, this is either be 'neo4j', " +
                   "or a computed value based on the cluster and instance names, when running in an HA configuration." )
@@ -70,6 +64,9 @@ public class MetricsSettings
     @Description( "Enable reporting metrics about the network usage." )
     public static Setting<Boolean> neoNetworkEnabled = setting(
             "metrics.neo4j.network.enabled", Settings.BOOLEAN, neoEnabled );
+    @Description( "Enable reporting metrics about core-edge mode." )
+    public static Setting<Boolean> coreEdgeEnabled = setting(
+            "metrics.neo4j.core_edge.enabled", Settings.BOOLEAN, neoEnabled );
     @Description( "Enable reporting metrics about Neo4j check pointing; when it occurs and how much time it takes to " +
                   "complete." )
     public static Setting<Boolean> neoCheckPointingEnabled = setting(
@@ -81,6 +78,9 @@ public class MetricsSettings
     @Description( "Enable reporting metrics about HA cluster info." )
     public static Setting<Boolean> neoClusterEnabled = setting(
             "metrics.neo4j.cluster.enabled", Settings.BOOLEAN, neoEnabled );
+    @Description( "Enable reporting metrics about Server threading info." )
+    public static Setting<Boolean> neoServerEnabled = setting(
+            "metrics.neo4j.server.enabled", Settings.BOOLEAN, neoEnabled );
 
     @Description( "Enable reporting metrics about the duration of garbage collections" )
     public static Setting<Boolean> jvmGcEnabled = setting( "metrics.jvm.gc.enabled", Settings.BOOLEAN, neoEnabled );
@@ -91,23 +91,19 @@ public class MetricsSettings
     @Description( "Enable reporting metrics about the current number of threads running." )
     public static Setting<Boolean> jvmThreadsEnabled = setting( "metrics.jvm.threads.enabled", Settings.BOOLEAN, neoEnabled );
 
+    @Description( "Enable reporting metrics about number of occurred replanning events." )
+    public static Setting<Boolean> cypherPlanningEnabled = setting( "metrics.cypher.replanning.enabled", Settings.BOOLEAN, neoEnabled );
+
+    @Description( "Enable reporting metrics about Bolt Protocol message processing." )
+    public static Setting<Boolean> boltMessagesEnabled = setting( "metrics.bolt.messages.enabled", Settings.BOOLEAN, neoEnabled );
+
     // CSV settings
     @Description( "Set to `true` to enable exporting metrics to CSV files" )
     public static Setting<Boolean> csvEnabled = setting( "metrics.csv.enabled", Settings.BOOLEAN, Settings.FALSE );
-    @Description( "The target location of the CSV files. Depending on the metrics.csv.file setting, this is either " +
-                  "the path to an individual CSV file, that have each of the reported metrics fields as columns, or " +
-                  "it is a path to a directory wherein a CSV file per reported field will be written. Relative paths " +
-                  "will be intepreted relative to the configured Neo4j store directory." )
-    public static Setting<File> csvPath = setting( "metrics.csv.path", Settings.PATH, Settings.NO_DEFAULT );
+    @Description( "The target location of the CSV files: a path to a directory wherein a CSV file per reported " +
+                  "field  will be written." )
+    public static Setting<File> csvPath = pathSetting( "dbms.directories.metrics", "metrics" );
 
-    @Deprecated
-    @Obsoleted( "This setting will be removed in the next major release." )
-    @Description( "Write to a single CSV file or to multiple files. " +
-                  "Set to `single` (the default) for reporting the metrics in a single CSV file (given by " +
-                  "metrics.csv.path), with a column per metrics field. Or set to `split` to produce a CSV file for " +
-                  "each metrics field, in a directory given by metrics.csv.path." )
-    public static Setting<CsvFile> csvFile = setting(
-            "metrics.csv.file", Settings.options( CsvFile.class ), CsvFile.single.name() );
     @Description( "The reporting interval for the CSV files. That is, how often new rows with numbers are appended to " +
                   "the CSV files." )
     public static Setting<Long> csvInterval = setting( "metrics.csv.interval", Settings.DURATION, "3s" );
@@ -119,18 +115,4 @@ public class MetricsSettings
     public static Setting<HostnamePort> graphiteServer = setting( "metrics.graphite.server", Settings.HOSTNAME_PORT, ":2003" );
     @Description( "The reporting interval for Graphite. That is, how often to send updated metrics to Graphite." )
     public static Setting<Long> graphiteInterval = setting( "metrics.graphite.interval", Settings.DURATION, "3s" );
-
-    // Ganglia settings
-    @Deprecated
-    @Obsoleted( "Ganglia support is experimental, and not guaranteed to work. This built in support has been deprecated and will be removed from a subsequent version." )
-    @Description( "Set to `true` to enable exporting metrics to Ganglia." )
-    public static Setting<Boolean> gangliaEnabled = setting( "metrics.ganglia.enabled", Settings.BOOLEAN, Settings.FALSE );
-    @Deprecated
-    @Obsoleted( "Ganglia support is experimental, and not guaranteed to work. This built in support has been deprecated and will be removed from a subsequent version." )
-    @Description( "The hostname or IP address of the Ganglia server" )
-    public static Setting<HostnamePort> gangliaServer = setting( "metrics.ganglia.server", Settings.HOSTNAME_PORT, ":8469" );
-    @Deprecated
-    @Obsoleted( "Ganglia support is experimental, and not guaranteed to work. This built in support has been deprecated and will be removed from a subsequent version." )
-    @Description( "The reporting interval for Ganglia. That is, how often to send updated metrics to Ganglia." )
-    public static Setting<Long> gangliaInterval = setting( "metrics.ganglia.interval", Settings.DURATION, "3s" );
 }

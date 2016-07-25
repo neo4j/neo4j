@@ -23,26 +23,8 @@ import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
-/**
- * Thrown during start-up of the server.
- *
- * @deprecated This class is for internal use only and will be moved to an internal package in a future release
- */
-@Deprecated
 public class ServerStartupException extends RuntimeException
 {
-    /**
-     * Creates a new exception with a message and an error code.
-     * 
-     * @param message sensible explanation about the exception, excluding the
-     *            error code value, which will be automatically appended
-     * @param errorCode unique identifying number for the error
-     */
-    public ServerStartupException( String message, Integer errorCode )
-    {
-        super( message + " Error code: " + errorCode.toString() );
-    }
-
     public ServerStartupException( String message, Throwable t )
     {
         super( message, t);

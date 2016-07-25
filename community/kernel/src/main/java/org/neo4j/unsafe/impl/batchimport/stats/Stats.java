@@ -24,7 +24,7 @@ package org.neo4j.unsafe.impl.batchimport.stats;
  */
 public class Stats
 {
-    public static abstract class LongBasedStat implements Stat
+    public abstract static class LongBasedStat implements Stat
     {
         private final DetailLevel detailLevel;
 

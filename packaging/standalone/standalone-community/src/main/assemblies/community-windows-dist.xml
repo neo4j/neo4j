@@ -33,64 +33,48 @@
       <outputDirectory></outputDirectory>
       <lineEnding>dos</lineEnding>
       <filtered>true</filtered>
+      <excludes>
+        <exclude>**/.keep</exclude>
+      </excludes>
     </fileSet>
     <!-- non-maven jars -->
     <fileSet>
       <directory>src/main/distribution/binary</directory>
       <outputDirectory></outputDirectory>
       <includes>
-        <include>system/lib/*.jar</include>
         <include>lib/*.jar</include>
       </includes>
     </fileSet>
+    <!-- do not filter binaries -->
+    <fileSet>
+      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>**/*.exe</include>
+        <include>**/config-migrator.jar</include>
+      </includes>
+    </fileSet>
+    <!-- filter text files -->
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
       <outputDirectory></outputDirectory>
       <lineEnding>dos</lineEnding>
       <includes>
         <include>**/*.bat</include>
-      </includes>
-      <excludes>
-        <exclude>**/Neo4jBackup*</exclude>
-        <exclude>**/Neo4jCoord*</exclude>
-        <exclude>**/Neo4jArbiter*</exclude>
-      </excludes>
-      <filtered>true</filtered>
-    </fileSet>
-    <!-- Neo4j Powershell Modules -->
-    <fileSet>
-      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
-      <outputDirectory></outputDirectory>
-      <lineEnding>dos</lineEnding>
-      <includes>
         <include>**/*.psd1</include>
         <include>**/*.psm1</include>
         <include>**/*.ps1</include>
       </includes>
-	  <filtered>true</filtered>
-    </fileSet>
-    <!-- upgrade text file -->
-    <fileSet>
-      <directory>target/upgrade</directory>
-      <outputDirectory></outputDirectory>
-      <fileMode>0644</fileMode>
-      <lineEnding>dos</lineEnding>
-      <includes>
-        <include>UPGRADE.txt</include>
-      </includes>
+      <excludes>
+        <exclude>**/neo4j-backup*</exclude>
+      </excludes>
+      <filtered>true</filtered>
     </fileSet>
   </fileSets>
 
   <dependencySets>
-   <dependencySet>
-  	<outputDirectory>/bin</outputDirectory>
-  	<unpack>false</unpack>
-  	<includes>
-  		<include>*:windows-service-wrapper:*</include>
-  	</includes>
-  	</dependencySet>
     <dependencySet>
-      <outputDirectory>/lib</outputDirectory>
+      <outputDirectory>lib</outputDirectory>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <useStrictFiltering>true</useStrictFiltering>
@@ -98,8 +82,10 @@
         <include>org.neo4j:*</include>
         <include>jline:jline</include>
         <include>org.apache.lucene:lucene-core</include>
+        <include>org.apache.lucene:lucene-analyzers-common</include>
+        <include>org.apache.lucene:lucene-queryparser</include>
+        <include>org.apache.lucene:lucene-codecs</include>
         <include>org.scala-lang:*</include>
-        <include>org.scala-lang.modules:*</include>
         <include>org.parboiled:*</include>
         <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
         <include>net.sf.opencsv:opencsv</include>
@@ -111,7 +97,7 @@
       </excludes>
     </dependencySet>
     <dependencySet>
-      <outputDirectory>system/lib</outputDirectory>
+      <outputDirectory>lib</outputDirectory>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <useStrictFiltering>true</useStrictFiltering>
@@ -119,11 +105,9 @@
         <exclude>org.neo4j:*</exclude>
         <exclude>org.neo4j.doc:*</exclude>
         <exclude>jline:jline</exclude>
-        <exclude>org.apache.lucene:lucene-core</exclude>
+        <exclude>org.apache.lucene:*</exclude>
         <exclude>org.scala-lang:*</exclude>
-        <exclude>org.scala-lang.modules:*</exclude>
         <exclude>org.parboiled:*</exclude>
-        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
         <exclude>net.sf.opencsv:opencsv</exclude>
         <exclude>org.apache.commons:commons-lang3</exclude>

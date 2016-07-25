@@ -21,12 +21,12 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class FunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Functions"
-  val css = "general c2-2 c3-2 c4-2 c5-3 c6-5"
+  val css = "general c2-1 c3-2 c4-2 c5-3 c6-5"
   override val linkId = "query-function"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -65,7 +65,7 @@ class FunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=returns-one parameters=default
-MATCH n WHERE id(n) = %A%
+MATCH (n)  WHERE id(n) = %A%
 RETURN
 
 coalesce(n.property, {defaultValue})###
@@ -107,5 +107,5 @@ RETURN
 
 keys({expr})###
 
-Returns a collection of string representations for the property names of a node, relationship, or map."""
+Returns a list of string representations for the property names of a node, relationship, or map."""
 }

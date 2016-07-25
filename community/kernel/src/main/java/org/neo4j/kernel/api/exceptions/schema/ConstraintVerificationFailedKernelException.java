@@ -34,12 +34,12 @@ public abstract class ConstraintVerificationFailedKernelException extends Kernel
 {
     protected ConstraintVerificationFailedKernelException( PropertyConstraint constraint )
     {
-        super( Status.Schema.ConstraintVerificationFailure, "Existing data does not satisfy %s.", constraint );
+        super( Status.Statement.ConstraintVerificationFailed, "Existing data does not satisfy %s.", constraint );
     }
 
     protected ConstraintVerificationFailedKernelException( PropertyConstraint constraint, Throwable failure )
     {
-        super( Status.Schema.ConstraintVerificationFailure, failure, "Failed to verify constraint %s: %s", constraint,
+        super( Status.Statement.ConstraintVerificationFailed, failure, "Failed to verify constraint %s: %s", constraint,
                 failure.getMessage() );
     }
 

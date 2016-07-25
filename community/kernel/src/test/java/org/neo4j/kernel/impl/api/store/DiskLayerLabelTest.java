@@ -19,30 +19,28 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.HashSet;
-
 import org.junit.Test;
 
+import java.util.HashSet;
+
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
-import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
-import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 
 /**
  * Test read access to committed label data.
@@ -65,11 +63,11 @@ public class DiskLayerLabelTest extends DiskLayerTest
         }
 
         // THEN
-        Cursor<NodeItem> node = disk.acquireStatement().acquireSingleNodeCursor( nodeId );
+        Cursor<NodeItem> node = disk.newStatement().acquireSingleNodeCursor( nodeId );
         node.next();
         PrimitiveIntIterator readLabels = node.get().getLabels();
         assertEquals( new HashSet<>( asList( labelId1, labelId2 ) ),
-                addToCollection( readLabels, new HashSet<Integer>() ) );
+                PrimitiveIntCollections.addToCollection( readLabels, new HashSet<Integer>() ) );
     }
 
     @Test
@@ -113,11 +111,11 @@ public class DiskLayerLabelTest extends DiskLayerTest
         int labelId2 = disk.labelGetForName( label2.name() );
 
         // WHEN
-        PrimitiveLongIterator nodesForLabel1 = disk.nodesGetForLabel( state, labelId1 );
-        PrimitiveLongIterator nodesForLabel2 = disk.nodesGetForLabel( state, labelId2 );
+        PrimitiveLongIterator nodesForLabel1 = disk.nodesGetForLabel( state.getStoreStatement(), labelId1 );
+        PrimitiveLongIterator nodesForLabel2 = disk.nodesGetForLabel( state.getStoreStatement(), labelId2 );
 
         // THEN
-        assertEquals( asSet( node1.getId(), node2.getId() ), IteratorUtil.asSet( nodesForLabel1 ) );
-        assertEquals( asSet( node2.getId() ), IteratorUtil.asSet( nodesForLabel2 ) );
+        assertEquals( asSet( node1.getId(), node2.getId() ), PrimitiveLongCollections.toSet( nodesForLabel1 ) );
+        assertEquals( asSet( node2.getId() ), PrimitiveLongCollections.toSet( nodesForLabel2 ) );
     }
 }

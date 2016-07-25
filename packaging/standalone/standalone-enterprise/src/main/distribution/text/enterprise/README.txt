@@ -16,10 +16,11 @@ Here in the installation directory, you'll find:
 
 * bin - scripts and other executables
 * conf - server configuration
-* data - database, log, and other variable files
-* lib - core libraries
+* data - database
+* lib - libraries
 * plugins - user extensions
-* system - super-secret server stuff
+* logs - log files
+* import - location of files for LOAD CSV
 
 Make it go
 ----------
@@ -33,10 +34,10 @@ look at the web interface ...
 2. Start the server:
    * Windows, use: bin\Neo4j.bat
    * Linux/Mac, use: ./bin/neo4j console
-3. In a browser, open http://localhost:#{org.neo4j.webserver.port}/
-4. From any REST client or browser, open http://localhost:#{org.neo4j.webserver.port}/db/data
+3. In a browser, open http://localhost:#{default.http.port}/
+4. From any REST client or browser, open http://localhost:#{default.http.port}/db/data
    in order to get a REST starting point, e.g.
-   curl -v http://localhost:#{org.neo4j.webserver.port}/db/data
+   curl -v http://localhost:#{default.http.port}/db/data
 5. Shutdown the server by typing Ctrl-C in the console.
 
 Learn more

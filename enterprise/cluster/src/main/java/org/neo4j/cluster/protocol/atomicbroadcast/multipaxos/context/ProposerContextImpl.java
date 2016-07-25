@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId;
@@ -35,12 +36,13 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.Iterables.limit;
-import static org.neo4j.helpers.collection.Iterables.toList;
+
+import static org.neo4j.helpers.collection.Iterables.asList;
+
 
 class ProposerContextImpl
         extends AbstractContextImpl
@@ -171,7 +173,7 @@ class ProposerContextImpl
             }
         }, heartbeatContext.getAlive() );
 
-        return toList( limit( (int) Math.min(Iterables.count( aliveMembers ), commonState.getMaxAcceptors()), aliveMembers ) );
+        return asList( limit( (int) Math.min(Iterables.count( aliveMembers ), commonState.getMaxAcceptors()), aliveMembers ) );
     }
 
     @Override

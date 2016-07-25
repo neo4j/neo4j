@@ -38,12 +38,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -55,28 +52,32 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
+import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
+import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension.NoDependencies;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -88,16 +89,19 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.lang.Integer.parseInt;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
@@ -114,19 +118,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.Iterables.addToCollection;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.helpers.collection.Iterators.asCollection;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
+import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 @RunWith( Parameterized.class )
 public class BatchInsertTest
@@ -134,13 +138,9 @@ public class BatchInsertTest
     private final int denseNodeThreshold;
 
     @Parameterized.Parameters
-    public static Collection<Object[]> data()
+    public static Collection<Integer> data()
     {
-        Collection<Object[]> result = new ArrayList<>();
-        result.add( new Object[] { 3 } );
-        result.add( new Object[] { 20 } );
-        result.add( new Object[] { parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) } );
-        return result;
+        return Arrays.asList( 3, 20, parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) );
     }
 
     public BatchInsertTest( int denseNodeThreshold )
@@ -317,7 +317,7 @@ public class BatchInsertTest
         inserter.shutdown();
         File dir = new File( inserter.getStoreDir() );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( dir, pageCache, fs, NullLogProvider.getInstance() );
         return storeFactory.openAllNeoStores();
     }
 
@@ -370,7 +370,7 @@ public class BatchInsertTest
         long from = inserter.createNode( Collections.<String,Object>emptyMap() );
         long to = inserter.createNode( Collections.<String,Object>emptyMap() );
         long theRel = inserter.createRelationship( from, to,
-                DynamicRelationshipType.withName( "TestingPropsHere" ),
+                RelationshipType.withName( "TestingPropsHere" ),
                 MapUtil.map( "foo", "bar" ) );
         inserter.setRelationshipProperty( theRel, "foo2", "bar2" );
         Map<String, Object> props = inserter.getRelationshipProperties( theRel );
@@ -415,7 +415,7 @@ public class BatchInsertTest
         long theNode = inserter.createNode( properties );
         long anotherNode = inserter.createNode( Collections.<String,Object>emptyMap() );
         long relationship = inserter.createRelationship( theNode, anotherNode,
-                DynamicRelationshipType.withName( "foo" ), properties );
+                RelationshipType.withName( "foo" ), properties );
         for ( String key : properties.keySet() )
         {
             assertTrue( inserter.nodeHasProperty( theNode, key ) );
@@ -435,7 +435,7 @@ public class BatchInsertTest
         long theNode = inserter.createNode( properties );
         long anotherNode = inserter.createNode( Collections.<String,Object>emptyMap() );
         long relationship = inserter.createRelationship( theNode, anotherNode,
-                DynamicRelationshipType.withName( "foo" ), properties );
+                RelationshipType.withName( "foo" ), properties );
 
         inserter.removeNodeProperty( theNode, "key0" );
         inserter.removeRelationshipProperty( relationship, "key1" );
@@ -526,7 +526,7 @@ public class BatchInsertTest
     {
         BatchInserter graphDb = newBatchInserter();
         long startNode = graphDb.createNode( properties );
-        long endNodes[] = new long[25];
+        long[] endNodes = new long[25];
         Set<Long> rels = new HashSet<>();
         for ( int i = 0; i < 25; i++ )
         {
@@ -579,8 +579,8 @@ public class BatchInsertTest
             Relationship realSelfRelationship = db.getRelationshipById( selfRelationship );
             Relationship realRelationship = db.getRelationshipById( relationship );
             assertEquals( realSelfRelationship, realStartNode.getSingleRelationship( RelTypes.REL_TYPE1, Direction.INCOMING ) );
-            assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships( Direction.OUTGOING ) ) );
-            assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships() ) );
+            assertEquals( asSet( realSelfRelationship, realRelationship ), Iterables.asSet( realStartNode.getRelationships( Direction.OUTGOING ) ) );
+            assertEquals( asSet( realSelfRelationship, realRelationship ), Iterables.asSet( realStartNode.getRelationships() ) );
         }
         finally
         {
@@ -808,7 +808,7 @@ public class BatchInsertTest
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
 
         // THEN
-        assertEquals( asSet( Labels.FIRST.name(), Labels.THIRD.name() ), asSet( labelNames ) );
+        assertEquals( asSet( Labels.FIRST.name(), Labels.THIRD.name() ), Iterables.asSet( labelNames ) );
         inserter.shutdown();
     }
 
@@ -824,7 +824,7 @@ public class BatchInsertTest
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
 
         // THEN
-        assertEquals( labels.other(), asSet( labelNames ) );
+        assertEquals( labels.other(), Iterables.asSet( labelNames ) );
         inserter.shutdown();
     }
 
@@ -841,7 +841,7 @@ public class BatchInsertTest
 
         // THEN
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
-        assertEquals( labels.other(), asSet( labelNames ) );
+        assertEquals( labels.other(), Iterables.asSet( labelNames ) );
         inserter.shutdown();
     }
 
@@ -857,7 +857,7 @@ public class BatchInsertTest
 
         // THEN
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
-        assertEquals( asSet( Labels.FIRST.name() ), asSet( labelNames ) );
+        assertEquals( asSet( Labels.FIRST.name() ), Iterables.asSet( labelNames ) );
         inserter.shutdown();
     }
 
@@ -872,7 +872,7 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( "Hacker", definition.getLabel().name() );
-        assertEquals( asCollection( iterator( "handle" ) ), asCollection( definition.getPropertyKeys() ) );
+        assertEquals( asCollection( iterator( "handle" ) ), Iterables.asCollection( definition.getPropertyKeys() ) );
         inserter.shutdown();
     }
 
@@ -889,7 +889,7 @@ public class BatchInsertTest
         // THEN
         assertEquals( "Hacker", definition.getLabel().name() );
         assertEquals( ConstraintType.UNIQUENESS, definition.getConstraintType() );
-        assertEquals( asSet( "handle" ), asSet( definition.getPropertyKeys() ) );
+        assertEquals( asSet( "handle" ), Iterables.asSet( definition.getPropertyKeys() ) );
         inserter.shutdown();
     }
 
@@ -906,13 +906,15 @@ public class BatchInsertTest
         GraphDatabaseAPI graphdb = (GraphDatabaseAPI) switchToEmbeddedGraphDatabaseService( inserter );
         try
         {
-            NeoStores neoStores = graphdb.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
+            NeoStores neoStores = graphdb.getDependencyResolver()
+                    .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             SchemaStore store = neoStores.getSchemaStore();
             SchemaStorage storage = new SchemaStorage( store );
             List<Long> inUse = new ArrayList<>();
+            DynamicRecord record = store.newRecord();
             for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
             {
-                DynamicRecord record = store.forceGetRecord( i );
+                store.getRecord( i, record, RecordLoad.FORCE );
                 if ( record.inUse() && record.isStartRecord() )
                 {
                     inUse.add( i );
@@ -1063,7 +1065,7 @@ public class BatchInsertTest
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( nodeId, "Jakewins" );
+        verify( populator ).add( singletonList( NodePropertyUpdate.add( nodeId, 0, "Jakewins", new long[]{0} ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -1098,7 +1100,7 @@ public class BatchInsertTest
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( nodeId, "Jakewins" );
+        verify( populator ).add( singletonList( NodePropertyUpdate.add( nodeId, 0, "Jakewins", new long[]{0} ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -1133,8 +1135,8 @@ public class BatchInsertTest
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( jakewins, "Jakewins" );
-        verify( populator ).add( boggle, "b0ggl3" );
+        verify( populator ).add( singletonList( NodePropertyUpdate.add( jakewins, 0, "Jakewins", new long[]{0} ) ) );
+        verify( populator ).add( singletonList( NodePropertyUpdate.add( boggle, 0, "b0ggl3", new long[]{0} ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -1244,7 +1246,7 @@ public class BatchInsertTest
         BatchInserter inserter = newBatchInserter();
 
         Map<String, Object> properties = new HashMap<>();
-        properties.put("id", 1099511659993l);
+        properties.put("id", 1099511659993L);
         properties.put("firstName", "Edward");
         properties.put("lastName", "Shevchenko");
         properties.put("gender", "male");
@@ -1270,6 +1272,7 @@ public class BatchInsertTest
 
         assertThat( (String[]) inserter.getNodeProperties( personNodeId ).get( "email" ),
                 arrayContaining( "Edward1099511659993@gmail.com", "backup@gmail.com" ) );
+        inserter.shutdown();
     }
 
     @Test
@@ -1329,10 +1332,10 @@ public class BatchInsertTest
         try
         {
             DependencyResolver dependencyResolver = db.getDependencyResolver();
-            NeoStoresSupplier neoStoresSupplier = dependencyResolver.resolveDependency( NeoStoresSupplier.class );
-            NeoStores neoStores = neoStoresSupplier.get();
+            NeoStores neoStores = dependencyResolver
+                    .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             NodeStore nodeStore = neoStores.getNodeStore();
-            NodeRecord record = nodeStore.getRecord( 1 );
+            NodeRecord record = getRecord( nodeStore, 1 );
             assertTrue( "Node " + record + " should have been dense", record.isDense() );
         }
         finally
@@ -1351,7 +1354,7 @@ public class BatchInsertTest
         createRelationships( inserter, node, RelTypes.REL_TYPE2, 4, 5, 6 );
 
         // WHEN
-        Set<Long> gottenRelationships = asSet( inserter.getRelationshipIds( node ) );
+        Set<Long> gottenRelationships = Iterables.asSet( inserter.getRelationshipIds( node ) );
 
         // THEN
         assertEquals( 21, gottenRelationships.size() );
@@ -1365,14 +1368,14 @@ public class BatchInsertTest
         BatchInserter inserter = newBatchInserter();
 
         // WHEN
-        long nodeId = inserter.createNode( map( "itemId", 1000l ), DynamicLabel.label( "Item" ),
-                DynamicLabel.label( "Item" ) );
+        long nodeId = inserter.createNode( map( "itemId", 1000L ), label( "Item" ),
+                label( "Item" ) );
 
         // THEN
         NeoStores neoStores = switchToNeoStores( inserter );
         try
         {
-            NodeRecord node = neoStores.getNodeStore().getRecord( nodeId );
+            NodeRecord node = getRecord( neoStores.getNodeStore(), nodeId );
             NodeLabels labels = NodeLabelsField.parseLabelsField( node );
             long[] labelIds = labels.get( neoStores.getNodeStore() );
             assertEquals( 1, labelIds.length );
@@ -1390,15 +1393,15 @@ public class BatchInsertTest
         BatchInserter inserter = newBatchInserter();
 
         // WHEN
-        long nodeId = inserter.createNode( map( "Item", 123456789123l ), DynamicLabel.label( "AA" ),
-                DynamicLabel.label( "BB" ), DynamicLabel.label( "CC" ), DynamicLabel.label( "DD" ) );
-        inserter.setNodeLabels( nodeId, DynamicLabel.label( "CC" ), DynamicLabel.label( "AA" ),
-                DynamicLabel.label( "DD" ), DynamicLabel.label( "EE" ), DynamicLabel.label( "FF" ) );
+        long nodeId = inserter.createNode( map( "Item", 123456789123L ), label( "AA" ),
+                label( "BB" ), label( "CC" ), label( "DD" ) );
+        inserter.setNodeLabels( nodeId, label( "CC" ), label( "AA" ),
+                label( "DD" ), label( "EE" ), label( "FF" ) );
 
         // THEN
         try ( NeoStores neoStores = switchToNeoStores( inserter ) )
         {
-            NodeRecord node = neoStores.getNodeStore().getRecord( nodeId );
+            NodeRecord node = getRecord( neoStores.getNodeStore(), nodeId );
             NodeLabels labels = NodeLabelsField.parseLabelsField( node );
 
             long[] labelIds = labels.get( neoStores.getNodeStore() );
@@ -1427,7 +1430,7 @@ public class BatchInsertTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                List<ConstraintDefinition> constraints = asList( db.schema().getConstraints() );
+                List<ConstraintDefinition> constraints = Iterables.asList( db.schema().getConstraints() );
                 assertEquals( 1, constraints.size() );
                 ConstraintDefinition constraint = constraints.get( 0 );
                 assertEquals( label.name(), constraint.getLabel().name() );
@@ -1479,6 +1482,7 @@ public class BatchInsertTest
             // Then
             assertEquals( "Index for given {label;property} already exists", e.getMessage() );
         }
+        inserter.shutdown();
     }
 
     @Test
@@ -1504,6 +1508,7 @@ public class BatchInsertTest
                     "It is not allowed to create uniqueness constraints and indexes on the same {label;property}",
                     e.getMessage() );
         }
+        inserter.shutdown();
     }
 
     @Test
@@ -1527,13 +1532,14 @@ public class BatchInsertTest
             // Then
             assertEquals( "Index for given {label;property} already exists", e.getMessage() );
         }
+        inserter.shutdown();
     }
 
     @Test
     public void uniquenessConstraintShouldBeCheckedOnBatchInserterShutdownAndFailIfViolated() throws Exception
     {
         // Given
-        Label label = DynamicLabel.label( "Foo" );
+        Label label = label( "Foo" );
         String property = "Bar";
         String value = "Baz";
 
@@ -1572,6 +1578,7 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( properties, inserter.getNodeProperties( node ) );
+        inserter.shutdown();
     }
 
     private void createRelationships( BatchInserter inserter, long node, RelationshipType relType,
@@ -1617,13 +1624,13 @@ public class BatchInsertTest
         }
 
         @Override
-        public LabelScanReader newReader()
+        public AllEntriesLabelScanReader allNodeLabelRanges()
         {
             return null;
         }
 
         @Override
-        public AllEntriesLabelScanReader newAllEntriesReader()
+        public LabelScanReader newReader()
         {
             return null;
         }
@@ -1654,7 +1661,8 @@ public class BatchInsertTest
         {
         }
 
-        @Override public LabelScanWriter newWriter()
+        @Override
+        public LabelScanWriter newWriter()
         {
             writersCreated++;
             return new LabelScanWriter()
@@ -1662,7 +1670,7 @@ public class BatchInsertTest
                 @Override
                 public void write( NodeLabelUpdate update ) throws IOException
                 {
-                    addToCollection( Collections.singletonList( update ).iterator(), allUpdates );
+                    addToCollection( Collections.singletonList( update ), allUpdates );
                 }
 
                 @Override
@@ -1673,7 +1681,7 @@ public class BatchInsertTest
         }
     }
 
-    private static class ControlledLabelScanStore extends KernelExtensionFactory<InMemoryLabelScanStoreExtension.NoDependencies>
+    private static class ControlledLabelScanStore extends KernelExtensionFactory<NoDependencies>
     {
         private final LabelScanStore labelScanStore;
 
@@ -1684,7 +1692,7 @@ public class BatchInsertTest
         }
 
         @Override
-        public Lifecycle newKernelExtension( InMemoryLabelScanStoreExtension.NoDependencies dependencies ) throws Throwable
+        public Lifecycle newInstance( KernelContext context, NoDependencies dependencies ) throws Throwable
         {
             return new LabelScanStoreProvider( labelScanStore, 100 );
         }
@@ -1714,7 +1722,7 @@ public class BatchInsertTest
         return array;
     }
 
-    private static enum Labels implements Label
+    private enum Labels implements Label
     {
         FIRST,
         SECOND,
@@ -1723,14 +1731,7 @@ public class BatchInsertTest
 
     private Iterable<String> asNames( Iterable<Label> nodeLabels )
     {
-        return map( new Function<Label,String>()
-        {
-            @Override
-            public String apply( Label from )
-            {
-                return from.name();
-            }
-        }, nodeLabels );
+        return map( Label::name, nodeLabels );
     }
 
     private Pair<Label[],Set<String>> manyLabels( int count )

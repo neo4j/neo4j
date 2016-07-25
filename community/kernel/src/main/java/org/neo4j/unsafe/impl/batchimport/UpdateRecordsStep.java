@@ -21,8 +21,8 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.Collection;
 
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
@@ -33,8 +33,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
- * Updates a batch of records to a store. Can be given a {@link Predicate} that can choose to not
- * {@link Predicate#accept(Object) accept} a record, which will have that record be written as unused instead.
+ * Updates a batch of records to a store.
  */
 public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
         extends ProcessorStep<RECORD[]>
@@ -51,30 +50,23 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
         this.recordSize = store.getRecordSize();
     }
 
-    @SuppressWarnings( "unchecked" )
     @Override
     protected void process( RECORD[] batch, BatchSender sender ) throws Throwable
     {
         for ( RECORD record : batch )
         {
-            if ( record.inUse() && !accept( record ) )
+            if ( record != null && record.inUse() && !IdValidator.isReservedId( record.getId() ) )
             {
-                record = (RECORD) record.clone();
-                record.setInUse( false );
+                update( record );
             }
-            update( record );
         }
         recordsUpdated += batch.length;
     }
 
     protected void update( RECORD record ) throws Throwable
     {
+        store.prepareForCommit( record );
         store.updateRecord( record );
-    }
-
-    protected boolean accept( @SuppressWarnings( "unused" ) RECORD record )
-    {
-        return true;
     }
 
     @Override

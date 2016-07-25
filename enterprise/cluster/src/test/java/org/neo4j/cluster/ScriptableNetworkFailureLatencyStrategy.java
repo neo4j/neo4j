@@ -34,33 +34,32 @@ public class ScriptableNetworkFailureLatencyStrategy
 {
     List<String> nodesDown = new ArrayList<String>(  );
     List<String[]> linksDown = new ArrayList<String[]>(  );
-    
+
     public ScriptableNetworkFailureLatencyStrategy nodeIsDown(String id)
     {
         nodesDown.add( id );
         return this;
     }
-    
+
     public ScriptableNetworkFailureLatencyStrategy nodeIsUp(String id)
     {
         nodesDown.remove( id );
         return this;
     }
-    
+
     public ScriptableNetworkFailureLatencyStrategy linkIsDown(String node1, String node2)
     {
         linksDown.add( new String[]{node1, node2} );
         linksDown.add( new String[]{ node2, node1 } );
         return this;
     }
-    
+
     public ScriptableNetworkFailureLatencyStrategy linkIsUp(String node1, String node2)
     {
         linksDown.remove( new String[]{ node1, node2 } );
         linksDown.remove( new String[]{ node2, node1 } );
         return this;
     }
-
 
     @Override
     public long messageDelay(Message<? extends MessageType> message, String serverIdTo)

@@ -21,6 +21,7 @@ package org.neo4j.backup;
 
 import java.io.File;
 import java.net.URI;
+import java.util.function.Supplier;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
@@ -32,9 +33,9 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyServer;
-import org.neo4j.function.Supplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -52,6 +53,7 @@ import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
 
 public class OnlineBackupKernelExtension implements Lifecycle
 {
+    static final String CUSTOM_IO_EXCEPTION_MESSAGE = "Online Backup not allowed with custom IO integration";
 
     private Object startBindingListener;
     private Object bindingListener;
@@ -82,27 +84,22 @@ public class OnlineBackupKernelExtension implements Lifecycle
                                         final Supplier<LogFileInformation> logFileInformationSupplier,
                                         final FileSystemAbstraction fileSystemAbstraction)
     {
-        this( config, graphDatabaseAPI, new BackupProvider()
-        {
-            @Override
-            public TheBackupInterface newBackup()
-            {
-                TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
-                StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, checkPointerSupplier.get(),
-                        fileSystemAbstraction, new File( graphDatabaseAPI.getStoreDir() ),
-                        monitors.newMonitor( StoreCopyServer.Monitor.class ) );
-                LogicalTransactionStore logicalTransactionStore = logicalTransactionStoreSupplier.get();
-                LogFileInformation logFileInformation = logFileInformationSupplier.get();
-                return new BackupImpl( copier, monitors,
-                        logicalTransactionStore, transactionIdStore, logFileInformation, new Supplier<StoreId>()
+        this( config, graphDatabaseAPI, () -> {
+            TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
+            StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, checkPointerSupplier.get(),
+                    fileSystemAbstraction, new File( graphDatabaseAPI.getStoreDir() ),
+                    monitors.newMonitor( StoreCopyServer.Monitor.class ) );
+            LogicalTransactionStore logicalTransactionStore = logicalTransactionStoreSupplier.get();
+            LogFileInformation logFileInformation = logFileInformationSupplier.get();
+            return new BackupImpl( copier, monitors,
+                    logicalTransactionStore, transactionIdStore, logFileInformation, new Supplier<StoreId>()
+                    {
+                        @Override
+                        public StoreId get()
                         {
-                            @Override
-                            public StoreId get()
-                            {
-                                return graphDatabaseAPI.storeId();
-                            }
-                        }, logProvider );
-            }
+                            return graphDatabaseAPI.storeId();
+                        }
+                    }, logProvider );
         }, monitors, logProvider );
     }
 
@@ -126,6 +123,8 @@ public class OnlineBackupKernelExtension implements Lifecycle
     {
         if ( config.<Boolean>get( OnlineBackupSettings.online_backup_enabled ) )
         {
+            CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
+
             try
             {
                 server = new BackupServer( backupProvider.newBackup(), config.get( online_backup_server ),
@@ -140,14 +139,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                     graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class).addClusterMemberListener(
                             (ClusterMemberListener) startBindingListener );
 
-                    bindingListener = new BindingListener()
-                    {
-                        @Override
-                        public void listeningAt( URI myUri )
-                        {
-                            me = myUri;
-                        }
-                    };
+                    bindingListener = (BindingListener) myUri -> me = myUri;
                     graphDatabaseAPI.getDependencyResolver().resolveDependency( BindingNotifier.class ).addBindingListener(
                             (BindingListener) bindingListener );
                 }

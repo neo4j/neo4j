@@ -85,9 +85,6 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
   override def getOrCreatePropertyKeyId(propertyKey: String): Int =
     translateException(super.getOrCreatePropertyKeyId(propertyKey))
 
-  override def detachDeleteNode(node: Node) =
-    translateException(super.detachDeleteNode(node))
-
   override def addIndexRule(labelId: Int, propertyKeyId: Int) =
     translateException(super.addIndexRule(labelId, propertyKeyId))
 

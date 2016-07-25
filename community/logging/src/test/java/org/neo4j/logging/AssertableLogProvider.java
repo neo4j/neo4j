@@ -19,6 +19,10 @@
  */
 package org.neo4j.logging;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.StringDescription;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,17 +30,14 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.StringDescription;
-
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Function;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import javax.annotation.Nonnull;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.StringEscapeUtils.escapeJava;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.equalTo;
@@ -148,25 +149,25 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         }
 
         @Override
-        public void log( String message )
+        public void log( @Nonnull String message )
         {
             logCalls.add( new LogCall( context, level, message, null, null ) );
         }
 
         @Override
-        public void log( String message, Throwable throwable )
+        public void log( @Nonnull String message, @Nonnull Throwable throwable )
         {
             logCalls.add( new LogCall( context, level, message, null, throwable ) );
         }
 
         @Override
-        public void log( String format, Object... arguments )
+        public void log( @Nonnull String format, @Nonnull Object... arguments )
         {
             logCalls.add( new LogCall( context, level, format, arguments, null ) );
         }
 
         @Override
-        public void bulk( Consumer<Logger> consumer )
+        public void bulk( @Nonnull Consumer<Logger> consumer )
         {
             consumer.accept( this );
         }
@@ -193,24 +194,28 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
             return debugEnabled;
         }
 
+        @Nonnull
         @Override
         public Logger debugLogger()
         {
             return debugLogger;
         }
 
+        @Nonnull
         @Override
         public Logger infoLogger()
         {
             return infoLogger;
         }
 
+        @Nonnull
         @Override
         public Logger warnLogger()
         {
             return warnLogger;
         }
 
+        @Nonnull
         @Override
         public Logger errorLogger()
         {
@@ -218,7 +223,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         }
 
         @Override
-        public void bulk( Consumer<Log> consumer )
+        public void bulk( @Nonnull Consumer<Log> consumer )
         {
             consumer.accept( this );
         }
@@ -246,6 +251,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
     private static final Matcher<Level> WARN_LEVEL_MATCHER = equalTo( Level.WARN );
     private static final Matcher<Level> ERROR_LEVEL_MATCHER = equalTo( Level.ERROR );
     private static final Matcher<Level> ANY_LEVEL_MATCHER = any( Level.class );
+    private static final Matcher<String> ANY_MESSAGE_MATCHER = any( String.class );
     private static final Matcher<Object[]> NULL_ARGUMENTS_MATCHER = nullValue( Object[].class );
     private static final Matcher<Object[]> ANY_ARGUMENTS_MATCHER = any( Object[].class );
     private static final Matcher<Throwable> NULL_THROWABLE_MATCHER = nullValue( Throwable.class );
@@ -404,6 +410,14 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         public LogMatcher error( Matcher<String> format, Object... arguments )
         {
             return new LogMatcher( contextMatcher, ERROR_LEVEL_MATCHER, format, arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
+        }
+
+        public LogMatcher any()
+        {
+            return new LogMatcher(
+                    contextMatcher, ANY_LEVEL_MATCHER, ANY_MESSAGE_MATCHER,
+                    anyOf( NULL_ARGUMENTS_MATCHER, ANY_ARGUMENTS_MATCHER ),
+                    anyOf( NULL_THROWABLE_MATCHER, ANY_THROWABLE_MATCHER ) );
         }
 
         @SuppressWarnings( "unchecked" )
@@ -629,14 +643,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
 
     public String serialize()
     {
-        return serialize( logCalls.iterator(), new Function<LogCall,String>()
-        {
-            @Override
-            public String apply( LogCall call )
-            {
-                return call.toLogLikeString();
-            }
-        } );
+        return serialize( logCalls.iterator(), LogCall::toLogLikeString );
     }
 
     private String describe( Iterator<LogMatcher> matchers )
@@ -652,14 +659,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
 
     private String serialize( Iterator<LogCall> events )
     {
-        return serialize( events, new Function<LogCall,String>()
-        {
-            @Override
-            public String apply( LogCall call )
-            {
-                return call.toString();
-            }
-        } );
+        return serialize( events, LogCall::toString );
     }
 
     private String serialize( Iterator<LogCall> events, Function<LogCall,String> serializer )

@@ -34,6 +34,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
 /**
@@ -52,7 +53,7 @@ public class NodeStage extends Stage
         add( new InputIteratorBatcherStep<>( control(), config, nodes.iterator(), InputNode.class ) );
         if ( !nodes.supportsMultiplePasses() )
         {
-            add( new InputEntityCacherStep<>( control(), config, inputCache.cacheNodes() ) );
+            add( new InputEntityCacherStep<>( control(), config, inputCache.cacheNodes( MAIN ) ) );
         }
 
         NodeStore nodeStore = neoStore.getNodeStore();

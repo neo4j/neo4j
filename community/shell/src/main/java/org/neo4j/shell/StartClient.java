@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,6 +29,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.util.HashMap;
@@ -37,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.Version;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.impl.SimpleAppServer;
@@ -45,7 +48,6 @@ import org.neo4j.shell.impl.SystemOutput;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 import static org.neo4j.io.fs.FileUtils.newBufferedFileReader;
-import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
 
 /**
  * Can start clients, either remotely to another JVM running a server
@@ -185,7 +187,8 @@ public class StartClient
 
         if ( version )
         {
-            out.printf( "Neo4j %s, version %s", factory.getEdition(), Version.getKernelVersion() );
+            String edition = StringUtils.capitalize( factory.getEdition().toLowerCase() );
+            out.printf( "Neo4j %s, version %s", edition, Version.getKernelVersion() );
         }
         else if ( (path != null && (port != null || name != null || host != null || pid != null))
              || (pid != null && host != null) )
@@ -260,8 +263,8 @@ public class StartClient
 
     private void startLocal( Args args, CtrlCHandler signalHandler )
     {
-        String dbPath = args.get( ARG_PATH, null );
-        if ( dbPath == null )
+        String path = args.get( ARG_PATH, null );
+        if ( path == null )
         {
             err.println( "ERROR: To start a local Neo4j service and a " +
                          "shell client on top of that you need to supply a path to a " +
@@ -274,7 +277,7 @@ public class StartClient
         try
         {
             boolean readOnly = args.getBoolean( ARG_READONLY, false, true );
-            tryStartLocalServerAndClient( dbPath, readOnly, args, signalHandler );
+            tryStartLocalServerAndClient( new File( path ), readOnly, args, signalHandler );
         }
         catch ( Exception e )
         {
@@ -282,11 +285,11 @@ public class StartClient
         }
     }
 
-    private void tryStartLocalServerAndClient( String dbPath, boolean readOnly, Args args,
-            CtrlCHandler signalHandler ) throws Exception
+    private void tryStartLocalServerAndClient( File path, boolean readOnly, Args args, CtrlCHandler signalHandler )
+            throws Exception
     {
         String configFile = args.get( ARG_CONFIG, null );
-        final GraphDatabaseShellServer server = getGraphDatabaseShellServer( dbPath, readOnly, configFile );
+        final GraphDatabaseShellServer server = getGraphDatabaseShellServer( path, readOnly, configFile );
         Runtime.getRuntime().addShutdownHook( new Thread()
         {
             @Override
@@ -298,7 +301,7 @@ public class StartClient
 
         if ( !isCommandLine( args ) )
         {
-            out.println( "NOTE: Local Neo4j graph database service at '" + dbPath + "'" );
+            out.println( "NOTE: Local Neo4j graph database service at '" + path + "'" );
         }
         ShellClient client = ShellLobby.newClient( server, getSessionVariablesFromArgs( args ),
                 new SystemOutput( out ), signalHandler );
@@ -307,10 +310,10 @@ public class StartClient
         shutdownIfNecessary( server );
     }
 
-    protected GraphDatabaseShellServer getGraphDatabaseShellServer( String dbPath, boolean readOnly, String configFile )
+    protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly, String configFile )
             throws RemoteException
     {
-        return new GraphDatabaseShellServer( factory, dbPath, readOnly, configFile );
+        return new GraphDatabaseShellServer( factory, path, readOnly, configFile );
     }
 
     private void shutdownIfNecessary( ShellServer server )
@@ -389,7 +392,7 @@ public class StartClient
             {
                 if ( fileName.equals( ARG_FILE_STDIN ) )
                 {
-                    reader = new BufferedReader( new InputStreamReader( System.in, UTF_8 ) );
+                    reader = new BufferedReader( new InputStreamReader( System.in, StandardCharsets.UTF_8 ) );
                 }
                 else
                 {
@@ -398,7 +401,7 @@ public class StartClient
                     {
                         throw new ShellException( "File to execute " + "does not exist: " + fileName );
                     }
-                    reader = newBufferedFileReader( file, UTF_8 );
+                    reader = newBufferedFileReader( file, StandardCharsets.UTF_8 );
                 }
                 executeCommandStream( client, reader );
             }
@@ -551,6 +554,7 @@ public class StartClient
 
         ShellExecutionFailureException( Throwable cause, Args args )
         {
+            super(cause);
             this.cause = cause;
             this.args = args;
         }

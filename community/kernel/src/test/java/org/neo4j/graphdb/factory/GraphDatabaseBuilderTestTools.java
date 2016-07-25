@@ -31,9 +31,4 @@ public class GraphDatabaseBuilderTestTools
     {
         return new Config( builder.getRawConfig() );
     }
-
-    public static void clearConfig( GraphDatabaseBuilder builder )
-    {
-        builder.getRawConfig().clear();
-    }
 }

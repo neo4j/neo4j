@@ -25,20 +25,20 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.mockito.Matchers.anyBoolean;
@@ -55,7 +55,7 @@ public class DefaultMasterImplSPITest
         CheckPointer checkPointer = mock( CheckPointer.class );
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-        when( dataSource.listStoreFiles( anyBoolean() ) ).thenReturn( IteratorUtil.<File>emptyIterator() );
+        when( dataSource.listStoreFiles( anyBoolean() ) ).thenReturn( Iterators.<File>emptyIterator() );
 
         DefaultMasterImplSPI master = new DefaultMasterImplSPI( mock( GraphDatabaseAPI.class, RETURNS_MOCKS ),
                 mock( FileSystemAbstraction.class ), new Monitors(), mock( LabelTokenHolder.class ),

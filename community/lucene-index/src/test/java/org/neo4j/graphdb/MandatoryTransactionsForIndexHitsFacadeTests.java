@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.fail;
 
@@ -86,7 +86,7 @@ public class MandatoryTransactionsForIndexHitsFacadeTests
 
     private Index<Node> createIndex()
     {
-        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseAPI();
         try ( Transaction transaction = graphDatabaseService.beginTx() )
         {
             Index<Node> index = graphDatabaseService.index().forNodes( "foo" );
@@ -97,7 +97,7 @@ public class MandatoryTransactionsForIndexHitsFacadeTests
 
     private IndexHits<Node> queryIndex( Index<Node> index )
     {
-        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseAPI();
         try ( Transaction transaction = graphDatabaseService.beginTx() )
         {
             return index.get( "foo", 42 );

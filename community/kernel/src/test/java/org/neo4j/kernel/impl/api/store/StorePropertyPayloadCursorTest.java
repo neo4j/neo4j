@@ -26,23 +26,22 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.helpers.Strings;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.StubPageCursor;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -53,17 +52,42 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.store.StorePropertyCursor.payloadValueAsObject;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.param;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.paramArg;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Params.params;
-import static org.neo4j.test.Assert.assertObjectOrArrayEquals;
+import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 
 @RunWith( Enclosed.class )
 public class StorePropertyPayloadCursorTest
 {
     public static class BasicContract
     {
+        @Test
+        public void nextShouldAlwaysReturnFalseWhenNotInitialized()
+        {
+            StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor( mock( RecordCursor.class ),
+                    mock( RecordCursor.class ) );
+
+            assertFalse( cursor.next() );
+
+            // Should still be true the Nth time
+            assertFalse( cursor.next() );
+        }
+
+        @Test
+        public void nextShouldAlwaysReturnFalseWhenCleared()
+        {
+            StorePropertyPayloadCursor cursor = newCursor( "cat-dog" );
+
+            assertTrue( cursor.next() );
+
+            cursor.clear();
+
+            // Should still be true the Nth time
+            assertFalse( cursor.next() );
+            assertFalse( cursor.next() );
+        }
+
         @Test
         public void shouldBeOkToClearUnusedCursor()
         {
@@ -157,8 +181,8 @@ public class StorePropertyPayloadCursorTest
             assertFalse( cursor.next() );
 
             // Then
-            verify( dynamicStringStore ).newDynamicRecordCursor();
-            verify( dynamicArrayStore ).newDynamicRecordCursor();
+            verify( dynamicStringStore ).newRecordCursor( any( DynamicRecord.class ) );
+            verify( dynamicArrayStore ).newRecordCursor( any( DynamicRecord.class ) );
         }
 
         @Test
@@ -233,7 +257,7 @@ public class StorePropertyPayloadCursorTest
             // Then
             assertTrue( next );
             assertEquals( param.type, cursor.type() );
-            assertObjectOrArrayEquals( param.value, payloadValueAsObject( cursor ) );
+            assertObjectOrArrayEquals( param.value, cursor.value() );
         }
     }
 
@@ -413,7 +437,7 @@ public class StorePropertyPayloadCursorTest
                 // Then
                 assertTrue( next );
                 assertEquals( param.type, cursor.type() );
-                assertObjectOrArrayEquals( param.value, payloadValueAsObject( cursor ) );
+                assertObjectOrArrayEquals( param.value, cursor.value() );
             }
         }
     }
@@ -444,20 +468,21 @@ public class StorePropertyPayloadCursorTest
     private static StorePropertyPayloadCursor newCursor( DynamicStringStore dynamicStringStore,
             DynamicArrayStore dynamicArrayStore, Object... values )
     {
-        StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor( dynamicStringStore, dynamicArrayStore );
+        StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor(
+                dynamicStringStore.newRecordCursor( null ), dynamicArrayStore.newRecordCursor( null ) );
 
-        PageCursor pageCursor = newPageCursor( values );
-        cursor.init( pageCursor );
+        long[] blocks = asBlocks( values );
+        cursor.init( blocks, blocks.length );
 
         return cursor;
     }
 
-    private static PageCursor newPageCursor( Object... values )
+    private static long[] asBlocks( Object... values )
     {
         RecordAllocator stringAllocator = new RecordAllocator();
         RecordAllocator arrayAllocator = new RecordAllocator();
-
-        ByteBuffer page = ByteBuffer.allocateDirect( StorePropertyPayloadCursor.MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY * 8 );
+        long[] blocks = new long[PropertyType.getPayloadSizeLongs()];
+        int cursor = 0;
         for ( int i = 0; i < values.length; i++ )
         {
             Object value = values[i];
@@ -465,31 +490,24 @@ public class StorePropertyPayloadCursorTest
             PropertyBlock block = new PropertyBlock();
             PropertyStore.encodeValue( block, i, value, stringAllocator, arrayAllocator );
             long[] valueBlocks = block.getValueBlocks();
-            for ( long valueBlock : valueBlocks )
-            {
-                page.putLong( valueBlock );
-            }
+            System.arraycopy( valueBlocks, 0, blocks, cursor, valueBlocks.length );
+            cursor += valueBlocks.length;
         }
-        while ( page.remaining() > 0 )
-        {
-            page.put( (byte) 0 );
-        }
-
-        return new StubPageCursor( 1, page );
+        return blocks;
     }
 
+    @SuppressWarnings( "unchecked" )
     private static <S extends AbstractDynamicStore> S newDynamicStoreMock( Class<S> clazz )
     {
-        AbstractDynamicStore.DynamicRecordCursor recordCursor = mock( AbstractDynamicStore.DynamicRecordCursor.class );
+        RecordCursor<DynamicRecord> recordCursor = mock( RecordCursor.class );
         when( recordCursor.next() ).thenReturn( true ).thenReturn( false );
         DynamicRecord dynamicRecord = new DynamicRecord( 42 );
         dynamicRecord.setData( new byte[]{1, 1, 1, 1, 1} );
         when( recordCursor.get() ).thenReturn( dynamicRecord );
+        when( recordCursor.acquire( anyLong(), any( RecordLoad.class ) ) ).thenReturn( recordCursor );
 
         S store = mock( clazz );
-        when( store.newDynamicRecordCursor() ).thenReturn( mock( AbstractDynamicStore.DynamicRecordCursor.class ) );
-        when( store.getRecordsCursor( anyLong(), any( AbstractDynamicStore.DynamicRecordCursor.class ) ) )
-                .thenReturn( recordCursor );
+        when( store.newRecordCursor( any( DynamicRecord.class ) ) ).thenReturn( recordCursor );
 
         return store;
     }
@@ -539,7 +557,7 @@ public class StorePropertyPayloadCursorTest
         @Override
         public Iterator<Param> iterator()
         {
-            return IteratorUtil.iterator( params );
+            return Iterators.iterator( params );
         }
 
         @Override
@@ -554,7 +572,7 @@ public class StorePropertyPayloadCursorTest
         long id;
 
         @Override
-        public int dataSize()
+        public int getRecordDataSize()
         {
             return 120;
         }

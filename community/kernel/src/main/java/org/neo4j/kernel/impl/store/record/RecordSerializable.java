@@ -24,6 +24,6 @@ import java.nio.ByteBuffer;
 public interface RecordSerializable
 {
     int length();
-    
+
     void serialize( ByteBuffer target );
 }

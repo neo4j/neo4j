@@ -21,43 +21,48 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.storageengine.api.StorageStatement;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class StatementLifecycleTest
 {
     @Test
-    public void shouldReleaseItselfWhenClosed() throws Exception
+    public void shouldReleaseStoreStatementOnlyWhenReferenceCountDownToZero() throws Exception
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        KernelStatement statement = new KernelStatement( transaction, mock( IndexReaderFactory.class ), null,
-                null, null, null, null );
+        StorageStatement storageStatement = mock( StorageStatement.class );
+        KernelStatement statement = new KernelStatement( transaction, null, null, storageStatement, new Procedures() );
+        statement.acquire();
+        verify( storageStatement ).acquire();
         statement.acquire();
 
         // when
         statement.close();
+        verifyNoMoreInteractions( storageStatement );
 
         // then
-        verify( transaction ).releaseStatement( statement );
+        statement.close();
+        verify( storageStatement ).release();
     }
 
     @Test
-    public void shouldReleaseWhenAllNestedStatementsClosed() throws Exception
+    public void shouldReleaseStoreStatementWhenForceClosingStatements() throws Exception
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        KernelStatement statement = new KernelStatement( transaction, mock( IndexReaderFactory.class ), null,
-                null, null, null, null );
-        statement.acquire();
+        StorageStatement storageStatement = mock( StorageStatement.class );
+        KernelStatement statement = new KernelStatement( transaction, null, null, storageStatement, new Procedures() );
         statement.acquire();
 
         // when
-        statement.close();
-        statement.close();
+        statement.forceClose();
 
         // then
-        verify( transaction ).releaseStatement( statement );
+        verify( storageStatement ).release();
     }
-
 }

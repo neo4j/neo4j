@@ -20,7 +20,10 @@
 package org.neo4j.helpers;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Objects;
+
+import org.apache.commons.lang3.StringUtils;
 
 import static java.lang.String.format;
 
@@ -40,12 +43,12 @@ public class HostnamePort
         String[] parts = splitHostAndPort( hostnamePort );
         if ( parts.length == 1 )
         {
-            host = Strings.defaultIfBlank( parts[0], null );
+            host = StringUtils.defaultIfBlank( parts[0], null );
             ports = new int[]{0, 0};
         }
         else if ( parts.length == 2 )
         {
-            host = Strings.defaultIfBlank( parts[0], null );
+            host = StringUtils.defaultIfBlank( parts[0], null );
 
             String[] portStrings = parts[1].split( "-" );
             ports = new int[2];
@@ -84,7 +87,7 @@ public class HostnamePort
 
     /**
      * The host part, or {@code null} if not given.
-     * 
+     *
      * @return the host part, or {@code null} if not given
      */
     public String getHost()
@@ -103,16 +106,16 @@ public class HostnamePort
             return host;
         }
     }
-    
+
     public String getHost( String defaultHost )
     {
-    	return getHostAddress( host, defaultHost );
+        return getHostAddress( host, defaultHost );
     }
 
     /**
      * The port range as two ints. If only one port given, then both ints have the same value.
      * If no port range is given, then the array has {0,0} as value.
-     * 
+     *
      * @return the port range as two ints, which may have the same value; if no port range has been given both ints are {@code 0}
      */
     public int[] getPorts()
@@ -122,7 +125,7 @@ public class HostnamePort
 
     /**
      * The first port, or 0 if no port was given.
-     * 
+     *
      * @return the first port or {@code 0} if no port was given
      */
     public int getPort()
@@ -186,7 +189,7 @@ public class HostnamePort
 
         // URI may contain IP, so make sure we check it too by converting ours, if necessary
         String toMatchHost = toMatch.getHost();
-        
+
         // this tries to match hostnames as they are at first, then tries to extract and match ip addresses of both
         return result && ( host.equalsIgnoreCase( toMatchHost ) || getHost(null).equalsIgnoreCase( getHostAddress( toMatchHost, toMatchHost ) ) );
     }
@@ -208,7 +211,7 @@ public class HostnamePort
 
             String host = hostnamePort.substring( 0, splitIndex );
             String port = hostnamePort.substring( splitIndex );
-            if ( !Strings.isBlank( port ) )
+            if ( StringUtils.isNotBlank( port ) )
             {
                 port = port.substring( 1 ); // remove ':'
                 return new String[]{host, port};
@@ -216,5 +219,27 @@ public class HostnamePort
             return new String[]{host};
         }
         return hostnamePort.split( ":" );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        HostnamePort that = (HostnamePort) o;
+        return Objects.equals( host, that.host ) &&
+                Arrays.equals( ports, that.ports );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( host, ports );
     }
 }

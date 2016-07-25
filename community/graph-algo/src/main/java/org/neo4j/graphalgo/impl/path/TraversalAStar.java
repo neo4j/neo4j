@@ -30,34 +30,29 @@ import org.neo4j.graphalgo.impl.util.PathInterest;
 import org.neo4j.graphalgo.impl.util.PathInterestFactory;
 import org.neo4j.graphalgo.impl.util.WeightedPathIterator;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.helpers.collection.Iterables;
 
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
 import static org.neo4j.graphdb.traversal.InitialBranchState.NO_STATE;
-import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
-import static org.neo4j.kernel.Traversal.traversal;
 
 /**
  * Implementation of A* algorithm, see {@link AStar}, but using the traversal
  * framework. It's still in an experimental state.
- *
- * @author Mattias Persson
- *
  */
 public class TraversalAStar implements PathFinder<WeightedPath>
 {
-    private final TraversalDescription traversalDescription;
     private final CostEvaluator<Double> costEvaluator;
+    private final PathExpander expander;
+    private final InitialBranchState initialState;
     private Traverser lastTraverser;
 
     private final EstimateEvaluator<Double> estimateEvaluator;
@@ -77,13 +72,6 @@ public class TraversalAStar implements PathFinder<WeightedPath>
     }
 
     @SuppressWarnings( "unchecked" )
-    public TraversalAStar( RelationshipExpander expander, CostEvaluator<Double> costEvaluator,
-            EstimateEvaluator<Double> estimateEvaluator )
-    {
-        this( toPathExpander( expander ), costEvaluator, estimateEvaluator, true );
-    }
-
-    @SuppressWarnings( "unchecked" )
     public <T> TraversalAStar( PathExpander<T> expander,
             CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator,
             boolean stopAfterLowestWeight )
@@ -98,26 +86,20 @@ public class TraversalAStar implements PathFinder<WeightedPath>
         this.costEvaluator = costEvaluator;
         this.estimateEvaluator = estimateEvaluator;
         this.stopAfterLowestWeight = stopAfterLowestWeight;
-        this.traversalDescription = traversal().uniqueness( Uniqueness.NONE ).expand( expander, initialState );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public TraversalAStar( RelationshipExpander expander, CostEvaluator<Double> costEvaluator,
-            EstimateEvaluator<Double> estimateEvaluator, boolean stopAfterLowestWeight )
-    {
-        this( toPathExpander( expander ), costEvaluator, estimateEvaluator, stopAfterLowestWeight );
+        this.expander = expander;
+        this.initialState = initialState;
     }
 
     @Override
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
-        return IteratorUtil.asIterable( findSinglePath( start, end ) );
+        return Iterables.asIterable( findSinglePath( start, end ) );
     }
 
     @Override
     public WeightedPath findSinglePath( Node start, Node end )
     {
-        return firstOrNull( findPaths( start, end, false ) );
+        return Iterables.firstOrNull( findPaths( start, end, false ) );
     }
 
     private Iterable<WeightedPath> findPaths( Node start, Node end, boolean multiplePaths )
@@ -130,6 +112,10 @@ public class TraversalAStar implements PathFinder<WeightedPath>
         else {
             interest = PathInterestFactory.single();
         }
+
+        GraphDatabaseService db = start.getGraphDatabase();
+        TraversalDescription traversalDescription = db.traversalDescription().uniqueness( Uniqueness.NONE )
+                .expand( expander, initialState );
 
         lastTraverser = traversalDescription.order(
                 new SelectorFactory( end, interest ) )

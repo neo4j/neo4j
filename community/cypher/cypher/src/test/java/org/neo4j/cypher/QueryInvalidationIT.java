@@ -27,17 +27,17 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.cypher.internal.compiler.v2_3.CypherCacheHitMonitor;
-import org.neo4j.cypher.internal.frontend.v2_3.ast.Query;
-import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.cypher.internal.compiler.v3_1.CypherCacheHitMonitor;
+import org.neo4j.cypher.internal.frontend.v3_1.ast.Query;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -137,7 +137,7 @@ public class QueryInvalidationIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( DynamicLabel.label( "User" ) ).on( "userId" ).create();
+            db.schema().indexFor( Label.label( "User" ) ).on( "userId" ).create();
             tx.success();
         }
         try ( Transaction tx = db.beginTx() )
@@ -166,7 +166,7 @@ public class QueryInvalidationIT
             params.put( "user1", user1 );
             params.put( "user2", user2 );
             db.execute( "MATCH (user1:User { userId: {user1} }), (user2:User { userId: {user2} }) " +
-                        "CREATE UNIQUE user1 -[:FRIEND]- user2", params );
+                        "CREATE UNIQUE (user1) -[:FRIEND]- (user2)", params );
         }
     }
 
@@ -209,7 +209,7 @@ public class QueryInvalidationIT
         }
 
         @Override
-        public void cacheDiscard( Query key )
+        public void cacheDiscard( Query key, String ignored )
         {
             discards.incrementAndGet();
         }

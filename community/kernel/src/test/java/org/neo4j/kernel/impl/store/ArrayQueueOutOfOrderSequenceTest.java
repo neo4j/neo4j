@@ -31,11 +31,14 @@ import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import static java.lang.Thread.sleep;
 import static java.lang.Thread.yield;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ArrayQueueOutOfOrderSequenceTest
 {
+    private final long[] EMPTY_META = new long[]{42L};
+
     @Test
     public void shouldExposeGapFreeSequenceSingleThreaded() throws Exception
     {
@@ -142,7 +145,7 @@ public class ArrayQueueOutOfOrderSequenceTest
                     while ( !end.get() )
                     {
                         long number = numberSource.incrementAndGet();
-                        offer( sequence, number, new long[]{number+2} );
+                        offer( sequence, number, new long[]{number + 2} );
                     }
                 }
             };
@@ -168,6 +171,19 @@ public class ArrayQueueOutOfOrderSequenceTest
         // THEN
         long lastNumber = numberSource.get();
         assertGet( sequence, lastNumber, new long[]{lastNumber + 2} );
+    }
+
+    @Test
+    public void highestEverSeenTest()
+    {
+        final OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 0, 5, EMPTY_META );
+        assertEquals( 0L, sequence.highestEverSeen() );
+
+        sequence.offer( 1L, EMPTY_META );
+        assertEquals( 1L, sequence.highestEverSeen() );
+
+        sequence.offer( 42L, EMPTY_META );
+        assertEquals( 42L, sequence.highestEverSeen() );
     }
 
     private boolean offer( OutOfOrderSequence sequence, long number, long[] meta )

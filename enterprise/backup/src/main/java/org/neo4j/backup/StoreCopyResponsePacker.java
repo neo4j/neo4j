@@ -19,7 +19,7 @@
  */
 package org.neo4j.backup;
 
-import java.io.IOException;
+import java.util.function.Supplier;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
@@ -29,7 +29,6 @@ import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreCopyServer.Monitor;
-import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -69,18 +68,13 @@ public class StoreCopyResponsePacker extends ResponsePacker
     {
         final long toStartFrom = mandatoryStartTransactionId;
         final long toEndAt = transactionIdStore.getLastCommittedTransactionId();
-        TransactionStream transactions = new TransactionStream()
-        {
-            @Override
-            public void accept( Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
+        TransactionStream transactions = visitor -> {
+            // Check so that it's even worth thinking about extracting any transactions at all
+            if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
             {
-                // Check so that it's even worth thinking about extracting any transactions at all
-                if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
-                {
-                    monitor.startStreamingTransactions( toStartFrom );
-                    extractTransactions( toStartFrom, filterVisitor( visitor, toEndAt ) );
-                    monitor.finishStreamingTransactions( toEndAt );
-                }
+                monitor.startStreamingTransactions( toStartFrom );
+                extractTransactions( toStartFrom, filterVisitor( visitor, toEndAt ) );
+                monitor.finishStreamingTransactions( toEndAt );
             }
         };
         return new TransactionStreamResponse<>( response, storeId.get(), transactions, ResourceReleaser.NO_OP );
@@ -88,7 +82,7 @@ public class StoreCopyResponsePacker extends ResponsePacker
 
     @Override
     protected void extractTransactions( long startingAtTransactionId,
-            Visitor<CommittedTransactionRepresentation, IOException> accumulator ) throws IOException
+            Visitor<CommittedTransactionRepresentation,Exception> accumulator ) throws Exception
     {
         try
         {
@@ -102,7 +96,7 @@ public class StoreCopyResponsePacker extends ResponsePacker
             {
                 // We don't necessarily need to ask that far back. Ask which is the oldest transaction in the log(s)
                 // that we can possibly serve
-                long oldestExistingTransactionId = logFileInformation.getFirstExistingTxId();
+                long oldestExistingTransactionId = logFileInformation.getFirstExistingEntryId();
                 if ( oldestExistingTransactionId == -1 )
                 {
                     // Seriously, there are no logs that we can serve?

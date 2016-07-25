@@ -26,7 +26,8 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.storageengine.api.Token;
 
 public interface KeyReadOperations
 {
@@ -55,9 +56,17 @@ public interface KeyReadOperations
     /** Returns the labels currently stored in the database **/
     Iterator<Token> labelsGetAllTokens( Statement state ); // TODO: Token is a store level concern, should not make it this far up the stack
 
+    /** Returns the relationship types currently stored in the database */
+    Iterator<Token> relationshipTypesGetAllTokens( Statement state );
+
     int relationshipTypeGetForName( Statement state, String relationshipTypeName );
 
     String relationshipTypeGetName( Statement state, int relationshipTypeId )
             throws RelationshipTypeIdNotFoundKernelException;
 
+    int labelCount( KernelStatement statement );
+
+    int propertyKeyCount( KernelStatement statement );
+
+    int relationshipTypeCount( KernelStatement statement );
 }

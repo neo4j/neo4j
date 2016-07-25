@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
 
 /**
@@ -28,5 +27,5 @@ import org.neo4j.kernel.api.properties.Property;
  */
 public interface PropertyAccessor
 {
-    Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException, PropertyNotFoundException;
+    Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 }

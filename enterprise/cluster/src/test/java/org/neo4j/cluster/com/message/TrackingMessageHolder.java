@@ -22,25 +22,25 @@ package org.neo4j.cluster.com.message;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 
 public class TrackingMessageHolder implements MessageHolder
 {
     private final List<Message> messages = new ArrayList<>();
-    
+
     @Override
     public void offer( Message<? extends MessageType> message )
     {
         messages.add( message );
     }
-    
+
     public <T extends MessageType> Message<T> single()
     {
-        return IteratorUtil.single( messages );
+        return Iterables.single( messages );
     }
 
     public <T extends MessageType> Message<T> first()
     {
-        return IteratorUtil.first( messages );
+        return Iterables.first( messages );
     }
 }

@@ -20,10 +20,9 @@
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
 import java.io.IOException;
+import java.util.function.BooleanSupplier;
 
-import org.neo4j.function.BooleanSupplier;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.Commitment;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -48,12 +47,10 @@ class Worker implements Runnable
         long latestTxId = TransactionIdStore.BASE_TX_ID;
         while ( condition.getAsBoolean() )
         {
-            TransactionRepresentation representation = factory.nextTransaction( latestTxId );
+            TransactionToApply transaction = factory.nextTransaction( latestTxId );
             try
             {
-                Commitment commitment = transactionAppender.append( representation, LogAppendEvent.NULL );
-                commitment.publishAsCommitted();
-                latestTxId = commitment.transactionId();
+                latestTxId = transactionAppender.append( transaction, LogAppendEvent.NULL );
             }
             catch ( IOException e )
             {

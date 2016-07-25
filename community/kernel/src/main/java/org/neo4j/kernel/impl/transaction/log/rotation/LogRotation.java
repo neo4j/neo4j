@@ -53,6 +53,7 @@ public interface LogRotation
     };
 
     /**
+     * Rotates the undelying log if it is required. Returns true if rotation happened, false otherwise
      * @param logAppendEvent A trace event for the current log append operation.
      */
     boolean rotateLogIfNeeded( LogAppendEvent logAppendEvent ) throws IOException;

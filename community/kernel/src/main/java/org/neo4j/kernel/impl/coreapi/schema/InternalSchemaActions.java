@@ -59,5 +59,5 @@ public interface InternalSchemaActions
 
     String getUserMessage( KernelException e );
 
-    void assertInUnterminatedTransaction();
+    void assertInOpenTransaction();
 }

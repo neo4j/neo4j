@@ -24,14 +24,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.modules.AuthorizationModule;
+import org.neo4j.server.modules.ConsoleModule;
 import org.neo4j.server.modules.DBMSModule;
 import org.neo4j.server.modules.ManagementApiModule;
 import org.neo4j.server.modules.Neo4jBrowserModule;
@@ -39,32 +41,20 @@ import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.SecurityRulesModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
-import org.neo4j.server.modules.WebAdminModule;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.JmxService;
-import org.neo4j.server.rest.management.MonitorService;
 import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.web.Jetty9WebServer;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
-/**
- * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
- * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
- */
-@Deprecated
 public class CommunityNeoServer extends AbstractNeoServer
 {
-    public static final GraphFactory COMMUNITY_FACTORY = new GraphFactory()
-    {
-        @Override
-        public GraphDatabaseAPI newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
-        {
-            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
-            return new CommunityFacadeFactory().newFacade( storeDir, config.getParams(), dependencies );
-        }
+    protected static final GraphFactory COMMUNITY_FACTORY = ( config, dependencies ) -> {
+        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
+        return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+                .newFacade( storeDir, config.getParams(), dependencies );
     };
 
     public CommunityNeoServer( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies,
@@ -83,20 +73,20 @@ public class CommunityNeoServer extends AbstractNeoServer
     protected Iterable<ServerModule> createServerModules()
     {
         return Arrays.asList(
-                new DBMSModule( webServer ),
+                new DBMSModule( webServer, getConfig() ),
                 new RESTApiModule( webServer, database, getConfig(), getDependencyResolver(), logProvider ),
                 new ManagementApiModule( webServer, getConfig() ),
                 new ThirdPartyJAXRSModule( webServer, getConfig(), logProvider, this ),
-                new WebAdminModule( webServer, getConfig() ),
+                new ConsoleModule( webServer, getConfig() ),
                 new Neo4jBrowserModule( webServer ),
-                new AuthorizationModule( webServer, authManager, logProvider, getConfig(), getUriWhitelist() ),
+                new AuthorizationModule( webServer, authManagerSupplier, logProvider, getConfig(), getUriWhitelist() ),
                 new SecurityRulesModule( webServer, getConfig(), logProvider ) );
     }
 
     @Override
     protected WebServer createWebServer()
     {
-		return new Jetty9WebServer( logProvider, getConfig() );
+        return new Jetty9WebServer( logProvider, getConfig() );
     }
 
     @Override
@@ -105,7 +95,6 @@ public class CommunityNeoServer extends AbstractNeoServer
         List<AdvertisableService> toReturn = new ArrayList<>( 3 );
         toReturn.add( new ConsoleService( null, null, logProvider, null ) );
         toReturn.add( new JmxService( null, null ) );
-        toReturn.add( new MonitorService( null, null ) );
 
         return toReturn;
     }

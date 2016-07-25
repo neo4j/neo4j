@@ -28,14 +28,14 @@ public interface Page
 {
     /**
      * Get the size of the cache page in bytes.
-     *
+     * <p>
      * Don't access memory beyond address() + size().
      */
     int size();
 
     /**
      * Get the memory address of the beginning of the page.
-     *
+     * <p>
      * Don't access memory beyond address() + size().
      */
     long address();

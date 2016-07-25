@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.io.File;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Assert;
@@ -36,29 +27,37 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Consumer;
+import java.io.File;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
+
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.kernel.impl.locking.LockService.LockType;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -689,7 +688,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     private static final long COLLISION_Y = 4611686018427387907L;
     private static final ExecutorService executor = Executors.newCachedThreadPool();
 
-    private Label label = DynamicLabel.label( "Cybermen" );
+    private Label label = Label.label( "Cybermen" );
     private String property = "name";
     private Node a;
     private Node b;
@@ -946,7 +945,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     // -- Set Up: Advanced transaction handling
 
-    private final Map<Transaction, TopLevelTransaction> txMap = new IdentityHashMap<>();
+    private final Map<Transaction,KernelTransaction> txMap = new IdentityHashMap<>();
 
     private void suspend( Transaction tx ) throws Exception
     {
@@ -1019,12 +1018,12 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         private final SchemaIndexProvider indexProvider;
 
         @Override
-        public Lifecycle newKernelExtension( NoDeps noDeps ) throws Throwable
+        public Lifecycle newInstance( KernelContext context, NoDeps noDeps ) throws Throwable
         {
             return indexProvider;
         }
 
-        public static interface NoDeps {
+        public interface NoDeps {
         }
 
         public PredefinedSchemaIndexProviderFactory( SchemaIndexProvider indexProvider )

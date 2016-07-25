@@ -28,6 +28,8 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+
 class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor<IOException>
 {
     private final int propertyKeyId;
@@ -35,6 +37,7 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor<IOExcep
     private final NodeRecord nodeRecord;
     boolean foundExact;
     private final PropertyStore propertyStore;
+    private final PropertyRecord propertyRecord;
     private final DuplicatePropertyRemover propertyRemover;
 
     public IndexConsultedPropertyBlockSweeper( int propertyKeyId, IndexLookup.Index index, NodeRecord nodeRecord,
@@ -46,15 +49,16 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor<IOExcep
         this.propertyStore = propertyStore;
         this.propertyRemover = propertyRemover;
         this.foundExact = false;
+        this.propertyRecord = propertyStore.newRecord();
     }
 
     @Override
     public boolean visited( long propRecordId ) throws IOException
     {
-        PropertyRecord record = propertyStore.getRecord( propRecordId );
+        propertyStore.getRecord( propRecordId, propertyRecord, NORMAL );
         boolean changed = false;
 
-        Iterator<PropertyBlock> it = record.iterator();
+        Iterator<PropertyBlock> it = propertyRecord.iterator();
         while ( it.hasNext() )
         {
             PropertyBlock block = it.next();
@@ -76,11 +80,11 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor<IOExcep
         }
         if ( changed )
         {
-            if ( record.numberOfProperties() == 0 )
+            if ( propertyRecord.numberOfProperties() == 0 )
             {
-                propertyRemover.fixUpPropertyLinksAroundUnusedRecord( nodeRecord, record );
+                propertyRemover.fixUpPropertyLinksAroundUnusedRecord( nodeRecord, propertyRecord );
             }
-            propertyStore.updateRecord( record );
+            propertyStore.updateRecord( propertyRecord );
         }
         return false;
     }

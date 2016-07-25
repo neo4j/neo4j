@@ -18,7 +18,7 @@ The first backup must be a full backup, after that incremental backups can be pe
 
 The source(s) are given as host:port pairs, the target is a filesystem location.
 
-For information regarding Windows, see http://neo4j.com/docs/stable/powershell.html.
+For help regarding Windows, see the reference in http://neo4j.com/docs/operations-manual/current/#powershell-windows.
 
 == BACKUP TYPE
 

@@ -1,5 +1,5 @@
 Neo4j
-Copyright © 2002-2015 Network Engine for Objects in Lund AB (referred to
+Copyright © 2002-2016 Network Engine for Objects in Lund AB (referred to
 in this notice as "Neo Technology")
    [http://neotechnology.com]
 
@@ -27,6 +27,8 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Configuration
   Apache Commons Lang
+  Apache Shiro :: Core
+  Apache Shiro :: Support :: EHCache
   Commons BeanUtils
   Commons Digester
   Commons IO
@@ -34,8 +36,9 @@ Apache Software License, Version 2.0
   Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
-  Ganglia Integration for Metrics
+  Ehcache Core
   Graphite Integration for Metrics
+  hazelcast-all
   Jackson
   JAX-RS provider for JSON content type
   Jetty :: Http Utility
@@ -46,14 +49,17 @@ Apache Software License, Version 2.0
   Jetty :: Utilities
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
+  Lucene codecs
+  Lucene Common Analyzers
   Lucene Core
+  Lucene Memory
+  Lucene QueryParsers
   Metrics Core
   Netty
   Netty/All-in-One
   opencsv
   parboiled-core
   parboiled-scala
-  RRD4J
 
 BSD - Scala License
   Scala Library
@@ -61,7 +67,6 @@ BSD - Scala License
 BSD License
   ASM Core
   Scala Compiler
-  scala-parser-combinators
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
@@ -85,9 +90,6 @@ Eclipse Public License, Version 1.0
   Jetty :: Utilities
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
-  Logback Access Module
-  Logback Classic Module
-  Logback Core Module
 
 GNU General Public License, version 2 with the Classpath Exception
   Java Servlet API
@@ -98,14 +100,7 @@ GNU General Public License, version 2 with the Classpath Exception
   jsr311-api
   MIME streaming extension
 
-GNU Lesser General Public License, Version 2.1
-  Logback Access Module
-  Logback Classic Module
-  Logback Core Module
-  Remote Tea Runtime
-
 MIT License
-  gmetric4j
   SLF4J API Module
 
 Mozilla Public License, Version 2.0
@@ -149,18 +144,6 @@ Jetty :: Webapp Application Support
 Jetty :: XML utilities
   Apache Software License, Version 2.0
   Eclipse Public License, Version 1.0
-
-Logback Access Module
-  Eclipse Public License, Version 1.0
-  GNU Lesser General Public License, Version 2.1
-
-Logback Classic Module
-  Eclipse Public License, Version 1.0
-  GNU Lesser General Public License, Version 2.1
-
-Logback Core Module
-  Eclipse Public License, Version 1.0
-  GNU Lesser General Public License, Version 2.1
 
 MIME streaming extension
   Common Development and Distribution License Version 1.1

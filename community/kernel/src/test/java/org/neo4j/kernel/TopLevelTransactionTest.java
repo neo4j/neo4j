@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertSame;

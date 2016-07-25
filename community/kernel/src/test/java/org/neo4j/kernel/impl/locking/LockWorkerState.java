@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.locking;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.kernel.impl.locking.Locks;
-
 class LockWorkerState
 {
     final Locks grabber;
@@ -31,18 +29,18 @@ class LockWorkerState
     volatile boolean deadlockOnLastWait;
     final List<String> completedOperations = new ArrayList<String>();
     String doing;
-    
+
     public LockWorkerState( Locks locks )
     {
         this.grabber = locks;
         this.client = locks.newClient();
     }
-    
+
     public void doing( String doing )
     {
         this.doing = doing;
     }
-    
+
     public void done()
     {
         this.completedOperations.add( this.doing );

@@ -24,31 +24,27 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
-import org.neo4j.kernel.api.index.util.FailureStorage;
-import org.neo4j.kernel.api.index.util.FolderLayout;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.test.TargetDirectory.testDirForTest;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 public class ConstraintIndexFailureIT
 {
-    public final @Rule TargetDirectory.TestDirectory storeDir = testDirForTest( ConstraintIndexFailureIT.class );
+    @Rule
+    public final TargetDirectory.TestDirectory storeDir = testDirForTest( ConstraintIndexFailureIT.class );
 
     @Test
     public void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed() throws Exception
@@ -82,7 +78,7 @@ public class ConstraintIndexFailureIT
 
     private GraphDatabaseService startDatabase()
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.directory().getAbsolutePath() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.directory().getAbsoluteFile() );
     }
 
     private void dbWithConstraint()
@@ -106,24 +102,9 @@ public class ConstraintIndexFailureIT
     private void storeIndexFailure( String failure ) throws IOException
     {
         File luceneRootDirectory = new File( storeDir.directory(), "schema/index/lucene" );
-        new FailureStorage( new DefaultFileSystemAbstraction(), new FolderLayout( luceneRootDirectory ) )
-                .storeIndexFailure( singleIndexId( luceneRootDirectory ), failure );
-    }
-
-    private int singleIndexId( File luceneRootDirectory )
-    {
-        List<Integer> indexIds = new ArrayList<>();
-        for ( String file : luceneRootDirectory.list() )
-        {
-            try
-            {
-                indexIds.add( Integer.parseInt( file ) );
-            }
-            catch ( NumberFormatException e )
-            {
-                // do nothing
-            }
-        }
-        return IteratorUtil.single( indexIds );
+        PartitionedIndexStorage indexStorage = LuceneIndexStorageBuilder.create()
+                .withIndexRootFolder( luceneRootDirectory )
+                .withIndexIdentifier( "1" ).build();
+        indexStorage.storeIndexFailure( failure );
     }
 }

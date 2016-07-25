@@ -20,8 +20,8 @@
 package org.neo4j.graphalgo.impl.util;
 
 import java.util.Comparator;
+import java.util.function.BiFunction;
 
-import org.neo4j.function.BiFunction;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.neo4j.graphalgo.impl.util.PathInterest.PriorityBasedPathInterest;
@@ -32,14 +32,7 @@ import static org.neo4j.graphalgo.impl.util.PathInterest.VisitCountBasedPathInte
  */
 public class PathInterestFactory
 {
-    public static final Comparator<Comparable> STANDARD_COMPARATOR = new Comparator<Comparable>()
-    {
-        @Override
-        public int compare( Comparable o1, Comparable o2 )
-        {
-            return o1.compareTo( o2 );
-        }
-    };
+    public static final Comparator<Comparable> STANDARD_COMPARATOR = Comparable::compareTo;
 
     public static PathInterest<? extends Comparable> single()
     {
@@ -93,14 +86,7 @@ public class PathInterestFactory
                 {
                     if ( interestFunction == null )
                     {
-                        interestFunction = new BiFunction<Comparable,Comparable,Boolean>()
-                        {
-                            @Override
-                            public Boolean apply( Comparable newValue, Comparable oldValue )
-                            {
-                                return newValue.compareTo( oldValue ) <= 0;
-                            }
-                        };
+                        interestFunction = ( newValue, oldValue ) -> newValue.compareTo( oldValue ) <= 0;
                     }
                     return interestFunction;
                 }

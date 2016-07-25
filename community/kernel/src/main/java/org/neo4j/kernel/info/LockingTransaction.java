@@ -24,10 +24,11 @@ import java.io.Serializable;
 
 public class LockingTransaction implements Serializable
 {
-    private static final long serialVersionUID = 1L;
-    private final String transaction;
-    private final int readCount;
-    private final int writeCount;
+    private static final long serialVersionUID = -8743172898557855333L;
+
+    private String transaction;
+    private int readCount;
+    private int writeCount;
 
     @ConstructorProperties( { "transaction", "readCount", "writeCount" } )
     public LockingTransaction( String transaction, int readCount, int writeCount )

@@ -24,10 +24,10 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.neo4j.kernel.impl.store.id.IdGeneratorImpl.createGenerator;
 
@@ -37,7 +37,7 @@ import static org.neo4j.kernel.impl.store.id.IdGeneratorImpl.createGenerator;
  */
 public class BatchingIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final Map<IdType,IdGenerator> idGenerators = new EnumMap<>( IdType.class );
+    private final Map<IdType, IdGenerator> idGenerators = new EnumMap<>( IdType.class );
     private final FileSystemAbstraction fs;
 
     public BatchingIdGeneratorFactory( FileSystemAbstraction fs )
@@ -46,13 +46,13 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, long highId )
+    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
     {
-        return open( filename, 0, idType, highId );
+        return open( filename, 0, idType, highId, maxId );
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
     {
         IdGenerator generator = idGenerators.get( idType );
         if ( generator == null )

@@ -20,12 +20,12 @@
 package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
+import java.util.Collection;
 
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
-
-import static org.neo4j.register.Register.DoubleLong;
+import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
  * Used for initial population of an index.
@@ -49,11 +49,12 @@ public interface IndexPopulator
      * Implementations may verify constraints at this time, or defer them until the first verification
      * of {@link #verifyDeferredConstraints(PropertyAccessor)}.
      *
-     * @param nodeId node id to index.
-     * @param propertyValue property value for the entry to index.
+     * @param updates batch of node property updates that needs to be inserted. Node ids will be retrieved using
+     * {@link NodePropertyUpdate#getNodeId()} method and property values will be retrieved using
+     * {@link NodePropertyUpdate#getValueAfter()} method.
      */
-    void add( long nodeId, Object propertyValue )
-            throws IndexEntryConflictException, IOException, IndexCapacityExceededException;
+    void add( Collection<NodePropertyUpdate> updates )
+            throws IndexEntryConflictException, IOException;
 
     /**
      * Verify constraints for all entries added so far.
@@ -69,7 +70,7 @@ public interface IndexPopulator
      * Simultaneously as population progresses there might be incoming updates
      * from committing transactions, which needs to be applied as well. This populator will only receive updates
      * for nodes that it already has seen. Updates coming in here must be applied idempotently as the same data
-     * may have been {@link #add(long, Object) added previously}.
+     * may have been {@link #add(Collection) added previously}.
      * Updates can come in two different {@link NodePropertyUpdate#getUpdateMode() modes}.
      * <ol>
      *   <li>{@link UpdateMode#ADDED} means that there's an added property to a node already seen by this
@@ -95,7 +96,7 @@ public interface IndexPopulator
      * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
      * {@link SchemaIndexProvider#getInitialState(long)} also returns {@link InternalIndexState#ONLINE}.
      */
-    void close( boolean populationCompletedSuccessfully ) throws IOException, IndexCapacityExceededException;
+    void close( boolean populationCompletedSuccessfully ) throws IOException;
 
     /**
      * Called then a population failed. The failure string should be stored for future retrieval by
@@ -107,7 +108,14 @@ public interface IndexPopulator
      */
     void markAsFailed( String failure ) throws IOException;
 
-    long sampleResult( DoubleLong.Out result );
+    /**
+     * Add the given {@link NodePropertyUpdate update} to the sampler for this index.
+     *
+     * @param update update to include in sample
+     */
+    void includeSample( NodePropertyUpdate update );
+
+    IndexSample sampleResult();
 
     class Adapter implements IndexPopulator
     {
@@ -122,7 +130,7 @@ public interface IndexPopulator
         }
 
         @Override
-        public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
+        public void add( Collection<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
         {
         }
 
@@ -148,10 +156,14 @@ public interface IndexPopulator
         }
 
         @Override
-        public long sampleResult( DoubleLong.Out result )
+        public void includeSample( NodePropertyUpdate update )
         {
-            result.write( 0l, 0l );
-            return 0;
+        }
+
+        @Override
+        public IndexSample sampleResult()
+        {
+            return new IndexSample();
         }
     }
 }

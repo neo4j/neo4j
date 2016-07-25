@@ -30,10 +30,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.function.Factory;
-import org.neo4j.test.ArtificialClock;
+import org.neo4j.helpers.FakeClock;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -49,52 +49,38 @@ public class TimedRepositoryTest
     private final AtomicLong valueGenerator = new AtomicLong();
     private final List<Long> reapedValues = new ArrayList<>();
 
-    private final Factory<Long> provider = new Factory<Long>()
-    {
-        @Override
-        public Long newInstance()
-        {
-            return valueGenerator.getAndIncrement();
-        }
-    };
-    private final Consumer<Long> consumer = new Consumer<Long>()
-    {
-        @Override
-        public void accept( Long value )
-        {
-            reapedValues.add( value );
-        }
-    };
+    private final Factory<Long> provider = valueGenerator::getAndIncrement;
+    private final Consumer<Long> consumer = reapedValues::add;
 
     private final long timeout = 100;
-    private final ArtificialClock clock = new ArtificialClock();
+    private final FakeClock clock = new FakeClock();
     private final TimedRepository<Long,Long> repo = new TimedRepository<>( provider, consumer, timeout, clock );
 
     @Test
     public void shouldManageLifecycleWithNoTimeouts() throws Exception
     {
         // When
-        repo.begin( 1l );
-        long acquired = repo.acquire( 1l );
-        repo.release( 1l );
-        repo.end( 1l );
+        repo.begin( 1L );
+        long acquired = repo.acquire( 1L );
+        repo.release( 1L );
+        repo.end( 1L );
 
         // Then
-        assertThat( acquired, equalTo( 0l ) );
-        assertThat( reapedValues, equalTo( asList( 0l ) ) );
+        assertThat( acquired, equalTo( 0L ) );
+        assertThat( reapedValues, equalTo( asList( 0L ) ) );
     }
 
     @Test
     public void shouldNotAllowOthersAccessWhenAcquired() throws Exception
     {
         // Given
-        repo.begin( 1l );
-        repo.acquire( 1l );
+        repo.begin( 1L );
+        repo.acquire( 1L );
 
         // When
         try
         {
-            repo.acquire( 1l );
+            repo.acquire( 1L );
             fail( "Should not have been allowed access." );
         }
         catch ( ConcurrentAccessException e )
@@ -104,23 +90,23 @@ public class TimedRepositoryTest
         }
 
         // But when
-        repo.release( 1l );
+        repo.release( 1L );
 
         // Then
-        assertThat( repo.acquire( 1l ), equalTo( 0l ) );
+        assertThat( repo.acquire( 1L ), equalTo( 0L ) );
     }
 
     @Test
     public void shouldNotAllowAccessAfterEnd() throws Exception
     {
         // Given
-        repo.begin( 1l );
-        repo.end( 1l );
+        repo.begin( 1L );
+        repo.end( 1L );
 
         // When
         try
         {
-            repo.acquire( 1l );
+            repo.acquire( 1L );
             fail( "Should not have been able to acquire." );
         }
         catch ( NoSuchEntryException e )
@@ -133,11 +119,11 @@ public class TimedRepositoryTest
     public void shouldSilentlyAllowMultipleEndings() throws Exception
     {
         // Given
-        repo.begin( 1l );
-        repo.end( 1l );
+        repo.begin( 1L );
+        repo.end( 1L );
 
         // When
-        repo.end( 1l );
+        repo.end( 1L );
 
         // Then no exception should've been thrown
     }
@@ -146,32 +132,32 @@ public class TimedRepositoryTest
     public void shouldNotEndImmediatelyIfEntryIsUsed() throws Exception
     {
         // Given
-        repo.begin( 1l );
-        repo.acquire( 1l );
+        repo.begin( 1L );
+        repo.acquire( 1L );
 
         // When
-        repo.end( 1l );
+        repo.end( 1L );
 
         // Then
         assertTrue( reapedValues.isEmpty() );
 
         // But when
-        repo.release( 1l );
+        repo.release( 1L );
 
         // Then
-        assertThat( reapedValues, equalTo( asList( 0l ) ) );
+        assertThat( reapedValues, equalTo( asList( 0L ) ) );
     }
 
     @Test
     public void shouldNotAllowBeginningWithDuplicateKey() throws Exception
     {
         // Given
-        repo.begin( 1l );
+        repo.begin( 1L );
 
         // When
         try
         {
-            repo.begin( 1l );
+            repo.begin( 1L );
             fail( "Should not have been able to begin." );
         }
         catch ( ConcurrentAccessException e )
@@ -185,27 +171,27 @@ public class TimedRepositoryTest
     public void shouldTimeOutUnusedEntries() throws Exception
     {
         // Given
-        repo.begin( 1l );
-        repo.acquire( 1l );
-        repo.release( 1l );
+        repo.begin( 1L );
+        repo.acquire( 1L );
+        repo.release( 1L );
 
         // When
         repo.run();
 
         // Then nothing should've happened, because the entry should not yet get timed out
-        assertThat( repo.acquire( 1l ), equalTo( 0l ) );
-        repo.release( 1l );
+        assertThat( repo.acquire( 1L ), equalTo( 0L ) );
+        repo.release( 1L );
 
         // But When
-        clock.progress( timeout + 1, MILLISECONDS );
+        clock.forward( timeout + 1, MILLISECONDS );
         repo.run();
 
         // Then
-        assertThat( reapedValues, equalTo( asList( 0l ) ) );
+        assertThat( reapedValues, equalTo( asList( 0L ) ) );
 
         try
         {
-            repo.acquire( 1l );
+            repo.acquire( 1L );
             fail( "Should not have been possible to acquire." );
         }
         catch ( NoSuchEntryException e )
@@ -218,12 +204,12 @@ public class TimedRepositoryTest
     public void usingDuplicateKeysShouldDisposeOfPreemptiveAllocatedValue() throws Exception
     {
         // Given
-        repo.begin( 1l );
+        repo.begin( 1L );
 
         // When
         try
         {
-            repo.begin( 1l );
+            repo.begin( 1L );
             fail( "Should not have been able to begin." );
         }
         catch ( ConcurrentAccessException e )
@@ -233,23 +219,23 @@ public class TimedRepositoryTest
             assertThat( e.getMessage(), containsString( "Cannot begin '1', because Entry" ) );
             assertThat( e.getMessage(), containsString( " with that key already exists." ) );
         }
-        assertThat( reapedValues, equalTo( asList( 1l ) ) );
+        assertThat( reapedValues, equalTo( asList( 1L ) ) );
     }
 
     @Test
     public void shouldAllowBeginWithSameKeyAfterSessionRelease() throws Exception
     {
         // Given
-        repo.begin( 1l );
-        repo.acquire( 1l );
+        repo.begin( 1L );
+        repo.acquire( 1L );
 
         // when
-        repo.release( 1l );
-        repo.end( 1l );
+        repo.release( 1L );
+        repo.end( 1L );
 
         //then
-        repo.begin( 1l );
-        assertThat( reapedValues, equalTo( asList( 0l ) ) );
+        repo.begin( 1L );
+        assertThat( reapedValues, equalTo( asList( 0L ) ) );
     }
 
     @Test
@@ -271,7 +257,7 @@ public class TimedRepositoryTest
             {
                 timedRepository.begin( entryKey );
                 timedRepository.acquire( entryKey );
-                clock.progress( 10, TimeUnit.MILLISECONDS );
+                clock.forward( 10, TimeUnit.MILLISECONDS );
                 timedRepository.release( entryKey );
                 timedRepository.end( entryKey );
 

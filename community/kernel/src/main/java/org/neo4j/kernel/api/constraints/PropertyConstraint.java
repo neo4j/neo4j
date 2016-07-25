@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 
+/**
+ * Base class describing a property constraint.
+ */
 public abstract class PropertyConstraint
 {
     public interface ChangeVisitor
@@ -61,12 +60,7 @@ public abstract class PropertyConstraint
         return propertyKeyId;
     }
 
-    public abstract ConstraintType type();
-
     public abstract String userDescription( TokenNameLookup tokenNameLookup );
-
-    public abstract ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions,
-            ReadOperations readOps );
 
     @Override
     public abstract boolean equals( Object o );

@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import java.util.function.Predicate;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.function.Predicate;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -31,10 +33,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.helpers.collection.Iterables;
 
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfAcceptedByAny;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestMultipleFilters extends TraversalTestBase
 {
@@ -62,7 +63,7 @@ public class TestMultipleFilters extends TraversalTestBase
     {
          tx.close();
     }
-    
+
     private static class MustBeConnectedToNodeFilter implements Predicate<Path>, Evaluator
     {
         private final Node node;
@@ -95,30 +96,26 @@ public class TestMultipleFilters extends TraversalTestBase
     public void testNarrowingFilters()
     {
         Evaluator mustBeConnectedToK = new MustBeConnectedToNodeFilter( getNodeWithName( "k" ) );
-        Evaluator mustNotHaveMoreThanTwoOutRels = new Evaluator()
-        {
-            public Evaluation evaluate( Path path )
-            {
-                return Evaluation.ofIncludes( count( path.endNode().getRelationships( Direction.OUTGOING ) ) <= 2 );
-            }
-        };
-        
-        TraversalDescription description = traversal().evaluator( mustBeConnectedToK );
+        Evaluator mustNotHaveMoreThanTwoOutRels =
+                path -> Evaluation.ofIncludes( Iterables
+                                                       .count( path.endNode().getRelationships( Direction.OUTGOING ) ) <= 2 );
+
+        TraversalDescription description = getGraphDb().traversalDescription().evaluator( mustBeConnectedToK );
         expectNodes( description.traverse( node( "a" ) ), "b", "c" );
         expectNodes( description.evaluator( mustNotHaveMoreThanTwoOutRels ).traverse( node( "a" ) ), "c" );
     }
-    
+
     @Test
     public void testBroadeningFilters()
     {
         MustBeConnectedToNodeFilter mustBeConnectedToC = new MustBeConnectedToNodeFilter( getNodeWithName( "c" ) );
         MustBeConnectedToNodeFilter mustBeConnectedToE = new MustBeConnectedToNodeFilter( getNodeWithName( "e" ) );
-        
+
         // Nodes connected (OUTGOING) to c (which "a" is)
-        expectNodes( traversal().evaluator( mustBeConnectedToC ).traverse( node( "a" ) ), "a" );
+        expectNodes( getGraphDb().traversalDescription().evaluator( mustBeConnectedToC ).traverse( node( "a" ) ), "a" );
         // Nodes connected (OUTGOING) to c AND e (which none is)
-        expectNodes( traversal().evaluator( mustBeConnectedToC ).evaluator( mustBeConnectedToE ).traverse( node( "a" ) ) );
+        expectNodes( getGraphDb().traversalDescription().evaluator( mustBeConnectedToC ).evaluator( mustBeConnectedToE ).traverse( node( "a" ) ) );
         // Nodes connected (OUTGOING) to c OR e (which "a" and "b" is)
-        expectNodes( traversal().evaluator( includeIfAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) ).traverse( node( "a" ) ), "a", "b" );
+        expectNodes( getGraphDb().traversalDescription().evaluator( includeIfAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) ).traverse( node( "a" ) ), "a", "b" );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.io.fs;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.Test;
 
@@ -35,7 +36,7 @@ public class StoreFileChannelTest
         FileChannel mockChannel = mock(FileChannel.class);
         when(mockChannel.write( any(ByteBuffer.class), anyLong() )).thenReturn( 4 );
 
-        ByteBuffer buffer = ByteBuffer.wrap( "Hello, world!".getBytes( "UTF-8" ) );
+        ByteBuffer buffer = ByteBuffer.wrap( "Hello, world!".getBytes( StandardCharsets.UTF_8 ) );
 
         StoreFileChannel channel = new StoreFileChannel( mockChannel );
 

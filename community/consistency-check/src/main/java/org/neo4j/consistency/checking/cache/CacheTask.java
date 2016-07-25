@@ -23,9 +23,13 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckerTask;
 import org.neo4j.consistency.checking.full.Stage;
 import org.neo4j.consistency.checking.full.StoreProcessor;
 import org.neo4j.consistency.statistics.Statistics;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
  * Action to be manipulate the {@link CacheAccess} in some way.
@@ -56,9 +60,9 @@ public abstract class CacheTask extends ConsistencyCheckerTask
 
     public static class CacheNextRel extends CacheTask
     {
-        private final Iterable<NodeRecord> nodes;
+        private final ResourceIterable<NodeRecord> nodes;
 
-        public CacheNextRel( Stage stage, CacheAccess cacheAccess, Iterable<NodeRecord> nodes )
+        public CacheNextRel( Stage stage, CacheAccess cacheAccess, ResourceIterable<NodeRecord> nodes )
         {
             super( stage, cacheAccess );
             this.nodes = nodes;
@@ -70,12 +74,16 @@ public abstract class CacheTask extends ConsistencyCheckerTask
             cacheAccess.clearCache();
             long[] fields = new long[] {1, 0, -1};
             CacheAccess.Client client = cacheAccess.client();
-            for ( NodeRecord node : nodes )
+            try ( ResourceIterator<NodeRecord> nodeRecords = nodes.iterator() )
             {
-                if ( node.inUse() )
+                while ( nodeRecords.hasNext() )
                 {
-                    fields[CacheSlots.NextRelationhip.SLOT_RELATIONSHIP_ID] = node.getNextRel();
-                    client.putToCache( node.getId(), fields );
+                    NodeRecord node = nodeRecords.next();
+                    if ( node.inUse() )
+                    {
+                        fields[CacheSlots.NextRelationhip.SLOT_RELATIONSHIP_ID] = node.getNextRel();
+                        client.putToCache( node.getId(), fields );
+                    }
                 }
             }
         }
@@ -103,8 +111,9 @@ public abstract class CacheTask extends ConsistencyCheckerTask
             {
                 if ( client.getFromCache( nodeId, CacheSlots.NextRelationhip.SLOT_FIRST_IN_TARGET ) == 0 )
                 {
-                    NodeRecord node = nodeStore.forceGetRecord( nodeId );
-                    if ( !node.isDense() )
+                    // TODO reuse record instances?
+                    NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
+                    if ( node.inUse() && !node.isDense() )
                     {
                         storeProcessor.processNode( nodeStore, node );
                     }

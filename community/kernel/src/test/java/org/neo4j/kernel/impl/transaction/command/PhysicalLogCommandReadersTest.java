@@ -25,7 +25,9 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.storageengine.api.CommandReader;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -50,12 +52,6 @@ public class PhysicalLogCommandReadersTest
     private static final long OWNING_NODE = 42;
 
     @Test
-    public void readRelGroupWithHugeTypeInV1_9()
-    {
-        assertDoesNotKnowAboutRelGroups( new PhysicalLogCommandReaderV1_9() );
-    }
-
-    @Test
     public void readRelGroupWithHugeTypeInV2_0()
     {
         assertDoesNotKnowAboutRelGroups( new PhysicalLogCommandReaderV2_0() );
@@ -70,7 +66,7 @@ public class PhysicalLogCommandReadersTest
     @Test
     public void readRelGroupWithHugeTypeInV2_2() throws IOException
     {
-        assertCanReadRelGroup( new PhysicalLogNeoCommandReaderV2_2() );
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2() );
     }
 
     @Test
@@ -83,6 +79,18 @@ public class PhysicalLogCommandReadersTest
     public void readRelGroupWithHugeTypeInV2_2_10() throws IOException
     {
         assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2_10() );
+    }
+
+    @Test
+    public void readRelGroupWithHugeTypeInV3_0() throws IOException
+    {
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0() );
+    }
+
+    @Test
+    public void readRelGroupWithHugeTypeInV3_0_2() throws IOException
+    {
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0_2() );
     }
 
     private static void assertDoesNotKnowAboutRelGroups( CommandReader reader )
@@ -100,15 +108,15 @@ public class PhysicalLogCommandReadersTest
 
     private void assertCanReadRelGroup( CommandReader reader ) throws IOException
     {
-        Command command = reader.read( channelWithRelGroupRecord() );
+        StorageCommand command = reader.read( channelWithRelGroupRecord() );
         assertValidRelGroupCommand( command );
     }
 
-    private static void assertValidRelGroupCommand( Command command )
+    private static void assertValidRelGroupCommand( StorageCommand command )
     {
         assertThat( command, instanceOf( RelationshipGroupCommand.class ) );
         RelationshipGroupCommand relGroupCommand = (RelationshipGroupCommand) command;
-        RelationshipGroupRecord record = relGroupCommand.getRecord();
+        RelationshipGroupRecord record = relGroupCommand.getAfter();
 
         assertEquals( ID, record.getId() );
         if ( IN_USE_FLAG == Record.IN_USE.byteValue() )
@@ -131,15 +139,15 @@ public class PhysicalLogCommandReadersTest
         assertEquals( OWNING_NODE, record.getOwningNode() );
     }
 
-    private static ReadableLogChannel channelWithRelGroupRecord() throws IOException
+    private static ReadableChannel channelWithRelGroupRecord() throws IOException
     {
         return channelWithRelGroupRecord( ID, IN_USE_FLAG, TYPE, NEXT, FIRST_OUT, FIRST_IN, FIRST_LOOP, OWNING_NODE );
     }
 
-    private static ReadableLogChannel channelWithRelGroupRecord( long id, byte inUse, short type, long next,
+    private static ReadableChannel channelWithRelGroupRecord( long id, byte inUse, short type, long next,
             long firstOut, long firstIn, long firstLoop, long owningNode ) throws IOException
     {
-        ReadableLogChannel channel = mock( ReadableLogChannel.class );
+        ReadableChannel channel = mock( ReadableChannel.class );
 
         when( channel.get() ).thenReturn( NeoCommandType.REL_GROUP_COMMAND ).thenReturn( inUse );
         when( channel.getLong() ).thenReturn( id ).thenReturn( next ).thenReturn( firstOut ).thenReturn( firstIn )

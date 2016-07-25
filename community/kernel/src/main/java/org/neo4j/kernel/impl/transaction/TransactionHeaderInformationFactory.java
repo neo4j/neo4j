@@ -38,7 +38,7 @@ public interface TransactionHeaderInformationFactory
         }
     };
 
-    static abstract class WithRandomBytes implements TransactionHeaderInformationFactory
+    abstract static class WithRandomBytes implements TransactionHeaderInformationFactory
     {
         private static final int ADDITIONAL_HEADER_SIZE = 8;
 

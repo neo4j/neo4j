@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.util.concurrent;
 
-import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.WaitStrategy;
 
 public enum LockWaitStrategies implements WaitStrategy<AcquireLockTimeoutException>
 {

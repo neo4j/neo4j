@@ -36,13 +36,12 @@ To gather good statistics about Neo4j usage, UDC collects this information:
 * The JVM heap size.
 * The number of nodes, relationships, labels and properties in the database.
 
-After startup, UDC waits for ten minutes before sending the first ping. It does this for two reasons; first, we don't want the startup to be slower because of UDC, and secondly, we want to keep pings from automatic tests to a minimum. The ping to the UDC servers is done with a HTTP GET.
+After startup, UDC waits for ten minutes before sending the first ping.
+It does this for two reasons; first, we don't want the startup to be slower because of UDC, and secondly, we want to keep pings from automatic tests to a minimum.
+The ping to the UDC servers is done with a HTTP GET.
 
 
 == How to disable UDC ==
 
-UDC is easily turned off by disabling it in the database configuration.
-In _conf/neo4j.properties_ for Neo4j server or in the configuration passed to the database in embedded mode.
-
-include::{importdir}/neo4j-udc-docs-jar/ops/configuration-attributes.asciidoc[]
-
+UDC is easily turned off by disabling it in the database configuration, in _neo4j.conf_ for Neo4j server or in the configuration passed to the database in embedded mode.
+See <<config_dbms.udc.enabled,UDC Configuration>> in the configuration section for details.

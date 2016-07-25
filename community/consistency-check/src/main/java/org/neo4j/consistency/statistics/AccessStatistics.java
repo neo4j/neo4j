@@ -24,12 +24,13 @@ import java.util.Map;
 
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static java.lang.String.format;
 
 /**
- * Keeps access statistics about a store, i.e. identifying {@link RecordStore#getRecord(long)} patterns
- * and how random the access is.
+ * Keeps access statistics about a store, i.e. identifying
+ * {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)} patterns and how random the access is.
  */
 public class AccessStatistics
 {

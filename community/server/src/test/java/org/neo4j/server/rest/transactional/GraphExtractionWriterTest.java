@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,29 +32,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.Property;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.test.Property.property;
-import static org.neo4j.test.mocking.GraphMock.node;
-import static org.neo4j.test.mocking.GraphMock.path;
-import static org.neo4j.test.mocking.GraphMock.relationship;
-import static org.neo4j.test.mocking.Link.link;
-import static org.neo4j.test.mocking.Properties.properties;
+import static org.neo4j.test.mockito.mock.GraphMock.node;
+import static org.neo4j.test.mockito.mock.GraphMock.path;
+import static org.neo4j.test.mockito.mock.GraphMock.relationship;
+import static org.neo4j.test.mockito.mock.Link.link;
+import static org.neo4j.test.mockito.mock.Properties.properties;
 
 public class GraphExtractionWriterTest
 {
@@ -58,6 +57,7 @@ public class GraphExtractionWriterTest
     private final Node n3 = node( 42, properties( property( "name", "n3" ) ), "Foo", "Bar" );
     private final Relationship r1 = relationship( 7, n1, "ONE", n2, property( "name", "r1" ) );
     private final Relationship r2 = relationship( 8, n1, "TWO", n3, property( "name", "r2" ) );
+    private final TransactionStateChecker checker = new TransactionStateChecker( id -> false, id -> false );
 
     @Test
     public void shouldExtractNodesFromRow() throws Exception
@@ -193,14 +193,14 @@ public class GraphExtractionWriterTest
         json.writeStartObject();
         try
         {
-            new GraphExtractionWriter().write( json, row.keySet(), new MapRow( row ) );
+            new GraphExtractionWriter().write( json, row.keySet(), new MapRow( row ), checker );
         }
         finally
         {
             json.writeEndObject();
             json.flush();
         }
-        return JsonHelper.jsonNode( out.toString( "UTF-8" ) );
+        return JsonHelper.jsonNode( out.toString( UTF_8.name() ) );
     }
 
     // The expected format of the result

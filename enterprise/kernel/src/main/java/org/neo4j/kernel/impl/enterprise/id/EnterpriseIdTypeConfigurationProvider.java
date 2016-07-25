@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.enterprise.id;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.neo4j.kernel.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.IdTypeConfiguration;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
+import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
 
 /**
  * Id type configuration provider for enterprise edition.
@@ -57,14 +57,13 @@ public class EnterpriseIdTypeConfigurationProvider extends CommunityIdTypeConfig
     private EnumSet<IdType> configureReusableTypes( Config config )
     {
         List<String> typeNames = config.get( EnterpriseEditionSettings.idTypesToReuse );
-        List<IdType> idTypes = new ArrayList<>();
-        for ( String idType : typeNames )
-        {
-            idTypes.add( IdType.valueOf( idType ) );
-        }
+
+        Set<IdType> configuredTypesToReuse = typeNames.stream()
+                                                      .map( IdType::valueOf )
+                                                      .collect( Collectors.toSet() );
 
         EnumSet<IdType> types = EnumSet.copyOf( super.getTypesToReuse() );
-        types.addAll( idTypes );
+        types.addAll( configuredTypesToReuse );
         return types;
     }
 }

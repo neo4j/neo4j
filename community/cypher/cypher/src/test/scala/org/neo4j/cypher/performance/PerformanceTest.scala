@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.performance
 
-import org.neo4j.cypher.ExecutionEngine
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import java.io.File
+import java.util.Collections
+
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
-import org.neo4j.graphdb.{DynamicRelationshipType, GraphDatabaseService, Node}
+import org.neo4j.graphdb.{GraphDatabaseService, Node, RelationshipType}
 
 import scala.util.Random
 
@@ -30,12 +32,10 @@ class PerformanceTest extends CypherFunSuite {
   val r = new Random()
 
   var db: GraphDatabaseService = null
-  var engine: ExecutionEngine = null
 
   override def beforeEach() {
     super.beforeEach()
-    db = new GraphDatabaseFactory().newEmbeddedDatabase("target/db");
-    engine = new ExecutionEngine(db)
+    db = new GraphDatabaseFactory().newEmbeddedDatabase(new File("target/db"))
   }
 
   override def afterEach() {
@@ -44,7 +44,6 @@ class PerformanceTest extends CypherFunSuite {
   }
 
   ignore("createDatabase") {
-
     val startPoints = (0 to 10).map(x => {
       val tx = db.beginTx()
 
@@ -64,11 +63,14 @@ class PerformanceTest extends CypherFunSuite {
       a
     })
 
-    val engine = new ExecutionEngine(db)
+    val t0: Double = System.nanoTime
 
-    val t0 = System.nanoTime : Double
-    engine.execute("start a=node({root}) match a-->b-->c, b-->d return a,count(*)", Map("root"->startPoints)).toList
-    val t1 = System.nanoTime : Double
+    val result = db.execute("start a=node({root}) match a-->b-->c, b-->d return a,count(*)",
+      Collections.singletonMap("root", startPoints))
+    result.resultAsString()
+    result.close()
+
+    val t1: Double = System.nanoTime
     println("Elapsed time " + (t1 - t0) / 1000000.0 + " msecs")
   }
 
@@ -77,6 +79,6 @@ class PerformanceTest extends CypherFunSuite {
   }
 
   def relate(a: Node, b: Node) {
-    a.createRelationshipTo(b, DynamicRelationshipType.withName("r"))
+    a.createRelationshipTo(b, RelationshipType.withName("r"))
   }
 }

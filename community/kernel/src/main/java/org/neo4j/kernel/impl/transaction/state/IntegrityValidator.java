@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -27,9 +28,9 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernel
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 
 /**
  * Validates data integrity during the prepare phase of {@link TransactionRecordState}.
@@ -49,8 +50,9 @@ public class IntegrityValidator
     {
         if ( !record.inUse() && record.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            throw new TransactionFailureException( Status.Transaction.ValidationFailed,
-                    "Node record " + record + " still has relationships" );
+            throw new ConstraintViolationTransactionFailureException(
+                    "Cannot delete node<" + record.getId() + ">, because it still has relationships. " +
+                    "To delete this node, you must first delete its relationships." );
         }
     }
 
@@ -84,14 +86,14 @@ public class IntegrityValidator
             }
             catch ( ConstraintVerificationFailedKernelException e )
             {
-                throw new TransactionFailureException( Status.Transaction.ValidationFailed, e, "Index validation failed" );
+                throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e, "Index validation failed" );
             }
             catch ( IndexNotFoundKernelException | IndexPopulationFailedKernelException e )
             {
                 // We don't expect this to occur, and if they do, it is because we are in a very bad state - out of
                 // disk or index corruption, or similar. This will kill the database such that it can be shut down
                 // and have recovery performed. It's the safest bet to avoid loosing data.
-                throw new TransactionFailureException( Status.Transaction.ValidationFailed, e, "Index population failure" );
+                throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e, "Index population failure" );
             }
         }
     }

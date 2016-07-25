@@ -20,54 +20,50 @@
 package org.neo4j.desktop.runtime;
 
 import java.io.File;
+import java.util.Optional;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.desktop.Parameters;
 import org.neo4j.desktop.config.Installation;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLog;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.BaseServerConfigLoader;
+import org.neo4j.server.CommunityBootstrapper;
+import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.web.ServerInternalSettings;
+import org.neo4j.server.configuration.ServerSettings.HttpConnector;
 
-import static org.neo4j.helpers.Pair.pair;
-import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
-import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
-import static org.neo4j.server.web.ServerInternalSettings.auth_store;
+import static org.neo4j.helpers.collection.Pair.pair;
 
 public class DesktopConfigurator
 {
     private final Installation installation;
 
     private Config config;
+    private final Parameters parameters;
     private File dbDir;
 
-    public DesktopConfigurator( Installation installation, File databaseDirectory )
+    public DesktopConfigurator( Installation installation, Parameters parameters, File databaseDirectory )
     {
         this.installation = installation;
+        this.parameters = parameters;
         this.dbDir = databaseDirectory;
         refresh();
     }
 
     public void refresh()
     {
-        config = new BaseServerConfigLoader().loadConfig(
-                /** Future single file, neo4j.conf or similar */
-                null,
+        config = new ConfigLoader( CommunityBootstrapper.settingsClasses).loadConfig(
+                Optional.of( dbDir.getAbsoluteFile() ),
+                Optional.of( getConfigurationsFile() ),
+                pair( DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath() ) );
+        config.setLogger( FormattedLog.toOutputStream( System.out ) );
+    }
 
-                /** Server config file */
-                installation.getServerConfigurationsFile(),
-
-                /** Database tuning file */
-                getDatabaseConfigurationFile(),
-
-                FormattedLog.toOutputStream( System.out ),
-
-                /** Desktop-specific config overrides */
-                pair( auth_store.name(), new File( dbDir, "./dbms/auth" ).getAbsolutePath() ),
-                pair( tls_certificate_file.name(), new File( dbDir, "./dbms/ssl/snakeoil.cert" ).getAbsolutePath() ),
-                pair( tls_key_file.name(), new File( dbDir, "./dbms/ssl/snakeoil.key" ).getAbsolutePath() ),
-
-                pair( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir.getAbsolutePath() ) );
+    public File getConfigurationsFile()
+    {
+        return Optional.ofNullable( parameters.getConfigurationsFile() )
+                .orElse( installation.getConfigurationsFile() );
     }
 
     public Config configuration()
@@ -75,19 +71,19 @@ public class DesktopConfigurator
         return config;
     }
 
-    public void setDatabaseDirectory( File directory ) {
+    public void setDatabaseDirectory( File directory )
+    {
         dbDir = directory;
+        refresh();
     }
 
-    public String getDatabaseDirectory() {
-        return config.get( ServerInternalSettings.legacy_db_location ).getAbsolutePath();
+    public String getDatabaseDirectory()
+    {
+        return dbDir.getAbsolutePath();
     }
 
-    public int getServerPort() {
-        return config.get( ServerSettings.webserver_port );
-    }
-
-    public File getDatabaseConfigurationFile() {
-        return new File( dbDir, Installation.NEO4J_PROPERTIES_FILENAME );
+    public HostnamePort getServerAddress()
+    {
+        return ServerSettings.httpConnector( config, HttpConnector.Encryption.NONE ).get().address.from( config );
     }
 }

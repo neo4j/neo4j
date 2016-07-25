@@ -26,7 +26,6 @@ import java.lang.annotation.Target;
 
 /**
  * Used to add a short description title for settings in {@link org.neo4j.graphdb.factory.GraphDatabaseSettings}.
- * These can then be accessed through the {@link org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle}.
  */
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.FIELD )

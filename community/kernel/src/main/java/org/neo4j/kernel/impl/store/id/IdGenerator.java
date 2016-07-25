@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
-public interface IdGenerator extends IdSequence
+import java.io.Closeable;
+
+public interface IdGenerator extends IdSequence, Closeable
 {
     IdRange nextIdBatch( int size );
 

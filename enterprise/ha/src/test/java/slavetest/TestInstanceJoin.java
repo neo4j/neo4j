@@ -22,6 +22,7 @@ package slavetest;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
@@ -35,8 +36,7 @@ import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.tooling.GlobalGraphOperations;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
@@ -59,8 +59,8 @@ public class TestInstanceJoin
 
         HighlyAvailableGraphDatabase master = null;
         HighlyAvailableGraphDatabase slave = null;
-        String masterDir = testDirectory.directory( "master" ).getAbsolutePath();
-        String slaveDir = testDirectory.directory( "slave" ).getAbsolutePath();
+        File masterDir = testDirectory.directory( "master" );
+        File slaveDir = testDirectory.directory( "slave" );
         try
         {
             master = start( masterDir, 0,
@@ -143,7 +143,7 @@ public class TestInstanceJoin
         try ( Transaction tx = slave.beginTx() )
         {
             int count = 0;
-            for ( Node node : GlobalGraphOperations.at( slave ).getAllNodes() )
+            for ( Node node : slave.getAllNodes() )
             {
                 if ( value.equals( node.getProperty( key, null ) ) )
                 {
@@ -166,10 +166,10 @@ public class TestInstanceJoin
         }
     }
 
-    private static HighlyAvailableGraphDatabase start( String storeDir, int i, Map<String, String> additionalConfig )
+    private static HighlyAvailableGraphDatabase start( File storeDir, int i, Map<String, String> additionalConfig )
     {
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( storeDir )
+                newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) )
                 .setConfig( ClusterSettings.server_id, i + "" )
                 .setConfig( HaSettings.ha_server, "127.0.0.1:" + (6666 + i) )

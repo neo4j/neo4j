@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
 
 public class CheckPointThresholds
 {

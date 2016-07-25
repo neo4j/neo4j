@@ -32,19 +32,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.AutoIndexer;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOfRange;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.GraphDescription.PropType.ERROR;
 import static org.neo4j.test.GraphDescription.PropType.STRING;
 
@@ -60,9 +58,9 @@ public class GraphDescription implements GraphDefinition
         NODE[] nodes() default {};
 
         REL[] relationships() default {};
-        
+
         boolean autoIndexNodes() default false;
-        
+
         boolean autoIndexRelationships() default false;
     }
 
@@ -72,7 +70,7 @@ public class GraphDescription implements GraphDefinition
         String name();
 
         PROP[] properties() default {};
-        
+
         LABEL[] labels() default {};
 
         boolean setNameProperty() default false;
@@ -105,7 +103,7 @@ public class GraphDescription implements GraphDefinition
 
         PropType componentType() default ERROR;
     }
-    
+
     @Target( {} )
     public @interface LABEL
     {
@@ -118,7 +116,8 @@ public class GraphDescription implements GraphDefinition
 
         ARRAY
         {
-            @Override Object convert( PropType componentType, String value )
+            @Override
+            Object convert( PropType componentType, String value )
             {
                 String[] items  = value.split( " *, *" );
                 Object[] result = (Object[]) Array.newInstance( componentType.componentClass(), items.length );
@@ -137,7 +136,8 @@ public class GraphDescription implements GraphDefinition
                 return value;
             }
 
-            @Override Class<?> componentClass()
+            @Override
+            Class<?> componentClass()
             {
                 return String.class;
             }
@@ -150,7 +150,8 @@ public class GraphDescription implements GraphDefinition
                 return Long.parseLong( value );
             }
 
-            @Override Class<?> componentClass()
+            @Override
+            Class<?> componentClass()
             {
                 return Long.class;
             }
@@ -163,7 +164,8 @@ public class GraphDescription implements GraphDefinition
                 return Double.parseDouble( value );
             }
 
-            @Override Class<?> componentClass()
+            @Override
+            Class<?> componentClass()
             {
                 return Double.class;
             }
@@ -176,7 +178,8 @@ public class GraphDescription implements GraphDefinition
                 return Boolean.parseBoolean( value );
             }
 
-            @Override Class<?> componentClass()
+            @Override
+            Class<?> componentClass()
             {
                 return Boolean.class;
             }
@@ -238,7 +241,7 @@ public class GraphDescription implements GraphDefinition
             for ( REL def : rels )
             {
                 init( result.get( def.start() ).createRelationshipTo( result.get( def.end() ),
-                        DynamicRelationshipType.withName( def.type() ) ), def.setNameProperty() ? def.name() : null,
+                                RelationshipType.withName( def.type() ) ), def.setNameProperty() ? def.name() : null,
                         def.properties(), graphdb.index().getRelationshipAutoIndexer(), autoIndexRelationships );
             }
             tx.success();
@@ -272,7 +275,7 @@ public class GraphDescription implements GraphDefinition
             }
             entity.setProperty( "name", name );
         }
-        
+
         return entity;
     }
 
@@ -307,7 +310,7 @@ public class GraphDescription implements GraphDefinition
         GraphDatabaseService db = nodes.values().iterator().next().getGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 for ( Relationship rel : node.getRelationships() )
                     rel.delete();
@@ -576,6 +579,5 @@ public class GraphDescription implements GraphDefinition
             return name;
         }
     }
-
 
 }

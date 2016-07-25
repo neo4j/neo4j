@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright (c) 2002-2015 "Neo Technology,"
+  Copyright (c) 2002-2016 "Neo Technology,"
   Network Engine for Objects in Lund AB [http://neotechnology.com]
 
   This file is part of Neo4j.
@@ -23,14 +23,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.app</groupId>
   <artifactId>neo4j-server</artifactId>
-  <version>2.3.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
   <name>Neo4j - Server</name>
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -46,11 +46,11 @@
     <docs-plugin.filter>true</docs-plugin.filter>
 
     <neo4j.version>${project.version}</neo4j.version>
+    <neo4j-browser.version>1.1.8</neo4j-browser.version>
 
-    <neo4j-server.mainClass>org.neo4j.server.CommunityBootstrapper</neo4j-server.mainClass>
+    <neo4j-server.mainClass>org.neo4j.server.CommunityEntryPoint</neo4j-server.mainClass>
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
-    <neo-server.test.hostname/>
 
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
@@ -71,12 +71,12 @@
 
     <!-- Don't write new code using this, use neo-server.external instead -->
     <webdriver.override.neo-server.baseuri/>
-
-    <jetty.version>9.2.9.v20150224</jetty.version>
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/neo4j/tree/master/community/server</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
   <licenses>
@@ -135,6 +135,24 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-security</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-dbms</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-command-line</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>server-api</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -146,9 +164,15 @@
     </dependency>
 
     <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-browser</artifactId>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-bolt</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.client</groupId>
+      <artifactId>neo4j-browser</artifactId>
+      <version>${neo4j-browser.version}</version>
     </dependency>
 
     <dependency>
@@ -158,25 +182,13 @@
     </dependency>
 
     <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-access</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>${jetty.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
-      <version>${jetty.version}</version>
     </dependency>
 
     <dependency>
@@ -192,12 +204,6 @@
     <dependency>
       <groupId>commons-configuration</groupId>
       <artifactId>commons-configuration</artifactId>
-    </dependency>
-
-    <dependency>
-      <!-- Used for X.509 certificate generation -->
-      <groupId>io.netty</groupId>
-      <artifactId>netty-all</artifactId>
     </dependency>
 
     <!-- Added directly to avoid version clash in commons-configuration. -->
@@ -217,11 +223,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.rrd4j</groupId>
-      <artifactId>rrd4j</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.mozilla</groupId>
       <artifactId>rhino</artifactId>
     </dependency>
@@ -230,6 +231,8 @@
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk15on</artifactId>
     </dependency>
+    <!-- This dependency is needed for Netty to be able to generate
+    self signed certificate on a JDK without sun.security.* package -->
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15on</artifactId>
@@ -283,6 +286,14 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-security</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-logging</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
@@ -292,6 +303,14 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-bolt</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
@@ -319,22 +338,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-module-junit4</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-api-mockito</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.jimfs</groupId>
-      <artifactId>jimfs</artifactId>
-      <version>1.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
       <version>20090211</version>
@@ -343,38 +346,6 @@
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-        <excludes>
-          <exclude>webadmin-html/index.html</exclude>
-        </excludes>
-        <filtering>false</filtering>
-      </resource>
-
-      <resource>
-        <directory>src/main/resources/</directory>
-        <includes>
-          <include>webadmin-html/index.html</include>
-        </includes>
-        <filtering>true</filtering>
-      </resource>
-
-      <resource>
-        <directory>${project.build.directory}/generated-sources</directory>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <targetPath>META-INF</targetPath>
-        <includes>
-          <include>NOTICE.txt</include>
-          <include>LICENSE.txt</include>
-          <include>CHANGES.txt</include>
-          <include>LICENSES.txt</include>
-        </includes>
-      </resource>
-    </resources>
-
     <plugins>
 
       <!-- Development execution -->
@@ -391,12 +362,10 @@
         <configuration>
           <mainClass>${neo4j-server.mainClass}</mainClass>
           <classpathScope>test</classpathScope>
-          <systemProperties>
-            <systemProperty>
-              <key>org.neo4j.server.properties</key>
-              <value>${basedir}/neo4j-home/conf/neo4j-server.properties</value>
-            </systemProperty>
-          </systemProperties>
+          <arguments>
+            <argument>--config-dir=${basedir}/neo4j-home/conf</argument>
+            <argument>--home-dir=${basedir}/neo4j-home</argument>
+          </arguments>
         </configuration>
       </plugin>
 
@@ -404,19 +373,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
-          <execution>
-            <id>static-web</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <attach>true</attach>
-              <descriptors>
-                <descriptor>src/main/assemblies/static-web.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
           <execution>
             <id>sources</id>
             <phase>package</phase>
@@ -460,11 +416,6 @@
             <include>src/**/*.scala</include>
             <include>src/**/*.xml</include>
           </includes>
-          <excludes>
-            <exclude>**/lib/*.js</exclude>
-            <exclude>**/lib/**/*.js</exclude>
-            <exclude>**/webadmin-html/**</exclude>
-          </excludes>
           <mapping>
             <scala>JAVADOC_STYLE</scala>
           </mapping>
@@ -486,7 +437,6 @@
                 </manifest>
               </archive>
               <excludes>
-                <exclude>webadmin-html/**</exclude>
                 <exclude>lib/**</exclude>
               </excludes>
             </configuration>
@@ -504,7 +454,6 @@
         <configuration>
           <systemPropertyVariables>
             <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-            <neo-server.test.hostname>${neo-server.test.hostname}</neo-server.test.hostname>
             <webdriver.implementation>${webdriver.implementation}</webdriver.implementation>
             <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
             <webdriver.chrome.driver.download.url>${webdriver.chrome.driver.download.url}
@@ -548,70 +497,6 @@
       </plugin>
 
       <plugin>
-        <groupId>com.voltvoodoo</groupId>
-        <artifactId>brew</artifactId>
-        <version>0.2.10</version>
-        <executions>
-          <execution>
-            <id>compile-webadmin</id>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-            <phase>compile</phase>
-          </execution>
-          <execution>
-            <id>minify-webadmin</id>
-            <goals>
-              <goal>optimize</goal>
-            </goals>
-            <phase>process-classes</phase>
-          </execution>
-        </executions>
-        <configuration>
-          <modules>
-            <module>
-              <name>webadmin</name>
-              <exclude>
-                <!-- Arbor runs with WebWorkers, webworkers are started by giving
-           the browser a js url to fetch and run, so this needs to be separate
-           from the webadmin js file. -->
-                <exclude>lib/arbor.js</exclude>
-              </exclude>
-            </module>
-          </modules>
-          <coffeeOutputDir>${project.build.outputDirectory}/webadmin-html/js</coffeeOutputDir>
-          <hamlOutputDir>${project.build.outputDirectory}/webadmin-html/js</hamlOutputDir>
-
-          <optimizeSourceDir>${project.build.outputDirectory}/webadmin-html/js</optimizeSourceDir>
-          <optimizeOutputDir>${project.build.outputDirectory}/webadmin-html/js</optimizeOutputDir>
-
-          <optimizedFileNameSuffix>false</optimizedFileNameSuffix>
-          <minifyOnlyAggregatedFiles>true</minifyOnlyAggregatedFiles>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>com.github.searls</groupId>
-        <artifactId>jasmine-maven-plugin</artifactId>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-            <id>webadmin-specs</id>
-            <goals>
-              <goal>test</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <jsTestSrcDir>${project.build.outputDirectory}/webadmin-html/js/test</jsTestSrcDir>
-          <customRunnerTemplate>src/test/resources/SpecRunner.htmlTemplate</customRunnerTemplate>
-          <specRunnerTemplate>REQUIRE_JS</specRunnerTemplate>
-          <!-- *Must* be relative to jasmine dir -->
-          <junitXmlReportFileName>../surefire-reports/TEST-Webadmin.xml</junitXmlReportFileName>
-        </configuration>
-      </plugin>
-
-      <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
           <groups>
@@ -623,10 +508,6 @@
               <title>Server REST Interface</title>
               <packages>org.neo4j.server.rest:org.neo4j.server.rest.*</packages>
             </group>
-            <group>
-              <title>Server Admin Interface</title>
-              <packages>org.neo4j.server.webadmin:org.neo4j.server.webadmin.*</packages>
-            </group>
           </groups>
         </configuration>
       </plugin>
@@ -636,24 +517,6 @@
         <version>1.7</version>
         <!--$NO-MVN-MAN-VER$-->
         <executions>
-          <execution>
-            <phase>process-classes</phase>
-            <configuration>
-              <target>
-                <taskdef
-                    resource="net/sf/antcontrib/antcontrib.properties"
-                    classpathref="maven.plugin.classpath"/>
-
-                <!-- Inject version-specific things (codename, version etc.)
-                     into webadmin -->
-                <ant antfile="src/build/webadmin-branding.ant.xml"/>
-
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
           <execution>
             <id>generate-source-based-documentation</id>
             <phase>process-classes</phase>
@@ -781,82 +644,6 @@
           <value>all</value>
         </property>
       </activation>
-    </profile>
-
-    <profile>
-      <id>neodev</id>
-      <!-- Expands the number of things skipped by the neodev profile defined in parent-central pom. This is meant to be used by maven exec, it does not guarantee producing working artifacts. -->
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>static-web</id>
-                <phase>none</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>skip-brew</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.voltvoodoo</groupId>
-            <artifactId>brew</artifactId>
-            <executions>
-              <execution>
-                <id>compile-webadmin</id>
-                <phase>none</phase>
-              </execution>
-              <execution>
-                <id>minify-webadmin</id>
-                <phase>none</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>com.github.searls</groupId>
-            <artifactId>jasmine-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>webadmin-specs</id>
-                <phase>none</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <!-- Firefox is default implementation, set in properties at the top of this file. -->
-    <profile>
-      <id>chrome-mac</id>
-      <properties>
-        <webdriver.implementation>Chrome</webdriver.implementation>
-      </properties>
-    </profile>
-    <profile>
-      <id>sauce-labs-firefox-windows</id>
-      <properties>
-        <webdriver.implementation>SauceLabsFirefoxWindows</webdriver.implementation>
-      </properties>
-    </profile>
-    <profile>
-      <id>sauce-labs-chrome-windows</id>
-      <properties>
-        <webdriver.implementation>SauceLabsChromeWindows</webdriver.implementation>
-      </properties>
-    </profile>
-    <profile>
-      <id>sauce-labs-internet-explorer-windows</id>
-      <properties>
-        <webdriver.implementation>SauceLabsInternetExplorerWindows</webdriver.implementation>
-      </properties>
     </profile>
 
     <profile>

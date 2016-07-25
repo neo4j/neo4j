@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -31,7 +32,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
@@ -49,9 +49,9 @@ import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -73,9 +73,9 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.withSettings;
-
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -83,7 +83,7 @@ import static org.neo4j.test.Property.set;
 public class ExecutionOrderIntegrationTest
 {
     @Rule
-    public final GraphStoreFixture fixture = new GraphStoreFixture()
+    public final GraphStoreFixture fixture = new GraphStoreFixture( getRecordFormatName() )
     {
         @Override
         protected void generateInitialData( GraphDatabaseService graphDb )
@@ -91,9 +91,9 @@ public class ExecutionOrderIntegrationTest
             // TODO: create bigger sample graph here
             try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
             {
-                Node node1 = set( graphDb.createNode() );
-                Node node2 = set( graphDb.createNode(), property( "key", "value" ) );
-                node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "C" ) );
+                Node node1 = set( graphDb.createNode( label( "Foo" ) ) );
+                Node node2 = set( graphDb.createNode( label( "Foo" ) ), property( "key", "value" ) );
+                node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
                 tx.success();
             }
         }
@@ -108,7 +108,7 @@ public class ExecutionOrderIntegrationTest
         CacheAccess cacheAccess = new DefaultCacheAccess( new DefaultCounts( threads ), threads );
         RecordAccess access = FullCheck.recordAccess( store, cacheAccess );
 
-        FullCheck singlePass = new FullCheck( config(), ProgressMonitorFactory.NONE, Statistics.NONE, threads );
+        FullCheck singlePass = new FullCheck( getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads );
 
         ConsistencySummaryStatistics singlePassSummary = new ConsistencySummaryStatistics();
         InconsistencyLogger logger = mock( InconsistencyLogger.class );
@@ -124,12 +124,15 @@ public class ExecutionOrderIntegrationTest
                 0, singlePassSummary.getTotalInconsistencyCount() );
     }
 
-    static Config config()
+    private Config getTuningConfiguration()
     {
-        Map<String,String> params = stringMap(
-                // Enable property owners check by default in tests:
-                ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
-        return new Config( params, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        return new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
+                GraphDatabaseSettings.record_format.name(), getRecordFormatName() ) );
+    }
+
+    protected String getRecordFormatName()
+    {
+        return StringUtils.EMPTY;
     }
 
     private static class InvocationLog
@@ -155,7 +158,7 @@ public class ExecutionOrderIntegrationTest
                 {
                     AbstractBaseRecord record = (AbstractBaseRecord) arg;
                     entry.append( ',' ).append( record.getClass().getSimpleName() )
-                            .append( '[' ).append( record.getLongId() ).append( ']' );
+                            .append( '[' ).append( record.getId() ).append( ']' );
                 }
             }
             String message = entry.append( ')' ).toString();

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
-
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public class OnlineIndexProxyTest
 {
     private final IndexDescriptor descriptor = new IndexDescriptor( 1, 2 );
-    private final IndexConfiguration config = new IndexConfiguration( false );
+    private final IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
     private final SchemaIndexProvider.Descriptor providerDescriptor = mock( SchemaIndexProvider.Descriptor.class );
     private final IndexAccessor accessor = mock( IndexAccessor.class );
     private final IndexStoreView storeView = mock( IndexStoreView.class );
@@ -44,14 +44,15 @@ public class OnlineIndexProxyTest
     public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
-        OnlineIndexProxy index = new OnlineIndexProxy( descriptor, config, accessor, storeView, providerDescriptor );
+        OnlineIndexProxy index = new OnlineIndexProxy( descriptor, config, accessor,
+                storeView, providerDescriptor, false );
 
         // when
         index.drop();
 
         // then
         verify( accessor ).drop();
-        verify( storeView ).replaceIndexCounts( descriptor, 0l, 0l, 0l );
+        verify( storeView ).replaceIndexCounts( descriptor, 0L, 0L, 0L );
         verifyNoMoreInteractions( accessor, storeView );
     }
 }

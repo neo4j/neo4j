@@ -33,6 +33,7 @@ import org.mozilla.javascript.NativeJavaMethod;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.UniqueTag;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.server.scripting.UserScriptClassWhiteList;
 
@@ -67,7 +68,6 @@ public class TestWhiteListJavaWrapper
         Set<String> whiteList = new HashSet<String>(  );
         whiteList.add( Object.class.getName() );
 
-
         WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ));
 
         Context cx = Context.enter();
@@ -90,7 +90,6 @@ public class TestWhiteListJavaWrapper
         // Given
         Set<String> whiteList = new HashSet<String>(  );
         whiteList.add( Object.class.getName() );
-
 
         WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ));
 

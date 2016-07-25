@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
-        <version>2.3.7-SNAPSHOT</version>
+        <version>3.1.0-SNAPSHOT</version>
         <relativePath>../../..</relativePath>
     </parent>
     <properties>
@@ -14,7 +14,7 @@
     </properties>
 
     <artifactId>neo4j-installer-rpm</artifactId>
-    <version>2.3.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Neo4j RPM Installers</name>
@@ -82,7 +82,7 @@
                     <configuration>
                         <requires>
                             <require>
-                                java-1.7.0-openjdk
+                                java-1.8.0-openjdk
                             </require>
                         </requires>
                         <mappings>
@@ -134,7 +134,7 @@
                                 <groupname>neo4j</groupname>
                             </mapping>
                             <mapping>
-                                <directory>/usr/share/neo4j/data/log</directory>
+                                <directory>/usr/share/neo4j/logs</directory>
                                 <sources>
                                     <softlinkSource>
                                         <location>/var/log/neo4j</location>
@@ -165,30 +165,12 @@
                             </mapping>
 
                             <mapping>
-                                <recurseDirectories>true</recurseDirectories>
-                                <sources>
-                                    <source>
-                                        <location>${project.build.directory}/neo4j-${edition}-${neo4j.version}/system
-                                        </location>
-                                    </source>
-                                </sources>
-                                <directory>/usr/share/neo4j/system</directory>
-                            </mapping>
-
-                            <mapping>
                                 <directory>/usr/share/neo4j/conf</directory>
                                 <sources>
                                     <softlinkSource>
                                         <location>/etc/neo4j</location>
                                     </softlinkSource>
                                 </sources>
-                            </mapping>
-
-                            <mapping>
-                                <directory>/usr/share/neo4j/data</directory>
-                                <filemode>0755</filemode>
-                                <username>neo4j</username>
-                                <groupname>neo4j</groupname>
                             </mapping>
 
                             <mapping>
@@ -249,7 +231,6 @@
 
     <modules>
         <module>installer-rpm-community</module>
-        <module>installer-rpm-advanced</module>
         <module>installer-rpm-enterprise</module>
     </modules>
 </project>

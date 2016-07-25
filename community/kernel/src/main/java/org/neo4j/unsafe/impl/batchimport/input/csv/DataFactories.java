@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
@@ -33,8 +35,6 @@ import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.function.Factory;
-import org.neo4j.function.Function;
-import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
@@ -67,32 +67,25 @@ public class DataFactories
             throw new IllegalArgumentException( "No files specified" );
         }
 
-        return new DataFactory<ENTITY>()
+        return config -> new Data<ENTITY>()
         {
             @Override
-            public Data<ENTITY> create( final Configuration config )
+            public CharSeeker stream()
             {
-                return new Data<ENTITY>()
+                try
                 {
-                    @Override
-                    public CharSeeker stream()
-                    {
-                        try
-                        {
-                            return charSeeker( files( charset, files ), config, true );
-                        }
-                        catch ( IOException e )
-                        {
-                            throw new InputException( e.getMessage(), e );
-                        }
-                    }
+                    return charSeeker( files( charset, files ), config, true );
+                }
+                catch ( IOException e )
+                {
+                    throw new InputException( e.getMessage(), e );
+                }
+            }
 
-                    @Override
-                    public Function<ENTITY,ENTITY> decorator()
-                    {
-                        return decorator;
-                    }
-                };
+            @Override
+            public Function<ENTITY,ENTITY> decorator()
+            {
+                return decorator;
             }
         };
     }
@@ -105,25 +98,18 @@ public class DataFactories
     public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
             final Supplier<CharReadable> readable )
     {
-        return new DataFactory<ENTITY>()
+        return config -> new Data<ENTITY>()
         {
             @Override
-            public Data<ENTITY> create( final Configuration config )
+            public CharSeeker stream()
             {
-                return new Data<ENTITY>()
-                {
-                    @Override
-                    public CharSeeker stream()
-                    {
-                        return charSeeker( readable.get(), config, true );
-                    }
+                return charSeeker( readable.get(), config, true );
+            }
 
-                    @Override
-                    public Function<ENTITY,ENTITY> decorator()
-                    {
-                        return decorator;
-                    }
-                };
+            @Override
+            public Function<ENTITY,ENTITY> decorator()
+            {
+                return decorator;
             }
         };
     }
@@ -133,7 +119,7 @@ public class DataFactories
      * from the top of the data file.
      *
      * This header factory can be used even when the header exists in a separate file, if that file
-     * is the first in the list of files supplied to {@link #data(File...)}.
+     * is the first in the list of files supplied to {@link #data}.
      */
     public static Header.Factory defaultFormatNodeFileHeader()
     {
@@ -155,7 +141,7 @@ public class DataFactories
      * from the top of the data file.
      *
      * This header factory can be used even when the header exists in a separate file, if that file
-     * is the first in the list of files supplied to {@link #data(File...)}.
+     * is the first in the list of files supplied to {@link #data}.
      */
     public static Header.Factory defaultFormatRelationshipFileHeader()
     {
@@ -209,7 +195,7 @@ public class DataFactories
         }
     };
 
-    private static abstract class SeparateHeaderReaderFactory implements HeaderCharSeekerFactory
+    private abstract static class SeparateHeaderReaderFactory implements HeaderCharSeekerFactory
     {
         @Override
         public void close( CharSeeker seeker )
@@ -241,7 +227,7 @@ public class DataFactories
         }
     }
 
-    private static abstract class AbstractDefaultFileHeaderParser implements Header.Factory
+    private abstract static class AbstractDefaultFileHeaderParser implements Header.Factory
     {
         private final Type[] mandatoryTypes;
         private final HeaderCharSeekerFactory headerCharSeekerFactory;
@@ -261,7 +247,7 @@ public class DataFactories
             {
                 headerSeeker = headerCharSeekerFactory.open( dataSeeker, config );
                 Mark mark = new Mark();
-                Extractors extractors = new Extractors( config.arrayDelimiter(), config.emptyQuotedStringsAsNull() );
+                Extractors extractors = new Extractors( config.arrayDelimiter(), config.emptyQuotedStringsAsNull(), config.trimStrings() );
                 Extractor<?> idExtractor = idType.extractor( extractors );
                 int delimiter = config.delimiter();
                 List<Header.Entry> columns = new ArrayList<>();

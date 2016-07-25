@@ -19,10 +19,18 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.storageengine.api.Token;
+
 public class DelegatingPropertyKeyTokenHolder extends DelegatingTokenHolder<Token> implements PropertyKeyTokenHolder
 {
     public DelegatingPropertyKeyTokenHolder( TokenCreator tokenCreator )
     {
         super( tokenCreator, new Token.Factory() );
+    }
+
+    @Override
+    protected String tokenType()
+    {
+        return "PropertyKey";
     }
 }

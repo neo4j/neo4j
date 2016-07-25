@@ -19,14 +19,6 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.test.IterableMatcher.matchesIterable;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -34,9 +26,15 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.junit.Test;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.NullLogProvider;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.test.mockito.matcher.IterableMatcher.matchesIterable;
 
 public class ClusterConfigurationTest
 {

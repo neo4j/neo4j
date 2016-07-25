@@ -36,26 +36,26 @@ public class LuceneIndexSiteExamples
 {
     private static GraphDatabaseService graphDb;
     private Transaction tx;
-    
+
     @BeforeClass
     public static void setUpDb()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
-    
+
     @Before
     public void beginTx()
     {
         tx = graphDb.beginTx();
     }
-    
+
     @After
     public void finishTx()
     {
         tx.success();
         tx.close();
     }
-    
+
     @Test
     public void addSomeThings()
     {
@@ -71,12 +71,12 @@ public class LuceneIndexSiteExamples
         persons.add( neo, "title", "The One" );
         // END SNIPPET: add
     }
-    
+
     @Test
     public void doSomeGets()
     {
         Index<Node> persons = graphDb.index().forNodes( "persons" );
-        
+
         // START SNIPPET: get
         Node morpheus = persons.get( "name", "Morpheus" ).getSingle();
         // END SNIPPET: get
@@ -88,7 +88,7 @@ public class LuceneIndexSiteExamples
     public void doSomeQueries()
     {
         Index<Node> persons = graphDb.index().forNodes( "persons" );
-        
+
         // START SNIPPET: query
         for ( Node person : persons.query( "name", "*e*" ) )
         {

@@ -4,10 +4,9 @@
 #
 # chkconfig: 2345 99 20
 # processname: java
-# config:      /etc/neo4j/neo4j-server.properties
-# config:      /etc/neo4j/neo4j.properties
+# config:      /etc/neo4j/neo4j.conf
 # pidfile:     /var/run/neo4j.pid
-# Provides:          neo4j-service
+# Provides:          neo4j
 # Required-Start: 
 # Required-Stop: 
 # Should-Start: 
@@ -18,7 +17,7 @@
 # Description:
 ### END INIT INFO
 
-# Copyright (c) 2002-2015 "Neo Technology,"
+# Copyright (c) 2002-2016 "Neo Technology,"
 
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #

@@ -46,7 +46,7 @@ public class NotificationCodeTest
 
         assertThat( notification.getTitle(), equalTo( "The request (directly or indirectly) referred to an index that does not exist." ) );
         assertThat( notification.getSeverity(), equalTo( SeverityLevel.WARNING ) );
-        assertThat( notification.getCode(), equalTo( "Neo.ClientError.Schema.NoSuchIndex" ) );
+        assertThat( notification.getCode(), equalTo( "Neo.ClientError.Schema.IndexNotFound" ) );
         assertThat( notification.getPosition(), equalTo( InputPosition.empty ) );
         assertThat( notification.getDescription(), equalTo( "The hinted index does not exist, please check the schema (hinted index is: index on :Person(name))" ) );
     }
@@ -62,7 +62,7 @@ public class NotificationCodeTest
 
         assertThat( notification.getTitle(), equalTo( "This query builds a cartesian product between disconnected patterns." ) );
         assertThat( notification.getSeverity(), equalTo( SeverityLevel.WARNING ) );
-        assertThat( notification.getCode(), equalTo( "Neo.ClientNotification.Statement.CartesianProduct" ) );
+        assertThat( notification.getCode(), equalTo( "Neo.ClientNotification.Statement.CartesianProductWarning" ) );
         assertThat( notification.getPosition(), equalTo( InputPosition.empty ) );
         assertThat( notification.getDescription(), equalTo( "If a part of a query contains multiple disconnected patterns, this will build a cartesian product " +
                                                             "between all those parts. This may produce a large amount of data and slow down query processing. While " +

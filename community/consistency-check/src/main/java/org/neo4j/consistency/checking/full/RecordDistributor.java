@@ -37,13 +37,12 @@ public class RecordDistributor
             int numberOfThreads,
             String workerNames,
             int queueSize,
-            Iterable<RECORD> records,
+            Iterator<RECORD> records,
             final ProgressListener progress,
             RecordProcessor<RECORD> processor,
             QueueDistributor<RECORD> idDistributor )
     {
-        Iterator<RECORD> iterator = records.iterator();
-        if ( !iterator.hasNext() )
+        if ( !records.hasNext() )
         {
             return;
         }
@@ -71,12 +70,12 @@ public class RecordDistributor
 
         try
         {
-            while ( iterator.hasNext() )
+            while ( records.hasNext() )
             {
                 try
                 {
                     // Put records into the queues using the queue distributor. Each Worker will pull and process.
-                    RECORD record = iterator.next();
+                    RECORD record = records.next();
                     idDistributor.distribute( record, recordConsumer );
                     progress.add( 1 );
                 }

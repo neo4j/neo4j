@@ -24,52 +24,39 @@ import org.junit.Before;
 
 import java.util.Map;
 
-import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 
 /**
  * Base class for disk layer tests, which test read-access to committed data.
  */
-public class DiskLayerTest
+public abstract class DiskLayerTest
 {
     @SuppressWarnings( "deprecation" )
     protected GraphDatabaseAPI db;
     protected final Label label1 = label( "FirstLabel" );
     protected final Label label2 = label( "SecondLabel" );
-    protected final RelationshipType relType1 = DynamicRelationshipType.withName( "type1" );
-    protected final RelationshipType relType2 = DynamicRelationshipType.withName( "type2" );
+    protected final RelationshipType relType1 = RelationshipType.withName( "type1" );
+    protected final RelationshipType relType2 = RelationshipType.withName( "type2" );
     protected final String propertyKey = "name";
     protected final String otherPropertyKey = "age";
     protected KernelStatement state;
-    protected DiskLayer disk;
+    protected StoreReadLayer disk;
 
     @SuppressWarnings( "deprecation" )
     @Before
@@ -77,25 +64,9 @@ public class DiskLayerTest
     {
         db = (GraphDatabaseAPI) createGraphDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
-        IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
-        final NeoStores neoStores = resolver.resolveDependency( NeoStoresSupplier.class ).get();
-        this.disk = new DiskLayer(
-                resolver.resolveDependency( PropertyKeyTokenHolder.class ),
-                resolver.resolveDependency( LabelTokenHolder.class ),
-                resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
-                new SchemaStorage( neoStores.getSchemaStore() ),
-                neoStores,
-                indexingService, new Factory<StoreStatement>()
-                {
-                    @Override
-                    public StoreStatement newInstance()
-                    {
-                        return new StoreStatement( neoStores, LockService.NO_LOCK_SERVICE );
-                    }
-                } );
-        this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ),
-                resolver.resolveDependency( LabelScanStore.class ), null,
-                null, null, disk.acquireStatement() );
+        this.disk = resolver.resolveDependency( StorageEngine.class ).storeReadLayer();
+        this.state = new KernelStatement( null,
+                null, null, disk.newStatement(), new Procedures() );
     }
 
     protected GraphDatabaseService createGraphDatabase()
@@ -120,23 +91,6 @@ public class DiskLayerTest
             }
             tx.success();
             return node;
-        }
-    }
-
-    protected IndexDescriptor createIndexAndAwaitOnline( Label label, String propertyKey ) throws Exception
-    {
-        IndexDefinition index;
-        try ( Transaction tx = db.beginTx() )
-        {
-            index = db.schema().indexFor( label ).on( propertyKey ).create();
-            tx.success();
-        }
-
-        try ( Transaction ignored = db.beginTx() )
-        {
-            db.schema().awaitIndexOnline( index, 10, SECONDS );
-            return disk.indexesGetForLabelAndPropertyKey( disk.labelGetForName( label.name() ),
-                    disk.propertyKeyGetForName( propertyKey ) );
         }
     }
 

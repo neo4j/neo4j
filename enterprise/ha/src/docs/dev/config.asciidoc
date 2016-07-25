@@ -11,28 +11,23 @@ For installation instructions of a High Availability cluster see <<ha-setup-tuto
 
 == Specifying cluster members ==
 
-Specify the instances that should form the cluster by supplying +ha.initial_hosts+, a comma-separated list of URLs.
+Specify the instances that should form the cluster by supplying `ha.initial_hosts`, a comma-separated list of URLs.
 When each instance starts, if it can contact any of the initial hosts, then it will form a cluster with them,
 otherwise it will start its own cluster.
 
-Note that the parameter is called +ha.initial_hosts+ because it's only used when instances initially join the cluster.
+Note that the parameter is called `ha.initial_hosts` because it's only used when instances initially join the cluster.
 This means that you can extend the cluster without changing the configuration of existing instances.
 
 == Server configuration ==
 
-If you are running Neo4j server, specify +org.neo4j.server.database.mode=HA+ in _conf/neo4j-server.properties_.
+If you are running Neo4j server, specify `dbms.mode=HA` in <<file-locations, _neo4j.conf_>>.
 
-include::{importdir}/neo4j-server-enterprise-docs-jar/ops/configuration-attributes.asciidoc[]
+See the <<configuration-settings,configuration reference section>> for detailed documentation on available configuration options.
 
 == Database configuration ==
 
-HA configuration parameters should be supplied alongside general Neo4j parameters in _conf/neo4j.properties_.
+HA configuration parameters should be supplied alongside general Neo4j parameters in _neo4j.conf_.
 There are many configurable parameters. In most cases it isn't necessary to modify the default values.
-The only parameters that need to be specified are +ha.server_id+ and +ha.initial_hosts+.
+The only parameters that need to be specified are `ha.server_id` and `ha.initial_hosts`.
 
-include::{importdir}/neo4j-ha-docs-jar/ops/ha-configuration-attributes.asciidoc[]
-
-include::{importdir}/neo4j-cluster-docs-jar/ops/configuration-attributes.asciidoc[]
-
-
-
+See the <<configuration-settings,configuration reference section>> for detailed documentation on available configuration options.

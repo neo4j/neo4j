@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -eu
+
+args="$@"
+record_args() {
+  [[ "${FAKE_JAVA_DISABLE_RECORD_ARGS:-}" ]] || echo -n "${args}" >java-args
+}
+trap record_args EXIT
+
+if [ "$1" == "-version" ]; then
+  echo "java version \"${FAKE_JAVA_VERSION:-1.8.0_51}\"
+Java(TM) SE Runtime Environment (build 1.8.0_51-b16)
+${FAKE_JAVA_JVM:-Java HotSpot(TM)} 64-Bit Server VM (build 25.51-b03, mixed mode)"
+  exit 0
+fi
+
+echo "stdout from java"
+echo "stderr from java" >&2
+
+while [ -f "${JAVA_SENTINEL:-}" ]; do
+  sleep 0.1
+done

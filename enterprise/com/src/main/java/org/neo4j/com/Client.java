@@ -45,12 +45,15 @@ import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
+
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 import static org.neo4j.com.ResourcePool.DEFAULT_CHECK_INTERVAL;
@@ -92,12 +95,17 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private final ResponseUnpacker responseUnpacker;
     private final ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> entryReader;
 
     public Client( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
-                   LogProvider logProvider, StoreId storeId, int frameLength, ProtocolVersion protocolVersion,
-                   long readTimeout, int maxConcurrentChannels, int chunkSize, ResponseUnpacker responseUnpacker,
-            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+            LogProvider logProvider, StoreId storeId, int frameLength, ProtocolVersion protocolVersion,
+            long readTimeout, int maxConcurrentChannels, int chunkSize,
+            ResponseUnpacker responseUnpacker,
+            ByteCounterMonitor byteCounterMonitor,
+            RequestMonitor requestMonitor,
+            LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
+        this.entryReader = entryReader;
         assert byteCounterMonitor != null;
         assert requestMonitor != null;
 
@@ -260,7 +268,6 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         };
     }
 
-
     @Override
     public void stop()
     {
@@ -297,7 +304,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
             // Response
             Response<R> response = protocol.deserializeResponse( extractBlockingReadHandler( channelContext ),
-                    channelContext.input(), getReadTimeout( type, readTimeout ), deserializer, resourcePoolReleaser );
+                    channelContext.input(), getReadTimeout( type, readTimeout ), deserializer, resourcePoolReleaser,
+                    entryReader );
 
             if ( type.responseShouldBeUnpacked() )
             {

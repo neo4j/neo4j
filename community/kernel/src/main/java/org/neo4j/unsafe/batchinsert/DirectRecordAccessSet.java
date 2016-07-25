@@ -19,17 +19,14 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import java.util.Collection;
-
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -38,10 +35,11 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccessSet;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public class DirectRecordAccessSet implements RecordAccessSet
 {
@@ -52,30 +50,31 @@ public class DirectRecordAccessSet implements RecordAccessSet
     private final DirectRecordAccess<Integer, PropertyKeyTokenRecord, Void> propertyKeyTokenRecords;
     private final DirectRecordAccess<Integer, RelationshipTypeTokenRecord, Void> relationshipTypeTokenRecords;
     private final DirectRecordAccess<Integer, LabelTokenRecord, Void> labelTokenRecords;
-//    private final DirectRecordAccess<Long, Collection<DynamicRecord>, SchemaRule> schemaRecords; // TODO
+    private final DirectRecordAccess[] all;
 
     public DirectRecordAccessSet( NeoStores neoStores )
     {
+        Loaders loaders = new Loaders( neoStores );
         NodeStore nodeStore = neoStores.getNodeStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
+        RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
         PropertyKeyTokenStore propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
         RelationshipTypeTokenStore relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
         LabelTokenStore labelTokenStore = neoStores.getLabelTokenStore();
-        nodeRecords = new DirectRecordAccess<>( nodeStore, Loaders.nodeLoader( nodeStore ) );
-        propertyRecords = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore ) );
-        relationshipRecords = new DirectRecordAccess<>(
-                relationshipStore, Loaders.relationshipLoader( relationshipStore ) );
+        nodeRecords = new DirectRecordAccess<>( nodeStore, loaders.nodeLoader() );
+        propertyRecords = new DirectRecordAccess<>( propertyStore, loaders.propertyLoader() );
+        relationshipRecords = new DirectRecordAccess<>( relationshipStore, loaders.relationshipLoader() );
         relationshipGroupRecords = new DirectRecordAccess<>(
-                relationshipGroupStore, Loaders.relationshipGroupLoader( relationshipGroupStore ) );
-        propertyKeyTokenRecords = new DirectRecordAccess<>(
-                propertyKeyTokenStore, Loaders.propertyKeyTokenLoader( propertyKeyTokenStore ) );
+                relationshipGroupStore, loaders.relationshipGroupLoader() );
+        propertyKeyTokenRecords = new DirectRecordAccess<>( propertyKeyTokenStore, loaders.propertyKeyTokenLoader() );
         relationshipTypeTokenRecords = new DirectRecordAccess<>(
-                relationshipTypeTokenStore, Loaders.relationshipTypeTokenLoader( relationshipTypeTokenStore ) );
-        labelTokenRecords = new DirectRecordAccess<>(
-                labelTokenStore, Loaders.labelTokenLoader( labelTokenStore ) );
-//        schemaRecords = new DirectRecordAccess<>( neoStores.getSchemaStore(), Loaders.schemaRuleLoader( neoStores ) ); // TODO
+                relationshipTypeTokenStore, loaders.relationshipTypeTokenLoader() );
+        labelTokenRecords = new DirectRecordAccess<>( labelTokenStore, loaders.labelTokenLoader() );
+        all = new DirectRecordAccess[] {
+                nodeRecords, propertyRecords, relationshipRecords, relationshipGroupRecords,
+                propertyKeyTokenRecords, relationshipTypeTokenRecords, labelTokenRecords
+        };
     }
 
     @Override
@@ -103,7 +102,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
     }
 
     @Override
-    public RecordAccess<Long, Collection<DynamicRecord>, SchemaRule> getSchemaRuleChanges()
+    public RecordAccess<Long, SchemaRecord, SchemaRule> getSchemaRuleChanges()
     {
         throw new UnsupportedOperationException( "Not needed. Implement if needed" );
     }
@@ -130,37 +129,41 @@ public class DirectRecordAccessSet implements RecordAccessSet
     public void close()
     {
         commit();
-        nodeRecords.close();
-        propertyRecords.close();
-        relationshipRecords.close();
-        relationshipGroupRecords.close();
-//        schemaRecords.close(); // TODO
-        relationshipTypeTokenRecords.close();
-        labelTokenRecords.close();
-        propertyKeyTokenRecords.close();
+        for ( DirectRecordAccess access : all )
+        {
+            access.close();
+        }
     }
 
     public void commit()
     {
-        nodeRecords.commit();
-        propertyRecords.commit();
-        relationshipGroupRecords.commit();
-        relationshipRecords.commit();
-//        schemaRecords.commit(); // TODO
-        relationshipTypeTokenRecords.commit();
-        labelTokenRecords.commit();
-        propertyKeyTokenRecords.commit();
+        for ( DirectRecordAccess access : all )
+        {
+            access.commit();
+        }
     }
 
     @Override
     public boolean hasChanges()
     {
-        return  nodeRecords.changeSize() > 0 ||
-                propertyRecords.changeSize() > 0 ||
-                relationshipRecords.changeSize() > 0 ||
-                relationshipGroupRecords.changeSize() > 0 ||
-                propertyKeyTokenRecords.changeSize() > 0 ||
-                labelTokenRecords.changeSize() > 0 ||
-                relationshipTypeTokenRecords.changeSize() > 0;
+        for ( DirectRecordAccess access : all )
+        {
+            if ( access.changeSize() > 0 )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public int changeSize()
+    {
+        int total = 0;
+        for ( DirectRecordAccess access : all )
+        {
+            total += access.changeSize();
+        }
+        return total;
     }
 }

@@ -26,14 +26,12 @@ import java.io.File;
 import java.util.Random;
 import java.util.Stack;
 import java.util.concurrent.CountDownLatch;
-import javax.transaction.Transaction;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 
 @Ignore("Not a test, part of a compatibility suite.")
 // This is the legacy deadlock detection tests
@@ -51,10 +49,10 @@ public class LegacyDeadlockCompatibility extends LockingCompatibilityTestSuite.C
     // this test is to be dismantled, and it's individual assertions moved into DeadlockTest
     public void testDeadlockDetection() throws Exception
     {
-        long r1 = 1l;
-        long r2 = 2l;
-        long r3 = 3l;
-        long r4 = 4l;
+        long r1 = 1L;
+        long r2 = 2L;
+        long r3 = 3L;
+        long r4 = 4L;
 
         LockWorker t1 = new LockWorker( "T1", locks );
         LockWorker t2 = new LockWorker( "T2", locks );
@@ -163,7 +161,6 @@ public class LegacyDeadlockCompatibility extends LockingCompatibilityTestSuite.C
         private final float readWriteRatio;
         private final Locks.Client lm;
         private volatile Exception error;
-        private final Transaction tx = mock( Transaction.class );
         public volatile Long startedWaiting = null;
 
         StressThread( String name, int numberOfIterations, int depthCount,
@@ -265,7 +262,7 @@ public class LegacyDeadlockCompatibility extends LockingCompatibilityTestSuite.C
         {
             StressThread.resources[i] = i;
         }
-        StressThread stressThreads[] = new StressThread[50];
+        StressThread[] stressThreads = new StressThread[50];
         CountDownLatch startSignal = new CountDownLatch( 1 );
         for ( int i = 0; i < stressThreads.length; i++ )
         {

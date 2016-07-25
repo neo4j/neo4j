@@ -281,7 +281,6 @@ public abstract class KeyValueStoreFileFormat
                 buffer.limit( keySize + valueSize );
                 value.dataFrom( buffer );
 
-
                 MetadataCollector metadata = metadata( formatSpecifier, pageSize, keySize, valueSize );
                 // scan and catalogue all entries in the file
                 KeyValueStoreFile.scanAll( file, 0, metadata, key, value );

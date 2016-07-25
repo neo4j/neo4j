@@ -22,16 +22,14 @@ package org.neo4j.kernel.impl.api.operations;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 
 public interface EntityReadOperations
 {
@@ -94,12 +92,31 @@ public interface EntityReadOperations
             throws IndexNotFoundKernelException;
 
     /**
+     * Returns an iterable with the matched nodes.
+     *
+     * @throws IndexNotFoundKernelException if no such index found.
+     */
+    PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, IndexDescriptor index, String term )
+            throws IndexNotFoundKernelException;
+
+    /**
+     * Returns an iterable with the matched nodes.
+     *
+     * @throws IndexNotFoundKernelException if no such index found.
+     */
+    PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, IndexDescriptor index, String suffix )
+            throws IndexNotFoundKernelException;
+
+    /**
      * Returns an iterable with the matched node.
      *
      * @throws IndexNotFoundKernelException if no such index found.
      * @throws IndexBrokenKernelException   if we found an index that was corrupt or otherwise in a failed state.
      */
     long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException;
+
+    long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     boolean graphHasProperty( KernelStatement state, int propertyKeyId );
@@ -122,14 +139,10 @@ public interface EntityReadOperations
 
     Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId );
 
-    Cursor<NodeItem> nodeCursor( TxStateHolder txStateHolder, StoreStatement statement, long nodeId );
-
     Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
             throws EntityNotFoundException;
 
     Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId );
-
-    Cursor<RelationshipItem> relationshipCursor( TxStateHolder txStateHolder, StoreStatement statement, long relId );
 
     Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement );
 
@@ -172,4 +185,9 @@ public interface EntityReadOperations
             IndexDescriptor index,
             Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException;
 
+    long nodesGetCount( KernelStatement statement );
+
+    long relationshipsGetCount( KernelStatement statement );
+
+    boolean nodeExists( KernelStatement statement, long id );
 }

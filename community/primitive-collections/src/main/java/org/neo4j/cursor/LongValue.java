@@ -19,13 +19,12 @@
  */
 package org.neo4j.cursor;
 
-import org.neo4j.function.LongSupplier;
+import java.util.function.LongSupplier;
 
 /**
  * Mutable implementation of {@link LongSupplier}.
  */
-public class LongValue
-    implements LongSupplier
+public class LongValue implements LongSupplier
 {
     private long value;
 

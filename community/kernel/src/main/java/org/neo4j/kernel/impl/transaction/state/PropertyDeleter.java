@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -29,12 +28,10 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 
 public class PropertyDeleter
 {
-    private final PropertyStore propertyStore;
     private final PropertyTraverser traverser;
 
-    public PropertyDeleter( PropertyStore propertyStore, PropertyTraverser traverser )
+    public PropertyDeleter( PropertyTraverser traverser )
     {
-        this.propertyStore = propertyStore;
         this.traverser = traverser;
     }
 

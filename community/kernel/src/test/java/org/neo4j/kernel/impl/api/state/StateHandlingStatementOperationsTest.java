@@ -24,30 +24,37 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.cursor.LabelItem;
-import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
+import org.neo4j.storageengine.api.LabelItem;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
@@ -56,15 +63,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asIterable;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
+import static org.neo4j.test.MockedNeoStores.basicMockedNeoStores;
 
 public class StateHandlingStatementOperationsTest
 {
@@ -105,11 +110,11 @@ public class StateHandlingStatementOperationsTest
         // given
         PropertyConstraint constraint = new UniquenessConstraint( 10, 66 );
         TransactionState txState = mock( TransactionState.class );
-        when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( new DiffSets() );
+        when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( new DiffSets<Long>() );
         when( txState.hasChanges() ).thenReturn( true );
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
-                .thenAnswer( asAnswer( asList( constraint ) ) );
+                .thenAnswer( invocation -> Iterators.iterator( constraint ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
 
         // when
@@ -127,12 +132,12 @@ public class StateHandlingStatementOperationsTest
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
-                .thenAnswer( asAnswer( Collections.emptyList() ) );
+                .thenAnswer( invocation -> Iterators.emptyIterator() );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquePropertyConstraintCreate( state, 10, 66 );
 
         // when
-        Set<NodePropertyConstraint> result = asSet(
+        Set<NodePropertyConstraint> result = Iterables.asSet(
                 asIterable( context.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) ) );
 
         // then
@@ -149,19 +154,19 @@ public class StateHandlingStatementOperationsTest
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
-                .thenAnswer( asAnswer( Collections.emptyList() ) );
+                .thenAnswer( invocation -> Iterators.emptyIterator() );
         when( inner.constraintsGetForLabelAndPropertyKey( 11, 99 ) )
-                .thenAnswer( asAnswer( Collections.emptyList() ) );
+                .thenAnswer( invocation -> Iterators.emptyIterator() );
         when( inner.constraintsGetForLabel( 10 ) )
-                .thenAnswer( asAnswer( Collections.emptyList() ) );
+                .thenAnswer( invocation -> Iterators.emptyIterator() );
         when( inner.constraintsGetForLabel( 11 ) )
-                .thenAnswer( asAnswer( asIterable( constraint1 ) ) );
+                .thenAnswer( invocation -> Iterators.iterator( constraint1 ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquePropertyConstraintCreate( state, 10, 66 );
         context.uniquePropertyConstraintCreate( state, 11, 99 );
 
         // when
-        Set<NodePropertyConstraint> result = asSet( asIterable( context.constraintsGetForLabel( state, 11 ) ) );
+        Set<NodePropertyConstraint> result = Iterables.asSet( asIterable( context.constraintsGetForLabel( state, 11 ) ) );
 
         // then
         assertEquals( asSet( constraint1, constraint2 ), result );
@@ -177,15 +182,16 @@ public class StateHandlingStatementOperationsTest
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
-                .thenAnswer( asAnswer( Collections.emptyList() ) );
+                .thenAnswer( invocation -> Iterators.emptyIterator() );
         when( inner.constraintsGetForLabelAndPropertyKey( 11, 99 ) )
-                .thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( inner.constraintsGetAll() ).thenAnswer( asAnswer( asIterable( constraint2 ) ) );
+                .thenAnswer( invocation -> Iterators.emptyIterator() );
+        when( inner.constraintsGetAll() )
+                .thenAnswer( invocation -> Iterators.iterator( constraint2 ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquePropertyConstraintCreate( state, 10, 66 );
 
         // when
-        Set<PropertyConstraint> result = asSet( asIterable( context.constraintsGetAll( state ) ) );
+        Set<PropertyConstraint> result = Iterables.asSet( asIterable( context.constraintsGetAll( state ) ) );
 
         // then
         assertEquals( asSet( constraint1, constraint2 ), result );
@@ -208,8 +214,9 @@ public class StateHandlingStatementOperationsTest
         );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.nodesGetFromIndexScan( statement, index ) ).thenReturn(
-                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
+        IndexReader indexReader = addMockedIndexReader( statement );
+        when( indexReader.scan() ).thenReturn(
+                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
         );
 
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
@@ -218,7 +225,7 @@ public class StateHandlingStatementOperationsTest
         PrimitiveLongIterator results = context.nodesGetFromIndexScan( statement, index );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
     }
 
     @Test
@@ -238,9 +245,9 @@ public class StateHandlingStatementOperationsTest
         );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.nodesGetFromIndexSeek( statement, index, "value" ) ).thenReturn(
-                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
-        );
+        IndexReader indexReader = addMockedIndexReader( statement );
+        when( indexReader.seek( "value" ) ).thenReturn(
+                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
 
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
@@ -248,7 +255,7 @@ public class StateHandlingStatementOperationsTest
         PrimitiveLongIterator results = context.nodesGetFromIndexSeek( statement, index, "value" );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
     }
 
     @Test
@@ -268,9 +275,9 @@ public class StateHandlingStatementOperationsTest
         );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.nodesGetFromIndexRangeSeekByPrefix( statement, index, "prefix" ) ).thenReturn(
-                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
-        );
+        IndexReader indexReader = addMockedIndexReader( statement );
+        when( indexReader.rangeSeekByPrefix( "prefix" ) )
+                .thenReturn( PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
 
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
@@ -278,7 +285,7 @@ public class StateHandlingStatementOperationsTest
         PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByPrefix( statement, index, "prefix" );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -295,6 +302,8 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
+        StorageStatement storageStatement = mock( StorageStatement.class );
+        when( statement.getStoreStatement() ).thenReturn( storageStatement );
         IndexDescriptor index = new IndexDescriptor( 1, propertyKey );
         when( txState.indexUpdatesForRangeSeekByNumber( index, lower, true, upper, false ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
@@ -315,12 +324,11 @@ public class StateHandlingStatementOperationsTest
                 } );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.nodesGetFromInclusiveNumericIndexRangeSeek( statement, index, lower, upper ) ).thenReturn(
-                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
+        IndexReader indexReader = addMockedIndexReader( storageStatement );
+        when( indexReader.rangeSeekByNumberInclusive( lower, upper ) ).thenReturn(
+                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
         );
-        StoreStatement storeStatement = mock( StoreStatement.class );
-        when( statement.getStoreStatement() ).thenReturn( storeStatement );
-        when( storeStatement.acquireSingleNodeCursor( anyLong() ) ).thenAnswer(
+        when( storageStatement.acquireSingleNodeCursor( anyLong() ) ).thenAnswer(
                 new Answer<Cursor<NodeItem>>()
                 {
                     @Override
@@ -335,10 +343,11 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
         // When
-        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, true, upper, false );
+        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, true,
+                upper, false );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
     }
 
     @Test
@@ -358,9 +367,9 @@ public class StateHandlingStatementOperationsTest
         );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.nodesGetFromIndexRangeSeekByString( statement, index, "Anne", true, "Bill", false ) )
-                .thenReturn(
-                        IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
+        IndexReader indexReader = addMockedIndexReader( statement );
+        when( indexReader.rangeSeekByString( "Anne", true, "Bill", false ) ) .thenReturn(
+                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
         );
 
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
@@ -369,25 +378,87 @@ public class StateHandlingStatementOperationsTest
         PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByString( statement, index, "Anne", true, "Bill", false );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
     }
 
-    private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )
+    @Test
+    public void nodeGetFromUniqueIndexSeekClosesIndexReader() throws Exception
     {
-        return new Answer<Iterator<T>>()
+        KernelStatement kernelStatement = mock( KernelStatement.class );
+        StoreStatement storeStatement = mock( StoreStatement.class );
+        IndexReader indexReader = mock( IndexReader.class );
+
+        when( indexReader.seek( any() ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
+        when( storeStatement.getFreshIndexReader( any() ) ).thenReturn( indexReader );
+        when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
+
+        StateHandlingStatementOperations operations = newTxStateOps( mock( StoreReadLayer.class ) );
+
+        operations.nodeGetFromUniqueIndexSeek( kernelStatement, new IndexDescriptor( 1, 1 ), "foo" );
+
+        verify( indexReader ).close();
+    }
+
+    @Test
+    public void nodeCursorGetFromUniqueIndexSeekClosesIndexReader() throws Exception
+    {
+        KernelStatement kernelStatement = mock( KernelStatement.class );
+        IndexReader indexReader = mock( IndexReader.class );
+        StoreStatement storeStatement = new StoreStatementWithSingleFreshIndexReader( indexReader );
+
+        when( indexReader.seek( any() ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
+        when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
+
+        StateHandlingStatementOperations operations = newTxStateOps( mock( StoreReadLayer.class ) );
+
+        try ( Cursor<NodeItem> cursor = operations.nodeCursorGetFromUniqueIndexSeek( kernelStatement,
+                new IndexDescriptor( 1, 1 ), "foo" ) )
         {
-            @Override
-            public Iterator<T> answer( InvocationOnMock invocation ) throws Throwable
+            while ( cursor.next() )
             {
-                return values.iterator();
+                fail( "Cursor should be empty" );
             }
-        };
+        }
+        verify( indexReader ).close();
     }
 
     private StateHandlingStatementOperations newTxStateOps( StoreReadLayer delegate )
     {
         return new StateHandlingStatementOperations( delegate,
-                mock( LegacyPropertyTrackers.class ), mock( ConstraintIndexCreator.class ),
+                mock( InternalAutoIndexing.class ), mock( ConstraintIndexCreator.class ),
                 mock( LegacyIndexStore.class ) );
+    }
+
+    private IndexReader addMockedIndexReader( KernelStatement kernelStatement ) throws IndexNotFoundKernelException
+    {
+        StorageStatement storageStatement = mock( StorageStatement.class );
+        when( kernelStatement.getStoreStatement() ).thenReturn( storageStatement );
+        return addMockedIndexReader( storageStatement );
+    }
+
+    private IndexReader addMockedIndexReader( StorageStatement storeStatement )
+            throws IndexNotFoundKernelException
+    {
+        IndexReader indexReader = mock( IndexReader.class );
+        when( storeStatement.getIndexReader( any( IndexDescriptor.class ) ) ).thenReturn( indexReader );
+        return indexReader;
+    }
+
+    private static class StoreStatementWithSingleFreshIndexReader extends StoreStatement
+    {
+        final IndexReader reader;
+
+        StoreStatementWithSingleFreshIndexReader( IndexReader reader )
+        {
+            super( basicMockedNeoStores(), () -> mock( IndexReaderFactory.class ),
+                    () -> mock( LabelScanReader.class ),  new ReentrantLockService() );
+            this.reader = reader;
+        }
+
+        @Override
+        public IndexReader getFreshIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        {
+            return reader;
+        }
     }
 }

@@ -45,6 +45,6 @@ public class MandatoryTransactionsForIndexCreatorTests
     {
         return graphDatabaseService
                .schema()
-               .indexFor( DynamicLabel.label( "Label" ) );
+               .indexFor( Label.label( "Label" ) );
     }
 }

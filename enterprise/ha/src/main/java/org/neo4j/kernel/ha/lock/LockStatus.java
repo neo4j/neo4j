@@ -31,7 +31,7 @@ public enum LockStatus
             return true;
         }
     };
-    
+
     public boolean hasMessage()
     {
         return false;

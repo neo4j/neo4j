@@ -21,29 +21,30 @@ package org.neo4j.kernel;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class TestTransactionEventDeadlocks
 {
     @Rule
     public DatabaseRule database = new ImpermanentDatabaseRule();
-    
+
     @Test
     public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData() throws Exception
     {
-        GraphDatabaseService graphdb = database.getGraphDatabaseService();
+        GraphDatabaseService graphdb = database.getGraphDatabaseAPI();
         Node node = null;
         try ( Transaction tx = graphdb.beginTx() )
         {
@@ -57,7 +58,7 @@ public class TestTransactionEventDeadlocks
         try ( Transaction tx = graphdb.beginTx() )
         {
             node.setProperty( "state", "not broken yet" );
-            node.createRelationshipTo( graphdb.createNode(), DynamicRelationshipType.withName( "TEST" ) );
+            node.createRelationshipTo( graphdb.createNode(), RelationshipType.withName( "TEST" ) );
             node.removeProperty( "state" );
             tx.success();
         }
@@ -80,7 +81,7 @@ public class TestTransactionEventDeadlocks
         {
             // TODO Hmm, makes me think... should we really call transaction event handlers
             // for these relationship type / property index transasctions?
-            if ( count( data.createdRelationships() ) == 0 )
+            if ( Iterables.count( data.createdRelationships() ) == 0 )
                 return null;
 
             node.setProperty( "counter", ((Long) node.removeProperty( "counter" )) + 1 );

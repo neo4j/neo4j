@@ -19,36 +19,37 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class CypherResultRepresentationTest
 {
+    @Rule
+    public DatabaseRule database = new ImpermanentDatabaseRule();
+
     @Test
     @SuppressWarnings("unchecked")
     public void shouldSerializeProfilingResult() throws Exception
@@ -62,8 +63,8 @@ public class CypherResultRepresentationTest
         when( plan.hasProfilerStatistics() ).thenReturn( true );
 
         ExecutionPlanDescription.ProfilerStatistics stats = mock( ExecutionPlanDescription.ProfilerStatistics.class );
-        when( stats.getDbHits() ).thenReturn( 13l );
-        when( stats.getRows() ).thenReturn( 25l );
+        when( stats.getDbHits() ).thenReturn( 13L );
+        when( stats.getRows() ).thenReturn( 25L );
 
         when( plan.getProfilerStatistics() ).thenReturn( stats );
 
@@ -106,13 +107,10 @@ public class CypherResultRepresentationTest
         assertFalse( "Didn't expect to see a plan here", serialized.containsKey( "plan" ) );
     }
 
-    @Rule
-    public DatabaseRule database = new ImpermanentDatabaseRule();
-
     @Test
     public void shouldFormatMapsProperly() throws Exception
     {
-        GraphDatabaseService graphdb = database.getGraphDatabaseService();
+        GraphDatabaseService graphdb = database.getGraphDatabaseAPI();
         Result result = graphdb.execute( "RETURN {one:{two:['wait for it...', {three: 'GO!'}]}}" );
         CypherResultRepresentation representation = new CypherResultRepresentation( result, false, false );
 
@@ -130,11 +128,11 @@ public class CypherResultRepresentationTest
     @Test
     public void shouldRenderNestedEntities() throws Exception
     {
-        try ( Transaction ignored = database.getGraphDatabaseService().beginTx() )
+        try ( Transaction ignored = database.getGraphDatabaseAPI().beginTx() )
         {
-            GraphDatabaseService graphdb = database.getGraphDatabaseService();
-            graphdb.execute( "CREATE (n {name: 'Sally'}), (m {age: 42}), n-[r:FOO {drunk: false}]->m" );
-            Result result = graphdb.execute( "MATCH p=n-[r]->m RETURN n, r, p, {node: n, edge: r, path: p}" );
+            GraphDatabaseService graphdb = database.getGraphDatabaseAPI();
+            graphdb.execute( "CREATE (n {name: 'Sally'}), (m {age: 42}), (n)-[r:FOO {drunk: false}]->(m)" );
+            Result result = graphdb.execute( "MATCH p=(n)-[r]->(m) RETURN n, r, p, {node: n, edge: r, path: p}" );
             CypherResultRepresentation representation = new CypherResultRepresentation( result, false, false );
 
             // When

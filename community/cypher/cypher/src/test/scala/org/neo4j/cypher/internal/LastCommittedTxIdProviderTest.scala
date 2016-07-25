@@ -19,22 +19,25 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.kernel.NeoStoreDataSource
-import org.neo4j.test.ImpermanentGraphDatabase
+import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.security.AccessMode
+import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.BeforeAndAfterAll
 
 class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAll {
 
-  var db: ImpermanentGraphDatabase = null
+  var db: GraphDatabaseCypherService = null
   var lastCommittedTxIdProvider: LastCommittedTxIdProvider = null
 
   override protected def beforeAll(): Unit = {
-    db = new ImpermanentGraphDatabase()
+    db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
     lastCommittedTxIdProvider = LastCommittedTxIdProvider(db)
   }
 
-  override protected def afterAll(): Unit = db.shutdown()
+  override protected def afterAll(): Unit = db.getGraphDatabaseService.shutdown()
 
   test("should return correct last committed tx id") {
     val startingTxId = lastCommittedTxIdProvider()
@@ -56,7 +59,7 @@ class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAl
   }
 
   private def createNode(): Unit = {
-    val tx = db.beginTx()
+    val tx = db.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
     try {
       db.createNode()
       tx.success()

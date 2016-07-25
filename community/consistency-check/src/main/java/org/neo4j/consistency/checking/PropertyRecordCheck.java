@@ -224,7 +224,7 @@ public class PropertyRecordCheck
         };
     }
 
-    private static abstract class DynamicReference implements
+    private abstract static class DynamicReference implements
             ComparativeRecordChecker<PropertyRecord, DynamicRecord, ConsistencyReport.PropertyConsistencyReport>
     {
         final PropertyBlock block;

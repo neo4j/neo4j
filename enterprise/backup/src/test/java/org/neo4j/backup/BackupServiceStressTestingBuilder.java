@@ -31,10 +31,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 
-import org.neo4j.function.BooleanSupplier;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -44,19 +43,21 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.assertTrue;
-
 import static java.lang.System.currentTimeMillis;
+import static org.junit.Assert.assertTrue;
 
 public class BackupServiceStressTestingBuilder
 {
@@ -69,14 +70,7 @@ public class BackupServiceStressTestingBuilder
     public static BooleanSupplier untilTimeExpired( long duration, TimeUnit unit )
     {
         final long endTimeInMilliseconds = currentTimeMillis() + unit.toMillis( duration );
-        return new BooleanSupplier()
-        {
-            @Override
-            public boolean getAsBoolean()
-            {
-                return currentTimeMillis() <= endTimeInMilliseconds;
-            }
-        };
+        return () -> currentTimeMillis() <= endTimeInMilliseconds;
     }
 
     public BackupServiceStressTestingBuilder until( BooleanSupplier untilCondition )
@@ -151,6 +145,8 @@ public class BackupServiceStressTestingBuilder
         private final File backupDir;
         private final File brokenDir;
 
+        private final Label indexLabel;
+
         private RunTest( BooleanSupplier until, File storeDir, File backupDir, String backupHostname, int backupPort )
         {
             this.until = until;
@@ -161,13 +157,14 @@ public class BackupServiceStressTestingBuilder
             fileSystem.mkdir( this.backupDir );
             this.brokenDir = new File( backupDir, "broken_stores" );
             fileSystem.mkdir( brokenDir );
+            indexLabel = randomLabel();
         }
 
         @Override
         public Integer call() throws Exception
         {
             final GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
-                    storeDir.getAbsolutePath() ).setConfig( OnlineBackupSettings.online_backup_server,
+                    storeDir.getAbsoluteFile() ).setConfig( OnlineBackupSettings.online_backup_server,
                     backupHostname + ":" + backupPort ).setConfig( GraphDatabaseSettings.keep_logical_logs, "true" )
                     .newGraphDatabase();
 
@@ -181,50 +178,45 @@ public class BackupServiceStressTestingBuilder
 
                 // when
                 Dependencies dependencies = new Dependencies( db.getDependencyResolver() );
-                dependencies.satisfyDependencies( new Config(), NullLogProvider.getInstance(), new Monitors() );
+                dependencies.satisfyDependencies( Config.empty(), NullLogProvider.getInstance(), new Monitors() );
 
-                OnlineBackupKernelExtension backup;
+                LifeSupport life = new LifeSupport();
                 try
                 {
-                    backup = (OnlineBackupKernelExtension) new OnlineBackupExtensionFactory().newKernelExtension(
-                            DependenciesProxy.dependencies( dependencies,
-                                    OnlineBackupExtensionFactory.Dependencies.class ) );
-
-                    backup.init();
-                    backup.start();
+                    SimpleKernelContext context = new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN,
+                            dependencies );
+                    OnlineBackupExtensionFactory.Dependencies extensionDeps = DependenciesProxy.dependencies(
+                            dependencies, OnlineBackupExtensionFactory.Dependencies.class );
+                    life.add( new OnlineBackupExtensionFactory().newInstance( context, extensionDeps ) );
                 }
-                catch ( Throwable t )
+                catch ( Throwable e )
                 {
-                    throw new RuntimeException( t );
+                    throw new RuntimeException( e );
                 }
+                life.start();
 
                 ExecutorService executor = Executors.newFixedThreadPool( 2 );
-                executor.execute( new Runnable()
-                {
-                    @Override
-                    public void run()
+                executor.execute( () -> {
+                    while ( keepGoing.get() && until.getAsBoolean() )
                     {
-                        while ( keepGoing.get() && until.getAsBoolean() )
-                        {
-                            createSomeData( db );
-                        }
+                        createSomeData( db );
                     }
                 } );
 
                 final AtomicInteger inconsistentDbs = new AtomicInteger( 0 );
-                executor.execute( new Runnable()
+                executor.submit( new Callable<Void>()
                 {
                     private final BackupService backupService = new BackupService( fileSystem,
                             NullLogProvider.getInstance(), new Monitors() );
 
                     @Override
-                    public void run()
+                    public Void call() throws IOException
                     {
                         while ( keepGoing.get() && until.getAsBoolean() )
                         {
-                            cleanup( backupDir );
+                            fileSystem.deleteRecursively( backupDir );
                             BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( backupHostname,
-                                    backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, new Config(),
+                                    backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.FULL, Config.empty(),
                                     BackupClient.BIG_READ_TIMEOUT, false );
 
                             if ( !backupOutcome.isConsistent() )
@@ -233,35 +225,11 @@ public class BackupServiceStressTestingBuilder
                                 int num = inconsistentDbs.incrementAndGet();
                                 File dir = new File( brokenDir, "" + num );
                                 fileSystem.mkdir( dir );
-                                copyRecursively( backupDir, dir );
+                                fileSystem.copyRecursively( backupDir, dir );
                             }
                         }
+                        return null;
                     }
-
-                    private void copyRecursively( File from, File to )
-                    {
-                        try
-                        {
-                            fileSystem.copyRecursively( from, to );
-                        }
-                        catch ( IOException e )
-                        {
-                            throw new RuntimeException( e );
-                        }
-                    }
-
-                    private void cleanup( File dir )
-                    {
-                        try
-                        {
-                            fileSystem.deleteRecursively( dir );
-                        }
-                        catch ( IOException e )
-                        {
-                            throw new RuntimeException( e );
-                        }
-                    }
-
                 } );
 
                 while ( keepGoing.get() && until.getAsBoolean() )
@@ -270,17 +238,9 @@ public class BackupServiceStressTestingBuilder
                 }
 
                 executor.shutdown();
-                assertTrue( executor.awaitTermination( 30, TimeUnit.SECONDS ) );
+                assertTrue( executor.awaitTermination( 5, TimeUnit.MINUTES ) );
 
-                try
-                {
-                    backup.stop();
-                    backup.shutdown();
-                }
-                catch ( Throwable t )
-                {
-                    throw new RuntimeException( t );
-                }
+                life.shutdown();
 
                 return inconsistentDbs.get();
             }
@@ -294,7 +254,7 @@ public class BackupServiceStressTestingBuilder
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().indexFor( randomLabel() ).on( "name" ).create();
+                db.schema().indexFor( indexLabel ).on( "name" ).create();
                 tx.success();
             }
         }
@@ -304,14 +264,19 @@ public class BackupServiceStressTestingBuilder
             Random random = ThreadLocalRandom.current();
             try ( Transaction tx = db.beginTx() )
             {
-                Node start = db.createNode( randomLabel() );
-                start.setProperty( "name", "name " + random.nextInt() );
-                Node end = db.createNode( randomLabel() );
-                end.setProperty( "name", "name " + random.nextInt() );
+                Node start = createLabeledNode( db, random );
+                Node end = createLabeledNode( db, random );
                 Relationship rel = start.createRelationshipTo( end, randomRelationshipType() );
                 rel.setProperty( "something", "some " + random.nextInt() );
                 tx.success();
             }
+        }
+
+        private Node createLabeledNode( GraphDatabaseService db, Random random )
+        {
+            Node node = db.createNode( randomLabel() );
+            node.setProperty( "name", "name'" + random.nextInt() );
+            return node;
         }
 
         private void rotateLogAndCheckPoint( GraphDatabaseAPI db ) throws IOException
@@ -324,13 +289,13 @@ public class BackupServiceStressTestingBuilder
 
         private static Label randomLabel()
         {
-            return DynamicLabel.label( "" + ThreadLocalRandom.current().nextInt( NUMBER_OF_LABELS ) );
+            return Label.label( "" + ThreadLocalRandom.current().nextInt( NUMBER_OF_LABELS ) );
         }
 
         private static RelationshipType randomRelationshipType()
         {
             String name = "" + ThreadLocalRandom.current().nextInt( NUMBER_OF_RELATIONSHIP_TYPES );
-            return DynamicRelationshipType.withName( name );
+            return RelationshipType.withName( name );
         }
     }
 }

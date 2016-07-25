@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2015 "Neo Technology,"
+# Copyright (c) 2002-2016 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # This file is part of Neo4j.
@@ -25,36 +25,28 @@ Uninstall a Neo4j Server Windows Service
 Uninstall a Neo4j Server Windows Service
 
 .PARAMETER Neo4jServer
-An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
-
-.PARAMETER ServiceName
-The name of the Neo4j Server service.  If no name is specified, the name is determined from the Neo4j Configuration files (default)
-
-.PARAMETER SucceedIfNotExist
-Do not raise an error if the service does not exist
+An object representing a valid Neo4j Server object
 
 .EXAMPLE
-'C:\Neo4j\neo4j-enterprise' | Uninstall-Neo4jServer
+Uninstall-Neo4jServer -Neo4jServer $ServerObject
 
-Uninstall the Neo4j Server Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise'
+Uninstall the Neo4j Windows Windows Service for the Neo4j installation at $ServerObject
 
 .OUTPUTS
-System.Management.Automation.PSCustomObject
-Neo4j Server object
+System.Int32
+0 = Service is uninstalled or did not exist
+non-zero = an error occured
+
+.NOTES
+This function is private to the powershell module
 
 #>
 Function Uninstall-Neo4jServer
 {
   [cmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Medium')]
   param (
-    [Parameter(Mandatory=$false,ValueFromPipeline=$true)]
-    [object]$Neo4jServer = ''
-    
-    ,[Parameter(Mandatory=$false)]
-    [string]$ServiceName = ''
-
-    ,[Parameter(Mandatory=$false)]
-    [switch]$SucceedIfNotExist
+    [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
+    [PSCustomObject]$Neo4jServer
   )
   
   Begin
@@ -63,56 +55,41 @@ Function Uninstall-Neo4jServer
 
   Process
   {
-    # Get the Neo4j Server information
-    if ($Neo4jServer -eq $null) { $Neo4jServer = '' }
-    switch ($Neo4jServer.GetType().ToString())
+    $Name = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
+
+    $service = Get-Service -Name $Name -ComputerName '.' -ErrorAction 'SilentlyContinue'
+    if ($service -eq $null) 
     {
-      'System.Management.Automation.PSCustomObject'
-      {
-        if (-not (Confirm-Neo4jServerObject -Neo4jServer $Neo4jServer))
-        {
-          Write-Error "The specified Neo4j Server object is not valid"
-          return
-        }
-        $thisServer = $Neo4jServer
-      }      
-      default
-      {
-        $thisServer = Get-Neo4jServer -Neo4jHome $Neo4jServer
-      }
-    }
-    if ($thisServer -eq $null) { return }
-    
-    if ($ServiceName -eq '')
-    {
-      $setting = ($thisServer | Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'wrapper.name')
-      if ($setting -ne $null) { $ServiceName = $setting.Value }
+      Write-Verbose "Windows Service $Name does not exist"
+      Write-Host "Neo4j uninstalled"
+      return 0
     }
 
-    if ($ServiceName -eq '')
-    {
-      Write-Error "Could not find the Windows Service Name for Neo4j"
-      return
-    }
-    
-    # Get the Service object as a WMI object.  Can only do deletions through WMI or SC.EXE
-    $service = Get-WmiObject -Class Win32_Service -Filter "Name='$ServiceName'"
-    if (($service -eq $null) -and (-not $SucceedIfNotExist) ) 
-    {
-      Write-Error "Windows service $ServiceName cannot be removed as it does not exist"
-      return
+    if ($service.State -ne 'Stopped') {
+      Write-Host "Stopping the Neo4j service"
+      Stop-Service -ServiceName $Name -ErrorAction 'Stop' | Out-Null
     }
 
-    if ($service -ne $null)
-    {
-      Stop-Service -ServiceName $ServiceName | Out-Null
-      if ($PSCmdlet.ShouldProcess($ServiceName, 'Remove Windows Service'))
-      {  
-        $service.delete() | Out-Null
+    $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $Neo4jServer -ForServerUninstall
+    if ($prunsrv -eq $null) { throw "Could not determine the command line for PRUNSRV" }
+
+    Write-Verbose "Uninstalling Neo4j as a service with command line $($prunsrv.cmd) $($prunsrv.args)"
+    $stdError = New-Neo4jTempFile -Prefix 'stderr'
+    $result = (Start-Process -FilePath $prunsrv.cmd -ArgumentList $prunsrv.args -Wait -NoNewWindow -PassThru -WorkingDirectory $Neo4jServer.Home -RedirectStandardError $stdError)
+    Write-Verbose "Returned exit code $($result.ExitCode)"
+
+    Write-Output $result.ExitCode
+
+    # Process the output
+    if ($result.ExitCode -eq 0) {
+      Write-Host "Neo4j service uninstalled"
+    } else {
+      Write-Host "Neo4j service did not uninstall"
+      # Write out STDERR if it did not uninstall
+      Get-Contet -Path $stdError -ErrorAction 'SilentlyContinue' | ForEach-Object -Process {
+        Write-Host $_
       }
     }
-    
-    Write-Output $thisServer
   }
   
   End

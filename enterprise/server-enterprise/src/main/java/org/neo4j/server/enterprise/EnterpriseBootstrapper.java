@@ -19,31 +19,24 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.io.File;
-import java.io.IOException;
+import java.util.Map;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.Log;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.advanced.AdvancedBootstrapper;
+import org.neo4j.server.security.enterprise.auth.SecuritySettings;
 
-import static org.neo4j.server.web.ServerInternalSettings.SERVER_CONFIG_FILE;
-import static org.neo4j.server.web.ServerInternalSettings.SERVER_CONFIG_FILE_KEY;
+import static java.util.Arrays.asList;
 
-public class EnterpriseBootstrapper extends AdvancedBootstrapper
+import static org.neo4j.server.enterprise.EnterpriseServerSettings.mode;
+
+public class EnterpriseBootstrapper extends CommunityBootstrapper
 {
-    public static void main( String[] args )
-    {
-        int exit = start( new EnterpriseBootstrapper(), args );
-        if ( exit != 0 )
-        {
-            System.exit( exit );
-        }
-    }
-
     @Override
     protected NeoServer createNeoServer( Config configurator, GraphDatabaseDependencies dependencies, LogProvider
             userLogProvider )
@@ -52,8 +45,22 @@ public class EnterpriseBootstrapper extends AdvancedBootstrapper
     }
 
     @Override
-    protected Config createConfig( Log log, File file, Pair<String,String>[] configOverrides ) throws IOException
+    protected Iterable<Class<?>> settingsClasses( Map<String, String> settings )
     {
-        return new EnterpriseServerConfigLoader().loadConfig( file, new File( System.getProperty( SERVER_CONFIG_FILE_KEY, SERVER_CONFIG_FILE ) ), log, configOverrides );
+        if ( isHAMode( settings ) )
+        {
+            return Iterables.concat(
+                    super.settingsClasses( settings ),
+                    asList( HaSettings.class, ClusterSettings.class, SecuritySettings.class ) );
+        }
+        else
+        {
+            return super.settingsClasses( settings );
+        }
+    }
+
+    private boolean isHAMode( Map<String, String> settings )
+    {
+        return new Config( settings, EnterpriseServerSettings.class ).get( mode ).equals( "HA" );
     }
 }

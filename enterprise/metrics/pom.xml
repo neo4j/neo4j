@@ -6,13 +6,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-metrics</artifactId>
-  <version>2.3.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
 
   <name>Neo4j - Metrics Kernel Extension</name>
   <packaging>jar</packaging>
@@ -33,20 +33,6 @@
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
-            <id>generate-source-based-settings-documentation</id>
-            <phase>${generate-config-docs-phase}</phase>
-            <configuration>
-              <target>
-                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
-                      classpathref="maven.test.classpath" failonerror="true">
-                  <arg value="org.neo4j.metrics.MetricsSettings" />
-                  <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
-                </java>
-              </target>
-            </configuration>
-            <goals><goal>run</goal></goals>
-          </execution>
-          <execution>
             <id>generate-source-based-metrics-documentation</id>
             <phase>${generate-config-docs-phase}</phase>
             <configuration>
@@ -54,10 +40,20 @@
                 <java classname="org.neo4j.metrics.docs.GenerateMetricsDocumentation"
                       classpathref="maven.test.classpath" failonerror="true">
                   <arg value="--output=${project.build.directory}/docs/ops/available-metrics.asciidoc" />
-                  <arg value="org.neo4j.metrics.source.DBMetrics" />
-                  <arg value="org.neo4j.metrics.source.NetworkMetrics" />
-                  <arg value="org.neo4j.metrics.source.ClusterMetrics" />
-                  <arg value="org.neo4j.metrics.source.JvmMetrics" />
+
+                  <arg value="org.neo4j.metrics.source.db.CheckPointingMetrics" />
+                  <arg value="org.neo4j.metrics.source.db.EntityCountMetrics" />
+                  <arg value="org.neo4j.metrics.source.db.PageCacheMetrics" />
+                  <arg value="org.neo4j.metrics.source.db.TransactionMetrics" />
+                  <arg value="org.neo4j.metrics.source.db.CypherMetrics" />
+                  <arg value="org.neo4j.metrics.source.db.LogRotationMetrics" />
+                  <arg value="org.neo4j.metrics.source.cluster.NetworkMetrics" />
+                  <arg value="org.neo4j.metrics.source.cluster.ClusterMetrics" />
+                  <arg value="org.neo4j.metrics.source.coreedge.CoreMetrics" />
+
+                  <!-- keep this one last as it's a bit special compared to the others -->
+                  <arg value="org.neo4j.metrics.source.jvm.JvmMetrics" />
+
                 </java>
               </target>
             </configuration>
@@ -85,6 +81,20 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-core-edge</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-bolt</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
@@ -102,6 +112,12 @@
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -109,10 +125,9 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher</artifactId>
+      <artifactId>neo4j-management</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -124,10 +139,44 @@
       <scope>test</scope>
       <type>test-jar</type>
     </dependency>
-
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-common</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-ha</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cluster</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-core-edge</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-bolt</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
       <type>test-jar</type>
@@ -141,10 +190,6 @@
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-graphite</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.dropwizard.metrics</groupId>
-      <artifactId>metrics-ganglia</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>junit</groupId>
@@ -154,6 +199,11 @@
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

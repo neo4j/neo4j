@@ -19,15 +19,109 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import org.neo4j.function.Predicate;
+import java.util.function.Predicate;
+
 import org.neo4j.helpers.CloneableInPublic;
 
+/**
+ * {@link AbstractBaseRecord records} are intended to be reusable. Created with a zero-arg constructor
+ * and initialized with the public {@code initialize} method exposed by the specific record implementations,
+ * or {@link #clear() cleared} if reading a record that isn't in use.
+ */
 public abstract class AbstractBaseRecord implements CloneableInPublic
 {
-    private boolean inUse = false;
-    private boolean created = false;
+    public static final int NO_ID = -1;
+    private long id;
+    // Used for the "record unit" feature where one logical record may span two physical records,
+    // as to still keep low and fixed record size, but support occasionally bigger records.
+    private long secondaryUnitId;
+    // This flag is for when a record required a secondary unit, was changed, as a result of that change
+    // no longer requires that secondary unit and gets updated. In that scenario we still want to know
+    // about the secondary unit id so that we can free it when the time comes to apply the record to store.
+    private boolean requiresSecondaryUnit;
+    private boolean inUse;
+    private boolean created;
 
-    public abstract long getLongId();
+    protected AbstractBaseRecord( long id )
+    {
+        this.id = id;
+        clear();
+    }
+
+    protected AbstractBaseRecord initialize( boolean inUse )
+    {
+        this.inUse = inUse;
+        this.created = false;
+        this.secondaryUnitId = NO_ID;
+        this.requiresSecondaryUnit = false;
+        return this;
+    }
+
+    /**
+     * Clears this record to its initial state. Initializing this record with an {@code initialize-method}
+     * doesn't require clear the record first, either initialize or clear suffices.
+     * Subclasses, most specific subclasses only, implements this method by calling initialize with
+     * zero-like arguments.
+     */
+    public void clear()
+    {
+        inUse = false;
+        created = false;
+        secondaryUnitId = NO_ID;
+        requiresSecondaryUnit = false;
+    }
+
+    public long getId()
+    {
+        return id;
+    }
+
+    public int getIntId()
+    {
+        return Math.toIntExact( id );
+    }
+
+    public final void setId( long id )
+    {
+        this.id = id;
+    }
+
+    /**
+     * Sets a secondary record unit ID for this record. If this is set to something other than {@link #NO_ID}
+     * then {@link #requiresSecondaryUnit()} will return {@code true}.
+     * Setting this id is separate from setting {@link #requiresSecondaryUnit()} since this secondary unit id
+     * may be used to just free that id at the time of updating in the store if a record goes from two to one unit.
+     */
+    public void setSecondaryUnitId( long id )
+    {
+        this.secondaryUnitId = id;
+    }
+
+    public boolean hasSecondaryUnitId()
+    {
+        return secondaryUnitId != NO_ID;
+    }
+
+    /**
+     * @return secondary record unit ID set by {@link #setSecondaryUnitId(long)}.
+     */
+    public long getSecondaryUnitId()
+    {
+        return this.secondaryUnitId;
+    }
+
+    public void setRequiresSecondaryUnit( boolean requires )
+    {
+        this.requiresSecondaryUnit = requires;
+    }
+
+    /**
+     * @return whether or not a secondary record unit ID has been assigned.
+     */
+    public boolean requiresSecondaryUnit()
+    {
+        return requiresSecondaryUnit;
+    }
 
     public final boolean inUse()
     {
@@ -52,11 +146,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     @Override
     public int hashCode()
     {
-        final int prime = 31;
-        int result = 1;
-        long id = getLongId();
-        result = prime * result + (int) (id ^ (id >>> 32));
-        return result;
+        return (int) (( id >>> 32 ) ^ id );
     }
 
     @Override
@@ -69,7 +159,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
         if ( getClass() != obj.getClass() )
             return false;
         AbstractBaseRecord other = (AbstractBaseRecord) obj;
-        if ( getLongId() != other.getLongId() )
+        if ( id != other.id )
             return false;
         return true;
     }

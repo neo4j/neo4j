@@ -43,6 +43,7 @@ import java.rmi.server.RemoteObject;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -50,13 +51,20 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.test.ProcessStreamHandler;
 
-@SuppressWarnings( "serial" )
+import static org.neo4j.io.proc.ProcessUtil.getClassPath;
+import static org.neo4j.io.proc.ProcessUtil.getClassPathList;
+import static org.neo4j.io.proc.ProcessUtil.getJavaExecutable;
+
 public abstract class SubProcess<T, P> implements Serializable
 {
+    private static final long serialVersionUID = -6084373832996850958L;
+
     private interface NoInterface
     {
         // Used when no interface is declared
@@ -65,7 +73,7 @@ public abstract class SubProcess<T, P> implements Serializable
     // by default will inherit output destinations for subprocess from current process
     private static final boolean INHERIT_OUTPUT_DEFAULT_VALUE = true;
 
-    private final Class<T> t;
+    private Class<T> t;
     private transient boolean inheritOutput = INHERIT_OUTPUT_DEFAULT_VALUE;
     private final transient Predicate<String> classPathFilter;
 
@@ -83,7 +91,8 @@ public abstract class SubProcess<T, P> implements Serializable
             me = me.getSuperclass();
         }
         Type type = ( (ParameterizedType) me.getGenericSuperclass() ).getActualTypeArguments()[0];
-        @SuppressWarnings( { "hiding" } ) Class<T> t;
+        @SuppressWarnings( { "hiding" } )
+        Class<T> t;
         if ( type instanceof Class<?> )
         {
             t = (Class<T>) type;
@@ -115,16 +124,6 @@ public abstract class SubProcess<T, P> implements Serializable
         this.classPathFilter = classPathFilter;
     }
 
-    public SubProcess( Predicate<String> classPathFilter )
-    {
-        this( classPathFilter, INHERIT_OUTPUT_DEFAULT_VALUE );
-    }
-
-    public SubProcess( boolean inheritOutput )
-    {
-        this(null, inheritOutput );
-    }
-
     public SubProcess()
     {
         this( null, INHERIT_OUTPUT_DEFAULT_VALUE );
@@ -146,8 +145,8 @@ public abstract class SubProcess<T, P> implements Serializable
         Dispatcher dispatcher;
         try
         {
-            process = start( inheritOutput, "java", "-ea", "-Xmx1G", "-Djava.awt.headless=true", "-cp",
-                    classPath( System.getProperty( "java.class.path" ) ),
+            String java = getJavaExecutable().toString();
+            process = start( inheritOutput, java, "-ea", "-Xmx1G", "-Djava.awt.headless=true", "-cp", classPath(),
                     SubProcess.class.getName(), serialize( callback ) );
             pid = getPid( process );
             // if IO was not inherited by current process we need to pipe error and input stream to corresponding
@@ -188,21 +187,14 @@ public abstract class SubProcess<T, P> implements Serializable
         return System.out;
     }
 
-    private String classPath( String parentClasspath )
+    private String classPath()
     {
         if ( classPathFilter == null )
         {
-            return parentClasspath;
+            return getClassPath();
         }
-        StringBuilder result = new StringBuilder();
-        for ( String part : parentClasspath.split( File.pathSeparator ) )
-        {
-            if ( classPathFilter.test( part ) )
-            {
-                result.append( result.length() > 0 ? File.pathSeparator : "" ).append( part );
-            }
-        }
-        return result.toString();
+        Stream<String> stream = getClassPathList().stream();
+        return stream.filter( classPathFilter ).collect( Collectors.joining( File.pathSeparator ) );
     }
 
     private static Process start(boolean inheritOutput, String... args )
@@ -472,9 +464,9 @@ public abstract class SubProcess<T, P> implements Serializable
 
     private static class DispatcherTrapImpl extends UnicastRemoteObject implements DispatcherTrap
     {
-        private final Object parameter;
+        private Object parameter;
         private volatile Dispatcher dispatcher;
-        private final SubProcess<?, ?> process;
+        private SubProcess<?, ?> process;
 
         DispatcherTrapImpl( SubProcess<?, ?> process, Object parameter ) throws RemoteException
         {
@@ -541,21 +533,14 @@ public abstract class SubProcess<T, P> implements Serializable
         {
             throw new RuntimeException( "Broken implementation!", e );
         }
-        return new sun.misc.BASE64Encoder().encode( os.toByteArray() );
+        return Base64.getEncoder().encodeToString( os.toByteArray() );
     }
 
     @SuppressWarnings( "restriction" )
-    private static DispatcherTrap deserialize( String data )
+    private static DispatcherTrap deserialize( String data ) throws Exception
     {
-        try
-        {
-            return (DispatcherTrap) new ObjectInputStream( new ByteArrayInputStream(
-                    new sun.misc.BASE64Decoder().decodeBuffer( data ) ) ).readObject();
-        }
-        catch ( Exception e )
-        {
-            return null;
-        }
+        return (DispatcherTrap) new ObjectInputStream( new ByteArrayInputStream(
+                Base64.getDecoder().decode( data ) ) ).readObject();
     }
 
     private interface Dispatcher extends Remote

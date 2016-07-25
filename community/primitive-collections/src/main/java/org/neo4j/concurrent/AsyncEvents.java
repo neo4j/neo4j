@@ -21,8 +21,7 @@ package org.neo4j.concurrent;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
-
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
 
 /**
  * {@code AsyncEvents} is a mechanism for queueing up events to be processed asynchronously in a background thread.
@@ -47,13 +46,7 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
     {
         void eventCount( long count );
 
-        Monitor NONE = new Monitor()
-        {
-            @Override
-            public void eventCount( long count )
-            {
-            }
-        };
+        Monitor NONE = count -> {};
     }
 
     // TODO use VarHandles in Java 9

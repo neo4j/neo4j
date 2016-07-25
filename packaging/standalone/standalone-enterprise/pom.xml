@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.assembly</groupId>
     <artifactId>neo4j-standalone</artifactId>
-    <version>2.3.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
@@ -14,7 +14,7 @@
 
   <name>Neo4j Enterprise - Server Assembler</name>
 
-  <version>2.3.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
 
   <description>This project assembles the Neo4j Enterprise stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them
@@ -22,11 +22,13 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/packaging/standalone/standalone-enterprise</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
   <properties>
-    <neo4j.mainClass>org.neo4j.server.enterprise.EnterpriseBootstrapper</neo4j.mainClass>
+    <neo4j.mainClass>org.neo4j.server.enterprise.EnterpriseEntryPoint</neo4j.mainClass>
   </properties>
 
   <licenses>

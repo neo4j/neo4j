@@ -24,14 +24,14 @@ import java.io.File;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
-final class FileSizeThreshold implements Threshold
+public final class FileSizeThreshold implements Threshold
 {
     private final FileSystemAbstraction fileSystem;
     private final long maxSize;
 
     private long currentSize;
 
-    FileSizeThreshold( FileSystemAbstraction fileSystem, long maxSize )
+    public FileSizeThreshold( FileSystemAbstraction fileSystem, long maxSize )
     {
         this.fileSystem = fileSystem;
         this.maxSize = maxSize;

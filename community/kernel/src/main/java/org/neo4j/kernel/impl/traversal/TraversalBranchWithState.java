@@ -33,7 +33,7 @@ public class TraversalBranchWithState extends TraversalBranchImpl implements Bra
 {
     protected final Object stateForMe;
     protected Object stateForChildren;
-    
+
     public TraversalBranchWithState( TraversalBranch parent, int depth, Node source, Relationship toHere, Object inheritedState )
     {
         super( parent, depth, source, toHere );
@@ -45,13 +45,13 @@ public class TraversalBranchWithState extends TraversalBranchImpl implements Bra
         super( parent, source );
         this.stateForMe = this.stateForChildren = initialState.initialState( this );
     }
-    
+
     @Override
     public void setState( Object state )
     {
         this.stateForChildren = state;
     }
-    
+
     @Override
     public Object getState()
     {
@@ -70,13 +70,13 @@ public class TraversalBranchWithState extends TraversalBranchImpl implements Bra
         Iterable<Relationship> iterable = expander.expand( this, this );
         return iterable.iterator();
     }
-    
+
     @Override
     public Object state()
     {
         return this.stateForMe;
     }
-    
+
     @Override
     protected void evaluate( TraversalContext context )
     {

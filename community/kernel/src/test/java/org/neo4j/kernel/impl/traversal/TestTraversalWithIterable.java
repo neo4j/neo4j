@@ -24,9 +24,9 @@ import java.util.Collection;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -42,7 +42,7 @@ public class TestTraversalWithIterable extends TraversalTestBase
          * (d)-->(e)-->(f)
          *
          */
-        
+
         createGraph( "a TO b", "b TO c", "d TO e", "e TO f" );
 
         try (Transaction tx = beginTx())
@@ -54,7 +54,6 @@ public class TestTraversalWithIterable extends TraversalTestBase
             startNodes.add( getNodeWithName( "d" ) );
 
             Iterable<Node> iterableStartNodes = startNodes;
-
 
             expectPaths( basicTraverser.traverse( iterableStartNodes ), "a,b,c", "d,e,f");
             tx.success();
@@ -77,7 +76,7 @@ public class TestTraversalWithIterable extends TraversalTestBase
         try (Transaction tx = beginTx())
         {
             TraversalDescription firstTraverser = getGraphDb().traversalDescription()
-                    .relationships( DynamicRelationshipType.withName( "FIRST" ) )
+                    .relationships( RelationshipType.withName( "FIRST" ) )
                     .evaluator( Evaluators.toDepth( 1 ) );
             final Iterable<Path> firstResult = firstTraverser.traverse( getNodeWithName( "a" ) );
 

@@ -22,27 +22,34 @@ package org.neo4j.tools.txlog;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.LogTestUtils;
+import org.neo4j.tools.txlog.checktypes.CheckType;
+import org.neo4j.tools.txlog.checktypes.CheckTypes;
 
 /**
  * Tool that verifies consistency of transaction logs.
- * <p/>
+ *
  * Transaction log is considered consistent when every command's before state is the same as after state for
  * corresponding record in previously committed transaction.
- * <p/>
+ *
  * Tool expects a single argument - directory with transaction logs.
  * It then simply iterates over all commands in those logs, compares before state for current record with previously
  * seen after state and stores after state for current record, if before state is consistent.
@@ -50,6 +57,8 @@ import org.neo4j.test.LogTestUtils;
 public class CheckTxLogs
 {
     private static final String HELP_FLAG = "help";
+    private static final String CHECKS = "checks";
+    private static final String SEPARATOR = ",";
 
     private PrintStream out;
     private final FileSystemAbstraction fs;
@@ -63,43 +72,66 @@ public class CheckTxLogs
     public static void main( String[] args ) throws Exception
     {
         Args arguments = Args.withFlags( HELP_FLAG ).parse( args );
+        PrintStream printStream = System.out;
         if ( arguments.getBoolean( HELP_FLAG ) )
         {
-            printUsageAndExit( System.out );
+            printUsageAndExit( printStream );
         }
-        File dir = parseDir( System.out, arguments );
+        CheckType<?,?>[] checkTypes = parseChecks( arguments );
+        File dir = parseDir( printStream, arguments );
 
         File[] logs = txLogsIn( dir );
-        System.out.println( "Found " + logs.length + " log files to verify" );
+        printStream.println( "Found " + logs.length + " log files to verify" );
 
-        CheckTxLogs tool = new CheckTxLogs( System.out, new DefaultFileSystemAbstraction() );
-        if ( !tool.checkAll( logs ) )
+        CheckTxLogs tool = new CheckTxLogs(printStream, new DefaultFileSystemAbstraction() );
+
+        if ( !tool.scan( logs, new PrintingInconsistenciesHandler( printStream ), checkTypes ) )
         {
             System.exit( 1 );
         }
     }
 
+    // used in other projects do not remove!
     public boolean checkAll( File[] logs ) throws IOException
     {
+        return scan( logs, new PrintingInconsistenciesHandler( out ), CheckTypes.CHECK_TYPES );
+    }
+
+    boolean scan( File[] logs, InconsistenciesHandler handler, CheckType<?,?>... checkTypes ) throws IOException
+    {
         boolean success = true;
-
-        success &= scan( logs, CheckType.NODE, new PrintingInconsistenciesHandler( out ) );
-        success &= scan( logs, CheckType.PROPERTY, new PrintingInconsistenciesHandler( out ) );
-
+        for ( CheckType<?,?> checkType : checkTypes )
+        {
+            success &= scan( logs, handler, checkType );
+        }
         return success;
     }
 
-    <C extends Command, R extends Abstract64BitRecord> boolean scan( File[] logs, CheckType<C,R> check,
-            InconsistenciesHandler handler ) throws IOException
+    class CommandAndLogVersion
+    {
+        StorageCommand command;
+        long logVersion;
+
+        CommandAndLogVersion( StorageCommand command, long logVersion )
+        {
+            this.command = command;
+            this.logVersion = logVersion;
+        }
+    }
+
+    private <C extends Command, R extends AbstractBaseRecord> boolean scan(
+            File[] logs, InconsistenciesHandler handler, CheckType<C,R> check ) throws IOException
     {
         out.println( "Checking logs for " + check.name() + " inconsistencies" );
-
         CommittedRecords<R> state = new CommittedRecords<>( check );
 
+        List<CommandAndLogVersion> txCommands = new ArrayList<>();
         boolean validLogs = true;
         for ( File log : logs )
         {
             long commandsRead = 0;
+            long logVersion = PhysicalLogFiles.getLogVersion( log );
+
             try ( LogEntryCursor logEntryCursor = LogTestUtils.openLog( fs, log ) )
             {
                 while ( logEntryCursor.next() )
@@ -107,13 +139,20 @@ public class CheckTxLogs
                     LogEntry entry = logEntryCursor.get();
                     if ( entry instanceof LogEntryCommand )
                     {
-                        Command command = ((LogEntryCommand) entry).getXaCommand();
+                        StorageCommand command = ((LogEntryCommand) entry).getXaCommand();
                         if ( check.commandClass().isInstance( command ) )
                         {
-                            long logVersion = PhysicalLogFiles.getLogVersion( log );
-                            C cmd = check.commandClass().cast( command );
-                            validLogs &= process( cmd, check, state, logVersion, handler );
+                            txCommands.add( new CommandAndLogVersion( command, logVersion ) );
                         }
+                    }
+                    else if ( entry instanceof LogEntryCommit )
+                    {
+                        long txId = ((LogEntryCommit) entry).getTxId();
+                        for ( CommandAndLogVersion txCommand : txCommands )
+                        {
+                            validLogs &= checkAndHandleInconsistencies( txCommand, check, state, txId, handler );
+                        }
+                        txCommands.clear();
                     }
                     commandsRead++;
                 }
@@ -122,40 +161,67 @@ public class CheckTxLogs
             out.println( state );
         }
 
+        if ( !txCommands.isEmpty() )
+        {
+            out.println( "Found " + txCommands.size() + " uncommitted commands at the end." );
+            for ( CommandAndLogVersion txCommand : txCommands )
+            {
+                validLogs &= checkAndHandleInconsistencies( txCommand, check, state, -1, handler );
+            }
+            txCommands.clear();
+        }
+
         return validLogs;
     }
 
-    private <C extends Command, R extends Abstract64BitRecord> boolean process( C command, CheckType<C,R> check,
-            CommittedRecords<R> state, long logVersion, InconsistenciesHandler handler )
+    private <C extends Command, R extends AbstractBaseRecord> boolean checkAndHandleInconsistencies( CommandAndLogVersion
+            txCommand, CheckType<C,R> check,
+            CommittedRecords<R> state, long txId, InconsistenciesHandler handler )
     {
+        C command = check.commandClass().cast( txCommand.command );
+
         R before = check.before( command );
         R after = check.after( command );
 
-        boolean isValid = state.isValid( before );
-        if ( !isValid )
-        {
-            LogRecord<R> seen = state.get( before.getId() );
-            LogRecord<R> current = new LogRecord<>( before, logVersion );
+        assert before.getId() == after.getId();
 
-            handler.handle( seen, current );
+        RecordInfo<R> lastSeen = state.get( after.getId() );
+
+        boolean isValidRecord = (lastSeen == null) || check.equal( before, lastSeen.record() );
+        if ( !isValidRecord )
+        {
+            handler.reportInconsistentCommand( lastSeen, new RecordInfo<>( before, txCommand.logVersion, txId ) );
         }
 
-        state.put( after, logVersion );
+        state.put( after, txCommand.logVersion, txId );
 
-        return isValid;
+        return isValidRecord;
     }
 
-    private static File parseDir( PrintStream out, Args args )
+    private static CheckType<?,?>[] parseChecks( Args arguments )
+    {
+        String checks = arguments.get( CHECKS );
+        if ( checks == null )
+        {
+            return CheckTypes.CHECK_TYPES;
+        }
+
+        return Stream.of( checks.split( SEPARATOR ) )
+                .map( CheckTypes::fromName )
+                .toArray( CheckType[]::new );
+    }
+
+    private static File parseDir( PrintStream printStream, Args args )
     {
         if ( args.orphans().size() != 1 )
         {
-            printUsageAndExit( out );
+            printUsageAndExit(printStream);
         }
         File dir = new File( args.orphans().get( 0 ) );
         if ( !dir.isDirectory() )
         {
-            out.println( "Invalid directory: '" + dir + "'" );
-            printUsageAndExit( out );
+            printStream.println( "Invalid directory: '" + dir + "'" );
+            printUsageAndExit(printStream);
         }
         return dir;
     }
@@ -163,15 +229,10 @@ public class CheckTxLogs
     private static File[] txLogsIn( File dir )
     {
         File[] logs = dir.listFiles( LogFiles.FILENAME_FILTER );
-        Arrays.sort( logs, new Comparator<File>()
-        {
-            @Override
-            public int compare( File f1, File f2 )
-            {
-                long f1Version = PhysicalLogFiles.getLogVersion( f1 );
-                long f2Version = PhysicalLogFiles.getLogVersion( f2 );
-                return Long.compare( f1Version, f2Version );
-            }
+        Arrays.sort( logs, ( f1, f2 ) -> {
+            long f1Version = PhysicalLogFiles.getLogVersion( f1 );
+            long f2Version = PhysicalLogFiles.getLogVersion( f2 );
+            return Long.compare( f1Version, f2Version );
         } );
         return logs;
     }
@@ -179,7 +240,14 @@ public class CheckTxLogs
     private static void printUsageAndExit( PrintStream out )
     {
         out.println( "Tool expects single argument - directory with tx logs" );
-        out.println( "Example:\n\t./checkTxLogs <directory containing neostore.transaction.db files>" );
+        out.println( "Usage:" );
+        out.println( "\t./checkTxLogs [options] <directory>" );
+        out.println( "Options:" );
+        out.println( "\t--help\t\tprints this description" );
+        out.println( "\t--checks='checkname[,...]'\t\tthe list of checks to perform. Checks available: " +
+                            Arrays.stream( CheckTypes.CHECK_TYPES )
+                                    .map( CheckType::name )
+                                    .collect( Collectors.joining( SEPARATOR ) ) );
         System.exit( 1 );
     }
 }

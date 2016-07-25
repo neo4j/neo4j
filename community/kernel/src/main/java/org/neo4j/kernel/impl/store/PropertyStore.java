@@ -20,62 +20,49 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.cursor.GenericCursor;
-import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.cursor.Cursor;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
-import org.neo4j.kernel.impl.api.store.PropertyRecordCursor;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.string.UTF8;
 
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
+import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
  * Implementation of the property store. This implementation has two dynamic
  * stores. One used to store keys and another for string property values.
  */
-public class PropertyStore extends AbstractRecordStore<PropertyRecord>
+public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHeader>
 {
-    public static abstract class Configuration extends AbstractStore.Configuration
+    public abstract static class Configuration extends CommonAbstractStore.Configuration
     {
     }
 
-    public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
-    public static final int DEFAULT_PAYLOAD_SIZE = 32;
-
     public static final String TYPE_DESCRIPTOR = "PropertyStore";
 
-    public static final int RECORD_SIZE = 1/*next and prev high bits*/
-            + 4/*next*/
-            + 4/*prev*/
-            + DEFAULT_PAYLOAD_SIZE /*property blocks*/;
-    // = 41
-
-    private final DynamicStringStore stringPropertyStore;
+    private final DynamicStringStore stringStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
-    private final DynamicArrayStore arrayPropertyStore;
-    private final PropertyPhysicalToLogicalConverter physicalToLogicalConverter;
+    private final DynamicArrayStore arrayStore;
 
     public PropertyStore(
             File fileName,
@@ -85,13 +72,14 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
             LogProvider logProvider,
             DynamicStringStore stringPropertyStore,
             PropertyKeyTokenStore propertyKeyTokenStore,
-            DynamicArrayStore arrayPropertyStore )
+            DynamicArrayStore arrayPropertyStore,
+            RecordFormats recordFormats)
     {
-        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider );
-        this.stringPropertyStore = stringPropertyStore;
+        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
+                recordFormats.property(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion() );
+        this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
-        this.arrayPropertyStore = arrayPropertyStore;
-        this.physicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( this );
+        this.arrayStore = arrayPropertyStore;
     }
 
     @Override
@@ -103,30 +91,12 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
 
     public DynamicStringStore getStringStore()
     {
-        return stringPropertyStore;
+        return stringStore;
     }
 
     public DynamicArrayStore getArrayStore()
     {
-        return arrayPropertyStore;
-    }
-
-    @Override
-    public String getTypeDescriptor()
-    {
-        return TYPE_DESCRIPTOR;
-    }
-
-    @Override
-    public int getRecordSize()
-    {
-        return RECORD_SIZE;
-    }
-
-    @Override
-    public int getRecordHeaderSize()
-    {
-        return RECORD_SIZE - DEFAULT_PAYLOAD_SIZE;
+        return arrayStore;
     }
 
     public PropertyKeyTokenStore getPropertyKeyTokenStore()
@@ -137,80 +107,8 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
     @Override
     public void updateRecord( PropertyRecord record )
     {
-        long pageId = pageIdForRecord( record.getId() );
         updatePropertyBlocks( record );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
-        {
-            if ( cursor.next() ) // should always be true
-            {
-                do
-                {
-                    updateRecord( record, cursor );
-                } while ( cursor.shouldRetry() );
-            }
-            else
-            {
-                throw new UnderlyingStorageException(
-                        "Could not pin page[" + pageId +
-                                " exclusively for updateRecord: " + record );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-
-    }
-
-    @Override
-    public void forceUpdateRecord( PropertyRecord record )
-    {
-        updateRecord( record ); // TODO: should we do something special for property records?
-    }
-
-    private void updateRecord( PropertyRecord record, PageCursor cursor )
-    {
-        long id = record.getId();
-        cursor.setOffset( (int) (id * RECORD_SIZE % storeFile.pageSize()) );
-        if ( record.inUse() )
-        {
-            // Set up the record header
-            short prevModifier = record.getPrevProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0
-                    : (short) ((record.getPrevProp() & 0xF00000000L) >> 28);
-            short nextModifier = record.getNextProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0
-                    : (short) ((record.getNextProp() & 0xF00000000L) >> 32);
-            byte modifiers = (byte) (prevModifier | nextModifier);
-            /*
-             * [pppp,nnnn] previous, next high bits
-             */
-            cursor.putByte( modifiers );
-            cursor.putInt( (int) record.getPrevProp() );
-            cursor.putInt( (int) record.getNextProp() );
-
-            // Then go through the blocks
-            int longsAppended = 0; // For marking the end of blocks
-            for ( PropertyBlock block : record )
-            {
-                long[] propBlockValues = block.getValueBlocks();
-                for ( long propBlockValue : propBlockValues )
-                {
-                    cursor.putLong( propBlockValue );
-                }
-
-                longsAppended += propBlockValues.length;
-            }
-            if ( longsAppended < PropertyType.getPayloadSizeLongs() )
-            {
-                cursor.putLong( 0 );
-            }
-        }
-        else
-        {
-            freeId( id );
-            // skip over the record header, nothing useful there
-            cursor.setOffset( cursor.getOffset() + 9 );
-            cursor.putLong( 0 );
-        }
+        super.updateRecord( record );
     }
 
     private void updatePropertyBlocks( PropertyRecord record )
@@ -242,11 +140,11 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
         {
             if ( valueRecord.getType() == PropertyType.STRING.intValue() )
             {
-                stringPropertyStore.updateRecord( valueRecord );
+                stringStore.updateRecord( valueRecord );
             }
             else if ( valueRecord.getType() == PropertyType.ARRAY.intValue() )
             {
-                arrayPropertyStore.updateRecord( valueRecord );
+                arrayStore.updateRecord( valueRecord );
             }
             else
             {
@@ -256,228 +154,48 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
         }
     }
 
-    public PropertyRecord getLightRecord( long id )
+    @Override
+    public void ensureHeavy( PropertyRecord record )
     {
-        return getRecord( id );
+        for ( PropertyBlock block : record )
+        {
+            ensureHeavy( block );
+        }
     }
 
     public void ensureHeavy( PropertyBlock block )
     {
-        if ( block.getType() == PropertyType.STRING )
+        if ( !block.isLight() )
         {
-            loadPropertyBlock( block, stringPropertyStore );
+            return;
         }
-        else if ( block.getType() == PropertyType.ARRAY )
-        {
-            loadPropertyBlock( block, arrayPropertyStore );
-        }
-    }
 
-    private static void loadPropertyBlock( PropertyBlock block, AbstractDynamicStore dynamicStore )
-    {
-        if ( block.isLight() )
+        PropertyType type = block.getType();
+        RecordStore<DynamicRecord> dynamicStore = dynamicStoreForValueType( type );
+        if ( dynamicStore == null )
         {
-            long startBlockId = block.getSingleValueLong();
-            try ( GenericCursor<DynamicRecord> cursor = dynamicStore.getRecordsCursor( startBlockId ) )
-            {
-                while ( cursor.next() )
-                {
-                    cursor.get().setType( block.getType().intValue() );
-                    block.addValueRecord( cursor.get().clone() );
-                }
-            }
+            return;
         }
-        else
+
+        try ( Cursor<DynamicRecord> dynamicRecords = dynamicStore.newRecordCursor( dynamicStore.newRecord() )
+                .acquire( block.getSingleValueLong(), NORMAL ) )
         {
-            for ( DynamicRecord dynamicRecord : block.getValueRecords() )
+            while ( dynamicRecords.next() )
             {
-                dynamicStore.ensureHeavy( dynamicRecord );
+                dynamicRecords.get().setType( type.intValue() );
+                block.addValueRecord( dynamicRecords.get().clone() );
             }
         }
     }
 
-    @Override
-    public PropertyRecord getRecord( long id )
+    private RecordStore<DynamicRecord> dynamicStoreForValueType( PropertyType type )
     {
-        return getRecord( new PropertyRecord( id ) );
-    }
-
-    public PropertyRecord getRecord( PropertyRecord record )
-    {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_SHARED_LOCK ) )
+        switch ( type )
         {
-            PropertyRecord tmpRecord = null;
-            if ( cursor.next() )
-            {
-                do
-                {
-                    tmpRecord = getRecord( cursor, record );
-                } while ( cursor.shouldRetry() );
-            }
-
-            if ( tmpRecord == null || !tmpRecord.inUse() )
-            {
-                throw new InvalidRecordException( "PropertyRecord[" + record.getId() + "] not in use" );
-            }
-
-            return record;
+        case ARRAY: return arrayStore;
+        case STRING: return stringStore;
+        default: return null;
         }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    public PageCursor newReadCursor( long recordId ) throws IOException
-    {
-        PageCursor cursor = storeFile.io( pageIdForRecord( recordId ), PF_SHARED_LOCK );
-        try
-        {
-            if ( !cursor.next() )
-            {
-                throw new IOException( "Record not found: " + recordId );
-            }
-            cursor.setOffset( (int) (recordId * RECORD_SIZE % storeFile.pageSize()) );
-            return cursor;
-        }
-        catch ( Throwable failure )
-        {
-            cursor.close();
-            throw failure;
-        }
-    }
-
-    public PropertyRecord getRecord( PropertyRecord record, PageCursor cursor )
-    {
-        try
-        {
-            PropertyRecord tmpRecord = null;
-            if ( cursor.next( pageIdForRecord( record.getId() ) ) )
-            {
-                do
-                {
-                    tmpRecord = getRecord( cursor, record );
-                } while ( cursor.shouldRetry() );
-            }
-
-            if ( tmpRecord == null || !tmpRecord.inUse() )
-            {
-                throw new InvalidRecordException( "PropertyRecord[" + record.getId() + "] not in use" );
-            }
-            record.verifyRecordIsWellFormed();
-
-            return record;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    @Override
-    public PropertyRecord forceGetRecord( long id )
-    {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
-        {
-            PropertyRecord record = new PropertyRecord( id );
-            if ( cursor.next() )
-            {
-                do
-                {
-                    record = getRecord( cursor, record );
-                } while ( cursor.shouldRetry() );
-            }
-            return record == null ? new PropertyRecord( id ) : record;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    private PropertyRecord getRecordFromBuffer( long id, PageCursor cursor )
-    {
-        return getRecordFromBuffer( cursor, new PropertyRecord( id ) );
-    }
-
-    private PropertyRecord getRecordFromBuffer( PageCursor cursor, PropertyRecord record )
-    {
-        record.clearPropertyBlocks();
-
-        int offsetAtBeginning = cursor.getOffset();
-
-        /*
-         * [pppp,nnnn] previous, next high bits
-         */
-        byte modifiers = cursor.getByte();
-        long prevMod = (modifiers & 0xF0L) << 28;
-        long nextMod = (modifiers & 0x0FL) << 32;
-        long prevProp = cursor.getUnsignedInt();
-        long nextProp = cursor.getUnsignedInt();
-        record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
-        record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
-
-        while ( cursor.getOffset() - offsetAtBeginning < RECORD_SIZE )
-        {
-            PropertyBlock newBlock = getPropertyBlock( cursor, record );
-            if ( newBlock != null )
-            {
-                record.addPropertyBlock( newBlock );
-                record.setInUse( true );
-            }
-            else
-            {
-                // We assume that storage is defragged
-                break;
-            }
-        }
-        return record;
-    }
-
-    private PropertyRecord getRecord( PageCursor cursor, PropertyRecord record )
-    {
-        cursor.setOffset( (int) (record.getId() * RECORD_SIZE % storeFile.pageSize()) );
-        return getRecordFromBuffer( cursor, record );
-    }
-
-    /*
-     * It is assumed that the argument does hold a property block - all zeros is
-     * a valid (not in use) block, so even if the Bits object has been exhausted a
-     * result is returned, that has inUse() return false. Also, the argument is not
-     * touched.
-     */
-    private PropertyBlock getPropertyBlock( PageCursor cursor, PropertyRecord record )
-    {
-        long header = cursor.getLong();
-        PropertyType type = PropertyType.getPropertyType( header, true );
-        if ( type == null )
-        {
-            return null;
-        }
-        PropertyBlock toReturn = new PropertyBlock();
-        // toReturn.setInUse( true );
-        int numBlocks = type.calculateNumberOfBlocksUsed( header );
-        if ( numBlocks == PropertyType.BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING )
-        {
-            record.setMalformedMessage( "Invalid type or encoding of property block" );
-            return null;
-        }
-        if ( numBlocks > PropertyType.getPayloadSizeLongs() )
-        {
-            // We most likely got an inconsistent read, so return null to signal failure for now
-            record.setMalformedMessage(
-                    "I was given an array of size " + numBlocks +", but I wanted it to be " +
-                    PropertyType.getPayloadSizeLongs() );
-            return null;
-        }
-        long[] blockData = new long[numBlocks];
-        blockData[0] = header; // we already have that
-        for ( int i = 1; i < numBlocks; i++ )
-        {
-            blockData[i] = cursor.getLong();
-        }
-        toReturn.setValueBlocks( blockData );
-        return toReturn;
     }
 
     public Object getValue( PropertyBlock propertyBlock )
@@ -488,19 +206,18 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
     public static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars,
             DynamicRecordAllocator allocator )
     {
-        AbstractDynamicStore.allocateRecordsFromBytes( target, chars,
-                IteratorUtil.<DynamicRecord>emptyIterator(), allocator );
+        AbstractDynamicStore.allocateRecordsFromBytes( target, chars, Iterators.emptyIterator(), allocator );
     }
 
     public static void allocateArrayRecords( Collection<DynamicRecord> target, Object array,
             DynamicRecordAllocator allocator )
     {
-        DynamicArrayStore.allocateRecords( target, array, IteratorUtil.<DynamicRecord>emptyIterator(), allocator );
+        DynamicArrayStore.allocateRecords( target, array, Iterators.emptyIterator(), allocator );
     }
 
     public void encodeValue( PropertyBlock block, int keyId, Object value )
     {
-        encodeValue( block, keyId, value, stringPropertyStore, arrayPropertyStore );
+        encodeValue( block, keyId, value, stringStore, arrayStore );
     }
 
     public static void encodeValue( PropertyBlock block, int keyId, Object value,
@@ -518,7 +235,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
             byte[] encodedString = encodeString( string );
             List<DynamicRecord> valueRecords = new ArrayList<>();
             allocateStringRecords( valueRecords, encodedString, stringAllocator );
-            setSingleBlockValue( block, keyId, PropertyType.STRING, first( valueRecords ).getId() );
+            setSingleBlockValue( block, keyId, PropertyType.STRING, Iterables.first( valueRecords ).getId() );
             for ( DynamicRecord valueRecord : valueRecords )
             {
                 valueRecord.setType( PropertyType.STRING.intValue() );
@@ -539,7 +256,9 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
         }
         else if ( value instanceof Long )
         {
-            long keyAndType = keyId | (((long) PropertyType.LONG.intValue()) << 24);
+
+            long keyAndType = keyId | (((long) PropertyType.LONG.intValue()) <<
+                                       StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS);
             if ( ShortArray.LONG.getRequiredBits( (Long) value ) <= 35 )
             {   // We only need one block for this value, special layout compared to, say, an integer
                 block.setSingleBlock( keyAndType | (1L << 28) | ((Long) value << 29) );
@@ -551,8 +270,8 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
         }
         else if ( value instanceof Double )
         {
-            block.setValueBlocks( new long[]{
-                    keyId | (((long) PropertyType.DOUBLE.intValue()) << 24),
+            block.setValueBlocks( new long[]{ keyId |
+                    (((long) PropertyType.DOUBLE.intValue()) << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS),
                     Double.doubleToRawLongBits( (Double) value )} );
         }
         else if ( value instanceof Byte )
@@ -577,7 +296,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
             // Fall back to dynamic array store
             List<DynamicRecord> arrayRecords = new ArrayList<>();
             allocateArrayRecords( arrayRecords, value, arrayAllocator );
-            setSingleBlockValue( block, keyId, PropertyType.ARRAY, first( arrayRecords ).getId() );
+            setSingleBlockValue( block, keyId, PropertyType.ARRAY, Iterables.first( arrayRecords ).getId() );
             for ( DynamicRecord valueRecord : arrayRecords )
             {
                 valueRecord.setType( PropertyType.ARRAY.intValue() );
@@ -597,7 +316,8 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
 
     public static long singleBlockLongValue( int keyId, PropertyType type, long longValue )
     {
-        return keyId | (((long) type.intValue()) << 24) | (longValue << 28);
+        return keyId | (((long) type.intValue()) << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS) |
+               (longValue << 28);
     }
 
     public static byte[] encodeString( String string )
@@ -618,7 +338,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
 
     public String getStringFor( Collection<DynamicRecord> dynamicRecords )
     {
-        Pair<byte[], byte[]> source = stringPropertyStore.readFullByteArray( dynamicRecords, PropertyType.STRING );
+        Pair<byte[], byte[]> source = stringStore.readFullByteArray( dynamicRecords, PropertyType.STRING );
         // A string doesn't have a header in the data array
         return decodeString( source.other() );
     }
@@ -631,17 +351,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
 
     public Object getArrayFor( Iterable<DynamicRecord> records )
     {
-        return getRightArray( arrayPropertyStore.readFullByteArray( records, PropertyType.ARRAY ) );
-    }
-
-    public int getStringBlockSize()
-    {
-        return stringPropertyStore.getBlockSize();
-    }
-
-    public int getArrayBlockSize()
-    {
-        return arrayPropertyStore.getBlockSize();
+        return getRightArray( arrayStore.readFullByteArray( records, PropertyType.ARRAY ) );
     }
 
     @Override
@@ -650,25 +360,14 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
         return super.toString() + "[blocksPerRecord:" + PropertyType.getPayloadSizeLongs() + "]";
     }
 
-    public PropertyRecordCursor getPropertyRecordCursor( PropertyRecordCursor cursor, long firstRecordId )
-    {
-        if ( cursor == null )
-        {
-            cursor = new PropertyRecordCursor( new PropertyRecord( -1 ), this );
-        }
-
-        cursor.init( firstRecordId );
-
-        return cursor;
-    }
-
     public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId )
     {
         long nextProp = firstRecordId;
         List<PropertyRecord> toReturn = new LinkedList<>();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = getLightRecord( nextProp );
+            PropertyRecord propRecord = new PropertyRecord( nextProp );
+            getRecord( nextProp, propRecord, RecordLoad.NORMAL );
             toReturn.add( propRecord );
             nextProp = propRecord.getNextProp();
         }
@@ -685,7 +384,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
             PropertyRecord propRecord = propertyLookup.get( nextProp );
             if ( propRecord == null )
             {
-                propRecord = getLightRecord( nextProp );
+                getRecord( nextProp, propRecord = newRecord(), RecordLoad.NORMAL );
             }
             toReturn.add( propRecord );
             nextProp = propRecord.getNextProp();
@@ -693,21 +392,9 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
         return toReturn;
     }
 
-    public void toLogicalUpdates( Collection<NodePropertyUpdate> target,
-            Iterable<PropertyRecordChange> changes,
-            long[] nodeLabelsBefore,
-            long[] nodeLabelsAfter )
-    {
-        physicalToLogicalConverter.apply( target, changes, nodeLabelsBefore, nodeLabelsAfter );
-    }
-
-    /**
-     * For property records there's no "inUse" byte and we need to read the whole record to
-     * see if there are any PropertyBlocks in use in it.
-     */
     @Override
-    protected boolean isRecordInUse( PageCursor cursor )
+    public PropertyRecord newRecord()
     {
-        return getRecordFromBuffer( 0 /*id doesn't matter here*/, cursor ).inUse();
+        return new PropertyRecord( -1 );
     }
 }

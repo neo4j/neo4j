@@ -19,21 +19,37 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
+import javax.servlet.http.HttpServletRequest;
+
+import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
+import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.server.rest.web.ServerQuerySession;
 
 public class CypherExecutor extends LifecycleAdapter
 {
     private final Database database;
-    private ServerExecutionEngine executionEngine;
+    private ExecutionEngine executionEngine;
+    private GraphDatabaseQueryService service;
+    private ThreadToStatementContextBridge txBridge;
+
+    private static final PropertyContainerLocker locker = new PropertyContainerLocker();
 
     public CypherExecutor( Database database )
     {
         this.database = database;
     }
 
-    public ServerExecutionEngine getExecutionEngine()
+    public ExecutionEngine getExecutionEngine()
     {
         return executionEngine;
     }
@@ -41,13 +57,24 @@ public class CypherExecutor extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        this.executionEngine = (ServerExecutionEngine) database.getGraph().getDependencyResolver()
-                                                               .resolveDependency( QueryExecutionEngine.class );
+        this.executionEngine = (ExecutionEngine) database.getGraph().getDependencyResolver()
+                .resolveDependency( QueryExecutionEngine.class );
+        this.service = executionEngine.queryService();
+        this.txBridge = service.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     @Override
     public void stop() throws Throwable
     {
         this.executionEngine = null;
+        this.service = null;
+        this.txBridge = null;
+    }
+
+    public QuerySession createSession( HttpServletRequest request )
+    {
+        InternalTransaction transaction = service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        TransactionalContext context = new Neo4jTransactionalContext( service, transaction, txBridge.get(), locker );
+        return new ServerQuerySession( request, context );
     }
 }

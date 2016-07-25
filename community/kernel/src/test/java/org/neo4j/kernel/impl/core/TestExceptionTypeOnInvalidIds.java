@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.UUID;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -56,16 +57,16 @@ public class TestExceptionTypeOnInvalidIds
     public static void createDatabase()
     {
         graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( getRandomStoreDir() );
-        String storeDir = getRandomStoreDir();
+        File storeDir = getRandomStoreDir();
         new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
         graphDbReadOnly = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).
             setConfig( GraphDatabaseSettings.read_only, TRUE ).
             newGraphDatabase();
     }
 
-    private static String getRandomStoreDir()
+    private static File getRandomStoreDir()
     {
-        return "target/var/id_test/" + UUID.randomUUID();
+        return new File( "target/var/id_test/" + UUID.randomUUID() );
     }
 
     @AfterClass

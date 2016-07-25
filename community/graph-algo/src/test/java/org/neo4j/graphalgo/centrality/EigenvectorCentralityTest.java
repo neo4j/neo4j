@@ -102,7 +102,6 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
         assertApproximateCentrality( eigenvectorCentrality, "d", 0.481, 0.02 );
     }
 
-
     @Test
     public void shouldHandleFirstNodeBeingOrphanInRelationshipSet()
     {

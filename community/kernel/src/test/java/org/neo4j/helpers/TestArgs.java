@@ -19,6 +19,8 @@
  */
 package org.neo4j.helpers;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,9 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
-
-import org.neo4j.function.Functions;
 import org.neo4j.helpers.Args.Option;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validator;
@@ -42,7 +41,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestArgs
@@ -81,7 +79,7 @@ public class TestArgs
         String [] line = { "-file", "-" };
         Args args = Args.parse( line );
         assertEquals( 1, args.asMap().size() );
-        assertEquals( "-", args.get ( "file", null ) );
+        assertEquals( "-", args.get( "file", null ) );
         assertTrue( args.orphans().isEmpty() );
     }
 
@@ -215,7 +213,7 @@ public class TestArgs
 
         // WHEN
         Collection<Option<String>> options = args.interpretOptionsWithMetadata( "my-option",
-                Converters.<String>mandatory(), Functions.<String>identity() );
+                Converters.<String>mandatory(), value -> value );
 
         // THEN
         assertEquals( 2, options.size() );
@@ -335,7 +333,7 @@ public class TestArgs
 
         // When
         Collection<String> interpreted = args.interpretOptions( "something", Converters.<String>optional(),
-                Functions.<String>identity() );
+                value -> value );
 
         // Then
         assertTrue( interpreted.isEmpty() );

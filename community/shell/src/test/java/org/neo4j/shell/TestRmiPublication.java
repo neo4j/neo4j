@@ -31,7 +31,7 @@ import java.util.Properties;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.getProperty;
@@ -39,16 +39,16 @@ import static org.junit.Assert.assertEquals;
 
 public class TestRmiPublication
 {
-    public static File createDefaultPropertiesFile( String path ) throws IOException
+    public static File createDefaultConfigFile( File path ) throws IOException
     {
-        File propsFile = new File( path, "neo4j.properties" );
+        File configFile = new File( path, "neo4j.conf" );
         Properties config = new Properties();
         config.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-        try ( Writer writer = new FileWriter( propsFile ) )
+        try ( Writer writer = new FileWriter( configFile ) )
         {
             config.store( writer, "" );
         }
-        return propsFile;
+        return configFile;
     }
 
     @Test

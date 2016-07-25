@@ -34,7 +34,7 @@ public class SimpleNodeColorMapper implements ColorMapper<Node>
 
     /**
      * Map from property values to colors.
-     * 
+     *
      * @param propertyKey the key to the value we will map
      * @param mappings property values to color mappings
      */

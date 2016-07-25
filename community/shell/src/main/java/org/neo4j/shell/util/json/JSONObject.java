@@ -48,7 +48,12 @@ import java.io.Writer;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * A JSONObject is an unordered collection of name/value pairs. Its
@@ -120,6 +125,10 @@ public class JSONObject {
             return this;
         }
 
+        @Override
+        public int hashCode() {
+            return 1;
+        }
 
         /**
          * A Null object is equal to the null value and to itself.
@@ -132,7 +141,6 @@ public class JSONObject {
             return object == null || object == this;
         }
 
-
         /**
          * Get the "null" string value.
          * @return The string "null".
@@ -142,7 +150,6 @@ public class JSONObject {
             return "null";
         }
     }
-
 
     /**
      * The map where the JSONObject's properties are kept.
@@ -162,14 +169,12 @@ public class JSONObject {
      */
     public static final Object NULL = new Null();
 
-
     /**
      * Construct an empty JSONObject.
      */
     public JSONObject() {
         this.map = new HashMap();
     }
-
 
     /**
      * Construct a JSONObject from a subset of another JSONObject.
@@ -185,7 +190,6 @@ public class JSONObject {
             putOnce(names[i], jo.opt(names[i]));
         }
     }
-
 
     /**
      * Construct a JSONObject from a JSONTokener.
@@ -247,7 +251,6 @@ public class JSONObject {
         }
     }
 
-
     /**
      * Construct a JSONObject from a Map.
      *
@@ -257,7 +260,6 @@ public class JSONObject {
     public JSONObject(Map map) {
         this.map = (map == null) ? new HashMap() : map;
     }
-
 
     /**
      * Construct a JSONObject from a Map.
@@ -283,7 +285,6 @@ public class JSONObject {
         }
     }
 
-
     /**
      * Construct a JSONObject from an Object using bean getters.
      * It reflects on all of the public methods of the object.
@@ -307,7 +308,6 @@ public class JSONObject {
         this();
         populateInternalMap(bean, false);
     }
-
 
     /**
      * Construct a JSONObject from an Object using bean getters.
@@ -389,7 +389,6 @@ public class JSONObject {
         }
     }
 
-
     static boolean isStandardProperty(Class clazz) {
         return clazz.isPrimitive()                  ||
             clazz.isAssignableFrom(Byte.class)      ||
@@ -403,7 +402,6 @@ public class JSONObject {
             clazz.isAssignableFrom(Boolean.class);
     }
 
-
     /**
      * Construct a JSONObject from an Object, using reflection to find the
      * public members. The resulting JSONObject's keys will be the strings
@@ -415,7 +413,7 @@ public class JSONObject {
      * @param names An array of strings, the names of the fields to be obtained
      * from the object.
      */
-    public JSONObject(Object object, String names[]) {
+    public JSONObject(Object object, String[] names) {
         this();
         Class c = object.getClass();
         for (int i = 0; i < names.length; i += 1) {
@@ -427,7 +425,6 @@ public class JSONObject {
             }
         }
     }
-
 
     /**
      * Construct a JSONObject from a source JSON text string.
@@ -441,7 +438,6 @@ public class JSONObject {
     public JSONObject(String source) throws JSONException {
         this(new JSONTokener(source));
     }
-
 
     /**
      * Accumulate values under a key. It is similar to the put method except
@@ -471,7 +467,6 @@ public class JSONObject {
         return this;
     }
 
-
     /**
      * Append values to the array under a key. If the key does not exist in the
      * JSONObject, then the key is put in the JSONObject with its value being a
@@ -498,14 +493,13 @@ public class JSONObject {
         return this;
     }
 
-
     /**
      * Produce a string from a double. The string "null" will be returned if
      * the number is not finite.
      * @param  d A double.
      * @return A String.
      */
-    static public String doubleToString(double d) {
+    public static String doubleToString(double d) {
         if (Double.isInfinite(d) || Double.isNaN(d)) {
             return "null";
         }
@@ -524,7 +518,6 @@ public class JSONObject {
         return s;
     }
 
-
     /**
      * Get the value object associated with a key.
      *
@@ -540,7 +533,6 @@ public class JSONObject {
         }
         return o;
     }
-
 
     /**
      * Get the boolean value associated with a key.
@@ -565,7 +557,6 @@ public class JSONObject {
                 "] is not a Boolean.");
     }
 
-
     /**
      * Get the double value associated with a key.
      * @param key   A key string.
@@ -585,7 +576,6 @@ public class JSONObject {
         }
     }
 
-
     /**
      * Get the int value associated with a key. If the number value is too
      * large for an int, it will be clipped.
@@ -600,7 +590,6 @@ public class JSONObject {
         return o instanceof Number ?
                 ((Number)o).intValue() : (int)getDouble(key);
     }
-
 
     /**
      * Get the JSONArray value associated with a key.
@@ -619,7 +608,6 @@ public class JSONObject {
                 "] is not a JSONArray.");
     }
 
-
     /**
      * Get the JSONObject value associated with a key.
      *
@@ -637,7 +625,6 @@ public class JSONObject {
                 "] is not a JSONObject.");
     }
 
-
     /**
      * Get the long value associated with a key. If the number value is too
      * long for a long, it will be clipped.
@@ -652,7 +639,6 @@ public class JSONObject {
         return o instanceof Number ?
                 ((Number)o).longValue() : (long)getDouble(key);
     }
-
 
     /**
      * Get an array of field names from a JSONObject.
@@ -673,7 +659,6 @@ public class JSONObject {
         }
         return names;
     }
-
 
     /**
      * Get an array of field names from an Object.
@@ -697,7 +682,6 @@ public class JSONObject {
         return names;
     }
 
-
     /**
      * Get the string associated with a key.
      *
@@ -709,7 +693,6 @@ public class JSONObject {
         return get(key).toString();
     }
 
-
     /**
      * Determine if the JSONObject contains a specific key.
      * @param key   A key string.
@@ -718,7 +701,6 @@ public class JSONObject {
     public boolean has(String key) {
         return this.map.containsKey(key);
     }
-
 
     /**
      * Determine if the value associated with the key is null or if there is
@@ -731,7 +713,6 @@ public class JSONObject {
         return JSONObject.NULL.equals(opt(key));
     }
 
-
     /**
      * Get an enumeration of the keys of the JSONObject.
      *
@@ -741,7 +722,6 @@ public class JSONObject {
         return this.map.keySet().iterator();
     }
 
-
     /**
      * Get the number of keys stored in the JSONObject.
      *
@@ -750,7 +730,6 @@ public class JSONObject {
     public int length() {
         return this.map.size();
     }
-
 
     /**
      * Produce a JSONArray containing the names of the elements of this
@@ -773,7 +752,7 @@ public class JSONObject {
      * @return A String.
      * @throws JSONException If n is a non-finite number.
      */
-    static public String numberToString(Number n)
+    public static String numberToString(Number n)
             throws JSONException {
         if (n == null) {
             throw new JSONException("Null pointer");
@@ -794,7 +773,6 @@ public class JSONObject {
         return s;
     }
 
-
     /**
      * Get an optional value associated with a key.
      * @param key   A key string.
@@ -803,7 +781,6 @@ public class JSONObject {
     public Object opt(String key) {
         return key == null ? null : this.map.get(key);
     }
-
 
     /**
      * Get an optional boolean associated with a key.
@@ -816,7 +793,6 @@ public class JSONObject {
     public boolean optBoolean(String key) {
         return optBoolean(key, false);
     }
-
 
     /**
      * Get an optional boolean associated with a key.
@@ -835,7 +811,6 @@ public class JSONObject {
         }
     }
 
-
     /**
      * Put a key/value pair in the JSONObject, where the value will be a
      * JSONArray which is produced from a Collection.
@@ -849,7 +824,6 @@ public class JSONObject {
         return this;
     }
 
-
     /**
      * Get an optional double associated with a key,
      * or NaN if there is no such key or if its value is not a number.
@@ -862,7 +836,6 @@ public class JSONObject {
     public double optDouble(String key) {
         return optDouble(key, Double.NaN);
     }
-
 
     /**
      * Get an optional double associated with a key, or the
@@ -884,7 +857,6 @@ public class JSONObject {
         }
     }
 
-
     /**
      * Get an optional int value associated with a key,
      * or zero if there is no such key or if the value is not a number.
@@ -897,7 +869,6 @@ public class JSONObject {
     public int optInt(String key) {
         return optInt(key, 0);
     }
-
 
     /**
      * Get an optional int value associated with a key,
@@ -917,7 +888,6 @@ public class JSONObject {
         }
     }
 
-
     /**
      * Get an optional JSONArray associated with a key.
      * It returns null if there is no such key, or if its value is not a
@@ -930,7 +900,6 @@ public class JSONObject {
         Object o = opt(key);
         return o instanceof JSONArray ? (JSONArray)o : null;
     }
-
 
     /**
      * Get an optional JSONObject associated with a key.
@@ -945,7 +914,6 @@ public class JSONObject {
         return o instanceof JSONObject ? (JSONObject)o : null;
     }
 
-
     /**
      * Get an optional long value associated with a key,
      * or zero if there is no such key or if the value is not a number.
@@ -958,7 +926,6 @@ public class JSONObject {
     public long optLong(String key) {
         return optLong(key, 0);
     }
-
 
     /**
      * Get an optional long value associated with a key,
@@ -978,7 +945,6 @@ public class JSONObject {
         }
     }
 
-
     /**
      * Get an optional string associated with a key.
      * It returns an empty string if there is no such key. If the value is not
@@ -990,7 +956,6 @@ public class JSONObject {
     public String optString(String key) {
         return optString(key, "");
     }
-
 
     /**
      * Get an optional string associated with a key.
@@ -1005,7 +970,6 @@ public class JSONObject {
         return o != null ? o.toString() : defaultValue;
     }
 
-
     /**
      * Put a key/boolean pair in the JSONObject.
      *
@@ -1018,7 +982,6 @@ public class JSONObject {
         put(key, value ? Boolean.TRUE : Boolean.FALSE);
         return this;
     }
-
 
     /**
      * Put a key/double pair in the JSONObject.
@@ -1033,7 +996,6 @@ public class JSONObject {
         return this;
     }
 
-
     /**
      * Put a key/int pair in the JSONObject.
      *
@@ -1046,7 +1008,6 @@ public class JSONObject {
         put(key, new Integer(value));
         return this;
     }
-
 
     /**
      * Put a key/long pair in the JSONObject.
@@ -1061,7 +1022,6 @@ public class JSONObject {
         return this;
     }
 
-
     /**
      * Put a key/value pair in the JSONObject, where the value will be a
      * JSONObject which is produced from a Map.
@@ -1074,7 +1034,6 @@ public class JSONObject {
         put(key, new JSONObject(value));
         return this;
     }
-
 
     /**
      * Put a key/value pair in the JSONObject. If the value is null,
@@ -1100,7 +1059,6 @@ public class JSONObject {
         return this;
     }
 
-
     /**
      * Put a key/value pair in the JSONObject, but only if the key and the
      * value are both non-null, and only if there is not already a member
@@ -1120,7 +1078,6 @@ public class JSONObject {
         return this;
     }
 
-
     /**
      * Put a key/value pair in the JSONObject, but only if the
      * key and the value are both non-null.
@@ -1137,7 +1094,6 @@ public class JSONObject {
         }
         return this;
     }
-
 
     /**
      * Produce a string in double quotes with backslash sequences in all the
@@ -1230,7 +1186,7 @@ public class JSONObject {
      * @param s A String.
      * @return A simple JSON value.
      */
-    static public Object stringToValue(String s) {
+    public static Object stringToValue(String s) {
         if (s.equals("")) {
             return s;
         }
@@ -1289,7 +1245,6 @@ public class JSONObject {
         return s;
     }
 
-
     /**
      * Throw an exception if the object is an NaN or infinite number.
      * @param o The object to test.
@@ -1310,7 +1265,6 @@ public class JSONObject {
             }
         }
     }
-
 
     /**
      * Produce a JSONArray containing the values of the members of this
@@ -1365,7 +1319,6 @@ public class JSONObject {
         }
     }
 
-
     /**
      * Make a prettyprinted JSON text of this JSONObject.
      * <p>
@@ -1381,7 +1334,6 @@ public class JSONObject {
     public String toString(int indentFactor) throws JSONException {
         return toString(indentFactor, 0);
     }
-
 
     /**
      * Make a prettyprinted JSON text of this JSONObject.
@@ -1439,7 +1391,6 @@ public class JSONObject {
         return sb.toString();
     }
 
-
     /**
      * Make a JSON text of an Object value. If the object has an
      * value.toJSONString() method, then that method will be used to produce
@@ -1496,7 +1447,6 @@ public class JSONObject {
         return quote(value.toString());
     }
 
-
     /**
      * Make a prettyprinted JSON text of an object value.
      * <p>
@@ -1549,7 +1499,6 @@ public class JSONObject {
         }
         return quote(value.toString());
     }
-
 
      /**
       * Write the contents of the JSONObject as JSON text to a writer.

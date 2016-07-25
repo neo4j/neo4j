@@ -19,16 +19,12 @@
  */
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
-import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 
+/**
+ * Description of constraint enforcing relationships to contain a certain property.
+ */
 public class RelationshipPropertyExistenceConstraint extends RelationshipPropertyConstraint
 {
     public RelationshipPropertyExistenceConstraint( int relTypeId, int propertyKeyId )
@@ -46,21 +42,6 @@ public class RelationshipPropertyExistenceConstraint extends RelationshipPropert
     public void removed( ChangeVisitor visitor )
     {
         visitor.visitRemovedRelationshipPropertyExistenceConstraint( this );
-    }
-
-    @Override
-    public ConstraintType type()
-    {
-        return ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE;
-    }
-
-    @Override
-    public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
-    {
-        StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOps );
-        return new RelationshipPropertyExistenceConstraintDefinition( schemaActions,
-                DynamicRelationshipType.withName( lookup.relationshipTypeGetName( relationshipTypeId ) ),
-                lookup.propertyKeyGetName( propertyKeyId ) );
     }
 
     @Override

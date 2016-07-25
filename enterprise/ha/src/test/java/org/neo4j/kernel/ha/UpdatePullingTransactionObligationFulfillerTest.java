@@ -21,11 +21,10 @@ package org.neo4j.kernel.ha;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+
+import java.util.function.Supplier;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
@@ -49,16 +48,7 @@ public class UpdatePullingTransactionObligationFulfillerTest
     @Before
     public void setup() throws Throwable
     {
-        doAnswer(
-                new Answer<Boolean>()
-                {
-
-                    @Override
-                    public Boolean answer( InvocationOnMock invocation ) throws Throwable
-                    {
-                        return ((UpdatePuller.Condition) invocation.getArguments()[0]).evaluate( 33, 34 );
-                    }
-                }
+        doAnswer( invocation -> ((UpdatePuller.Condition) invocation.getArguments()[0]).evaluate( 33, 34 )
         ).when( updatePuller ).pullUpdates( any( UpdatePuller.Condition.class ), anyBoolean() );
     }
 
@@ -87,28 +77,18 @@ public class UpdatePullingTransactionObligationFulfillerTest
         Supplier<TransactionIdStore> supplier = mock( Supplier.class );
         when( supplier.get() ).thenReturn( store1, store2 );
 
-        doAnswer( new Answer<Void>()
-        {
-            @Override
-            public Void answer( InvocationOnMock invocation ) throws Throwable
-            {
-                ((HighAvailabilityMemberListener) invocation.getArguments()[0]).slaveIsAvailable(
-                        new HighAvailabilityMemberChangeEvent( null, null, serverId, null )
-                );
-                return null;
-            }
+        doAnswer( invocation -> {
+            ((HighAvailabilityMemberListener) invocation.getArguments()[0]).slaveIsAvailable(
+                    new HighAvailabilityMemberChangeEvent( null, null, serverId, null )
+            );
+            return null;
         } ).when( machine ).addHighAvailabilityMemberListener( any( HighAvailabilityMemberListener.class ) );
 
-        doAnswer( new Answer<Void>()
-        {
-            @Override
-            public Void answer( InvocationOnMock invocation ) throws Throwable
-            {
-                ((HighAvailabilityMemberListener) invocation.getArguments()[0]).instanceStops(
-                        new HighAvailabilityMemberChangeEvent( null, null, serverId, null )
-                );
-                return null;
-            }
+        doAnswer( invocation -> {
+            ((HighAvailabilityMemberListener) invocation.getArguments()[0]).instanceStops(
+                    new HighAvailabilityMemberChangeEvent( null, null, serverId, null )
+            );
+            return null;
         } ).when( machine ).removeHighAvailabilityMemberListener( any( HighAvailabilityMemberListener.class ) );
 
         UpdatePullingTransactionObligationFulfiller fulfiller =

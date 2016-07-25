@@ -107,7 +107,7 @@ public class JsonFormatTest
             @Override
             protected void serialize( MappingSerializer serializer )
             {
-                serializer.putUri( "URL", "subpath" );
+                serializer.putRelativeUri( "URL", "subpath" );
             }
         } );
 
@@ -137,7 +137,7 @@ public class JsonFormatTest
                 JsonHelper.createJsonFrom( Collections.singletonMap( "nested",
                         Collections.singletonMap( "data", "expected data" ) ) ), entity );
     }
-    
+
     @Test
     public void canFormatNestedMapsAndLists() throws Exception
     {

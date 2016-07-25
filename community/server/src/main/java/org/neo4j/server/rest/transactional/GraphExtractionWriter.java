@@ -37,7 +37,7 @@ import org.neo4j.helpers.collection.IterableWrapper;
 class GraphExtractionWriter implements ResultDataContentWriter
 {
     @Override
-    public void write( JsonGenerator out, Iterable<String> columns, Result.ResultRow row ) throws IOException
+    public void write( JsonGenerator out, Iterable<String> columns, Result.ResultRow row, TransactionStateChecker txStateChecker ) throws IOException
     {
         Set<Node> nodes = new HashSet<>();
         Set<Relationship> relationships = new HashSet<>();
@@ -46,8 +46,8 @@ class GraphExtractionWriter implements ResultDataContentWriter
         out.writeObjectFieldStart( "graph" );
         try
         {
-            writeNodes( out, nodes );
-            writeRelationships( out, relationships );
+            writeNodes( out, nodes, txStateChecker );
+            writeRelationships( out, relationships, txStateChecker );
         }
         finally
         {
@@ -55,7 +55,7 @@ class GraphExtractionWriter implements ResultDataContentWriter
         }
     }
 
-    private void writeNodes( JsonGenerator out, Iterable<Node> nodes ) throws IOException
+    private void writeNodes( JsonGenerator out, Iterable<Node> nodes, TransactionStateChecker txStateChecker ) throws IOException
     {
         out.writeArrayFieldStart( "nodes" );
         try
@@ -65,20 +65,28 @@ class GraphExtractionWriter implements ResultDataContentWriter
                 out.writeStartObject();
                 try
                 {
-                    out.writeStringField( "id", Long.toString( node.getId() ) );
-                    out.writeArrayFieldStart( "labels" );
-                    try
+                    long nodeId = node.getId();
+                    out.writeStringField( "id", Long.toString( nodeId ) );
+                    if ( txStateChecker.isNodeDeletedInCurrentTx( nodeId ) )
                     {
-                        for ( Label label : node.getLabels() )
+                        markDeleted( out );
+                    }
+                    else
+                    {
+                        out.writeArrayFieldStart( "labels" );
+                        try
                         {
-                            out.writeString( label.name() );
+                            for ( Label label : node.getLabels() )
+                            {
+                                out.writeString( label.name() );
+                            }
                         }
+                        finally
+                        {
+                            out.writeEndArray();
+                        }
+                        writeProperties( out, node );
                     }
-                    finally
-                    {
-                        out.writeEndArray();
-                    }
-                    writeProperties( out, node );
                 }
                 finally
                 {
@@ -92,7 +100,12 @@ class GraphExtractionWriter implements ResultDataContentWriter
         }
     }
 
-    private void writeRelationships( JsonGenerator out, Iterable<Relationship> relationships ) throws IOException
+    private void markDeleted( JsonGenerator out ) throws IOException
+    {
+        out.writeBooleanField( "deleted", Boolean.TRUE );
+    }
+
+    private void writeRelationships( JsonGenerator out, Iterable<Relationship> relationships, TransactionStateChecker txStateChecker ) throws IOException
     {
         out.writeArrayFieldStart( "relationships" );
         try
@@ -102,11 +115,19 @@ class GraphExtractionWriter implements ResultDataContentWriter
                 out.writeStartObject();
                 try
                 {
-                    out.writeStringField( "id", Long.toString( relationship.getId() ) );
-                    out.writeStringField( "type", relationship.getType().name() );
-                    out.writeStringField( "startNode", Long.toString( relationship.getStartNode().getId() ) );
-                    out.writeStringField( "endNode", Long.toString( relationship.getEndNode().getId() ) );
-                    writeProperties( out, relationship );
+                    long relationshipId = relationship.getId();
+                    out.writeStringField( "id", Long.toString( relationshipId ) );
+                    if ( txStateChecker.isRelationshipDeletedInCurrentTx( relationshipId ) )
+                    {
+                        markDeleted( out );
+                    }
+                    else
+                    {
+                        out.writeStringField( "type", relationship.getType().name() );
+                        out.writeStringField( "startNode", Long.toString( relationship.getStartNode().getId() ) );
+                        out.writeStringField( "endNode", Long.toString( relationship.getEndNode().getId() ) );
+                        writeProperties( out, relationship );
+                    }
                 }
                 finally
                 {

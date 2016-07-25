@@ -239,7 +239,7 @@ class KeyValueWriter implements Closeable
         }
     }
 
-    static abstract class Writer
+    abstract static class Writer
     {
         private static final boolean WRITE_TO_PAGE_CACHE =
                 flag( KeyValueWriter.class, "WRITE_TO_PAGE_CACHE", false );
@@ -326,7 +326,7 @@ class KeyValueWriter implements Closeable
         PageWriter( PagedFile file ) throws IOException
         {
             this.file = file;
-            this.cursor = file.io( 0, PagedFile.PF_EXCLUSIVE_LOCK );
+            this.cursor = file.io( 0, PagedFile.PF_SHARED_WRITE_LOCK );
             cursor.next();
         }
 

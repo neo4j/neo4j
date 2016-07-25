@@ -32,10 +32,11 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 /**
  * Controls access to {@link IndexPopulator}, {@link IndexAccessor} during different stages
@@ -84,6 +85,8 @@ public interface IndexProxy
      * @return failure message. Expect a call to it if {@link #getState()} returns {@link InternalIndexState#FAILED}.
      */
     IndexPopulationFailure getPopulationFailure() throws IllegalStateException;
+
+    PopulationProgress getIndexPopulationProgress();
 
     void force() throws IOException;
 

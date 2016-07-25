@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.api;
 import java.util.Comparator;
 
 import org.neo4j.helpers.MathUtil;
-import org.neo4j.helpers.ObjectUtil;
+import org.neo4j.helpers.Strings;
 
 import static java.lang.String.format;
 
 public class PropertyValueComparison
 {
-    public final static Object LOWEST_OBJECT = new Object()
+    public static final Object LOWEST_OBJECT = new Object()
     {
         @Override
         public String toString()
@@ -40,15 +40,15 @@ public class PropertyValueComparison
     // DO NOT CHANGE the sort order without considering the implications for TxState and lucene!
 
     // This compares two values that have the same super type according to that super type's comparator
-    // Any values that fall under OTHER, are compared by ObjectUtil.toString
+    // Any values that fall under OTHER, are compared by Strings.prettyPrint
     // NULL is not supported
-    public final static PropertyValueComparator<Object> COMPARE_VALUES = new AnyPropertyValueComparator();
+    public static final PropertyValueComparator<Object> COMPARE_VALUES = new AnyPropertyValueComparator();
 
-    public final static PropertyValueComparator<Number> COMPARE_NUMBERS = new NumberPropertyValueComparator();
+    public static final PropertyValueComparator<Number> COMPARE_NUMBERS = new NumberPropertyValueComparator();
 
-    public final static PropertyValueComparator<Object> COMPARE_STRINGS = new StringPropertyValueComparator();
+    public static final PropertyValueComparator<Object> COMPARE_STRINGS = new StringPropertyValueComparator();
 
-    public final static PropertyValueComparator<SuperType> COMPARE_SUPER_TYPE = new PropertyValueSuperTypeComparator();
+    public static final PropertyValueComparator<SuperType> COMPARE_SUPER_TYPE = new PropertyValueSuperTypeComparator();
 
     public enum SuperType
     {
@@ -164,8 +164,8 @@ public class PropertyValueComparison
 
                     // case OTHER:
                     default:
-                        String leftString = ObjectUtil.toString( left );
-                        String rightString = ObjectUtil.toString( right );
+                        String leftString = Strings.prettyPrint( left );
+                        String rightString = Strings.prettyPrint( right );
                         return leftString.compareTo( rightString );
                 }
             }

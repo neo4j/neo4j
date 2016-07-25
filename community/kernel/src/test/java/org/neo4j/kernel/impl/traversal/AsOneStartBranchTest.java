@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalContext;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -45,7 +45,8 @@ public class AsOneStartBranchTest
         when( nodeIterator.hasNext() ).thenReturn( true );
 
         // When
-        new AsOneStartBranch( mock( TraversalContext.class ), nodeIterable, mock( InitialBranchState.class ), Uniqueness.RELATIONSHIP_PATH );
+        new AsOneStartBranch( mock( TraversalContext.class ), nodeIterable, mock( InitialBranchState.class ),
+                Uniqueness.RELATIONSHIP_PATH );
 
         // Then
         verify( nodeIterator, never() ).next();

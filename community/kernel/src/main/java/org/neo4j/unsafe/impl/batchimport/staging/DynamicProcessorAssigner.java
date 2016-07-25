@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
@@ -101,7 +101,8 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
             int optimalProcessorIncrement = min( max( 1, (int) bottleNeck.other().floatValue() - 1 ), permits );
             for ( int i = 0; i < optimalProcessorIncrement; i++ )
             {
-                if ( bottleNeckStep.incrementNumberOfProcessors() )
+                int before = bottleNeckStep.processors( 0 );
+                if ( bottleNeckStep.processors( 1 ) > before )
                 {
                     lastChangedProcessors.put( bottleNeckStep, doneBatches );
                     usedPermits++;
@@ -115,7 +116,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
     {
         for ( Pair<Step<?>,Float> fast : execution.stepsOrderedBy( Keys.avg_processing_time, true ) )
         {
-            int numberOfProcessors = fast.first().numberOfProcessors();
+            int numberOfProcessors = fast.first().processors( 0 );
             if ( numberOfProcessors == 1 )
             {
                 continue;
@@ -132,7 +133,8 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
                 long doneBatches = batches( fastestStep );
                 if ( batchesPassedSinceLastChange( fastestStep, doneBatches ) >= config.movingAverageSize() )
                 {
-                    if ( fastestStep.decrementNumberOfProcessors() )
+                    int before = fastestStep.processors( 0 );
+                    if ( fastestStep.processors( -1 ) < before )
                     {
                         lastChangedProcessors.put( fastestStep, doneBatches );
                         return true;
@@ -143,9 +145,9 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
         return false;
     }
 
-    private int avg( Step<?> step )
+    private long avg( Step<?> step )
     {
-        return (int) step.stats().stat( Keys.avg_processing_time ).asLong();
+        return step.stats().stat( Keys.avg_processing_time ).asLong();
     }
 
     private long batches( Step<?> step )
@@ -169,7 +171,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
                     // "steal" some of its processing power.
                     long avg = avg( step );
                     float factor = (float)avg / (float)highestAverage;
-                    processors += factor * step.numberOfProcessors();
+                    processors += factor * step.processors( 0 );
                 }
             }
         }

@@ -27,36 +27,49 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.adversaries.ClassGuardedAdversary;
+import org.neo4j.adversaries.CountingAdversary;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.counts.FileVersion.INITIAL_MINOR_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -166,7 +179,8 @@ public class CountsRotationTest
         }
 
         // on the other hand the tracker should read the correct value by merging data on disk and data in memory
-        final CountsTracker tracker = db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+        final CountsTracker tracker = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                .testAccessNeoStores().getCounts();
         assertEquals( 1 + 1, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
 
         final LabelTokenHolder holder = db.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
@@ -176,9 +190,72 @@ public class CountsRotationTest
         db.shutdown();
     }
 
-    private CountsTracker createCountsTracker(PageCache pageCache)
+    @Test( timeout = 60_000 )
+    public void possibleToShutdownDbWhenItIsNotHealthyAndNotAllTransactionsAreApplied() throws Exception
     {
-        return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache, emptyConfig,
+        // adversary that makes page cache throw exception when node store is used
+        ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ),
+                NodeStore.class );
+        adversary.disable();
+
+        GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fs, adversary )
+                .newEmbeddedDatabaseBuilder( dir )
+                .newGraphDatabase();
+
+        CountDownLatch txStartLatch = new CountDownLatch( 1 );
+        CountDownLatch txCommitLatch = new CountDownLatch( 1 );
+
+        Future<?> result = ForkJoinPool.commonPool().submit( () -> {
+            try ( Transaction tx = db.beginTx() )
+            {
+                txStartLatch.countDown();
+                db.createNode();
+                await( txCommitLatch );
+                tx.success();
+            }
+        } );
+
+        await( txStartLatch );
+
+        adversary.enable();
+
+        txCommitLatch.countDown();
+
+        try
+        {
+            result.get();
+            fail( "Exception expected" );
+        }
+        catch ( ExecutionException ee )
+        {
+            // transaction is expected to fail because write through the page cache fails
+            assertThat( ee.getCause(), instanceOf( TransactionFailureException.class ) );
+        }
+        adversary.disable();
+
+        // shutdown should complete without any problems
+        db.shutdown();
+    }
+
+    private static void await( CountDownLatch latch )
+    {
+        try
+        {
+            boolean result = latch.await( 30, TimeUnit.SECONDS );
+            if ( !result )
+            {
+                throw new RuntimeException( "Count down did not happen. Current count: " + latch.getCount() );
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private CountsTracker createCountsTracker( PageCache pageCache )
+    {
+        return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache, Config.empty(),
                 new File( dir.getPath(), COUNTS_STORE_BASE ) );
     }
 
@@ -188,9 +265,9 @@ public class CountsRotationTest
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( triggerInfo );
     }
 
-    private final Label A = DynamicLabel.label( "A" );
-    private final Label B = DynamicLabel.label( "B" );
-    private final Label C = DynamicLabel.label( "C" );
+    private final Label A = Label.label( "A" );
+    private final Label B = Label.label( "B" );
+    private final Label C = Label.label( "C" );
 
     @Rule
     public PageCacheRule pcRule = new PageCacheRule();
@@ -204,7 +281,6 @@ public class CountsRotationTest
     private File dir;
     private GraphDatabaseBuilder dbBuilder;
     private PageCache pageCache;
-    private Config emptyConfig;
 
     @Before
     public void setup()
@@ -213,7 +289,6 @@ public class CountsRotationTest
         dir = testDir.directory( "dir" ).getAbsoluteFile();
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );
-        emptyConfig = new Config();
     }
 
     private static final String COUNTS_STORE_BASE = MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
@@ -227,7 +302,6 @@ public class CountsRotationTest
     {
         return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.RIGHT );
     }
-
 
     private Collection<Pair<? extends CountsKey, Long>> allRecords( CountsVisitor.Visitable store )
     {

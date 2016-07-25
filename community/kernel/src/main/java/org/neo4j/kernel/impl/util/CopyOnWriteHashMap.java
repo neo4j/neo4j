@@ -30,13 +30,13 @@ import java.util.Set;
 /**
  * Optimized for rare writes and very frequent reads in a thread safe way.
  * Reads impose no synchronization or locking.
- * 
+ *
  * {@link #keySet()}, {@link #values()} and {@link #entrySet()} wraps the
  * returned iterators since they provide the {@link Iterator#remove() remove}
  * method which isn't supported by this implementation. These iterators are also
  * views of the map at that point in time so they don't change during their
  * life time.
- * 
+ *
  * @author Mattias Persson
  *
  * @param <K> key type
@@ -45,7 +45,7 @@ import java.util.Set;
 public class CopyOnWriteHashMap<K, V> implements Map<K, V>
 {
     private volatile Map<K, V> actual = new HashMap<K, V>();
-    
+
     @Override
     public int size()
     {
@@ -80,7 +80,7 @@ public class CopyOnWriteHashMap<K, V> implements Map<K, V>
     {
         return new HashMap<K, V>( actual );
     }
-    
+
     @Override
     public synchronized V put( K key, V value )
     {
@@ -112,16 +112,16 @@ public class CopyOnWriteHashMap<K, V> implements Map<K, V>
     {
         actual = new HashMap<K, V>();
     }
-    
+
     private static class UnsupportedRemoveIterator<T> implements Iterator<T>
     {
         private final Iterator<T> actual;
-        
+
         UnsupportedRemoveIterator( Iterator<T> actual )
         {
             this.actual = actual;
         }
-        
+
         @Override
         public boolean hasNext()
         {
@@ -151,7 +151,7 @@ public class CopyOnWriteHashMap<K, V> implements Map<K, V>
             {
                 return CopyOnWriteHashMap.this.remove( o ) != null;
             }
-            
+
             @Override
             public Iterator<K> iterator()
             {
@@ -195,7 +195,7 @@ public class CopyOnWriteHashMap<K, V> implements Map<K, V>
             {
                 throw new UnsupportedOperationException();
             }
-            
+
             @Override
             public Iterator<Entry<K, V>> iterator()
             {
@@ -224,13 +224,13 @@ public class CopyOnWriteHashMap<K, V> implements Map<K, V>
                             {
                                 throw new UnsupportedOperationException();
                             }
-                            
+
                             @Override
                             public boolean equals( Object obj )
                             {
                                 return actualNext.equals( obj );
                             }
-                            
+
                             @Override
                             public int hashCode()
                             {

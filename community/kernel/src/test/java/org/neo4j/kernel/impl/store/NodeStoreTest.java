@@ -28,42 +28,54 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
+import java.util.stream.LongStream;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Exceptions.contains;
-import static org.neo4j.helpers.Exceptions.containsStackTraceElement;
-import static org.neo4j.helpers.Exceptions.forMethod;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class NodeStoreTest
 {
@@ -74,6 +86,7 @@ public class NodeStoreTest
 
     private NodeStore nodeStore;
     private NeoStores neoStores;
+    private IdGeneratorFactory idGeneratorFactory;
 
     @After
     public void tearDown()
@@ -88,9 +101,9 @@ public class NodeStoreTest
     public void shouldReadFirstFromSingleRecordDynamicLongArray() throws Exception
     {
         // GIVEN
-        Long expectedId = 12l;
-        long[] ids = new long[]{expectedId, 23l, 42l};
-        DynamicRecord firstRecord = new DynamicRecord( 0l );
+        Long expectedId = 12L;
+        long[] ids = new long[]{expectedId, 23L, 42L};
+        DynamicRecord firstRecord = new DynamicRecord( 0L );
         List<DynamicRecord> dynamicRecords = asList( firstRecord );
         allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(),
                 new PreAllocatedRecords( 60 ) );
@@ -108,7 +121,7 @@ public class NodeStoreTest
         // GIVEN
         Long expectedId = null;
         long[] ids = new long[]{};
-        DynamicRecord firstRecord = new DynamicRecord( 0l );
+        DynamicRecord firstRecord = new DynamicRecord( 0L );
         List<DynamicRecord> dynamicRecords = asList( firstRecord );
         allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(),
                 new PreAllocatedRecords( 60 ) );
@@ -124,10 +137,10 @@ public class NodeStoreTest
     public void shouldReadFirstFromTwoRecordDynamicLongArray() throws Exception
     {
         // GIVEN
-        Long expectedId = 12l;
-        long[] ids = new long[]{expectedId, 1l, 2l, 3l, 4l, 5l, 6l, 7l, 8l, 9l, 10l, 11l};
-        DynamicRecord firstRecord = new DynamicRecord( 0l );
-        List<DynamicRecord> dynamicRecords = asList( firstRecord, new DynamicRecord( 1l ) );
+        Long expectedId = 12L;
+        long[] ids = new long[]{expectedId, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L};
+        DynamicRecord firstRecord = new DynamicRecord( 0L );
+        List<DynamicRecord> dynamicRecords = asList( firstRecord, new DynamicRecord( 1L ) );
         allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(),
                 new PreAllocatedRecords( 8 ) );
 
@@ -156,7 +169,7 @@ public class NodeStoreTest
 
         // WHEN
         // -- reading that record back
-        NodeRecord readRecord = nodeStore.getRecord( nodeId );
+        NodeRecord readRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
 
         // THEN
         // -- the label field must be the same
@@ -205,9 +218,9 @@ public class NodeStoreTest
         store.updateRecord( new NodeRecord( deleted, false, 10, 20, false ) );
 
         // When & then
-        assertTrue( store.inUse( exists ) );
-        assertFalse( store.inUse( deleted ) );
-        assertFalse( store.inUse( IdType.NODE.getMaxValue() ) );
+        assertTrue( store.isInUse( exists ) );
+        assertFalse( store.isInUse( deleted ) );
+        assertFalse( store.isInUse( nodeStore.recordFormat.getMaxId() ) );
     }
 
     @Test
@@ -273,8 +286,8 @@ public class NodeStoreTest
                     public int read( ByteBuffer dst ) throws IOException
                     {
                         Exception stack = new Exception();
-                        if ( containsStackTraceElement( stack, forMethod( "initGenerator" ) ) &&
-                             !containsStackTraceElement( stack, forMethod( "createNodeStore" ) ) )
+                        if ( containsStackTraceElement( stack, item -> item.getMethodName().equals( "initGenerator" ) ) &&
+                             !containsStackTraceElement( stack, item -> item.getMethodName().equals( "createNodeStore" ) ) )
                         {
                             fired.set( true );
                             throw new IOException( "Proving a point here" );
@@ -299,6 +312,85 @@ public class NodeStoreTest
         }
     }
 
+    private static boolean containsStackTraceElement( Throwable cause,
+            final Predicate<StackTraceElement> predicate )
+    {
+        return contains( cause, item -> {
+            for ( StackTraceElement element : item.getStackTrace() )
+            {
+                if ( predicate.test( element ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        } );
+    }
+
+    @Test
+    public void shouldFreeSecondaryUnitIdOfDeletedRecord() throws Exception
+    {
+        // GIVEN
+        EphemeralFileSystemAbstraction fs = efs.get();
+        nodeStore = newNodeStore( fs );
+        NodeRecord record = new NodeRecord( 5L );
+        record.setRequiresSecondaryUnit( true );
+        record.setSecondaryUnitId( 10L );
+        record.setInUse( true );
+        nodeStore.updateRecord( record );
+        nodeStore.setHighestPossibleIdInUse( 10L );
+
+        // WHEN
+        record.setInUse( false );
+        nodeStore.updateRecord( record );
+
+        // THEN
+        IdGenerator idGenerator = idGeneratorFactory.get( IdType.NODE );
+        verify( idGenerator ).freeId( 5L );
+        verify( idGenerator ).freeId( 10L );
+    }
+
+    @Test
+    public void shouldFreeSecondaryUnitIdOfShrunkRecord() throws Exception
+    {
+        // GIVEN
+        EphemeralFileSystemAbstraction fs = efs.get();
+        nodeStore = newNodeStore( fs );
+        NodeRecord record = new NodeRecord( 5L );
+        record.setRequiresSecondaryUnit( true );
+        record.setSecondaryUnitId( 10L );
+        record.setInUse( true );
+        nodeStore.updateRecord( record );
+        nodeStore.setHighestPossibleIdInUse( 10L );
+
+        // WHEN
+        record.setRequiresSecondaryUnit( false );
+        nodeStore.updateRecord( record );
+
+        // THEN
+        IdGenerator idGenerator = idGeneratorFactory.get( IdType.NODE );
+        verify( idGenerator, times( 0 ) ).freeId( 5L );
+        verify( idGenerator ).freeId( 10L );
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void ensureHeavy() throws IOException
+    {
+        long[] labels = LongStream.range( 1, 1000 ).toArray();
+        NodeRecord node = new NodeRecord( 5 );
+        node.setLabelField( 10, Collections.emptyList() );
+        Collection<DynamicRecord> dynamicLabelRecords = DynamicNodeLabels.putSorted( node, labels,
+                mock( NodeStore.class ), new StandaloneDynamicRecordAllocator() );
+        assertThat( dynamicLabelRecords, not( empty() ) );
+        RecordCursor<DynamicRecord> dynamicLabelCursor = mock( RecordCursor.class );
+        when( dynamicLabelCursor.getAll() ).thenReturn( Iterables.asList( dynamicLabelRecords ) );
+
+        NodeStore.ensureHeavy( node, dynamicLabelCursor );
+
+        assertEquals( dynamicLabelRecords, node.getDynamicLabelRecords() );
+    }
+
     private NodeStore newNodeStore( FileSystemAbstraction fs ) throws IOException
     {
         return newNodeStore( fs, pageCacheRule.getPageCache( fs ) );
@@ -308,8 +400,16 @@ public class NodeStoreTest
     {
         File storeDir = new File( "dir" );
         fs.mkdirs( storeDir );
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        StoreFactory factory = new StoreFactory( storeDir, new Config(), idGeneratorFactory, pageCache, fs,
+        idGeneratorFactory = spy( new DefaultIdGeneratorFactory( fs )
+        {
+            @Override
+            protected IdGenerator instantiate( FileSystemAbstraction fs, File fileName, int grabSize, long maxValue,
+                    boolean aggressiveReuse, long highId )
+            {
+                return spy( super.instantiate( fs, fileName, grabSize, maxValue, aggressiveReuse, highId ) );
+            }
+        } );
+        StoreFactory factory = new StoreFactory( storeDir, Config.empty(), idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance() );
         neoStores = factory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();

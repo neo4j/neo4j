@@ -21,67 +21,77 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.FakeClock;
+import org.neo4j.kernel.impl.api.DefaultTransactionTracer.Monitor;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
+import org.neo4j.test.OnDemandJobScheduler;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class DefaultTransactionTracerTest
 {
     private final FakeClock clock = new FakeClock();
+    private final OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
+    private final Monitor monitor = mock( Monitor.class );
 
     @Test
     public void shouldComputeStartEndAndTotalTimeForLogRotation() throws Throwable
     {
-        DefaultTransactionTracer tracer = new DefaultTransactionTracer( clock );
-        try ( TransactionEvent txEvent = tracer.beginTransaction() )
-        {
-            try ( CommitEvent commitEvent = txEvent.beginCommitEvent() )
-            {
-                try ( LogAppendEvent logAppendEvent = commitEvent.beginLogAppend() )
-                {
-                    clock.forward( 10, TimeUnit.MILLISECONDS );
-                    try ( LogRotateEvent event = logAppendEvent.beginLogRotate() )
-                    {
-                        clock.forward( 20, TimeUnit.MILLISECONDS );
-                    }
-                }
-            }
-        }
+        DefaultTransactionTracer tracer = new DefaultTransactionTracer( clock, monitor, jobScheduler );
+
+        triggerEvent( tracer, 20 );
 
         assertEquals( 1, tracer.numberOfLogRotationEvents() );
         assertEquals( 20, tracer.logRotationAccumulatedTotalTimeMillis() );
+        verify( monitor, times( 1 ) ).lastLogRotationEventDuration( 20L );
 
+        triggerEvent( tracer, 30 );
 
-        try ( TransactionEvent txEvent = tracer.beginTransaction() )
-        {
-            try ( CommitEvent commitEvent = txEvent.beginCommitEvent() )
-            {
-                try ( LogAppendEvent logAppendEvent = commitEvent.beginLogAppend() )
-                {
-                    clock.forward( 200, TimeUnit.MILLISECONDS );
-                    try ( LogRotateEvent event = logAppendEvent.beginLogRotate() )
-                    {
-                        clock.forward( 30, TimeUnit.MILLISECONDS );
-                    }
-                }
-            }
-        }
         // should reset the total time value whenever read
         assertEquals( 2, tracer.numberOfLogRotationEvents() );
         assertEquals( 50, tracer.logRotationAccumulatedTotalTimeMillis() );
+        verify( monitor, times( 1 ) ).lastLogRotationEventDuration( 30L );
     }
 
     @Test
     public void shouldReturnMinusOneIfNoDataIsAvailableForLogRotation() throws Throwable
     {
-        DefaultTransactionTracer tracer = new DefaultTransactionTracer( clock );
+        DefaultTransactionTracer tracer = new DefaultTransactionTracer( clock, monitor, jobScheduler );
+
+        jobScheduler.runJob();
+
         assertEquals( 0, tracer.numberOfLogRotationEvents() );
         assertEquals( 0, tracer.logRotationAccumulatedTotalTimeMillis() );
+        verifyZeroInteractions( monitor );
+    }
+
+    private void triggerEvent( DefaultTransactionTracer tracer, int eventDuration )
+    {
+        try ( TransactionEvent txEvent = tracer.beginTransaction() )
+        {
+            try ( CommitEvent commitEvent = txEvent.beginCommitEvent() )
+            {
+                try ( LogAppendEvent logAppendEvent = commitEvent.beginLogAppend() )
+                {
+                    clock.forward( ThreadLocalRandom.current().nextLong( 200 ), TimeUnit.MILLISECONDS );
+                    try ( LogRotateEvent event = logAppendEvent.beginLogRotate() )
+                    {
+                        clock.forward( eventDuration, TimeUnit.MILLISECONDS );
+                    }
+                }
+            }
+        }
+
+        jobScheduler.runJob();
     }
 }

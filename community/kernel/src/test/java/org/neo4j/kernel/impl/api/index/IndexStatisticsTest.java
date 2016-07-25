@@ -22,14 +22,17 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -42,8 +45,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -51,20 +52,73 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.runners.Parameterized.Parameter;
+import static org.junit.runners.Parameterized.Parameters;
 
+@RunWith( Parameterized.class )
 public class IndexStatisticsTest
 {
+    private static final double UNIQUE_NAMES = 10.0;
+    private static final String[] NAMES = new String[]{
+            "Andres", "Davide", "Jakub", "Chris", "Tobias", "Stefan", "Petra", "Rickard", "Mattias", "Emil", "Chris",
+            "Chris"
+    };
+
+    private static final int CREATION_MULTIPLIER = 10_000;
+    private static final int MISSED_UPDATES_TOLERANCE = NAMES.length;
+    private static final double DOUBLE_ERROR_TOLERANCE = 0.00001d;
+
+    @Parameter
+    public boolean multiThreadedPopulationEnabled;
+
+    @Rule
+    public DatabaseRule dbRule = new EmbeddedDatabaseRule()
+    {
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
+        {
+            super.configure( builder );
+            // make sure we don't sample in these tests
+            builder.setConfig( GraphDatabaseSettings.index_background_sampling_enabled, "false" );
+            builder.setConfig( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled,
+                    multiThreadedPopulationEnabled + "" );
+        }
+    };
+
+    private GraphDatabaseService db;
+    private ThreadToStatementContextBridge bridge;
+    private final IndexOnlineMonitor indexOnlineMonitor = new IndexOnlineMonitor();
+
+    @Parameters(name = "multiThreadedIndexPopulationEnabled = {0}")
+    public static Object[] multiThreadedIndexPopulationEnabledValues()
+    {
+        return new Object[]{true, false};
+    }
+
+    @Before
+    public void before()
+    {
+        GraphDatabaseAPI graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
+        this.db = graphDatabaseAPI;
+        DependencyResolver dependencyResolver = graphDatabaseAPI.getDependencyResolver();
+        this.bridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
+        graphDatabaseAPI.getDependencyResolver()
+                .resolveDependency( Monitors.class )
+                .addMonitorListener( indexOnlineMonitor );
+    }
+
     @Test
     public void shouldProvideIndexStatisticsForDataCreatedWhenPopulationBeforeTheIndexIsOnline() throws KernelException
     {
@@ -76,8 +130,8 @@ public class IndexStatisticsTest
 
         // then
         assertEquals( 0.75d, indexSelectivity( index ), DOUBLE_ERROR_TOLERANCE );
-        assertEquals( 4l, indexSize( index ) );
-        assertEquals( 0l, indexUpdates( index ) );
+        assertEquals( 4L, indexSize( index ) );
+        assertEquals( 0L, indexUpdates( index ) );
     }
 
     @Test
@@ -91,8 +145,8 @@ public class IndexStatisticsTest
 
         // then
         assertEquals( 1.0d, indexSelectivity( index ), DOUBLE_ERROR_TOLERANCE );
-        assertEquals( 0l, indexSize( index ) );
-        assertEquals( 4l, indexUpdates( index ) );
+        assertEquals( 0L, indexSize( index ) );
+        assertEquals( 4L, indexUpdates( index ) );
     }
 
     @Test
@@ -108,8 +162,8 @@ public class IndexStatisticsTest
 
         // then
         assertEquals( 0.75d, indexSelectivity( index ), DOUBLE_ERROR_TOLERANCE );
-        assertEquals( 4l, indexSize( index ) );
-        assertEquals( 4l, indexUpdates( index ) );
+        assertEquals( 4L, indexSize( index ) );
+        assertEquals( 4L, indexUpdates( index ) );
     }
 
     @Test
@@ -132,13 +186,13 @@ public class IndexStatisticsTest
         {
             DoubleLongRegister actual = getTracker()
                     .indexSample( index.getLabelId(), index.getPropertyKeyId(), Registers.newDoubleLongRegister() );
-            assertDoubleLongEquals( 0l, 0l, actual );
+            assertDoubleLongEquals( 0L, 0L, actual );
         }
 
         // and then index size and index updates are zero on disk
         DoubleLongRegister actual = getTracker()
                 .indexUpdatesAndSize( index.getLabelId(), index.getPropertyKeyId(), Registers.newDoubleLongRegister() );
-        assertDoubleLongEquals( 0l, 0l, actual );
+        assertDoubleLongEquals( 0L, 0L, actual );
     }
 
     @Test
@@ -154,7 +208,7 @@ public class IndexStatisticsTest
         double expectedSelectivity = UNIQUE_NAMES / (created);
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( created, indexSize( index ) );
-        assertEquals( 0l, indexUpdates( index ) );
+        assertEquals( 0L, indexUpdates( index ) );
     }
 
     @Test
@@ -376,16 +430,14 @@ public class IndexStatisticsTest
     private long indexSize( IndexDescriptor descriptor ) throws KernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
-                                      .resolveDependency( NeoStoreDataSource.class )
-                                      .getIndexService()
+                                      .resolveDependency( IndexingService.class )
                                       .indexUpdatesAndSize( descriptor ).readSecond();
     }
 
     private long indexUpdates( IndexDescriptor descriptor ) throws KernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
-                                      .resolveDependency( NeoStoreDataSource.class )
-                                      .getIndexService()
+                                      .resolveDependency( IndexingService.class )
                                       .indexUpdatesAndSize( descriptor ).readFirst();
     }
 
@@ -402,7 +454,8 @@ public class IndexStatisticsTest
 
     private CountsTracker getTracker()
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                .testAccessNeoStores().getCounts();
     }
 
     private void createSomePersons() throws KernelException
@@ -495,7 +548,6 @@ public class IndexStatisticsTest
     {
         return internalExecuteCreationsDeletionsAndUpdates( nodes, index, numberOfCreations, false, true );
     }
-
 
     private UpdatesTracker executeCreationsDeletionsAndUpdates( long[] nodes,
                                                                 IndexDescriptor index,
@@ -620,47 +672,9 @@ public class IndexStatisticsTest
         assertEquals( message, expected, actual, tolerance );
     }
 
-    private static final double UNIQUE_NAMES = 10.0;
-    private static final String[] NAMES = new String[]{
-            "Andres", "Davide", "Jakub", "Chris", "Tobias", "Stefan", "Petra", "Rickard", "Mattias", "Emil", "Chris",
-            "Chris"
-    };
-
-    private static final int CREATION_MULTIPLIER = 10_000;
-    private static final int MISSED_UPDATES_TOLERANCE = NAMES.length;
-    private static final double DOUBLE_ERROR_TOLERANCE = 0.00001d;
-
-    @Rule
-    public DatabaseRule dbRule = new EmbeddedDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            super.configure( builder );
-            // make sure we don't sample in these tests
-            builder.setConfig( GraphDatabaseSettings.index_background_sampling_enabled, "false" );
-        }
-    };
-
-    private GraphDatabaseService db;
-    private ThreadToStatementContextBridge bridge;
-    private final IndexOnlineMonitor indexOnlineMonitor = new IndexOnlineMonitor();
-
-    @Before
-    public void before()
-    {
-        GraphDatabaseAPI graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
-        this.db = graphDatabaseAPI;
-        DependencyResolver dependencyResolver = graphDatabaseAPI.getDependencyResolver();
-        this.bridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
-        graphDatabaseAPI.getDependencyResolver()
-                        .resolveDependency( Monitors.class )
-                        .addMonitorListener( indexOnlineMonitor );
-    }
-
     private static class IndexOnlineMonitor extends IndexingService.MonitorAdapter
     {
-        private final Set<IndexDescriptor> onlineIndexes = new HashSet<>();
+        private final Set<IndexDescriptor> onlineIndexes = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
         @Override
         public void populationCompleteOn( IndexDescriptor descriptor )

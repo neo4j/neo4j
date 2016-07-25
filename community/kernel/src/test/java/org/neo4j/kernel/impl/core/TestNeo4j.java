@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Iterator;
 import java.util.Random;
-
-import org.junit.Ignore;
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -32,11 +32,10 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.IdType;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.tooling.GlobalGraphOperations;
+import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -190,13 +189,13 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         long highId = getIdGenerator( IdType.NODE ).getHighestPossibleIdInUse();
         if ( highId >= 0 && highId < 10000 )
         {
-            int count = IteratorUtil.count( GlobalGraphOperations.at( getGraphDb() ).getAllNodes() );
+            long count = Iterables.count( getGraphDb().getAllNodes() );
             boolean found = false;
             Node newNode = getGraphDb().createNode();
             newTransaction();
-            int oldCount = count;
+            long oldCount = count;
             count = 0;
-            for ( Node node : GlobalGraphOperations.at( getGraphDb() ).getAllNodes() )
+            for ( Node node : getGraphDb().getAllNodes() )
             {
                 count++;
                 if ( node.equals( newNode ) )
@@ -208,14 +207,14 @@ public class TestNeo4j extends AbstractNeo4jTestCase
             assertEquals( count, oldCount + 1 );
 
             // Tests a bug in the "all nodes" iterator
-            Iterator<Node> allNodesIterator = GlobalGraphOperations.at( getGraphDb() ).getAllNodes().iterator();
+            Iterator<Node> allNodesIterator = getGraphDb().getAllNodes().iterator();
             assertNotNull( allNodesIterator.next() );
 
             newNode.delete();
             newTransaction();
             found = false;
             count = 0;
-            for ( Node node : GlobalGraphOperations.at( getGraphDb() ).getAllNodes() )
+            for ( Node node : getGraphDb().getAllNodes() )
             {
                 count++;
                 if ( node.equals( newNode ) )

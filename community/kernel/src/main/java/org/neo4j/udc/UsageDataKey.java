@@ -19,13 +19,13 @@
  */
 package org.neo4j.udc;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
 
 import static org.neo4j.function.Suppliers.singleton;
 
 /**
  * A lookup key to publish or retrieve data in {@link UsageData}.
- * @param <Type>
+ * @param <Type> The type of the data
  */
 public class UsageDataKey<Type>
 {

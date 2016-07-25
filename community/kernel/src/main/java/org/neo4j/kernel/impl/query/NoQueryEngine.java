@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.query;
 import java.util.Map;
 
 import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 
 enum NoQueryEngine implements QueryExecutionEngine
 {
@@ -47,6 +48,12 @@ enum NoQueryEngine implements QueryExecutionEngine
 
     @Override
     public boolean isPeriodicCommit( String query )
+    {
+        throw noQueryEngine();
+    }
+
+    @Override
+    public GraphDatabaseQueryService queryService()
     {
         throw noQueryEngine();
     }

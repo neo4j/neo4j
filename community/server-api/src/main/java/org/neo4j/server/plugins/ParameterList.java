@@ -27,7 +27,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.repr.BadInputException;
 
 public abstract class ParameterList
@@ -39,7 +39,7 @@ public abstract class ParameterList
         this.data = data;
     }
 
-    private static abstract class Converter<T>
+    private abstract static class Converter<T>
     {
         abstract T convert( GraphDatabaseAPI graphDb, Object value )
                 throws BadInputException;

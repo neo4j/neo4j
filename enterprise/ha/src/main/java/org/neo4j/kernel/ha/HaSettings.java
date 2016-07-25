@@ -35,7 +35,7 @@ import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_descending;
+import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
 
 /**
  * Settings for High Availability mode
@@ -43,29 +43,30 @@ import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_descending;
 @Description( "High Availability configuration settings" )
 public class HaSettings
 {
+    @SuppressWarnings("unused") // accessed by reflection
     @Migrator
     public static final ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
 
     @Description( "How long a slave will wait for response from master before giving up." )
-    public static final Setting<Long> read_timeout = setting( "ha.read_timeout", DURATION, "20s" );
+    public static final Setting<Long> read_timeout = setting( "ha.slave_read_timeout", DURATION, "20s" );
 
     @Description( "Timeout for request threads waiting for instance to become master or slave." )
-    public static final Setting<Long> state_switch_timeout = setting( "ha.state_switch_timeout", DURATION, "120s" );
+    public static final Setting<Long> state_switch_timeout = setting( "ha.role_switch_timeout", DURATION, "120s" );
 
     @Description( "Timeout for waiting for internal conditions during state switch, like for transactions "
             + "to complete, before switching to master or slave." )
     public static final Setting<Long> internal_state_switch_timeout =
-            setting( "ha.internal_state_switch_timeout", DURATION, "10s" );
+            setting( "ha.internal_role_switch_timeout", DURATION, "10s" );
 
-    @Description( "Timeout for taking remote (write) locks on slaves. Defaults to ha.read_timeout." )
-    public static final Setting<Long> lock_read_timeout = setting( "ha.lock_read_timeout", DURATION, read_timeout );
+    @Description( "Timeout for taking remote (write) locks on slaves. Defaults to ha.slave_read_timeout." )
+    public static final Setting<Long> lock_read_timeout = setting( "ha.slave_lock_timeout", DURATION, read_timeout );
 
     @Description( "Maximum number of connections a slave can have to the master." )
     public static final Setting<Integer> max_concurrent_channels_per_slave =
-            setting( "ha.max_concurrent_channels_per_slave", INTEGER, "20", min( 1 ) );
+            setting( "ha.max_channels_per_slave", INTEGER, "20", min( 1 ) );
 
     @Description( "Hostname and port to bind the HA server." )
-    public static final Setting<HostnamePort> ha_server = setting( "ha.server", HOSTNAME_PORT, "0.0.0.0:6001-6011" );
+    public static final Setting<HostnamePort> ha_server = setting( "ha.host.data", HOSTNAME_PORT, "0.0.0.0:6001-6011" );
 
     @Description("Whether this instance should only participate as slave in cluster. "
             + "If set to `true`, it will never be elected as master.")
@@ -80,10 +81,9 @@ public class HaSettings
             setting( "dbms.security.ha_status_auth_enabled", BOOLEAN, Settings.TRUE );
 
     @Description( "Max size of the data chunks that flows between master and slaves in HA. Bigger size may increase " +
-            "throughput, but may also be more sensitive to variations in bandwidth, whereas lower size increases tolerance" +
-            " for bandwidth variations." )
-    public static final Setting<Long> com_chunk_size =
-            setting( "ha.com_chunk_size", BYTES, "2M", min( 1024L ) );
+            "throughput, but may also be more sensitive to variations in bandwidth, whereas lower size increases " +
+            "tolerance for bandwidth variations." )
+    public static final Setting<Long> com_chunk_size = setting( "ha.data_chunk_size", BYTES, "2M", min( 1024L ) );
 
     @Description( "Interval of pulling updates from master." )
     public static final Setting<Long> pull_interval = setting( "ha.pull_interval", DURATION, "0s" );
@@ -92,10 +92,10 @@ public class HaSettings
     public static final Setting<Integer> tx_push_factor = setting( "ha.tx_push_factor", INTEGER, "1", min( 0 ) );
 
     @Description( "Push strategy of a transaction to a slave during commit." )
-    public static final Setting<TxPushStrategy> tx_push_strategy = setting( "ha.tx_push_strategy", options( TxPushStrategy.class ), fixed_descending.name() );
+    public static final Setting<TxPushStrategy> tx_push_strategy = setting( "ha.tx_push_strategy", options( TxPushStrategy.class ), fixed_ascending.name() );
 
     @Description( "Size of batches of transactions applied on slaves when pulling from master" )
-    public static final Setting<Integer> pull_apply_batch_size = setting( "ha.pull_apply_batch_size", INTEGER, "100" );
+    public static final Setting<Integer> pull_apply_batch_size = setting( "ha.pull_batch_size", INTEGER, "100" );
 
     @Description( "Duration for which master will buffer ids and not reuse them to allow slaves read " +
                   "consistently. Slaves will also terminate transactions longer than this duration, when " +
@@ -108,10 +108,6 @@ public class HaSettings
     {
         @Description("Round robin")
         round_robin,
-
-        @Deprecated
-        @Description("Deprecated, please use `fixed_ascending` or `fixed_descending` instead.")
-        fixed,
 
         @Description("Fixed, prioritized by server id in descending order. This strategy will push to the same set of instances, as long as they remain " +
                      "available, and will prioritize available instances with the highest instance ids.")

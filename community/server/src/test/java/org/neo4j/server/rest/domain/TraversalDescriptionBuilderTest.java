@@ -29,7 +29,6 @@ import org.junit.Test;
 
 public class TraversalDescriptionBuilderTest
 {
-
     @Test(expected = IllegalArgumentException.class)
     public void throwsIllegalArgumentOnUnknownExpanderType() throws Exception
     {
@@ -57,5 +56,4 @@ public class TraversalDescriptionBuilderTest
                 "relationships", rels,
                 "expander", map( ) ) );
     }
-
 }

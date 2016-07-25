@@ -178,19 +178,19 @@ public class IndexOperationsIT
 
     private long createNode( HighlyAvailableGraphDatabase author, String key, Object value, boolean index )
     {
-
         try ( Transaction tx = author.beginTx() )
         {
             Node node = author.createNode();
             node.setProperty( key, value );
             if ( index )
-            { author.index().forNodes( key ).add( node, key, value ); }
+            {
+                author.index().forNodes( key ).add( node, key, value );
+            }
             tx.success();
             return node.getId();
         }
         catch ( Exception e )
         {
-            e.printStackTrace( System.err );
             throw e;
         }
     }

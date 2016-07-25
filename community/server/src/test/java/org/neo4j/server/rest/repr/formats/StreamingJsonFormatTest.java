@@ -69,7 +69,6 @@ public class StreamingJsonFormatTest
         }
         assertTrue( stream.toString().contains( "\"self\" : \"http://localhost/node/0\"," ) );
     }
-
     @Test
     public void canFormatString() throws Exception
     {
@@ -127,7 +126,7 @@ public class StreamingJsonFormatTest
             @Override
             protected void serialize( MappingSerializer serializer )
             {
-                serializer.putUri( "URL", "subpath" );
+                serializer.putRelativeUri( "URL", "subpath" );
             }
         } );
 

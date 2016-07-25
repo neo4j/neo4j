@@ -44,7 +44,7 @@ public class MapWrappingWriter extends MappingWriter
     }
 
     @Override
-    final protected boolean isInteractive()
+    protected final boolean isInteractive()
     {
         return interactive;
     }

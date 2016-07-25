@@ -30,14 +30,15 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Consumer;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.NodeItem;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -47,7 +48,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.IteratorUtil.set;
+import static org.neo4j.helpers.collection.Iterators.set;
 
 public class TwoPhaseNodeForRelationshipLockingTest
 {
@@ -126,7 +127,8 @@ public class TwoPhaseNodeForRelationshipLockingTest
             @Override
             public Void answer( InvocationOnMock invocation ) throws Throwable
             {
-                @SuppressWarnings( "unchecked" ) RelationshipVisitor<RuntimeException> visitor =
+                @SuppressWarnings( "unchecked" )
+                RelationshipVisitor<RuntimeException> visitor =
                         (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
                 visitor.visit( relId, 6, startNodeId, endNodeId );
                 return null;
@@ -187,12 +189,12 @@ public class TwoPhaseNodeForRelationshipLockingTest
         });
     }
 
-    private static class Collector implements Consumer<Long>
+    private static class Collector implements ThrowingConsumer<Long,KernelException>
     {
         public final Set<Long> set = new HashSet<>();
 
         @Override
-        public void accept( Long input )
+        public void accept( Long input ) throws KernelException
         {
             assertNotNull( input );
             set.add( input );

@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 
@@ -77,6 +78,12 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
 
     @Override
     public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
+    {
+        throw new IllegalStateException( this + " is recovering" );
+    }
+
+    @Override
+    public PopulationProgress getIndexPopulationProgress()
     {
         throw new IllegalStateException( this + " is recovering" );
     }

@@ -35,55 +35,55 @@ import org.neo4j.walk.Visitor;
  */
 public class Visualizer<E extends Throwable> implements Visitor<Void, E>
 {
-	private final GraphRenderer<E> renderer;
-	private Set<Relationship> visitedRelationships = new HashSet<Relationship>();
-	private Set<Node> visitedNodes = new HashSet<Node>();
+    private final GraphRenderer<E> renderer;
+    private Set<Relationship> visitedRelationships = new HashSet<Relationship>();
+    private Set<Node> visitedNodes = new HashSet<Node>();
 
-	/**
-	 * Creates a new visualizer.
-	 * @param renderer
-	 *            An object capable of rendering the different parts of a graph.
-	 */
-	public Visualizer( GraphRenderer<E> renderer )
-	{
-		this.renderer = renderer;
-	}
+    /**
+     * Creates a new visualizer.
+     * @param renderer
+     *            An object capable of rendering the different parts of a graph.
+     */
+    public Visualizer( GraphRenderer<E> renderer )
+    {
+        this.renderer = renderer;
+    }
 
-	public Void done() throws E
-	{
-		renderer.done();
-		return null;
-	}
+    public Void done() throws E
+    {
+        renderer.done();
+        return null;
+    }
 
-	public void visitNode( Node node ) throws E
-	{
-		if ( visitedNodes.add( node ) )
-		{
-			renderProperties( renderer.renderNode( node ), node );
-		}
-	}
+    public void visitNode( Node node ) throws E
+    {
+        if ( visitedNodes.add( node ) )
+        {
+            renderProperties( renderer.renderNode( node ), node );
+        }
+    }
 
-	public void visitRelationship( Relationship relationship ) throws E
-	{
-		if ( visitedRelationships.add( relationship ) )
-		{
-			renderProperties( renderer.renderRelationship( relationship ),
-			    relationship );
-		}
-	}
+    public void visitRelationship( Relationship relationship ) throws E
+    {
+        if ( visitedRelationships.add( relationship ) )
+        {
+            renderProperties( renderer.renderRelationship( relationship ),
+                relationship );
+        }
+    }
 
     public Visitor<Void, E> visitSubgraph( String name ) throws E
     {
         return new Visualizer<E>( renderer.renderSubgraph( name ) );
     }
 
-	private void renderProperties( PropertyRenderer<E> propertyRenderer,
-	    PropertyContainer container ) throws E
-	{
-		for ( String key : container.getPropertyKeys() )
-		{
-			propertyRenderer.renderProperty( key, container.getProperty( key ) );
-		}
-		propertyRenderer.done();
-	}
+    private void renderProperties( PropertyRenderer<E> propertyRenderer,
+        PropertyContainer container ) throws E
+    {
+        for ( String key : container.getPropertyKeys() )
+        {
+            propertyRenderer.renderProperty( key, container.getProperty( key ) );
+        }
+        propertyRenderer.done();
+    }
 }

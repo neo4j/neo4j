@@ -24,15 +24,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map.Entry;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
-import org.neo4j.function.BiFunction;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
@@ -44,10 +43,10 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
@@ -55,6 +54,7 @@ import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -72,7 +72,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.nio.charset.Charset.defaultCharset;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
@@ -135,6 +134,10 @@ public class ImportTool
         MULTILINE_FIELDS( "multiline-fields", org.neo4j.csv.reader.Configuration.DEFAULT.multilineFields(),
                 "<true/false>",
                 "Whether or not fields from input source can span multiple lines, i.e. contain newline characters." ),
+
+        TRIM_STRINGS( "trim-strings", org.neo4j.csv.reader.Configuration.DEFAULT.trimStrings(),
+                "<true/false>",
+                "Whether or not strings should be trimmed for whitespaces."),
 
         INPUT_ENCODING( "input-encoding", null,
                 "<character set>",
@@ -374,7 +377,7 @@ public class ImportTool
 
         LifeSupport life = new LifeSupport();
 
-        LogService logService = life.add( StoreLogService.inStoreDirectory( fs, storeDir ) );
+        LogService logService = life.add( StoreLogService.inLogsDirectory( fs, storeDir ) );
 
         life.start();
         org.neo4j.unsafe.impl.batchimport.Configuration configuration =
@@ -417,7 +420,7 @@ public class ImportTool
                 {
                     StoreFile.fileOperation( FileOperation.DELETE, fs, storeDir, null,
                             Iterables.<StoreFile,StoreFile>iterable( StoreFile.values() ),
-                            false, false, StoreFileType.values() );
+                            false, ExistingTargetStrategy.FAIL, StoreFileType.values() );
                 }
                 catch ( IOException e )
                 {
@@ -433,7 +436,7 @@ public class ImportTool
 
     private static Config loadDbConfig( File file ) throws IOException
     {
-        return file != null && file.exists() ? new Config( MapUtil.load( file ) ) : new Config();
+        return file != null && file.exists() ? new Config( MapUtil.load( file ) ) : Config.defaults();
     }
 
     private static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,
@@ -521,7 +524,13 @@ public class ImportTool
 
     private static String manualReference( ManualPage page, Anchor anchor )
     {
-        return " http://neo4j.com/docs/" + Version.getKernel().getReleaseVersion() + "/" + page.getReference( anchor );
+        // Docs are versioned major.minor-suffix, so drop the patch version.
+        String[] versionParts = Version.getKernel().getReleaseVersion().split("-");
+        versionParts[0] = versionParts[0].substring(0, 3);
+        String docsVersion = String.join("-", versionParts);
+
+        return " http://neo4j.com/docs/operations-manual/" + docsVersion + "/" +
+               page.getReference( anchor );
     }
 
     /**
@@ -569,13 +578,7 @@ public class ImportTool
         // Calling System.exit( 1 ) or similar would be convenient on one hand since we can set
         // a specific exit code. On the other hand It's very inconvenient to have any System.exit
         // call in code that is tested.
-        Thread.currentThread().setUncaughtExceptionHandler( new UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException( Thread t, Throwable e )
-            {   // Shhhh
-            }
-        } );
+        Thread.currentThread().setUncaughtExceptionHandler( ( t, e1 ) -> { /* Shhhh */ } );
         return launderedException( e ); // throw in order to have process exit with !0
     }
 
@@ -679,6 +682,7 @@ public class ImportTool
                 CHARACTER_CONVERTER );
         final Boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), null );
         final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );
+        final Boolean trimStrings = args.getBoolean( Options.TRIM_STRINGS.key(), null);
         return new Configuration.Default()
         {
             @Override
@@ -726,49 +730,38 @@ public class ImportTool
             {
                 return defaultSettingsSuitableForTests ? 10_000 : super.bufferSize();
             }
+
+            @Override
+            public boolean trimStrings()
+            {
+                return trimStrings != null
+                        ? trimStrings.booleanValue()
+                        : defaultConfiguration.trimStrings();
+            }
         };
     }
 
-    private static final Function<String,IdType> TO_ID_TYPE = new Function<String,IdType>()
-    {
-        @Override
-        public IdType apply( String from )
-        {
-            return IdType.valueOf( from.toUpperCase() );
-        }
-    };
+    private static final Function<String,IdType> TO_ID_TYPE = from -> IdType.valueOf( from.toUpperCase() );
 
     private static final Function<String,Character> CHARACTER_CONVERTER = new CharacterConverter();
 
-    private static final BiFunction<Args,String,Collection<Option<File[]>>> INPUT_FILES_EXTRACTOR =
-            new BiFunction<Args,String,Collection<Option<File[]>>>()
-    {
-        @Override
-        public Collection<Option<File[]>> apply( Args args, String key )
+    static final Validator<File[]> FILES_EXISTS = files -> {
+        for ( File file : files )
         {
-            return args.interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
-                    Converters.toFiles( MULTI_FILE_DELIMITER, Converters.regexFiles( true ) ), FILES_EXISTS,
-                    Validators.<File>atLeast( "--" + key, 1 ) );
+            if ( file.getName().startsWith( ":" ) )
+            {
+                warn( "It looks like you're trying to specify default label or relationship type (" +
+                      file.getName() + "). Please put such directly on the key, f.ex. " +
+                      Options.NODE_DATA.argument() + ":MyLabel" );
+            }
+            Validators.REGEX_FILE_EXISTS.validate( file );
         }
     };
 
-    static final Validator<File[]> FILES_EXISTS = new Validator<File[]>()
-    {
-        @Override
-        public void validate( File[] files )
-        {
-            for ( File file : files )
-            {
-                if ( file.getName().startsWith( ":" ) )
-                {
-                    warn( "It looks like you're trying to specify default label or relationship type (" +
-                            file.getName() + "). Please put such directly on the key, f.ex. " +
-                            Options.NODE_DATA.argument() + ":MyLabel" );
-                }
-                Validators.REGEX_FILE_EXISTS.validate( file );
-            }
-        }
-    };
+    private static final BiFunction<Args,String,Collection<Option<File[]>>> INPUT_FILES_EXTRACTOR =
+            ( args, key ) -> args.interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
+                    Converters.toFiles( MULTI_FILE_DELIMITER, Converters.regexFiles( true ) ), FILES_EXISTS,
+                    Validators.<File>atLeast( "--" + key, 1 ) );
 
     static void warn( String warning )
     {
@@ -788,7 +781,8 @@ public class ImportTool
 
         public String getReference( Anchor anchor )
         {
-            return page + "#" + anchor.anchor;
+            // As long as the the operations manual is single-page we only use the anchor.
+            return "#" + anchor.anchor;
         }
     }
 

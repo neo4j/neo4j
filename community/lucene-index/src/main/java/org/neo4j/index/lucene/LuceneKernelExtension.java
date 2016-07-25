@@ -19,24 +19,25 @@
  */
 package org.neo4j.index.lucene;
 
-import org.neo4j.graphdb.index.IndexProviders;
-import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
+import java.io.File;
+import java.util.function.Supplier;
+
+import org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import java.io.File;
+import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 
 public class LuceneKernelExtension extends LifecycleAdapter
 {
     private final File storeDir;
     private final Config config;
-    private final IndexConfigStore indexStore;
+    private final Supplier<IndexConfigStore> indexStore;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final IndexProviders indexProviders;
 
-    public LuceneKernelExtension( File storeDir, Config config, IndexConfigStore indexStore,
+    public LuceneKernelExtension( File storeDir, Config config, Supplier<IndexConfigStore> indexStore,
             FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders )
     {
         this.storeDir = storeDir;

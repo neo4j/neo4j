@@ -59,7 +59,7 @@ public class SystemOutDebugWindow
         System.setOut( sysStreamPrinter );
         System.setErr( sysStreamPrinter );
     }
-    
+
     private void init()
     {
         frame = new JFrame( "Debug" );
@@ -70,7 +70,7 @@ public class SystemOutDebugWindow
         text = new JTextArea();
         panel.add( "status", text );
         frame.add( new JScrollPane( panel ) );
-        
+
         frame.pack();
         frame.setBounds( START_X, START_Y, START_WIDTH, START_HEIGHT );
         frame.setVisible( false );

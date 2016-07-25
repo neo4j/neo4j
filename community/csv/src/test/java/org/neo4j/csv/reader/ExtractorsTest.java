@@ -223,6 +223,38 @@ public class ExtractorsTest
         assertNull( extracted );
     }
 
+    @Test
+    public void shouldTrimStringIfConfiguredTo() throws Exception
+    {
+        // GIVEN
+        Extractors extractors = new Extractors( ',', true, true);
+        String value = " abcde fgh  ";
+
+        // WHEN
+        char[] asChars = value.toCharArray();
+        Extractor<String> extractor = extractors.string();
+        extractor.extract( asChars, 0, asChars.length, true );
+
+        // THEN
+        assertEquals( value.trim(), extractor.value() );
+    }
+
+    @Test
+    public void shouldNotTrimStringIfNotConfiguredTo() throws Exception
+    {
+        // GIVEN
+        Extractors extractors = new Extractors( ',', true, false);
+        String value = " abcde fgh  ";
+
+        // WHEN
+        char[] asChars = value.toCharArray();
+        Extractor<String> extractor = extractors.string();
+        extractor.extract( asChars, 0, asChars.length, true );
+
+        // THEN
+        assertEquals( value, extractor.value() );
+    }
+
     private String toString( long[] values, char delimiter )
     {
         StringBuilder builder = new StringBuilder();

@@ -22,15 +22,18 @@ package org.neo4j.kernel.impl.query;
 import java.util.Map;
 
 import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 
 public interface QueryExecutionEngine
 {
+    GraphDatabaseQueryService queryService();
+
     Result executeQuery( String query, Map<String, Object> parameters, QuerySession querySession ) throws QueryExecutionKernelException;
+
+    Result profileQuery( String query, Map<String, Object> parameters, QuerySession querySession) throws QueryExecutionKernelException;
 
     boolean isPeriodicCommit( String query );
 
     String prettify( String query );
-
-    Result profileQuery( String query, Map<String, Object> parameters, QuerySession querySession) throws QueryExecutionKernelException;
 }
 

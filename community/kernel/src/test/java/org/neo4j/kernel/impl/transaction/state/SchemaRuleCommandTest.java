@@ -22,30 +22,40 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.helpers.Provider;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.impl.api.BatchTransactionApplier;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
+import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
-import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_2;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
-import org.neo4j.unsafe.batchinsert.LabelScanWriter;
+import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
+import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.IndexUpdatesWork;
+import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
+import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -53,69 +63,84 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class SchemaRuleCommandTest
 {
+
+    private final int labelId = 2;
+    private final int propertyKey = 8;
+    private final long id = 0;
+    private final long txId = 1337L;
+    private final NeoStores neoStores = mock( NeoStores.class );
+    private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
+    private final SchemaStore schemaStore = mock( SchemaStore.class );
+    private final IndexingService indexes = mock( IndexingService.class );
+    @SuppressWarnings( "unchecked" )
+    private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
+    private final NeoStoreBatchTransactionApplier storeApplier = new NeoStoreBatchTransactionApplier( neoStores,
+            mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
+    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
+            new WorkSync<>( labelScanStore );
+    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexes );
+    private final PropertyStore propertyStore = mock( PropertyStore.class );
+    private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexes,
+            labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
+            mock( PropertyLoader.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
+            TransactionApplicationMode.INTERNAL );
+    private final PhysicalLogCommandReaderV2_2 reader = new PhysicalLogCommandReaderV2_2();
+    private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
+
     @Test
     public void shouldWriteCreatedSchemaRuleToStore() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
+        SchemaRecord beforeRecords = serialize( rule, id, false, false);
+        SchemaRecord afterRecords = serialize( rule, id, true, true);
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-
         // WHEN
-        storeApplier.visitSchemaRuleCommand( command );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( first( afterRecords ) );
+        verify( schemaStore ).updateRecord( Iterables.first( afterRecords ) );
     }
 
     @Test
     public void shouldCreateIndexForCreatedSchemaRule() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
+        SchemaRecord beforeRecords = serialize( rule, id, false, false);
+        SchemaRecord afterRecords = serialize( rule, id, true, true);
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-
         // WHEN
-        indexApplier.visitSchemaRuleCommand( command );
+        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
-        verify( indexes ).createIndex( rule );
+        verify( indexes ).createIndexes( rule );
     }
 
     @Test
     public void shouldSetLatestConstraintRule() throws Exception
     {
         // Given
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, true, false);
+        SchemaRecord beforeRecords = serialize( rule, id, true, true);
+        SchemaRecord afterRecords = serialize( rule, id, true, false);
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, uniquenessConstraintRule( id, labelId, propertyKey, 0 )  );
+        UniquePropertyConstraintRule schemaRule = uniquenessConstraintRule( id, labelId, propertyKey, 0 );
 
         // WHEN
-        storeApplier.visitSchemaRuleCommand( command );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, schemaRule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( first( afterRecords ) );
+        verify( schemaStore ).updateRecord( Iterables.first( afterRecords ) );
         verify( metaDataStore ).setLatestConstraintIntroducingTx( txId );
     }
 
@@ -123,35 +148,29 @@ public class SchemaRuleCommandTest
     public void shouldDropSchemaRuleFromStore() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
+        SchemaRecord beforeRecords = serialize( rule, id, true, true);
+        SchemaRecord afterRecords = serialize( rule, id, false, false);
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-
         // WHEN
-        storeApplier.visitSchemaRuleCommand( command );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( first( afterRecords ) );
+        verify( schemaStore ).updateRecord( Iterables.first( afterRecords ) );
     }
 
     @Test
     public void shouldDropSchemaRuleFromIndex() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
+        SchemaRecord beforeRecords = serialize( rule, id, true, true);
+        SchemaRecord afterRecords = serialize( rule, id, false, false);
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-
         // WHEN
-        indexApplier.visitSchemaRuleCommand( command );
+        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
         verify( indexes ).dropIndex( rule );
@@ -161,17 +180,16 @@ public class SchemaRuleCommandTest
     public void shouldWriteSchemaRuleToLog() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
+        SchemaRecord beforeRecords = serialize( rule, id, false, false);
+        SchemaRecord afterRecords = serialize( rule, id, true, true);
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-        InMemoryLogChannel buffer = new InMemoryLogChannel();
+        SchemaRuleCommand command = new SchemaRuleCommand( beforeRecords, afterRecords, rule );
+        InMemoryClosableChannel buffer = new InMemoryClosableChannel();
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        new CommandWriter( buffer ).visitSchemaRuleCommand( command );
+        command.serialize( buffer );
         Command readCommand = reader.read( buffer );
 
         // THEN
@@ -184,16 +202,15 @@ public class SchemaRuleCommandTest
     public void shouldRecreateSchemaRuleWhenDeleteCommandReadFromDisk() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
+        SchemaRecord beforeRecords = serialize( rule, id, true, true);
+        SchemaRecord afterRecords = serialize( rule, id, false, false);
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-        InMemoryLogChannel buffer = new InMemoryLogChannel();
+        SchemaRuleCommand command = new SchemaRuleCommand( beforeRecords, afterRecords, rule );
+        InMemoryClosableChannel buffer = new InMemoryClosableChannel();
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        new CommandWriter( buffer ).visitSchemaRuleCommand( command );
+        command.serialize( buffer );
         Command readCommand = reader.read( buffer );
 
         // THEN
@@ -202,26 +219,7 @@ public class SchemaRuleCommandTest
         assertSchemaRule( (SchemaRuleCommand)readCommand );
     }
 
-    private final int labelId = 2;
-    private final int propertyKey = 8;
-    private final long id = 0;
-    private final long txId = 1337l;
-    private final NeoStores neoStores = mock( NeoStores.class );
-    private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
-    private final SchemaStore schemaStore = mock( SchemaStore.class );
-    private final IndexingService indexes = mock( IndexingService.class );
-    @SuppressWarnings( "unchecked" )
-    private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
-    private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStores,
-            mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, new LockGroup(), txId );
-    private final WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanStoreSynchronizer =
-            new WorkSync<>( labelScanStore );
-    private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,
-            ValidatedIndexUpdates.NONE, labelScanStoreSynchronizer );
-    private final PhysicalLogNeoCommandReaderV2_2 reader = new PhysicalLogNeoCommandReaderV2_2();
-    private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
-
-    private Collection<DynamicRecord> serialize( SchemaRule rule, long id, boolean inUse, boolean created )
+    private SchemaRecord serialize( AbstractSchemaRule rule, long id, boolean inUse, boolean created )
     {
         RecordSerializer serializer = new RecordSerializer();
         serializer = serializer.append( rule );
@@ -235,7 +233,7 @@ public class SchemaRuleCommandTest
         {
             record.setInUse( true );
         }
-        return Arrays.asList( record );
+        return new SchemaRecord( Arrays.asList( record ) );
     }
 
     private void assertSchemaRule( SchemaRuleCommand readSchemaCommand )
@@ -245,4 +243,10 @@ public class SchemaRuleCommandTest
         assertEquals( propertyKey, ((IndexRule)readSchemaCommand.getSchemaRule()).getPropertyKey() );
     }
 
+    private void visitSchemaRuleCommand( BatchTransactionApplier applier, SchemaRuleCommand command ) throws Exception
+    {
+        TransactionToApply tx = new TransactionToApply(
+                new PhysicalTransactionRepresentation( Arrays.<StorageCommand>asList( command ) ), txId );
+        CommandHandlerContract.apply( applier, tx );
+    }
 }

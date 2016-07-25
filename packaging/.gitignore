@@ -11,10 +11,6 @@ target
 *.iml
 .idea
 .DS_Store
-server/src/main/resources/webadmin-html/webadmin.js
-server/neo4j-home/data
-server/neo4j-home/rrd
 /bin
 .gradle
-server/rrd
 /installer-windows/src/main/resources/installer/installer-cache/

@@ -32,12 +32,5 @@ public interface CancellationRequest
      */
     boolean cancellationRequested();
 
-    CancellationRequest NEVER_CANCELLED = new CancellationRequest()
-    {
-        @Override
-        public boolean cancellationRequested()
-        {
-            return false;
-        }
-    };
+    CancellationRequest NEVER_CANCELLED = () -> false;
 }

@@ -61,9 +61,9 @@ public class SlaveLockManagerTest
         Locks localLocks = mock( Locks.class );
         SlaveLockManager slaveLockManager = newSlaveLockManager( localLocks );
 
-        slaveLockManager.shutdown();
+        slaveLockManager.close();
 
-        verify( localLocks ).shutdown();
+        verify( localLocks ).close();
     }
 
     @Test
@@ -73,7 +73,7 @@ public class SlaveLockManagerTest
 
         assertNotNull( slaveLockManager.newClient() );
 
-        slaveLockManager.shutdown();
+        slaveLockManager.close();
 
         try
         {
@@ -89,6 +89,6 @@ public class SlaveLockManagerTest
     private SlaveLockManager newSlaveLockManager( Locks localLocks )
     {
         return new SlaveLockManager( localLocks, requestContextFactory, master, availabilityGuard,
-                NullLogProvider.getInstance(), new Config() );
+                NullLogProvider.getInstance(), Config.empty() );
     }
 }

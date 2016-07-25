@@ -22,7 +22,6 @@ package org.neo4j.kernel;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
@@ -30,17 +29,16 @@ import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.guard.GuardOperationsCountException;
 import org.neo4j.kernel.guard.GuardTimeoutException;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Thread.sleep;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.SillyUtils.ignore;
+import static org.neo4j.helpers.collection.Iterables.count;
 
 @SuppressWarnings("deprecation"/*getGuard() is deprecated (GraphDatabaseAPI), and used all throughout this test*/)
 public class TestGuard
@@ -100,11 +98,7 @@ public class TestGuard
             assertEquals( 1, ops3.getOpsCount() );
 
             getGuard( db ).startOperationsCount( MAX_VALUE );
-            for ( Path position : Traversal.description().breadthFirst().relationships( withName( "REL" ) ).
-                    traverse( n0 ) )
-            {
-                ignore( position );
-            }
+            count( db.traversalDescription().breadthFirst().relationships( withName( "REL" ) ).traverse( n0 ) );
             Guard.OperationsCount ops4 = getGuard( db ).stop();
             assertEquals( 2, ops4.getOpsCount() );
         }

@@ -32,16 +32,14 @@ import java.util.Random;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
-
-import static org.junit.Assert.assertEquals;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.Iterators.count;
 
 @RunWith(Parameterized.class)
 public class IndexTxStateLookupTest
@@ -205,7 +203,7 @@ public class IndexTxStateLookupTest
     @Before
     public void given()
     {
-        graphDb = db.getGraphDatabaseService();
+        graphDb = db.getGraphDatabaseAPI();
         // database with an index on `(:Node).prop`
         try ( Transaction tx = graphDb.beginTx() )
         {

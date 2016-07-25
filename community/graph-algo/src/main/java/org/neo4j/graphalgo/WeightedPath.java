@@ -30,7 +30,7 @@ public interface WeightedPath extends Path
 {
     /**
      * Returns the weight of the path.
-     * 
+     *
      * @return the weight of the path.
      */
     double weight();

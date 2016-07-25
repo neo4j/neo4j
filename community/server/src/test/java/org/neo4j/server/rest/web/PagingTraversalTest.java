@@ -19,20 +19,20 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import javax.ws.rs.core.Response;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -54,19 +54,18 @@ public class PagingTraversalTest
     private static final String BASE_URI = "http://neo4j.org:7474/";
     private RestfulGraphDatabase service;
     private Database database;
-    private EntityOutputFormat output;
     private GraphDbHelper helper;
     private LeaseManager leaseManager;
     private static final int SIXTY_SECONDS = 60;
-    private GraphDatabaseAPI graph;
+    private GraphDatabaseFacade graph;
 
     @Before
     public void startDatabase() throws IOException
     {
-        graph = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        database = new WrappedDatabase(graph);
+        graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        database = new WrappedDatabase( graph );
         helper = new GraphDbHelper( database );
-        output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
+        EntityOutputFormat output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );
         service = new RestfulGraphDatabase( new JsonFormat(),
                 output,
@@ -137,7 +136,7 @@ public class PagingTraversalTest
     @Test
     public void shouldRespondWith400OnNegativePageSize()
     {
-        long arbitraryStartNodeId = 1l;
+        long arbitraryStartNodeId = 1L;
         int negativePageSize = -5;
         String arbitraryDescription = description();
         Response response = service.createPagedTraverser( arbitraryStartNodeId, TraverserReturnType.node,
@@ -149,7 +148,7 @@ public class PagingTraversalTest
     @Test
     public void shouldRespondWith400OnLeaseTime()
     {
-        long arbitraryStartNodeId = 1l;
+        long arbitraryStartNodeId = 1L;
         int arbitraryPageSize = 5;
         String arbitraryDescription = description();
         Response response = service.createPagedTraverser( arbitraryStartNodeId, TraverserReturnType.node,
@@ -223,7 +222,7 @@ public class PagingTraversalTest
                 long currentNodeId = helper.createNode( MapUtil.map( "name", String.valueOf( i ) ) );
                 database.getGraph().getNodeById( previousNodeId )
                         .createRelationshipTo( database.getGraph().getNodeById( currentNodeId ),
-                                DynamicRelationshipType.withName( "PRECEDES" ) );
+                                RelationshipType.withName( "PRECEDES" ) );
                 previousNodeId = currentNodeId;
             }
 

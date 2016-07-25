@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -34,22 +35,22 @@ import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.impl.index.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
-import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -61,21 +62,26 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
+import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
 {
@@ -83,15 +89,33 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     private Statistics statistics;
     private final boolean keepStatistics;
     private NeoStores neoStore;
+    private File directory;
+    private long schemaId;
+    private long nodeId;
+    private int labelId;
+    private long nodeLabelsId;
+    private long relId;
+    private long relGroupId;
+    private int propId;
+    private long stringPropId;
+    private long arrayPropId;
+    private int relTypeId;
+    private int propKeyId;
 
-    public GraphStoreFixture( boolean keepStatistics )
+    /**
+     * Record format used to generate initial database.
+     */
+    private String formatName = StringUtils.EMPTY;
+
+    public GraphStoreFixture( boolean keepStatistics, String formatName )
     {
         this.keepStatistics = keepStatistics;
+        this.formatName = formatName;
     }
 
-    public GraphStoreFixture()
+    public GraphStoreFixture( String formatName )
     {
-        this( false );
+        this( false, formatName );
     }
 
     public void apply( Transaction transaction ) throws TransactionFailureException
@@ -105,7 +129,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
-            neoStore = new StoreFactory( fileSystem, directory, pageCache, NullLogProvider.getInstance() ).openAllNeoStores();
+            LogProvider logProvider = NullLogProvider.getInstance();
+            StoreFactory storeFactory = new StoreFactory( directory, pageCache, fileSystem, logProvider );
+            neoStore = storeFactory.openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )
             {
@@ -120,11 +146,13 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                 nativeStores = new StoreAccess( neoStore );
             }
             nativeStores.initialize();
+            IndexStoreView indexStoreView =
+                    new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores() );
             directStoreAccess = new DirectStoreAccess(
                     nativeStores,
                     new LuceneLabelScanStoreBuilder(
                             directory,
-                            nativeStores.getRawNeoStores(),
+                            fullStoreLabelUpdateStream( () -> indexStoreView ),
                             fileSystem,
                             FormattedLogProvider.toOutputStream( System.out )
                     ).build(),
@@ -156,10 +184,11 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next );
 
         public TransactionRepresentation representation( IdGenerator idGenerator, int masterId, int authorId,
-                                                         long lastCommittedTx, NodeStore nodes )
+                                                         long lastCommittedTx, NeoStores neoStores )
         {
-            TransactionWriter writer = new TransactionWriter();
-            transactionData( new TransactionDataBuilder( writer, nodes ), idGenerator );
+            TransactionWriter writer = new TransactionWriter( neoStores );
+            transactionData( new TransactionDataBuilder( writer, neoStores.getNodeStore() ), idGenerator );
+            idGenerator.updateCorrespondingIdGenerators( neoStores );
             return writer.representation( new byte[0], masterId, authorId, startTimestamp, lastCommittedTx,
                    currentTimeMillis() );
         }
@@ -226,6 +255,13 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             return propKeyId++;
         }
+
+        public void updateCorrespondingIdGenerators( NeoStores neoStores )
+        {
+            neoStores.getNodeStore().setHighestPossibleIdInUse( nodeId );
+            neoStores.getRelationshipStore().setHighestPossibleIdInUse( relId );
+            neoStores.getRelationshipGroupStore().setHighestPossibleIdInUse( relGroupId );
+        }
     }
 
     public static final class TransactionDataBuilder
@@ -263,9 +299,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             writer.relationshipType( id, relationshipType, id + 1 );
         }
 
-        public void update( NeoStoreRecord record )
+        public void update( NeoStoreRecord before, NeoStoreRecord after )
         {
-            writer.update( record );
+            writer.update( before, after );
         }
 
         public void create( NodeRecord node )
@@ -292,9 +328,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             writer.create( relationship );
         }
 
-        public void update( RelationshipRecord relationship )
+        public void update( RelationshipRecord before, RelationshipRecord after )
         {
-            writer.update( relationship );
+            writer.update( before, after );
         }
 
         public void delete( RelationshipRecord relationship )
@@ -307,9 +343,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             writer.create( group );
         }
 
-        public void update(  RelationshipGroupRecord group )
+        public void update(  RelationshipGroupRecord before, RelationshipGroupRecord after )
         {
-            writer.update( group );
+            writer.update( before, after );
         }
 
         public void delete(  RelationshipGroupRecord group )
@@ -386,22 +422,24 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         // and the next startup of the store would do recovery where the transaction would have been
         // applied and all would have been well.
 
-        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
-        GraphDatabaseAPI database = (GraphDatabaseAPI) builder.newGraphDatabase();
-        try ( LockGroup locks = new LockGroup() )
+        GraphDatabaseAPI database = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( directory );
+        try
         {
             DependencyResolver dependencyResolver = database.getDependencyResolver();
 
             TransactionRepresentationCommitProcess commitProcess =
                     new TransactionRepresentationCommitProcess(
                             dependencyResolver.resolveDependency( TransactionAppender.class ),
-                            dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
-                            dependencyResolver.resolveDependency( IndexUpdatesValidator.class ) );
+                            dependencyResolver.resolveDependency( StorageEngine.class ) );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
-            NodeStore nodes = database.getDependencyResolver().resolveDependency( NeoStores.class ).getNodeStore();
-            commitProcess.commit( transaction.representation( idGenerator(), masterId(), myId(),
-                    transactionIdStore.getLastCommittedTransactionId(), nodes ), locks, CommitEvent.NULL,
+
+            NeoStores neoStores = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                    .testAccessNeoStores();
+
+            TransactionRepresentation representation = transaction.representation( idGenerator(), masterId(), myId(),
+                    transactionIdStore.getLastCommittedTransactionId(), neoStores );
+            commitProcess.commit( new TransactionToApply( representation ), CommitEvent.NULL,
                     TransactionApplicationMode.EXTERNAL );
         }
         finally
@@ -410,27 +448,21 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         }
     }
 
-    private File directory;
-    private long schemaId;
-    private long nodeId;
-    private int labelId;
-    private long nodeLabelsId;
-    private long relId;
-    private long relGroupId;
-    private int propId;
-    private long stringPropId;
-    private long arrayPropId;
-    private int relTypeId;
-    private int propKeyId;
-
     private void generateInitialData()
     {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
-        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) builder.newGraphDatabase();
+        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) builder
+                .setConfig( GraphDatabaseSettings.record_format, formatName )
+                // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
+                // tests and records around that. Those tests could change, but the simpler option is to just
+                // keep the block size to 60 and let them be.
+                .setConfig( GraphDatabaseSettings.label_block_size, "60" )
+                .newGraphDatabase();
         try
         {
             generateInitialData( graphDb );
-            StoreAccess stores = new StoreAccess( graphDb ).initialize();
+            StoreAccess stores = new StoreAccess( graphDb.getDependencyResolver()
+                    .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores() ).initialize();
             schemaId = stores.getSchemaStore().getHighId();
             nodeId = stores.getNodeStore().getHighId();
             labelId = (int) stores.getLabelTokenStore().getHighId();

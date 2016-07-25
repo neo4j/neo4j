@@ -26,6 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.helpers.ArrayUtil;
 
 import static java.lang.Integer.bitCount;
+import static java.lang.Math.abs;
 
 /**
  * Set of useful randomizing utilities, for example randomizing a string or property value of random type and value.
@@ -133,6 +134,19 @@ public class Randoms
         return String.valueOf( chars );
     }
 
+    public Object array()
+    {
+        int length = intBetween( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+        byte componentType = propertyType( false );
+        Object itemType = propertyValue( componentType );
+        Object array = Array.newInstance( itemType.getClass(), length );
+        for ( int i = 0; i < length; i++ )
+        {
+            Array.set( array, i, propertyValue( componentType ) );
+        }
+        return array;
+    }
+
     public char character( int characterSets )
     {
         int setCount = bitCount( characterSets );
@@ -157,7 +171,8 @@ public class Randoms
     public <T> T[] selection( T[] among, int min, int max, boolean allowDuplicates )
     {
         assert min <= max;
-        int length = min + (max-min == 0 ? 0 : random.nextInt( max-min ) );
+        int diff = min == max ? 0 : random.nextInt( max-min );
+        int length = min + diff;
         T[] result = (T[]) Array.newInstance( among.getClass().getComponentType(), length );
         for ( int i = 0; i < length; i++ )
         {
@@ -194,26 +209,28 @@ public class Randoms
     {
         switch ( type )
         {
-        case 0: return random.nextBoolean();
-        case 1: return (byte)random.nextInt();
-        case 2: return (short)random.nextInt();
-        case 3: return character( CSA_LETTERS_AND_DIGITS );
-        case 4: return random.nextInt();
-        case 5: return random.nextLong();
-        case 6: return random.nextFloat();
-        case 7: return random.nextDouble();
-        case 8: return string();
+        case 0:
+            return random.nextBoolean();
+        case 1:
+            return (byte) random.nextInt();
+        case 2:
+            return (short) random.nextInt();
+        case 3:
+            return character( CSA_LETTERS_AND_DIGITS );
+        case 4:
+            return random.nextInt();
+        case 5:
+            return random.nextLong();
+        case 6:
+            return random.nextFloat();
+        case 7:
+            return random.nextDouble();
+        case 8:
+            return string();
         case 9:
-            int length = intBetween( configuration.arrayMinLength(), configuration.arrayMaxLength() );
-            byte componentType = propertyType( false );
-            Object itemType = propertyValue( componentType );
-            Object array = Array.newInstance( itemType.getClass(), length );
-            for ( int i = 0; i < length; i++ )
-            {
-                Array.set( array, i, propertyValue( componentType ) );
-            }
-            return array;
-        default: throw new IllegalArgumentException( "Unknown value type " + type );
+            return array();
+        default:
+            throw new IllegalArgumentException( "Unknown value type " + type );
         }
     }
 
@@ -222,12 +239,48 @@ public class Randoms
         int range = random.nextInt( 5 );
         switch ( range )
         {
-        case 0: return (char) intBetween( 33,  47 );
-        case 1: return (char) intBetween( 58, 64 );
-        case 2: return (char) intBetween( 91, 96 );
-        case 3: return (char) intBetween( 123, 126 );
-        case 4: return ' ';
-        default: throw new IllegalArgumentException( "Unknown symbol range " + range );
+        case 0:
+            return (char) intBetween( 33, 47 );
+        case 1:
+            return (char) intBetween( 58, 64 );
+        case 2:
+            return (char) intBetween( 91, 96 );
+        case 3:
+            return (char) intBetween( 123, 126 );
+        case 4:
+            return ' ';
+        default:
+            throw new IllegalArgumentException( "Unknown symbol range " + range );
         }
+    }
+
+    public long nextLong( long bound )
+    {
+        return abs( random.nextLong() ) % bound;
+    }
+
+    public boolean nextBoolean()
+    {
+        return random.nextBoolean();
+    }
+
+    public int nextInt( int bound )
+    {
+        return random.nextInt( bound );
+    }
+
+    public int nextInt()
+    {
+        return random.nextInt();
+    }
+
+    public void nextBytes( byte[] data )
+    {
+        random.nextBytes( data );
+    }
+
+    public float nextFloat()
+    {
+        return random.nextFloat();
     }
 }

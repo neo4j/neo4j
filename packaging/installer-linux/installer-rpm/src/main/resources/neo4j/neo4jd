@@ -22,17 +22,14 @@ while getopts “hp:” OPTION; do
 done
 
 [ -n "$PID_FILE" ] || die "$USAGE"
-mkdir -p $NEO4J_HOME/data/graph.db
 
 cd $NEO4J_HOME
 
 CLASSPATH=`find $NEO4J_HOME -name '*.jar' | xargs echo | tr ' ' ':'`
 
 java -cp "${CLASSPATH}" \
-        -Dneo4j.home="${NEO4J_HOME}" \
         -Dfile.encoding=UTF-8 \
-        -Dorg.neo4j.server.properties=conf/neo4j-server.properties \
-        #{neo4j.mainClass} > /var/log/neo4j/console.log 2>&1 &
+        #{neo4j.mainClass} --config-dir=conf > /var/log/neo4j/neo4j.log 2>&1 &
 
 echo $! > $PID_FILE
 

@@ -32,12 +32,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntFunction;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -45,7 +45,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -53,11 +52,12 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.Matchers.instanceOf;
@@ -76,8 +76,10 @@ public class TestPullUpdates
     private ClusterManager.ManagedCluster cluster;
     private static final int PULL_INTERVAL = 100;
     private static final int SHELL_PORT = 6370;
-    public final @Rule TestName testName = new TestName();
-    public final @Rule TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestName testName = new TestName();
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @After
     public void doAfter() throws Throwable
@@ -98,7 +100,7 @@ public class TestPullUpdates
                 ClusterSettings.heartbeat_interval.name(), "2s",
                 ClusterSettings.heartbeat_timeout.name(), "30s") ).build();
         clusterManager.start();
-        cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getCluster();
         cluster.await( allSeesAllAsAvailable() );
 
         cluster.info( "### Creating initial dataset" );
@@ -141,7 +143,7 @@ public class TestPullUpdates
                         HaSettings.tx_push_factor.name(), "0",
                         KernelTransactions.tx_termination_aware_locks.name(), Settings.TRUE ) ).build();
         clusterManager.start();
-        cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getCluster();
 
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         final HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
@@ -197,23 +199,17 @@ public class TestPullUpdates
     {
         File root = testDirectory.directory( testName.getMethodName() );
         ClusterManager clusterManager = new ClusterManager.Builder( root )
-                .withProvider( clusterOfSize( 2 ) )
+                .withCluster( clusterOfSize( 2 ) )
                 .withSharedConfig( MapUtil.stringMap(
                     HaSettings.pull_interval.name(), "0",
                     HaSettings.tx_push_factor.name(), "0" ,
                     ShellSettings.remote_shell_enabled.name(), "true" ) )
                 .withInstanceConfig( MapUtil.<String,IntFunction<String>>genericMap(
-                    ShellSettings.remote_shell_port.name(), new IntFunction<String>()
-                    {
-                        @Override
-                        public String apply( int oneBasedServerId )
-                        {
-                            return oneBasedServerId >= 1 && oneBasedServerId <= 2 ?
-                                    "" + (SHELL_PORT + oneBasedServerId) : null;
-                        }
-                    } ) ).build();
+                    ShellSettings.remote_shell_port.name(),
+                        (IntFunction<String>) oneBasedServerId -> oneBasedServerId >= 1 && oneBasedServerId <= 2 ?
+                                "" + (SHELL_PORT + oneBasedServerId) : null ) ).build();
         clusterManager.start();
-        cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getCluster();
 
         long commonNodeId = createNodeOnMaster();
 
@@ -236,7 +232,7 @@ public class TestPullUpdates
             File testRootDir = testDirectory.directory( testName.getMethodName() );
             File masterDir = new File( testRootDir, "master" );
             master = new TestHighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( masterDir.getAbsolutePath() )
+                    newEmbeddedDatabaseBuilder( masterDir.getAbsoluteFile() )
                     .setConfig( ClusterSettings.server_id, "1" )
                     .setConfig( ClusterSettings.initial_hosts, "localhost:5001" )
                     .newGraphDatabase();
@@ -244,7 +240,7 @@ public class TestPullUpdates
             // Copy the store, then shutdown, so update pulling later makes sense
             File slaveDir = new File( testRootDir, "slave" );
             slave = new TestHighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() )
+                    newEmbeddedDatabaseBuilder( slaveDir.getAbsoluteFile() )
                     .setConfig( ClusterSettings.server_id, "2" )
                     .setConfig( ClusterSettings.initial_hosts, "localhost:5001" )
                     .newGraphDatabase();
@@ -282,7 +278,7 @@ public class TestPullUpdates
 
             // Store is already in place, should pull updates
             slave = new TestHighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() )
+                    newEmbeddedDatabaseBuilder( slaveDir.getAbsoluteFile() )
                     .setConfig( ClusterSettings.server_id, "2" )
                     .setConfig( ClusterSettings.initial_hosts, "localhost:5001" )
                     .setConfig( HaSettings.pull_interval, "0" ) // no pull updates, should pull on startup

@@ -20,94 +20,80 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
-import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotCommit;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotWriteToLog;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.ValidationFailed;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionLogError;
 
 public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
 {
     private final TransactionAppender appender;
-    private final TransactionRepresentationStoreApplier storeApplier;
-    private final IndexUpdatesValidator indexUpdatesValidator;
+    private final StorageEngine storageEngine;
 
-    public TransactionRepresentationCommitProcess( TransactionAppender appender,
-            TransactionRepresentationStoreApplier storeApplier, IndexUpdatesValidator indexUpdatesValidator )
+    public TransactionRepresentationCommitProcess( TransactionAppender appender, StorageEngine storageEngine )
     {
         this.appender = appender;
-        this.storeApplier = storeApplier;
-        this.indexUpdatesValidator = indexUpdatesValidator;
+        this.storageEngine = storageEngine;
     }
 
     @Override
-    public long commit( TransactionRepresentation transaction, LockGroup locks, CommitEvent commitEvent,
+    public long commit( TransactionToApply batch, CommitEvent commitEvent,
             TransactionApplicationMode mode ) throws TransactionFailureException
     {
-        try ( ValidatedIndexUpdates indexUpdates = validateIndexUpdates( transaction ) )
-        {
-            Commitment commitment = appendToLog( transaction, commitEvent );
-            applyToStore( transaction, locks, commitEvent, indexUpdates, commitment, mode );
-            return commitment.transactionId();
-        }
-    }
-
-    private ValidatedIndexUpdates validateIndexUpdates( TransactionRepresentation transaction )
-            throws TransactionFailureException
-    {
+        long lastTxId = appendToLog( batch, commitEvent );
         try
         {
-            return indexUpdatesValidator.validate( transaction );
+            applyToStore( batch, commitEvent, mode );
+            return lastTxId;
         }
-        catch ( Throwable e )
+        finally
         {
-            throw new TransactionFailureException( ValidationFailed, e, "Validation of index updates failed" );
+            close( batch );
         }
     }
 
-    private Commitment appendToLog(
-            TransactionRepresentation transaction, CommitEvent commitEvent ) throws TransactionFailureException
+    private long appendToLog( TransactionToApply batch, CommitEvent commitEvent ) throws TransactionFailureException
     {
-        Commitment commitment;
         try ( LogAppendEvent logAppendEvent = commitEvent.beginLogAppend() )
         {
-            commitment = appender.append( transaction, logAppendEvent );
+            return appender.append( batch, logAppendEvent );
         }
         catch ( Throwable cause )
         {
-            throw new TransactionFailureException( CouldNotWriteToLog, cause,
+            throw new TransactionFailureException( TransactionLogError, cause,
                     "Could not append transaction representation to log" );
         }
-        commitEvent.setTransactionId( commitment.transactionId() );
-        return commitment;
     }
 
-    private void applyToStore(
-            TransactionRepresentation transaction, LockGroup locks, CommitEvent commitEvent,
-            ValidatedIndexUpdates indexUpdates, Commitment commitment, TransactionApplicationMode mode )
+    private void applyToStore( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode )
             throws TransactionFailureException
     {
         try ( StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply() )
         {
-            storeApplier.apply( transaction, indexUpdates, locks, commitment.transactionId(), mode );
+            storageEngine.apply( batch, mode );
         }
-        // TODO catch different types of exceptions here, some which are OK
         catch ( Throwable cause )
         {
-            throw new TransactionFailureException( CouldNotCommit, cause,
+            throw new TransactionFailureException( TransactionCommitFailed, cause,
                     "Could not apply the transaction to the store after written to log" );
         }
-        finally
+    }
+
+    private void close( TransactionToApply batch )
+    {
+        while ( batch != null )
         {
-            commitment.publishAsApplied();
+            if ( batch.commitment().markedAsCommitted() )
+            {
+                batch.commitment().publishAsClosed();
+            }
+            batch.close();
+            batch = batch.next();
         }
     }
 }

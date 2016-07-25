@@ -25,17 +25,16 @@ import org.junit.Test;
 import java.io.StringReader;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.function.Function;
-import org.neo4j.function.Functions;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.DataException;
@@ -60,10 +59,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.union;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
@@ -803,9 +801,9 @@ public class CsvInputTest
             assertNode( nodes.next(), 2L, properties( "one", "test" ), labels() );
             assertFalse( nodes.hasNext() );
         }
-        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 1l ), eq( (String)null ) );
-        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2l ), eq( (String)null ) );
-        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2l ), eq( "additional" ) );
+        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 1L ), eq( (String)null ) );
+        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2L ), eq( (String)null ) );
+        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2L ), eq( "additional" ) );
     }
 
     private Configuration customConfig( final char delimiter, final char arrayDelimiter, final char quote )
@@ -834,27 +832,13 @@ public class CsvInputTest
 
     private <ENTITY extends InputEntity> DataFactory<ENTITY> given( final CharSeeker data )
     {
-        return new DataFactory<ENTITY>()
-        {
-            @Override
-            public Data<ENTITY> create( Configuration config )
-            {
-                return dataItem( data, Functions.<ENTITY>identity() );
-            }
-        };
+        return config -> dataItem( data, (Function<ENTITY,ENTITY>) value -> value );
     }
 
     private <ENTITY extends InputEntity> DataFactory<ENTITY> data( final CharSeeker data,
             final Function<ENTITY,ENTITY> decorator )
     {
-        return new DataFactory<ENTITY>()
-        {
-            @Override
-            public Data<ENTITY> create( Configuration config )
-            {
-                return dataItem( data, decorator );
-            }
-        };
+        return config -> dataItem( data, decorator );
     }
 
     private static <ENTITY extends InputEntity> Data<ENTITY> dataItem( final CharSeeker data,
@@ -887,7 +871,6 @@ public class CsvInputTest
             Group endNodeGroup, Object endNode,
             String type, Object[] properties )
     {
-        assertFalse( relationship.hasSpecificId() );
         assertEquals( startNodeGroup, relationship.startNodeGroup() );
         assertEquals( startNode, relationship.startNode() );
         assertEquals( endNodeGroup.id(), relationship.endNodeGroup().id() );
@@ -921,14 +904,7 @@ public class CsvInputTest
 
     private Header.Factory header( final Header.Entry... entries )
     {
-        return new Header.Factory()
-        {
-            @Override
-            public Header create( CharSeeker from, Configuration configuration, IdType idType )
-            {
-                return new Header( entries );
-            }
-        };
+        return ( from, configuration, idType ) -> new Header( entries );
     }
 
     private Header.Entry entry( String name, Type type, Extractor<?> extractor )
@@ -943,20 +919,13 @@ public class CsvInputTest
 
     private static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final String data )
     {
-        return data( data, Functions.<ENTITY>identity() );
+        return data( data, value -> value );
     }
 
     private static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final String data,
             final Function<ENTITY,ENTITY> decorator )
     {
-        return new DataFactory<ENTITY>()
-        {
-            @Override
-            public Data<ENTITY> create( Configuration config )
-            {
-                return dataItem( charSeeker( data ), decorator );
-            }
-        };
+        return config -> dataItem( charSeeker( data ), decorator );
     }
 
     private static final org.neo4j.csv.reader.Configuration SEEKER_CONFIG =
@@ -996,6 +965,7 @@ public class CsvInputTest
         }
     }
 
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private final Extractors extractors = new Extractors( ',' );
 }

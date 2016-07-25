@@ -39,13 +39,12 @@ public class MandatoryTransactionsForUniquenessConstraintDefinitionTests
         assertFacadeMethodsThrowAfterTerminate( ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }
 
-
     @Override
     protected ConstraintDefinition obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
         return graphDatabaseService
                 .schema()
-                .constraintFor( DynamicLabel.label( "Label" ) )
+                .constraintFor( Label.label( "Label" ) )
                 .assertPropertyIsUnique( "property" )
                 .create();
     }

@@ -25,10 +25,9 @@ package org.neo4j.tools.txlog;
 interface InconsistenciesHandler
 {
     /**
-     * Processes found inconsistency.
-     *
+     * For reporting of inconsistencies found between before and after state of commands.
      * @param committed the record seen previously during transaction log scan and considered valid
      * @param current the record met during transaction log scan and considered inconsistent with committed
      */
-    void handle( LogRecord<?> committed, LogRecord<?> current );
+    void reportInconsistentCommand( RecordInfo<?> committed, RecordInfo<?> current );
 }

@@ -24,8 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Functions;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 
 /**
  * Given a set of annotated config classes,
@@ -47,7 +46,7 @@ public class ConfigurationValidator
     {
         for ( Setting<?> setting : settings.values() )
         {
-            setting.apply( Functions.map( rawConfig ) );
+            setting.apply( rawConfig::get );
         }
     }
 

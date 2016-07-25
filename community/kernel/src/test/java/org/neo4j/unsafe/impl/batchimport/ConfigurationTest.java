@@ -23,16 +23,14 @@ import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.String.valueOf;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
+import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY;
 
 public class ConfigurationTest
@@ -76,7 +74,7 @@ public class ConfigurationTest
         long memory = config.pageCacheMemory();
 
         // THEN
-        assertTrue( within( memory, new Config().get( pagecache_memory ), MAX_PAGE_CACHE_MEMORY ) );
+        assertTrue( within( memory, Config.defaults().get( pagecache_memory ), MAX_PAGE_CACHE_MEMORY ) );
     }
 
     private boolean within( long value, long firstBound, long otherBound )

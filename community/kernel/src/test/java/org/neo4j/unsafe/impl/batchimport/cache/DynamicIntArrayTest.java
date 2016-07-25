@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class DynamicIntArrayTest
 {
@@ -54,32 +53,5 @@ public class DynamicIntArrayTest
 
         // THEN
         assertEquals( value, array.get( index ) );
-    }
-
-
-    @Test
-    public void shouldFixate() throws Exception
-    {
-        // GIVEN
-        IntArray array = NumberArrayFactory.AUTO.newDynamicIntArray( 100, 0 );
-        array.set( 50, 1 );
-        array.set( 500, 1 );
-
-        // WHEN
-        array = array.fixate();
-        assertEquals( 1, array.get( 50 ) );
-        assertEquals( 1, array.get( 500 ) );
-        array.set( 499, 10 );
-        assertEquals( 10, array.get( 499 ) );
-        assertEquals( 0, array.get( 50_000 ) );
-        try
-        {
-            array.set( 650, 9 );
-            fail( "Should have been fixated at this point" );
-        }
-        catch ( ArrayIndexOutOfBoundsException e )
-        {
-            // THEN good
-        }
     }
 }

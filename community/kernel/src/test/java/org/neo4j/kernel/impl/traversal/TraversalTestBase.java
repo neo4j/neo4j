@@ -34,13 +34,15 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.GraphDescription;
-import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 {
@@ -84,7 +86,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 
     protected Node getNodeWithName( String name )
     {
-        for ( Node node : GlobalGraphOperations.at( getGraphDb() ).getAllNodes() )
+        for ( Node node : getGraphDb().getAllNodes() )
         {
             String nodeName = (String) node.getProperty( "name", null );
             if ( nodeName != null && nodeName.equals( name ) )
@@ -249,7 +251,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 
     public static <E> void assertContains( Iterator<E> actual, E... expected )
     {
-        assertContains( IteratorUtil.asIterable( actual ), expected );
+        assertContains( Iterators.asIterable( actual ), expected );
     }
 
     public static <E> void assertContains( Iterable<E> actual, E... expected )
@@ -280,11 +282,11 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
             assertEquals( expectedItems[i], itr.next() );
         }
     }
-    
+
     public static <T> void assertContainsInOrder( Iterable<T> collection,
             T... expectedItems )
     {
-        assertContainsInOrder( IteratorUtil.asCollection( collection ), expectedItems );
+        assertContainsInOrder( Iterables.asCollection( collection ), expectedItems );
     }
 
     public static <T> String join( String delimiter, T... items )

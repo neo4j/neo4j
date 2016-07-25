@@ -37,7 +37,9 @@ import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.fail;
 import static org.neo4j.jmx.JmxUtils.getAttribute;
 import static org.neo4j.jmx.JmxUtils.getObjectName;
 
@@ -46,24 +48,23 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
 
+    private CommunityNeoServer server;
+
     @Test
     public void serverConfigShouldBeVisibleInJMX() throws Throwable
     {
         // Given
         String configValue = tempDir.newFile().getAbsolutePath();
         server = CommunityServerBuilder.server().withProperty(
-                ServerSettings.http_log_config_file.name(), configValue )
-                .build();
+        ServerSettings.run_directory.name(), configValue ).build();
 
         // When
         server.start();
 
         // Then
         ObjectName name = getObjectName( server.getDatabase().getGraph(), ConfigurationBean.CONFIGURATION_MBEAN_NAME );
-        assertThat( getAttribute( name, ServerSettings.http_log_config_file.name() ), equalTo( (Object)configValue ) );
+        assertThat( getAttribute( name, ServerSettings.run_directory.name() ), equalTo( (Object)configValue ) );
     }
-
-    private CommunityNeoServer server;
 
     @Test
     public void shouldBeAbleToOverrideShellConfig()  throws Throwable
@@ -87,7 +88,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void connectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Throwable
+    public void shouldNotBeAbleToConnectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Throwable
     {
         // Given
         server = CommunityServerBuilder.server().build();
@@ -96,7 +97,16 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         server.start();
 
         // Then
-        ShellLobby.newClient().shutdown();
+        try
+        {
+            ShellLobby.newClient().shutdown();
+            fail( "Should not have been able to connect a shell client" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( "Should have been got connection refused", e.getMessage(),
+                    containsString( "Connection refused" ) );
+        }
     }
 
     private int findFreeShellPortToUse( int startingPort )

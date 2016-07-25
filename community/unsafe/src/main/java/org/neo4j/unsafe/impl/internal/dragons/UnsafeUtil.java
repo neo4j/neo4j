@@ -23,7 +23,6 @@ import sun.misc.Unsafe;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -31,7 +30,14 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
+import static java.lang.String.format;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 /**
@@ -51,10 +57,9 @@ public final class UnsafeUtil
      * and verify that our code does not assume that memory is clean when allocated.
      */
     private static final boolean DIRTY_MEMORY = flag( UnsafeUtil.class, "DIRTY_MEMORY", false );
+    private static final boolean CHECK_NATIVE_ACCESS = flag( UnsafeUtil.class, "CHECK_NATIVE_ACCESS", false );
 
     private static final Unsafe unsafe;
-    private static final MethodHandle getAndAddInt;
-    private static final MethodHandle getAndSetObject;
     private static final MethodHandle sharedStringConstructor;
     private static final String allowUnalignedMemoryAccessProperty =
             "org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess";
@@ -77,8 +82,6 @@ public final class UnsafeUtil
         unsafe = getUnsafe();
 
         MethodHandles.Lookup lookup = MethodHandles.lookup();
-        getAndAddInt = getGetAndAddIntMethodHandle( lookup );
-        getAndSetObject = getGetAndSetObjectMethodHandle( lookup );
         sharedStringConstructor = getSharedStringConstructorMethodHandle( lookup );
 
         Class<?> dbbClass = null;
@@ -126,8 +129,7 @@ public final class UnsafeUtil
         pageSize = ps;
 
         // See java.nio.Bits.unaligned() and its uses.
-        String alignmentProperty = System.getProperty(
-                allowUnalignedMemoryAccessProperty );
+        String alignmentProperty = System.getProperty( allowUnalignedMemoryAccessProperty );
         if ( alignmentProperty != null &&
                 (alignmentProperty.equalsIgnoreCase( "true" )
                         || alignmentProperty.equalsIgnoreCase( "false" )) )
@@ -136,10 +138,24 @@ public final class UnsafeUtil
         }
         else
         {
+            boolean unaligned;
             String arch = System.getProperty( "os.arch", "?" );
-            allowUnalignedMemoryAccess =
-                    arch.equals( "x86_64" ) || arch.equals( "i386" )
-                            || arch.equals( "x86" ) || arch.equals( "amd64" );
+            switch ( arch ) // list of architectures that support unaligned access to memory
+            {
+            case "x86_64":
+            case "i386":
+            case "x86":
+            case "amd64":
+            case "ppc64":
+            case "ppc64le":
+            case "ppc64be":
+                unaligned = true;
+                break;
+            default:
+                unaligned = false;
+                break;
+            }
+            allowUnalignedMemoryAccess = unaligned;
         }
         storeByteOrderIsNative = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
     }
@@ -148,34 +164,30 @@ public final class UnsafeUtil
     {
         try
         {
-            return AccessController.doPrivileged( new PrivilegedExceptionAction<Unsafe>()
-            {
-                @Override
-                public Unsafe run() throws Exception
+            PrivilegedExceptionAction<Unsafe> getUnsafe = () -> {
+                try
                 {
-                    try
-                    {
-                        return Unsafe.getUnsafe();
-                    }
-                    catch ( Exception e )
-                    {
-                        Class<Unsafe> type = Unsafe.class;
-                        Field[] fields = type.getDeclaredFields();
-                        for ( Field field : fields )
-                        {
-                            if ( Modifier.isStatic( field.getModifiers() )
-                                    && type.isAssignableFrom( field.getType() ) )
-                            {
-                                field.setAccessible( true );
-                                return type.cast( field.get( null ) );
-                            }
-                        }
-                        LinkageError error = new LinkageError( "No static field of type sun.misc.Unsafe" );
-                        error.addSuppressed( e );
-                        throw error;
-                    }
+                    return Unsafe.getUnsafe();
                 }
-            } );
+                catch ( Exception e )
+                {
+                    Class<Unsafe> type = Unsafe.class;
+                    Field[] fields = type.getDeclaredFields();
+                    for ( Field field : fields )
+                    {
+                        if ( Modifier.isStatic( field.getModifiers() )
+                             && type.isAssignableFrom( field.getType() ) )
+                        {
+                            field.setAccessible( true );
+                            return type.cast( field.get( null ) );
+                        }
+                    }
+                    LinkageError error = new LinkageError( "No static field of type sun.misc.Unsafe" );
+                    error.addSuppressed( e );
+                    throw error;
+                }
+            };
+            return AccessController.doPrivileged( getUnsafe );
         }
         catch ( Exception e )
         {
@@ -191,36 +203,6 @@ public final class UnsafeUtil
         if ( unsafe == null )
         {
             throw new LinkageError( "Unsafe not available" );
-        }
-    }
-
-    private static MethodHandle getGetAndAddIntMethodHandle(
-            MethodHandles.Lookup lookup )
-    {
-        // int getAndAddInt(Object o, long offset, int delta)
-        MethodType type = MethodType.methodType( Integer.TYPE, Object.class, Long.TYPE, Integer.TYPE );
-        try
-        {
-            return lookup.findVirtual( Unsafe.class, "getAndAddInt", type );
-        }
-        catch ( Exception e )
-        {
-            return null;
-        }
-    }
-
-    private static MethodHandle getGetAndSetObjectMethodHandle(
-            MethodHandles.Lookup lookup )
-    {
-        // Object getAndSetObject(Object o, long offset, Object newValue)
-        MethodType type = MethodType.methodType( Object.class, Object.class, Long.TYPE, Object.class );
-        try
-        {
-            return lookup.findVirtual( Unsafe.class, "getAndSetObject", type );
-        }
-        catch ( Exception e )
-        {
-            return null;
         }
     }
 
@@ -262,35 +244,23 @@ public final class UnsafeUtil
      */
     public static int getAndAddInt( Object obj, long offset, int delta )
     {
-        if ( getAndAddInt != null )
-        {
-            return getAndAddInt_java8( obj, offset, delta );
-        }
-
-        return getAndAddInt_java7( obj, offset, delta );
+        return unsafe.getAndAddInt( obj, offset, delta );
     }
 
-    private static int getAndAddInt_java8( Object obj, long offset, int delta )
+    /**
+     * Orders loads before the fence, with loads and stores after the fence.
+     */
+    public static void loadFence()
     {
-        try
-        {
-            return (int) getAndAddInt.invokeExact( unsafe, obj, offset, delta );
-        }
-        catch ( Throwable throwable )
-        {
-            throw new LinkageError( "Unexpected 'getAndAddInt' intrinsic failure", throwable );
-        }
+        unsafe.loadFence();
     }
 
-    private static int getAndAddInt_java7( Object obj, long offset, int delta )
+    /**
+     * Orders stores before the fence, with loads and stores after the fence.
+     */
+    public static void storeFence()
     {
-        int x;
-        do
-        {
-            x = unsafe.getIntVolatile( obj, offset );
-        }
-        while ( !unsafe.compareAndSwapInt( obj, offset, x, x + delta ) );
-        return x;
+        unsafe.storeFence();
     }
 
     /**
@@ -320,35 +290,7 @@ public final class UnsafeUtil
      */
     public static Object getAndSetObject( Object obj, long offset, Object newValue )
     {
-        if ( getAndSetObject != null )
-        {
-            return getAndSetObject_java8( obj, offset, newValue );
-        }
-
-        return getAndSetObject_java7( obj, offset, newValue );
-    }
-
-    private static Object getAndSetObject_java8( Object obj, long offset, Object newValue )
-    {
-        try
-        {
-            return getAndSetObject.invokeExact( unsafe, obj, offset, newValue );
-        }
-        catch ( Throwable throwable )
-        {
-            throw new LinkageError( "Unexpected 'getAndSetObject' intrinsic failure", throwable );
-        }
-    }
-
-    private static Object getAndSetObject_java7( Object obj, long offset, Object newValue )
-    {
-        Object current;
-        do
-        {
-            current = unsafe.getObjectVolatile( obj, offset );
-        }
-        while ( !unsafe.compareAndSwapObject( obj, offset, current, newValue ) );
-        return current;
+        return unsafe.getAndSetObject( obj, offset, newValue );
     }
 
     /**
@@ -388,6 +330,7 @@ public final class UnsafeUtil
         {
             setMemory( pointer, sizeInBytes, (byte) 0xA5 );
         }
+        addAllocatedPointer( pointer, sizeInBytes );
         return pointer;
     }
 
@@ -396,7 +339,120 @@ public final class UnsafeUtil
      */
     public static void free( long pointer )
     {
+        checkFree( pointer );
         unsafe.freeMemory( pointer );
+    }
+
+    private static final class FreeTrace extends Throwable implements Comparable<FreeTrace>
+    {
+        private final long pointer;
+        private final long size;
+        private final long id;
+        private final long nanoTime;
+        private long referenceTime;
+
+        private FreeTrace( long pointer, long size, long id )
+        {
+            this.pointer = pointer;
+            this.size = size;
+            this.id = id;
+            this.nanoTime = System.nanoTime();
+        }
+
+        private boolean contains( long pointer )
+        {
+            return this.pointer <= pointer && pointer <= this.pointer + size;
+        }
+
+        @Override
+        public int compareTo( FreeTrace that )
+        {
+            return Long.compare( this.id, that.id );
+        }
+
+        @Override
+        public String getMessage()
+        {
+            return format( "0x%x of %6d bytes, freed %s µs ago at", pointer, size, (referenceTime - nanoTime) / 1000 );
+        }
+    }
+
+    private static final ConcurrentSkipListMap<Long, Long> pointers = new ConcurrentSkipListMap<>();
+    private static final FreeTrace[] freeTraces = CHECK_NATIVE_ACCESS? new FreeTrace[4096] : null;
+    private static final AtomicLong freeTraceCounter = new AtomicLong();
+
+    private static void addAllocatedPointer( long pointer, long sizeInBytes )
+    {
+        if ( CHECK_NATIVE_ACCESS )
+        {
+            pointers.put( pointer, sizeInBytes );
+        }
+    }
+
+    private static void checkFree( long pointer )
+    {
+        if ( CHECK_NATIVE_ACCESS )
+        {
+            doCheckFree( pointer );
+        }
+    }
+
+    private static void doCheckFree( long pointer )
+    {
+        Long size = pointers.remove( pointer );
+        if ( size == null )
+        {
+            StringBuilder sb = new StringBuilder( format( "Bad free: 0x%x, valid pointers are:", pointer ) );
+            pointers.forEach( (k,v) -> sb.append( '\n' ).append( k ) );
+            throw new AssertionError( sb.toString() );
+        }
+        long count = freeTraceCounter.getAndIncrement();
+        int idx = (int) (count & 4095);
+        freeTraces[idx] = new FreeTrace( pointer, size, count );
+    }
+
+    private static void checkAccess( long pointer, int size )
+    {
+        if ( CHECK_NATIVE_ACCESS )
+        {
+            doCheckAccess( pointer, size );
+        }
+    }
+
+    private static void doCheckAccess( long pointer, int size )
+    {
+        long now = System.nanoTime();
+        Map.Entry<Long,Long> fentry = pointers.floorEntry( pointer + size );
+        Map.Entry<Long,Long> centry = pointers.ceilingEntry( pointer );
+        if ( fentry == null || fentry.getKey() + fentry.getValue() < pointer + size )
+        {
+            long faddr = fentry == null? 0 : fentry.getKey();
+            long fsize = fentry == null? 0 : fentry.getValue();
+            long foffset = pointer - (faddr + fsize);
+            long caddr = centry == null? 0 : centry.getKey();
+            long csize = centry == null? 0 : centry.getValue();
+            long coffset = caddr - (pointer + size);
+            boolean floorIsNearest = foffset < coffset;
+            long naddr = floorIsNearest? faddr : caddr;
+            long nsize = floorIsNearest? fsize : csize;
+            long noffset = floorIsNearest? foffset : coffset;
+            List<FreeTrace> recentFrees = Arrays.stream( freeTraces )
+                                                .filter( trace -> trace != null )
+                                                .filter( trace -> trace.contains( pointer ) )
+                                                .sorted()
+                                                .collect( Collectors.toList() );
+            AssertionError error = new AssertionError( format(
+                    "Bad access at address 0x%x with size %s, nearest valid allocation is " +
+                    "0x%x (%s bytes, off by %s bytes). " +
+                    "Recent relevant frees (of %s) are attached as suppressed exceptions.",
+                    pointer, size, naddr, nsize, noffset, freeTraceCounter.get() ) );
+            for ( FreeTrace recentFree : recentFrees )
+            {
+                recentFree.referenceTime = now;
+                error.addSuppressed( recentFree );
+            }
+            throw error;
+        }
     }
 
     /**
@@ -429,21 +485,25 @@ public final class UnsafeUtil
 
     public static void putByte( long address, byte value )
     {
+        checkAccess( address, Byte.BYTES );
         unsafe.putByte( address, value );
     }
 
     public static byte getByte( long address )
     {
+        checkAccess( address, Byte.BYTES );
         return unsafe.getByte( address );
     }
 
     public static void putByteVolatile( long address, byte value )
     {
+        checkAccess( address, Byte.BYTES );
         unsafe.putByteVolatile( null, address, value );
     }
 
     public static byte getByteVolatile( long address )
     {
+        checkAccess( address, Byte.BYTES );
         return unsafe.getByteVolatile( null, address );
     }
 
@@ -469,21 +529,25 @@ public final class UnsafeUtil
 
     public static void putShort( long address, short value )
     {
+        checkAccess( address, Short.BYTES );
         unsafe.putShort( address, value );
     }
 
     public static short getShort( long address )
     {
+        checkAccess( address, Short.BYTES );
         return unsafe.getShort( address );
     }
 
     public static void putShortVolatile( long address, short value )
     {
+        checkAccess( address, Short.BYTES );
         unsafe.putShortVolatile( null, address, value );
     }
 
     public static short getShortVolatile( long address )
     {
+        checkAccess( address, Short.BYTES );
         return unsafe.getShortVolatile( null, address );
     }
 
@@ -509,21 +573,25 @@ public final class UnsafeUtil
 
     public static void putFloat( long address, float value )
     {
+        checkAccess( address, Float.BYTES );
         unsafe.putFloat( address, value );
     }
 
     public static float getFloat( long address )
     {
+        checkAccess( address, Float.BYTES );
         return unsafe.getFloat( address );
     }
 
     public static void putFloatVolatile( long address, float value )
     {
+        checkAccess( address, Float.BYTES );
         unsafe.putFloatVolatile( null, address, value );
     }
 
     public static float getFloatVolatile( long address )
     {
+        checkAccess( address, Float.BYTES );
         return unsafe.getFloatVolatile( null, address );
     }
 
@@ -549,21 +617,25 @@ public final class UnsafeUtil
 
     public static void putChar( long address, char value )
     {
+        checkAccess( address, Character.BYTES );
         unsafe.putChar( address, value );
     }
 
     public static char getChar( long address )
     {
+        checkAccess( address, Character.BYTES );
         return unsafe.getChar( address );
     }
 
     public static void putCharVolatile( long address, char value )
     {
+        checkAccess( address, Character.BYTES );
         unsafe.putCharVolatile( null, address, value );
     }
 
     public static char getCharVolatile( long address )
     {
+        checkAccess( address, Character.BYTES );
         return unsafe.getCharVolatile( null, address );
     }
 
@@ -589,21 +661,25 @@ public final class UnsafeUtil
 
     public static void putInt( long address, int value )
     {
+        checkAccess( address, Integer.BYTES );
         unsafe.putInt( address, value );
     }
 
     public static int getInt( long address )
     {
+        checkAccess( address, Integer.BYTES );
         return unsafe.getInt( address );
     }
 
     public static void putIntVolatile( long address, int value )
     {
+        checkAccess( address, Integer.BYTES );
         unsafe.putIntVolatile( null, address, value );
     }
 
     public static int getIntVolatile( long address )
     {
+        checkAccess( address, Integer.BYTES );
         return unsafe.getIntVolatile( null, address );
     }
 
@@ -629,21 +705,25 @@ public final class UnsafeUtil
 
     public static void putLongVolatile( long address, long value )
     {
+        checkAccess( address, Long.BYTES );
         unsafe.putLongVolatile( null, address, value );
     }
 
     public static long getLongVolatile( long address )
     {
+        checkAccess( address, Long.BYTES );
         return unsafe.getLongVolatile( null, address );
     }
 
     public static void putLong( long address, long value )
     {
+        checkAccess( address, Long.BYTES );
         unsafe.putLong( address, value );
     }
 
     public static long getLong( long address )
     {
+        checkAccess( address, Long.BYTES );
         return unsafe.getLong( address );
     }
 
@@ -669,21 +749,25 @@ public final class UnsafeUtil
 
     public static void putDouble( long address, double value )
     {
+        checkAccess( address, Double.BYTES );
         unsafe.putDouble( address, value );
     }
 
     public static double getDouble( long address )
     {
+        checkAccess( address, Double.BYTES );
         return unsafe.getDouble( address );
     }
 
     public static void putDoubleVolatile( long address, double value )
     {
+        checkAccess( address, Double.BYTES );
         unsafe.putDoubleVolatile( null, address, value );
     }
 
     public static double getDoubleVolatile( long address )
     {
+        checkAccess( address, Double.BYTES );
         return unsafe.getDoubleVolatile( null, address );
     }
 

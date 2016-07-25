@@ -20,15 +20,28 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
+import java.io.IOException;
 
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.StoreVersion;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.DatabaseNotCleanlyShutDownException;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreFormatException;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreVersionException;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradeMissingStoreFilesException;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
-import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.recovery.LatestCheckPointFinder;
+import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
 
 /**
  * Logic to check whether a database version is upgradable to the current version. It looks at the
@@ -36,76 +49,125 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
  */
 public class UpgradableDatabase
 {
+    private final FileSystemAbstraction fs;
     private final StoreVersionCheck storeVersionCheck;
     private final LegacyStoreVersionCheck legacyStoreVersionCheck;
+    private final RecordFormats format;
 
-    public UpgradableDatabase( StoreVersionCheck storeVersionCheck, LegacyStoreVersionCheck legacyStoreVersionCheck )
+    public UpgradableDatabase( FileSystemAbstraction fs,
+            StoreVersionCheck storeVersionCheck, LegacyStoreVersionCheck legacyStoreVersionCheck, RecordFormats format )
     {
+        this.fs = fs;
         this.storeVersionCheck = storeVersionCheck;
         this.legacyStoreVersionCheck = legacyStoreVersionCheck;
+        this.format = format;
     }
 
-    boolean storeFilesUpgradeable( File storeDirectory )
+    /**
+     * Assumed to only be called if {@link #hasCurrentVersion(File)} returns {@code false}.
+     *
+     * @param storeDirectory the store to check for upgradability is in.
+     * @return the {@link RecordFormats} the current store (which is upgradable) is currently in.
+     * @throws UpgradeMissingStoreFilesException if store cannot be upgraded due to some store files are missing.
+     * @throws UpgradingStoreVersionNotFoundException if store cannot be upgraded due to store
+     * version cannot be determined.
+     * @throws UnexpectedUpgradingStoreVersionException if store cannot be upgraded due to an unexpected store
+     * version found.
+     * @throws UnexpectedUpgradingStoreFormatException if store cannot be upgraded due to an unexpected store
+     * format found.
+     * @throws DatabaseNotCleanlyShutDownException if store cannot be upgraded due to not being cleanly shut down.
+     */
+    public RecordFormats checkUpgradeable( File storeDirectory )
     {
+        Result result = storeVersionCheck.hasVersion( new File( storeDirectory, MetaDataStore.DEFAULT_NAME ),
+                format.storeVersion() );
+        if ( result.outcome.isSuccessful() )
+        {
+            // This store already has the format that we want
+            // Although this method should not have been called in this case.
+            return format;
+        }
+
+        // If we are trying to open an enterprise store when configured to use community format, then inform the user
+        // of the config setting to change since downgrades aren't possible but the store can still be opened.
+        if ( StoreVersion.isEnterpriseStoreVersion( result.actualVersion ) &&
+             StoreVersion.isCommunityStoreVersion( format.storeVersion() ) )
+        {
+            throw new StoreUpgrader.UnexpectedUpgradingStoreFormatException();
+        }
+
+        RecordFormats fromFormat;
         try
         {
-            checkUpgradeable( storeDirectory );
-            return true;
+            fromFormat = RecordFormatSelector.selectForVersion( result.actualVersion );
+            if ( fromFormat.generation() > format.generation() )
+            {
+                // Tried to downgrade, that isn't supported
+                result = new Result( Outcome.unexpectedUpgradingStoreVersion, fromFormat.storeVersion(),
+                        new File( storeDirectory, MetaDataStore.DEFAULT_NAME ).getAbsolutePath() );
+            }
+            else
+            {
+                result = fromFormat.hasCapability( Capability.VERSION_TRAILERS )
+                        ? checkCleanShutDownByVersionTrailer( storeDirectory, fromFormat )
+                        : checkCleanShutDownByCheckPoint( storeDirectory );
+                if ( result.outcome.isSuccessful() )
+                {
+                    return fromFormat;
+                }
+            }
         }
-        catch ( StoreUpgrader.UnableToUpgradeException e )
+        catch ( IllegalArgumentException e )
         {
-            return false;
-        }
-    }
-
-    public String checkUpgradeable( File storeDirectory )
-    {
-        Result result = checkUpgradeableFor( storeDirectory, Legacy19Store.LEGACY_VERSION );
-        if ( result.outcome.isSuccessful() )
-        {
-            return Legacy19Store.LEGACY_VERSION;
-        }
-
-        result = checkUpgradeableFor( storeDirectory, Legacy20Store.LEGACY_VERSION );
-        if ( result.outcome.isSuccessful() )
-        {
-            return Legacy20Store.LEGACY_VERSION;
-        }
-
-        result = checkUpgradeableFor( storeDirectory, Legacy21Store.LEGACY_VERSION );
-        if ( result.outcome.isSuccessful() )
-        {
-            return Legacy21Store.LEGACY_VERSION;
+            result = new Result( Outcome.unexpectedUpgradingStoreVersion, result.actualVersion, result.storeFilename );
         }
 
-        result = checkUpgradeableFor( storeDirectory, Legacy22Store.LEGACY_VERSION );
-        if ( result.outcome.isSuccessful() )
-        {
-            return Legacy22Store.LEGACY_VERSION;
-        }
-
-        // report error
-        String path = new File( storeDirectory, result.storeFilename ).getAbsolutePath();
         switch ( result.outcome )
         {
-            case missingStoreFile:
-                throw new StoreUpgrader.UpgradeMissingStoreFilesException( path );
-            case storeVersionNotFound:
-                throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( path );
-            case unexpectedUpgradingStoreVersion:
-                throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException(
-                        path, Legacy21Store.LEGACY_VERSION, result.actualVersion );
-            default:
-                throw new IllegalArgumentException( "Unexpected outcome: " + result.outcome.name() );
+        case missingStoreFile:
+            throw new StoreUpgrader.UpgradeMissingStoreFilesException( getPathToStoreFile( storeDirectory, result ) );
+        case storeVersionNotFound:
+            throw new StoreUpgrader.UpgradingStoreVersionNotFoundException(
+                    getPathToStoreFile( storeDirectory, result ) );
+        case unexpectedUpgradingStoreVersion:
+            throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException(
+                    getPathToStoreFile( storeDirectory, result ), result.actualVersion );
+        case storeNotCleanlyShutDown:
+            throw new StoreUpgrader.DatabaseNotCleanlyShutDownException();
+        default:
+            throw new IllegalArgumentException( "Unexpected outcome: " + result.outcome.name() );
         }
     }
 
-    private Result checkUpgradeableFor( File storeDirectory, String version )
+    private Result checkCleanShutDownByCheckPoint( File storeDirectory )
+    {
+        // check version
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, fs );
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        LatestCheckPointFinder latestCheckPointFinder =
+                new LatestCheckPointFinder( logFiles, fs, logEntryReader );
+        try
+        {
+            LatestCheckPoint latestCheckPoint = latestCheckPointFinder.find( logFiles.getHighestLogVersion() );
+            if ( !latestCheckPoint.commitsAfterCheckPoint )
+            {
+                return new Result( Result.Outcome.ok, null, null );
+            }
+        }
+        catch ( IOException e )
+        {
+            // ignore exception and return db not cleanly shutdown
+        }
+
+        return new Result( Result.Outcome.storeNotCleanlyShutDown, null, null );
+    }
+
+    private Result checkCleanShutDownByVersionTrailer( File storeDirectory, RecordFormats fromFormat )
     {
         Result result = null;
-        for ( StoreFile store : StoreFile.legacyStoreFilesForVersion( version ) )
+        for ( StoreFile store : StoreFile.legacyStoreFilesForVersion( fromFormat.storeVersion() ) )
         {
-            String expectedVersion = store.forVersion( version );
+            String expectedVersion = store.forVersion( fromFormat.storeVersion() );
             File storeFile = new File( storeDirectory, store.storeFileName() );
             result = legacyStoreVersionCheck.hasVersion( storeFile, expectedVersion, store.isOptional() );
             if ( !result.outcome.isSuccessful() )
@@ -116,23 +178,30 @@ public class UpgradableDatabase
         return result;
     }
 
+    private String getPathToStoreFile( File storeDirectory, Result result )
+    {
+        return new File( storeDirectory, result.storeFilename ).getAbsolutePath();
+    }
+
     public boolean hasCurrentVersion( File storeDir )
     {
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-        Result result = storeVersionCheck.hasVersion( neoStore, CommonAbstractStore.ALL_STORES_VERSION );
+        Result result = storeVersionCheck.hasVersion( neoStore, format.storeVersion() );
         switch ( result.outcome )
         {
         case ok:
-            return true;
-        case missingStoreFile:
-            // let's assume the db is empty
+        case missingStoreFile: // let's assume the db is empty
             return true;
         case storeVersionNotFound:
-            return false;
         case unexpectedUpgradingStoreVersion:
             return false;
         default:
             throw new IllegalArgumentException( "Unknown outcome: " + result.outcome.name() );
         }
+    }
+
+    public String currentVersion()
+    {
+        return format.storeVersion();
     }
 }

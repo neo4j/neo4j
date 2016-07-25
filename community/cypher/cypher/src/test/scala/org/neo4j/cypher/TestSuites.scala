@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Node, PropertyContainer}
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.{Node, PropertyContainer, Result}
 import org.neo4j.kernel.api.exceptions.Status
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -87,6 +87,16 @@ abstract class ExecutionEngineFunSuite
     }
   }
 
+  def useProjectionWith(otherText: String*): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(result: InternalExecutionResult): MatchResult = {
+      val plan: InternalPlanDescription = result.executionPlanDescription()
+      MatchResult(
+        matches = otherText.forall(o => plan.find("Projection").exists(_.toString.contains(o))),
+        rawFailureMessage = s"Plan should use Projection with ${otherText.mkString(",")}:\n$plan",
+        rawNegatedFailureMessage = s"Plan should not use Projection with ${otherText.mkString(",")}:\n$plan")
+    }
+  }
+
   def haveCount(count: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
     override def apply(result: InternalExecutionResult): MatchResult = {
       MatchResult(
@@ -96,16 +106,16 @@ abstract class ExecutionEngineFunSuite
     }
   }
 
-  def shouldHaveWarnings(result: ExtendedExecutionResult, statusCodes: List[Status]) {
-    val resultCodes = result.notifications.map(_.getCode)
+  def shouldHaveWarnings(result: Result, statusCodes: List[Status]) {
+    val resultCodes = result.getNotifications.asScala.map(_.getCode)
     statusCodes.foreach(statusCode => resultCodes should contain(statusCode.code.serialize()))
   }
 
-  def shouldHaveWarning(result: ExtendedExecutionResult, notification: Status) {
+  def shouldHaveWarning(result: Result, notification: Status) {
     shouldHaveWarnings(result, List(notification))
   }
 
-  def shouldHaveNoWarnings(result: ExtendedExecutionResult) {
+  def shouldHaveNoWarnings(result: Result) {
     shouldHaveWarnings(result, List())
   }
 }

@@ -9,7 +9,7 @@ Each HTTP request can include a list of statements, and for convenience you can 
 
 The server guards against orphaned transactions by using a timeout.
 If there are no requests for a given transaction within the timeout period, the server will roll it back.
-You can configure the timeout in the server configuration, by setting `org.neo4j.server.transaction.timeout` to the number of seconds before timeout.
+You can configure the timeout in the server configuration, by setting `dbms.transaction_timeout` to the number of seconds before timeout.
 The default timeout is 60 seconds.
 
 The key difference between the transactional HTTP endpoint for Cypher and the Cypher endpoint (see <<rest-api-cypher>>) is the ability to use the same transaction across multiple HTTP requests.
@@ -24,6 +24,8 @@ There has also been improvements to the serialization format.
 * Cypher queries with +USING PERIODIC COMMIT+  (see <<query-periodic-commit>>) may only be executed when creating a new transaction and immediately committing it with a single HTTP request (see <<rest-api-begin-and-commit-a-transaction-in-one-request>> for how to do that).
 * The serialization format for Cypher results is mostly the same as the <<rest-api-cypher,Cypher endpoint>>.
 However, the format for raw entities is slightly less verbose and does not include hypermedia links.
+* Whenever a request fails the transaction will be rolled back.
+By checking the result for the presence/absence of the `transaction` key you can figure out if the transaction is still open.
 --
 
 [TIP]
@@ -52,6 +54,8 @@ include::include-query-statistics.asciidoc[]
 include::return-results-in-graph-format.asciidoc[]
 
 include::handling-errors.asciidoc[]
+
+include::handling-errors-in-an-open-transaction.asciidoc[]
 
 include::transactional-status-codes.asciidoc[]
 

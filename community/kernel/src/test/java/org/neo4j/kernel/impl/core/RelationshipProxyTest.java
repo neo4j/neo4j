@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.core;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.DynamicLabel;
@@ -41,7 +40,7 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class RelationshipProxyTest extends PropertyContainerProxyTest
 {
@@ -62,22 +61,10 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     {
         // GIVEN
         RelationshipActions actions = mock( RelationshipActions.class );
-        when( actions.newNodeProxy( anyLong() ) ).then( new Answer<Node>()
-        {
-            @Override
-            public Node answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return nodeWithId( (Long) invocation.getArguments()[0] );
-            }
-        } );
-        when( actions.getRelationshipTypeById( anyInt() ) ).then( new Answer<RelationshipType>()
-        {
-            @Override
-            public RelationshipType answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new RelationshipTypeToken( "whatever", (Integer) invocation.getArguments()[0] );
-            }
-        } );
+        when( actions.newNodeProxy( anyLong() ) ).then(
+                (Answer<Node>) invocation -> nodeWithId( (Long) invocation.getArguments()[0] ) );
+        when( actions.getRelationshipTypeById( anyInt() ) ).then(
+                (Answer<RelationshipType>) invocation -> new RelationshipTypeToken( "whatever", (Integer) invocation.getArguments()[0] ) );
 
         long[] ids = new long[]{
                 1437589437,
@@ -107,6 +94,30 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
             int type = types[i];
             verifyIds( actions, id, nodeId1, type, nodeId2 );
             verifyIds( actions, id, nodeId2, type, nodeId1 );
+        }
+    }
+
+    @Test
+    public void shouldPrintCypherEsqueRelationshipToString() throws Exception
+    {
+        // GIVEN
+        Node start, end;
+        RelationshipType type = RelationshipType.withName( "NICE" );
+        Relationship relationship;
+        try ( Transaction tx = db.beginTx() )
+        {
+            // GIVEN
+            start = db.createNode();
+            end = db.createNode();
+            relationship = start.createRelationshipTo( end, type );
+            tx.success();
+
+            // WHEN
+            String toString = relationship.toString();
+
+            // THEN
+            assertEquals( "(" + start.getId() + ")-[" + type + "," + relationship.getId() + "]->(" + end.getId() + ")",
+                    toString );
         }
     }
 

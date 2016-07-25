@@ -26,6 +26,6 @@ import org.neo4j.com.storecopy.StoreWriter;
 public interface TheBackupInterface
 {
     Response<Void> fullBackup( StoreWriter writer, boolean forensics );
-    
+
     Response<Void> incrementalBackup( RequestContext context );
 }

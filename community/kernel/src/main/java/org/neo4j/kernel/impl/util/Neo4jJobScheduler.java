@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.util;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -50,27 +51,13 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     @Override
     public Executor executor( final Group group )
     {
-        return new Executor()
-        {
-            @Override
-            public void execute( Runnable command )
-            {
-                schedule( group, command );
-            }
-        };
+        return job -> schedule( group, job );
     }
 
     @Override
     public ThreadFactory threadFactory( final Group group )
     {
-        return new ThreadFactory()
-        {
-            @Override
-            public Thread newThread( Runnable r )
-            {
-                return createNewThread( group, r, NO_METADATA );
-            }
-        };
+        return job -> createNewThread( group, job, NO_METADATA );
     }
 
     @Override
@@ -127,6 +114,11 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         default:
             throw new IllegalArgumentException( "Unsupported strategy to use for delayed jobs: " + group.strategy() );
         }
+    }
+
+    @Override
+    public void stop()
+    {
     }
 
     @Override
@@ -198,6 +190,12 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         {
             job.cancel( mayInterruptIfRunning );
         }
+
+        @Override
+        public void waitTermination() throws InterruptedException, ExecutionException
+        {
+            job.get();
+        }
     }
 
     private static class SingleThreadHandle implements JobHandle
@@ -216,6 +214,12 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
             {
                 thread.interrupt();
             }
+        }
+
+        @Override
+        public void waitTermination() throws InterruptedException
+        {
+            thread.join();
         }
     }
 }

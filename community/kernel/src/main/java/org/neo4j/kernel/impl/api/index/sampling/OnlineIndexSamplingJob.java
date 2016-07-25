@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.neo4j.kernel.impl.util.DurationLogger;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.util.DurationLogger;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
@@ -42,9 +42,9 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     private final String indexUserDescription;
 
     public OnlineIndexSamplingJob( IndexProxy indexProxy,
-                                   IndexStoreView storeView,
-                                   String indexUserDescription,
-                                   LogProvider logProvider )
+            IndexStoreView storeView,
+            String indexUserDescription,
+            LogProvider logProvider )
     {
         this.indexDescriptor = indexProxy.getDescriptor();
         this.indexProxy = indexProxy;
@@ -62,26 +62,26 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     @Override
     public void run()
     {
-        try( DurationLogger durationLogger = new DurationLogger( log, "Sampling index " + indexUserDescription ) )
+        try ( DurationLogger durationLogger = new DurationLogger( log, "Sampling index " + indexUserDescription ) )
         {
             try
             {
                 try ( IndexReader reader = indexProxy.newReader() )
                 {
-                    Register.DoubleLongRegister sample = Registers.newDoubleLongRegister();
-                    final long indexSize = reader.sampleIndex( sample );
+                    IndexSampler sampler = reader.createSampler();
+                    IndexSample sample = sampler.sampleIndex();
 
                     // check again if the index is online before saving the counts in the store
                     if ( indexProxy.getState() == ONLINE )
                     {
-                        long unique = sample.readFirst();
-                        long sampleSize = sample.readSecond();
-                        storeView.replaceIndexCounts( indexDescriptor, unique, sampleSize, indexSize );
+                        storeView.replaceIndexCounts( indexDescriptor, sample.uniqueValues(), sample.sampleSize(),
+                                sample.indexSize() );
                         durationLogger.markAsFinished();
                         log.info(
-                            format( "Sampled index %s with %d unique values in sample of avg size %d taken from " +
-                                    "index containing %d entries",
-                                    indexUserDescription, unique, sampleSize, indexSize ) );
+                                format( "Sampled index %s with %d unique values in sample of avg size %d taken from " +
+                                        "index containing %d entries",
+                                        indexUserDescription, sample.uniqueValues(), sample.sampleSize(),
+                                        sample.indexSize() ) );
                     }
                     else
                     {

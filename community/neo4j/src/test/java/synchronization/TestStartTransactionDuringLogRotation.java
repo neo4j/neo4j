@@ -31,7 +31,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -40,8 +39,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 public class TestStartTransactionDuringLogRotation
 {
@@ -96,7 +95,7 @@ public class TestStartTransactionDuringLogRotation
         };
 
         monitors.addMonitorListener( rotationListener );
-        label = DynamicLabel.label( "Label" );
+        label = Label.label( "Label" );
 
         Runnable writerTask = new Runnable()
         {

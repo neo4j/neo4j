@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.constraints;
 
+/**
+ * Base class describing property constraint on nodes.
+ */
 public abstract class NodePropertyConstraint extends PropertyConstraint
 {
     protected final int labelId;

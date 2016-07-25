@@ -107,7 +107,7 @@ public class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator
 
     private boolean computeNextFromAddedElements()
     {
-        return addedElementsIterator.hasNext() ? next( (Long) addedElementsIterator.next() ) : false;
+        return addedElementsIterator.hasNext() && next((Long) addedElementsIterator.next());
     }
 
     @Override

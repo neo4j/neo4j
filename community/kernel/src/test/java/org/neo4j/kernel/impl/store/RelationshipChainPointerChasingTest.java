@@ -30,14 +30,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.helpers.collection.Iterables.toArray;
+import static org.neo4j.helpers.collection.Iterables.asArray;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
 /**
@@ -82,7 +81,7 @@ public class RelationshipChainPointerChasingTest
         Relationship[] relationships;
         try ( Transaction tx = db.beginTx() )
         {
-            relationships = toArray( Relationship.class, node.getRelationships() );
+            relationships = asArray( Relationship.class, node.getRelationships() );
             tx.success();
         }
 

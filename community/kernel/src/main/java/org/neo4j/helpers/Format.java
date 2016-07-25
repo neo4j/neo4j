@@ -89,12 +89,7 @@ public class Format
         return TIME.format( date, timeZone );
     }
 
-    @Deprecated
-    public static int KB = (int) ByteUnit.kibiBytes( 1 );
-    @Deprecated
-    public static int MB = (int) ByteUnit.mebiBytes( 1 );
-    @Deprecated
-    public static int GB = (int) ByteUnit.gibiBytes( 1 );
+    private static int KB = (int) ByteUnit.kibiBytes( 1 );
 
     public static String bytes( long bytes )
     {

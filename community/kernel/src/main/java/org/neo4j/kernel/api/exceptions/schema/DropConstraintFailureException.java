@@ -30,7 +30,7 @@ public class DropConstraintFailureException extends SchemaKernelException
 
     public DropConstraintFailureException( PropertyConstraint constraint, Throwable cause )
     {
-        super( Status.Schema.ConstraintDropFailure, cause, "Unable to drop constraint %s: %s", constraint, cause.getMessage() );
+        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint %s: %s", constraint, cause.getMessage() );
         this.constraint = constraint;
     }
 

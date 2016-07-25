@@ -25,4 +25,10 @@ public class DelegatingRelationshipTypeTokenHolder extends DelegatingTokenHolder
     {
         super( tokenCreator, new RelationshipTypeToken.Factory() );
     }
+
+    @Override
+    protected String tokenType()
+    {
+        return "RelationshipType";
+    }
 }

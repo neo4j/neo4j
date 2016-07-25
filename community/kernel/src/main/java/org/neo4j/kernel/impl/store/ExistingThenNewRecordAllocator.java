@@ -26,15 +26,16 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 class ExistingThenNewRecordAllocator implements DynamicRecordAllocator
 {
-    private final DynamicBlockSize blockSize;
+    private final int recordDataSize;
     private final IdSequence idSequence;
 
-    ExistingThenNewRecordAllocator( DynamicBlockSize blockSize, IdSequence idSequence )
+    ExistingThenNewRecordAllocator( int recordDataSize, IdSequence idSequence )
     {
-        this.blockSize = blockSize;
+        this.recordDataSize = recordDataSize;
         this.idSequence = idSequence;
     }
 
+    @Override
     public DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst )
     {
         DynamicRecord record;
@@ -56,8 +57,8 @@ class ExistingThenNewRecordAllocator implements DynamicRecordAllocator
     }
 
     @Override
-    public int dataSize()
+    public int getRecordDataSize()
     {
-        return blockSize.getBlockSize() - AbstractDynamicStore.BLOCK_HEADER_SIZE;
+        return recordDataSize;
     }
 }

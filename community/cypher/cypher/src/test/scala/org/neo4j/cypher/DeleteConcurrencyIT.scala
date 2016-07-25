@@ -158,13 +158,17 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
             execute(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id CREATE (root)-[:name]->(b)").toList
           } catch {
             case _: NotFoundException => // ignore if we cannot create the relationship if b has been deleted
+            case _: CypherExecutionException => // ignore if we cannot create the relationship if b has been deleted
           }
         }, ignoreException = {
-          // let's ignore the commit failures if they are caused by the above exception
+          // let's ignore the commit failures if they are caused by the above exceptions
           case ex: TransactionFailureException =>
             val cause: Throwable = ex.getCause
             cause.isInstanceOf[org.neo4j.kernel.api.exceptions.TransactionFailureException] &&
               cause.getMessage == "Transaction rolled back even if marked as successful"
+          case ex: CypherExecutionException =>
+            ex.getCause.isInstanceOf[org.neo4j.kernel.api.exceptions.EntityNotFoundException] &&
+            ex.getCause.getMessage.startsWith("Unable to load NODE with id")
           case _ => false
         })
       }

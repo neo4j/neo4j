@@ -19,35 +19,31 @@
  */
 package org.neo4j.server.database;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.server.web.ServerInternalSettings;
-import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
-import static org.neo4j.test.SuppressOutput.suppressAll;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class TestLifecycleManagedDatabase
 {
@@ -59,26 +55,26 @@ public class TestLifecycleManagedDatabase
     @Rule
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logProvider );
 
-    private File databaseDirectory;
+    private File dataDirectory;
     private Database theDatabase;
     private boolean deletionFailureOk;
     private LifecycleManagingDatabase.GraphFactory dbFactory;
+    private Config dbConfig;
 
     @Before
     public void setup() throws Exception
     {
-        databaseDirectory = createTempDir();
+        dataDirectory = createTempDir();
 
-        dbFactory = mock( LifecycleManagingDatabase.GraphFactory.class );
-        when(dbFactory.newGraphDatabase( any( Config.class ), any( GraphDatabaseFacadeFactory.Dependencies.class ) ))
-                .thenReturn( dbRule.getGraphDatabaseAPI() );
+        dbFactory = createGraphFactory();
+        dbConfig = new Config(stringMap( DatabaseManagementSystemSettings.data_directory.name(), dataDirectory.getAbsolutePath() ) );
         theDatabase = newDatabase();
     }
 
     private LifecycleManagingDatabase newDatabase()
     {
-        Config dbConfig = new Config(stringMap( ServerInternalSettings.legacy_db_location.name(), databaseDirectory.getAbsolutePath() ));
-        return new LifecycleManagingDatabase( dbConfig, dbFactory, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider ) );
+        return new LifecycleManagingDatabase( dbConfig, dbFactory,
+                GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider ) );
     }
 
     @After
@@ -88,7 +84,7 @@ public class TestLifecycleManagedDatabase
 
         try
         {
-            FileUtils.forceDelete( databaseDirectory );
+            FileUtils.forceDelete( dataDirectory );
         }
         catch ( IOException e )
         {
@@ -108,7 +104,7 @@ public class TestLifecycleManagedDatabase
         theDatabase.start();
 
         logProvider.assertAtLeastOnce(
-                inLog( LifecycleManagingDatabase.class ).info( "Successfully started database" )
+                inLog( LifecycleManagingDatabase.class ).info( "Started." )
         );
     }
 
@@ -119,7 +115,7 @@ public class TestLifecycleManagedDatabase
         theDatabase.stop();
 
         logProvider.assertAtLeastOnce(
-                inLog( LifecycleManagingDatabase.class ).info( "Successfully stopped database" )
+                inLog( LifecycleManagingDatabase.class ).info( "Stopped." )
         );
     }
 
@@ -146,6 +142,11 @@ public class TestLifecycleManagedDatabase
     public void shouldBeAbleToGetLocation() throws Throwable
     {
         theDatabase.start();
-        assertThat( theDatabase.getLocation(), is( databaseDirectory.getAbsolutePath() ) );
+        assertThat( theDatabase.getLocation(), is( dbConfig.get( DatabaseManagementSystemSettings.database_path ).getAbsolutePath() ) );
+    }
+
+    private LifecycleManagingDatabase.GraphFactory createGraphFactory()
+    {
+        return ( config, dependencies ) -> (GraphDatabaseFacade) dbRule.getGraphDatabaseAPI();
     }
 }

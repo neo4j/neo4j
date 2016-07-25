@@ -41,7 +41,7 @@ public class AutoRelationshipTypeColor extends RelationshipTypeColor
     /**
      * Reserve and map colors for relationship types. Any non-mapped
      * relationship types will be automatically mapped to non-reserved colors.
-     * 
+     *
      * @param rtcm relationship type to color mapper
      */
     public AutoRelationshipTypeColor( ColorMapper<RelationshipType> rtcm )

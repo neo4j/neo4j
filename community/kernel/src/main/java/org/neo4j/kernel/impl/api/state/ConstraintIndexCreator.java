@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
+
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
@@ -33,13 +36,13 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
-import org.neo4j.kernel.impl.store.SchemaStorage;
 
 import static java.util.Collections.singleton;
+
+import static org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
 
 public class ConstraintIndexCreator
 {
@@ -58,7 +61,7 @@ public class ConstraintIndexCreator
     public long createUniquenessConstraintIndex( KernelStatement state, SchemaReadOperations schema,
             int labelId, int propertyKeyId )
             throws ConstraintVerificationFailedKernelException, TransactionFailureException,
-                   CreateConstraintFailureException, DropIndexFailureException
+            CreateConstraintFailureException, DropIndexFailureException
     {
         IndexDescriptor descriptor = createConstraintIndex( labelId, propertyKeyId );
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
@@ -66,7 +69,7 @@ public class ConstraintIndexCreator
         boolean success = false;
         try
         {
-            long indexId = schema.indexGetCommittedId( state, descriptor, SchemaStorage.IndexRuleKind.CONSTRAINT );
+            long indexId = schema.indexGetCommittedId( state, descriptor, CONSTRAINT );
             awaitIndexPopulation( constraint, indexId );
             success = true;
             return indexId;
@@ -95,8 +98,9 @@ public class ConstraintIndexCreator
     public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
             throws TransactionFailureException, DropIndexFailureException
     {
-        try ( KernelTransaction transaction = kernelSupplier.get().newTransaction();
-             Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction =
+                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+              Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
             // write lock. It is assumed that the transaction that invoked this "inner" transaction
@@ -139,7 +143,8 @@ public class ConstraintIndexCreator
 
     public IndexDescriptor createConstraintIndex( final int labelId, final int propertyKeyId )
     {
-        try ( KernelTransaction transaction = kernelSupplier.get().newTransaction();
+        try ( KernelTransaction transaction =
+                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
               Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema

@@ -39,12 +39,5 @@ public interface LogVersionBridge
      */
     LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException;
 
-    LogVersionBridge NO_MORE_CHANNELS = new LogVersionBridge()
-    {
-        @Override
-        public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
-        {
-            return channel;
-        }
-    };
+    LogVersionBridge NO_MORE_CHANNELS = channel -> channel;
 }

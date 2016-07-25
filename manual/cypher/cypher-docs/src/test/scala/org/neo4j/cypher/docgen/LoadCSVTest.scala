@@ -91,7 +91,7 @@ include::csv-files/artists.csv[]
         """
 A new node with the +Artist+ label is created for each row in the CSV file.
 In addition, two columns from the CSV file are set as properties on the nodes.""",
-      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4))
+      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesWritten = 8, labelsAdded = 4))
   }
 
   @Test def should_import_data_from_a_csv_file_with_headers() {
@@ -110,7 +110,7 @@ include::csv-files/artists-with-headers.csv[]
       optionalResultExplanation = """
 This time, the file starts with a single row containing column names.
 Indicate this using +WITH HEADERS+ and you can access specific fields by their corresponding column name.""",
-      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4))
+      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesWritten = 8, labelsAdded = 4))
   }
 
   @Test def should_import_data_from_a_csv_file_with_custom_field_terminator() {
@@ -129,7 +129,7 @@ include::csv-files/artists-fieldterminator.csv[]
       queryText = s"LOAD CSV FROM '%ARTIST_WITH_FIELD_DELIMITER%' AS line FIELDTERMINATOR ';' CREATE (:Artist {name: line[1], year: toInt(line[2])})",
       optionalResultExplanation =
         "As values in this file are separated by a semicolon, a custom +FIELDTERMINATOR+ is specified in the +LOAD CSV+ clause.",
-      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4))
+      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesWritten = 8, labelsAdded = 4))
   }
 
   @Test def should_import_data_from_a_csv_file_with_periodic_commit() {
@@ -144,7 +144,7 @@ For more information, see <<query-periodic-commit>>.
 """,
       queryText = s"USING PERIODIC COMMIT LOAD CSV FROM '%ARTIST%' AS line CREATE (:Artist {name: line[1], year: toInt(line[2])})",
       optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4))
+      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesWritten = 8, labelsAdded = 4))
   }
 
   @Test def should_import_data_from_a_csv_file_with_periodic_commit_after_500_rows() {
@@ -153,7 +153,7 @@ For more information, see <<query-periodic-commit>>.
       text = """You can set the number of rows as in the example, where it is set to 500 rows.""",
       queryText = s"USING PERIODIC COMMIT 500 LOAD CSV FROM '%ARTIST%' AS line CREATE (:Artist {name: line[1], year: toInt(line[2])})",
       optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4))
+      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesWritten = 8, labelsAdded = 4))
   }
 
   @Test def should_import_data_from_a_csv_file_which_uses_the_escape_char() {

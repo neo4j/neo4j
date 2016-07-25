@@ -26,41 +26,41 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 
 import java.util.Arrays;
+import java.util.function.Consumer;
 
-import org.neo4j.function.Consumer;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.DefaultFileSystemRule;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.storageengine.api.Direction;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.graphdb.Direction.BOTH;
-import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.storageengine.api.Direction.BOTH;
+import static org.neo4j.storageengine.api.Direction.INCOMING;
+import static org.neo4j.storageengine.api.Direction.OUTGOING;
 
 @RunWith( Parameterized.class )
 public class StoreNodeRelationshipCursorTest
 {
 
-    private static final int FIRST_OWNING_NODE = 1;
-    private static final int SECOND_OWNING_NODE = 2;
+    private static final long FIRST_OWNING_NODE = 1;
+    private static final long SECOND_OWNING_NODE = 2;
     private static final int TYPE = 0;
 
     private final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
@@ -69,13 +69,13 @@ public class StoreNodeRelationshipCursorTest
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( pageCacheRule )
             .around( fileSystemRule );
-    @Parameter
+    @Parameterized.Parameter
     public Direction direction;
-    @Parameter( value = 1 )
+    @Parameterized.Parameter( value = 1 )
     public boolean dense;
     private NeoStores neoStores;
 
-    @Parameters
+    @Parameterized.Parameters
     public static Iterable<Object[]> parameters()
     {
         return Arrays.asList( new Object[][]{
@@ -100,11 +100,10 @@ public class StoreNodeRelationshipCursorTest
     @Before
     public void setUp()
     {
-        StoreFactory storeFactory = new StoreFactory( fileSystemRule.get(), testDirectory.directory(),
-                pageCacheRule.getPageCache( fileSystemRule.get() ), NullLogProvider.getInstance() );
-        neoStores = storeFactory.openNeoStores( true, NeoStores.StoreType.NODE,
-                NeoStores.StoreType.RELATIONSHIP_GROUP,
-                NeoStores.StoreType.RELATIONSHIP );
+        StoreFactory storeFactory = new StoreFactory( testDirectory.directory(),
+                pageCacheRule.getPageCache( fileSystemRule.get() ), fileSystemRule.get(),
+                NullLogProvider.getInstance() );
+        neoStores = storeFactory.openAllNeoStores( true );
     }
 
     @Test
@@ -114,7 +113,7 @@ public class StoreNodeRelationshipCursorTest
 
         try ( StoreNodeRelationshipCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( dense, 1, FIRST_OWNING_NODE, direction );
+            cursor.init( dense, 1L, FIRST_OWNING_NODE, direction );
             assertTrue( cursor.next() );
 
             cursor.init( dense, 2, FIRST_OWNING_NODE, direction );
@@ -143,6 +142,7 @@ public class StoreNodeRelationshipCursorTest
     @Test
     public void retrieveRelationshipChainWithUnusedLink()
     {
+        neoStores.getRelationshipStore().setHighId( 10 );
         createRelationshipChain( 4 );
         unUseRecord( 3 );
         int[] expectedRelationshipIds = new int[]{1, 2, 4};
@@ -180,23 +180,24 @@ public class StoreNodeRelationshipCursorTest
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         if ( dense )
         {
-            RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
-            relationshipGroupStore.forceUpdateRecord( createRelationshipGroup( 1, 1 ) );
-            relationshipGroupStore.forceUpdateRecord( createRelationshipGroup( 2, 2 ) );
-            relationshipGroupStore.forceUpdateRecord( createRelationshipGroup( 3, 3 ) );
+            RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
+            relationshipGroupStore.updateRecord( createRelationshipGroup( 1, 1 ) );
+            relationshipGroupStore.updateRecord( createRelationshipGroup( 2, 2 ) );
+            relationshipGroupStore.updateRecord( createRelationshipGroup( 3, 3 ) );
         }
 
-        relationshipStore.forceUpdateRecord( createRelationship( 1, NO_NEXT_RELATIONSHIP.intValue() ) );
-        relationshipStore.forceUpdateRecord( createRelationship( 2, NO_NEXT_RELATIONSHIP.intValue() ) );
-        relationshipStore.forceUpdateRecord( createRelationship( 3, NO_NEXT_RELATIONSHIP.intValue() ) );
+        relationshipStore.updateRecord( createRelationship( 1, NO_NEXT_RELATIONSHIP.intValue() ) );
+        relationshipStore.updateRecord( createRelationship( 2, NO_NEXT_RELATIONSHIP.intValue() ) );
+        relationshipStore.updateRecord( createRelationship( 3, NO_NEXT_RELATIONSHIP.intValue() ) );
     }
 
     private void unUseRecord( long recordId )
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        RelationshipRecord relationshipRecord = relationshipStore.forceGetRecord( recordId );
+        RelationshipRecord relationshipRecord = relationshipStore.getRecord( recordId, new RelationshipRecord( -1 ),
+                RecordLoad.FORCE );
         relationshipRecord.setInUse( false );
-        relationshipStore.forceUpdateRecord( relationshipRecord );
+        relationshipStore.updateRecord( relationshipRecord );
     }
 
     private RelationshipGroupRecord createRelationshipGroup( long id, long relationshipId )
@@ -225,18 +226,18 @@ public class StoreNodeRelationshipCursorTest
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         for ( int i = 1; i < recordsInChain; i++ )
         {
-            relationshipStore.forceUpdateRecord( createRelationship( i, i + 1 ) );
+            relationshipStore.updateRecord( createRelationship( i, i + 1 ) );
         }
-        relationshipStore.forceUpdateRecord( createRelationship( recordsInChain, NO_NEXT_RELATIONSHIP.intValue() ) );
+        relationshipStore.updateRecord( createRelationship( recordsInChain, NO_NEXT_RELATIONSHIP.intValue() ) );
         if ( dense )
         {
-            RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
+            RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
             for ( int i = 1; i < recordsInChain; i++ )
             {
-                relationshipGroupStore.forceUpdateRecord( createRelationshipGroup( i, i ) );
+                relationshipGroupStore.updateRecord( createRelationshipGroup( i, i ) );
             }
             relationshipGroupStore
-                    .forceUpdateRecord( createRelationshipGroup( recordsInChain, NO_NEXT_RELATIONSHIP.intValue() ) );
+                    .updateRecord( createRelationshipGroup( recordsInChain, NO_NEXT_RELATIONSHIP.intValue() ) );
         }
     }
 
@@ -253,16 +254,16 @@ public class StoreNodeRelationshipCursorTest
 
     private long getFirstNode()
     {
-        return direction == Direction.OUTGOING ? FIRST_OWNING_NODE : SECOND_OWNING_NODE;
+        return direction == OUTGOING ? FIRST_OWNING_NODE : SECOND_OWNING_NODE;
     }
 
     private StoreNodeRelationshipCursor getNodeRelationshipCursor()
     {
         return new StoreNodeRelationshipCursor(
-                new RelationshipRecord( -1 ), neoStores,
+                new RelationshipRecord( -1 ),
                 new RelationshipGroupRecord( -1, -1 ),
-                mock( StoreStatement.class ),
                 mock( Consumer.class ),
+                new RecordCursors( neoStores ),
                 NO_LOCK_SERVICE );
     }
 }

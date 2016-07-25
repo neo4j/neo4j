@@ -40,17 +40,18 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 
 @Ignore("To be rewritten")
 public class QuorumWritesIT
@@ -184,14 +185,13 @@ public class QuorumWritesIT
 
         HighlyAvailableGraphDatabase replacement =
                 (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( new File( clusterRule.directory( "another" ),
-                        "replacement" ).getAbsolutePath() ).
-                setConfig( ClusterSettings.cluster_server, ":5010" ).
-                setConfig( HaSettings.ha_server, ":6010" ).
-                setConfig( ClusterSettings.server_id, "3" ).
-                setConfig( ClusterSettings.initial_hosts, cluster.getInitialHostsConfigString() ).
-                setConfig( HaSettings.tx_push_factor, "0" ).
-                newGraphDatabase();
+                        newEmbeddedDatabaseBuilder( new File( clusterRule.directory( "another" ), "replacement" ) ).
+                        setConfig( ClusterSettings.cluster_server, ":5010" ).
+                        setConfig( HaSettings.ha_server, ":6010" ).
+                        setConfig( ClusterSettings.server_id, "3" ).
+                        setConfig( ClusterSettings.initial_hosts, cluster.getInitialHostsConfigString() ).
+                        setConfig( HaSettings.tx_push_factor, "0" ).
+                        newGraphDatabase();
 
         latch3.await();
         latch4.await();

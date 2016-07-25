@@ -20,7 +20,7 @@
 package org.neo4j.helpers;
 
 import static org.neo4j.helpers.Exceptions.combine;
-import static org.neo4j.helpers.collection.Iterables.toArray;
+import static org.neo4j.helpers.collection.Iterables.asArray;
 
 public class RunCarefully
 {
@@ -33,7 +33,7 @@ public class RunCarefully
 
     public RunCarefully( Iterable<Runnable> operations )
     {
-        this( toArray( Runnable.class, operations ) );
+        this( asArray( Runnable.class, operations ) );
     }
 
     public void run()

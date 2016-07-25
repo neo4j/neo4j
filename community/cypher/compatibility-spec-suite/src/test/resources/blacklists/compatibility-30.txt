@@ -1,0 +1,9 @@
+Fail at runtime when trying to index something which is not a map or collection
+`toInt()` handling Any type
+`toFloat()` handling Any type
+`type()` handling Any type
+`type()` failing on invalid arguments
+`toInt()` failing on invalid arguments
+`toFloat()` failing on invalid arguments
+Handling property access on the Any type
+Failing when performing property access on a non-map 1

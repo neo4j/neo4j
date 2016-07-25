@@ -23,9 +23,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -34,27 +34,35 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.TokenCreator;
+import org.neo4j.storageengine.api.Token;
 
 import static java.lang.Math.max;
 
 /**
  * Batching version of a {@link TokenStore} where tokens can be created and retrieved, but only persisted
- * to storage as part of {@link #close() closing}.
+ * to storage as part of {@link #close() closing}. Instances of this class are thread safe
+ * to call {@link #getOrCreateId(String)} methods on.
  */
 public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN extends Token>
+        implements ToIntFunction<Object>
 {
-    // TODO more efficient data structure
     private final Map<String,Integer> tokens = new HashMap<>();
     private final TokenStore<RECORD, TOKEN> store;
     private int highId;
 
-    public BatchingTokenRepository( TokenStore<RECORD,TOKEN> store, int highId )
+    public BatchingTokenRepository( TokenStore<RECORD,TOKEN> store )
     {
         this.store = store;
-        // TODO read the store into the repository, i.e. into existing?
-        this.highId = highId;
+        this.highId = (int)store.getHighId();
     }
 
+    /**
+     * Returns the id for token with the specified {@code name}, potentially creating that token and
+     * assigning a new id as part of this call.
+     *
+     * @param name token name.
+     * @return the id (created or existing) for the token by this name.
+     */
     public int getOrCreateId( String name )
     {
         assert name != null;
@@ -75,15 +83,48 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
     }
 
     /**
-     * Converts label names into label ids. Also sorts and deduplicates.
+     * Returns the id for token with the specified {@code key}, which can be a {@link String} if representing
+     * a user-defined name or an {@link Integer} if representing an existing type from an external source,
+     * which wants to preserve its name --> id tokens. Also see {@link #getOrCreateId(String)} for more details.
+     *
+     * @param key name or id of this token.
+     * @return the id (created or existing) for the token key.
      */
-    public long[] getOrCreateIds( String[] labels )
+    public int getOrCreateId( Object key )
     {
-        long[] result = new long[labels.length];
-        int from, to;
-        for ( from = 0, to = 0; from < labels.length; from++ )
+        if ( key instanceof String )
         {
-            int id = getOrCreateId( labels[from] );
+            // A name was supplied, get or create a token id for it
+            return getOrCreateId( (String) key );
+        }
+        else if ( key instanceof Integer )
+        {
+            // A raw token id was supplied, just use it
+            return (Integer) key;
+        }
+        throw new IllegalArgumentException( "Expected either a String or Integer for property key, but was '" +
+                key + "'" + ", " + key.getClass() );
+    }
+
+    @Override
+    public int applyAsInt( Object key )
+    {
+        return getOrCreateId( key );
+    }
+
+    /**
+     * Returns or creates multiple tokens for given token names.
+     *
+     * @param names token names to lookup or create token ids for.
+     * @return {@code long[]} containing the label ids.
+     */
+    public long[] getOrCreateIds( String[] names )
+    {
+        long[] result = new long[names.length];
+        int from, to;
+        for ( from = 0, to = 0; from < names.length; from++ )
+        {
+            int id = getOrCreateId( names[from] );
             if ( !contains( result, id, to ) )
             {
                 result[to++] = id;
@@ -116,6 +157,9 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
 
     protected abstract RECORD createRecord( int key );
 
+    /**
+     * Closes this repository and writes all created tokens to the underlying store.
+     */
     public void close()
     {
         // Batch-friendly record access
@@ -142,7 +186,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
         for ( RECORD record : recordAccess.records() )
         {
             store.updateRecord( record );
-            highestId = max( highestId, record.getId() );
+            highestId = max( highestId, record.getIntId() );
         }
         store.setHighestPossibleIdInUse( highestId );
     }
@@ -159,9 +203,9 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
 
     public static class BatchingPropertyKeyTokenRepository extends BatchingTokenRepository<PropertyKeyTokenRecord, Token>
     {
-        public BatchingPropertyKeyTokenRepository( TokenStore<PropertyKeyTokenRecord, Token> store, int highId )
+        public BatchingPropertyKeyTokenRepository( TokenStore<PropertyKeyTokenRecord, Token> store )
         {
-            super( store, highId );
+            super( store );
         }
 
         @Override
@@ -176,7 +220,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
             int count = properties.length >> 1;
             for ( int i = 0, cursor = 0; i < count; i++ )
             {
-                int key = getOrCreateId( (String)properties[cursor++] );
+                int key = getOrCreateId( properties[cursor++] );
                 Object value = properties[cursor++];
                 target[offset+i] = creator.encodeValue( new PropertyBlock(), key, value );
             }
@@ -185,9 +229,9 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
 
     public static class BatchingLabelTokenRepository extends BatchingTokenRepository<LabelTokenRecord, Token>
     {
-        public BatchingLabelTokenRepository( TokenStore<LabelTokenRecord, Token> store, int highId )
+        public BatchingLabelTokenRepository( TokenStore<LabelTokenRecord, Token> store )
         {
-            super( store, highId );
+            super( store );
         }
 
         @Override
@@ -200,9 +244,10 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
     public static class BatchingRelationshipTypeTokenRepository
             extends BatchingTokenRepository<RelationshipTypeTokenRecord,RelationshipTypeToken>
     {
-        public BatchingRelationshipTypeTokenRepository( TokenStore<RelationshipTypeTokenRecord, RelationshipTypeToken> store, int highId )
+        public BatchingRelationshipTypeTokenRepository( TokenStore<RelationshipTypeTokenRecord,
+                RelationshipTypeToken> store )
         {
-            super( store, highId );
+            super( store );
         }
 
         @Override

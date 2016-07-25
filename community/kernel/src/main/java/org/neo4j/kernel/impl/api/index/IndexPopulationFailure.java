@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 public abstract class IndexPopulationFailure
 {
     public abstract String asString();
-    
+
     public abstract IndexPopulationFailedKernelException asIndexPopulationFailure(
             IndexDescriptor descriptor, String indexUserDescriptor );
 

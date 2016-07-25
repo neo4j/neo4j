@@ -31,14 +31,16 @@ import java.io.Writer;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.adversaries.Adversary;
-import org.neo4j.function.Function;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.fs.StoreFileChannel;
 
 /**
  * Used by the robustness suite to check for partial failures.
@@ -63,7 +65,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     public StoreChannel open( File fileName, String mode ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
-        return AdversarialFileChannel.wrap( delegate.open( fileName, mode ), adversary );
+        return AdversarialFileChannel.wrap( (StoreFileChannel) delegate.open( fileName, mode ), adversary );
     }
 
     public boolean renameFile( File from, File to ) throws IOException
@@ -81,7 +83,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     public StoreChannel create( File fileName ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
-        return AdversarialFileChannel.wrap( delegate.create( fileName ), adversary );
+        return AdversarialFileChannel.wrap( (StoreFileChannel) delegate.create( fileName ), adversary );
     }
 
     public boolean mkdir( File fileName )
@@ -102,18 +104,18 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         return delegate.listFiles( directory, filter );
     }
 
-    public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
+    public Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException
     {
         adversary.injectFailure(
                 UnsupportedEncodingException.class, FileNotFoundException.class, SecurityException.class );
-        return new AdversarialWriter( delegate.openAsWriter( fileName, encoding, append ), adversary );
+        return new AdversarialWriter( delegate.openAsWriter( fileName, charset, append ), adversary );
     }
 
-    public Reader openAsReader( File fileName, String encoding ) throws IOException
+    public Reader openAsReader( File fileName, Charset charset ) throws IOException
     {
         adversary.injectFailure(
                 UnsupportedEncodingException.class, FileNotFoundException.class, SecurityException.class );
-        return new AdversarialReader( delegate.openAsReader( fileName, encoding ), adversary );
+        return new AdversarialReader( delegate.openAsReader( fileName, charset ), adversary );
     }
 
     public long getFileSize( File fileName )
@@ -181,7 +183,6 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     private final Map<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem> thirdPartyFileSystems =
             new HashMap<>();
 
-    @Override
     public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
             Class<K> clazz,
             Function<Class<K>, K> creator )
@@ -196,7 +197,6 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         return (K) fileSystem;
     }
 
-    @Override
     public void truncate( File path, long size ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, IllegalArgumentException.class,

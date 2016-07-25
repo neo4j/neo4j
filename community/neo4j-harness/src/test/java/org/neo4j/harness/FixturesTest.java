@@ -23,16 +23,18 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 
-import org.neo4j.function.Function;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.test.SuppressOutput;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.server.HTTP;
 
+import static java.lang.System.lineSeparator;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,7 +46,8 @@ public class FixturesTest
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( FixturesTest.class );
 
-    @Rule public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldAccepSingleCypherFileAsFixture() throws Exception
@@ -57,7 +60,7 @@ public class FixturesTest
                 "CREATE (a:OtherUser)", false);
 
         // When
-        try(ServerControls server = newInProcessBuilder( targetFolder )
+        try(ServerControls server = getServerBuilder( targetFolder )
                 .withFixture( fixture ).newServer())
         {
             // Then
@@ -89,7 +92,7 @@ public class FixturesTest
                 "CREATE (a:OtherUser)", false);
 
         // When
-        try(ServerControls server = newInProcessBuilder( targetFolder )
+        try(ServerControls server = getServerBuilder( targetFolder )
                 .withFixture( targetFolder ).newServer())
         {
             // Then
@@ -115,7 +118,7 @@ public class FixturesTest
                 "CREATE (a:OtherUser)", false);
 
         // When
-        try(ServerControls server = newInProcessBuilder( targetFolder )
+        try(ServerControls server = getServerBuilder( targetFolder )
                 .withFixture( fixture1 )
                 .withFixture( fixture2 )
                 .newServer())
@@ -135,7 +138,7 @@ public class FixturesTest
         File targetFolder = testDir.directory();
 
         // When
-        try(ServerControls server = newInProcessBuilder( targetFolder )
+        try(ServerControls server = getServerBuilder( targetFolder )
                 .withFixture( "CREATE (a:User)" )
                 .newServer())
         {
@@ -158,7 +161,7 @@ public class FixturesTest
         FileUtils.writeToFile( new File(targetFolder, "fixture2.cyp"), "", false);
 
         // When
-        try(ServerControls server = newInProcessBuilder( targetFolder )
+        try(ServerControls server = getServerBuilder( targetFolder )
                 .withFixture( targetFolder ).newServer())
         {
             // Then
@@ -177,15 +180,16 @@ public class FixturesTest
         FileUtils.writeToFile( new File(targetFolder, "fixture1.cyp"), "this is not a valid cypher statement", false);
 
         // When
-        try(ServerControls ignore = newInProcessBuilder( targetFolder )
+        try(ServerControls ignore = getServerBuilder( targetFolder )
                 .withFixture( targetFolder ).newServer())
         {
             fail("Should have thrown exception");
         }
         catch(RuntimeException e)
         {
-            assertThat(e.getMessage(), equalTo("Invalid input 't': expected <init> " +
-                    "(line 1, column 1 (offset: 0))\n\"this is not a valid cypher statement\"\n ^"));
+            assertThat( e.getMessage(), equalTo(
+                    "Invalid input 't': expected <init> (line 1, column 1 (offset: 0))" + lineSeparator() +
+                    "\"this is not a valid cypher statement\"" + lineSeparator() + " ^" ) );
         }
     }
 
@@ -196,19 +200,15 @@ public class FixturesTest
         File targetFolder = testDir.directory();
 
         // When
-        try ( ServerControls server = newInProcessBuilder( targetFolder )
-                .withFixture( new Function<GraphDatabaseService, Void>()
-                {
-                    @Override
-                    public Void apply( GraphDatabaseService graphDatabaseService ) throws RuntimeException
+
+        try ( ServerControls server = getServerBuilder( targetFolder )
+                .withFixture( graphDatabaseService -> {
+                    try ( Transaction tx = graphDatabaseService.beginTx() )
                     {
-                        try ( Transaction tx = graphDatabaseService.beginTx() )
-                        {
-                            graphDatabaseService.createNode( DynamicLabel.label( "User" ) );
-                            tx.success();
-                        }
-                        return null;
+                        graphDatabaseService.createNode( Label.label( "User" ) );
+                        tx.success();
                     }
+                    return null;
                 } )
                 .newServer() )
         {
@@ -219,4 +219,13 @@ public class FixturesTest
             assertThat( response.get( "results" ).get( 0 ).get( "data" ).size(), equalTo( 1 ) );
         }
     }
+
+    private TestServerBuilder getServerBuilder( File targetFolder ) throws IOException
+    {
+        TestServerBuilder serverBuilder = newInProcessBuilder( targetFolder )
+                .withConfig( ServerSettings.certificates_directory.name(),
+                        ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.certificates_directory ) );
+        return serverBuilder;
+    }
+
 }

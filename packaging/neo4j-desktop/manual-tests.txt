@@ -15,7 +15,7 @@
  * Check that you can't see the data you added to the other database.
  * Change the server port through the settings dialogue. Check that
    the browser can now connect to the new port.
- * Through settings dialogue, add read_only=true to neo4j.properties.
+ * Through settings dialogue, add dbms.read_only=true to neo4j.conf.
  * Check that you get an error if you try to modify data.
  * Restart the original, default database and check that you can still
    modify data.

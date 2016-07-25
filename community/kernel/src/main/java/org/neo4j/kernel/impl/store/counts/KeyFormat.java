@@ -130,12 +130,15 @@ class KeyFormat implements CountsVisitor
         case KeyFormat.RELATIONSHIP_COUNT:
             return CountsKeyFactory.relationshipKey( key.getInt( 4 ), key.getInt( 8 ), key.getInt( 12 ) );
         case KeyFormat.INDEX:
-            switch ( key.getByte( 15 ) )
+            byte indexKeyByte = key.getByte( 15 );
+            switch ( indexKeyByte )
             {
             case KeyFormat.INDEX_STATS:
                 return indexStatisticsKey( key.getInt( 4 ), key.getInt( 8 ) );
             case KeyFormat.INDEX_SAMPLE:
                 return CountsKeyFactory.indexSampleKey( key.getInt( 4 ), key.getInt( 8 ) );
+            default:
+                throw new IllegalStateException( "Unknown index key: " + indexKeyByte );
             }
         default:
             throw new UnknownKey( "Unknown key type: " + key );

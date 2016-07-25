@@ -19,6 +19,7 @@
  */
 package org.neo4j.jmx.impl;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 
@@ -26,8 +27,10 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
 import org.neo4j.jmx.Kernel;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 public class KernelBean extends Neo4jMBean implements Kernel
@@ -37,19 +40,17 @@ public class KernelBean extends Neo4jMBean implements Kernel
     private final ObjectName query;
     private final String instanceId;
 
-    private final DataSourceInfo dataSourceInfo;
     private boolean isReadOnly;
     private long storeCreationDate = -1;
     private long storeId = -1;
-    private String storeDir = null;
+    private String databaseName = null;
     private long storeLogVersion;
 
     KernelBean( KernelData kernel, ManagementSupport support ) throws NotCompliantMBeanException
     {
         super( Kernel.class, kernel, support );
-        dataSourceInfo = new DataSourceInfo();
         kernel.graphDatabase().getDependencyResolver().resolveDependency( DataSourceManager.class )
-                .addListener( dataSourceInfo );
+                .addListener( new DataSourceInfo() );
         this.kernelVersion = kernel.version().toString();
         this.instanceId = kernel.instanceId();
         this.query = support.createMBeanQuery( instanceId );
@@ -105,9 +106,9 @@ public class KernelBean extends Neo4jMBean implements Kernel
     }
 
     @Override
-    public String getStoreDirectory()
+    public String getDatabaseName()
     {
-        return storeDir;
+        return databaseName;
     }
 
     private class DataSourceInfo
@@ -116,19 +117,23 @@ public class KernelBean extends Neo4jMBean implements Kernel
         @Override
         public void registered( NeoStoreDataSource ds )
         {
-            storeCreationDate = ds.getCreationTime();
-            storeLogVersion = ds.getCurrentLogVersion();
+            StoreId id = ds.getStoreId();
+            storeLogVersion =
+                    ds.getDependencyResolver().resolveDependency( LogVersionRepository.class ).getCurrentLogVersion();
+            storeCreationDate = id.getCreationTime();
             isReadOnly = ds.isReadOnly();
-            storeId = ds.getRandomIdentifier();
+            storeId = id.getRandomId();
 
+            File storeDir = ds.getStoreDir();
             try
             {
-                storeDir = ds.getStoreDir().getCanonicalFile().getAbsolutePath();
+                storeDir = storeDir.getCanonicalFile();
             }
-            catch ( IOException e )
+            catch ( IOException ignored )
             {
-                storeDir = ds.getStoreDir().getAbsolutePath();
             }
+
+            databaseName = storeDir.getName();
         }
 
         @Override
@@ -138,7 +143,6 @@ public class KernelBean extends Neo4jMBean implements Kernel
             storeLogVersion = -1;
             isReadOnly = false;
             storeId = -1;
-            storeDir = null;
         }
     }
 }

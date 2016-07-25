@@ -23,7 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
 public abstract class AbstractIndexHits<T> extends PrefetchingIterator<T> implements IndexHits<T>
@@ -44,7 +44,7 @@ public abstract class AbstractIndexHits<T> extends PrefetchingIterator<T> implem
     {
         try
         {
-            return IteratorUtil.singleOrNull( (Iterator<T>) this );
+            return Iterators.singleOrNull( (Iterator<T>) this );
         }
         finally
         {

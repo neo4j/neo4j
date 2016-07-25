@@ -25,7 +25,7 @@ import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -35,15 +35,13 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
  * network}.
  * One serializer can be instantiated per response and is able to serialize one or many transactions.
  */
-public class CommittedTransactionSerializer implements Visitor<CommittedTransactionRepresentation,IOException>
+public class CommittedTransactionSerializer implements Visitor<CommittedTransactionRepresentation,Exception>
 {
-    private final NetworkWritableLogChannel channel;
     private final LogEntryWriter writer;
 
-    public CommittedTransactionSerializer( ChannelBuffer targetBuffer )
+    public CommittedTransactionSerializer( FlushableChannel networkFlushableChannel )
     {
-        this.channel = new NetworkWritableLogChannel( targetBuffer );
-        this.writer = new LogEntryWriter( channel, new CommandWriter( channel ) );
+        this.writer = new LogEntryWriter( networkFlushableChannel );
     }
 
     @Override

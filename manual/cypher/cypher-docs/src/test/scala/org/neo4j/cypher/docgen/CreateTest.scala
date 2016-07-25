@@ -21,8 +21,8 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
-import org.neo4j.graphdb.{DynamicLabel, Node, Relationship}
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.graphdb.{Label, Node, Relationship}
+import org.neo4j.kernel.GraphDatabaseQueryService
 
 class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport with SoftReset {
 
@@ -70,7 +70,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
       text = "When creating a new node with labels, you can add properties at the same time.",
       queryText = "create (n:Person {name : 'Andres', title : 'Developer'})",
       optionalResultExplanation = "Nothing is returned from this query.",
-      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))
+      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesWritten = 2, labelsAdded = 1))
   }
 
   @Test def create_single_node_and_return_it() {
@@ -82,10 +82,10 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
       assertions = (p) => assert(p.size === 1))
   }
 
-  def createTwoPersonNodesWithNames(db: GraphDatabaseAPI) = {
+  def createTwoPersonNodesWithNames(db: GraphDatabaseQueryService) = {
     db.inTx {
-      db.createNode(DynamicLabel.label("Person")).setProperty("name", "Node A")
-      db.createNode(DynamicLabel.label("Person")).setProperty("name", "Node B")
+      db.createNode(Label.label("Person")).setProperty("name", "Node A")
+      db.createNode(Label.label("Person")).setProperty("name", "Node B")
     }
   }
 
@@ -101,17 +101,17 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
   }
 
   @Test def set_property_to_a_collection() {
-    val createTwoNodesWithProperty = (db: GraphDatabaseAPI) => db.inTx {
+    val createTwoNodesWithProperty = (db: GraphDatabaseQueryService) => db.inTx {
       db.createNode().setProperty("name", "Andres")
       db.createNode().setProperty("name", "Michael")
     }
 
     prepareAndTestQuery(
       title = "Set a property to an array",
-      text = """When you set a property to an expression that returns a collection of values,
-Cypher will turn that into an array. All the elements in the collection must be of the same type
+      text = """When you set a property to an expression that returns a list of values,
+Cypher will turn that into an array. All the elements in the list must be of the same type
 for this to work.""",
-      queryText = "match (n) where has(n.name) with collect(n.name) as names create (new { name : names }) return new",
+      queryText = "match (n) where exists(n.name) with collect(n.name) as names create (new { name : names }) return new",
       optionalResultExplanation = "A node with an array property named name is returned.",
       prepare = createTwoNodesWithProperty,
       assertions = (p) => {
@@ -127,9 +127,9 @@ for this to work.""",
         """When you use `CREATE` and a pattern, all parts of the pattern that are not already in scope at this time
 will be created. """,
       queryText = "create p = (andres {name:'Andres'})-[:WORKS_AT]->(neo)<-[:WORKS_AT]-(michael {name:'Michael'}) return p",
-      optionalResultExplanation = "This query creates three nodes and two relationships in one go, assigns it to a path identifier, " +
+      optionalResultExplanation = "This query creates three nodes and two relationships in one go, assigns it to a path variable, " +
         "and returns it.",
-      assertions = (p) => assertStats(p, nodesCreated = 3, relationshipsCreated = 2, propertiesSet = 2))
+      assertions = (p) => assertStats(p, nodesCreated = 3, relationshipsCreated = 2, propertiesWritten = 2))
   }
 
   @Test def create_relationship_with_properties() {
@@ -159,7 +159,7 @@ In this case we add a +Person+ label to the node as well.
       parameters = Map("props" -> Map("name" -> "Andres", "position" -> "Developer")),
       queryText = "create (n:Person {props}) return n",
       optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))
+      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesWritten = 2, labelsAdded = 1))
   }
 
   @Test def create_multiple_nodes_from_maps() {
@@ -171,26 +171,6 @@ In this case we add a +Person+ label to the node as well.
         Map("name" -> "Michael", "position" -> "Developer"))),
       queryText = "UNWIND {props} as map CREATE (n) SET n = map",
       optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
-  }
-
-  @Test def create_multiple_nodes_from_maps_deprecated() {
-    testQuery(
-      title = "Create multiple nodes with a parameter for their properties using old syntax",
-      text = """
-By providing Cypher an array of maps, it will create a node for each map.
-
-NOTE: When you do this, you can't create anything else in the same +CREATE+ clause.
-
-NOTE: This syntax is deprecated in Neo4j version 2.3.
-It may be removed in a future major release.
-See the above example using +UNWIND+ for how to achieve the same functionality.
-""",
-      parameters = Map("props" -> List(
-        Map("name" -> "Andres", "position" -> "Developer"),
-        Map("name" -> "Michael", "position" -> "Developer"))),
-      queryText = "create (n {props}) return n",
-      optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
+      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesWritten = 4))
   }
 }

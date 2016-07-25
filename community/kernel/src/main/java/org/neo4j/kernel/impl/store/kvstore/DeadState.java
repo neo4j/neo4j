@@ -21,16 +21,13 @@ package org.neo4j.kernel.impl.store.kvstore;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Function;
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.util.function.Optional;
-
-import static org.neo4j.kernel.impl.util.function.Optionals.none;
-import static org.neo4j.kernel.impl.util.function.Optionals.some;
+import org.neo4j.helpers.collection.Pair;
 
 abstract class DeadState<Key> extends ProgressiveState<Key>
 {
@@ -204,7 +201,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
         @Override
         protected Optional<EntryUpdater<Key>> optionalUpdater( long version, Lock lock )
         {
-            return none();
+            return Optional.empty();
         }
 
         /** for rotating recovered state (none) */
@@ -263,11 +260,11 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
         {
             if ( version <= state.version() )
             {
-                return none();
+                return Optional.empty();
             }
             else
             {
-                return some( state.updater( version, lock ) );
+                return Optional.of( state.updater( version, lock ) );
             }
         }
 
@@ -323,7 +320,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
         }
     }
 
-    private static abstract class Rotation<Key, State extends ProgressiveState<Key>> extends RotationState<Key>
+    private abstract static class Rotation<Key, State extends ProgressiveState<Key>> extends RotationState<Key>
     {
         final State state;
 

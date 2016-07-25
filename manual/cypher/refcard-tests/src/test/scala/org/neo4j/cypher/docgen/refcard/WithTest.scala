@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class WithTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT FRIEND A", "A FRIEND B", "B FRIEND C", "C FRIEND ROOT")
@@ -65,7 +65,7 @@ RETURN user
 ###
 
 The `WITH` syntax is similar to `RETURN`.
-It separates query parts explicitly, allowing you to declare which identifiers to carry over to the next part.
+It separates query parts explicitly, allowing you to declare which variables to carry over to the next part.
 
 ###assertion=with-limit
 //

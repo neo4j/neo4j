@@ -22,6 +22,8 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Collections;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
@@ -119,5 +121,37 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
 
         assertThat( getAllNodesFromIndexSeekByPrefix( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
         assertThat( getAllNodesFromIndexSeekByPrefix( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
+    }
+
+    @Test
+    public void testIndexFullSearchWithDuplicates() throws Exception
+    {
+        updateAndCommit( asList(
+                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
+                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "A", new long[]{1000} ),
+                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
+                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
+                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "apalong", new long[]{1000} ) ) );
+
+        assertThat( getAllNodesFromIndexScanByContains( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromIndexScanByContains( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromIndexScanByContains( "apa*" ), equalTo( Collections.emptyList() ) );
+    }
+
+    @Test
+    public void testIndexEndsWithWithDuplicated() throws Exception
+    {
+        updateAndCommit( asList(
+                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
+                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "A", new long[]{1000} ),
+                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
+                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
+                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "longapa", new long[]{1000} ),
+                NodePropertyUpdate.add( 6L, PROPERTY_KEY_ID, "apalong", new long[]{1000} ) ) );
+
+        assertThat( getAllNodesFromIndexScanEndsWith( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromIndexScanEndsWith( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromIndexScanEndsWith( "apa*" ), equalTo( Collections.emptyList() ) );
+        assertThat( getAllNodesFromIndexScanEndsWith( "" ), equalTo( asList( 1L, 2L, 3L, 4L, 5L, 6L ) ) );
     }
 }

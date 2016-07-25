@@ -44,7 +44,7 @@ public class ObjectToRepresentationConverter
         }
         if ( data instanceof Map )
         {
-            
+
             return getMapRepresentation( (Map) data );
         }
         return getSingleRepresentation( data );
@@ -52,7 +52,7 @@ public class ObjectToRepresentationConverter
 
     public static MappingRepresentation getMapRepresentation( Map data )
     {
-        
+
         return new MapRepresentation( data );
     }
 

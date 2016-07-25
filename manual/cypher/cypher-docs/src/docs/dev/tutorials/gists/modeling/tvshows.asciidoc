@@ -149,7 +149,7 @@ What a great pilot for a show
 //table
 
 Now let's list the characters featured in a show.
-Note that in this query we only put identifiers on the nodes we actually use later on.
+Note that in this query we only put variables on the nodes we actually use later on.
 The other nodes of the path pattern are designated by `()`.
 
 [source,cypher]

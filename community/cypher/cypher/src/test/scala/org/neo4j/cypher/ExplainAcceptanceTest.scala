@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.MergePattern
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.MergePattern
 
 class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
   test("normal query is marked as such") {
     createNode()
-    val result = execute("match n return n")
+    val result = execute("match (n) return n")
 
     result.planDescriptionRequested should equal(false)
     result shouldNot be(empty)
@@ -32,14 +32,14 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("explain query is marked as such") {
     createNode()
-    val result = execute("explain match n return n")
+    val result = execute("explain match (n) return n")
 
     result.planDescriptionRequested should equal(true)
     result should be(empty)
   }
 
-  test("EXPLAIN for Cypher 2.3") {
-    val result = eengine.execute("explain match n return n")
+  test("EXPLAIN for Cypher 3.1") {
+    val result = eengine.execute("explain match (n) return n", Map.empty[String, Object], graph.session())
     result.toList
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
     result.executionPlanDescription().toString should include("Estimated Rows")
@@ -47,7 +47,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should report which node the merge starts from") {
-    val query = "EXPLAIN MERGE (first)-[:PIZZA]->(second)"
+    val query = "CYPHER planner=rule EXPLAIN MERGE (first)-[:PIZZA]->(second)"
 
     val result = execute(query)
     val plan = result.executionPlanDescription()

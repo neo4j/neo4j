@@ -20,9 +20,8 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -37,14 +36,12 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.store.ProcedureCache;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TransactionId;
@@ -52,15 +49,20 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextFactory;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.Race;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -69,6 +71,7 @@ import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
@@ -76,11 +79,13 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class KernelTransactionsTest
 {
@@ -91,14 +96,14 @@ public class KernelTransactionsTest
         KernelTransactions registry = newKernelTransactions();
 
         // When
-        KernelTransaction first = registry.newInstance();
-        KernelTransaction second = registry.newInstance();
-        KernelTransaction third = registry.newInstance();
+        KernelTransaction first = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransaction second = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransaction third = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
 
         first.close();
 
         // Then
-        assertThat( asUniqueSet( registry.activeTransactions() ), equalTo( asSet( second, third ) ) );
+        assertThat( Iterables.asUniqueSet( registry.activeTransactions() ), equalTo( asSet( second, third ) ) );
     }
 
     @Test
@@ -109,9 +114,9 @@ public class KernelTransactionsTest
 
         registry.disposeAll();
 
-        KernelTransaction first = registry.newInstance();
-        KernelTransaction second = registry.newInstance();
-        KernelTransaction leftOpen = registry.newInstance();
+        KernelTransaction first = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransaction second = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransaction leftOpen = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
         first.close();
         second.close();
 
@@ -119,7 +124,7 @@ public class KernelTransactionsTest
         registry.disposeAll();
 
         // Then
-        KernelTransaction postDispose = registry.newInstance();
+        KernelTransaction postDispose = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
         assertThat( postDispose, not( equalTo( first ) ) );
         assertThat( postDispose, not( equalTo( second ) ) );
 
@@ -127,18 +132,20 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldIncludeRandomBytesInAdditionalHeader() throws TransactionFailureException
+    public void shouldIncludeRandomBytesInAdditionalHeader() throws Exception
     {
         // Given
         TransactionRepresentation[] transactionRepresentation = new TransactionRepresentation[1];
 
-        KernelTransactions registry = newKernelTransactions(
-                newRememberingCommitProcess( transactionRepresentation ), newMockContextFactoryWithChanges() );
+        KernelTransactions registry = newKernelTransactions( newRememberingCommitProcess( transactionRepresentation ) );
 
         // When
-        KernelTransaction transaction = registry.newInstance();
-        transaction.success();
-        transaction.close();
+        try ( KernelTransaction transaction = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE ) )
+        {
+            // Just pick anything that can flag that changes have been made to this transaction
+            ((KernelTransactionImplementation) transaction).txState().nodeDoCreate( 0 );
+            transaction.success();
+        }
 
         // Then
         byte[] additionalHeader = transactionRepresentation[0].additionalHeader();
@@ -151,11 +158,11 @@ public class KernelTransactionsTest
     {
         // GIVEN
         KernelTransactions transactions = newKernelTransactions();
-        KernelTransaction a = transactions.newInstance();
+        KernelTransaction a = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
 
         // WHEN
         a.close();
-        KernelTransaction b = transactions.newInstance();
+        KernelTransaction b = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
 
         // THEN
         assertSame( a, b );
@@ -166,9 +173,9 @@ public class KernelTransactionsTest
     {
         // GIVEN
         KernelTransactions transactions = newKernelTransactions();
-        KernelTransaction a = transactions.newInstance();
-        KernelTransaction b = transactions.newInstance();
-        KernelTransaction c = transactions.newInstance();
+        KernelTransaction a = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransaction b = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransaction c = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
         KernelTransactionsSnapshot snapshot = transactions.get();
         assertFalse( snapshot.allClosed() );
 
@@ -178,7 +185,7 @@ public class KernelTransactionsTest
 
         // WHEN c gets closed and (test knowing too much) that instance getting reused in another transaction "d".
         c.close();
-        KernelTransaction d = transactions.newInstance();
+        KernelTransaction d = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
         assertFalse( snapshot.allClosed() );
 
         // WHEN b finally gets closed
@@ -200,60 +207,117 @@ public class KernelTransactionsTest
         for ( int i = 0; i < threads; i++ )
         {
             final int threadIndex = i;
-            race.addContestant( new Runnable()
-            {
-                @Override
-                public void run()
+            race.addContestant( () -> {
+                ThreadLocalRandom random = ThreadLocalRandom.current();
+                while ( !end.get() )
                 {
-                    ThreadLocalRandom random = ThreadLocalRandom.current();
-                    while ( !end.get() )
+                    try ( KernelTransaction transaction = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE ) )
                     {
-                        try ( KernelTransaction transaction = transactions.newInstance() )
+                        parkNanos( MILLISECONDS.toNanos( random.nextInt( 3 ) ) );
+                        if ( snapshots.get( threadIndex ) == null )
                         {
+                            snapshots.set( threadIndex, transactions.get() );
                             parkNanos( MILLISECONDS.toNanos( random.nextInt( 3 ) ) );
-                            if ( snapshots.get( threadIndex ) == null )
-                            {
-                                snapshots.set( threadIndex, transactions.get() );
-                                parkNanos( MILLISECONDS.toNanos( random.nextInt( 3 ) ) );
-                            }
                         }
-                        catch ( TransactionFailureException e )
-                        {
-                            throw new RuntimeException( e );
-                        }
+                    }
+                    catch ( TransactionFailureException e )
+                    {
+                        throw new RuntimeException( e );
                     }
                 }
             } );
         }
 
         // Just checks snapshots
-        race.addContestant( new Runnable()
-        {
-            @Override
-            public void run()
+        race.addContestant( () -> {
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            int snapshotsLeft = 1_000;
+            while ( snapshotsLeft > 0 )
             {
-                ThreadLocalRandom random = ThreadLocalRandom.current();
-                int snapshotsLeft = 1_000;
-                while ( snapshotsLeft > 0 )
+                int threadIndex = random.nextInt( threads );
+                KernelTransactionsSnapshot snapshot = snapshots.get( threadIndex );
+                if ( snapshot != null && snapshot.allClosed() )
                 {
-                    int threadIndex = random.nextInt( threads );
-                    KernelTransactionsSnapshot snapshot = snapshots.get( threadIndex );
-                    if ( snapshot != null && snapshot.allClosed() )
-                    {
-                        snapshotsLeft--;
-                        snapshots.set( threadIndex, null );
-                    }
+                    snapshotsLeft--;
+                    snapshots.set( threadIndex, null );
                 }
-
-                // End condition of this test can be described as:
-                //   when 1000 snapshots have been seen as closed.
-                // setting this boolean to true will have all other threads end as well so that race.go() will end
-                end.set( true );
             }
+
+            // End condition of this test can be described as:
+            //   when 1000 snapshots have been seen as closed.
+            // setting this boolean to true will have all other threads end as well so that race.go() will end
+            end.set( true );
         } );
 
         // WHEN
         race.go();
+    }
+
+    @Test
+    public void transactionCloseRemovesTxFromActiveTransactions() throws Exception
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+
+        KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit,AccessMode.Static.NONE );
+        KernelTransaction tx3 = kernelTransactions.newInstance( KernelTransaction.Type.implicit,AccessMode.Static.NONE );
+
+        tx1.close();
+        tx3.close();
+
+        assertEquals( asSet( tx2 ), kernelTransactions.activeTransactions() );
+    }
+
+    @Test
+    public void transactionRemovesItselfFromActiveTransactions() throws Exception
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+
+        KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransaction tx3 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+
+        tx2.close();
+
+        assertEquals( asSet( tx1, tx3 ), kernelTransactions.activeTransactions() );
+    }
+
+    @Test
+    public void disposeAllMarksAllTransactionsForTermination() throws Exception
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+
+        KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransaction tx3 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+
+        kernelTransactions.disposeAll();
+
+        assertEquals( Status.General.DatabaseUnavailable, tx1.getReasonIfTerminated() );
+        assertEquals( Status.General.DatabaseUnavailable, tx2.getReasonIfTerminated() );
+        assertEquals( Status.General.DatabaseUnavailable, tx3.getReasonIfTerminated() );
+    }
+
+    @Test
+    public void transactionClosesUnderlyingStoreStatementWhenDisposed() throws Exception
+    {
+        StorageStatement storeStatement1 = mock( StorageStatement.class );
+        StorageStatement storeStatement2 = mock( StorageStatement.class );
+        StorageStatement storeStatement3 = mock( StorageStatement.class );
+
+        KernelTransactions kernelTransactions = newKernelTransactions( mock( TransactionCommitProcess.class ),
+                storeStatement1, storeStatement2, storeStatement3 );
+
+        // start and close 3 transactions from different threads
+        startAndCloseTransaction( kernelTransactions );
+        Executors.newSingleThreadExecutor().submit( () -> startAndCloseTransaction( kernelTransactions ) ).get();
+        Executors.newSingleThreadExecutor().submit( () -> startAndCloseTransaction( kernelTransactions ) ).get();
+
+        kernelTransactions.disposeAll();
+
+        verify( storeStatement1 ).close();
+        verify( storeStatement2 ).close();
+        verify( storeStatement3 ).close();
     }
 
     @Test
@@ -263,7 +327,7 @@ public class KernelTransactionsTest
         kernelTransactions.blockNewTransactions();
         try
         {
-            kernelTransactions.newInstance();
+            kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.WRITE );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -317,13 +381,30 @@ public class KernelTransactionsTest
         assertNotNull( txOpener.get( 2, TimeUnit.SECONDS ) );
     }
 
-    private static KernelTransactions newKernelTransactions()
+    private static void startAndCloseTransaction( KernelTransactions kernelTransactions )
     {
-        return newKernelTransactions( mock( TransactionCommitProcess.class ), newMockContextFactory() );
+        try
+        {
+            kernelTransactions.newInstance( KernelTransaction.Type.explicit, AccessMode.Static.FULL ).close();
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private static KernelTransactions newKernelTransactions() throws Exception
+    {
+        return newKernelTransactions( mock( TransactionCommitProcess.class ) );
+    }
+
+    private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess ) throws Exception
+    {
+        return newKernelTransactions( commitProcess, mock( StorageStatement.class ) );
     }
 
     private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess,
-            NeoStoreTransactionContextFactory contextSupplier )
+            StorageStatement firstStoreStatements, StorageStatement... otherStorageStatements ) throws Exception
     {
         LifeSupport life = new LifeSupport();
         life.start();
@@ -332,17 +413,30 @@ public class KernelTransactionsTest
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
         StoreReadLayer readLayer = mock( StoreReadLayer.class );
-        when( readLayer.acquireStatement() ).thenReturn( mock( StoreStatement.class ) );
+        when( readLayer.newStatement() ).thenReturn( firstStoreStatements, otherStorageStatements );
 
-        NeoStores neoStores = mock( NeoStores.class );
-        MetaDataStore metaDataStore = mock( MetaDataStore.class );
-        when( metaDataStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 2, 3, 4 ) );
-        when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
-        return new KernelTransactions( contextSupplier, neoStores, locks,
-                mock( IntegrityValidator.class ), null, null, null, null, null, null, null,
-                TransactionHeaderInformationFactory.DEFAULT, readLayer, commitProcess, null,
-                null, new TransactionHooks(), mock( ConstraintSemantics.class ), mock( TransactionMonitor.class ),
-                life, new ProcedureCache(), new Config(), new Tracers( "null", NullLog.getInstance() ),
+        StorageEngine storageEngine = mock( StorageEngine.class );
+        when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
+        doAnswer( invocation -> {
+            invocation.getArgumentAt( 0, Collection.class ).add( mock( StorageCommand.class ) );
+            return null;
+        } ).when( storageEngine ).createCommands(
+                anyCollection(),
+                any( ReadableTransactionState.class ),
+                any( StorageStatement.class ),
+                any( ResourceLocker.class ),
+                anyLong() );
+
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 0, 0, 0 ) );
+
+        Tracers tracers =
+                new Tracers( "null", NullLog.getInstance(), mock( Monitors.class ), mock( JobScheduler.class ) );
+        return new KernelTransactions( locks,
+                null, null, null, TransactionHeaderInformationFactory.DEFAULT,
+                commitProcess, null,
+                null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
+                tracers, storageEngine, new Procedures(), transactionIdStore, Config.empty(),
                 Clock.SYSTEM_CLOCK );
     }
 
@@ -353,48 +447,14 @@ public class KernelTransactionsTest
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
 
         when( commitProcess.commit(
-                any( TransactionRepresentation.class ), any( LockGroup.class ), any( CommitEvent.class ),
+                any( TransactionToApply.class ), any( CommitEvent.class ),
                 any( TransactionApplicationMode.class ) ) )
-                .then( new Answer<Long>()
-                {
-                    @Override
-                    public Long answer( InvocationOnMock invocation ) throws Throwable
-                    {
-                        slot[0] = ((TransactionRepresentation) invocation.getArguments()[0]);
-                        return 1L;
-                    }
+                .then( invocation -> {
+                    slot[0] = ((TransactionToApply) invocation.getArguments()[0]).transactionRepresentation();
+                    return 1L;
                 } );
 
         return commitProcess;
-    }
-
-    private static NeoStoreTransactionContextFactory newMockContextFactory()
-    {
-        NeoStoreTransactionContextFactory factory = mock( NeoStoreTransactionContextFactory.class );
-        NeoStoreTransactionContext context = mock( NeoStoreTransactionContext.class, RETURNS_MOCKS );
-        when( factory.newInstance() ).thenReturn( context );
-        return factory;
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private static NeoStoreTransactionContextFactory newMockContextFactoryWithChanges()
-    {
-        NeoStoreTransactionContextFactory factory = mock( NeoStoreTransactionContextFactory.class );
-
-        NeoStoreTransactionContext context = mock( NeoStoreTransactionContext.class, RETURNS_MOCKS );
-        when( context.hasChanges() ).thenReturn( true );
-
-        RecordAccess<Long,NodeRecord,Void> recordChanges = mock( RecordAccess.class );
-        when( recordChanges.changeSize() ).thenReturn( 1 );
-
-        RecordProxy<Long,NodeRecord,Void> recordChange = mock( RecordProxy.class );
-        when( recordChange.forReadingLinkage() ).thenReturn( new NodeRecord( 1, false, 1, 1 ) );
-
-        when( recordChanges.changes() ).thenReturn( Iterables.option( recordChange ) );
-        when( context.getNodeRecords() ).thenReturn( recordChanges );
-
-        when( factory.newInstance() ).thenReturn( context );
-        return factory;
     }
 
     private static Future<KernelTransaction> startTxInSeparateThread( final KernelTransactions kernelTransactions,
@@ -406,7 +466,7 @@ public class KernelTransactionsTest
             public KernelTransaction call()
             {
                 aboutToStartTx.countDown();
-                return kernelTransactions.newInstance();
+                return kernelTransactions.newInstance( KernelTransaction.Type.explicit, AccessMode.Static.WRITE );
             }
         } );
     }

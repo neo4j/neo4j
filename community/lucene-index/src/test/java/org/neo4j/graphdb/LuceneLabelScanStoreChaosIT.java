@@ -19,31 +19,28 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Stream;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndexBuilder;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import org.neo4j.function.Predicates;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.DatabaseRule.RestartAction;
-import org.neo4j.test.EmbeddedDatabaseRule;
-
-import static org.hamcrest.CoreMatchers.containsString;
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.Exceptions.peel;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 /**
@@ -52,6 +49,10 @@ import static org.neo4j.io.fs.FileUtils.deleteRecursively;
  */
 public class LuceneLabelScanStoreChaosIT
 {
+    @Rule
+    public final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
+    private final Random random = new Random();
+
     @Test
     public void shouldRebuildDeletedLabelScanStoreOnStartup() throws Exception
     {
@@ -62,97 +63,80 @@ public class LuceneLabelScanStoreChaosIT
         deleteNode( node2 ); // just to create a hole in the store
 
         // WHEN
-        // TODO how do we make sure it was deleted and then fully rebuilt? I mean if we somehow deleted
-        // the wrong directory here then it would also work, right?
         dbRule.restartDatabase( deleteTheLabelScanStoreIndex() );
 
         // THEN
-        assertEquals(
-                asSet( node1, node3 ),
-                getAllNodesWithLabel( Labels.First ) );
+        assertEquals( asSet( node1, node3 ), getAllNodesWithLabel( Labels.First ) );
     }
 
     @Test
-    public void shouldPreventCorruptedLabelScanStoreToStartup() throws Exception
+    public void rebuildCorruptedLabelScanStoreToStartup() throws Exception
     {
-        // GIVEN
-        createLabeledNode( Labels.First );
+        Node node = createLabeledNode( Labels.First );
 
-        // WHEN
-        // TODO how do we make sure it was deleted and then fully rebuilt? I mean if we somehow deleted
-        // the wrong directory here then it would also work, right?
-        try
-        {
-            dbRule.restartDatabase( corruptTheLabelScanStoreIndex() );
-            fail( "Shouldn't be able to start up" );
-        }
-        catch ( RuntimeException e )
-        {
-            // THEN
-            @SuppressWarnings( "unchecked" )
-            Throwable ioe = peel( e, Predicates.<Throwable>instanceOf( RuntimeException.class ) );
-            assertThat( ioe.getMessage(), containsString( "Label scan store could not be read" ) );
-        }
+        dbRule.restartDatabase( corruptTheLabelScanStoreIndex() );
+
+        assertEquals( asSet( node ), getAllNodesWithLabel( Labels.First ) );
     }
 
-    private RestartAction corruptTheLabelScanStoreIndex()
+    private DatabaseRule.RestartAction corruptTheLabelScanStoreIndex()
     {
-        return new RestartAction()
-        {
-            @Override
-            public void run( FileSystemAbstraction fs, File storeDirectory )
+        return ( fs, storeDirectory ) -> {
+            try
             {
-                try
+                int filesCorrupted = 0;
+                List<File> partitionDirs = labelScanStoreIndexDirectories( storeDirectory );
+                for ( File partitionDir : partitionDirs )
                 {
-                    int filesCorrupted = 0;
-                    for ( File file : labelScanStoreIndexDirectory( storeDirectory ).listFiles() )
+                    for ( File file : partitionDir.listFiles() )
                     {
                         scrambleFile( file );
                         filesCorrupted++;
                     }
-                    assertTrue( "No files found to corrupt", filesCorrupted > 0 );
                 }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                assertTrue( "No files found to corrupt", filesCorrupted > 0 );
             }
-        };
-    }
-
-    private RestartAction deleteTheLabelScanStoreIndex()
-    {
-        return new RestartAction()
-        {
-            @Override
-            public void run( FileSystemAbstraction fs, File storeDirectory )
+            catch ( IOException e )
             {
-                try
-                {
-                    File directory = labelScanStoreIndexDirectory( storeDirectory );
-                    assertTrue( "We seem to want to delete the wrong directory here", directory.exists() );
-                    assertTrue( "No index files to delete", directory.listFiles().length > 0 );
-                    deleteRecursively( directory );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                throw new RuntimeException( e );
             }
         };
     }
 
-    private File labelScanStoreIndexDirectory( File storeDirectory )
+    private DatabaseRule.RestartAction deleteTheLabelScanStoreIndex()
     {
-        File directory = new File( new File( new File( storeDirectory, "schema" ), "label" ), "lucene" );
-        return directory;
+        return ( fs, storeDirectory ) -> {
+            try
+            {
+                List<File> partitionDirs = labelScanStoreIndexDirectories( storeDirectory );
+                for ( File dir : partitionDirs )
+                {
+                    assertTrue( "We seem to want to delete the wrong directory here", dir.exists() );
+                    assertTrue( "No index files to delete", dir.listFiles().length > 0 );
+                    deleteRecursively( dir );
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        };
+    }
+
+    private List<File> labelScanStoreIndexDirectories( File storeDirectory )
+    {
+        File rootDir = new File( new File( new File( new File( storeDirectory, "schema" ), "label" ), "lucene" ),
+                LuceneLabelScanIndexBuilder.DEFAULT_INDEX_IDENTIFIER );
+
+        File[] partitionDirs = rootDir.listFiles( File::isDirectory );
+        return (partitionDirs == null) ? Collections.emptyList() : Stream.of( partitionDirs ).collect( toList() );
     }
 
     private Node createLabeledNode( Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
-            Node node = dbRule.getGraphDatabaseService().createNode( labels );
+            Node node = dbRule.getGraphDatabaseAPI().createNode( labels );
             tx.success();
             return node;
         }
@@ -160,15 +144,15 @@ public class LuceneLabelScanStoreChaosIT
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
-            return asSet( dbRule.getGraphDatabaseService().findNodes( label ) );
+            return asSet( dbRule.getGraphDatabaseAPI().findNodes( label ) );
         }
     }
 
     private void deleteNode( Node node )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
             node.delete();
             tx.success();
@@ -197,13 +181,8 @@ public class LuceneLabelScanStoreChaosIT
         }
     }
 
-    private static enum Labels implements Label
+    private enum Labels implements Label
     {
-        First,
-        Second,
-        Third;
+        First, Second, Third
     }
-
-    public final @Rule DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
-    private final Random random = new Random();
 }

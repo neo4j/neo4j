@@ -26,7 +26,6 @@ import java.util.Set;
 
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -74,8 +73,8 @@ public class FunctionalTestPlugin extends ServerPlugin
     }
 
     @PluginTarget( Node.class )
-    public Iterable<Relationship> getRelationshipsBetween( final @Source Node start,
-            final @Parameter( name = "other" ) Node end )
+    public Iterable<Relationship> getRelationshipsBetween( @Source final Node start,
+            @Parameter( name = "other" ) final Node end )
     {
         List<Relationship> result = new ArrayList<>();
         try ( Transaction tx = start.getGraphDatabase().beginTx() )
@@ -243,9 +242,9 @@ public class FunctionalTestPlugin extends ServerPlugin
         try ( Transaction tx = me.getGraphDatabase().beginTx() )
         {
             Node other;
-            if ( me.hasRelationship( DynamicRelationshipType.withName( "friend" ) ) )
+            if ( me.hasRelationship( RelationshipType.withName( "friend" ) ) )
             {
-                other = me.getRelationships( DynamicRelationshipType.withName( "friend" ) )
+                other = me.getRelationships( RelationshipType.withName( "friend" ) )
                         .iterator()
                         .next()
                         .getOtherNode( me );
@@ -268,7 +267,7 @@ public class FunctionalTestPlugin extends ServerPlugin
             Node node;
             try
             {
-                node = db.getNodeById( 0l );
+                node = db.getNodeById( 0L );
             } catch(NotFoundException e)
             {
                 node = db.createNode();

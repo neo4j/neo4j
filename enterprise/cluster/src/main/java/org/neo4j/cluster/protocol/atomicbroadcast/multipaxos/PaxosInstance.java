@@ -32,7 +32,6 @@ import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 public class PaxosInstance
 {
 
-
     enum State
     {
         empty,
@@ -105,7 +104,7 @@ public class PaxosInstance
     public void ready( Object value, boolean clientValue )
     {
         assertNotNull( value );
-        
+
         state = State.p1_ready;
         promises.clear();
         value_1 = null;
@@ -149,7 +148,7 @@ public class PaxosInstance
     public void closed( Object value, String conversationIdHeader )
     {
         assertNotNull( value );
-        
+
         value_2 = value;
         state = State.closed;
         accepts.clear();

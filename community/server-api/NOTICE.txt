@@ -1,5 +1,5 @@
 Neo4j
-Copyright © 2002-2015 Network Engine for Objects in Lund AB (referred to
+Copyright © 2002-2016 Network Engine for Objects in Lund AB (referred to
 in this notice as "Neo Technology")
    [http://neotechnology.com]
 
@@ -32,6 +32,8 @@ Apache Software License, Version 2.0
   Commons Digester
   Commons Lang
   Commons Logging
+  Lucene Core
+  Lucene Memory
 
 Common Development and Distribution License Version 1.1
   jsr311-api

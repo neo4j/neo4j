@@ -28,30 +28,32 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
-import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
+import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsIteratorFrom;
+import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsPrimitiveLongIteratorFrom;
 
 public class LabelTransactionStateTest
 {
@@ -67,7 +69,7 @@ public class LabelTransactionStateTest
 
         txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );
-        txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
+        txContext = new StateHandlingStatementOperations( store, mock( InternalAutoIndexing.class ),
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
 
         storeStatement = mock( StoreStatement.class );
@@ -167,7 +169,7 @@ public class LabelTransactionStateTest
         txContext.nodeAddLabel( state, 2, 2 );
 
         // THEN
-        assertEquals( asSet( 0L, 1L, 2L ), asSet( txContext.nodesGetForLabel( state, 2 ) ) );
+        assertEquals( asSet( 0L, 1L, 2L ), PrimitiveLongCollections.toSet( txContext.nodesGetForLabel( state, 2 ) ) );
     }
 
     @Test
@@ -183,7 +185,7 @@ public class LabelTransactionStateTest
         txContext.nodeRemoveLabel( state, 1, 2 );
 
         // THEN
-        assertEquals( asSet( 0L ), asSet( txContext.nodesGetForLabel( state, 2 ) ) );
+        assertEquals( asSet( 0L ), PrimitiveLongCollections.toSet( txContext.nodesGetForLabel( state, 2 ) ) );
     }
 
     @Test
@@ -343,8 +345,8 @@ public class LabelTransactionStateTest
 
         for ( Map.Entry<Integer,Collection<Long>> entry : allLabels.entrySet() )
         {
-            when( store.nodesGetForLabel( state, entry.getKey() ) ).then( answerAsPrimitiveLongIteratorFrom( entry
-                    .getValue() ) );
+            when( store.nodesGetForLabel( state.getStoreStatement(), entry.getKey() ) )
+                    .then( answerAsPrimitiveLongIteratorFrom( entry.getValue() ) );
         }
     }
 
@@ -364,7 +366,7 @@ public class LabelTransactionStateTest
         {
             if ( cursor.next() )
             {
-                assertEquals( asSet( labels ), asSet( cursor.get().getLabels() ) );
+                assertEquals( asSet( labels ), PrimitiveIntCollections.toSet( cursor.get().getLabels() ) );
             }
         }
 

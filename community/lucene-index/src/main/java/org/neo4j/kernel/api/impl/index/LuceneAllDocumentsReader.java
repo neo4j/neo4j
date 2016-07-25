@@ -20,93 +20,46 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.search.IndexSearcher;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.io.IOUtils;
+
+import static java.util.stream.Collectors.toList;
 
 public class LuceneAllDocumentsReader implements BoundedIterable<Document>
 {
-    private final IndexSearcher searcher;
-    private final LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher> searcherManager;
+    private final List<LucenePartitionAllDocumentsReader> partitionReaders;
 
-    public LuceneAllDocumentsReader(
-            LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher> searcherManager )
+    public LuceneAllDocumentsReader( List<LucenePartitionAllDocumentsReader> partitionReaders )
     {
-        this.searcherManager = searcherManager;
-        this.searcher = searcherManager.acquire();
+        this.partitionReaders = partitionReaders;
     }
 
     @Override
     public long maxCount()
     {
-        return maxDocIdBoundary();
+        return partitionReaders.stream().mapToLong( LucenePartitionAllDocumentsReader::maxCount ).sum();
     }
 
     @Override
     public Iterator<Document> iterator()
     {
-        return new PrefetchingIterator<Document>()
-        {
-            private int docId;
+        Iterator<Iterator<Document>> iterators = partitionReaders.stream()
+                .map( LucenePartitionAllDocumentsReader::iterator )
+                .collect( toList() )
+                .iterator();
 
-            @Override
-            protected Document fetchNextOrNull()
-            {
-                Document document = null;
-                while ( document == null && isPossibleDocId( docId ) )
-                {
-                    if ( ! deleted( docId ) )
-                    {
-                        document = getDocument( docId );
-                    }
-                    docId++;
-                }
-                return document;
-            }
-        };
+        return Iterators.concat( iterators );
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
-        try
-        {
-            searcherManager.release( searcher );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    private Document getDocument( int docId )
-    {
-        try
-        {
-            return searcher.doc( docId );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    private boolean deleted( int docId )
-    {
-        return searcher.getIndexReader().isDeleted( docId );
-    }
-
-    private boolean isPossibleDocId( int docId )
-    {
-        return docId < maxDocIdBoundary();
-    }
-
-    private int maxDocIdBoundary()
-    {
-        return searcher.maxDoc();
+        IOUtils.closeAll( partitionReaders );
     }
 }

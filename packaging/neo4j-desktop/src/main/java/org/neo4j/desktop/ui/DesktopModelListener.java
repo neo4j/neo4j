@@ -19,6 +19,8 @@
  */
 package org.neo4j.desktop.ui;
 
+import org.neo4j.desktop.model.DesktopModel;
+
 /**
  * Listeners interested in changes to the DesktopModel.
  *

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.RonjaPipe
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.EstimatedRows
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.EstimatedRows
+import org.neo4j.kernel.impl.query.QueryEngineProvider
 
 /**
  * Runs the 14 LDBC queries and checks so that the result is what is expected.
@@ -31,21 +31,35 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
 
   LDBC_QUERIES.foreach { ldbcQuery =>
     test(ldbcQuery.name) {
-      //given
-      executeWithRulePlanner(ldbcQuery.createQuery, ldbcQuery.createParams.toSeq: _*)
-      ldbcQuery.constraintQueries.foreach(executeWithRulePlanner(_))
+      try {
+        //given
+        eengine.execute(ldbcQuery.createQuery, ldbcQuery.createParams, graph.session())
+        ldbcQuery.constraintQueries.foreach(updateWithBothPlannersAndCompatibilityMode(_))
 
-      //when
-      val result = executeWithAllPlanners(ldbcQuery.query, ldbcQuery.params.toSeq: _*).toComparableResult
+        //when
+        val result = executeWithAllPlannersAndCompatibilityMode(ldbcQuery.query, ldbcQuery.params.toSeq: _*).toComparableResult
 
-      //then
-      result should equal(ldbcQuery.expectedResult)
+        //then
+        result should equal(ldbcQuery.expectedResult)
+
+      } catch {
+        case e: Throwable =>
+          System.err.println(
+            s"""|QUERY *************
+                |${ldbcQuery.query}
+                |
+                |PREPARE QUERY *************
+                |${ldbcQuery.createQuery}
+                |
+                |""".stripMargin)
+          throw e
+      }
     }
   }
 
   test("LDBC query 12 should not get a bad plan because of lost precision in selectivity calculation") {
-    executeWithRulePlanner(LdbcQueries.Query12.createQuery, LdbcQueries.Query12.createParams.toSeq: _*)
-    LdbcQueries.Query12.constraintQueries.foreach(executeWithRulePlanner(_))
+    updateWithBothPlannersAndCompatibilityMode(LdbcQueries.Query12.createQuery, LdbcQueries.Query12.createParams.toSeq: _*)
+    LdbcQueries.Query12.constraintQueries.foreach(updateWithBothPlannersAndCompatibilityMode(_))
 
     val updatedLdbc12 =
       """MATCH (:Person {id:{1}})-[:KNOWS]-(friend:Person)
@@ -58,7 +72,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
 
     val params: Map[String, Any] = Map("1" -> 0, "2" -> 1, "3" -> 10)
 
-    val result = executeWithAllPlanners(s"PROFILE $updatedLdbc12", params.toSeq:_*)
+    val result = executeWithAllPlannersAndCompatibilityMode(s"PROFILE $updatedLdbc12", params.toSeq:_*)
 
     // no precision loss resulting in insane numbers
     all (collectEstimations(result.executionPlanDescription())) should be > 0.0

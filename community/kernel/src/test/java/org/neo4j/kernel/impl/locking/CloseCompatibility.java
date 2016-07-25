@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.locking.Locks.Client;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
@@ -37,7 +38,7 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
     }
 
     @Test
-    public void shouldNotBeAbleToHandOutClientsIfShutDown() throws Throwable
+    public void shouldNotBeAbleToHandOutClientsIfClosed() throws Throwable
     {
         // GIVEN a lock manager and working clients
         try ( Client client = locks.newClient() )
@@ -46,8 +47,7 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
         }
 
         // WHEN
-        locks.stop();
-        locks.shutdown();
+        locks.close();
 
         // THEN
         try
@@ -91,14 +91,14 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
     public void shouldNotBeAbleToAcquireSharedLockFromClosedClient()
     {
         clientA.close();
-        clientA.acquireShared( NODE, 1l );
+        clientA.acquireShared( NODE, 1L );
     }
 
     @Test( expected = LockClientStoppedException.class )
     public void shouldNotBeAbleToAcquireExclusiveLockFromClosedClient()
     {
         clientA.close();
-        clientA.acquireExclusive( NODE, 1l );
+        clientA.acquireExclusive( NODE, 1L );
     }
 
     @Test( expected = LockClientStoppedException.class )
@@ -113,5 +113,19 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
     {
         clientA.close();
         clientA.tryExclusiveLock( NODE, 1L );
+    }
+
+    @Test
+    public void releaseTryLocksOnClose()
+    {
+        assertTrue( clientA.trySharedLock( ResourceTypes.NODE, 1L ) );
+        assertTrue( clientB.tryExclusiveLock( ResourceTypes.NODE, 2L ) );
+
+        clientA.close();
+        clientB.close();
+
+        LockCountVisitor lockCountVisitor = new LockCountVisitor();
+        locks.accept( lockCountVisitor );
+        Assert.assertEquals( 0, lockCountVisitor.getLockCount() );
     }
 }

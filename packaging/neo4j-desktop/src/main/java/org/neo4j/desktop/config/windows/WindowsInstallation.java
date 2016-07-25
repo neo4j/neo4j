@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.Properties;
 
-import org.neo4j.desktop.config.Environment;
+import org.neo4j.desktop.config.portable.Environment;
 import org.neo4j.desktop.config.portable.PortableInstallation;
 
 import static javax.swing.filechooser.FileSystemView.getFileSystemView;
@@ -31,14 +31,12 @@ import static javax.swing.filechooser.FileSystemView.getFileSystemView;
 public class WindowsInstallation extends PortableInstallation
 {
     private final WindowsEnvironment environment;
-    private final Properties installProperties;
+    private final Properties config = new Properties();
 
     public WindowsInstallation() throws Exception
     {
         environment = new WindowsEnvironment();
-        installProperties = new Properties();
-        File installPropertiesFile = new File( getInstallationBinDirectory(), INSTALL_PROPERTIES_FILENAME );
-        installProperties.load( new FileInputStream( installPropertiesFile ) );
+        config.load( new FileInputStream( new File( getInstallationBinDirectory(), INSTALL_PROPERTIES_FILENAME ) ) );
     }
 
     @Override
@@ -50,7 +48,6 @@ public class WindowsInstallation extends PortableInstallation
     @Override
     protected File getDefaultDirectory()
     {
-        // cf. http://stackoverflow.com/questions/1503555/how-to-find-my-documents-folder
         return getFileSystemView().getDefaultDirectory();
     }
 
@@ -58,7 +55,7 @@ public class WindowsInstallation extends PortableInstallation
     public File getConfigurationDirectory()
     {
         File appData = new File( System.getenv( "APPDATA" ) );
-        return new File( appData, installProperties.getProperty( "win.appdata.subdir" ) );
+        return new File( appData, config.getProperty( "win.appdata.subdir" ) );
     }
 
     @Override
@@ -68,8 +65,8 @@ public class WindowsInstallation extends PortableInstallation
     }
 
     @Override
-    public File getServerConfigurationsFile()
+    public File getConfigurationsFile()
     {
-        return new File( getConfigurationDirectory(), NEO4J_SERVER_PROPERTIES_FILENAME );
+        return new File( getConfigurationDirectory(), NEO4J_CONFIG_FILENAME );
     }
 }

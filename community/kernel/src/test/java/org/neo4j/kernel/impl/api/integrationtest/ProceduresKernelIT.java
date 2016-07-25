@@ -19,26 +19,28 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.List;
 
-import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
+import org.neo4j.collection.RawIterator;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
 
-import static java.util.Arrays.asList;
-import static junit.framework.TestCase.assertNull;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.kernel.api.Neo4jTypes.NTText;
-import static org.neo4j.kernel.api.procedures.ProcedureSignature.procedureSignature;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.core.IsCollectionContaining.hasItems;
+import static org.junit.Assert.assertNotNull;
+import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ProceduresKernelIT extends KernelIntegrationTest
 {
@@ -46,110 +48,99 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     public ExpectedException exception = ExpectedException.none();
 
     private final ProcedureSignature signature = procedureSignature( "example", "exampleProc" )
-            .in( "name", NTText )
-            .out( "name", NTText ).build();
+            .in( "name", NTString )
+            .out( "name", NTString ).build();
 
-    @Test
-    public void shouldCreateProcedure() throws Throwable
-    {
-        // Given
-        SchemaWriteOperations ops = schemaWriteOperationsInNewTransaction();
-
-        // When
-        ops.procedureCreate( signature, "javascript", "emit(1);" );
-
-        // Then
-        Iterator<ProcedureSignature> all = ops.proceduresGetAll();
-        assertThat( asCollection( all ),
-                Matchers.<Collection<ProcedureSignature>>equalTo( asList( signature ) ) );
-
-        // And when
-        commit();
-
-        // Then
-        assertThat( asCollection( readOperationsInNewTransaction().proceduresGetAll() ),
-                Matchers.<Collection<ProcedureSignature>>equalTo( asList( signature ) ) );
-    }
-
-    @Test
-    public void shouldDropProcedure() throws Throwable
-    {
-        // Given
-        SchemaWriteOperations ops = schemaWriteOperationsInNewTransaction();
-        ops.procedureCreate( signature, "javascript", "emit(1);" );
-        commit();
-
-        // When
-        ops = schemaWriteOperationsInNewTransaction();
-        ops.procedureDrop( signature.name() );
-
-        // Then
-        Iterator<ProcedureSignature> all = ops.proceduresGetAll();
-        assertThat( asCollection( all ),
-                Matchers.<Collection<ProcedureSignature>>equalTo( Collections.<ProcedureSignature>emptyList() ) );
-
-        // And when
-        commit();
-
-        // Then
-        assertThat( asCollection( readOperationsInNewTransaction().proceduresGetAll() ),
-                Matchers.<Collection<ProcedureSignature>>equalTo( Collections.<ProcedureSignature>emptyList() ) );
-    }
-
-    @Test
-    public void shouldDropProcedureInSameTransaction() throws Throwable
-    {
-        // Given
-        SchemaWriteOperations ops = schemaWriteOperationsInNewTransaction();
-        ops.procedureCreate( signature, "javascript", "emit(1);" );
-
-        // When
-        ops.procedureDrop( signature.name() );
-
-        // Then
-        Iterator<ProcedureSignature> all = ops.proceduresGetAll();
-        assertThat( asCollection( all ),
-                Matchers.<Collection<ProcedureSignature>>equalTo( Collections.<ProcedureSignature>emptyList() ) );
-
-        // And when
-        commit();
-
-        // Then
-        assertThat( asCollection( readOperationsInNewTransaction().proceduresGetAll() ),
-                Matchers.<Collection<ProcedureSignature>>equalTo( Collections.<ProcedureSignature>emptyList() ) );
-    }
+    private final CallableProcedure procedure = procedure( signature );
 
     @Test
     public void shouldGetProcedureByName() throws Throwable
     {
         // Given
-        shouldCreateProcedure();
+        kernel.registerProcedure( procedure );
 
         // When
         ProcedureSignature found = readOperationsInNewTransaction()
-                .procedureGet( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ) )
-                .signature();
+                .procedureGet( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ) );
 
         // Then
-        assertThat( found, equalTo( found ) );
+        assertThat( found, equalTo( signature ) );
     }
 
     @Test
-    public void nonexistentProcedureShouldReturnNull() throws Throwable
+    public void shouldGetBuiltInProcedureByName() throws Throwable
     {
-        // When & Then
-        assertNull( readOperationsInNewTransaction()
-                .procedureGet( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ) ) );
+        // When
+        ProcedureSignature found = readOperationsInNewTransaction()
+                .procedureGet( procedureName( "db", "labels" ) );
+
+        // Then
+        assertThat( found, equalTo( procedureSignature( procedureName( "db", "labels" ) )
+                .out(  "label", Neo4jTypes.NTString ).build() ) );
     }
 
     @Test
-    public void droppingNonExistentProcedureShouldThrow() throws Throwable
+    public void shouldGetAllProcedures() throws Throwable
     {
-        // Expect
-        exception.expect( ProcedureConstraintViolation.class );
+        // Given
+        kernel.registerProcedure( procedure );
+        kernel.registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).build() ) );
+        kernel.registerProcedure( procedure( procedureSignature( "example", "exampleProc3" ).build() ) );
 
         // When
-        schemaWriteOperationsInNewTransaction().procedureDrop( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ) );
+        List<ProcedureSignature> signatures =
+                Iterables.asList( readOperationsInNewTransaction().proceduresGetAll() );
+
+        // Then
+        assertThat( signatures, hasItems(
+            procedure.signature(),
+            procedureSignature( "example", "exampleProc2" ).build(),
+            procedureSignature( "example", "exampleProc3" ).build() ) );
     }
 
+    @Test
+    public void shouldCallReadOnlyProcedure() throws Throwable
+    {
+        // Given
+        kernel.registerProcedure( procedure );
+
+        // When
+        RawIterator<Object[], ProcedureException> found = readOperationsInNewTransaction()
+                .procedureCallRead( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ), new Object[]{ 1337 } );
+
+        // Then
+        assertThat( asList( found ), contains( equalTo( new Object[]{1337} ) ) );
+    }
+
+    @Test
+    public void registeredProcedureShouldGetReadOperations() throws Throwable
+    {
+        // Given
+        kernel.registerProcedure( new CallableProcedure.BasicProcedure( signature )
+        {
+            @Override
+            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+            {
+                return RawIterator.<Object[], ProcedureException>of( new Object[]{ ctx.get( Context.KERNEL_TRANSACTION ).acquireStatement().readOperations() } );
+            }
+        } );
+
+        // When
+        RawIterator<Object[], ProcedureException> stream = readOperationsInNewTransaction().procedureCallRead( signature.name(), new Object[]{""} );
+
+        // Then
+        assertNotNull( asList( stream  ).get( 0 )[0] );
+    }
+
+    private static CallableProcedure procedure( final ProcedureSignature signature )
+    {
+        return new CallableProcedure.BasicProcedure( signature )
+        {
+            @Override
+            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input )
+            {
+                return RawIterator.<Object[], ProcedureException>of( input );
+            }
+        };
+    }
 }

@@ -39,23 +39,24 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.impl.index.LuceneLabelScanStoreExtension;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
+import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStoreExtension;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 
 /**
  * Arbitrary recovery scenarios boiled down to as small tests as possible
@@ -63,6 +64,44 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 @RunWith(Parameterized.class)
 public class UniqueIndexRecoveryTests
 {
+    @Rule
+    public final TargetDirectory.TestDirectory storeDir =
+            TargetDirectory.testDirForTest( UniqueIndexRecoveryTests.class );
+
+    private static final String PROPERTY_KEY = "key";
+    private static final String PROPERTY_VALUE = "value";
+    private static final Label LABEL = label( "label" );
+
+    private final TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+    private GraphDatabaseAPI db;
+
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object[]> parameters()
+    {
+        return asList(
+                new Object[]{new LuceneSchemaIndexProviderFactory()},
+                new Object[]{new InMemoryIndexProviderFactory()} );
+    }
+
+    @Parameterized.Parameter(0)
+    public KernelExtensionFactory<?> kernelExtensionFactory;
+
+    @Before
+    public void before()
+    {
+        List<KernelExtensionFactory<?>> extensionFactories = new ArrayList<>();
+        extensionFactories.add( kernelExtensionFactory );
+        extensionFactories.add(new LuceneLabelScanStoreExtension());
+        factory.setKernelExtensions( extensionFactories );
+        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( storeDir.absolutePath() );
+    }
+
+    @After
+    public void after()
+    {
+        db.shutdown();
+    }
+
     @Test
     public void shouldRecoverCreationOfUniquenessConstraintFollowedByDeletionOfThatSameConstraint() throws Exception
     {
@@ -85,7 +124,7 @@ public class UniqueIndexRecoveryTests
     public void shouldRecoverWhenCommandsTemporarilyViolateConstraints() throws Exception
     {
         // GIVEN
-        Node unLabeledNode = createUnLabeledNode();
+        Node unLabeledNode = createUnLabeledNodeWithProperty();
         Node labeledNode = createLabeledNode();
         createUniqueConstraint();
         rotateLogAndCheckPoint(); // snapshot
@@ -111,18 +150,18 @@ public class UniqueIndexRecoveryTests
     private void restart( File newStore )
     {
         db.shutdown();
-        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( newStore.getAbsolutePath() );
+        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( newStore.getAbsoluteFile() );
     }
 
-    private File snapshot( final String path ) throws IOException
+    private File snapshot( final File path ) throws IOException
     {
         File snapshotDir = new File( path, "snapshot-" + new Random().nextInt() );
-        FileUtils.copyRecursively( new File( path ), snapshotDir, new FileFilter()
+        FileUtils.copyRecursively( path, snapshotDir, new FileFilter()
         {
             @Override
             public boolean accept( File pathName )
             {
-                String subPath = pathName.getAbsolutePath().substring( path.length() ).replace( File.separatorChar, '/' );
+                String subPath = pathName.getAbsolutePath().substring( path.getPath().length() ).replace( File.separatorChar, '/' );
                 if ( "/store_lock".equals( subPath ) )
                 {
                     return false; // since the db is running, exclude the 'store_lock' file
@@ -183,7 +222,7 @@ public class UniqueIndexRecoveryTests
         }
     }
 
-    private Node createUnLabeledNode()
+    private Node createUnLabeledNodeWithProperty()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -206,44 +245,6 @@ public class UniqueIndexRecoveryTests
         }
     }
 
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<Object[]> parameters()
-    {
-        return asList(
-                new Object[]{new LuceneSchemaIndexProviderFactory()},
-                new Object[]{new InMemoryIndexProviderFactory()} );
-    }
-
-    @Parameterized.Parameter(0)
-    public KernelExtensionFactory<?> kernelExtensionFactory;
-
-    @Rule
-    public final TargetDirectory.TestDirectory storeDir =
-            TargetDirectory.testDirForTest( UniqueIndexRecoveryTests.class );
-
-    private static final String PROPERTY_KEY = "key";
-    private static final String PROPERTY_VALUE = "value";
-    private static final Label LABEL = label( "label" );
-
-    private final TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-    private GraphDatabaseAPI db;
-
-    @Before
-    public void before()
-    {
-        List<KernelExtensionFactory<?>> extensionFactories = new ArrayList<>();
-        extensionFactories.add( kernelExtensionFactory );
-        extensionFactories.add(new LuceneLabelScanStoreExtension());
-        factory.setKernelExtensions( extensionFactories );
-        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( storeDir.absolutePath() );
-    }
-
-    @After
-    public void after()
-    {
-        db.shutdown();
-    }
-
     private void rotateLogAndCheckPoint() throws IOException
     {
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
@@ -254,6 +255,6 @@ public class UniqueIndexRecoveryTests
 
     private void flushAll()
     {
-        db.getDependencyResolver().resolveDependency( StoreFlusher.class ).forceEverything();
+        db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( IOLimiter.unlimited() );
     }
 }

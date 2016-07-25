@@ -21,8 +21,6 @@ package org.neo4j.kernel.ha.cluster;
 
 import org.junit.Test;
 import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +44,6 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreCopyClient;
-import org.neo4j.function.Function;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
@@ -57,7 +54,6 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.PullerFactory;
@@ -65,10 +61,12 @@ import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
+import org.neo4j.kernel.ha.cluster.modeswitch.AbstractComponentSwitcher;
+import org.neo4j.kernel.ha.cluster.modeswitch.ComponentSwitcherContainer;
+import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
@@ -77,8 +75,9 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
@@ -100,10 +99,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcherTest.neoStoreDataSourceSupplierMock;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcherTest.storeSupplierMock;
+import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcherTest.storeSupplierMock;
 
 public class HighAvailabilityMemberStateMachineTest
 {
@@ -189,7 +188,7 @@ public class HighAvailabilityMemberStateMachineTest
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
 
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
-        ObservedClusterMembers members = mockClusterMembers( me, Collections.<InstanceId>emptyList(), singletonList( other ) );
+        ObservedClusterMembers members = mockClusterMembers( me, emptyList(), singletonList( other ) );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
         ClusterMemberListenerContainer memberListenerContainer = mockAddClusterMemberListener( events );
@@ -253,7 +252,6 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( probe.instanceStops, is( false ) );
     }
 
-
     @Test
     public void whenInSlaveStateLosingMasterShouldPutInPending() throws Throwable
     {
@@ -301,7 +299,7 @@ public class HighAvailabilityMemberStateMachineTest
         InstanceId other = new InstanceId( 2 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
-        ObservedClusterMembers members = mockClusterMembers( me, Collections.<InstanceId>emptyList(), singletonList( other ) );
+        ObservedClusterMembers members = mockClusterMembers( me, emptyList(), singletonList( other ) );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
         ClusterMemberListenerContainer memberListenerContainer = mockAddClusterMemberListener( events );
@@ -336,7 +334,7 @@ public class HighAvailabilityMemberStateMachineTest
         InstanceId other = new InstanceId( 2 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
-        ObservedClusterMembers members = mockClusterMembers( me, Collections.<InstanceId>emptyList(), singletonList( other ) );
+        ObservedClusterMembers members = mockClusterMembers( me, emptyList(), singletonList( other ) );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
         ClusterMemberListenerContainer memberListenerContainer = mockAddClusterMemberListener( events );
@@ -384,12 +382,11 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
     }
 
-
     @Test
     public void whenHAModeSwitcherSwitchesToSlaveTheOtherModeSwitcherDoNotGetTheOldMasterClient() throws Throwable
     {
         InstanceId me = new InstanceId( 1 );
-        StoreId storeId = new StoreId();
+        StoreId storeId = newStoreIdForCurrentVersion();
         HighAvailabilityMemberContext context = mock( HighAvailabilityMemberContext.class );
         when( context.getMyId() ).thenReturn( me );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
@@ -498,12 +495,12 @@ public class HighAvailabilityMemberStateMachineTest
 
         Config config = new Config( Collections.singletonMap( ClusterSettings.server_id.name(), me.toString() ) );
 
-        TransactionCounters transactionCounters = mock( TransactionCounters.class );
-        when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0l );
+        TransactionStats transactionCounters = mock( TransactionStats.class );
+        when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0L );
 
         PageCache pageCacheMock = mock( PageCache.class );
         PagedFile pagedFileMock = mock( PagedFile.class );
-        when( pagedFileMock.getLastPageId() ).thenReturn( 1l );
+        when( pagedFileMock.getLastPageId() ).thenReturn( 1L );
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenReturn( pagedFileMock );
 
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );
@@ -515,25 +512,22 @@ public class HighAvailabilityMemberStateMachineTest
                 handler,
                 mock( ClusterMemberAvailability.class ), mock( RequestContextFactory.class ),
                 mock( PullerFactory.class, RETURNS_MOCKS ),
-                Iterables.<KernelExtensionFactory<?>>empty(), masterClientResolver,
+                Iterables.empty(), masterClientResolver,
                 monitor,
                 new StoreCopyClient.Monitor.Adapter(),
                 Suppliers.singleton( dataSource ),
                 Suppliers.singleton( transactionIdStoreMock ),
-                new Function<Slave,SlaveServer>()
-                {
-                    @Override
-                    public SlaveServer apply( Slave slave ) throws RuntimeException
-                    {
-                        SlaveServer mock = mock( SlaveServer.class );
-                        when( mock.getSocketAddress() ).thenReturn( new InetSocketAddress( "localhost", 123 ) );
-                        return mock;
-                    }
+                slave -> {
+                    SlaveServer mock = mock( SlaveServer.class );
+                    when( mock.getSocketAddress() ).thenReturn( new InetSocketAddress( "localhost", 123 ) );
+                    return mock;
                 }, updatePuller, pageCacheMock, mock( Monitors.class ), transactionCounters );
 
+        ComponentSwitcherContainer switcherContainer = new ComponentSwitcherContainer();
         HighAvailabilityModeSwitcher haModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave,
                 mock( SwitchToMaster.class ), election, clusterMemberAvailability, mock( ClusterClient.class ),
-                storeSupplierMock(), me, NullLogService.getInstance(), neoStoreDataSourceSupplierMock() );
+                storeSupplierMock(), me, switcherContainer, neoStoreDataSourceSupplierMock(),
+                NullLogService.getInstance() );
         haModeSwitcher.init();
         haModeSwitcher.start();
         haModeSwitcher.listeningAt( URI.create( "http://localhost:12345" ) );
@@ -543,11 +537,11 @@ public class HighAvailabilityMemberStateMachineTest
         final AtomicReference<Master> ref = new AtomicReference<>( null );
 
         //noinspection unchecked
-        AbstractModeSwitcher<Object> otherModeSwitcher = new AbstractModeSwitcher<Object>( haModeSwitcher, mock(
+        AbstractComponentSwitcher<Object> otherModeSwitcher = new AbstractComponentSwitcher<Object>( mock(
                 DelegateInvocationHandler.class ) )
         {
             @Override
-            protected Object getSlaveImpl( LifeSupport life )
+            protected Object getSlaveImpl()
             {
                 Master master = handler.cement();
                 ref.set( master );
@@ -556,14 +550,12 @@ public class HighAvailabilityMemberStateMachineTest
             }
 
             @Override
-            protected Object getMasterImpl( LifeSupport life )
+            protected Object getMasterImpl()
             {
                 return null;
             }
         };
-        otherModeSwitcher.init();
-        otherModeSwitcher.start();
-
+        switcherContainer.add( otherModeSwitcher );
         // When
         events.switchToSlave( me );
 
@@ -578,8 +570,6 @@ public class HighAvailabilityMemberStateMachineTest
         stateMachine.shutdown();
         haModeSwitcher.stop();
         haModeSwitcher.shutdown();
-        otherModeSwitcher.stop();
-        otherModeSwitcher.shutdown();
     }
 
     private ObservedClusterMembers mockClusterMembers( InstanceId me, List<InstanceId> alive, List<InstanceId> failed )
@@ -619,19 +609,20 @@ public class HighAvailabilityMemberStateMachineTest
         return members;
     }
 
+    private static DataSourceManager neoStoreDataSourceSupplierMock()
+    {
+        DataSourceManager dataSourceManager = new DataSourceManager();
+        dataSourceManager.register( mock( NeoStoreDataSource.class ) );
+        return dataSourceManager;
+    }
+
     static ClusterMemberListenerContainer mockAddClusterMemberListener( ClusterMemberEvents events )
     {
         final ClusterMemberListenerContainer listenerContainer = new ClusterMemberListenerContainer();
-        doAnswer( new Answer()
-        {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                listenerContainer.set( (ClusterMemberListener) invocation.getArguments()[0] );
-                return null;
-            }
-
-        } ).when( events ).addClusterMemberListener( Matchers.<ClusterMemberListener>any() );
+        doAnswer( invocation -> {
+            listenerContainer.set( (ClusterMemberListener) invocation.getArguments()[0] );
+            return null;
+        } ).when( events ).addClusterMemberListener( Matchers.any() );
         return listenerContainer;
     }
 
@@ -640,7 +631,7 @@ public class HighAvailabilityMemberStateMachineTest
         return new StateMachineBuilder().build();
     }
 
-    private HighAvailabilityMemberStateMachine buildMockedStateMachine ( HighAvailabilityMemberContext context,
+    private HighAvailabilityMemberStateMachine buildMockedStateMachine( HighAvailabilityMemberContext context,
             ClusterMemberEvents events )
     {
         return new StateMachineBuilder().withContext( context ).withEvents( events ).build();

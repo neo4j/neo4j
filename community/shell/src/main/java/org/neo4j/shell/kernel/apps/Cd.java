@@ -65,7 +65,7 @@ public class Cd extends TransactionProvidingApp
     public String getDescription()
     {
         return "Changes the current node or relationship, i.e. traverses " +
-       		"one step to another node or relationship. Usage: cd <id>";
+               "one step to another node or relationship. Usage: cd <id>";
     }
 
     @Override
@@ -86,7 +86,7 @@ public class Cd extends TransactionProvidingApp
         {
             return Collections.emptyList();
         }
-        
+
         TreeSet<String> result = new TreeSet<>();
         if ( current.isNode() )
         {
@@ -151,7 +151,7 @@ public class Cd extends TransactionProvidingApp
             catch ( ShellException e )
             { // Ok, didn't exist
             }
-            
+
             String arg = parser.arguments().get( 0 );
             TypedId newId = null;
             if ( arg.equals( ".." ) )
@@ -171,7 +171,7 @@ public class Cd extends TransactionProvidingApp
                     throw new ShellException( "Can't do " + START_ALIAS + " or " +
                             END_ALIAS + " on a non-existent relationship" );
                 }
-                
+
                 newId = getStartOrEnd( current, arg );
                 paths.add( current.getTypedId() );
             }
@@ -209,7 +209,7 @@ public class Cd extends TransactionProvidingApp
                         " isn't connected to the current primitive," +
                         " use -a to force it to go there anyway" );
                 }
-                
+
                 if ( current != null )
                 {
                     paths.add( current.getTypedId() );

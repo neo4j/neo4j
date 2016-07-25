@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<updateDescriptor baseUrl="">
-  <entry targetMediaFileId="444" updatableVersionMin="" updatableVersionMax="" fileName="neo4j-community_macos_@NEO4J_VERSION@.dmg" newVersion="@NEO4J_VERSION@" newMediaFileId="444" fileSize="51530839" bundledJre="macosx-amd64-1.7.0_80_unpacked" archive="true">
-    <comment language="en" />
-  </entry>
-</updateDescriptor>

@@ -24,8 +24,8 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachineTest.mockAddClusterMemberListener;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
 
 import java.net.URI;
 

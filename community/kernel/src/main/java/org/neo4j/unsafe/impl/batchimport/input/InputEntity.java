@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.csv.reader.SourceTraceability;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 
 import static java.lang.String.format;
 
@@ -37,7 +37,7 @@ public abstract class InputEntity implements SourceTraceability
     public static final String[] NO_LABELS = new String[0];
 
     private Object[] properties;
-    private final Long firstPropertyId;
+    private Long firstPropertyId;
     private final String sourceDescription;
     private final long lineNumber;
     private final long position;
@@ -132,6 +132,7 @@ public abstract class InputEntity implements SourceTraceability
     public void setProperties( Object... keyValuePairs )
     {
         properties = keyValuePairs;
+        firstPropertyId = null;
     }
 
     public boolean hasFirstPropertyId()

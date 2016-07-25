@@ -25,20 +25,17 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.TransactionTemplate;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
+import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 
 public class BiggerThanLogTxIT
 {
@@ -63,7 +60,7 @@ public class BiggerThanLogTxIT
     {
         // GIVEN
         GraphDatabaseService slave = cluster.getAnySlave();
-        int initialNodeCount = nodeCount( slave );
+        long initialNodeCount = nodeCount( slave );
 
         // WHEN
         cluster.info( "Before commit large" );
@@ -88,7 +85,7 @@ public class BiggerThanLogTxIT
     {
         // GIVEN
         GraphDatabaseService slave = cluster.getAnySlave();
-        int initialNodeCount = nodeCount( slave );
+        long initialNodeCount = nodeCount( slave );
 
         // WHEN
         int nodeCount = commitLargeTx( cluster.getMaster() );
@@ -111,17 +108,17 @@ public class BiggerThanLogTxIT
         }
     }
 
-    private int nodeCount( GraphDatabaseService db )
+    private long nodeCount( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            int count = count( GlobalGraphOperations.at( db ).getAllNodes() );
+            long count = Iterables.count( db.getAllNodes() );
             tx.success();
             return count;
         }
     }
 
-    private void assertAllMembersHasNodeCount( int expectedNodeCount )
+    private void assertAllMembersHasNodeCount( long expectedNodeCount )
     {
         for ( GraphDatabaseService db : cluster.getAllMembers() )
         {
@@ -139,7 +136,7 @@ public class BiggerThanLogTxIT
                         throw new RuntimeException( e );
                     }
 
-                    int count = nodeCount( db );
+                    long count = nodeCount( db );
                     if (expectedNodeCount == count)
                         break;
 
@@ -160,24 +157,19 @@ public class BiggerThanLogTxIT
 
     private int commitLargeTx( final GraphDatabaseService db )
     {
-        return template.with( db ).execute( new Function<Transaction,Integer>()
-        {
-            @Override
-            public Integer apply( Transaction transaction ) throws RuntimeException
+        return template.with( db ).execute( transaction -> {
+            // We're not actually asserting that this transaction produces log data
+            // bigger than the threshold.
+            long rotationThreshold = parseLongWithUnit( ROTATION_THRESHOLD );
+            int nodeCount = 100;
+            byte[] arrayProperty = new byte[(int) (rotationThreshold / nodeCount)];
+            for ( int i = 0; i < nodeCount; i++ )
             {
-                // We're not actually asserting that this transaction produces log data
-                // bigger than the threshold.
-                long rotationThreshold = parseLongWithUnit( ROTATION_THRESHOLD );
-                int nodeCount = 100;
-                byte[] arrayProperty = new byte[(int) (rotationThreshold / nodeCount)];
-                for ( int i = 0; i < nodeCount; i++ )
-                {
-                    Node node = db.createNode();
-                    node.setProperty( "name", "big" + i );
-                    node.setProperty( "data", arrayProperty );
-                }
-                return nodeCount;
+                Node node = db.createNode();
+                node.setProperty( "name", "big" + i );
+                node.setProperty( "data", arrayProperty );
             }
+            return nodeCount;
         } );
     }
 }

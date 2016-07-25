@@ -33,7 +33,7 @@ public class PatternGroup
 {
     private Collection<FilterExpression> regexExpression =
         new ArrayList<FilterExpression>();
-    
+
     /**
      * Adds a filter expression to the list of filters for this group.
      * @param regexRepression the {@link FilterExpression} to add to this
@@ -43,7 +43,7 @@ public class PatternGroup
     {
         this.regexExpression.add( regexRepression );
     }
-    
+
     /**
      * Returns the filter expressions which has been added for this group with
      * {@link #addFilter(FilterExpression)}.

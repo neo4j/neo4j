@@ -22,20 +22,21 @@ package org.neo4j.kernel.impl.index;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Function;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 
@@ -183,7 +184,8 @@ public class LegacyIndexStore
                 }
 
                 // We were the first one here, let's create this config
-                try ( KernelTransaction transaction = kernel.get().newTransaction();
+                try ( KernelTransaction transaction =
+                              kernel.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
                       Statement statement = transaction.acquireStatement() )
                 {
                     switch ( entityType )
@@ -195,6 +197,9 @@ public class LegacyIndexStore
                     case Relationship:
                         statement.dataWriteOperations().relationshipLegacyIndexCreate( indexName, config );
                         break;
+
+                    default:
+                        throw new IllegalArgumentException( "Unknown entity type: " + entityType );
                     }
 
                     transaction.success();

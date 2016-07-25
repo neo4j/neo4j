@@ -33,25 +33,25 @@ import java.io.StringWriter;
 public class ShellException extends Exception
 {
     private static final long serialVersionUID = 1L;
-    
-	private final String stackTraceAsString;
 
-	public ShellException( String message )
-	{
-	    this( message, (String) null );
-	}
-	
-	private ShellException( String message, Throwable cause )
+    private final String stackTraceAsString;
+
+    public ShellException( String message )
+    {
+        this( message, (String) null );
+    }
+
+    private ShellException( String message, Throwable cause )
     {
         super( message, cause );
         this.stackTraceAsString = null;
     }
 
     private ShellException( String message, String stackTraceAsString )
-	{
-	    super( message );
+    {
+        super( message );
         this.stackTraceAsString = stackTraceAsString;
-	}
+    }
 
     @Override
     public void printStackTrace( PrintStream s )
@@ -86,16 +86,16 @@ public class ShellException extends Exception
             super.printStackTrace( s );
         }
     }
-    
-	/**
-	 * Serializes a {@link Throwable} to a String and uses that as a message
-	 * in a {@link ShellException}. This is because we can't rely on the
-	 * client having the full classpath the server has.
-	 * @param cause the {@link Throwable} to wrap in a {@link ShellException}.
-	 * @return the {@link ShellException} wrapped around the {@code cause}.
-	 */
-	public static ShellException wrapCause( Throwable cause )
-	{
+
+    /**
+     * Serializes a {@link Throwable} to a String and uses that as a message
+     * in a {@link ShellException}. This is because we can't rely on the
+     * client having the full classpath the server has.
+     * @param cause the {@link Throwable} to wrap in a {@link ShellException}.
+     * @return the {@link ShellException} wrapped around the {@code cause}.
+     */
+    public static ShellException wrapCause( Throwable cause )
+    {
         if ( isCompletelyRecognizedException( cause ) )
         {
             return cause instanceof ShellException ? (ShellException) cause : new ShellException( getFirstMessage( cause ), cause );
@@ -104,18 +104,18 @@ public class ShellException extends Exception
         {
             return softWrap( cause );
         }
-	}
-	
-	private static ShellException softWrap( Throwable cause )
-	{
-	    String stackTraceAsString = stackTraceAsString( cause );
-	    String message = getFirstMessage( cause );
-	    if ( !( cause instanceof ShellException ) )
-	    {
-	        message = cause.getClass().getSimpleName() + ": " + message;
-	    }
+    }
+
+    private static ShellException softWrap( Throwable cause )
+    {
+        String stackTraceAsString = stackTraceAsString( cause );
+        String message = getFirstMessage( cause );
+        if ( !( cause instanceof ShellException ) )
+        {
+            message = cause.getClass().getSimpleName() + ": " + message;
+        }
         return new ShellException( message, stackTraceAsString );
-	}
+    }
 
     public static String getFirstMessage( Throwable cause )
     {
@@ -142,7 +142,7 @@ public class ShellException extends Exception
         Throwable cause = e.getCause();
         return cause == null ? true : isCompletelyRecognizedException( cause );
     }
-    
+
     public static String stackTraceAsString( Throwable cause )
     {
         StringWriter writer = new StringWriter();

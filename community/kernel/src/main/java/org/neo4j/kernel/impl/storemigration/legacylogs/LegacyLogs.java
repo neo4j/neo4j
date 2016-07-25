@@ -26,11 +26,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.cursor.IOCursor;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.TransactionId;
+import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
-import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -162,7 +163,7 @@ public class LegacyLogs
         File[] logFiles = fs.listFiles( from, versionedLegacyLogFilesFilter );
         for ( File file : logFiles )
         {
-            op.perform( fs, file.getName(), from, false, to, true );
+            op.perform( fs, file.getName(), from, false, to, ExistingTargetStrategy.OVERWRITE );
         }
     }
 

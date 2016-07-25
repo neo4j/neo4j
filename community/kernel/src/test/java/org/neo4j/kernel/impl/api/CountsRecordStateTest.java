@@ -24,9 +24,11 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.helpers.collection.Iterables;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
@@ -48,7 +50,7 @@ public class CountsRecordStateTest
         victim.incrementRelationshipCount( 1, 4, 3, 25 );
 
         // when
-        Set<CountsRecordState.Difference> differences = asSet( oracle.verify( victim ) );
+        Set<CountsRecordState.Difference> differences = Iterables.asSet( oracle.verify( victim ) );
 
         // then
         assertEquals( differences, asSet(

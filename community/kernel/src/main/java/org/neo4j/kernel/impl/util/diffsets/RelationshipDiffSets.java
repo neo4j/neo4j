@@ -21,17 +21,16 @@ package org.neo4j.kernel.impl.util.diffsets;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor.Home;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.DiffApplyingRelationshipIterator;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
 
 /**
  * Given a sequence of add and removal operations, instances of DiffSets track
@@ -80,7 +79,7 @@ public class RelationshipDiffSets<T> extends SuperDiffSets<T,RelationshipIterato
     public RelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter )
     {
         return new RelationshipDiffSets<>( txStateRelationshipHome,
-                asSet( Iterables.filter( addedFilter, added( false ) ) ),
-                asSet( removed( false ) ) );
+                Iterables.asSet( Iterables.filter( addedFilter, added( false ) ) ),
+                Iterables.asSet( removed( false ) ) );
     }
 }

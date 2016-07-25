@@ -21,31 +21,31 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class StartTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "START"
-  val css = "col carddeprecation c2-1 c3-3 c4-4 c5-5 c6-6"
+  val css = "col carddeprecation c2-2 c3-2 c4-4 c5-1 c6-2"
   override def indexProps: List[String] = List("value", "name", "key")
   override val linkId = "query-start"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "create" =>
-        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 0)
+        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesWritten = 0)
         assert(result.toList.size === 1)
       case "all-nodes" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 4)
       case "single-node-by-id" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 1)
       case "multiple-nodes-by-id" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 2)
       case "multiple-start-nodes-by-id" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 1)
       case "index-match" =>
         assertStats(result)

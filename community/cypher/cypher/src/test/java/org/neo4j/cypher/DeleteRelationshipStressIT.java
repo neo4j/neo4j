@@ -35,14 +35,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class DeleteRelationshipStressIT
 {
-    
     private final AtomicBoolean hasFailed = new AtomicBoolean( false );
 
     @Rule
@@ -75,7 +74,6 @@ public class DeleteRelationshipStressIT
 
     private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
 
-
     @Test
     public void shouldBeAbleToReturnRelsWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
     {
@@ -89,7 +87,6 @@ public class DeleteRelationshipStressIT
         // Then
         assertFalse(hasFailed.get());
     }
-
 
     @Test
     public void shouldBeAbleToGetPropertyWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
@@ -160,5 +157,4 @@ public class DeleteRelationshipStressIT
             }
         } );
     }
-
 }

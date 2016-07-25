@@ -168,8 +168,8 @@ public class MultiPaxosServerFactory
             }
         } );
 
-        stateMachines.addMessageProcessor( new HeartbeatRefreshProcessor( stateMachines.getOutgoing
-                (), context.getClusterContext() ) );
+        stateMachines.addMessageProcessor( new HeartbeatRefreshProcessor( stateMachines.getOutgoing(),
+                context.getClusterContext() ) );
         input.addMessageProcessor( new HeartbeatIAmAliveProcessor( stateMachines.getOutgoing(),
                 context.getClusterContext() ) );
 
@@ -258,7 +258,6 @@ public class MultiPaxosServerFactory
                         internal( ElectionMessage.leave ),
                         internal( SnapshotMessage.leave ),
                         internal( ProposerMessage.leave ) );
-
 
         stateMachines.addStateTransitionListener( rules );
 

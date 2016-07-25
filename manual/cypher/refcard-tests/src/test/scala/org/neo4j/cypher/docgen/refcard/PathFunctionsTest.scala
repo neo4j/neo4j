@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.docgen.refcard
 
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class PathFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
   val title = "Path Functions"
-  val css = "general c3-3 c4-3 c5-2 c6-5"
+  val css = "general c3-3 c4-2 c5-5 c6-5"
   override val linkId = "query-functions-collection"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -41,7 +41,7 @@ class PathFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 0)
       case "friends" =>
-        assertStats(result, nodesCreated = 0, propertiesSet = 1)
+        assertStats(result, nodesCreated = 0, propertiesWritten = 1)
         assert(result.toList.size === 0)
     }
   }
@@ -80,7 +80,7 @@ RETURN
 nodes(path)
 ###
 
-The nodes in the path as a collection.
+The nodes in the path as a list.
 
 ###assertion=returns-one
 MATCH path = (n)-->(m)
@@ -90,7 +90,7 @@ RETURN
 relationships(path)
 ###
 
-The relationships in the path as a collection.
+The relationships in the path as a list.
 
 ###assertion=returns-one
 MATCH path = (n)-->(m)

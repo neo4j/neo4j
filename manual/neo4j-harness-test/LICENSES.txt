@@ -9,6 +9,8 @@ Apache Software License, Version 2.0
   Commons Digester
   Commons Lang
   Commons Logging
+  Lucene Core
+  Lucene Memory
 ------------------------------------------------------------------------------
 
                                  Apache License

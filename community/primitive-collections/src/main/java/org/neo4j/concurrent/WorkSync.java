@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *     under synchronisation.
  * </p>
  * <p>
- *     Obviously this only makes sense for that a) can be combined, and b)
+ *     Obviously this only makes sense for work that a) can be combined, and b)
  *     where the performance improvements from batching effects is large enough
  *     to overcome the overhead of collecting and batching up the work units.
  * </p>

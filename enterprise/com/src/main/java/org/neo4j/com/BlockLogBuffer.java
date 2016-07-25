@@ -82,7 +82,7 @@ public class BlockLogBuffer implements Closeable
         }
         return this;
     }
-    
+
     private void flush( int howManyBytesToWrite ) throws IOException
     {
         target.writeBytes( byteArray, 0, howManyBytesToWrite );
@@ -91,7 +91,7 @@ public class BlockLogBuffer implements Closeable
         clearInternalBuffer();
         byteBuffer.put( byteArray, howManyBytesToWrite, pos - howManyBytesToWrite );
     }
-    
+
 //    @Override
 //    public void emptyBufferIntoChannelAndClearIt() throws IOException
 //    {

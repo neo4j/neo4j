@@ -153,6 +153,8 @@ public class Parameter
         case "true":
         case "false":
             throw new IllegalArgumentException( "'" + name + "' is a reserved name" );
+        default:
+            break;
         }
     }
 

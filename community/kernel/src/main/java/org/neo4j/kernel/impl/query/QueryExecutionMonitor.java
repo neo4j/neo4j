@@ -28,7 +28,7 @@ import java.util.Map;
  */
 public interface QueryExecutionMonitor
 {
-    void startQueryExecution( QuerySession session, String query, Map<String,Object> parameters );
+    void startQueryExecution( QuerySession session, String query, Map<String,Object> parameters);
 
     void endFailure( QuerySession session, Throwable failure );
 

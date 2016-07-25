@@ -27,24 +27,27 @@ import java.util.concurrent.Future;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 
 public class IdBufferingRoleSwitchIT
 {
-    public @Rule ClusterRule clusterRule = new ClusterRule( getClass() )
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() )
              // Disable automatic sync so that the test can control this itself
             .withSharedSetting( HaSettings.pull_interval, "0" )
             .withSharedSetting( HaSettings.tx_push_factor, "0" )
             .withConsistencyCheckAfterwards();
-    public @Rule OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+
+    @Rule
+    public OtherThreadRule<Void> t2 = new OtherThreadRule<>();
 
     @Test
     public void shouldNotSeeFreedIdsCrossRoleSwitch() throws Throwable
@@ -84,34 +87,29 @@ public class IdBufferingRoleSwitchIT
 
     private void triggerIdMaintenance( GraphDatabaseAPI db )
     {
-        db.getDependencyResolver()
-                .resolveDependency( NeoStoreDataSource.BufferedIdMaintenanceController.class )
+        db.getDependencyResolver().resolveDependency( IdController.class )
                 .maintenance();
     }
 
     private WorkerCommand<Void,Void> barrierControlledReadTransaction( final GraphDatabaseService slave,
             final Barrier.Control barrier )
     {
-        return new WorkerCommand<Void,Void>()
+        return state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            try ( Transaction tx = slave.beginTx() )
             {
-                try ( Transaction tx = slave.beginTx() )
-                {
-                    barrier.reached();
-                    tx.success();
-                }
-                catch ( Exception e )
-                {
-                    // This is OK, we expect this transaction to fail after role switch
-                }
-                finally
-                {
-                    barrier.release();
-                }
-                return null;
+                barrier.reached();
+                tx.success();
             }
+            catch ( Exception e )
+            {
+                // This is OK, we expect this transaction to fail after role switch
+            }
+            finally
+            {
+                barrier.release();
+            }
+            return null;
         };
     }
 

@@ -19,6 +19,10 @@
  */
 package org.neo4j.concurrent;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -26,12 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -150,24 +149,19 @@ public class AsyncEventsTest
         executor.submit( asyncEvents );
 
         ExecutorService threadPool = Executors.newFixedThreadPool( threads );
-        Runnable runner = new Runnable()
-        {
-            @Override
-            public void run()
+        Runnable runner = () -> {
+            try
             {
-                try
-                {
-                    startLatch.await();
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                startLatch.await();
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
 
-                for ( int i = 0; i < iterations; i++ )
-                {
-                    asyncEvents.send( new Event() );
-                }
+            for ( int i = 0; i < iterations; i++ )
+            {
+                asyncEvents.send( new Event() );
             }
         };
         for ( int i = 0; i < threads; i++ )
@@ -209,22 +203,17 @@ public class AsyncEventsTest
         while ( consumer.eventsProcessed.take().processedBy == Thread.currentThread() );
 
         // Start a thread that awaits the termination
-        Future<?> awaitShutdownFuture = executor.submit( new Runnable()
-        {
-            @Override
-            public void run()
+        Future<?> awaitShutdownFuture = executor.submit( (Runnable) () -> {
+            awaitStartLatch.countDown();
+            try
             {
-                awaitStartLatch.countDown();
-                try
-                {
-                    asyncEvents.awaitTermination();
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( e );
-                }
-                consumer.eventsProcessed.offer( specialShutdownObservedEvent );
+                asyncEvents.awaitTermination();
             }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
+            consumer.eventsProcessed.offer( specialShutdownObservedEvent );
         } );
 
         awaitStartLatch.await();

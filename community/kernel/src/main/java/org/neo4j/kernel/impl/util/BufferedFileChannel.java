@@ -68,7 +68,7 @@ public class BufferedFileChannel extends AbstractStoreChannel
         intermediaryBufferPosition += howMuchToRead;
         return howMuchToRead;
     }
-    
+
     private int remainingInIntermediaryBuffer()
     {
         return intermediaryBufferSize-intermediaryBufferPosition;
@@ -126,7 +126,7 @@ public class BufferedFileChannel extends AbstractStoreChannel
     {
         source.force( metaData );
     }
-    
+
     public StoreChannel getSource()
     {
         return source;

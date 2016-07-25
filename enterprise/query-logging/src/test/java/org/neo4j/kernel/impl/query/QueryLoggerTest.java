@@ -57,7 +57,7 @@ public class QueryLoggerTest
         QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
 
         // when
-        queryLogger.startQueryExecution( session, QUERY_1, Collections.<String,Object>emptyMap() );
+        queryLogger.startQueryExecution( session, QUERY_1, Collections.emptyMap() );
         clock.forward( 11, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( session );
 
@@ -77,7 +77,7 @@ public class QueryLoggerTest
         QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
 
         // when
-        queryLogger.startQueryExecution( session, QUERY_1, Collections.<String,Object>emptyMap() );
+        queryLogger.startQueryExecution( session, QUERY_1, Collections.emptyMap() );
         clock.forward( 9, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( session );
 
@@ -97,11 +97,11 @@ public class QueryLoggerTest
         QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
 
         // when
-        queryLogger.startQueryExecution( session1, QUERY_1, Collections.<String,Object>emptyMap() );
+        queryLogger.startQueryExecution( session1, QUERY_1, Collections.emptyMap() );
         clock.forward( 1, TimeUnit.MILLISECONDS );
-        queryLogger.startQueryExecution( session2, QUERY_2, Collections.<String,Object>emptyMap() );
+        queryLogger.startQueryExecution( session2, QUERY_2, Collections.emptyMap() );
         clock.forward( 1, TimeUnit.MILLISECONDS );
-        queryLogger.startQueryExecution( session3, QUERY_3, Collections.<String,Object>emptyMap() );
+        queryLogger.startQueryExecution( session3, QUERY_3, Collections.emptyMap() );
         clock.forward( 7, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( session3 );
         clock.forward( 7, TimeUnit.MILLISECONDS );
@@ -127,13 +127,14 @@ public class QueryLoggerTest
         RuntimeException failure = new RuntimeException();
 
         // when
-        queryLogger.startQueryExecution( session, QUERY_1, Collections.<String,Object>emptyMap() );
+        queryLogger.startQueryExecution( session, QUERY_1, Collections.emptyMap() );
         clock.forward( 1, TimeUnit.MILLISECONDS );
         queryLogger.endFailure( session, failure );
 
         // then
         logProvider.assertExactly(
-                inLog( getClass() ).error( is( "1 ms: {session one} - MATCH (n) RETURN n" ), sameInstance( failure ) )
+                inLog( getClass() )
+                        .error( is( "1 ms: {session one} - MATCH (n) RETURN n" ), sameInstance( failure ) )
         );
     }
 
@@ -141,7 +142,7 @@ public class QueryLoggerTest
     public void shouldLogQueryParameters() throws Exception
     {
         // given
-        AssertableLogProvider logProvider = new AssertableLogProvider();
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
         QuerySession session = session( SESSION_1_NAME );
         FakeClock clock = new FakeClock();
         QueryLogger queryLogger = queryLoggerWithParams( logProvider, clock );
@@ -163,8 +164,8 @@ public class QueryLoggerTest
     public void shouldLogQueryParametersOnFailure() throws Exception
     {
         // given
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        QuerySession session = session( SESSION_2_NAME );
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
+        QuerySession session = session( SESSION_1_NAME );
         FakeClock clock = new FakeClock();
         QueryLogger queryLogger = queryLoggerWithParams( logProvider, clock );
         RuntimeException failure = new RuntimeException();
@@ -179,7 +180,7 @@ public class QueryLoggerTest
         // then
         logProvider.assertExactly(
                 inLog( getClass() ).error(
-                        is( "1 ms: {session two} - MATCH (n) WHERE n.age IN {ages} RETURN n - {ages: [41, 42, 43]}" ),
+                        is( "1 ms: {session one} - MATCH (n) WHERE n.age IN {ages} RETURN n - {ages: [41, 42, 43]}" ),
                         sameInstance( failure ) )
         );
     }
@@ -196,7 +197,7 @@ public class QueryLoggerTest
 
     private static QuerySession session( final String data )
     {
-        return new QuerySession()
+        return new QuerySession( null )
         {
             @Override
             public String toString()

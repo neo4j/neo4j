@@ -21,6 +21,9 @@ package org.neo4j.test;
 
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 public class ThreadTestUtils
 {
@@ -28,8 +31,16 @@ public class ThreadTestUtils
     {
         String name = "Forked-from-" + Thread.currentThread().getName();
         Thread thread = new Thread( runnable, name );
+        thread.setDaemon( true );
         thread.start();
         return thread;
+    }
+
+    public static <T> Future<T> forkFuture( Callable<T> callable )
+    {
+        FutureTask<T> task = new FutureTask<T>( callable );
+        fork( task );
+        return task;
     }
 
     public static void awaitThreadState( Thread thread, long maxWaitMillis, Thread.State first, Thread.State... rest )

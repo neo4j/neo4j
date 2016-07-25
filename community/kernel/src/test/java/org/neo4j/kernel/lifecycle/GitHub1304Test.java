@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.lifecycle;
 
-import java.util.Collections;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.util.Collections;
 
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -36,7 +36,7 @@ public class GitHub1304Test
     @Test
     public void givenBatchInserterWhenArrayPropertyUpdated4TimesThenShouldNotFail() throws Exception
     {
-        BatchInserter batchInserter = BatchInserters.inserter( folder.getRoot().getAbsolutePath() );
+        BatchInserter batchInserter = BatchInserters.inserter( folder.getRoot().getAbsoluteFile() );
 
         long nodeId = batchInserter.createNode( Collections.<String, Object>emptyMap() );
 

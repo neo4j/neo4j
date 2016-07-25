@@ -23,11 +23,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-class RecordSet<R extends Abstract64BitRecord> implements Iterable<R>
+class RecordSet<R extends AbstractBaseRecord> implements Iterable<R>
 {
-    private Map<Long, R> map = new HashMap<Long, R>();
+    private final Map<Long, R> map = new HashMap<Long, R>();
 
     void add( R record )
     {
@@ -84,7 +84,7 @@ class RecordSet<R extends Abstract64BitRecord> implements Iterable<R>
         return builder.append( "]\n" ).toString();
     }
 
-    public static <R extends Abstract64BitRecord> RecordSet<R> asSet( R... records )
+    public static <R extends AbstractBaseRecord> RecordSet<R> asSet( R... records )
     {
         RecordSet<R> set = new RecordSet<R>();
         for ( R record : records )

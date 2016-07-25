@@ -34,13 +34,13 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
-import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.test.ConstantRequestContextFactory;
 import org.neo4j.test.LongResponse;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -75,8 +75,8 @@ public class SlaveTransactionCommitProcessTest
         };
         response = new LongResponse( 42L );
         tx = new PhysicalTransactionRepresentation(
-                Collections.<Command>emptyList() );
-        tx.setHeader( new byte[]{}, 1, 1, 1, 1, 1, 1337 );
+                Collections.<StorageCommand>emptyList() );
+        tx.setHeader(new byte[]{}, 1, 1, 1, 1, 1, 1337);
 
         commitProcess = new SlaveTransactionCommitProcess( master, reqFactory );
     }
@@ -88,7 +88,7 @@ public class SlaveTransactionCommitProcessTest
         when( master.commit( requestContext, tx ) ).thenReturn( response );
 
         // When
-        commitProcess.commit( tx , new LockGroup(), CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
+        commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
 
         // Then
         assertThat( lastSeenEventIdentifier.get(), is( 1337 ) );
@@ -99,7 +99,8 @@ public class SlaveTransactionCommitProcessTest
     {
         when( master.commit( requestContext, tx ) ).thenThrow( new ComException() );
 
-        commitProcess.commit( tx , new LockGroup(), CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
+        // When
+        commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
         // Then we assert that the right exception is thrown
     }
 
@@ -110,12 +111,12 @@ public class SlaveTransactionCommitProcessTest
 
         try
         {
-            commitProcess.commit( tx , new LockGroup(), CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
+            commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
             fail( "commit should have thrown" );
         }
         catch ( TransactionFailureException e )
         {
-            assertThat( e.status(), is( (Status) Status.Transaction.CouldNotCommit ) );
+            assertThat( e.status(), is( (Status) Status.Transaction.TransactionCommitFailed ) );
         }
     }
 }

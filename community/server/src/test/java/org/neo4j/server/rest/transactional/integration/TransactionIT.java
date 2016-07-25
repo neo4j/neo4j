@@ -29,32 +29,33 @@ import java.io.Reader;
 import java.net.Socket;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.web.XForwardUtil;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.hasErrors;
@@ -84,7 +85,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // execute
         Response execute =
-                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertThat( execute.status(), equalTo( 200 ) );
         assertThat( execute.get( "transaction" ).get( "expires" ).asText(), isValidRFCTimestamp() );
 
@@ -107,7 +108,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertHasTxLocation( begin );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
 
         // rollback
         Response commit = http.DELETE( begin.location() );
@@ -131,7 +132,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( commitResource, equalTo( begin.location() + "/commit" ) );
 
         // execute and commit
-        Response commit = http.POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }"
+        Response commit = http.POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"
         ) );
 
         assertThat( commit, containsNoErrors() );
@@ -145,8 +146,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin and execute
-        Response begin = http.POST( "/db/data/transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' " +
-                                                                        "} ] }" ) );
+        Response begin = http.POST( "/db/data/transaction",
+                quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
 
         String commitResource = begin.stringFromContent( "commit" );
 
@@ -178,7 +179,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( begin, hasErrors( Status.Request.InvalidFormat ) );
 
         assertThat( commit.status(), equalTo( 404 ) );
-        assertThat( commit, hasErrors( Status.Transaction.UnknownId ) );
+        assertThat( commit, hasErrors( Status.Transaction.TransactionNotFound ) );
 
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
     }
@@ -191,17 +192,17 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
 
         // commit
         http.POST( commitResource );
 
         // execute
-        Response execute2 = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
+        Response execute2 = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ]" +
                                                                      " }" ) );
 
         assertThat( execute2.status(), equalTo( 404 ) );
-        assertThat( execute2, hasErrors( Status.Transaction.UnknownId ) );
+        assertThat( execute2, hasErrors( Status.Transaction.TransactionNotFound ) );
     }
 
     @Test
@@ -210,10 +211,11 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin and execute and commit
-        Response begin = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': " +
-                                                                               "'CREATE n' } ] }" ) );
+        Response begin = http.POST( "/db/data/transaction/commit",
+                quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
 
         assertThat( begin.status(), equalTo( 200 ) );
+        assertThat( begin, containsNoErrors() );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
     }
 
@@ -253,108 +255,107 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
     }
 
-
     @Test
     public void begin_and_execute_periodic_commit_and_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
-        {
-            @Override
-            public void execute( String url )
-            {
-                long nodesInDatabaseBeforeTransaction = countNodes();
+        int nodes = 11;
+        int batch = 2;
+        ServerTestUtils.withCSVFile( nodes, url -> {
+            long nodesInDatabaseBeforeTransaction = countNodes();
+            long txIdBefore = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
-                // begin and execute and commit
-                Response response = http.POST(
-                        "/db/data/transaction/commit",
-                        quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                    url + "\\\" AS line CREATE ()' } ] }" )
-                );
+            // begin and execute and commit
+            Response response = http.POST(
+                    "/db/data/transaction/commit",
+                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT "+batch+" LOAD CSV FROM \\\"" +
+                                url + "\\\" AS line CREATE ()' } ] }" )
+            );
 
-                assertThat( response.status(), equalTo( 200 ) );
-                assertThat( response, containsNoErrors() );
-                assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
-            }
+            long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
+            assertThat( response.status(), equalTo( 200 ) );
+            assertThat( response, containsNoErrors() );
+            assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + nodes ) );
+            assertThat( txIdAfter, equalTo( txIdBefore + ((nodes / batch) + 1) ) );
         } );
     }
 
     @Test
     public void begin_and_execute_periodic_commit_that_returns_data_and_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
-        {
-            @Override
-            public void execute( String url ) throws Exception
-            {
-                long nodesInDatabaseBeforeTransaction = countNodes();
+        int nodes = 11;
+        int batch = 2;
+        ServerTestUtils.withCSVFile( nodes, url -> {
+            long nodesInDatabaseBeforeTransaction = countNodes();
+            long txIdBefore = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
-                // begin and execute and commit
-                Response response = http.POST(
-                        "/db/data/transaction/commit",
-                        quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                    url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
-                );
+            // begin and execute and commit
+            Response response = http.POST(
+                    "/db/data/transaction/commit",
+                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT "+batch+" LOAD CSV FROM \\\"" +
+                                url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
+            );
+            long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
-                assertThat( response.status(), equalTo( 200 ) );
+            assertThat( response.status(), equalTo( 200 ) );
 
-                assertThat( response, containsNoErrors() );
+            assertThat( response, containsNoErrors() );
 
-                JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
-                assertThat( columns.toString(), equalTo( "[\"n\"]" ) );
-
-                assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
-            }
+            JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
+            assertThat( columns.toString(), equalTo( "[\"n\"]" ) );
+            assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + nodes ) );
+            assertThat( txIdAfter, equalTo( txIdBefore + ((nodes / batch) + 1) ) );
         } );
     }
 
     @Test
-    public void begin_and_execute_cypher_22_periodic_commit_that_returns_data_and_commit() throws Exception
+    public void begin_and_execute_cypher_23_periodic_commit_that_returns_data_and_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
+        // to get rid off the property key id creation in the actual test
+        try ( Transaction tx = graphdb().beginTx() )
         {
-            @Override
-            public void execute( String url ) throws Exception
-            {
-                long nodesInDatabaseBeforeTransaction = countNodes();
+            Node node = graphdb().createNode();
+            node.setProperty( "id", 42 );
+        }
 
-                // begin and execute and commit
-                Response response = http.POST(
-                        "/db/data/transaction/commit",
-                        quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.2 USING PERIODIC COMMIT LOAD CSV FROM" +
-                                    " \\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
-                );
+        int nodes = 11;
+        int batch = 2;
+        ServerTestUtils.withCSVFile( nodes, url -> {
+            long nodesInDatabaseBeforeTransaction = countNodes();
+            long txIdBefore = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
-                assertThat( response.status(), equalTo( 200 ) );
+            // begin and execute and commit
+            Response response = http.POST(
+                    "/db/data/transaction/commit",
+                    quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.3 USING PERIODIC COMMIT "+batch+" LOAD CSV FROM" +
+                                " \\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
+            );
+            long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
-                assertThat( response, containsNoErrors() );
+            assertThat( response.status(), equalTo( 200 ) );
 
-                JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
-                assertThat( columns.toString(), equalTo( "[\"n\"]" ) );
+            assertThat( response, containsNoErrors() );
 
-                assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
-            }
+            JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
+            assertThat( columns.toString(), equalTo( "[\"n\"]" ) );
+            assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + nodes ) );
+            assertThat( txIdAfter, equalTo( txIdBefore + ((nodes / batch) + 1) ) );
         } );
     }
 
     @Test
     public void begin_and_execute_periodic_commit_followed_by_another_statement_and_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
-        {
-            @Override
-            public void execute( String url )
-            {
-                // begin and execute and commit
-                Response response = http.POST(
-                        "/db/data/transaction/commit",
-                        quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                    url +
-                                    "\\\" AS line CREATE (n {id: 23}) RETURN n' }, { 'statement': 'RETURN 1' } ] }" )
-                );
+        ServerTestUtils.withCSVFile( 1, url -> {
+            // begin and execute and commit
+            Response response = http.POST(
+                    "/db/data/transaction/commit",
+                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
+                                url +
+                                "\\\" AS line CREATE (n {id: 23}) RETURN n' }, { 'statement': 'RETURN 1' } ] }" )
+            );
 
-                assertThat( response.status(), equalTo( 200 ) );
-                assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
-            }
+            assertThat( response.status(), equalTo( 200 ) );
+            assertThat( response, hasErrors( Status.Statement.SemanticError ) );
         } );
     }
 
@@ -368,71 +369,56 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         );
 
         assertThat( response.status(), equalTo( 200 ) );
-        assertThat( response, hasErrors( Status.Statement.InvalidSyntax ) );
+        assertThat( response, hasErrors( Status.Statement.SyntaxError ) );
     }
 
     @Test
     public void begin_and_execute_multiple_periodic_commit_last_and_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
-        {
-            @Override
-            public void execute( String url )
-            {
-                // begin and execute and commit
-                Response response = http.POST(
-                        "/db/data/transaction/commit",
-                        quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' }, " +
-                                    "{ 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" + url + "\\\" AS line " +
-                                    "CREATE ()' } ] }" )
-                );
+        ServerTestUtils.withCSVFile( 1, url -> {
+            // begin and execute and commit
+            Response response = http.POST(
+                    "/db/data/transaction/commit",
+                    quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' }, " +
+                                "{ 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" + url + "\\\" AS line " +
+                                "CREATE ()' } ] }" )
+            );
 
-                assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
-            }
+            assertThat( response, hasErrors( Status.Statement.SemanticError ) );
         } );
     }
 
     @Test
     public void begin__execute__execute_and_periodic_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
-        {
-            @Override
-            public void execute( String url )
-            {
-                // begin
-                Response begin = http.POST( "/db/data/transaction" );
+        ServerTestUtils.withCSVFile( 1, url -> {
+            // begin
+            Response begin = http.POST( "/db/data/transaction" );
 
-                // execute
-                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' } ] }" ) );
+            // execute
+            http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' } ] }" ) );
 
-                // execute
-                Response response = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'USING" +
-                                                                             " PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                                                             url + "\\\" AS line CREATE ()' } ] }" ) );
+            // execute
+            Response response = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'USING" +
+                                                                         " PERIODIC COMMIT LOAD CSV FROM \\\"" +
+                                                                         url + "\\\" AS line CREATE ()' } ] }" ) );
 
-                assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
-            }
+            assertThat( response, hasErrors( Status.Statement.SemanticError ) );
         } );
     }
 
     @Test
     public void begin_and_execute_periodic_commit__commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
-        {
-            @Override
-            public void execute( String url )
-            {
-                // begin and execute
-                Response begin = http.POST(
-                        "/db/data/transaction",
-                        quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                    url + "\\\" AS line CREATE ()' } ] }" )
-                );
+        ServerTestUtils.withCSVFile( 1, url -> {
+            // begin and execute
+            Response begin = http.POST(
+                    "/db/data/transaction",
+                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
+                                url + "\\\" AS line CREATE ()' } ] }" )
+            );
 
-                assertThat( begin, hasErrors( Status.Statement.InvalidSemantics ) );
-            }
+            assertThat( begin, hasErrors( Status.Statement.SemanticError ) );
         } );
     }
 
@@ -447,8 +433,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' }, " +
-                                                 "{ 'statement': 'CREATE n' } ] }" ) );
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' }, " +
+                                                 "{ 'statement': 'CREATE (n)' } ] }" ) );
 
         // commit
         Response commit = http.POST( commitResource );
@@ -467,11 +453,11 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         String commitResource = begin.stringFromContent( "commit" );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ]" +
                                                  " }" ) );
 
         // execute
-        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ]" +
                                                  " }" ) );
 
         // commit
@@ -509,7 +495,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         long id = result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).getLongValue();
 
         // WHEN
-        http.POST( "/db/data/cypher", rawPayload( "{\"query\":\"match n where id(n) = " + id + " delete n\"}" ) );
+        http.POST( "/db/data/cypher", rawPayload( "{\"query\":\"match (n) where id(n) = " + id + " delete n\"}" ) );
 
         // THEN
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
@@ -550,7 +536,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // execute
         Response execute =
-                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
 
         assertThat( execute.status(), equalTo( 404 ) );
     }
@@ -570,49 +556,39 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         final CountDownLatch latch = new CountDownLatch( 1 );
 
-        final Future<Response> executeFuture = Executors.newSingleThreadExecutor().submit( new Callable<Response>()
-        {
-            @Override
-            public Response call()
-            {
-                latch.countDown();
-                Response response = http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
-                                                                            statement + "' } ] }" ) );
-                assertThat( response.status(), equalTo( 200 ) );
-                return response;
+        final Future<Response> executeFuture = Executors.newSingleThreadExecutor().submit( () -> {
+            latch.countDown();
+            Response response = http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
+                                                                        statement + "' } ] }" ) );
+            assertThat( response.status(), equalTo( 200 ) );
+            return response;
 
-            }
         } );
 
         // terminate
-        final Future<Response> interruptFuture = Executors.newSingleThreadExecutor().submit( new Callable<Response>()
-        {
-            @Override
-            public Response call()
+        final Future<Response> interruptFuture = Executors.newSingleThreadExecutor().submit( () -> {
+            try
             {
-                try
-                {
-                    latch.await();
-                    Thread.sleep( 100 );
-                }
-                catch ( InterruptedException ignored )
-                {
-                    // go
-                }
-                Response response = http.DELETE( begin.location() );
-                assertThat( response.status(), equalTo( 200 ) );
-                return response;
+                latch.await();
+                Thread.sleep( 100 );
             }
+            catch ( InterruptedException ignored )
+            {
+                // go
+            }
+            Response response = http.DELETE( begin.location() );
+            assertThat( response.status(), equalTo( 200 ) );
+            return response;
         } );
 
         interruptFuture.get();
         Response execute = executeFuture.get();
-        assertThat( execute, hasErrors( Status.Statement.ExecutionFailure ) );
+        assertThat( execute, hasErrors( Status.Statement.ExecutionFailed ) );
 
         Response execute2 =
-                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertThat( execute2.status(), equalTo( 404 ) );
-        assertThat( execute2, hasErrors( Status.Transaction.UnknownId ) );
+        assertThat( execute2, hasErrors( Status.Transaction.TransactionNotFound ) );
     }
 
     @Test
@@ -631,8 +607,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     {
         // given
         long initialNodes = countNodes();
-        TransactionCounters txMonitor = ((GraphDatabaseAPI) graphdb()).getDependencyResolver().resolveDependency(
-                TransactionCounters.class );
+        TransactionStats txMonitor = ((GraphDatabaseAPI) graphdb()).getDependencyResolver().resolveDependency(
+                TransactionStats.class );
         long initialTerminations = txMonitor.getNumberOfTerminatedTransactions();
 
         // when sending a request and aborting in the middle of receiving the result
@@ -858,7 +834,54 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         // begin and execute and commit
         Response begin = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': " +
                                                                                "'MATCH (n:Test) USING INDEX n:Test(foo) WHERE n.foo = 42 RETURN n.foo' } ] }" ) );
-        assertThat( begin, hasErrors( Status.Request.Schema.NoSuchIndex ) );
+        assertThat( begin, hasErrors( Status.Request.Schema.IndexNotFound ) );
+    }
+
+    @Test
+    public void transaction_not_in_response_on_failure() throws Exception
+    {
+        // begin
+        Response begin = http.POST( "/db/data/transaction" );
+
+        String commitResource = begin.stringFromContent( "commit" );
+
+        // execute valid statement
+        Response valid =
+                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'RETURN 42' } ] }" ) );
+        assertThat( valid.status(), equalTo( 200 ) );
+        assertThat( valid.get( "transaction"), notNullValue() );
+
+        // execute invalid statement
+        Response invalid =
+                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'RETRUN 42' } ] }" ) );
+        assertThat( invalid.status(), equalTo( 200 ) );
+        //transaction has been closed and rolled back
+        assertThat( invalid.get( "transaction"), nullValue() );
+
+        // commit
+        Response commit = http.POST( commitResource );
+
+        //no transaction open anymore, we have failed
+        assertThat( commit.status(), equalTo( 404 ) );
+    }
+
+    @Test
+    public void shouldWorkWhenHittingTheASTCacheInCypher() throws JsonParseException
+    {
+        // give a cached plan
+        Response response = http.POST( "/db/data/transaction/commit",
+                singleStatement( "MATCH (group:Group {name: \\\"AAA\\\"}) RETURN *" ) );
+
+        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
+
+        // when we hit the ast cache
+        response = http.POST( "/db/data/transaction/commit",
+                singleStatement( "MATCH (group:Group {name: \\\"BBB\\\"}) RETURN *" ) );
+
+        // then no errors (in particular no NPE)
+        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
     }
 
     private void assertPath( JsonNode jsonURIString, String path, String hostname, final String scheme )
@@ -867,7 +890,6 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                     "but got '" + jsonURIString.asText() + "'.",
                 jsonURIString.asText().matches( scheme + "://" + hostname + ":\\d+/db/data" + path ) );
     }
-
 
     private HTTP.RawPayload singleStatement( String statement )
     {
@@ -879,15 +901,15 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         Set<Label> givenLabels = new HashSet<>( labels.length );
         for ( String label : labels )
         {
-            givenLabels.add( DynamicLabel.label( label ) );
+            givenLabels.add( Label.label( label ) );
         }
 
         try ( Transaction transaction = graphdb().beginTx() )
         {
             long count = 0;
-            for ( Node node : GlobalGraphOperations.at( graphdb() ).getAllNodes() )
+            for ( Node node : graphdb().getAllNodes() )
             {
-                Set<Label> nodeLabels = IteratorUtil.asSet( node.getLabels() );
+                Set<Label> nodeLabels = Iterables.asSet( node.getLabels() );
                 if ( nodeLabels.containsAll( givenLabels ) )
                 {
                     count++;
@@ -897,7 +919,6 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             return count;
         }
     }
-
 
     private void assertHasTxLocation( Response begin )
     {

@@ -26,57 +26,57 @@ import java.util.Properties;
 
 public class GraphStyle
 {
-	GraphStyle( StyleParameter... parameters )
-	{
-		this.configuration = new DefaultStyleConfiguration( parameters );
-		this.nodeStyle = new DefaultNodeStyle( configuration );
-		this.edgeStyle = new DefaultRelationshipStyle( configuration );
-	}
+    GraphStyle( StyleParameter... parameters )
+    {
+        this.configuration = new DefaultStyleConfiguration( parameters );
+        this.nodeStyle = new DefaultNodeStyle( configuration );
+        this.edgeStyle = new DefaultRelationshipStyle( configuration );
+    }
 
-	/**
-	 * Constructor for subclasses. Used to provide graph styles with more
-	 * elaborate configuration than the default configuration parameters can
-	 * provide.
-	 * @param nodeStyle
-	 *            the node style to use.
-	 * @param edgeStyle
-	 *            the relationship style to use.
-	 */
+    /**
+     * Constructor for subclasses. Used to provide graph styles with more
+     * elaborate configuration than the default configuration parameters can
+     * provide.
+     * @param nodeStyle
+     *            the node style to use.
+     * @param edgeStyle
+     *            the relationship style to use.
+     */
     public GraphStyle( NodeStyle nodeStyle, RelationshipStyle edgeStyle )
-	{
+    {
         this.configuration = null;
-		this.nodeStyle = nodeStyle;
-		this.edgeStyle = edgeStyle;
-	}
+        this.nodeStyle = nodeStyle;
+        this.edgeStyle = edgeStyle;
+    }
 
-	/**
-	 * Emit the end of a graph. Override this method to change the format of the
-	 * end of a graph.
-	 * @param stream
-	 *            the stream to emit the graph ending to.
-	 * @throws IOException
-	 *             if there is an error in emitting the graph ending.
-	 */
-	protected void emitGraphEnd( Appendable stream ) throws IOException
-	{
-		stream.append( "}\n" );
-	}
+    /**
+     * Emit the end of a graph. Override this method to change the format of the
+     * end of a graph.
+     * @param stream
+     *            the stream to emit the graph ending to.
+     * @throws IOException
+     *             if there is an error in emitting the graph ending.
+     */
+    protected void emitGraphEnd( Appendable stream ) throws IOException
+    {
+        stream.append( "}\n" );
+    }
 
-	/**
-	 * Emit the start of a graph. Override this method to change the format of
-	 * the start of a graph.
-	 * @param stream
-	 *            the stream to emit the graph start to.
-	 * @throws IOException
-	 *             if there is an error in emitting the graph start.
-	 */
-	protected void emitGraphStart( Appendable stream ) throws IOException
-	{
-		stream.append( "digraph Neo {\n" );
-		emitHeaders(stream);
-	}
+    /**
+     * Emit the start of a graph. Override this method to change the format of
+     * the start of a graph.
+     * @param stream
+     *            the stream to emit the graph start to.
+     * @throws IOException
+     *             if there is an error in emitting the graph start.
+     */
+    protected void emitGraphStart( Appendable stream ) throws IOException
+    {
+        stream.append( "digraph Neo {\n" );
+        emitHeaders(stream);
+    }
 
-	protected void emitHeaders( Appendable stream ) throws IOException
+    protected void emitHeaders( Appendable stream ) throws IOException
     {
         if ( configuration != null )
         {
@@ -103,13 +103,12 @@ public class GraphStyle
         }
         stream.append( "  ]\n" );
 
-        
     }
 
     final NodeStyle nodeStyle;
-	final RelationshipStyle edgeStyle;
-	private final DefaultStyleConfiguration configuration;
-	private static volatile Header header;
+    final RelationshipStyle edgeStyle;
+    private final DefaultStyleConfiguration configuration;
+    private static volatile Header header;
 
     GraphStyle getSubgraphStyle( final String subgraphName )
     {
@@ -129,95 +128,94 @@ public class GraphStyle
         };
     }
 
-	static Header header()
-	{
-		Header instance = header;
-		if ( instance == null )
-		{
-			synchronized ( GraphStyle.class )
-			{
-				instance = header;
-				if ( instance == null )
-				{
-					header = instance = new Header();
-				}
-			}
-		}
-		return instance;
-	}
+    static Header header()
+    {
+        Header instance = header;
+        if ( instance == null )
+        {
+            synchronized ( GraphStyle.class )
+            {
+                instance = header;
+                if ( instance == null )
+                {
+                    header = instance = new Header();
+                }
+            }
+        }
+        return instance;
+    }
 
-	static final class Header
-	{
-		private Header()
-		{
-			String prefix = getClass().getPackage().getName() + ".";
-			String nodePrefix = prefix + "node.";
-			String relPrefix = prefix + "relationship.";
-			Properties properties = System.getProperties();
-			for ( Object obj : properties.keySet() )
-			{
-				try
-				{
-					String property = ( String ) obj;
-					if ( property.startsWith( nodePrefix ) )
-					{
-						nodeHeader.put( property
-						    .substring( nodePrefix.length() ),
-						    ( String ) properties.get( property ) );
-					}
-					else if ( property.startsWith( relPrefix ) )
-					{
-						edgeHeader.put(
-						    property.substring( relPrefix.length() ),
-						    ( String ) properties.get( property ) );
-					}
-				}
-				catch ( ClassCastException cce )
-				{
-					continue;
-				}
-			}
-			assertMember( nodeHeader, properties, prefix, "fontname",
-			    "Bitstream Vera Sans" );
-			assertMember( nodeHeader, properties, prefix, "fontsize", "8" );
-			assertMember( edgeHeader, properties, prefix, "fontname",
-			    "Bitstream Vera Sans" );
-			assertMember( edgeHeader, properties, prefix, "fontsize", "8" );
-			nodeHeader.put( "shape", "Mrecord" );
-		}
+    static final class Header
+    {
+        private Header()
+        {
+            String prefix = getClass().getPackage().getName() + ".";
+            String nodePrefix = prefix + "node.";
+            String relPrefix = prefix + "relationship.";
+            Properties properties = System.getProperties();
+            for ( Object obj : properties.keySet() )
+            {
+                try
+                {
+                    String property = (String) obj;
+                    if ( property.startsWith( nodePrefix ) )
+                    {
+                        nodeHeader.put( property
+                            .substring( nodePrefix.length() ),
+                            (String) properties.get( property ) );
+                    }
+                    else if ( property.startsWith( relPrefix ) )
+                    {
+                        edgeHeader.put(
+                            property.substring( relPrefix.length() ),
+                            (String) properties.get( property ) );
+                    }
+                }
+                catch ( ClassCastException cce )
+                {
+                    continue;
+                }
+            }
+            assertMember( nodeHeader, properties, prefix, "fontname",
+                "Bitstream Vera Sans" );
+            assertMember( nodeHeader, properties, prefix, "fontsize", "8" );
+            assertMember( edgeHeader, properties, prefix, "fontname",
+                "Bitstream Vera Sans" );
+            assertMember( edgeHeader, properties, prefix, "fontsize", "8" );
+            nodeHeader.put( "shape", "Mrecord" );
+        }
 
-		final Map<String, String> nodeHeader = new HashMap<String, String>();
-		final Map<String, String> edgeHeader = new HashMap<String, String>();
+        final Map<String, String> nodeHeader = new HashMap<String, String>();
+        final Map<String, String> edgeHeader = new HashMap<String, String>();
         final Map<String, String> graphHeader = new HashMap<String, String>();
 
-		private void assertMember( Map<String, String> header,
-		    Properties properties, String prefix, String key, String def )
-		{
-			if ( !header.containsKey( key ) )
-			{
-				header.put( key, properties.getProperty( prefix + key, def ) );
-			}
-		}
+        private void assertMember( Map<String, String> header,
+            Properties properties, String prefix, String key, String def )
+        {
+            if ( !header.containsKey( key ) )
+            {
+                header.put( key, properties.getProperty( prefix + key, def ) );
+            }
+        }
 
-		private void emitNode( Appendable stream ) throws IOException
-		{
-			emitHeader( stream, nodeHeader );
-		}
+        private void emitNode( Appendable stream ) throws IOException
+        {
+            emitHeader( stream, nodeHeader );
+        }
 
-		private void emitEdge( Appendable stream ) throws IOException
-		{
-			emitHeader( stream, edgeHeader );
-		}
-	}
+        private void emitEdge( Appendable stream ) throws IOException
+        {
+            emitHeader( stream, edgeHeader );
+        }
+    }
 
-	static void emitHeader( Appendable stream, Map<String, String> header )
-	    throws IOException
-	{
-		for ( String key : header.keySet() )
-		{
-			stream.append( "    " + key + " = \"" + header.get( key ) + "\"\n" );
-		}
-	}
-	
+    static void emitHeader( Appendable stream, Map<String, String> header )
+        throws IOException
+    {
+        for ( String key : header.keySet() )
+        {
+            stream.append( "    " + key + " = \"" + header.get( key ) + "\"\n" );
+        }
+    }
 
 }

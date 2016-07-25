@@ -52,8 +52,8 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
     {
         super( control, "PROPERTIES", config, 0 );
         this.propertyKeyHolder = propertyKeyHolder;
-        this.arrayDataSize = propertyStore.getArrayStore().dataSize();
-        this.stringDataSize = propertyStore.getStringStore().dataSize();
+        this.arrayDataSize = propertyStore.getArrayStore().getRecordDataSize();
+        this.stringDataSize = propertyStore.getStringStore().getRecordDataSize();
         this.averageBlocksPerBatch = new MovingAverage( config.movingAverageSize() );
     }
 

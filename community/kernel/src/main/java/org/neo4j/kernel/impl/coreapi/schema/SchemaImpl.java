@@ -24,18 +24,21 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.index.IndexPopulationProgress;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -61,25 +64,24 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.Iterators.addToCollection;
+import static org.neo4j.helpers.collection.Iterators.asCollection;
+import static org.neo4j.helpers.collection.Iterators.map;
 
 public class SchemaImpl implements Schema
 {
-    private final ThreadToStatementContextBridge statementContextSupplier;
+    private final Supplier<Statement> statementContextSupplier;
     private final InternalSchemaActions actions;
 
-    public SchemaImpl( ThreadToStatementContextBridge statementContextSupplier )
+    public SchemaImpl( Supplier<Statement> statementContextSupplier )
     {
         this.statementContextSupplier = statementContextSupplier;
         this.actions = new GDBSchemaActions( statementContextSupplier );
@@ -88,16 +90,12 @@ public class SchemaImpl implements Schema
     @Override
     public IndexCreator indexFor( Label label )
     {
-        assertInUnterminatedTransaction();
-
         return new IndexCreatorImpl( actions, label );
     }
 
     @Override
     public Iterable<IndexDefinition> getIndexes( final Label label )
     {
-        assertInUnterminatedTransaction();
-
         try ( Statement statement = statementContextSupplier.get() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
@@ -115,8 +113,6 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<IndexDefinition> getIndexes()
     {
-        assertInUnterminatedTransaction();
-
         try ( Statement statement = statementContextSupplier.get() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
@@ -129,21 +125,16 @@ public class SchemaImpl implements Schema
     private void addDefinitions( List<IndexDefinition> definitions, final ReadOperations statement,
                                  Iterator<IndexDescriptor> indexes, final boolean constraintIndex )
     {
-        addToCollection( map( new Function<IndexDescriptor,IndexDefinition>()
-        {
-            @Override
-            public IndexDefinition apply( IndexDescriptor rule )
+        addToCollection( map( (Function<IndexDescriptor,IndexDefinition>) rule -> {
+            try
             {
-                try
-                {
-                    Label label = label( statement.labelGetName( rule.getLabelId() ) );
-                    String propertyKey = statement.propertyKeyGetName( rule.getPropertyKeyId() );
-                    return new IndexDefinitionImpl( actions, label, propertyKey, constraintIndex );
-                }
-                catch ( LabelNotFoundKernelException | PropertyKeyIdNotFoundKernelException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                Label label = label( statement.labelGetName( rule.getLabelId() ) );
+                String propertyKey = statement.propertyKeyGetName( rule.getPropertyKeyId() );
+                return new IndexDefinitionImpl( actions, label, propertyKey, constraintIndex );
+            }
+            catch ( LabelNotFoundKernelException | PropertyKeyIdNotFoundKernelException e )
+            {
+                throw new RuntimeException( e );
             }
         }, indexes ), definitions );
     }
@@ -151,8 +142,7 @@ public class SchemaImpl implements Schema
     @Override
     public void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )
     {
-        assertInUnterminatedTransaction();
-
+        actions.assertInOpenTransaction();
         long timeout = System.currentTimeMillis() + unit.toMillis( duration );
         do
         {
@@ -180,8 +170,7 @@ public class SchemaImpl implements Schema
     @Override
     public void awaitIndexesOnline( long duration, TimeUnit unit )
     {
-        assertInUnterminatedTransaction();
-
+        actions.assertInOpenTransaction();
         long millisLeft = TimeUnit.MILLISECONDS.convert( duration, unit );
         Collection<IndexDefinition> onlineIndexes = new ArrayList<>();
 
@@ -206,9 +195,8 @@ public class SchemaImpl implements Schema
     @Override
     public IndexState getIndexState( final IndexDefinition index )
     {
-        assertInUnterminatedTransaction();
-
-        String propertyKey = single( index.getPropertyKeys() );
+        actions.assertInOpenTransaction();
+        String propertyKey = Iterables.single( index.getPropertyKeys() );
         try ( Statement statement = statementContextSupplier.get() )
         {
             int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
@@ -224,7 +212,7 @@ public class SchemaImpl implements Schema
                 throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
             }
 
-            IndexDescriptor descriptor = statement.readOperations().indexesGetForLabelAndPropertyKey( labelId, propertyKeyId );
+            IndexDescriptor descriptor = statement.readOperations().indexGetForLabelAndPropertyKey( labelId, propertyKeyId );
             InternalIndexState indexState = statement.readOperations().indexGetState( descriptor );
             switch ( indexState )
             {
@@ -246,11 +234,10 @@ public class SchemaImpl implements Schema
     }
 
     @Override
-    public String getIndexFailure( IndexDefinition index )
+    public IndexPopulationProgress getIndexPopulationProgress( IndexDefinition index )
     {
-        assertInUnterminatedTransaction();
-
-        String propertyKey = single( index.getPropertyKeys() );
+        actions.assertInOpenTransaction();
+        String propertyKey = Iterables.single( index.getPropertyKeys() );
         try ( Statement statement = statementContextSupplier.get() )
         {
             int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
@@ -266,7 +253,39 @@ public class SchemaImpl implements Schema
                 throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
             }
 
-            IndexDescriptor indexId = statement.readOperations().indexesGetForLabelAndPropertyKey( labelId, propertyKeyId );
+            IndexDescriptor descriptor = statement.readOperations().indexGetForLabelAndPropertyKey( labelId,
+                    propertyKeyId );
+            PopulationProgress progress = statement.readOperations().indexGetPopulationProgress( descriptor );
+            return new IndexPopulationProgress( progress.getCompleted(), progress.getTotal() );
+        }
+        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
+        {
+            throw new NotFoundException( format( "No index for label %s on property %s", index.getLabel().name(),
+                    propertyKey ) );
+        }
+    }
+
+    @Override
+    public String getIndexFailure( IndexDefinition index )
+    {
+        actions.assertInOpenTransaction();
+        String propertyKey = Iterables.single( index.getPropertyKeys() );
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
+            int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
+
+            if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
+            {
+                throw new NotFoundException( format( "Label %s not found", index.getLabel().name() ) );
+            }
+
+            if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
+            }
+
+            IndexDescriptor indexId = statement.readOperations().indexGetForLabelAndPropertyKey( labelId, propertyKeyId );
             return statement.readOperations().indexGetFailure( indexId );
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
@@ -279,16 +298,14 @@ public class SchemaImpl implements Schema
     @Override
     public ConstraintCreator constraintFor( Label label )
     {
-        assertInUnterminatedTransaction();
-
+        actions.assertInOpenTransaction();
         return new BaseNodeConstraintCreator( actions, label );
     }
 
     @Override
     public Iterable<ConstraintDefinition> getConstraints()
     {
-        assertInUnterminatedTransaction();
-
+        actions.assertInOpenTransaction();
         try ( Statement statement = statementContextSupplier.get() )
         {
             Iterator<PropertyConstraint> constraints = statement.readOperations().constraintsGetAll();
@@ -299,7 +316,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints( final Label label )
     {
-        assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
 
         try ( Statement statement = statementContextSupplier.get() )
         {
@@ -316,8 +333,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints( RelationshipType type )
     {
-        assertInUnterminatedTransaction();
-
+        actions.assertInOpenTransaction();
         try ( Statement statement = statementContextSupplier.get() )
         {
             int typeId = statement.readOperations().relationshipTypeGetForName( type.name() );
@@ -340,16 +356,48 @@ public class SchemaImpl implements Schema
         while ( constraints.hasNext() )
         {
             PropertyConstraint constraint = constraints.next();
-            definitions.add( constraint.asConstraintDefinition( actions, readOperations ) );
+            definitions.add( asConstraintDefinition( constraint, readOperations ) );
         }
 
         return definitions;
     }
 
+    private ConstraintDefinition asConstraintDefinition( PropertyConstraint constraint, ReadOperations readOperations )
+    {
+        // This was turned inside out. Previously a low-level constraint object would reference a public enum type
+        // which made it impossible to break out the low-level component from kernel. There could be a lower level
+        // constraint type introduced to mimic the public ConstraintType, but that would be a duplicate of it
+        // essentially. Checking instanceof here is OKish since the objects it checks here are part of the
+        // internal storage engine API.
+        if ( constraint instanceof NodePropertyExistenceConstraint )
+        {
+            StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
+            return new NodePropertyExistenceConstraintDefinition( actions,
+                    Label.label( lookup.labelGetName( ((NodePropertyConstraint) constraint).label() ) ),
+                    lookup.propertyKeyGetName( constraint.propertyKey() ) );
+        }
+        else if ( constraint instanceof UniquenessConstraint )
+        {
+            StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
+            return new UniquenessConstraintDefinition( actions,
+                    Label.label( lookup.labelGetName( ((NodePropertyConstraint) constraint).label() ) ),
+                    lookup.propertyKeyGetName( constraint.propertyKey() ) );
+        }
+        else if ( constraint instanceof RelationshipPropertyExistenceConstraint )
+        {
+            StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
+            return new RelationshipPropertyExistenceConstraintDefinition( actions,
+                    RelationshipType.withName( lookup.relationshipTypeGetName(
+                            ((RelationshipPropertyConstraint) constraint).relationshipType() ) ),
+                    lookup.propertyKeyGetName( constraint.propertyKey() ) );
+        }
+        throw new IllegalArgumentException( "Unknown constraint " + constraint );
+    }
+
     private static class GDBSchemaActions implements InternalSchemaActions
     {
-        private final ThreadToStatementContextBridge ctxSupplier;
-        public GDBSchemaActions( ThreadToStatementContextBridge ctxSupplier )
+        private final Supplier<Statement> ctxSupplier;
+        public GDBSchemaActions( Supplier<Statement> ctxSupplier )
         {
             this.ctxSupplier = ctxSupplier;
         }
@@ -400,7 +448,7 @@ public class SchemaImpl implements Schema
                             .NO_SUCH_PROPERTY_KEY )
                     {
                         statement.schemaWriteOperations().indexDrop(
-                                statement.readOperations().indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
+                                statement.readOperations().indexGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
                     }
                 }
                 catch ( SchemaRuleNotFoundException | DropIndexFailureException e )
@@ -592,14 +640,9 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public void assertInUnterminatedTransaction()
+        public void assertInOpenTransaction()
         {
-            ctxSupplier.assertInUnterminatedTransaction();
+            ctxSupplier.get();
         }
-    }
-
-    private void assertInUnterminatedTransaction()
-    {
-        statementContextSupplier.assertInUnterminatedTransaction();
     }
 }

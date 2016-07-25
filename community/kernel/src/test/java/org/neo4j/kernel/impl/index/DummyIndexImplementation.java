@@ -24,14 +24,14 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.index.IndexCommandFactory;
-import org.neo4j.graphdb.index.IndexImplementation;
-import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.spi.legacyindex.IndexCommandFactory;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
+import org.neo4j.kernel.spi.legacyindex.LegacyIndexProviderTransaction;
 
 public class DummyIndexImplementation extends LifecycleAdapter implements IndexImplementation
 {
@@ -189,6 +189,12 @@ public class DummyIndexImplementation extends LifecycleAdapter implements IndexI
     }
 
     @Override
+    public File getIndexImplementationDirectory( File storeDir )
+    {
+        return storeDir;
+    }
+
+    @Override
     public LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory )
     {
         return new LegacyIndexProviderTransaction()
@@ -212,10 +218,10 @@ public class DummyIndexImplementation extends LifecycleAdapter implements IndexI
         };
     }
 
-    private static final CommandHandler NO_APPLIER = new CommandHandler.Adapter();
+    private static final TransactionApplier NO_APPLIER = new TransactionApplier.Adapter();
 
     @Override
-    public CommandHandler newApplier( boolean recovery )
+    public TransactionApplier newApplier( boolean recovery )
     {
         return NO_APPLIER;
     }
@@ -228,6 +234,6 @@ public class DummyIndexImplementation extends LifecycleAdapter implements IndexI
     @Override
     public ResourceIterator<File> listStoreFiles()
     {
-        return IteratorUtil.emptyIterator();
+        return Iterators.emptyIterator();
     }
 }

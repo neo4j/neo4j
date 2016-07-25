@@ -23,8 +23,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -44,12 +42,11 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -57,14 +54,20 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.register.Register.DoubleLong;
-import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -74,17 +77,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
-import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
-import static org.neo4j.graphdb.Neo4jMatchers.haveState;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
-import static org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant.NOT_PARTICIPATING;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class IndexRecoveryIT
 {
@@ -178,16 +176,7 @@ public class IndexRecoveryIT
                 .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                         any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
-        when( populator.sampleResult( any( DoubleLong.Out.class ) ) ).thenAnswer( new Answer<Long>()
-        {
-            @Override
-            public Long answer( InvocationOnMock invocation ) throws Throwable
-            {
-                DoubleLong.Out result = (DoubleLong.Out) invocation.getArguments()[0];
-                result.write( 0l, 0l );
-                return 0l;
-            }
-        } );
+        when( populator.sampleResult() ).thenReturn( new IndexSample() );
         IndexAccessor mockedAccessor = mock( IndexAccessor.class );
         when( mockedAccessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( SwallowingIndexUpdater.INSTANCE );
         when( mockedIndexProvider.getOnlineAccessor(
@@ -256,8 +245,9 @@ public class IndexRecoveryIT
                         any( IndexSamplingConfig.class ) );
     }
 
-    @SuppressWarnings("deprecation") private GraphDatabaseAPI db;
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private GraphDatabaseAPI db;
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
             singleInstanceSchemaIndexProviderFactory( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR.getKey(),
@@ -272,8 +262,9 @@ public class IndexRecoveryIT
                 .thenReturn( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
-        when( mockedIndexProvider.storeMigrationParticipant(
-                any( FileSystemAbstraction.class), any( PageCache.class ) ) ).thenReturn( NOT_PARTICIPATING );
+        when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ),
+                any( PageCache.class ), any( LabelScanStoreProvider.class ) ) )
+                .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
     }
 
     @SuppressWarnings("deprecation")
@@ -402,7 +393,7 @@ public class IndexRecoveryIT
                             regularUpdates.addAll( updates );
                             break;
 
-                        case BATCHED:
+                        case RECOVERY:
                             batchedUpdates.addAll( updates );
                             break;
 

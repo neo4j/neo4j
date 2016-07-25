@@ -24,10 +24,9 @@ import java.io.File;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -67,17 +66,6 @@ public class StoreAccess
     private boolean closeable;
     private final NeoStores neoStores;
 
-    public StoreAccess( GraphDatabaseAPI graphdb )
-    {
-        this( getNeoStoresFrom( graphdb ) );
-    }
-
-    @SuppressWarnings( "deprecation" )
-    private static NeoStores getNeoStoresFrom( GraphDatabaseAPI graphdb )
-    {
-        return graphdb.getDependencyResolver().resolveDependency( NeoStores.class );
-    }
-
     public StoreAccess( NeoStores store )
     {
         this.neoStores = store;
@@ -91,10 +79,10 @@ public class StoreAccess
 
     public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir )
     {
-        this( fileSystem, pageCache, storeDir, new Config() );
+        this( fileSystem, pageCache, storeDir, Config.defaults() );
     }
 
-    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
+    public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
     {
         this( new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
                 fileSystem, NullLogProvider.getInstance() ).openAllNeoStores() );
@@ -227,10 +215,12 @@ public class StoreAccess
         };
     }
 
-    private static RecordStore<DynamicRecord> wrapNodeDynamicLabelStore( RecordStore<DynamicRecord> store ) {
-        return new DelegatingRecordStore<DynamicRecord>( store ) {
+    private static RecordStore<DynamicRecord> wrapNodeDynamicLabelStore( RecordStore<DynamicRecord> store )
+    {
+        return new RecordStore.Delegator<DynamicRecord>( store )
+        {
             @Override
-            public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, DynamicRecord record)
+            public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, DynamicRecord record )
                     throws FAILURE
             {
                 processor.processLabelArrayWithOwner( this, record );

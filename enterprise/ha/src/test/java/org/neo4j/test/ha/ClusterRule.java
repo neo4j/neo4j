@@ -28,9 +28,11 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
-import org.neo4j.function.IntFunction;
-import org.neo4j.function.Predicate;
+import org.neo4j.cluster.client.Cluster;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -39,10 +41,9 @@ import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.Builder;
 import org.neo4j.kernel.impl.ha.ClusterManager.ClusterBuilder;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.kernel.impl.ha.ClusterManager.Provider;
 import org.neo4j.kernel.impl.ha.ClusterManager.StoreDirInitializer;
 import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
@@ -76,6 +77,7 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     private ClusterManager.Builder clusterManagerBuilder;
     private ClusterManager clusterManager;
     private File storeDirectory;
+
     private final TargetDirectory.TestDirectory testDirectory;
     private ManagedCluster cluster;
 
@@ -116,9 +118,9 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     }
 
     @Override
-    public ClusterRule withProvider( Provider provider )
+    public ClusterRule withCluster( Supplier<Cluster> provider )
     {
-        return set( clusterManagerBuilder.withProvider( provider ) );
+        return set( clusterManagerBuilder.withCluster( provider ) );
     }
 
     @Override
@@ -171,25 +173,26 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     }
 
     /**
-     * Starts cluster with the configuration provided at instantiation time.
+     * Starts cluster with the configuration provided at instantiation time. This method will not return until the
+     * cluster is up and all members report each other as available.
      */
     public ClusterManager.ManagedCluster startCluster() throws Exception
     {
-        if ( cluster != null )
+        if ( cluster == null )
         {
-            return cluster;
+            clusterManager = clusterManagerBuilder.withRootDirectory( storeDirectory ).build();
+            try
+            {
+                clusterManager.start();
+            }
+            catch ( Throwable throwable )
+            {
+                throw new RuntimeException( throwable );
+            }
+            cluster = clusterManager.getCluster();
         }
-
-        clusterManager = clusterManagerBuilder.withRootDirectory( storeDirectory ).build();
-        try
-        {
-            clusterManager.start();
-        }
-        catch ( Throwable throwable )
-        {
-            throw new RuntimeException( throwable );
-        }
-        return this.cluster = clusterManager.getDefaultCluster();
+        cluster.await( allSeesAllAsAvailable() );
+        return cluster;
     }
 
     @Override
@@ -246,7 +249,7 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     }
 
     /**
-     * Dynamic configuration value, of sorts. Can be used as input to {@link #config(Setting, IntFunction)}.
+     * Dynamic configuration value, of sorts. Can be used as input to {@link #withInstanceConfig(Map)}.
      * Some configuration values are a function of server id of the cluster member and this is a utility
      * for creating such dynamic configuration values.
      *
@@ -255,18 +258,11 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
      */
     public static IntFunction<String> intBase( final int oneBasedServerId )
     {
-        return new IntFunction<String>()
-        {
-            @Override
-            public String apply( int serverId )
-            {
-                return String.valueOf( oneBasedServerId + serverId );
-            }
-        };
+        return serverId -> String.valueOf( oneBasedServerId + serverId );
     }
 
     /**
-     * Dynamic configuration value, of sorts. Can be used as input to {@link #config(Setting, IntFunction)}.
+     * Dynamic configuration value, of sorts. Can be used as input to {@link #withInstanceConfig(Map)}.
      * Some configuration values are a function of server id of the cluster member and this is a utility
      * for creating such dynamic configuration values.
      *
@@ -279,13 +275,6 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
      */
     public static IntFunction<String> stringWithIntBase( final String prefix, final int oneBasedServerId )
     {
-        return new IntFunction<String>()
-        {
-            @Override
-            public String apply( int serverId )
-            {
-                return prefix + (oneBasedServerId + serverId);
-            }
-        };
+        return serverId -> prefix + (oneBasedServerId + serverId);
     }
 }

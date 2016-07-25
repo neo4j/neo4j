@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.app</groupId>
   <artifactId>neo4j-server-enterprise</artifactId>
-  <version>2.3.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
 
   <name>Neo4j - Enterprise Server</name>
   <description>Standalone Neo4j server application.</description>
@@ -20,7 +20,7 @@
     <bundle.namespace>org.neo4j.server.enterprise</bundle.namespace>
     <short-name>server-enterprise</short-name>
     <version-package>server.enterprise</version-package>
-    <neo4j-server.mainClass>org.neo4j.server.enterprise.EnterpriseBootstrapper</neo4j-server.mainClass>
+    <neo4j-server.mainClass>org.neo4j.server.enterprise.EnterpriseEntryPoint</neo4j-server.mainClass>
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
@@ -38,7 +38,9 @@
   <packaging>jar</packaging>
 
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/enterprise/server-enterprise</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
   <licenses>
@@ -64,17 +66,17 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server-advanced</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-enterprise</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-security-enterprise</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -112,6 +114,13 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-security-enterprise</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -123,6 +132,20 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-metrics</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-bolt</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
@@ -191,12 +214,10 @@
         <configuration>
           <mainClass>${neo4j-server.mainClass}</mainClass>
           <classpathScope>test</classpathScope>
-          <systemProperties>
-            <systemProperty>
-              <key>org.neo4j.server.properties</key>
-              <value>${basedir}/neo4j-home/conf/neo4j-server.properties</value>
-            </systemProperty>
-          </systemProperties>
+          <arguments>
+            <argument>--config-dir=${basedir}/neo4j-home/conf</argument>
+            <argument>--home-dir=${basedir}/neo4j-home</argument>
+          </arguments>
         </configuration>
       </plugin>
 
@@ -215,7 +236,6 @@
                 </manifest>
               </archive>
               <excludes>
-                <exclude>webadmin-html/**</exclude>
                 <exclude>lib/**</exclude>
               </excludes>
             </configuration>
@@ -233,27 +253,6 @@
           <useManifestOnlyJar>false</useManifestOnlyJar>
         </configuration>
       </plugin>
-
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-source-based-documentation</id>
-            <phase>${generate-config-docs-phase}</phase>
-            <configuration>
-              <target>
-                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
-                      classpathref="maven.compile.classpath" failonerror="true">
-                  <arg value="org.neo4j.server.enterprise.EnterpriseServerSettings" />
-                  <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
-                </java>
-              </target>
-            </configuration>
-            <goals><goal>run</goal></goals>
-          </execution>
-        </executions>
-      </plugin>
-
     </plugins>
   </build>
 
@@ -299,67 +298,6 @@
             </configuration>
           </plugin>
 
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <!-- An execution that adds src/main/resources to the classpath. Allows changing static files and
-        seeing results without restarting server. Done with ant b/c of problems adding local directory to classpath
-        when using exec. -->
-      <id>webdev-exec</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-
-            <configuration>
-              <target>
-                <property name="classpath" refid="maven.runtime.classpath" />
-                <exec executable="java">
-                  <arg line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties" />
-                  <arg line="-classpath" />
-                  <arg line="${basedir}/src/main/resources:${classpath}" />
-                  <arg line="${neo4j-server.mainClass}" />
-                </exec>
-              </target>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <!-- Temporarily disconnected from the rest of the build
-      because "brew" is not in maven central. To use this, mvn install
-       -->
-      <id>webadmin-build</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.voltvoodoo</groupId>
-            <artifactId>brew</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <executions>
-              <execution>
-                <id>build-webadmin</id>
-                <goals>
-                  <goal>compile-haml</goal>
-                  <goal>compile-coffeescript</goal>
-                  <goal>optimize</goal>
-                </goals>
-              </execution>
-            </executions>
-
-            <configuration>
-              <module>webadmin</module>
-              <coffeeOutputDir>${basedir}/src/main/resources/webadmin-html/js</coffeeOutputDir>
-              <hamlOutputDir>${basedir}/src/main/resources/webadmin-html/js</hamlOutputDir>
-              <optimizeSourceDir>${basedir}/src/main/resources/webadmin-html/js</optimizeSourceDir>
-              <optimizeOutputDir>${basedir}/src/main/resources/webadmin-html/js</optimizeOutputDir>
-            </configuration>
-          </plugin>
         </plugins>
       </build>
     </profile>

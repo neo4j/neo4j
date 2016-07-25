@@ -22,8 +22,8 @@ package org.neo4j.consistency.checking.full;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.full.QueueDistribution.QueueDistributor;
 import org.neo4j.consistency.statistics.Statistics;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.progress.ProgressMonitorFactory.MultiPartBuilder;
-import org.neo4j.kernel.api.direct.BoundedIterable;
 
 import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.DEFAULT_QUEUE_SIZE;
 import static org.neo4j.consistency.checking.full.RecordDistributor.distributeRecords;
@@ -51,6 +51,6 @@ public class ParallelRecordScanner<RECORD> extends RecordScanner<RECORD>
 
         QueueDistributor<RECORD> distributor = distribution.distributor( recordsPerCPU, numberOfThreads );
         distributeRecords( numberOfThreads, getClass().getSimpleName() + "-" + name,
-                DEFAULT_QUEUE_SIZE, store, progress, processor, distributor );
+                DEFAULT_QUEUE_SIZE, store.iterator(), progress, processor, distributor );
     }
 }

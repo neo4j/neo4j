@@ -19,25 +19,27 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import org.neo4j.storageengine.api.StorageCommand;
+
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.COMMAND;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURRENT;
 
 public class LogEntryCommand extends AbstractLogEntry
 {
-    private final org.neo4j.kernel.impl.transaction.command.Command command;
+    private final StorageCommand command;
 
-    public LogEntryCommand( org.neo4j.kernel.impl.transaction.command.Command command )
+    public LogEntryCommand( StorageCommand command )
     {
         this( CURRENT, command );
     }
 
-    public LogEntryCommand( LogEntryVersion version, org.neo4j.kernel.impl.transaction.command.Command command )
+    public LogEntryCommand( LogEntryVersion version, StorageCommand command )
     {
         super( version, COMMAND );
         this.command = command;
     }
 
-    public org.neo4j.kernel.impl.transaction.command.Command getXaCommand()
+    public StorageCommand getXaCommand()
     {
         return command;
     }

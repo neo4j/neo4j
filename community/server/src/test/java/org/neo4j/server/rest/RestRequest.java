@@ -19,20 +19,21 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.WebResource.Builder;
 import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -41,7 +42,7 @@ import org.neo4j.test.server.HTTP;
 public class RestRequest {
 
     private final URI baseUri;
-    private final static Client DEFAULT_CLIENT = Client.create();
+    private static final Client DEFAULT_CLIENT = Client.create();
     private final Client client;
     private MediaType accept = MediaType.APPLICATION_JSON_TYPE;
     private Map<String, String> headers=new HashMap<String, String>();
@@ -81,12 +82,11 @@ public class RestRequest {
     public static String encode( Object value ) {
         if ( value == null ) return "";
         try {
-            return URLEncoder.encode( value.toString(), "utf-8" ).replaceAll( "\\+", "%20" );
+            return URLEncoder.encode( value.toString(), StandardCharsets.UTF_8.name() ).replaceAll( "\\+", "%20" );
         } catch ( UnsupportedEncodingException e ) {
             throw new RuntimeException( e );
         }
     }
-
 
     private Builder builder( String path ) {
         return builder( path, accept );
@@ -151,7 +151,6 @@ public class RestRequest {
         }
         return new JaxRsResponse( HTTP.sanityCheck( builder.put( ClientResponse.class ) ) );
     }
-
 
     public Object toEntity( JaxRsResponse JaxRsResponse ) throws JsonParseException {
         return JsonHelper.readJson( entityString( JaxRsResponse ) );

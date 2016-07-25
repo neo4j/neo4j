@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-manual-contents</artifactId>
-  <version>2.3.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
 
   <name>Neo4j - Reference Manual Contents</name>
   <description>Neo4j Reference Manual Contents.</description>
@@ -24,14 +24,13 @@
     <neo4j.version>${project.version}</neo4j.version>
     <attach-docs-phase>none</attach-docs-phase>
     <attach-test-jar-phase>none</attach-test-jar-phase>
-    <bolt-attribute></bolt-attribute>
-    <additional-document-attributes>${bolt-attribute}</additional-document-attributes>
+    <additional-document-attributes></additional-document-attributes>
   </properties>
 
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-    <url>https://github.com/neo4j/neo4j/tree/master/manual/contents</url>
+    <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
   <licenses>
@@ -86,13 +85,6 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-algo</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
@@ -114,20 +106,6 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-consistency-check</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cluster</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-backup</artifactId>
       <version>${neo4j.version}</version>
       <classifier>test-sources</classifier>
@@ -138,6 +116,13 @@
       <artifactId>neo4j-shell</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-cypher-docs</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>sources</classifier>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -225,8 +210,22 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-import-tool</artifactId>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-import-tool-docs</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-config-docs</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-bolt-docs</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
@@ -368,7 +367,7 @@
               <excludes>META-INF,META-INF/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.sourcecode}</outputDirectory>
-              <includeArtifactIds>neo4j-examples,neo4j-server-examples</includeArtifactIds>
+              <includeArtifactIds>neo4j-examples,neo4j-server-examples,neo4j-cypher-docs</includeArtifactIds>
             </configuration>
           </execution>
         </executions>
@@ -396,18 +395,5 @@
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>feature-bolt</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property> <name>feature.bolt</name> </property>
-      </activation>
-      <properties>
-        <!-- Line break is intentional -->
-        <bolt-attribute>:feature-bolt:</bolt-attribute>
-      </properties>
-    </profile>
-  </profiles>
 </project>
 

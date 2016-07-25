@@ -21,70 +21,41 @@ package org.neo4j.desktop.config.windows;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 
-import org.neo4j.desktop.config.portable.PortableEnvironment;
+import org.neo4j.desktop.config.portable.Environment;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.String.format;
 
 import static org.apache.commons.lang.StringUtils.join;
 
-class WindowsEnvironment extends PortableEnvironment
+class WindowsEnvironment extends Environment
 {
-    @Override
-    public void openBrowser( String link ) throws IOException, URISyntaxException
-    {
-        if ( isPortableBrowseSupported() )
-        {
-            portableBrowse( link );
-            return;
-        }
-
-        throw new UnsupportedOperationException();
-    }
 
     @Override
-    public void editFile( File file ) throws IOException
+    public void editFile( File file ) throws IOException, SecurityException
     {
-        if ( isPortableEditFileSupported() )
+        try
         {
-            try
-            {
-                portableEditFile( file );
-                return;
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace( System.out );
-            }
+            super.editFile( file );
         }
-        windowsEditFile( file );
-    }
-
-    private void windowsEditFile( File file ) throws IOException
-    {
-        String[] cmdarray = { "notepad", file.getAbsolutePath() };
-        getRuntime().exec( cmdarray );
+        catch( IOException|UnsupportedOperationException ex )
+        {
+            getRuntime().exec( new String[] { "notepad", file.getAbsolutePath() } );
+        }
     }
 
     @Override
     public void openDirectory( File directory ) throws IOException
     {
-        if ( isPortableOpenSupported() )
+        try
         {
-            try
-            {
-                portableOpen( directory );
-                return;
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace( System.out );
-            }
+            super.openDirectory( directory );
         }
-
-        windowsOpenDirectory( directory );
+        catch( IOException|UnsupportedOperationException ex )
+        {
+            getRuntime().exec( new String[] { "explorer", directory.getAbsolutePath() } );
+        }
     }
 
     @Override
@@ -102,16 +73,13 @@ class WindowsEnvironment extends PortableEnvironment
                 "echo * Neo4jShell",
                 "echo * Neo4jImport"
         };
+
         String[] cmdArray = {
                 "cmd",
                 "/C",
                 format( "start \"Neo4j Command Prompt\" cmd /K \"%s\"", join( shellStartupCommands, " && " ) )
         };
-        getRuntime().exec( cmdArray );
-    }
 
-    private void windowsOpenDirectory( File directory ) throws IOException
-    {
-        getRuntime().exec( new String[] { "explorer", directory.getAbsolutePath() } );
+        getRuntime().exec( cmdArray );
     }
 }

@@ -19,70 +19,72 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
-
-final class CursorPool
+final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 {
-    private static boolean disableCursorPooling = flag( CursorPool.class, "disableCursorPooling", false );
+    private final MuninnPagedFile pagedFile;
+    private final long victimPage;
 
-    private final ThreadLocal<MuninnReadPageCursor> readCursorCache = new MuninnReadPageCursorThreadLocal();
-    private final ThreadLocal<MuninnWritePageCursor> writeCursorCache = new MuninnWritePageCursorThreadLocal();
-
-    public MuninnReadPageCursor takeReadCursor()
+    CursorPool( MuninnPagedFile pagedFile )
     {
-        if ( disableCursorPooling )
+        this.pagedFile = pagedFile;
+        this.victimPage = pagedFile.pageCache.victimPage;
+    }
+
+    @Override
+    protected CursorSets initialValue()
+    {
+        return new CursorSets();
+    }
+
+    MuninnReadPageCursor takeReadCursor( long pageId, int pf_flags )
+    {
+        CursorSets cursorSets = get();
+        MuninnReadPageCursor cursor = cursorSets.readCursors;
+        if ( cursor != null )
         {
-            return new MuninnReadPageCursor();
+            cursorSets.readCursors = cursor.nextCursor;
         }
-
-        MuninnReadPageCursor cursor = readCursorCache.get();
-
-        assert unclaimed( cursor, writeCursorCache );
-
-        cursor.markAsClaimed();
+        else
+        {
+            cursor = createReadCursor( cursorSets );
+        }
+        cursor.initialiseFlags( pagedFile, pageId, pf_flags );
         return cursor;
     }
 
-    public MuninnWritePageCursor takeWriteCursor()
+    private MuninnReadPageCursor createReadCursor( CursorSets cursorSets )
     {
-        if ( disableCursorPooling )
-        {
-            return new MuninnWritePageCursor();
-        }
-
-        MuninnWritePageCursor cursor = writeCursorCache.get();
-
-        assert unclaimed( cursor, readCursorCache );
-
-        cursor.markAsClaimed();
+        MuninnReadPageCursor cursor = new MuninnReadPageCursor( cursorSets, victimPage );
+        cursor.initialiseFile( pagedFile );
         return cursor;
     }
 
-    private static boolean unclaimed( MuninnPageCursor first, ThreadLocal<? extends MuninnPageCursor> second )
+    MuninnWritePageCursor takeWriteCursor( long pageId, int pf_flags )
     {
-        // This has been pulled out into a static method and guarded behind
-        // `assert`s to reduce the overhead put upon the inlining budget
-        // by something that should never happen.
-        first.assertUnclaimed();
-        second.get().assertUnclaimed();
-        return true;
+        CursorSets cursorSets = get();
+        MuninnWritePageCursor cursor = cursorSets.writeCursors;
+        if ( cursor != null )
+        {
+            cursorSets.writeCursors = cursor.nextCursor;
+        }
+        else
+        {
+            cursor = createWriteCursor( cursorSets );
+        }
+        cursor.initialiseFlags( pagedFile, pageId, pf_flags );
+        return cursor;
     }
 
-    private static class MuninnReadPageCursorThreadLocal extends ThreadLocal<MuninnReadPageCursor>
+    private MuninnWritePageCursor createWriteCursor( CursorSets cursorSets )
     {
-        @Override
-        protected MuninnReadPageCursor initialValue()
-        {
-            return new MuninnReadPageCursor();
-        }
+        MuninnWritePageCursor cursor = new MuninnWritePageCursor( cursorSets, victimPage );
+        cursor.initialiseFile( pagedFile );
+        return cursor;
     }
 
-    private static class MuninnWritePageCursorThreadLocal extends ThreadLocal<MuninnWritePageCursor>
+    static class CursorSets
     {
-        @Override
-        protected MuninnWritePageCursor initialValue()
-        {
-            return new MuninnWritePageCursor();
-        }
+        MuninnReadPageCursor readCursors;
+        MuninnWritePageCursor writeCursors;
     }
 }

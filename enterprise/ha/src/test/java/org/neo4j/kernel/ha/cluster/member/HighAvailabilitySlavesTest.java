@@ -19,26 +19,30 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -59,7 +63,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
 
 public class HighAvailabilitySlavesTest
 {
@@ -162,9 +166,10 @@ public class HighAvailabilitySlavesTest
     public void shouldSupportConcurrentConsumptionOfSlaves() throws Exception
     {
         // Given
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         HighAvailabilitySlaves haSlaves = new HighAvailabilitySlaves( clusterMembersOfSize( 1000 ),
-                mock( Cluster.class ), new DefaultSlaveFactory( NullLogProvider.getInstance(), new Monitors(), 42 ),
-                        new HostnamePort( null, 0 ) );
+                mock( Cluster.class ), new DefaultSlaveFactory( NullLogProvider.getInstance(), new Monitors(), 42,
+                        Suppliers.singleton( logEntryReader  ) ), new HostnamePort( null, 0 ) );
 
         // When
         ExecutorService executor = Executors.newFixedThreadPool( 5 );

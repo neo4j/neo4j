@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
@@ -142,8 +143,12 @@ public class ExceptionRepresentation extends MappingRepresentation
             {
                 return ((Status.HasStatus)current).status();
             }
+            if ( current instanceof ConstraintViolationException )
+            {
+                return Status.Schema.ConstraintValidationFailed;
+            }
             current = current.getCause();
         }
-        return Status.General.UnknownFailure;
+        return Status.General.UnknownError;
     }
 }

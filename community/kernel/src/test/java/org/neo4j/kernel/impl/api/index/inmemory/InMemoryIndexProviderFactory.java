@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.util.Objects.requireNonNull;
@@ -53,7 +54,7 @@ public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemor
     }
 
     @Override
-    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         return singleProvider != null ? singleProvider : new InMemoryIndexProvider();
     }

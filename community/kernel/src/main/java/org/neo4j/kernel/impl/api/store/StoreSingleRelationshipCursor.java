@@ -21,24 +21,24 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
+
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Cursor for a single relationship.
  */
 public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCursor
 {
-    private long relationshipId = -1;
     private final InstanceCache<StoreSingleRelationshipCursor> instanceCache;
+    private long relationshipId = -1;
 
-    public StoreSingleRelationshipCursor( RelationshipRecord relationshipRecord, NeoStores neoStores,
-            StoreStatement storeStatement, InstanceCache<StoreSingleRelationshipCursor> instanceCache,
-            LockService lockService )
+    public StoreSingleRelationshipCursor( RelationshipRecord relationshipRecord,
+            InstanceCache<StoreSingleRelationshipCursor> instanceCache, RecordCursors cursors, LockService lockService )
     {
-        super( relationshipRecord, neoStores, storeStatement, lockService );
+        super( relationshipRecord, cursors, lockService );
         this.instanceCache = instanceCache;
     }
 
@@ -55,8 +55,7 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
         {
             try
             {
-                relationshipRecord.setId( relationshipId );
-                return relationshipStore.fillRecord( relationshipId, relationshipRecord, RecordLoad.CHECK );
+                return relationshipRecordCursor.next( relationshipId, relationshipRecord, CHECK );
             }
             finally
             {
@@ -66,7 +65,6 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
 
         return false;
     }
-
 
     @Override
     public void close()

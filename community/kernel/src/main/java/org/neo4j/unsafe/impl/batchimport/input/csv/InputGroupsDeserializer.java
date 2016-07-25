@@ -20,9 +20,9 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.util.Iterator;
+import java.util.function.Function;
 
 import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
@@ -39,7 +39,7 @@ abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
     private final Header.Factory headerFactory;
     private final Configuration config;
     private final IdType idType;
-    private InputIterator<ENTITY> currentInput = new InputIterator.Adapter<>();
+    private InputIterator<ENTITY> currentInput = new InputIterator.Empty<>();
     private long previousInputsCollectivePositions;
     private boolean currentInputOpen;
 

@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
-import static org.neo4j.graphdb.Neo4jMatchers.hasSamePrimitiveItems;
+import org.junit.Test;
 
 import java.util.Iterator;
 
-import org.junit.Test;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
+
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSamePrimitiveItems;
 
 public class LongDiffSetsTest
 {
@@ -41,10 +42,10 @@ public class LongDiffSetsTest
     {
         // given
         DiffSets<Long> diffSets = new DiffSets<>( );
-        Iterator<Long> expected = diffSets.apply( iteratorSource( 1l, 2l ) );
+        Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 2L ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.augment( iterator( 1l, 2l ) );
+        PrimitiveLongIterator actual = diffSets.augment( iterator( 1L, 2L ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );
@@ -55,12 +56,12 @@ public class LongDiffSetsTest
     {
         // given
         DiffSets<Long> diffSets = new DiffSets<>( );
-        diffSets.remove( 17l );
-        diffSets.remove( 18l );
-        Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 17l, 3l ) );
+        diffSets.remove( 17L );
+        diffSets.remove( 18L );
+        Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 17L, 3L ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.augment( iterator( 1l, 17l, 3l ) );
+        PrimitiveLongIterator actual = diffSets.augment( iterator( 1L, 17L, 3L ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );
@@ -71,12 +72,12 @@ public class LongDiffSetsTest
     {
         // given
         DiffSets<Long> diffSets = new DiffSets<>( );
-        diffSets.add( 17l );
-        diffSets.add( 18l );
-        Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 17l, 3l ) );
+        diffSets.add( 17L );
+        diffSets.add( 18L );
+        Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 17L, 3L ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.augment( iterator( 1l, 17l, 3l ) );
+        PrimitiveLongIterator actual = diffSets.augment( iterator( 1L, 17L, 3L ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );
@@ -87,12 +88,12 @@ public class LongDiffSetsTest
     {
         // given
         DiffSets<Long> diffSets = new DiffSets<>( );
-        diffSets.add( 19l );
-        diffSets.add( 20l );
-        Iterator<Long> expected = diffSets.apply( iteratorSource( 19l ) );
+        diffSets.add( 19L );
+        diffSets.add( 20L );
+        Iterator<Long> expected = diffSets.apply( iteratorSource( 19L ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.augment( iterator( 19l ) );
+        PrimitiveLongIterator actual = diffSets.augment( iterator( 19L ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );

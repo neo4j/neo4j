@@ -44,10 +44,10 @@ public class InstanceIdTest
     {
         testCluster( new int[] { 1, 1 }, new VerifyInstanceConfiguration[]
                 {
-                new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, InstanceId>emptyMap(),
-                                        Collections.<InstanceId>emptySet() ),
-                new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, InstanceId>emptyMap(),
-                                        Collections.<InstanceId>emptySet() )
+                new VerifyInstanceConfiguration( Collections.emptyList(), Collections.emptyMap(),
+                        Collections.emptySet() ),
+                new VerifyInstanceConfiguration( Collections.emptyList(), Collections.emptyMap(),
+                        Collections.emptySet() )
                 },
                 DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 600 ).
@@ -71,11 +71,11 @@ public class InstanceIdTest
 
         testCluster( new int[] {1, 2, 3, 3},
                 new VerifyInstanceConfiguration[]{
-                new VerifyInstanceConfiguration( correctMembers, roles, Collections.<InstanceId>emptySet() ),
-                new VerifyInstanceConfiguration( correctMembers, roles, Collections.<InstanceId>emptySet() ),
-                new VerifyInstanceConfiguration( correctMembers, roles, Collections.<InstanceId>emptySet() ),
-                new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, InstanceId>emptyMap(),
-                        Collections.<InstanceId>emptySet() )}, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
+                new VerifyInstanceConfiguration( correctMembers, roles, Collections.emptySet() ),
+                new VerifyInstanceConfiguration( correctMembers, roles, Collections.emptySet() ),
+                new VerifyInstanceConfiguration( correctMembers, roles, Collections.emptySet() ),
+                new VerifyInstanceConfiguration( Collections.emptyList(), Collections.emptyMap(),
+                        Collections.emptySet() )}, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 600 ).
                 join( 100, 1, 1 ).
                 join( 100, 2, 1 ).
@@ -145,7 +145,6 @@ public class InstanceIdTest
         Set<InstanceId> isolatedMemberFailed = new HashSet<>();
         isolatedMemberFailed.add( new InstanceId( 1 ) ); // will never receive heartbeats again from 1,2 so they are failed
         isolatedMemberFailed.add( new InstanceId( 2 ) );
-
 
         testCluster( new int[]{1, 2, 3, 3},
                 new VerifyInstanceConfiguration[]{

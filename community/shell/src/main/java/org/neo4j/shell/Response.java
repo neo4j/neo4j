@@ -23,20 +23,22 @@ import java.io.Serializable;
 
 public class Response implements Serializable
 {
-    private final String prompt;
-    private final Continuation continuation;
-    
+    private static final long serialVersionUID = -5359521886510594233L;
+
+    private String prompt;
+    private Continuation continuation;
+
     public Response( String prompt, Continuation continuation )
     {
         this.prompt = prompt;
         this.continuation = continuation;
     }
-    
+
     public String getPrompt()
     {
         return prompt;
     }
-    
+
     public Continuation getContinuation()
     {
         return continuation;

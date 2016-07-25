@@ -356,7 +356,7 @@ public class SingleFilePageSwapper implements PageSwapper
             }
             return 0;
         }
-        else if ( bytesRead < filePageSize * length )
+        else if ( bytesRead < ((long) filePageSize) * length )
         {
             int pagesRead = (int) (bytesRead / filePageSize);
             int bytesReadIntoLastReadPage = (int) (bytesRead % filePageSize);
@@ -477,7 +477,7 @@ public class SingleFilePageSwapper implements PageSwapper
             long startFilePageId, Page[] pages, int arrayOffset, int length ) throws Exception
     {
         long fileOffset = pageIdToPosition( startFilePageId );
-        increaseFileSizeTo( fileOffset + (filePageSize * length) );
+        increaseFileSizeTo( fileOffset + (((long) filePageSize) * length) );
         FileChannel channel = unwrappedChannel( startFilePageId );
         ByteBuffer[] srcs = convertToByteBuffers( pages, arrayOffset, length );
         return lockPositionWriteVector( startFilePageId, channel, fileOffset, srcs );
@@ -692,6 +692,13 @@ public class SingleFilePageSwapper implements PageSwapper
             }
         }
         closeAndCollectExceptions( channelIndex + 1, exception );
+    }
+
+    @Override
+    public synchronized void closeAndDelete() throws IOException
+    {
+        close();
+        fs.deleteFile( file );
     }
 
     @Override

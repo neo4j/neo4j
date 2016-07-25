@@ -35,19 +35,17 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
-
 
 public class ResponsePackerIT
 {
@@ -63,9 +61,8 @@ public class ResponsePackerIT
         LogicalTransactionStore transactionStore = mock( LogicalTransactionStore.class );
         FileSystemAbstraction fs = fsRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        Monitors monitors = new Monitors();
 
-        try ( NeoStores neoStore = createNeoStore( fs, pageCache, monitors ) )
+        try ( NeoStores neoStore = createNeoStore( fs, pageCache ) )
         {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.transactionCommitted( 2, 111, BASE_TX_COMMIT_TIMESTAMP );
@@ -79,7 +76,8 @@ public class ResponsePackerIT
             final long expectedTxId = 8L;
             store.transactionCommitted( expectedTxId, 777, BASE_TX_COMMIT_TIMESTAMP );
 
-            ResponsePacker packer = new ResponsePacker( transactionStore, store, Suppliers.singleton( new StoreId() ) );
+            ResponsePacker packer =
+                    new ResponsePacker( transactionStore, store, Suppliers.singleton( newStoreIdForCurrentVersion() ) );
 
             // WHEN
             Response<Object> response =
@@ -96,7 +94,7 @@ public class ResponsePackerIT
                 }
 
                 @Override
-                public Visitor<CommittedTransactionRepresentation,IOException> transactions()
+                public Visitor<CommittedTransactionRepresentation,Exception> transactions()
                 {
                     throw new UnsupportedOperationException( "not expected" );
                 }
@@ -104,12 +102,11 @@ public class ResponsePackerIT
         }
     }
 
-    private NeoStores createNeoStore( FileSystemAbstraction fs, PageCache pageCache, Monitors monitors )
-            throws IOException
+    private NeoStores createNeoStore( FileSystemAbstraction fs, PageCache pageCache ) throws IOException
     {
         File storeDir = new File( "/store/" );
         fs.mkdirs( storeDir );
-        StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance() );
         return storeFactory.openAllNeoStores( true );
     }
 }

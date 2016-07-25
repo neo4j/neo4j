@@ -24,18 +24,18 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.BooleanSupplier;
 
-import org.neo4j.function.BooleanSupplier;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.KernelEventHandlers;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -69,9 +70,10 @@ public class Runner implements Callable<Long>
         try ( Lifespan life = new Lifespan() )
         {
             TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
-            TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1000, 100_000 );
+            TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100_000 );
+            LogHeaderCache logHeaderCache = new LogHeaderCache( 1000 );
 
-            LogFile logFile = life.add( createPhysicalLogFile( transactionIdStore, transactionMetadataCache ) );
+            LogFile logFile = life.add( createPhysicalLogFile( transactionIdStore, logHeaderCache ) );
 
             TransactionAppender transactionAppender = life.add(
                     createBatchingTransactionAppender( transactionIdStore, transactionMetadataCache, logFile ) );
@@ -109,23 +111,24 @@ public class Runner implements Callable<Long>
     {
         Log log = NullLog.getInstance();
         KernelEventHandlers kernelEventHandlers = new KernelEventHandlers( log );
-        KernelPanicEventGenerator kpe = new KernelPanicEventGenerator( kernelEventHandlers );
-        KernelHealth kernelHealth = new KernelHealth( kpe, log );
-        LogRotationImpl logRotation = new LogRotationImpl( NOOP_LOGROTATION_MONITOR, logFile, kernelHealth );
+        DatabasePanicEventGenerator panicEventGenerator = new DatabasePanicEventGenerator( kernelEventHandlers );
+        DatabaseHealth databaseHealth = new DatabaseHealth( panicEventGenerator, log );
+        LogRotationImpl logRotation = new LogRotationImpl( NOOP_LOGROTATION_MONITOR, logFile, databaseHealth );
         return new BatchingTransactionAppender( logFile, logRotation,
-                transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS, kernelHealth );
+                transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS, databaseHealth );
     }
 
     private PhysicalLogFile createPhysicalLogFile( TransactionIdStore transactionIdStore,
-            TransactionMetadataCache transactionMetadataCache )
+            LogHeaderCache logHeaderCache )
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fs );
         long rotateAtSize = Settings.BYTES.apply(
                 GraphDatabaseSettings.logical_log_rotation_threshold.getDefaultValue() );
         DeadSimpleLogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 0 );
-        return new PhysicalLogFile( fs, logFiles, rotateAtSize, transactionIdStore,
-                logVersionRepository, NOOP_LOGFILE_MONITOR, transactionMetadataCache );
+        return new PhysicalLogFile( fs, logFiles, rotateAtSize,
+                transactionIdStore::getLastCommittedTransactionId, logVersionRepository, NOOP_LOGFILE_MONITOR,
+                logHeaderCache );
     }
 
     private static final PhysicalLogFile.Monitor NOOP_LOGFILE_MONITOR = new PhysicalLogFile.Monitor()

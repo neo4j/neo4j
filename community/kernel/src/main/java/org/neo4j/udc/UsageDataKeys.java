@@ -19,8 +19,13 @@
  */
 package org.neo4j.udc;
 
+import java.util.function.Supplier;
+
+import org.neo4j.concurrent.DecayingFlags;
+import org.neo4j.concurrent.DecayingFlags.Key;
 import org.neo4j.concurrent.RecentK;
-import org.neo4j.function.Supplier;
+import org.neo4j.kernel.impl.factory.Edition;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 
 import static org.neo4j.udc.UsageDataKey.key;
 
@@ -44,32 +49,31 @@ public class UsageDataKeys
     public static final UsageDataKey<OperationalMode> operationalMode = key( "neo4j.opMode", OperationalMode.unknown );
 
     /** Self-reported names of clients connecting to us. */
-    public static final UsageDataKey<RecentK<String>> clientNames = key( "neo4j.clientNames", new Supplier<RecentK<String>>()
-    {
-        @Override
-        public RecentK<String> get()
-        {
-            return new RecentK<>( 10 );
-        }
-    } );
+    public static final UsageDataKey<RecentK<String>> clientNames = key( "neo4j.clientNames",
+            (Supplier<RecentK<String>>) () -> new RecentK<>( 10 ) );
 
     /** Cluster server ID */
     public static final UsageDataKey<String> serverId = key( "neo4j.serverId" );
 
-    public enum OperationalMode
+    public interface Features
     {
-        // Note, these are sent verbatum via UDC if UDC is enabled
-        unknown,
-        single,
-        ha
+        // Note: The indexes used here is how we track which feature a flag
+        //       refers to. Be very careful about re-using indexes so features
+        //       don't get confused.
+        Key http_cypher_endpoint = new Key( 0 );
+        Key http_tx_endpoint = new Key( 1 );
+        Key http_batch_endpoint = new Key( 2 );
+
+        Key bolt = new Key( 3 );
     }
 
-    public enum Edition
-    {
-        // Note, these are sent verbatum via UDC if UDC is enabled
-        unknown,
-        community,
-        advanced,
-        enterprise
-    }
+    /**
+     * Tracks features in use, including decay such that features that are not
+     * used for a while are marked as no longer in use.
+     *
+     * Decay is handled by an external mechanism invoking a 'sweep' method on this
+     * DecayingFlags instance. See usages of this field to find where that happens.
+     */
+    public static final UsageDataKey<DecayingFlags> features = key( "neo4j.features",
+            (Supplier<DecayingFlags>) () -> new DecayingFlags( 7/*days*/ ) );
 }

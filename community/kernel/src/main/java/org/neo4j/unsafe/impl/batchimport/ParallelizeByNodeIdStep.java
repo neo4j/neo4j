@@ -120,4 +120,13 @@ public class ParallelizeByNodeIdStep extends ProcessorStep<Batch<InputRelationsh
             concurrentBatches = 1;
         }
     }
+
+    /**
+     * @return the next relationship id that this step would return if it were to import more relationships.
+     * This value can be used to feed into importing the next type, e.g. the constructor.
+     */
+    public long getNextRelationshipId()
+    {
+        return firstRecordId;
+    }
 }

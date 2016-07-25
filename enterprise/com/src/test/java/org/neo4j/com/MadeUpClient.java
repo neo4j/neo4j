@@ -19,21 +19,22 @@
  */
 package org.neo4j.com;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
 import org.neo4j.com.MadeUpServer.MadeUpRequestType;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
 import static org.neo4j.com.Protocol.writeString;
@@ -52,7 +53,8 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
                 chunkSize, responseUnpacker,
                 new Monitors().newMonitor( ByteCounterMonitor.class ),
-                new Monitors().newMonitor( RequestMonitor.class ) );
+                new Monitors().newMonitor( RequestMonitor.class ),
+                new VersionAwareLogEntryReader<>() );
         this.internalProtocolVersion = internalProtocolVersion;
     }
 

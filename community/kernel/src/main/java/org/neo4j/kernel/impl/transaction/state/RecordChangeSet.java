@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.util.Collection;
-
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -31,9 +27,10 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public class RecordChangeSet implements RecordAccessSet
 {
@@ -41,49 +38,42 @@ public class RecordChangeSet implements RecordAccessSet
     private final RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords;
     private final RecordAccess<Long, RelationshipRecord, Void> relRecords;
     private final RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords;
-    private final RecordAccess<Long, Collection<DynamicRecord>, SchemaRule> schemaRuleChanges;
+    private final RecordAccess<Long, SchemaRecord, SchemaRule> schemaRuleChanges;
     private final RecordAccess<Integer, PropertyKeyTokenRecord, Void> propertyKeyTokenChanges;
     private final RecordAccess<Integer, LabelTokenRecord, Void> labelTokenChanges;
     private final RecordAccess<Integer, RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
     private final IntCounter changeCounter = new IntCounter();
 
-    public RecordChangeSet( NeoStores neoStores )
+    public RecordChangeSet( Loaders loaders )
     {
-        this( false, neoStores );
-    }
-
-    public RecordChangeSet( boolean beforeStateForAll, NeoStores neoStores )
-    {
-        this(   beforeStateForAll,
-                Loaders.nodeLoader( neoStores.getNodeStore() ),
-                Loaders.propertyLoader( neoStores.getPropertyStore() ),
-                Loaders.relationshipLoader( neoStores.getRelationshipStore() ),
-                Loaders.relationshipGroupLoader( neoStores.getRelationshipGroupStore() ),
-                Loaders.schemaRuleLoader( neoStores.getSchemaStore() ),
-                Loaders.propertyKeyTokenLoader( neoStores.getPropertyKeyTokenStore() ),
-                Loaders.labelTokenLoader( neoStores.getLabelTokenStore() ),
-                Loaders.relationshipTypeTokenLoader( neoStores.getRelationshipTypeTokenStore() ) );
+        this(   loaders.nodeLoader(),
+                loaders.propertyLoader(),
+                loaders.relationshipLoader(),
+                loaders.relationshipGroupLoader(),
+                loaders.schemaRuleLoader(),
+                loaders.propertyKeyTokenLoader(),
+                loaders.labelTokenLoader(),
+                loaders.relationshipTypeTokenLoader() );
     }
 
     public RecordChangeSet(
-            boolean beforeStateForAll,
             Loader<Long,NodeRecord,Void> nodeLoader,
             Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader,
             Loader<Long,RelationshipRecord,Void> relationshipLoader,
             Loader<Long,RelationshipGroupRecord,Integer> relationshipGroupLoader,
-            Loader<Long,Collection<DynamicRecord>,SchemaRule> schemaRuleLoader,
+            Loader<Long,SchemaRecord,SchemaRule> schemaRuleLoader,
             Loader<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenLoader,
             Loader<Integer,LabelTokenRecord,Void> labelTokenLoader,
             Loader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader )
     {
-        this.nodeRecords = new RecordChanges<>( nodeLoader, true, changeCounter );
-        this.propertyRecords = new RecordChanges<>( propertyLoader, true, changeCounter );
-        this.relRecords = new RecordChanges<>( relationshipLoader, beforeStateForAll, changeCounter );
-        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, beforeStateForAll, changeCounter );
-        this.schemaRuleChanges = new RecordChanges<>( schemaRuleLoader, true, changeCounter );
-        this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, beforeStateForAll, changeCounter );
-        this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, beforeStateForAll, changeCounter );
-        this.relationshipTypeTokenChanges = new RecordChanges<>( relationshipTypeTokenLoader, beforeStateForAll, changeCounter );
+        this.nodeRecords = new RecordChanges<>( nodeLoader, changeCounter );
+        this.propertyRecords = new RecordChanges<>( propertyLoader, changeCounter );
+        this.relRecords = new RecordChanges<>( relationshipLoader, changeCounter );
+        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, changeCounter );
+        this.schemaRuleChanges = new RecordChanges<>( schemaRuleLoader, changeCounter );
+        this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, changeCounter );
+        this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, changeCounter );
+        this.relationshipTypeTokenChanges = new RecordChanges<>( relationshipTypeTokenLoader, changeCounter );
     }
 
     @Override
@@ -111,7 +101,7 @@ public class RecordChangeSet implements RecordAccessSet
     }
 
     @Override
-    public RecordAccess<Long, Collection<DynamicRecord>, SchemaRule> getSchemaRuleChanges()
+    public RecordAccess<Long, SchemaRecord, SchemaRule> getSchemaRuleChanges()
     {
         return schemaRuleChanges;
     }
@@ -138,6 +128,12 @@ public class RecordChangeSet implements RecordAccessSet
     public boolean hasChanges()
     {
         return changeCounter.value() > 0;
+    }
+
+    @Override
+    public int changeSize()
+    {
+        return changeCounter.value();
     }
 
     @Override

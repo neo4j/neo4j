@@ -26,46 +26,36 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.CommunityBootstrapper.start;
-import static org.neo4j.server.web.ServerInternalSettings.legacy_db_location;
+import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
+import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 {
     @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-
-    @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
 
-    protected Bootstrapper bootstrapper;
-
-    protected String[] commandLineConfig( String... params )
-    {
-        ArrayList<String> config = new ArrayList<>();
-
-        for ( String param : params )
-        {
-            config.add( param );
-        }
-
-        return config.toArray( new String[config.size()] );
-    }
+    protected ServerBootstrapper bootstrapper;
 
     @Before
-    public void before()
+    public void before() throws IOException
     {
         bootstrapper = newBootstrapper();
     }
@@ -79,33 +69,48 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         }
     }
 
-    protected abstract Bootstrapper newBootstrapper();
+    protected abstract ServerBootstrapper newBootstrapper() throws IOException;
+
+    protected abstract void start( String[] args );
+
+    protected abstract void stop( String[] args );
 
     @Test
-    public void shouldStartStopNeoServerWithoutAnyConfigFiles()
+    public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws Throwable
     {
         // When
-        int resultCode = start( bootstrapper, commandLineConfig( "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
+        int resultCode = ServerBootstrapper.start( bootstrapper,
+                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
+                "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
+                "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
+                "-c", configOption( tls_certificate_file,
+                        new File( tempDir.getRoot(), "cert.cert" ).getAbsolutePath() ),
+                "-c", configOption( tls_key_file, new File( tempDir.getRoot(), "key.key" ).getAbsolutePath() ),
+                "-c", "dbms.connector.1.type=HTTP",
+                "-c", "dbms.connector.1.enabled=true"
+        );
 
         // Then
-        assertEquals( Bootstrapper.OK, resultCode );
-        assertNotNull( bootstrapper.getServer() );
+        assertEquals( ServerBootstrapper.OK, resultCode );
+        assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
     }
 
     @Test
     public void canSpecifyConfigFile() throws Throwable
     {
         // Given
-        File configFile = tempDir.newFile( "neo4j.config" );
+        File configFile = tempDir.newFile( ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
 
-        store( stringMap(
-                forced_kernel_id.name(), "ourcustomvalue"
-        ), configFile );
+        Map<String, String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
+        properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.put( "dbms.connector.1.type", "HTTP" );
+        properties.put( "dbms.connector.1.enabled", "true" );
+        store( properties, configFile );
 
         // When
-        start( bootstrapper, commandLineConfig(
-                "-C", configFile.getAbsolutePath(),
-                "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
+        ServerBootstrapper.start( bootstrapper,
+                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
+                "--config-dir", configFile.getParentFile().getAbsolutePath() );
 
         // Then
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "ourcustomvalue" ) );
@@ -115,24 +120,26 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     public void canOverrideConfigValues() throws Throwable
     {
         // Given
-        File configFile = tempDir.newFile( "neo4j.config" );
+        File configFile = tempDir.newFile( ConfigLoader.DEFAULT_CONFIG_FILE_NAME);
 
-        store( stringMap(
-                forced_kernel_id.name(), "thisshouldnotshowup"
-        ), configFile );
+        Map<String, String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
+        properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.put( "dbms.connector.1.type", "HTTP" );
+        properties.put( "dbms.connector.1.enabled", "true" );
+        store( properties, configFile );
 
         // When
-        start( bootstrapper, commandLineConfig(
-                "-C", configFile.getAbsolutePath(),
-                "-c", configOption( forced_kernel_id.name(), "mycustomvalue" ),
-                "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
+        ServerBootstrapper.start( bootstrapper,
+                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
+                "--config-dir", configFile.getParentFile().getAbsolutePath(),
+                "-c", configOption( forced_kernel_id, "mycustomvalue" ) );
 
         // Then
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "mycustomvalue" ) );
     }
 
-    protected String configOption( String key, String value )
+    protected String configOption( Setting<?> setting, String value )
     {
-        return key + "=" + value;
+        return setting.name() + "=" + value;
     }
 }

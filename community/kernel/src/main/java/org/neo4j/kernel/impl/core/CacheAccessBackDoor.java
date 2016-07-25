@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public interface CacheAccessBackDoor
 {

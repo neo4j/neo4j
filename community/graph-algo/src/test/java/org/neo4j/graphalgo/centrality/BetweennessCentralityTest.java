@@ -106,7 +106,6 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
         assertCentrality( betweennessCentrality, "d", 3.0 );
         assertCentrality( betweennessCentrality, "e", 0.0 );
     }
-    
 
     @Test
     public void testXlike()

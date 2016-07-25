@@ -26,7 +26,7 @@ import javax.management.ObjectName;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.jmx.impl.JmxKernelExtension;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static java.lang.String.format;
 

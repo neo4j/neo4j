@@ -19,6 +19,7 @@
  */
 package org.neo4j.ha;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,15 +27,15 @@ import java.util.Map;
 
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class StartInstanceInAnotherJvm
 {
     public static void main( String[] args )
     {
-        String dir = args[0];
+        File dir = new File( args[0] );
         GraphDatabaseAPI newSlave = (GraphDatabaseAPI) new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( dir )
+                .newEmbeddedDatabaseBuilder( dir )
                 .setConfig( Args.parse( args ).asMap() )
                 .newGraphDatabase();
     }

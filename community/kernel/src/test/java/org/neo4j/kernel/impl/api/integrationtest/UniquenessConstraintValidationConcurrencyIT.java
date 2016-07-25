@@ -19,31 +19,32 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import java.util.concurrent.Future;
-
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Function;
+import java.util.concurrent.Future;
+import java.util.function.Function;
+
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.test.OtherThreadRule.isWaiting;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
 
 public class UniquenessConstraintValidationConcurrencyIT
 {
-    public final @Rule DatabaseRule database = new ImpermanentDatabaseRule();
-    public final @Rule OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
+    @Rule
+    public final DatabaseRule database = new ImpermanentDatabaseRule();
+    @Rule
+    public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     @Test
     public void shouldAllowConcurrentCreationOfNonConflictingData() throws Exception
@@ -52,14 +53,9 @@ public class UniquenessConstraintValidationConcurrencyIT
         database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
 
         // when
-        Future<Boolean> created = database.executeAndCommit( new Function<GraphDatabaseService, Future<Boolean>>()
-        {
-            @Override
-            public Future<Boolean> apply( GraphDatabaseService db )
-            {
-                db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
-                return otherThread.execute( createNode( db, "Label1", "key1", "value2" ) );
-            }
+        Future<Boolean> created = database.executeAndCommit( db -> {
+            db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+            return otherThread.execute( createNode( db, "Label1", "key1", "value2" ) );
         } );
 
         // then
@@ -73,20 +69,15 @@ public class UniquenessConstraintValidationConcurrencyIT
         database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
 
         // when
-        Future<Boolean> created = database.executeAndCommit( new Function<GraphDatabaseService, Future<Boolean>>()
-        {
-            @Override
-            public Future<Boolean> apply( GraphDatabaseService db )
+        Future<Boolean> created = database.executeAndCommit( db -> {
+            db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+            try
             {
-                db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
-                try
-                {
-                    return otherThread.execute( createNode( db, "Label1", "key1", "value1" ) );
-                }
-                finally
-                {
-                    assertThat( otherThread, isWaiting() );
-                }
+                return otherThread.execute( createNode( db, "Label1", "key1", "value1" ) );
+            }
+            finally
+            {
+                assertThat( otherThread, isWaiting() );
             }
         } );
 
@@ -101,20 +92,15 @@ public class UniquenessConstraintValidationConcurrencyIT
         database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
 
         // when
-        Future<Boolean> created = database.executeAndRollback( new Function<GraphDatabaseService, Future<Boolean>>()
-        {
-            @Override
-            public Future<Boolean> apply( GraphDatabaseService db )
+        Future<Boolean> created = database.executeAndRollback( db -> {
+            db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+            try
             {
-                db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
-                try
-                {
-                    return otherThread.execute( createNode( db, "Label1", "key1", "value1" ) );
-                }
-                finally
-                {
-                    assertThat( otherThread, isWaiting() );
-                }
+                return otherThread.execute( createNode( db, "Label1", "key1", "value1" ) );
+            }
+            finally
+            {
+                assertThat( otherThread, isWaiting() );
             }
         } );
 
@@ -125,36 +111,26 @@ public class UniquenessConstraintValidationConcurrencyIT
     private static Function<GraphDatabaseService, Void> createUniquenessConstraint(
             final String label, final String propertyKey )
     {
-        return new Function<GraphDatabaseService, Void>()
-        {
-            @Override
-            public Void apply( GraphDatabaseService db )
-            {
-                db.schema().constraintFor( label( label ) ).assertPropertyIsUnique( propertyKey ).create();
-                return null;
-            }
+        return db -> {
+            db.schema().constraintFor( label( label ) ).assertPropertyIsUnique( propertyKey ).create();
+            return null;
         };
     }
 
     public static OtherThreadExecutor.WorkerCommand<Void, Boolean> createNode(
             final GraphDatabaseService db, final String label, final String propertyKey, final Object propertyValue )
     {
-        return new OtherThreadExecutor.WorkerCommand<Void, Boolean>()
-        {
-            @Override
-            public Boolean doWork( Void nothing ) throws Exception
+        return nothing -> {
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    db.createNode( label( label ) ).setProperty( propertyKey, propertyValue );
+                db.createNode( label( label ) ).setProperty( propertyKey, propertyValue );
 
-                    tx.success();
-                    return true;
-                }
-                catch ( ConstraintViolationException e )
-                {
-                    return false;
-                }
+                tx.success();
+                return true;
+            }
+            catch ( ConstraintViolationException e )
+            {
+                return false;
             }
         };
     }

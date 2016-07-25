@@ -54,7 +54,7 @@ public class ClientCrashingWriter implements MadeUpWriter
             }
         }
     }
-    
+
     public int getSizeRead()
     {
         return totalSize;

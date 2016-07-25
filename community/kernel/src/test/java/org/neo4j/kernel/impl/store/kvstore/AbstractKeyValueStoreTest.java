@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.kvstore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,31 +33,34 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.function.IOFunction;
-import org.neo4j.function.Predicate;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.rule.Resources;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
-import static org.neo4j.kernel.impl.store.kvstore.Resources.InitialLifecycle.STARTED;
-import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
+import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
+import static org.neo4j.test.rule.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
 
 public class AbstractKeyValueStoreTest
 {
-    @Rule
-    public final Resources resourceManager = new Resources( FILE_IN_EXISTING_DIRECTORY );
+
+    private final ExpectedException expectedException = ExpectedException.none();
+    private final Resources resourceManager = new Resources( FILE_IN_EXISTING_DIRECTORY );
+
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
     @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+    public final RuleChain ruleChain = RuleChain.outerRule( expectedException )
+            .around( resourceManager );
 
     private static final HeaderField<Long> TX_ID = new HeaderField<Long>()
     {
@@ -143,7 +147,7 @@ public class AbstractKeyValueStoreTest
         try ( Lifespan life = new Lifespan() )
         {
             Store store = life.add( createTestStore() );
-            assertEquals( 10l, store.headers().get( TX_ID ).longValue() );
+            assertEquals( 10L, store.headers().get( TX_ID ).longValue() );
         }
     }
 
@@ -213,7 +217,7 @@ public class AbstractKeyValueStoreTest
         {
             life.add( store );
 
-            assertEquals( 64l, store.headers().get( TX_ID ).longValue() );
+            assertEquals( 64L, store.headers().get( TX_ID ).longValue() );
         }
     }
 
@@ -316,14 +320,8 @@ public class AbstractKeyValueStoreTest
 
         assertEquals( 2, rotation.rotate() );
 
-        Future<Long> rotationFuture = threading.executeAndAwait( store.rotation, 5l, new Predicate<Thread>()
-        {
-            @Override
-            public boolean test( Thread thread )
-            {
-                return Thread.State.TIMED_WAITING == thread.getState();
-            }
-        }, 100, SECONDS );
+        Future<Long> rotationFuture = threading.executeAndAwait( store.rotation, 5L,
+                thread -> Thread.State.TIMED_WAITING == thread.getState(), 100, SECONDS );
 
         Thread.sleep( TimeUnit.SECONDS.toMillis( 1 ) );
 
@@ -342,21 +340,16 @@ public class AbstractKeyValueStoreTest
 
         // when
         updateStore( store, 1 );
-        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3l, new Predicate<Thread>()
-        {
-            @Override
-            public boolean test( Thread thread )
+        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3L, thread -> {
+            switch ( thread.getState() )
             {
-                switch ( thread.getState() )
-                {
-                case BLOCKED:
-                case WAITING:
-                case TIMED_WAITING:
-                case TERMINATED:
-                    return true;
-                default:
-                    return false;
-                }
+            case BLOCKED:
+            case WAITING:
+            case TIMED_WAITING:
+            case TERMINATED:
+                return true;
+            default:
+                return false;
             }
         }, 100, SECONDS );
         // rotation should wait...
@@ -381,7 +374,7 @@ public class AbstractKeyValueStoreTest
         // then
         assertEquals( 3, rotation.get().longValue() );
         assertEquals( 3, store.headers().get( TX_ID ).longValue() );
-        store.rotation.apply( 4l );
+        store.rotation.apply( 4L );
     }
 
     @Test( timeout = 2000 )
@@ -396,7 +389,7 @@ public class AbstractKeyValueStoreTest
         expectedException.expect( RotationTimeoutException.class );
 
         // WHEN
-        store.prepareRotation( 10l ).rotate();
+        store.prepareRotation( 10L ).rotate();
     }
 
     private Store createTestStore()
@@ -414,7 +407,7 @@ public class AbstractKeyValueStoreTest
             {
                 if ( field == TX_ID )
                 {
-                    return (Value) (Object) 1l;
+                    return (Value) (Object) 1L;
                 }
                 else
                 {
@@ -438,20 +431,14 @@ public class AbstractKeyValueStoreTest
 
     private void updateStore( final Store store, long transaction ) throws IOException
     {
-        ThrowingConsumer<Long,IOException> update = new ThrowingConsumer<Long,IOException>()
-        {
-            @Override
-            public void accept( Long update ) throws IOException
+        ThrowingConsumer<Long,IOException> update = u -> {
+            try ( EntryUpdater<String> updater = store.updater( u ).get() )
             {
-                try ( EntryUpdater<String> updater = store.updater( update ).get() )
-                {
-                    updater.apply( "key " + update, store.value( "value " + update ) );
-                }
+                updater.apply( "key " + u, store.value( "value " + u ) );
             }
         };
         update.accept( transaction );
     }
-
 
     static DataProvider data( final Entry... data )
     {
@@ -486,14 +473,7 @@ public class AbstractKeyValueStoreTest
     class Store extends AbstractKeyValueStore<String>
     {
         private final HeaderField<?>[] headerFields;
-        final IOFunction<Long,Long> rotation = new IOFunction<Long,Long>()
-        {
-            @Override
-            public Long apply( Long version ) throws IOException
-            {
-                return prepareRotation( version ).rotate();
-            }
-        };
+        final IOFunction<Long,Long> rotation = version -> prepareRotation( version ).rotate();
 
         private Store( HeaderField<?>... headerFields )
         {
@@ -545,12 +525,6 @@ public class AbstractKeyValueStoreTest
         protected int compareHeaders( Headers lhs, Headers rhs )
         {
             return 0;
-        }
-
-        @SuppressWarnings( "unchecked" )
-        private <Value> void putField( Headers.Builder builder, HeaderField<Value> field, Object change )
-        {
-            builder.put( field, (Value) change );
         }
 
         @Override
@@ -614,14 +588,7 @@ public class AbstractKeyValueStoreTest
 
         ValueUpdate value( final String value )
         {
-            return new ValueUpdate()
-            {
-                @Override
-                public void update( WritableBuffer target )
-                {
-                    writeKey( value, target );
-                }
-            };
+            return target -> writeKey( value, target );
         }
 
         public String get( String key ) throws IOException

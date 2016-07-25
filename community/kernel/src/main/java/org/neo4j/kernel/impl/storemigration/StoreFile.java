@@ -23,13 +23,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -43,13 +41,13 @@ import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.string.UTF8;
 
 import static org.neo4j.helpers.collection.Iterables.iterable;
-
 
 public enum StoreFile
 {
@@ -57,91 +55,91 @@ public enum StoreFile
     NODE_STORE(
             NodeStore.TYPE_DESCRIPTOR,
             StoreFactory.NODE_STORE_NAME,
-            Legacy19Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     ),
 
     NODE_LABEL_STORE(
             DynamicArrayStore.TYPE_DESCRIPTOR,
             StoreFactory.NODE_LABELS_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     ),
 
     PROPERTY_STORE(
             PropertyStore.TYPE_DESCRIPTOR,
             StoreFactory.PROPERTY_STORE_NAME,
-            Legacy19Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     ),
 
     PROPERTY_ARRAY_STORE(
             DynamicArrayStore.TYPE_DESCRIPTOR,
             StoreFactory.PROPERTY_ARRAYS_STORE_NAME,
-            Legacy19Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     ),
 
     PROPERTY_STRING_STORE(
             DynamicStringStore.TYPE_DESCRIPTOR,
             StoreFactory.PROPERTY_STRINGS_STORE_NAME,
-            Legacy19Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     ),
 
     PROPERTY_KEY_TOKEN_STORE(
             PropertyKeyTokenStore.TYPE_DESCRIPTOR,
             StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME,
-            Legacy19Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     ),
 
     PROPERTY_KEY_TOKEN_NAMES_STORE(
             DynamicStringStore.TYPE_DESCRIPTOR,
             StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME,
-            Legacy19Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     ),
 
     RELATIONSHIP_STORE(
             RelationshipStore.TYPE_DESCRIPTOR,
             StoreFactory.RELATIONSHIP_STORE_NAME,
-            Legacy19Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     ),
 
     RELATIONSHIP_GROUP_STORE(
             RelationshipGroupStore.TYPE_DESCRIPTOR,
             StoreFactory.RELATIONSHIP_GROUP_STORE_NAME,
-            Legacy21Store.LEGACY_VERSION
+            StandardV2_1.STORE_VERSION
     ),
 
     RELATIONSHIP_TYPE_TOKEN_STORE(
             RelationshipTypeTokenStore.TYPE_DESCRIPTOR,
             StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME,
-            Legacy19Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     ),
 
     RELATIONSHIP_TYPE_TOKEN_NAMES_STORE(
             DynamicStringStore.TYPE_DESCRIPTOR,
             StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME,
-            Legacy19Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     ),
 
     LABEL_TOKEN_STORE(
             LabelTokenStore.TYPE_DESCRIPTOR,
             StoreFactory.LABEL_TOKEN_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     ),
 
     LABEL_TOKEN_NAMES_STORE(
             DynamicStringStore.TYPE_DESCRIPTOR,
             StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     ),
 
     SCHEMA_STORE(
             SchemaStore.TYPE_DESCRIPTOR,
             StoreFactory.SCHEMA_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     ),
 
     COUNTS_STORE_LEFT(
             CountsTracker.TYPE_DESCRIPTOR,
             StoreFactory.COUNTS_STORE + CountsTracker.LEFT,
-            Legacy22Store.LEGACY_VERSION,
+            StandardV2_2.STORE_VERSION,
             false
     )
             {
@@ -154,7 +152,7 @@ public enum StoreFile
     COUNTS_STORE_RIGHT(
             CountsTracker.TYPE_DESCRIPTOR,
             StoreFactory.COUNTS_STORE + CountsTracker.RIGHT,
-            Legacy22Store.LEGACY_VERSION,
+            StandardV2_2.STORE_VERSION,
             false
     )
             {
@@ -168,7 +166,7 @@ public enum StoreFile
     NEO_STORE(
             MetaDataStore.TYPE_DESCRIPTOR,
             "",
-            Legacy19Store.LEGACY_VERSION
+            StandardV2_0.STORE_VERSION
     );
 
     private final String typeDescriptor;
@@ -204,6 +202,11 @@ public enum StoreFile
         return fileName( StoreFileType.STORE );
     }
 
+    public String fileNamePart()
+    {
+        return storeFileNamePart;
+    }
+
     public boolean isRecordStore()
     {
         return recordStore;
@@ -211,15 +214,7 @@ public enum StoreFile
 
     public static Iterable<StoreFile> legacyStoreFilesForVersion( final String version )
     {
-        Predicate<StoreFile> predicate = new Predicate<StoreFile>()
-        {
-            @Override
-            public boolean test( StoreFile item )
-            {
-                return version.compareTo( item.sinceVersion ) >= 0;
-            }
-        };
-
+        Predicate<StoreFile> predicate = item -> version.compareTo( item.sinceVersion ) >= 0;
         Iterable<StoreFile> storeFiles = currentStoreFiles();
         Iterable<StoreFile> filter = Iterables.filter( predicate, storeFiles );
         return filter;
@@ -233,15 +228,16 @@ public enum StoreFile
     public static void fileOperation( FileOperation operation, FileSystemAbstraction fs, File fromDirectory,
             File toDirectory, StoreFile... files ) throws IOException
     {
-        fileOperation( operation, fs, fromDirectory, toDirectory, storeFiles( files ), false, false );
+        fileOperation( operation, fs, fromDirectory, toDirectory, storeFiles( files ), false,
+                ExistingTargetStrategy.FAIL );
     }
 
     public static void fileOperation( FileOperation operation, FileSystemAbstraction fs, File fromDirectory,
             File toDirectory, Iterable<StoreFile> files,
-            boolean allowSkipNonExistentFiles, boolean allowOverwriteTarget ) throws IOException
+            boolean allowSkipNonExistentFiles, ExistingTargetStrategy existingTargetStrategy ) throws IOException
     {
         fileOperation( operation, fs, fromDirectory, toDirectory, files, allowSkipNonExistentFiles,
-                allowOverwriteTarget, StoreFileType.values() );
+                existingTargetStrategy, StoreFileType.values() );
     }
 
     /**
@@ -255,7 +251,7 @@ public enum StoreFile
      */
     public static void fileOperation( FileOperation operation, FileSystemAbstraction fs, File fromDirectory,
             File toDirectory, Iterable<StoreFile> files,
-            boolean allowSkipNonExistentFiles, boolean allowOverwriteTarget,
+            boolean allowSkipNonExistentFiles, ExistingTargetStrategy existingTargetStrategy,
             StoreFileType... types ) throws IOException
     {
         // TODO: change the order of files to handle failure conditions properly
@@ -265,7 +261,7 @@ public enum StoreFile
             {
                 String fileName = storeFile.fileName( type );
                 operation.perform( fs, fileName,
-                        fromDirectory, allowSkipNonExistentFiles, toDirectory, allowOverwriteTarget );
+                        fromDirectory, allowSkipNonExistentFiles, toDirectory, existingTargetStrategy );
             }
         }
     }
@@ -273,7 +269,7 @@ public enum StoreFile
     public static void removeTrailers( String version, FileSystemAbstraction fs, File storeDir, int pageSize )
             throws IOException
     {
-        for ( StoreFile storeFile : legacyStoreFilesForVersion( CommonAbstractStore.ALL_STORES_VERSION ) )
+        for ( StoreFile storeFile : legacyStoreFilesForVersion( StandardV3_0.STORE_VERSION ) )
         {
             String trailer = storeFile.forVersion( version );
             byte[] encodedTrailer = UTF8.encode( trailer );
@@ -292,7 +288,7 @@ public enum StoreFile
     {
         if ( !fs.fileExists( file ) )
         {
-            return -1l;
+            return -1L;
         }
 
         try ( StoreChannel channel = fs.open( file, "rw" ) )
@@ -309,7 +305,7 @@ public enum StoreFile
                     int read = channel.read( buffer );
                     if ( read == -1 )
                     {
-                        return -1l;
+                        return -1L;
                     }
                     totalRead += read;
                 }

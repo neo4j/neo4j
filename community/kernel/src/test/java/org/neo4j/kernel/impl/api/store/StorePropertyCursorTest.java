@@ -35,29 +35,32 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Consumers;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.cursor.PropertyItem;
-import org.neo4j.kernel.impl.store.AbstractRecordStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.test.MockedNeoStores;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
@@ -66,11 +69,13 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @RunWith( Enclosed.class )
 public class StorePropertyCursorTest
@@ -80,8 +85,8 @@ public class StorePropertyCursorTest
             new Object[]{(byte) 3, PropertyType.BYTE},
             new Object[]{(short) 34, PropertyType.SHORT},
             new Object[]{3456, PropertyType.INT},
-            new Object[]{3456l, PropertyType.LONG},
-            new Object[]{Integer.MAX_VALUE * 2l, PropertyType.LONG},
+            new Object[]{3456L, PropertyType.LONG},
+            new Object[]{Integer.MAX_VALUE * 2L, PropertyType.LONG},
             new Object[]{1.6f, PropertyType.FLOAT},
             new Object[]{1.9d, PropertyType.DOUBLE},
             new Object[]{'a', PropertyType.CHAR},
@@ -223,15 +228,23 @@ public class StorePropertyCursorTest
 
     public static class ErrorTest
     {
-        private final PropertyStore propertyStore = mock( PropertyStore.class );
+        private final NeoStores neoStores = MockedNeoStores.basicMockedNeoStores();
+        private final PropertyStore propertyStore = neoStores.getPropertyStore();
         @SuppressWarnings( "unchecked" )
         private final Consumer<StorePropertyCursor> cache = mock( Consumer.class );
-        private final DynamicStringStore stringStore = mock( DynamicStringStore.class );
-        private final DynamicArrayStore arrayStore = mock( DynamicArrayStore.class );
 
         {
-            when( propertyStore.getStringStore() ).thenReturn( stringStore );
-            when( propertyStore.getArrayStore() ).thenReturn( arrayStore );
+            RecordCursor<PropertyRecord> recordCursor = MockedNeoStores.mockedRecordCursor();
+            try
+            {
+                when( recordCursor.next() ).thenReturn( true );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+            when( recordCursor.get() ).thenReturn( new PropertyRecord( 42 ) );
+            when( propertyStore.newRecordCursor( any( PropertyRecord.class ) ) ).thenReturn( recordCursor );
         }
 
         @Test
@@ -285,7 +298,7 @@ public class StorePropertyCursorTest
                 fs.deleteRecursively( storeDir );
             }
             fs.mkdirs( storeDir );
-            StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, log );
+            StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fs, log );
             neoStores = storeFactory.openAllNeoStores( true );
             propertyStore = neoStores.getPropertyStore();
         }
@@ -766,13 +779,29 @@ public class StorePropertyCursorTest
 
     private static StorePropertyCursor newStorePropertyCursor( PropertyStore propertyStore )
     {
-        return newStorePropertyCursor( propertyStore, Consumers.<StorePropertyCursor>noop() );
+        return newStorePropertyCursor( propertyStore, ignored -> {} );
     }
 
     private static StorePropertyCursor newStorePropertyCursor( PropertyStore propertyStore,
             Consumer<StorePropertyCursor> cache )
     {
-        return new StorePropertyCursor( propertyStore, cache );
+        RecordCursor<PropertyRecord> propertyRecordCursor = propertyStore.newRecordCursor( propertyStore.newRecord() );
+        propertyRecordCursor.acquire( 0, NORMAL );
+
+        DynamicStringStore stringStore = propertyStore.getStringStore();
+        RecordCursor<DynamicRecord> dynamicStringCursor = stringStore.newRecordCursor( stringStore.newRecord() );
+        dynamicStringCursor.acquire( 0, NORMAL );
+
+        DynamicArrayStore arrayStore = propertyStore.getArrayStore();
+        RecordCursor<DynamicRecord> dynamicArrayCursor = arrayStore.newRecordCursor( arrayStore.newRecord() );
+        dynamicArrayCursor.acquire( 0, NORMAL );
+
+        RecordCursors cursors = mock( RecordCursors.class );
+        when( cursors.property() ).thenReturn( propertyRecordCursor );
+        when( cursors.propertyString() ).thenReturn( dynamicStringCursor );
+        when( cursors.propertyArray() ).thenReturn( dynamicArrayCursor );
+
+        return new StorePropertyCursor( cursors, cache );
     }
 
     private static List<PropertyRecord> createPropertyChain( PropertyStore store, int firstRecordId, int keyId,
@@ -805,9 +834,9 @@ public class StorePropertyCursorTest
     {
         for ( int recordId : recordIds )
         {
-            PropertyRecord record = store.forceGetRecord( recordId );
+            PropertyRecord record = RecordStore.getRecord( store, recordId );
             record.setInUse( false );
-            store.forceUpdateRecord( record );
+            store.updateRecord( record );
         }
     }
 
@@ -851,7 +880,7 @@ public class StorePropertyCursorTest
 
         PropertyRecord record = new PropertyRecord( recordId );
         record.addPropertyBlock( block1 );
-        if ( block1.getSize() + block2.getSize() <= PropertyStore.DEFAULT_PAYLOAD_SIZE )
+        if ( block1.getSize() + block2.getSize() <= PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE )
         {
             record.addPropertyBlock( block2 );
         }
@@ -890,9 +919,9 @@ public class StorePropertyCursorTest
         return values;
     }
 
-    private static <T extends Abstract64BitRecord> void updateRecord( AbstractRecordStore<T> store, T record )
+    private static <T extends AbstractBaseRecord> void updateRecord( RecordStore<T> store, T record )
     {
-        store.forceUpdateRecord( record );
-        store.setHighestPossibleIdInUse( record.getLongId() );
+        store.updateRecord( record );
+        store.setHighestPossibleIdInUse( record.getId() );
     }
 }

@@ -25,9 +25,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
-import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestMultipleStartNodes extends TraversalTestBase
 {
@@ -36,14 +35,14 @@ public class TestMultipleStartNodes extends TraversalTestBase
     {
         /*
          * Hey, this looks like a futuristic gun or something
-         * 
+         *
          *  (f8)     _----(f1)--(f5)
          *   |      /      /
          * (f7)--(you)--(me)--(f2)--(f6)
          *         |   /   \
          *         (f4)    (f3)
          */
-        
+
         createGraph( "you KNOW me", "you KNOW f1", "you KNOW f4", "me KNOW f1",
                 "me KNOW f4", "me KNOW f2", "me KNOW f3", "f1 KNOW f5", "f2 KNOW f6",
                 "you KNOW f7", "f7 KNOW f8" );
@@ -55,12 +54,12 @@ public class TestMultipleStartNodes extends TraversalTestBase
             Node me = getNodeWithName( "me" );
 
             String[] levelOneFriends = new String[]{"f1", "f2", "f3", "f4", "f7"};
-            TraversalDescription levelOneTraversal = traversal().relationships( KNOW ).evaluator( atDepth( 1 ) );
+            TraversalDescription levelOneTraversal = getGraphDb().traversalDescription().relationships( KNOW ).evaluator( atDepth( 1 ) );
             expectNodes( levelOneTraversal.depthFirst().traverse( you, me ), levelOneFriends );
             expectNodes( levelOneTraversal.breadthFirst().traverse( you, me ), levelOneFriends );
 
             String[] levelTwoFriends = new String[]{"f5", "f6", "f8"};
-            TraversalDescription levelTwoTraversal = traversal().relationships( KNOW ).evaluator( atDepth( 2 ) );
+            TraversalDescription levelTwoTraversal = getGraphDb().traversalDescription().relationships( KNOW ).evaluator( atDepth( 2 ) );
             expectNodes( levelTwoTraversal.depthFirst().traverse( you, me ), levelTwoFriends );
             expectNodes( levelTwoTraversal.breadthFirst().traverse( you, me ), levelTwoFriends );
         }

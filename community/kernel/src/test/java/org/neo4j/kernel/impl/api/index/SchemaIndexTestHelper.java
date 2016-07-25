@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.Ignore;
+
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.Ignore;
 import org.neo4j.helpers.FutureAdapter;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -34,10 +35,12 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @Ignore( "This is not a test" )
 public class SchemaIndexTestHelper
@@ -47,12 +50,12 @@ public class SchemaIndexTestHelper
     {
         return new SingleInstanceSchemaIndexProviderFactory( key, provider );
     }
-    
+
     public interface SingleInstanceSchemaIndexProviderFactoryDependencies
     {
         Config config();
     }
-    
+
     private static class SingleInstanceSchemaIndexProviderFactory
         extends KernelExtensionFactory<SingleInstanceSchemaIndexProviderFactoryDependencies>
     {
@@ -65,13 +68,13 @@ public class SchemaIndexTestHelper
         }
 
         @Override
-        public Lifecycle newKernelExtension( SingleInstanceSchemaIndexProviderFactoryDependencies dependencies )
-                throws Throwable
+        public Lifecycle newInstance( KernelContext context,
+                SingleInstanceSchemaIndexProviderFactoryDependencies dependencies ) throws Throwable
         {
             return provider;
         }
     }
-    
+
     public static IndexProxy mockIndexProxy() throws IOException
     {
         IndexProxy result = mock( IndexProxy.class );
@@ -79,7 +82,7 @@ public class SchemaIndexTestHelper
         when( result.close() ).thenReturn( FutureAdapter.VOID );
         return result;
     }
-    
+
     public static <T> T awaitFuture( Future<T> future )
     {
         try
@@ -96,7 +99,7 @@ public class SchemaIndexTestHelper
             throw new RuntimeException( e );
         }
     }
-    
+
     public static boolean awaitLatch( CountDownLatch latch )
     {
         try
@@ -109,7 +112,7 @@ public class SchemaIndexTestHelper
             throw new RuntimeException( e );
         }
     }
-    
+
     public static void awaitIndexOnline( ReadOperations readOperations, IndexDescriptor indexRule )
             throws IndexNotFoundKernelException
     {

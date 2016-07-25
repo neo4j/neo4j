@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.string.UTF8;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
@@ -391,19 +392,20 @@ public enum LongerShortString
         @Override
         char decTranslate( byte codePoint )
         {
-            if ( codePoint < 0x40 )
+            int code = codePoint & 0xFF;
+            if ( code < 0x40 )
             {
-                if ( codePoint == 0x17 ) return '.';
-                if ( codePoint == 0x37 ) return '-';
-                return (char) ( codePoint + 0xC0 );
+                if ( code == 0x17 ) return '.';
+                if ( code == 0x37 ) return '-';
+                return (char) (code + 0xC0 );
             }
             else
             {
-                if ( codePoint == 0x40 ) return ' ';
-                if ( codePoint == 0x60 ) return '_';
-                if ( codePoint >= 0x5B && codePoint < 0x60 ) return (char) ( '0' + codePoint - 0x5B );
-                if ( codePoint >= 0x7B && codePoint < 0x80 ) return (char) ( '5' + codePoint - 0x7B );
-                return (char) codePoint;
+                if ( code == 0x40 ) return ' ';
+                if ( code == 0x60 ) return '_';
+                if ( code >= 0x5B && code < 0x60 ) return (char) ('0' + code - 0x5B );
+                if ( code >= 0x7B && code < 0x80 ) return (char) ('5' + code - 0x7B );
+                return (char) code;
             }
         }
 
@@ -801,7 +803,7 @@ public enum LongerShortString
             if ( maskShift >= 64 && block + 1 < blocks.length )
             {
                 maskShift %= 64;
-                codePoint |= (blocks[++block] & (baseMask >>> (table.step-maskShift))) << (table.step-maskShift);
+                codePoint |= (blocks[++block] & (baseMask >>> (table.step - maskShift))) << (table.step - maskShift);
             }
             result[i] = table.decTranslate( codePoint );
         }
@@ -809,7 +811,7 @@ public enum LongerShortString
 
     // lookup table by encoding header
     // +2 because of ENCODING_LATIN1 gap and one based index
-    private final static LongerShortString[] ENCODINGS_BY_ENCODING = new LongerShortString[ENCODING_COUNT + 2];
+    private static final LongerShortString[] ENCODINGS_BY_ENCODING = new LongerShortString[ENCODING_COUNT + 2];
 
     static
     {
@@ -866,27 +868,19 @@ public enum LongerShortString
         return true;
     }
 
-    private static boolean encodeUTF8( int keyId, String string,
-            PropertyBlock target, int payloadSize )
+    private static boolean encodeUTF8( int keyId, String string, PropertyBlock target, int payloadSize )
     {
-        try
+        byte[] bytes = string.getBytes( StandardCharsets.UTF_8 );
+        final int length = bytes.length;
+        if ( length > payloadSize-3/*key*/-2/*enc+len*/ ) return false;
+        Bits bits = newBitsForStep8(length);
+        writeHeader( bits, keyId, ENCODING_UTF8, length); // In this case it isn't the string length, but the number of bytes
+        for ( byte value : bytes )
         {
-            byte[] bytes = string.getBytes( "UTF-8" );
-            final int length = bytes.length;
-            if ( length > payloadSize-3/*key*/-2/*enc+len*/ ) return false;
-            Bits bits = newBitsForStep8(length);
-            writeHeader( bits, keyId, ENCODING_UTF8, length); // In this case it isn't the string length, but the number of bytes
-            for ( byte value : bytes )
-            {
-                bits.put( value );
-            }
-            target.setValueBlocks( bits.getLongs() );
-            return true;
+            bits.put( value );
         }
-        catch ( UnsupportedEncodingException e )
-        {
-            throw new IllegalStateException( "All JVMs must support UTF-8", e );
-        }
+        target.setValueBlocks( bits.getLongs() );
+        return true;
     }
 
     private boolean doEncode(int keyId, byte[] data, PropertyBlock target,
@@ -943,14 +937,7 @@ public enum LongerShortString
             }
             result[i] = codePoint;
         }
-        try
-        {
-            return new String( result, "UTF-8" );
-        }
-        catch ( UnsupportedEncodingException e )
-        {
-            throw new IllegalStateException( "All JVMs must support UTF-8", e );
-        }
+        return UTF8.decode( result );
     }
 
     public static int calculateNumberOfBlocksUsed( long firstBlock )
@@ -976,11 +963,12 @@ public enum LongerShortString
 
     public static int calculateNumberOfBlocksUsedForStep8( int length )
     {
-        return totalBits(length << 3); // * 8
+        return totalBits( length << 3 ); // * 8
     }
+
     public static int calculateNumberOfBlocksUsed( LongerShortString encoding, int length )
     {
-        return totalBits(length * encoding.step);
+        return totalBits( length * encoding.step );
     }
 
     private static int totalBits( int bitsForCharacters )

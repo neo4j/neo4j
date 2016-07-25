@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.Arrays;
-
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;

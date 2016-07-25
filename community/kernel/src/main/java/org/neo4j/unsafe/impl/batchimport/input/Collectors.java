@@ -21,8 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.IOException;
 import java.io.OutputStream;
-
-import org.neo4j.function.Function;
+import java.util.function.Function;
 
 /**
  * Common implementations of {@link Collector}
@@ -63,14 +62,7 @@ public class Collectors
 
     public static Function<OutputStream,Collector> badCollector( final int tolerance, final int collect )
     {
-        return new Function<OutputStream,Collector>()
-        {
-            @Override
-            public Collector apply( OutputStream out ) throws RuntimeException
-            {
-                return badCollector( out, tolerance, collect );
-            }
-        };
+        return out -> badCollector( out, tolerance, collect );
     }
 
     public static int collect( boolean skipBadRelationships, boolean skipDuplicateNodes, boolean ignoreExtraColumns )

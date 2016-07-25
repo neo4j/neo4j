@@ -127,7 +127,6 @@ public class DefaultElectionCredentialsTest
         assertEquals( sameAsNext, sameAsPrevious );
         assertEquals( sameAsNext, sameAsNext );
 
-
         DefaultElectionCredentials differentTxIdFromNext =
                 new DefaultElectionCredentials( 1, 11, false );
 

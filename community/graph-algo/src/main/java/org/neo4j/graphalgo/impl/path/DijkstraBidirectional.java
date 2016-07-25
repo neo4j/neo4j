@@ -20,22 +20,21 @@
 package org.neo4j.graphalgo.impl.path;
 
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
-import org.neo4j.graphalgo.impl.util.TopFetchingWeightedPathIterator;
 import org.neo4j.graphalgo.impl.util.DijkstraBranchCollisionDetector;
 import org.neo4j.graphalgo.impl.util.DijkstraSelectorFactory;
 import org.neo4j.graphalgo.impl.util.PathInterest;
 import org.neo4j.graphalgo.impl.util.PathInterestFactory;
+import org.neo4j.graphalgo.impl.util.TopFetchingWeightedPathIterator;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.BranchCollisionDetector;
 import org.neo4j.graphdb.traversal.BranchCollisionPolicy;
@@ -53,10 +52,7 @@ import org.neo4j.kernel.impl.util.MutableDouble;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
-import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
-import static org.neo4j.kernel.Traversal.traversal;
+import static org.neo4j.helpers.collection.Iterators.firstOrNull;
 
 /**
  * Find (one or all) simple shortest path(s) between two nodes.
@@ -76,14 +72,6 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
     private final CostEvaluator<Double> costEvaluator;
     private final double epsilon;
     private Traverser lastTraverser;
-
-    /**
-     * @deprecated in favor of {@link #DijkstraBidirectional(PathExpander, CostEvaluator)}
-     */
-    public DijkstraBidirectional( RelationshipExpander expander, CostEvaluator<Double> costEvaluator )
-    {
-        this( toPathExpander( expander ), costEvaluator );
-    }
 
     /**
      * See {@link #DijkstraBidirectional(PathExpander, CostEvaluator, double)}
@@ -114,14 +102,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
         final Traverser traverser = traverser( start, end, PathInterestFactory.allShortest( epsilon ) );
-        return new Iterable<WeightedPath>()
-        {
-            @Override
-            public Iterator<WeightedPath> iterator()
-            {
-                return new TopFetchingWeightedPathIterator( traverser.iterator(), costEvaluator );
-            }
-        };
+        return () -> new TopFetchingWeightedPathIterator( traverser.iterator(), costEvaluator );
     }
 
     private Traverser traverser( Node start, final Node end, PathInterest interest )
@@ -132,8 +113,9 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         PathExpander dijkstraExpander = new DijkstraBidirectionalPathExpander( expander, shortestSoFar, true,
                 startSideShortest, endSideShortest, epsilon);
 
+        GraphDatabaseService db = start.getGraphDatabase();
 
-        TraversalDescription side = traversal().expand( dijkstraExpander, stateFactory )
+        TraversalDescription side = db.traversalDescription().expand( dijkstraExpander, stateFactory )
                 .order( new DijkstraSelectorFactory( interest, costEvaluator ) )
                 .evaluator( new DijkstraBidirectionalEvaluator( costEvaluator ) )
                 .uniqueness( Uniqueness.NODE_PATH );
@@ -141,11 +123,11 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         TraversalDescription startSide = side;
         TraversalDescription endSide = side.reverse();
 
-        BidirectionalTraversalDescription traversal = bidirectionalTraversal()
+        BidirectionalTraversalDescription traversal = db.bidirectionalTraversalDescription()
                 .startSide( startSide )
                 .endSide( endSide )
                 .collisionEvaluator( Evaluators.all() )
-                .collisionPolicy( new BranchCollisionPolicy.CollisionPolicyAdapter()
+                .collisionPolicy( new BranchCollisionPolicy()
                 {
                     @Override
                     public BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate )

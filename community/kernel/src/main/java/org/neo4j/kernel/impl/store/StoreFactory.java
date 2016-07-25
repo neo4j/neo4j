@@ -22,13 +22,14 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -59,63 +60,46 @@ public class StoreFactory
     public static final String RELATIONSHIP_GROUP_STORE_NAME = ".relationshipgroupstore.db";
     public static final String COUNTS_STORE = ".counts.db";
 
-    private Config config;
-    @SuppressWarnings( "deprecation" )
-    private IdGeneratorFactory idGeneratorFactory;
-    private FileSystemAbstraction fileSystemAbstraction;
-    private LogProvider logProvider;
-    private File neoStoreFileName;
-    private PageCache pageCache;
+    private final Config config;
+    private final IdGeneratorFactory idGeneratorFactory;
+    private final FileSystemAbstraction fileSystemAbstraction;
+    private final LogProvider logProvider;
+    private final File neoStoreFileName;
+    private final PageCache pageCache;
+    private final RecordFormats recordFormats;
 
-    public StoreFactory()
+    public StoreFactory( File storeDir, PageCache pageCache, FileSystemAbstraction fileSystem, LogProvider logProvider )
     {
+        this( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
+                logProvider );
     }
 
-    @SuppressWarnings( "deprecation" )
-    public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, LogProvider logProvider )
+    public StoreFactory( File storeDir, PageCache pageCache, FileSystemAbstraction fileSystem,
+            RecordFormats recordFormats, LogProvider logProvider )
     {
-        this( storeDir, new Config(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
+        this( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
+                recordFormats, logProvider );
     }
 
-    public StoreFactory( File storeDir, Config config,
-            @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+    public StoreFactory( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider )
     {
+        this( storeDir, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
+                RecordFormatSelector.selectForStoreOrConfig( config, storeDir, fileSystemAbstraction, pageCache, logProvider ),
+                logProvider );
+    }
+
+    public StoreFactory( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider )
+    {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
-        setLogProvider( logProvider );
-        setStoreDir( storeDir );
-        this.pageCache = pageCache;
-    }
+        this.recordFormats = recordFormats;
+        new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
 
-    public void setConfig( Config config )
-    {
-        this.config = config;
-    }
-
-    public void setIdGeneratorFactory( IdGeneratorFactory idGeneratorFactory )
-    {
-        this.idGeneratorFactory = idGeneratorFactory;
-    }
-
-    public void setFileSystemAbstraction( FileSystemAbstraction fileSystemAbstraction )
-    {
-        this.fileSystemAbstraction = fileSystemAbstraction;
-    }
-
-    public void setLogProvider( LogProvider logProvider )
-    {
         this.logProvider = logProvider;
-    }
-
-    public void setStoreDir( File storeDir )
-    {
         this.neoStoreFileName = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-    }
-
-    public void setPageCache( PageCache pageCache )
-    {
         this.pageCache = pageCache;
     }
 
@@ -125,7 +109,7 @@ public class StoreFactory
      */
     public NeoStores openAllNeoStores()
     {
-        return openNeoStores( false, NeoStores.StoreType.values() );
+        return openNeoStores( false, StoreType.values() );
     }
 
     /**
@@ -135,7 +119,7 @@ public class StoreFactory
      */
     public NeoStores openAllNeoStores( boolean createStoreIfNotExists )
     {
-        return openNeoStores( createStoreIfNotExists, NeoStores.StoreType.values() );
+        return openNeoStores( createStoreIfNotExists, StoreType.values() );
     }
 
     /**
@@ -145,7 +129,7 @@ public class StoreFactory
      * @param storeTypes - types of stores to be opened.
      * @return container with opened stores
      */
-    public NeoStores openNeoStores( NeoStores.StoreType... storeTypes )
+    public NeoStores openNeoStores( StoreType... storeTypes )
     {
         return openNeoStores( false, storeTypes );
     }
@@ -157,7 +141,7 @@ public class StoreFactory
      * @param storeTypes - types of stores to be opened.
      * @return container with opened stores
      */
-    public NeoStores openNeoStores( boolean createStoreIfNotExists, NeoStores.StoreType... storeTypes )
+    public NeoStores openNeoStores( boolean createStoreIfNotExists, StoreType... storeTypes )
     {
         if ( createStoreIfNotExists )
         {
@@ -172,12 +156,6 @@ public class StoreFactory
             }
         }
         return new NeoStores( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
-                fileSystemAbstraction, createStoreIfNotExists, storeTypes );
-    }
-
-    public abstract static class Configuration
-    {
-        public static final Setting<Integer> string_block_size = GraphDatabaseSettings.string_block_size;
-        public static final Setting<Integer> array_block_size = GraphDatabaseSettings.array_block_size;
+                fileSystemAbstraction, recordFormats, createStoreIfNotExists, storeTypes );
     }
 }

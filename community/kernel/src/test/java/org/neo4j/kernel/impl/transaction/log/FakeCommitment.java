@@ -23,38 +23,52 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_C
 
 public class FakeCommitment implements Commitment
 {
+    public static final int CHECKSUM = 3;
+    public static final long TIMESTAMP = 8194639457389L;
     private final long id;
     private final TransactionIdStore transactionIdStore;
     private boolean committed;
+    private boolean hasLegacyIndexChanges = false;
 
     public FakeCommitment( long id, TransactionIdStore transactionIdStore )
     {
+        this( id, transactionIdStore, false );
+    }
+
+    public FakeCommitment( long id, TransactionIdStore transactionIdStore, boolean markedAsCommitted )
+    {
         this.id = id;
         this.transactionIdStore = transactionIdStore;
+        this.committed = markedAsCommitted;
     }
 
     @Override
     public void publishAsCommitted()
     {
         committed = true;
-        transactionIdStore.transactionCommitted( id, 3, BASE_TX_COMMIT_TIMESTAMP );
+        transactionIdStore.transactionCommitted( id, CHECKSUM, TIMESTAMP );
     }
 
     @Override
-    public void publishAsApplied()
+    public void publishAsClosed()
     {
         transactionIdStore.transactionClosed( id, 1, 2 );
-    }
-
-    @Override
-    public long transactionId()
-    {
-        return id;
     }
 
     @Override
     public boolean markedAsCommitted()
     {
         return committed;
+    }
+
+    public void setHasLegacyIndexChanges( boolean hasLegacyIndexChanges )
+    {
+        this.hasLegacyIndexChanges = hasLegacyIndexChanges;
+    }
+
+    @Override
+    public boolean hasLegacyIndexChanges()
+    {
+        return hasLegacyIndexChanges;
     }
 }

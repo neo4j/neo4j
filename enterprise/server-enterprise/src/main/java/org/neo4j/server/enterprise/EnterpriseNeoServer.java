@@ -19,53 +19,83 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.eclipse.jetty.util.thread.ThreadPool;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.neo4j.coreedge.server.core.CoreGraphDatabase;
+import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.advanced.AdvancedNeoServer;
+import org.neo4j.metrics.source.server.ServerThreadView;
+import org.neo4j.metrics.source.server.ServerThreadViewSetter;
+import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
+import org.neo4j.server.enterprise.modules.JMXManagementModule;
 import org.neo4j.server.modules.ServerModule;
+import org.neo4j.server.rest.DatabaseRoleInfoServerModule;
+import org.neo4j.server.rest.MasterInfoService;
 import org.neo4j.server.rest.management.AdvertisableService;
-import org.neo4j.server.web.ServerInternalSettings;
-import org.neo4j.server.webadmin.rest.MasterInfoServerModule;
-import org.neo4j.server.webadmin.rest.MasterInfoService;
+import org.neo4j.server.web.Jetty9WebServer;
+import org.neo4j.server.web.WebServer;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.Iterables.mix;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
-public class EnterpriseNeoServer extends AdvancedNeoServer
+public class EnterpriseNeoServer extends CommunityNeoServer
 {
-    public static final String HA = "HA";
-    private static final GraphFactory HA_FACTORY = new GraphFactory()
+    public enum Mode
     {
-        @Override
-        public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
+        SINGLE,
+        HA,
+        ARBITER,
+        CORE,
+        EDGE;
+
+        public static Mode fromString( String value )
         {
-            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
-            return new HighlyAvailableGraphDatabase( storeDir, config.getParams(), dependencies );
+            try
+            {
+                return Mode.valueOf( value );
+            }
+            catch ( IllegalArgumentException ex )
+            {
+                return SINGLE;
+            }
         }
+    }
+
+    private static final GraphFactory HA_FACTORY = ( config, dependencies ) -> {
+        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
+        return new HighlyAvailableGraphDatabase( storeDir, config.getParams(), dependencies );
     };
-    private static final GraphFactory ENTERPRISE_FACTORY = new GraphFactory()
-    {
-        @Override
-        public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
-        {
-            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
-            return new EnterpriseGraphDatabase( storeDir, config.getParams(), dependencies );
-        }
+
+    private static final GraphFactory ENTERPRISE_FACTORY = ( config, dependencies ) -> {
+        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
+        return new EnterpriseGraphDatabase( storeDir, config.getParams(), dependencies );
+    };
+
+    private static final GraphFactory CORE_FACTORY = ( config, dependencies ) -> {
+        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
+        return new CoreGraphDatabase( storeDir, config.getParams(), dependencies );
+    };
+
+    private static final GraphFactory EDGE_FACTORY = ( config, dependencies ) -> {
+        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
+        return new EdgeGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 
     public EnterpriseNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
@@ -75,17 +105,64 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
 
     protected static Database.Factory createDbFactory( Config config )
     {
-        String mode = config.get( EnterpriseServerSettings.mode ).toUpperCase();
-        return lifecycleManagingDatabase( mode.equals( HA ) ? HA_FACTORY : ENTERPRISE_FACTORY );
+        final Mode mode = Mode.fromString( config.get( EnterpriseServerSettings.mode ).toUpperCase() );
+
+        switch ( mode )
+        {
+        case HA:
+            return lifecycleManagingDatabase( HA_FACTORY );
+        case ARBITER:
+            // Should never reach here because this mode is handled separately by the scripts.
+            throw new IllegalArgumentException( "The server cannot be started in ARBITER mode." );
+        case CORE:
+            return lifecycleManagingDatabase( CORE_FACTORY );
+        case EDGE:
+            return lifecycleManagingDatabase( EDGE_FACTORY );
+        default: // Anything else gives community, including Mode.SINGLE
+            return lifecycleManagingDatabase( ENTERPRISE_FACTORY );
+        }
+    }
+
+    @Override
+    protected WebServer createWebServer()
+    {
+        Jetty9WebServer webServer = (Jetty9WebServer) super.createWebServer();
+        webServer.setJettyCreatedCallback( ( jetty ) -> {
+            ThreadPool threadPool = jetty.getThreadPool();
+            assert threadPool != null;
+            try
+            {
+                ServerThreadViewSetter setter =
+                        database.getGraph().getDependencyResolver().resolveDependency( ServerThreadViewSetter.class );
+                setter.set( new ServerThreadView()
+                {
+                    @Override
+                    public int allThreads()
+                    {
+                        return threadPool.getThreads();
+                    }
+
+                    @Override
+                    public int idleThreads()
+                    {
+                        return threadPool.getIdleThreads();
+                    }
+                } );
+            }
+            catch ( UnsatisfiedDependencyException ex )
+            {
+                // nevermind, metrics are likely not enabled
+            }
+        } );
+        return webServer;
     }
 
     @SuppressWarnings( "unchecked" )
     @Override
     protected Iterable<ServerModule> createServerModules()
     {
-        return mix(
-                asList( (ServerModule) new MasterInfoServerModule( webServer, getConfig(),
-                        logProvider ) ), super.createServerModules() );
+        return mix( asList( new DatabaseRoleInfoServerModule( webServer, getConfig(), logProvider ),
+                new JMXManagementModule( this ) ), super.createServerModules() );
     }
 
     @Override

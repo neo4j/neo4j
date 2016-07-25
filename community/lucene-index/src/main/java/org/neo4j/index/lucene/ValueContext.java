@@ -32,7 +32,7 @@ public class ValueContext
     {
         this.value = value;
     }
-    
+
     /**
      * @return the value object specified in the constructor.
      */
@@ -57,18 +57,18 @@ public class ValueContext
         this.indexNumeric = true;
         return this;
     }
-    
+
     /**
      * Returns the string representation of the value given in the constructor,
      * or the unmodified value if {@link #indexNumeric()} has been called.
-     * 
+     *
      * @return the, by the user, intended value to index.
      */
     public Object getCorrectValue()
     {
         return this.indexNumeric ? this.value : this.value.toString();
     }
-    
+
     @Override
     public String toString()
     {

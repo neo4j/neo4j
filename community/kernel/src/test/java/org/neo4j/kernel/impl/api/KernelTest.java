@@ -19,18 +19,19 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.io.File;
-import java.util.Map;
-
 import org.junit.Test;
 
+import java.io.File;
+import java.util.Map;
+import java.util.function.Function;
+
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -75,37 +76,28 @@ public class KernelTest
         @Override
         protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
-            new CommunityFacadeFactory()
-            {
-                @Override
-                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
-                {
-                    return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
-                }
-
-                @Override
-                protected EditionModule createEdition( PlatformModule platformModule )
-                {
-                    return new CommunityEditionModule( platformModule )
+            Function<PlatformModule,EditionModule> factory =
+                    ( platformModule ) -> new CommunityEditionModule( platformModule )
                     {
                         @Override
                         protected SchemaWriteGuard createSchemaWriteGuard()
                         {
-                            return new SchemaWriteGuard()
-                            {
-                                @Override
-                                public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
-                                {
-                                    throw new InvalidTransactionTypeKernelException(
-                                            "Creation or deletion of constraints is not possible while running in a HA cluster. " +
-                                            "In order to do that, please restart in non-HA mode and propagate the database copy to " +
-                                            "all slaves" );
-                                }
+                            return () -> {
+                                throw new InvalidTransactionTypeKernelException(
+                                        "Creation or deletion of constraints is not possible while running in a HA cluster. " +
+                                                "In order to do that, please restart in non-HA mode and propagate the database copy" +
+                                                "to all slaves" );
                             };
                         }
                     };
+            new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY,  factory )
+            {
+                @Override
+                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                {
+                    return new ImpermanentPlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade );
                 }
-            }.newFacade( storeDir, params, dependencies, this );
+            }.initFacade( storeDir, params, dependencies, this );
         }
     }
 }

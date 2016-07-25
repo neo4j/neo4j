@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.docgen.refcard
 
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class LabelsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A:Person KNOWS ROOT")
   val title = "Labels"
-  val css = "general c2-1 c3-2 c4-1 c5-3 c6-3"
+  val css = "general c2-1 c3-2 c4-1 c5-2 c6-6"
   override val linkId = "cypherdoc-labels-constraints-and-indexes"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -38,10 +38,10 @@ class LabelsTest extends RefcardTest with QueryStatisticsTestSupport {
         assertStats(result, labelsAdded = 3)
         assert(result.toList.size === 1)
       case "create-rel" =>
-        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 1, labelsAdded = 1)
+        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesWritten = 1, labelsAdded = 1)
         assert(result.toList.size === 1)
       case "create" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1, nodesDeleted = 1)
+        assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1, nodesDeleted = 1)
         assert(result.toList.size === 1)
       case "remove-label" =>
         assertStats(result, labelsRemoved = 1)

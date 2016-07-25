@@ -22,19 +22,20 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.subprocess.SubProcess;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
+import static org.neo4j.graphdb.Label.label;
 
 public class SchemaRecoveryIT
 {
@@ -42,7 +43,7 @@ public class SchemaRecoveryIT
     public void schemaTransactionsShouldSurviveRecovery() throws Exception
     {
         // given
-        String storeDir = testDirectory.absolutePath();
+        File storeDir = testDirectory.absolutePath();
         Process process = new CreateConstraintButDoNotShutDown().start( storeDir );
         process.waitForSchemaTransactionCommitted();
         SubProcess.kill( process );
@@ -64,7 +65,7 @@ public class SchemaRecoveryIT
     {
         try ( Transaction ignored = database.beginTx() )
         {
-            return asList( database.schema().getConstraints() );
+            return Iterables.asList( database.schema().getConstraints() );
         }
     }
 
@@ -72,7 +73,7 @@ public class SchemaRecoveryIT
     {
         try ( Transaction ignored = database.beginTx() )
         {
-            return asList( database.schema().getIndexes() );
+            return Iterables.asList( database.schema().getIndexes() );
         }
     }
 
@@ -81,13 +82,13 @@ public class SchemaRecoveryIT
         void waitForSchemaTransactionCommitted() throws InterruptedException;
     }
 
-    static class CreateConstraintButDoNotShutDown extends SubProcess<Process, String> implements Process
+    static class CreateConstraintButDoNotShutDown extends SubProcess<Process, File> implements Process
     {
         // Would use a CountDownLatch but fields of this class need to be serializable.
         private volatile boolean started = false;
 
         @Override
-        protected void startup( String storeDir ) throws Throwable
+        protected void startup( File storeDir ) throws Throwable
         {
             GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
             try ( Transaction transaction = database.beginTx() )

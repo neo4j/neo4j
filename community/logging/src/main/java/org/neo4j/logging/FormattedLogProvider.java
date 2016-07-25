@@ -19,9 +19,6 @@
  */
 package org.neo4j.logging;
 
-import org.neo4j.function.Supplier;
-import org.neo4j.function.Suppliers;
-
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
@@ -29,10 +26,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
+
+import org.neo4j.function.Suppliers;
 
 import static org.neo4j.logging.FormattedLog.DEFAULT_CURRENT_DATE_SUPPLIER;
 import static org.neo4j.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
+import static org.neo4j.logging.FormattedLog.UTC;
 
 /**
  * A {@link LogProvider} implementation that applies a simple formatting to each log message.
@@ -47,7 +48,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     public static class Builder
     {
         private boolean renderContext = true;
-        private TimeZone timezone = TimeZone.getDefault();
+        private TimeZone timezone = UTC;
         private Map<String, Level> levels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
         private boolean autoFlush = true;
@@ -120,6 +121,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
          * Set the log level for many contexts - equivalent to calling {@link #withLogLevel(String, Level)} for every entry in the provided map.
          *
          * @param levels a map containing paris of context and level
+         * @return this builder
          */
         public Builder withLogLevels( Map<String, Level> levels )
         {

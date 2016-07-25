@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking.full;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.CheckerEngine;
@@ -33,7 +34,6 @@ import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyRep
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.MultiSet;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -54,6 +54,7 @@ import static org.neo4j.consistency.checking.cache.CacheSlots.NodeLabel.SLOT_LAB
 import static org.neo4j.consistency.checking.full.NodeLabelReader.getListOfLabels;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 class CountsBuilderDecorator extends CheckDecorator.Adapter
 {
@@ -174,15 +175,17 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
             public void visitRelationshipCount( int startLabelId, int relTypeId, int endLabelId, long count )
             {
                 relationshipEntries.incrementAndGet();
-                reporter.forCounts( new CountsEntry( relationshipKey( startLabelId, relTypeId, endLabelId ), count ),
+                reporter.forCounts(
+                        new CountsEntry( relationshipKey( startLabelId, relTypeId, endLabelId ), count ),
                         CHECK_RELATIONSHIP_COUNT );
                 listener.add( 1 );
             }
         } );
-        reporter.forCounts( new CountsEntry( nodeKey( WILDCARD ), nodeEntries.get() ), CHECK_NODE_KEY_COUNT );
         reporter.forCounts(
-                new CountsEntry( relationshipKey( WILDCARD, WILDCARD, WILDCARD ), relationshipEntries.get() ),
-                CHECK_RELATIONSHIP_KEY_COUNT );
+                new CountsEntry( nodeKey( WILDCARD ), nodeEntries.get() ), CHECK_NODE_KEY_COUNT );
+        reporter.forCounts(
+                new CountsEntry( relationshipKey( WILDCARD, WILDCARD, WILDCARD ),
+                        relationshipEntries.get() ), CHECK_RELATIONSHIP_KEY_COUNT );
         listener.done();
     }
 
@@ -357,6 +360,6 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                                         RecordAccess recordAccess,
                                         long nodeId )
     {
-        return getListOfLabels( nodeStore.forceGetRecord( nodeId ), recordAccess, engine );
+        return getListOfLabels( nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE ), recordAccess, engine );
     }
 }

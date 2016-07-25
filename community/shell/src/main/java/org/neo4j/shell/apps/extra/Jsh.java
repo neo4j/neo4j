@@ -30,25 +30,25 @@ import org.neo4j.shell.impl.AbstractApp;
  */
 public class Jsh extends AbstractApp
 {
-	public Continuation execute( AppCommandParser parser, Session session,
-		Output out ) throws Exception
-	{
-		String line = parser.getLineWithoutApp();
-		new JshExecutor().execute( line, session, out );
-		return Continuation.INPUT_COMPLETE;
-	}
+    public Continuation execute( AppCommandParser parser, Session session,
+        Output out ) throws Exception
+    {
+        String line = parser.getLineWithoutApp();
+        new JshExecutor().execute( line, session, out );
+        return Continuation.INPUT_COMPLETE;
+    }
 
-	@Override
-	public String getDescription()
-	{
-		JshExecutor anExecutor = new JshExecutor();
-		return
-			"Runs python (jython) scripts. Usage: jsh <python script line>\n" +
-			"Example: jsh --doSomething arg1 \"arg 2\" " +
-			"--doSomethingElse arg1\n\n" +
-			"Python scripts doSomething.py and doSomethingElse.py " +
-			"must exist\n" +
-			"in one of environment variable " + anExecutor.getPathKey() +
-			" paths (default is " + anExecutor.getDefaultPaths() + ")";
-	}
+    @Override
+    public String getDescription()
+    {
+        JshExecutor anExecutor = new JshExecutor();
+        return
+            "Runs python (jython) scripts. Usage: jsh <python script line>\n" +
+            "Example: jsh --doSomething arg1 \"arg 2\" " +
+            "--doSomethingElse arg1\n\n" +
+            "Python scripts doSomething.py and doSomethingElse.py " +
+            "must exist\n" +
+            "in one of environment variable " + anExecutor.getPathKey() +
+            " paths (default is " + anExecutor.getDefaultPaths() + ")";
+    }
 }

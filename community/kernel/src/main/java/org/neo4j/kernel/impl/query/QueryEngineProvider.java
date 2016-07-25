@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.query;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+
+import static java.lang.String.format;
 
 public abstract class QueryEngineProvider extends Service
 {
@@ -57,15 +59,15 @@ public abstract class QueryEngineProvider extends Service
         return NoQueryEngine.INSTANCE;
     }
 
-    public static QuerySession embeddedSession()
+    public static QuerySession embeddedSession( TransactionalContext transactionalContext )
     {
         final Thread thread = Thread.currentThread();
-        return new QuerySession()
+        return new QuerySession( transactionalContext )
         {
             @Override
             public String toString()
             {
-                return String.format( "EmbeddedSession{thread=%s}", thread.getName() );
+                return format( "embedded-session\tthread\t%s", thread.getName() );
             }
         };
     }

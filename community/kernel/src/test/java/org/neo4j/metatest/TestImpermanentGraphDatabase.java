@@ -23,18 +23,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
 public class TestImpermanentGraphDatabase
@@ -77,7 +75,7 @@ public class TestImpermanentGraphDatabase
     {
         try ( Transaction tx = db.beginTx() )
         {
-            DynamicRelationshipType relationshipType = DynamicRelationshipType.withName("R");
+            RelationshipType relationshipType = RelationshipType.withName( "R" );
 
             Node n1 = db.createNode();
             Node n2 = db.createNode();
@@ -92,13 +90,13 @@ public class TestImpermanentGraphDatabase
 
         cleanDatabaseContent( db );
 
-        assertThat( nodeCount(), is( 0 ) );
+        assertThat( nodeCount(), is( 0L ) );
     }
 
-    private int nodeCount()
+    private long nodeCount()
     {
         Transaction transaction = db.beginTx();
-        int count = IteratorUtil.count( GlobalGraphOperations.at( db ).getAllNodes() );
+        long count = Iterables.count( db.getAllNodes() );
         transaction.close();
         return count;
     }

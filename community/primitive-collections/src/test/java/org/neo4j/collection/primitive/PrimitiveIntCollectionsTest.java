@@ -19,16 +19,14 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.Test;
-
-import org.neo4j.function.IntPredicate;
+import java.util.function.IntPredicate;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -113,14 +111,7 @@ public class PrimitiveIntCollectionsTest
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
 
         // WHEN
-        PrimitiveIntIterator filtered = PrimitiveIntCollections.filter( items, new IntPredicate()
-        {
-            @Override
-            public boolean test( int item )
-            {
-                return item != 2;
-            }
-        } );
+        PrimitiveIntIterator filtered = PrimitiveIntCollections.filter( items, (IntPredicate) item -> item != 2 );
 
         // THEN
         assertItems( filtered, 1, 3 );
@@ -397,14 +388,7 @@ public class PrimitiveIntCollectionsTest
     public void itemAt() throws Exception
     {
         // GIVEN
-        PrimitiveIntIterable items = new PrimitiveIntIterable()
-        {
-            @Override
-            public PrimitiveIntIterator iterator()
-            {
-                return PrimitiveIntCollections.iterator( 10, 20, 30 );
-            }
-        };
+        PrimitiveIntIterable items = () -> PrimitiveIntCollections.iterator( 10, 20, 30 );
 
         // THEN
         try
@@ -437,14 +421,7 @@ public class PrimitiveIntCollectionsTest
     public void itemAtWithDefault() throws Exception
     {
         // GIVEN
-        PrimitiveIntIterable items = new PrimitiveIntIterable()
-        {
-            @Override
-            public PrimitiveIntIterator iterator()
-            {
-                return PrimitiveIntCollections.iterator( 10, 20, 30 );
-            }
-        };
+        PrimitiveIntIterable items = () -> PrimitiveIntCollections.iterator( 10, 20, 30 );
         int defaultValue = 55;
 
         // THEN
@@ -462,14 +439,7 @@ public class PrimitiveIntCollectionsTest
     public void indexOf() throws Exception
     {
         // GIVEN
-        PrimitiveIntIterable items = new PrimitiveIntIterable()
-        {
-            @Override
-            public PrimitiveIntIterator iterator()
-            {
-                return PrimitiveIntCollections.iterator( 10, 20, 30 );
-            }
-        };
+        PrimitiveIntIterable items = () -> PrimitiveIntCollections.iterator( 10, 20, 30 );
 
         // THEN
         assertEquals( -1, PrimitiveIntCollections.indexOf( items.iterator(), 55 ) );
@@ -482,38 +452,10 @@ public class PrimitiveIntCollectionsTest
     public void iteratorsEqual() throws Exception
     {
         // GIVEN
-        PrimitiveIntIterable items1 = new PrimitiveIntIterable()
-        {
-            @Override
-            public PrimitiveIntIterator iterator()
-            {
-                return PrimitiveIntCollections.iterator( 1, 2, 3 );
-            }
-        };
-        PrimitiveIntIterable items2 = new PrimitiveIntIterable()
-        {
-            @Override
-            public PrimitiveIntIterator iterator()
-            {
-                return PrimitiveIntCollections.iterator( 1, 20, 3 );
-            }
-        };
-        PrimitiveIntIterable items3 = new PrimitiveIntIterable()
-        {
-            @Override
-            public PrimitiveIntIterator iterator()
-            {
-                return PrimitiveIntCollections.iterator( 1, 2, 3, 4 );
-            }
-        };
-        PrimitiveIntIterable items4 = new PrimitiveIntIterable()
-        {
-            @Override
-            public PrimitiveIntIterator iterator()
-            {
-                return PrimitiveIntCollections.iterator( 1, 2, 3 );
-            }
-        };
+        PrimitiveIntIterable items1 = () -> PrimitiveIntCollections.iterator( 1, 2, 3 );
+        PrimitiveIntIterable items2 = () -> PrimitiveIntCollections.iterator( 1, 20, 3 );
+        PrimitiveIntIterable items3 = () -> PrimitiveIntCollections.iterator( 1, 2, 3, 4 );
+        PrimitiveIntIterable items4 = () -> PrimitiveIntCollections.iterator( 1, 2, 3 );
 
         // THEN
         assertFalse( PrimitiveIntCollections.equals( items1.iterator(), items2.iterator() ) );

@@ -21,59 +21,76 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
-import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateEntitySchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.EntitySchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
-
-import static org.neo4j.function.Functions.cast;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
+import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.storageengine.api.schema.SchemaRule.Kind;
 
 public class SchemaStorage implements SchemaRuleAccess
 {
-    public enum IndexRuleKind
+    public enum IndexRuleKind implements Predicate<SchemaRule.Kind>
     {
         INDEX
-                {
-                    @Override
-                    public boolean isOfKind( IndexRule rule )
-                    {
-                        return !rule.isConstraintIndex();
-                    }
-                },
+        {
+            @Override
+            public boolean isOfKind( IndexRule rule )
+            {
+                return !rule.isConstraintIndex();
+            }
+
+            @Override
+            public boolean test( Kind kind )
+            {
+                return kind == Kind.INDEX_RULE;
+            }
+        },
         CONSTRAINT
-                {
-                    @Override
-                    public boolean isOfKind( IndexRule rule )
-                    {
-                        return rule.isConstraintIndex();
-                    }
-                },
+        {
+            @Override
+            public boolean isOfKind( IndexRule rule )
+            {
+                return rule.isConstraintIndex();
+            }
+
+            @Override
+            public boolean test( Kind kind )
+            {
+                return kind == Kind.CONSTRAINT_INDEX_RULE;
+            }
+        },
         ALL
-                {
-                    @Override
-                    public boolean isOfKind( IndexRule rule )
-                    {
-                        return true;
-                    }
-                };
+        {
+            @Override
+            public boolean isOfKind( IndexRule rule )
+            {
+                return true;
+            }
+
+            @Override
+            public boolean test( Kind t )
+            {
+                return true;
+            }
+        };
 
         public abstract boolean isOfKind( IndexRule rule );
     }
@@ -102,14 +119,8 @@ public class SchemaStorage implements SchemaRuleAccess
      */
     public IndexRule indexRule( final int labelId, final int propertyKeyId, IndexRuleKind kind )
     {
-        Iterator<IndexRule> rules = schemaRules( cast( IndexRule.class ), IndexRule.class, new Predicate<IndexRule>()
-        {
-            @Override
-            public boolean test( IndexRule rule )
-            {
-                return rule.getLabel() == labelId && rule.getPropertyKey() == propertyKeyId;
-            }
-        } );
+        Iterator<IndexRule> rules = schemaRules( cast( IndexRule.class ), IndexRule.class,
+                rule -> rule.getLabel() == labelId && rule.getPropertyKey() == propertyKeyId );
 
         IndexRule foundRule = null;
 
@@ -120,7 +131,8 @@ public class SchemaStorage implements SchemaRuleAccess
             {
                 if ( foundRule != null )
                 {
-                    throw new ThisShouldNotHappenError( "Jake", String.format("Found more than one matching index rule, %s and %s", foundRule, candidate) );
+                    throw new IllegalStateException( String.format(
+                            "Found more than one matching index rule, %s and %s", foundRule, candidate ) );
                 }
                 foundRule = candidate;
             }
@@ -165,16 +177,9 @@ public class SchemaStorage implements SchemaRuleAccess
     {
         @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
         Function<SchemaRule, T> ruleConversion = (Function) conversion;
-        return map( ruleConversion, filter( new Predicate<SchemaRule>()
-        {
-            @SuppressWarnings( "unchecked" )
-            @Override
-            public boolean test( SchemaRule rule )
-            {
-                return ruleType.isAssignableFrom( rule.getKind().getRuleClass() ) &&
-                       predicate.test( (R) rule );
-            }
-        }, loadAllSchemaRules() ) );
+        return Iterators.map( ruleConversion, Iterators
+                .filter( rule -> ruleType.isAssignableFrom( AbstractSchemaRule.getRuleClass( rule.getKind() ) ) &&
+                                 predicate.test( (R) rule ), loadAllSchemaRules() ) );
     }
 
     public <R extends SchemaRule, T> Iterator<T> schemaRules(
@@ -182,28 +187,13 @@ public class SchemaStorage implements SchemaRuleAccess
     {
         @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
         Function<SchemaRule, T> ruleConversion = (Function) conversion;
-        return map( ruleConversion, filter( new Predicate<SchemaRule>()
-        {
-            @SuppressWarnings("unchecked")
-            @Override
-            public boolean test( SchemaRule rule )
-            {
-                return ruleClass.isInstance( rule );
-            }
-        }, loadAllSchemaRules() ) );
+        return Iterators.map( ruleConversion, Iterators.filter( ruleClass::isInstance, loadAllSchemaRules() ) );
     }
 
     public <R extends SchemaRule> Iterator<R> schemaRules( final Class<R> ruleClass )
     {
         @SuppressWarnings({"UnnecessaryLocalVariable", "unchecked"/*the predicate ensures that this cast is safe*/})
-        Iterator<R> result = (Iterator)filter( new Predicate<SchemaRule>()
-        {
-            @Override
-            public boolean test( SchemaRule rule )
-            {
-                return ruleClass.isInstance( rule );
-            }
-        }, loadAllSchemaRules() );
+        Iterator<R> result = (Iterator) Iterators.filter( ruleClass::isInstance, loadAllSchemaRules() );
         return result;
     }
 
@@ -214,6 +204,7 @@ public class SchemaStorage implements SchemaRuleAccess
             private final long highestId = schemaStore.getHighestPossibleIdInUse();
             private long currentId = 1; /*record 0 contains the block size*/
             private final byte[] scratchData = newRecordBuffer();
+            private final DynamicRecord record = schemaStore.newRecord();
 
             @Override
             protected SchemaRule fetchNextOrNull()
@@ -221,7 +212,7 @@ public class SchemaStorage implements SchemaRuleAccess
                 while ( currentId <= highestId )
                 {
                     long id = currentId++;
-                    DynamicRecord record = schemaStore.forceGetRecord( id );
+                    schemaStore.getRecord( id, record, RecordLoad.FORCE );
                     if ( record.inUse() && record.isStartRecord() )
                     {
                         try
@@ -256,7 +247,7 @@ public class SchemaStorage implements SchemaRuleAccess
         Collection<DynamicRecord> records;
         try
         {
-            records = schemaStore.getRecords( id );
+            records = schemaStore.getRecords( id, RecordLoad.NORMAL );
         }
         catch ( Exception e )
         {
@@ -292,15 +283,8 @@ public class SchemaStorage implements SchemaRuleAccess
             final int labelId, final int propertyKeyId )
             throws SchemaRuleNotFoundException, DuplicateEntitySchemaRuleException
     {
-        Iterator<Rule> rules = schemaRules( cast( type ), type, new Predicate<Rule>()
-        {
-            @Override
-            public boolean test( Rule item )
-            {
-                return item.getLabel() == labelId &&
-                       item.containsPropertyKeyId( propertyKeyId );
-            }
-        } );
+        Iterator<Rule> rules = schemaRules( cast( type ), type, item -> item.getLabel() == labelId &&
+                                                                item.containsPropertyKeyId( propertyKeyId ) );
         if ( !rules.hasNext() )
         {
             throw new EntitySchemaRuleNotFoundException( EntityType.NODE, labelId, propertyKeyId );
@@ -319,15 +303,9 @@ public class SchemaStorage implements SchemaRuleAccess
             final int relationshipTypeId, final int propertyKeyId )
             throws SchemaRuleNotFoundException, DuplicateEntitySchemaRuleException
     {
-        Iterator<Rule> rules = schemaRules( cast( type ), type, new Predicate<Rule>()
-        {
-            @Override
-            public boolean test( Rule item )
-            {
-                return item.getRelationshipType() == relationshipTypeId &&
-                       item.containsPropertyKeyId( propertyKeyId );
-            }
-        } );
+        Iterator<Rule> rules = schemaRules( cast( type ), type,
+                item -> item.getRelationshipType() == relationshipTypeId &&
+                        item.containsPropertyKeyId( propertyKeyId ) );
         if ( !rules.hasNext() )
         {
             throw new EntitySchemaRuleNotFoundException( EntityType.RELATIONSHIP, relationshipTypeId, propertyKeyId );
@@ -340,5 +318,23 @@ public class SchemaStorage implements SchemaRuleAccess
             throw new DuplicateEntitySchemaRuleException( EntityType.RELATIONSHIP, relationshipTypeId, propertyKeyId );
         }
         return rule;
+    }
+
+    private static <FROM, TO> Function<FROM,TO> cast( final Class<TO> to )
+    {
+        return new Function<FROM,TO>()
+        {
+            @Override
+            public TO apply( FROM from )
+            {
+                return to.cast( from );
+            }
+
+            @Override
+            public String toString()
+            {
+                return "cast(to=" + to.getName() + ")";
+            }
+        };
     }
 }

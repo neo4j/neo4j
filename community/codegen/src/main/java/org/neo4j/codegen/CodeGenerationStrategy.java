@@ -22,8 +22,6 @@ package org.neo4j.codegen;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.neo4j.codegen.source.SourceCode.SOURCECODE;
-
 public abstract class CodeGenerationStrategy<Configuration> implements CodeGeneratorOption
 {
     protected abstract Configuration createConfigurator( ClassLoader loader );
@@ -31,10 +29,10 @@ public abstract class CodeGenerationStrategy<Configuration> implements CodeGener
     protected abstract CodeGenerator createCodeGenerator( ClassLoader loader, Configuration configuration )
             throws CodeGenerationStrategyNotSupportedException;
 
-    static CodeGenerator codeGenerator( ClassLoader loader, CodeGeneratorOption... options )
+    static CodeGenerator codeGenerator( ClassLoader loader, CodeGenerationStrategy<?> strategy, CodeGeneratorOption... options )
             throws CodeGenerationNotSupportedException
     {
-        return applyTo( new Choice( SOURCECODE ), options ).generateCode( loader, options );
+        return applyTo( new Choice( strategy ), options ).generateCode( loader, options );
     }
 
     @Override

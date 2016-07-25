@@ -25,24 +25,23 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -51,7 +50,7 @@ public class IndexSamplingIntegrationTest
     @Rule
     public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
-    private final Label label = DynamicLabel.label( "Person" );
+    private final Label label = Label.label( "Person" );
     private final String property = "name";
     private final int nodes = 1000;
     private final String[] names = {"Neo4j", "Neo", "Graph", "Apa"};
@@ -64,7 +63,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Given
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir().getAbsolutePath() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
             IndexDefinition indexDefinition;
             try ( Transaction tx = db.beginTx() )
             {
@@ -130,7 +129,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Given
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir().getAbsolutePath() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
@@ -185,10 +184,11 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Then
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir().getAbsolutePath() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
-            CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+            CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                    .testAccessNeoStores().getCounts();
             IndexSampleKey key = CountsKeyFactory.indexSampleKey( 0, 0 ); // cheating a bit...
             return countsTracker.get( key, Registers.newDoubleLongRegister() );
         }
@@ -206,10 +206,11 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Then
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir().getAbsolutePath() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
-            CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+            CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                    .testAccessNeoStores().getCounts();
             IndexStatisticsKey key = CountsKeyFactory.indexStatisticsKey( 0, 0 ); // cheating a bit...
             return countsTracker.get( key, Registers.newDoubleLongRegister() );
         }

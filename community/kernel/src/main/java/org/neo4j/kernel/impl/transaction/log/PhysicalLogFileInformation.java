@@ -28,44 +28,49 @@ public class PhysicalLogFileInformation implements LogFileInformation
         long getTimestampForVersion( long version ) throws IOException;
     }
 
+    public interface LastEntryInLog
+    {
+        long getLastEntryId(  );
+    }
+
     private final PhysicalLogFiles logFiles;
-    private final TransactionMetadataCache transactionMetadataCache;
-    private final TransactionIdStore transactionIdStore;
+    private final LogHeaderCache logHeaderCache;
+    private final LastEntryInLog lastEntryInLog;
     private final LogVersionToTimestamp logVersionToTimestamp;
 
     public PhysicalLogFileInformation( PhysicalLogFiles logFiles,
-                                       TransactionMetadataCache transactionMetadataCache,
-                                       TransactionIdStore transactionIdStore,
+                                       LogHeaderCache logHeaderCache,
+                                       LastEntryInLog lastEntryInLog,
                                        LogVersionToTimestamp logVersionToTimestamp )
     {
         this.logFiles = logFiles;
-        this.transactionMetadataCache = transactionMetadataCache;
-        this.transactionIdStore = transactionIdStore;
+        this.logHeaderCache = logHeaderCache;
+        this.lastEntryInLog = lastEntryInLog;
         this.logVersionToTimestamp = logVersionToTimestamp;
     }
 
     @Override
-    public long getFirstExistingTxId() throws IOException
+    public long getFirstExistingEntryId() throws IOException
     {
         long version = logFiles.getHighestLogVersion();
         long candidateFirstTx = -1;
         while ( logFiles.versionExists( version ) )
         {
-            candidateFirstTx = getFirstCommittedTxId( version );
+            candidateFirstTx = getFirstEntryId( version );
             version--;
         }
         version++; // the loop above goes back one version too far.
 
         // OK, so we now have the oldest existing log version here. Open it and see if there's any transaction
         // in there. If there is then that transaction is the first one that we have.
-        return logFiles.hasAnyTransaction( version ) ? candidateFirstTx : -1;
+        return logFiles.hasAnyEntries( version ) ? candidateFirstTx : -1;
     }
 
     @Override
-    public long getFirstCommittedTxId( long version ) throws IOException
+    public long getFirstEntryId( long version ) throws IOException
     {
-        long logHeader = transactionMetadataCache.getLogHeader( version );
-        if ( logHeader != -1 )
+        Long logHeader = logHeaderCache.getLogHeader( version );
+        if ( logHeader != null )
         {   // It existed in cache
             return logHeader + 1;
         }
@@ -74,16 +79,16 @@ public class PhysicalLogFileInformation implements LogFileInformation
         if ( logFiles.versionExists( version ) )
         {
             long previousVersionLastCommittedTx = logFiles.extractHeader( version ).lastCommittedTxId;
-            transactionMetadataCache.putHeader( version, previousVersionLastCommittedTx );
+            logHeaderCache.putHeader( version, previousVersionLastCommittedTx );
             return previousVersionLastCommittedTx + 1;
         }
         return -1;
     }
 
     @Override
-    public long getLastCommittedTxId()
+    public long getLastEntryId()
     {
-        return transactionIdStore.getLastCommittedTransactionId();
+        return lastEntryInLog.getLastEntryId();
     }
 
     @Override

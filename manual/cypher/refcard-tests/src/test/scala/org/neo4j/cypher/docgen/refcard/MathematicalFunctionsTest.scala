@@ -21,12 +21,12 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class MathematicalFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A")
   val title = "Mathematical Functions"
-  val css = "general c2-1 c3-3 c4-2 c5-3 c6-5"
+  val css = "general c2-1 c3-3 c4-2 c5-4 c6-5"
   override val linkId = "query-functions-mathematical"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -65,7 +65,9 @@ RETURN
 rand()
 ###
 
-A random number between 0 and 1. Returns a new value for each call. Also useful for selecting subset or random ordering.
+Returns a random number in the range from 0 (inclusive) to 1 (exclusive), [0,1).
+Returns a new value for each call.
+Also useful for selecting subset or random ordering.
 
 ###assertion=returns-one parameters=expression
 RETURN
@@ -102,6 +104,7 @@ sin({expr})
 ###
 
 Trigonometric functions, also `cos`, `tan`, `cot`, `asin`, `acos`, `atan`, `atan2`, `haversin`.
+All arguments for the trigonometric functions should be in radians, if not otherwise specified.
 
 ###assertion=returns-one parameters=expression
 RETURN

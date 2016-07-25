@@ -26,7 +26,6 @@ import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
-//TODO this must live outside 2.3
 public abstract class CompiledExpandUtils
 {
     public static RelationshipIterator connectingRelationships( ReadOperations readOperations,
@@ -64,7 +63,6 @@ public abstract class CompiledExpandUtils
 
         return connectingRelationshipsIterator( allRelationships, startNode, endNode );
     }
-
 
     public static RelationshipIterator connectingRelationships( ReadOperations readOperations,
             long fromNode, Direction direction, long toNode, int... relTypes ) throws EntityNotFoundException

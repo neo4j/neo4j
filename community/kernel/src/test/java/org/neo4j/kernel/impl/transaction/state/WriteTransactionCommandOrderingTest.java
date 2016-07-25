@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,28 +30,32 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
@@ -116,20 +119,21 @@ public class WriteTransactionCommandOrderingTest
         PhysicalTransactionRepresentation commands = transactionRepresentationOf( tx );
 
         // Then
-        commands.accept( new CommandHandler.HandlerVisitor( new OrderVerifyingCommandHandler() ) );
+        final OrderVerifyingCommandHandler orderVerifyingCommandHandler = new OrderVerifyingCommandHandler();
+        commands.accept( element -> ((Command)element).handle( orderVerifyingCommandHandler ) );
     }
 
     private PhysicalTransactionRepresentation transactionRepresentationOf( TransactionRecordState tx )
             throws TransactionFailureException
     {
-        List<Command> commands = new ArrayList<>();
+        List<StorageCommand> commands = new ArrayList<>();
         tx.extractCommands( commands );
         return new PhysicalTransactionRepresentation( commands );
     }
 
     private TransactionRecordState injectAllPossibleCommands()
     {
-        NeoStoreTransactionContext context = mock( NeoStoreTransactionContext.class );
+        RecordChangeSet recordChangeSet = mock( RecordChangeSet.class );
 
         RecordChanges<Integer,LabelTokenRecord,Void> labelTokenChanges = mock( RecordChanges.class );
         RecordChanges<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenChanges =
@@ -139,16 +143,16 @@ public class WriteTransactionCommandOrderingTest
         RecordChanges<Long,RelationshipRecord,Void> relationshipRecordChanges = mock( RecordChanges.class );
         RecordChanges<Long,PropertyRecord,PrimitiveRecord> propertyRecordChanges = mock( RecordChanges.class );
         RecordChanges<Long,RelationshipGroupRecord,Integer> relationshipGroupChanges = mock( RecordChanges.class );
-        RecordChanges<Long,Collection<DynamicRecord>,SchemaRule> schemaRuleChanges = mock( RecordChanges.class );
+        RecordChanges<Long,SchemaRecord,SchemaRule> schemaRuleChanges = mock( RecordChanges.class );
 
-        when( context.getLabelTokenRecords() ).thenReturn( labelTokenChanges );
-        when( context.getRelationshipTypeTokenRecords() ).thenReturn( relationshipTypeTokenChanges );
-        when( context.getPropertyKeyTokenRecords() ).thenReturn( propertyKeyTokenChanges );
-        when( context.getNodeRecords() ).thenReturn( nodeRecordChanges );
-        when( context.getRelRecords() ).thenReturn( relationshipRecordChanges );
-        when( context.getPropertyRecords() ).thenReturn( propertyRecordChanges );
-        when( context.getRelGroupRecords() ).thenReturn( relationshipGroupChanges );
-        when( context.getSchemaRuleChanges() ).thenReturn( schemaRuleChanges );
+        when( recordChangeSet.getLabelTokenChanges() ).thenReturn( labelTokenChanges );
+        when( recordChangeSet.getRelationshipTypeTokenChanges() ).thenReturn( relationshipTypeTokenChanges );
+        when( recordChangeSet.getPropertyKeyTokenChanges() ).thenReturn( propertyKeyTokenChanges );
+        when( recordChangeSet.getNodeRecords() ).thenReturn( nodeRecordChanges );
+        when( recordChangeSet.getRelRecords() ).thenReturn( relationshipRecordChanges );
+        when( recordChangeSet.getPropertyRecords() ).thenReturn( propertyRecordChanges );
+        when( recordChangeSet.getRelGroupRecords() ).thenReturn( relationshipGroupChanges );
+        when( recordChangeSet.getSchemaRuleChanges() ).thenReturn( schemaRuleChanges );
 
         List<RecordProxy<Long,NodeRecord,Void>> nodeChanges = new LinkedList<>();
 
@@ -169,6 +173,7 @@ public class WriteTransactionCommandOrderingTest
 
         when( nodeRecordChanges.changes() ).thenReturn( nodeChanges );
         when( nodeRecordChanges.changeSize() ).thenReturn( 3 );
+        when( recordChangeSet.changeSize() ).thenReturn( 3 );
 
         when( labelTokenChanges.changes() )
                 .thenReturn( Collections.<RecordProxy<Integer,LabelTokenRecord,Void>>emptyList() );
@@ -183,9 +188,15 @@ public class WriteTransactionCommandOrderingTest
         when( relationshipGroupChanges.changes() ).thenReturn(
                 Collections.<RecordProxy<Long,RelationshipGroupRecord,Integer>>emptyList() );
         when( schemaRuleChanges.changes() ).thenReturn(
-                Collections.<RecordProxy<Long,Collection<DynamicRecord>,SchemaRule>>emptyList() );
+                Collections.<RecordProxy<Long,SchemaRecord,SchemaRule>>emptyList() );
 
-        return new TransactionRecordState( mock( NeoStores.class ), mock( IntegrityValidator.class ), context );
+        NeoStores neoStores = mock( NeoStores.class );
+        when( neoStores.getNodeStore() ).thenReturn( mock( NodeStore.class ) );
+        when( neoStores.getRelationshipGroupStore() ).thenReturn( mock( RelationshipGroupStore.class ) );
+        when( neoStores.getRelationshipStore() ).thenReturn( mock( RelationshipStore.class ) );
+
+        return new TransactionRecordState( neoStores, mock( IntegrityValidator.class ), recordChangeSet,
+                0, null, null, null, null, null );
     }
 
     private static class RecordingPropertyStore extends PropertyStore
@@ -194,7 +205,8 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, NullLogProvider.getInstance(), null, null, null );
+            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null, null, null,
+                    StandardV3_0.RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 
@@ -221,7 +233,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, NullLogProvider.getInstance(), null );
+            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null, StandardV3_0.RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 
@@ -242,10 +254,10 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        public NodeRecord getRecord( long id )
+        public NodeRecord getRecord( long id, NodeRecord record, RecordLoad mode )
         {
-            NodeRecord record = new NodeRecord( id, false, -1, -1 );
-            record.setInUse( true );
+            record.initialize( true, -1, false, -1, 0 );
+            record.setId( id );
             return record;
         }
     }
@@ -256,7 +268,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, NullLogProvider.getInstance() );
+            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), StandardV3_0.RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 
@@ -277,7 +289,7 @@ public class WriteTransactionCommandOrderingTest
         }
     }
 
-    private static class OrderVerifyingCommandHandler extends CommandHandler.Adapter
+    private static class OrderVerifyingCommandHandler extends CommandVisitor.Adapter
     {
         private boolean nodeVisited;
 
@@ -308,9 +320,10 @@ public class WriteTransactionCommandOrderingTest
             case DELETE:
                 deleted = true;
                 break;
+            default:
+                throw new IllegalStateException( "Unknown command mode: " + command.getMode() );
             }
             return false;
         }
-
     }
 }

@@ -11,11 +11,11 @@ An expression in Cypher can be:
 * An octal integer literal (starting with `0`): `01372`, `02127`, `-05671`.
 * A string literal: `"Hello"`, `'World'`.
 * A boolean literal:  `true`, `false`, `TRUE`, `FALSE`.
-* An identifier: `n`, `x`, `rel`, `myFancyIdentifier`, +\`A name with weird stuff in it[]!`+.
-* A property: `n.prop`, `x.prop`, `rel.thisProperty`, +myFancyIdentifier.\`(weird property name)`+.
+* A variable: `n`, `x`, `rel`, `myFancyVariable`, +\`A name with weird stuff in it[]!`+.
+* A property: `n.prop`, `x.prop`, `rel.thisProperty`, +myFancyVariable.\`(weird property name)`+.
 * A dynamic property: `n["prop"]`, `rel[n.city + n.zip]`, `map[coll[0]]`.
 * A parameter: `{param}`, `{0}`
-* A collection of expressions: `["a", "b"]`, `[1,2,3]`, `["a", 2, n.property, {param}]`, `[ ]`.
+* A list of expressions: `["a", "b"]`, `[1,2,3]`, `["a", 2, n.property, {param}]`, `[ ]`.
 * A function call: `length(p)`, `nodes(p)`.
 * An aggregate function: `avg(x.prop)`, `count(*)`.
 * A path-pattern: `(a)-->()<--(b)`.

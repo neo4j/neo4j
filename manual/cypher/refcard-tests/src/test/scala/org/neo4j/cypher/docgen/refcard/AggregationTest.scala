@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.docgen.refcard
 
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class AggregationTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Aggregation"
-  val css = "general c3-3 c4-4 c5-4 c6-6"
+  val css = "general c3-3 c4-1 c5-3 c6-6"
   override val linkId = "query-aggregation"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -67,37 +67,37 @@ count(*)
 The number of matching rows.
 
 ###assertion=returns-one
-MATCH path = (identifier)-->(m)
-WHERE id(identifier) = %A% AND id(m) = %B%
+MATCH path = (variable)-->(m)
+WHERE id(variable) = %A% AND id(m) = %B%
 RETURN nodes(path),
 
-count(identifier)
+count(variable)
 ###
 
 The number of non-++NULL++ values.
 
 ###assertion=returns-one
-MATCH path = (identifier)-->(m)
-WHERE id(identifier) = %A% AND id(m) = %B%
+MATCH path = (variable)-->(m)
+WHERE id(variable) = %A% AND id(m) = %B%
 RETURN nodes(path),
 
-count(DISTINCT identifier)
+count(DISTINCT variable)
 ###
 
 All aggregation functions also take the `DISTINCT` modifier,
 which removes duplicates from the values.
 
 ###assertion=returns-one
-MATCH n WHERE id(n) IN [%A%, %B%, %C%]
+MATCH (n) WHERE id(n) IN [%A%, %B%, %C%]
 RETURN
 
 collect(n.property)
 ###
 
-Collection from the values, ignores `NULL`.
+List from the values, ignores `NULL`.
 
 ###assertion=returns-one
-MATCH n WHERE id(n) IN [%A%, %B%, %C%]
+MATCH (n) WHERE id(n) IN [%A%, %B%, %C%]
 RETURN
 
 sum(n.property)
@@ -108,7 +108,7 @@ sum(n.property)
 Sum numerical values. Similar functions are +avg+, +min+, +max+.
 
 ###assertion=returns-one parameters=percentile
-MATCH n WHERE id(n) IN [%A%, %B%, %C%]
+MATCH (n) WHERE id(n) IN [%A%, %B%, %C%]
 RETURN
 
 percentileDisc(n.property, {percentile})
@@ -120,7 +120,7 @@ Discrete percentile. Continuous percentile is +percentileCont+.
 The `percentile` argument is from `0.0` to `1.0`.
 
 ###assertion=returns-one parameters=percentile
-MATCH n WHERE id(n) IN [%A%, %B%, %C%]
+MATCH (n) WHERE id(n) IN [%A%, %B%, %C%]
 RETURN
 
 stdev(n.property)

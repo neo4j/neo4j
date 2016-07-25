@@ -45,7 +45,6 @@ public class PropertyTransactionStateTest
         db.shutdown();
     }
 
-
     @Test
     public void testUpdateDoubleArrayProperty() throws Exception
     {

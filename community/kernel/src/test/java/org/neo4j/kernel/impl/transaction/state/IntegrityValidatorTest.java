@@ -23,16 +23,16 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
-import static org.powermock.api.mockito.PowerMockito.mock;
 
 public class IntegrityValidatorTest
 {
@@ -45,9 +45,9 @@ public class IntegrityValidatorTest
         IntegrityValidator validator = new IntegrityValidator(store, indexes);
 
         doThrow( new UniquenessConstraintVerificationFailedKernelException( null, new RuntimeException() ) )
-                .when( indexes ).validateIndex( 2l );
+                .when( indexes ).validateIndex( 2L );
 
-        UniquePropertyConstraintRule record = uniquenessConstraintRule( 1l, 1, 1, 2l );
+        UniquePropertyConstraintRule record = uniquenessConstraintRule( 1L, 1, 1, 2L );
 
         // When
         try
@@ -57,7 +57,7 @@ public class IntegrityValidatorTest
         }
         catch(Exception e)
         {
-            // good 
+            // good
         }
     }
 
@@ -69,7 +69,7 @@ public class IntegrityValidatorTest
         IndexingService indexes = mock(IndexingService.class);
         IntegrityValidator validator = new IntegrityValidator(store, indexes );
 
-        NodeRecord record = new NodeRecord( 1l, false, 1l, -1l );
+        NodeRecord record = new NodeRecord( 1L, false, 1L, -1L );
         record.setInUse( false );
 
         // When
@@ -92,7 +92,7 @@ public class IntegrityValidatorTest
         MetaDataStore metaDataStore = mock( MetaDataStore.class );
         when( store.getMetaDataStore() ).thenReturn( metaDataStore );
         IndexingService indexes = mock( IndexingService.class );
-        when( metaDataStore.getLatestConstraintIntroducingTx() ).thenReturn( 10l );
+        when( metaDataStore.getLatestConstraintIntroducingTx() ).thenReturn( 10L );
         IntegrityValidator validator = new IntegrityValidator( store, indexes );
 
         // When

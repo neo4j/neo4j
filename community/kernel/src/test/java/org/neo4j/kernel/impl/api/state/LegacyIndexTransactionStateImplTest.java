@@ -24,17 +24,18 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
@@ -193,9 +194,9 @@ public class LegacyIndexTransactionStateImplTest
         assertEquals( expectedCommands, extractCommands( state ) );
     }
 
-    private static Set<Command> extractCommands( LegacyIndexTransactionStateImpl state )
+    private static Set<StorageCommand> extractCommands( LegacyIndexTransactionStateImpl state )
     {
-        Set<Command> commands = new HashSet<>();
+        Set<StorageCommand> commands = new HashSet<>();
         state.extractCommands( commands );
         return commands;
     }
@@ -236,14 +237,7 @@ public class LegacyIndexTransactionStateImplTest
         when( indexConfigStore.get( eq( Relationship.class ), anyString() ) )
                 .thenReturn( singletonMap( IndexManager.PROVIDER, "test" ) );
 
-        Function<String,IndexImplementation> providerLookup = new Function<String,IndexImplementation>()
-        {
-            @Override
-            public IndexImplementation apply( String s ) throws RuntimeException
-            {
-                return mock( IndexImplementation.class );
-            }
-        };
+        Function<String,IndexImplementation> providerLookup = s -> mock( IndexImplementation.class );
 
         return new LegacyIndexTransactionStateImpl( indexConfigStore, providerLookup );
     }

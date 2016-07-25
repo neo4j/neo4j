@@ -54,7 +54,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 
 import static java.util.Collections.unmodifiableMap;
-
 import static org.neo4j.consistency.RecordType.ARRAY_PROPERTY;
 import static org.neo4j.consistency.RecordType.PROPERTY_KEY_NAME;
 import static org.neo4j.consistency.RecordType.RELATIONSHIP_TYPE_NAME;
@@ -244,17 +243,20 @@ class OwnerCheck implements CheckDecorator
 
     private RecordType recordType( PropertyType type )
     {
-        if ( type != null )
+        if ( type == null )
         {
-            switch ( type )
-            {
-            case STRING:
-                return STRING_PROPERTY;
-            case ARRAY:
-                return ARRAY_PROPERTY;
-            }
+            return null;
         }
-        return null;
+
+        switch ( type )
+        {
+        case STRING:
+            return STRING_PROPERTY;
+        case ARRAY:
+            return ARRAY_PROPERTY;
+        default:
+            return null;
+        }
     }
 
     @Override
@@ -413,7 +415,7 @@ class OwnerCheck implements CheckDecorator
         abstract PropertyOwner owner( RECORD record );
     }
 
-    private static abstract class NameCheckerDecorator
+    private abstract static class NameCheckerDecorator
             <RECORD extends TokenRecord, REPORT extends ConsistencyReport.NameConsistencyReport>
             implements RecordCheck<RECORD, REPORT>
     {

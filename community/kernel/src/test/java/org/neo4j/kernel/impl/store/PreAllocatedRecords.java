@@ -33,7 +33,7 @@ public class PreAllocatedRecords implements DynamicRecordAllocator
     }
 
     @Override
-    public int dataSize()
+    public int getRecordDataSize()
     {
         return dataSize;
     }

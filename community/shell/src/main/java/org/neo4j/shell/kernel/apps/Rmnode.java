@@ -44,7 +44,7 @@ public class Rmnode extends TransactionProvidingApp
         addOptionDefinition( "f", new OptionDefinition( OptionValueType.NONE,
                 "Force deletion, will delete all relationships prior to deleting the node" ) );
     }
-    
+
     @Override
     public String getDescription()
     {
@@ -72,13 +72,13 @@ public class Rmnode extends TransactionProvidingApp
                 throw new ShellException( "No node " + id + " found" );
             }
         }
-        
+
         if ( !node.isNode() )
         {
             out.println( "Please select a node to delete" );
             return Continuation.INPUT_COMPLETE;
         }
-        
+
         boolean forceDeletion = parser.options().containsKey( "f" );
         if ( forceDeletion )
         {
@@ -88,7 +88,7 @@ public class Rmnode extends TransactionProvidingApp
                 relationship.delete();
             }
         }
-        
+
         if ( node.asNode().hasRelationship() )
         {
             throw new ShellException( getDisplayName( getServer(), session, node.asNode(), false ) +

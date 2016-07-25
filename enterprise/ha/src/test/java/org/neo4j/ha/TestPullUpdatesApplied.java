@@ -45,7 +45,7 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.StreamConsumer;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -60,7 +60,7 @@ import static org.junit.Assert.assertTrue;
  * txid and that will lead to branching. The exception is thrown during startup,
  * before the constructor returns, so we cannot test from userland. Instead we
  * check for the symptom, which is the branched store. This is not nice, just a
- * bit better than checking messages.log for certain entries. Another, more
+ * bit better than checking debug.log for certain entries. Another, more
  * direct, test is present in community.
  */
 public class TestPullUpdatesApplied
@@ -159,7 +159,7 @@ public class TestPullUpdatesApplied
     // For executing in a different process than the one running the test case.
     public static void main( String[] args ) throws Exception
     {
-        String storePath = args[0];
+        File storePath = new File( args[0] );
         int serverId = Integer.parseInt( args[1] );
 
         database( serverId, storePath ).getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
@@ -169,18 +169,18 @@ public class TestPullUpdatesApplied
 
     private HighlyAvailableGraphDatabase newDb( int serverId )
     {
-        return database( serverId, testDirectory.directory( Integer.toString( serverId ) ).getAbsolutePath() );
+        return database( serverId, testDirectory.directory( Integer.toString( serverId ) ).getAbsoluteFile() );
     }
 
     private void restart( int serverId )
     {
-        dbs[serverId] = database( serverId, testDirectory.directory( Integer.toString( serverId ) ).getAbsolutePath() );
+        dbs[serverId] = database( serverId, testDirectory.directory( Integer.toString( serverId ) ).getAbsoluteFile() );
     }
 
-    private static HighlyAvailableGraphDatabase database( int serverId, String path )
+    private static HighlyAvailableGraphDatabase database( int serverId, File path )
     {
         return (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( path )
+                newEmbeddedDatabaseBuilder( path )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
                 .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                 .setConfig( ClusterSettings.server_id, Integer.toString( serverId ) )

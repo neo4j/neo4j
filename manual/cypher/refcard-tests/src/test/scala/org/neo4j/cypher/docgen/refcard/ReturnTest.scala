@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class ReturnTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
@@ -32,13 +32,13 @@ class ReturnTest extends RefcardTest with QueryStatisticsTestSupport {
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "all-nodes" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 4)
       case "alias" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.dumpToString.contains("columnName"))
       case "unique" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 1)
       case "skip" =>
         assertStats(result, nodesDeleted = 0)
@@ -72,7 +72,7 @@ MATCH (n)
 
 RETURN *###
 
-Return the value of all identifiers.
+Return the value of all variables.
 
 ### assertion=alias
 MATCH (n)

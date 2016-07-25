@@ -28,11 +28,12 @@ import java.util.Set;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
@@ -43,7 +44,6 @@ import org.neo4j.test.ha.ClusterRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 
 public class UpdatePullerSwitchIT
@@ -55,7 +55,7 @@ public class UpdatePullerSwitchIT
     @Before
     public void setup() throws Exception
     {
-        managedCluster = clusterRule.withProvider( ClusterManager.clusterOfSize( 2 ) )
+        managedCluster = clusterRule.withCluster( ClusterManager.clusterOfSize( 2 ) )
                                     .withSharedSetting( tx_push_factor, "0" )
                                     .withSharedSetting( HaSettings.pull_interval, "100s" )
                                     .startCluster();
@@ -89,7 +89,6 @@ public class UpdatePullerSwitchIT
         // checking pulling threads
         verifyUpdatePullerThreads();
 
-
         // and finally switching roles back
         ClusterManager.RepairKit justiceRepairKit = managedCluster.shutdown( managedCluster.getMaster() );
         managedCluster.await( ClusterManager.masterAvailable() );
@@ -109,8 +108,8 @@ public class UpdatePullerSwitchIT
 
     private void verifyUpdatePullerThreads()
     {
-        InstanceId masterId = managedCluster.getMaster().platformModule.config.get( ClusterSettings.server_id );
-        InstanceId slaveId = managedCluster.getAnySlave().platformModule.config.get( ClusterSettings.server_id );
+        InstanceId masterId = managedCluster.getMaster().getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
+        InstanceId slaveId = managedCluster.getAnySlave().getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
         Map<Thread,StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
         Set<Thread> threads = allStackTraces.keySet();
         assertFalse( "Master should not have any puller threads", findThreadWithPrefix( threads,
@@ -155,14 +154,14 @@ public class UpdatePullerSwitchIT
         try ( Transaction transaction = master.beginTx() )
         {
             Node masterNode = master.createNode();
-            masterNode.addLabel( DynamicLabel.label( label ) );
+            masterNode.addLabel( Label.label( label ) );
             transaction.success();
         }
     }
 
     private void checkNodeWithLabelExists( HighlyAvailableGraphDatabase database, String label  )
     {
-        ResourceIterator<Node> slaveNodes = database.findNodes( DynamicLabel.label( label ) );
-        assertEquals( 1, Iterables.toList( slaveNodes ).size() );
+        ResourceIterator<Node> slaveNodes = database.findNodes( Label.label( label ) );
+        assertEquals( 1, Iterators.asList( slaveNodes ).size() );
     }
 }

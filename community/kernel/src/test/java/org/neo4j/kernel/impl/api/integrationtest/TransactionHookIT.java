@@ -24,8 +24,9 @@ import org.junit.Test;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.api.txstate.ReadableTxState;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.equalTo;
@@ -51,9 +52,9 @@ public class TransactionHookIT extends KernelIntegrationTest
         commit();
 
         // Then
-        verify( hook ).beforeCommit( any( ReadableTxState.class ), any( KernelTransaction.class ),
-                any( StoreReadLayer.class ) );
-        verify( hook ).afterCommit( any( ReadableTxState.class ), any( KernelTransaction.class ),
+        verify( hook ).beforeCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
+                any( StoreReadLayer.class ), any( StorageStatement.class ) );
+        verify( hook ).afterCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
                 any( TransactionHook.Outcome.class ) );
         verifyNoMoreInteractions( hook );
     }
@@ -64,8 +65,8 @@ public class TransactionHookIT extends KernelIntegrationTest
         // Given
         TransactionHook hook = mock( TransactionHook.class );
         final String message = "Original";
-        when( hook.beforeCommit( any( ReadableTxState.class ), any( KernelTransaction.class ),
-                any( StoreReadLayer.class ) ) ).thenReturn( new TransactionHook.Outcome()
+        when( hook.beforeCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
+                any( StoreReadLayer.class ), any( StorageStatement.class ) ) ).thenReturn( new TransactionHook.Outcome()
         {
             @Override
             public boolean isSuccessful()
@@ -96,9 +97,9 @@ public class TransactionHookIT extends KernelIntegrationTest
             assertThat( e.getCause().getCause().getMessage(), equalTo( message ) );
         }
         // Then
-        verify( hook ).beforeCommit( any( ReadableTxState.class ), any( KernelTransaction.class ),
-                any( StoreReadLayer.class ) );
-        verify( hook ).afterRollback( any( ReadableTxState.class ), any( KernelTransaction.class ),
+        verify( hook ).beforeCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
+                any( StoreReadLayer.class ), any( StorageStatement.class ) );
+        verify( hook ).afterRollback( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
                 any( TransactionHook.Outcome.class ) );
         verifyNoMoreInteractions( hook );
     }

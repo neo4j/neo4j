@@ -29,12 +29,13 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.DoubleLatch;
 
 import static org.mockito.Mockito.mock;
@@ -74,10 +75,9 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
             }
 
             @Override
-            public long sampleResult( Register.DoubleLong.Out result )
+            public IndexSample sampleResult()
             {
-                result.write( 0l, 0l );
-                return 0;
+                return new IndexSample();
             }
         };
         return populationCompletionLatch;
@@ -129,7 +129,8 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
+            LabelScanStoreProvider labelScanStoreProvider )
     {
         return StoreMigrationParticipant.NOT_PARTICIPATING;
     }

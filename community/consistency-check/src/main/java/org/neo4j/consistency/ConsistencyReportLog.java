@@ -19,15 +19,16 @@
  */
 package org.neo4j.consistency;
 
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Supplier;
+import java.io.PrintWriter;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import javax.annotation.Nonnull;
+
 import org.neo4j.function.Suppliers;
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLogger;
-
-import java.io.PrintWriter;
 
 public class ConsistencyReportLog extends AbstractLog
 {
@@ -57,24 +58,28 @@ public class ConsistencyReportLog extends AbstractLog
         return false;
     }
 
+    @Nonnull
     @Override
     public Logger debugLogger()
     {
         return NullLogger.getInstance();
     }
 
+    @Nonnull
     @Override
     public Logger infoLogger()
     {
         return infoLogger;
     }
 
+    @Nonnull
     @Override
     public Logger warnLogger()
     {
         return warnLogger;
     }
 
+    @Nonnull
     @Override
     public Logger errorLogger()
     {
@@ -82,7 +87,7 @@ public class ConsistencyReportLog extends AbstractLog
     }
 
     @Override
-    public void bulk( Consumer<Log> consumer )
+    public void bulk( @Nonnull Consumer<Log> consumer )
     {
         PrintWriter writer;
         synchronized (this)

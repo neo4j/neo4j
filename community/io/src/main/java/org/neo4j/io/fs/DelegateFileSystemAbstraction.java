@@ -29,17 +29,16 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import org.neo4j.function.Function;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * This FileSystemAbstract implementation delegates all calls to a given {@link FileSystem} implementation.
@@ -83,15 +82,15 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public Reader openAsReader( File fileName, String encoding ) throws IOException
+    public Reader openAsReader( File fileName, Charset charset ) throws IOException
     {
-        return new InputStreamReader( openAsInputStream( fileName ), encoding );
+        return new InputStreamReader( openAsInputStream( fileName ), charset );
     }
 
     @Override
-    public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
+    public Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException
     {
-        return new OutputStreamWriter( openAsOutputStream( fileName, append ), encoding );
+        return new OutputStreamWriter( openAsOutputStream( fileName, append ), charset );
     }
 
     @Override
@@ -175,45 +174,30 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public File[] listFiles( File directory )
     {
-        List<File> files = new ArrayList<>();
-        try
+        try ( Stream<Path> listing = Files.list( path( directory ) ) )
         {
-            for ( Path path : Files.newDirectoryStream( path( directory ) ) )
-            {
-                files.add( path.toFile() );
-            }
+            return listing.map( Path::toFile ).toArray( File[]::new );
         }
         catch ( IOException e )
         {
             return null;
         }
-        return files.toArray( new File[files.size()] );
     }
 
     @Override
     public File[] listFiles( File directory, final FilenameFilter filter )
     {
-        List<File> files = new ArrayList<>();
-        try
+        try ( Stream<Path> listing = Files.list( path( directory ) ) )
         {
-            DirectoryStream.Filter<Path> dirfilter = new DirectoryStream.Filter<Path>()
-            {
-                @Override
-                public boolean accept( Path entry ) throws IOException
-                {
-                    return filter.accept( entry.getParent().toFile(), entry.getFileName().toString() );
-                }
-            };
-            for ( Path path : Files.newDirectoryStream( path( directory ), dirfilter ) )
-            {
-                files.add( path.toFile() );
-            }
+            return listing
+                    .filter( entry -> filter.accept( entry.getParent().toFile(), entry.getFileName().toString() ) )
+                    .map( Path::toFile )
+                    .toArray( File[]::new );
         }
         catch ( IOException e )
         {
             return null;
         }
-        return files.toArray( new File[files.size()] );
     }
 
     @Override
@@ -244,18 +228,21 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
 
     private void copyRecursively( Path source, Path target ) throws IOException
     {
-        for ( Path sourcePath : Files.newDirectoryStream( source ) )
+        try ( DirectoryStream<Path> directoryStream = Files.newDirectoryStream( source ) )
         {
-            Path targetPath = target.resolve( sourcePath.getFileName() );
-            if ( Files.isDirectory( sourcePath ) )
+            for ( Path sourcePath : directoryStream )
             {
-                Files.createDirectories( targetPath );
-                copyRecursively( sourcePath, targetPath );
-            }
-            else
-            {
-                Files.copy( sourcePath, targetPath,
-                        StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
+                Path targetPath = target.resolve( sourcePath.getFileName() );
+                if ( Files.isDirectory( sourcePath ) )
+                {
+                    Files.createDirectories( targetPath );
+                    copyRecursively( sourcePath, targetPath );
+                }
+                else
+                {
+                    Files.copy( sourcePath, targetPath,
+                            StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
+                }
             }
         }
     }

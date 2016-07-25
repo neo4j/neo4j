@@ -21,49 +21,74 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
 import org.neo4j.concurrent.BinaryLatch;
+import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
-abstract class MuninnPageCursor implements PageCursor
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+
+abstract class MuninnPageCursor extends PageCursor
 {
+    private static final boolean tracePinnedCachePageId =
+            flag( MuninnPageCursor.class, "tracePinnedCachePageId", false );
+
+    private static final boolean usePreciseCursorErrorStackTraces =
+            flag( MuninnPageCursor.class, "usePreciseCursorErrorStackTraces", false );
+
+    private static final boolean boundsCheck = flag( MuninnPageCursor.class, "boundsCheck", true );
+
+    // Size of the respective primitive types in bytes.
+    private static final int SIZE_OF_BYTE = Byte.BYTES;
+    private static final int SIZE_OF_SHORT = Short.BYTES;
+    private static final int SIZE_OF_INT = Integer.BYTES;
+    private static final int SIZE_OF_LONG = Long.BYTES;
+
+    private final long victimPage;
     protected MuninnPagedFile pagedFile;
+    protected PageSwapper swapper;
+    protected PageCacheTracer tracer;
     protected MuninnPage page;
     protected PinEvent pinEvent;
     protected long pageId;
     protected int pf_flags;
     protected long currentPageId;
     protected long nextPageId;
-    protected long lastPageId;
-    protected long lockStamp;
-
-    private boolean claimed;
+    protected MuninnPageCursor linkedCursor;
+    private long pointer;
+    private int pageSize;
+    private int filePageSize;
     private int offset;
+    private boolean outOfBounds;
+    // This is a String with the exception message if usePreciseCursorErrorStackTraces is false, otherwise it is a
+    // CursorExceptionWithPreciseStackTrace with the message and stack trace pointing more or less directly at the
+    // offending code.
+    private Object cursorException;
 
-    public final void initialise( MuninnPagedFile pagedFile, long pageId, int pf_flags )
+    MuninnPageCursor( long victimPage )
+    {
+        this.victimPage = victimPage;
+        pointer = victimPage;
+    }
+
+    final void initialiseFile( MuninnPagedFile pagedFile )
+    {
+        this.swapper = pagedFile.swapper;
+        this.tracer = pagedFile.tracer;
+    }
+
+    final void initialiseFlags( MuninnPagedFile pagedFile, long pageId, int pf_flags )
     {
         this.pagedFile = pagedFile;
         this.pageId = pageId;
         this.pf_flags = pf_flags;
-    }
-
-    public final void markAsClaimed()
-    {
-        claimed = true;
-    }
-
-    public final void assertUnclaimed()
-    {
-        if ( claimed )
-        {
-            throw new IllegalStateException(
-                    "Cannot operate on more than one PageCursor at a time," +
-                            " because it is prone to deadlocks" );
-        }
+        this.filePageSize = pagedFile.filePageSize;
     }
 
     @Override
@@ -71,19 +96,27 @@ abstract class MuninnPageCursor implements PageCursor
     {
         nextPageId = pageId;
         currentPageId = UNBOUND_PAGE_ID;
-        lastPageId = pagedFile.getLastPageId();
     }
 
     public final void reset( MuninnPage page )
     {
         this.page = page;
         this.offset = 0;
-        pinEvent.setCachePageId( page.getCachePageId() );
+        this.pointer = page.address();
+        this.pageSize = filePageSize;
+        if ( tracePinnedCachePageId )
+        {
+            pinEvent.setCachePageId( page.getCachePageId() );
+        }
     }
 
     @Override
     public final boolean next( long pageId ) throws IOException
     {
+        if ( currentPageId == pageId )
+        {
+            return true;
+        }
         nextPageId = pageId;
         return next();
     }
@@ -91,9 +124,58 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public final void close()
     {
-        unpinCurrentPage();
-        pagedFile = null;
-        claimed = false;
+        MuninnPageCursor cursor = this;
+        do
+        {
+            cursor.unpinCurrentPage();
+            cursor.releaseCursor();
+            // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
+            // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
+            cursor.pagedFile = null;
+        }
+        while ( (cursor = cursor.getAndClearLinkedCursor()) != null );
+    }
+
+    private MuninnPageCursor getAndClearLinkedCursor()
+    {
+        MuninnPageCursor cursor = linkedCursor;
+        linkedCursor = null;
+        return cursor;
+    }
+
+    private void closeLinkedCursorIfAny()
+    {
+        if ( linkedCursor != null )
+        {
+            linkedCursor.close();
+            linkedCursor = null;
+        }
+    }
+
+    @Override
+    public PageCursor openLinkedCursor( long pageId )
+    {
+        closeLinkedCursorIfAny();
+        MuninnPagedFile pf = pagedFile;
+        if ( pf == null )
+        {
+            // This cursor has been closed
+            throw new IllegalStateException( "Cannot open linked cursor on closed page cursor" );
+        }
+        linkedCursor = (MuninnPageCursor) pf.io( pageId, pf_flags );
+        return linkedCursor;
+    }
+
+    /**
+     * Must be called by {@link #unpinCurrentPage()}.
+     */
+    void clearPageState()
+    {
+        pointer = victimPage; // make all future page access go to the victim page
+        pageSize = 0; // make all future bound checks fail
+        page = null; // make all future page navigation fail
+        currentPageId = UNBOUND_PAGE_ID;
+        cursorException = null;
     }
 
     @Override
@@ -118,21 +200,20 @@ abstract class MuninnPageCursor implements PageCursor
     /**
      * Pin the desired file page to this cursor, page faulting it into memory if it isn't there already.
      * @param filePageId The file page id we want to pin this cursor to.
-     * @param exclusive 'true' if we will be taking an exclusive lock on the page as part of the pin.
+     * @param writeLock 'true' if we will be taking a write lock on the page as part of the pin.
      * @throws IOException if anything goes wrong with the pin, most likely during a page fault.
      */
-    protected void pin( long filePageId, boolean exclusive ) throws IOException
+    protected void pin( long filePageId, boolean writeLock ) throws IOException
     {
-        PageSwapper swapper = pagedFile.swapper;
-        pinEvent = pagedFile.tracer.beginPin( exclusive, filePageId, swapper );
-        int chunkId = pagedFile.computeChunkId( filePageId );
+        pinEvent = tracer.beginPin( writeLock, filePageId, swapper );
+        int chunkId = MuninnPagedFile.computeChunkId( filePageId );
         // The chunkOffset is the addressing offset into the chunk array object for the relevant array slot. Using
         // this, we can access the array slot with Unsafe.
-        long chunkOffset = pagedFile.computeChunkOffset( filePageId );
+        long chunkOffset = MuninnPagedFile.computeChunkOffset( filePageId );
         Object[][] tt = pagedFile.translationTable;
         if ( tt.length <= chunkId )
         {
-            tt = pagedFile.expandCapacity( chunkId );
+            tt = expandTranslationTableCapacity( chunkId );
         }
         Object[] chunk = tt[chunkId];
 
@@ -146,42 +227,73 @@ abstract class MuninnPageCursor implements PageCursor
         do
         {
             item = UnsafeUtil.getObjectVolatile( chunk, chunkOffset );
-            if ( item == null )
-            {
-                // Looks like there's no mapping, so we'd like to do a page fault.
-                BinaryLatch latch = new BinaryLatch();
-                if ( UnsafeUtil.compareAndSwapObject( chunk, chunkOffset, null, latch ) )
-                {
-                    // We managed to inject our latch, so we now own the right to perform the page fault. We also
-                    // have a duty to eventually release and remove the latch, no matter what happens now.
-                    item = pageFault( filePageId, swapper, chunkOffset, chunk, latch );
-                }
-            }
-            else if ( item.getClass() == MuninnPage.class )
+            if ( item != null && item.getClass() == MuninnPage.class )
             {
                 // We got *a* page, but we might be racing with eviction. To cope with that, we have to take some
                 // kind of lock on the page, and check that it is indeed bound to what we expect. If not, then it has
                 // been evicted, and possibly even page faulted into something else. In this case, we discard the
                 // item and try again, as the eviction thread would have set the chunk array slot to null.
                 MuninnPage page = (MuninnPage) item;
-                lockPage( page );
-                if ( !page.isBoundTo( swapper, filePageId ) )
+                boolean locked = tryLockPage( page );
+                if ( locked & page.isBoundTo( swapper, filePageId ) )
+                {
+                    pinCursorToPage( page, filePageId, swapper );
+                    return;
+                }
+                if ( locked )
                 {
                     unlockPage( page );
-                    item = null;
                 }
+                item = null;
             }
             else
             {
-                // We found a latch, so someone else is already doing a page fault for this page. So we'll just wait
-                // for them to finish, and grab the page then.
-                BinaryLatch latch = (BinaryLatch) item;
-                latch.await();
-                item = null;
+                item = uncommonPin( item, filePageId, chunkOffset, chunk );
             }
         }
         while ( item == null );
         pinCursorToPage( (MuninnPage) item, filePageId, swapper );
+    }
+
+    private Object[][] expandTranslationTableCapacity( int chunkId )
+    {
+        return pagedFile.expandCapacity( chunkId );
+    }
+
+    private Object uncommonPin( Object item, long filePageId, long chunkOffset, Object[] chunk ) throws IOException
+    {
+        if ( item == null )
+        {
+            // Looks like there's no mapping, so we'd like to do a page fault.
+            item = initiatePageFault( filePageId, chunkOffset, chunk );
+        }
+        else
+        {
+            // We found a latch, so someone else is already doing a page fault for this page. So we'll just wait
+            // for them to finish, and grab the page then.
+            item = awaitPageFault( item );
+        }
+        return item;
+    }
+
+    private Object initiatePageFault( long filePageId, long chunkOffset, Object[] chunk ) throws IOException
+    {
+        BinaryLatch latch = new BinaryLatch();
+        Object item = null;
+        if ( UnsafeUtil.compareAndSwapObject( chunk, chunkOffset, null, latch ) )
+        {
+            // We managed to inject our latch, so we now own the right to perform the page fault. We also
+            // have a duty to eventually release and remove the latch, no matter what happens now.
+            item = pageFault( filePageId, swapper, chunkOffset, chunk, latch );
+        }
+        return item;
+    }
+
+    private Object awaitPageFault( Object item )
+    {
+        BinaryLatch latch = (BinaryLatch) item;
+        latch.await();
+        return null;
     }
 
     private MuninnPage pageFault(
@@ -196,28 +308,21 @@ abstract class MuninnPageCursor implements PageCursor
         // we must make sure to release that write lock as well.
         PageFaultEvent faultEvent = pinEvent.beginPageFault();
         MuninnPage page;
-        long stamp;
         try
         {
             // The grabFreePage method might throw.
-            page = pagedFile.grabFreePage( faultEvent );
+            page = pagedFile.grabFreeAndExclusivelyLockedPage( faultEvent );
 
             // We got a free page, and we know that we have race-free access to it. Well, it's not entirely race
             // free, because other paged files might have it in their translation tables (or rather, their reads of
             // their translation tables might race with eviction) and try to pin it.
-            // However, they will all fail because when they try to pin, the page will either be 1) free, 2) bound to
-            // our file, or 3) the page is write locked.
-            stamp = page.writeLock();
+            // However, they will all fail because when they try to pin, because the page will be exclusively locked
+            // and possibly bound to our page.
         }
         catch ( Throwable throwable )
         {
             // Make sure to unstuck the page fault latch.
-            UnsafeUtil.putObjectVolatile( chunk, chunkOffset, null );
-            latch.release();
-            faultEvent.done( throwable );
-            pinEvent.done();
-            // We don't need to worry about the 'stamp' here, because the writeLock call is uninterruptible, so it
-            // can't really fail.
+            abortPageFault( throwable, chunk, chunkOffset, latch, faultEvent );
             throw throwable;
         }
         try
@@ -226,49 +331,87 @@ abstract class MuninnPageCursor implements PageCursor
             // here, so the unmapping would have already happened. We do this
             // check before page.fault(), because that would otherwise reopen
             // the file channel.
-            assertPagedFileStillMapped();
+            assertPagedFileStillMappedAndGetIdOfLastPage();
             page.initBuffer();
             page.fault( swapper, filePageId, faultEvent );
         }
         catch ( Throwable throwable )
         {
             // Make sure to unlock the page, so the eviction thread can pick up our trash.
-            page.unlockWrite( stamp );
+            page.unlockExclusive();
             // Make sure to unstuck the page fault latch.
-            UnsafeUtil.putObjectVolatile( chunk, chunkOffset, null );
-            latch.release();
-            faultEvent.done( throwable );
-            pinEvent.done();
+            abortPageFault( throwable, chunk, chunkOffset, latch, faultEvent );
             throw throwable;
         }
-        convertPageFaultLock( page, stamp );
+        // Put the page in the translation table before we undo the exclusive lock, as we could otherwise race with
+        // eviction, and the onEvict callback expects to find a MuninnPage object in the table.
         UnsafeUtil.putObjectVolatile( chunk, chunkOffset, page );
+        // Once we page has been published to the translation table, we can convert our exclusive lock to whatever we
+        // need for the page cursor.
+        convertPageFaultLock( page );
         latch.release();
         faultEvent.done();
         return page;
     }
 
-    protected void assertPagedFileStillMapped()
+    private void abortPageFault( Throwable throwable, Object[] chunk, long chunkOffset,
+                                 BinaryLatch latch,
+                                 PageFaultEvent faultEvent ) throws IOException
     {
-        pagedFile.assertStillMapped();
+        UnsafeUtil.putObjectVolatile( chunk, chunkOffset, null );
+        latch.release();
+        faultEvent.done( throwable );
+        pinEvent.done();
+    }
+
+    long assertPagedFileStillMappedAndGetIdOfLastPage()
+    {
+        return pagedFile.getLastPageId();
     }
 
     protected abstract void unpinCurrentPage();
 
-    protected abstract void convertPageFaultLock( MuninnPage page, long stamp );
+    protected abstract void convertPageFaultLock( MuninnPage page );
 
     protected abstract void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper );
 
-    protected abstract void lockPage( MuninnPage page );
+    protected abstract boolean tryLockPage( MuninnPage page );
 
     protected abstract void unlockPage( MuninnPage page );
 
+    protected abstract void releaseCursor();
+
     // --- IO methods:
+
+    /**
+     * Compute a pointer that guarantees (assuming {@code size} is less than or equal to {@link #pageSize}) that the
+     * page access will be within the bounds of the page.
+     * This might mean that the pointer won't point to where one might naively expect, but will instead be
+     * truncated to point within the page. In this case, an overflow has happened and the {@link #outOfBounds}
+     * flag will be raised.
+     */
+    private long getBoundedPointer( int offset, int size )
+    {
+        if ( boundsCheck )
+        {
+            long can = pointer + offset;
+            long lim = pointer + pageSize - size;
+            long ref = Math.min( can, lim );
+            ref = Math.max( ref, pointer );
+            outOfBounds |= ref != can | lim < pointer;
+            return ref;
+        }
+        else
+        {
+            return pointer + offset;
+        }
+    }
 
     @Override
     public final byte getByte()
     {
-        byte b = page.getByte( offset );
+        long p = getBoundedPointer( offset, SIZE_OF_BYTE );
+        byte b = UnsafeUtil.getByte( p );
         offset++;
         return b;
     }
@@ -276,86 +419,155 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public byte getByte( int offset )
     {
-        return page.getByte( offset );
+        long p = getBoundedPointer( offset, SIZE_OF_BYTE );
+        return UnsafeUtil.getByte( p );
     }
 
     @Override
     public void putByte( byte value )
     {
-        page.putByte( value, offset );
+        long p = getBoundedPointer( offset, SIZE_OF_BYTE );
+        UnsafeUtil.putByte( p, value );
         offset++;
     }
 
     @Override
     public void putByte( int offset, byte value )
     {
-        page.putByte( value, offset );
+        long p = getBoundedPointer( offset, SIZE_OF_BYTE );
+        UnsafeUtil.putByte( p, value );
     }
 
     @Override
     public long getLong()
     {
-        long l = page.getLong( offset );
-        offset += 8;
-        return l;
+        long value = getLong( offset );
+        offset += SIZE_OF_LONG;
+        return value;
     }
 
     @Override
     public long getLong( int offset )
     {
-        return page.getLong( offset );
+        long p = getBoundedPointer( offset, SIZE_OF_LONG );
+        long value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            value = UnsafeUtil.getLong( p );
+            if ( !UnsafeUtil.storeByteOrderIsNative )
+            {
+                value = Long.reverseBytes( value );
+            }
+        }
+        else
+        {
+            value = getLongBigEndian( p );
+        }
+        return value;
+    }
+
+    private long getLongBigEndian( long p )
+    {
+        long a = UnsafeUtil.getByte( p     ) & 0xFF;
+        long b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
+        long c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
+        long d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
+        long e = UnsafeUtil.getByte( p + 4 ) & 0xFF;
+        long f = UnsafeUtil.getByte( p + 5 ) & 0xFF;
+        long g = UnsafeUtil.getByte( p + 6 ) & 0xFF;
+        long h = UnsafeUtil.getByte( p + 7 ) & 0xFF;
+        return (a << 56) | (b << 48) | (c << 40) | (d << 32) | (e << 24) | (f << 16) | (g << 8) | h;
     }
 
     @Override
     public void putLong( long value )
     {
-        page.putLong( value, offset );
-        offset += 8;
+        putLong( offset, value );
+        offset += SIZE_OF_LONG;
     }
 
     @Override
     public void putLong( int offset, long value )
     {
-        page.putLong( value, offset );
+        long p = getBoundedPointer( offset, SIZE_OF_LONG );
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putLong( p, UnsafeUtil.storeByteOrderIsNative ? value : Long.reverseBytes( value ) );
+        }
+        else
+        {
+            putLongBigEndian( value, p );
+        }
+    }
+
+    private void putLongBigEndian( long value, long p )
+    {
+        UnsafeUtil.putByte( p    , (byte)( value >> 56 ) );
+        UnsafeUtil.putByte( p + 1, (byte)( value >> 48 ) );
+        UnsafeUtil.putByte( p + 2, (byte)( value >> 40 ) );
+        UnsafeUtil.putByte( p + 3, (byte)( value >> 32 ) );
+        UnsafeUtil.putByte( p + 4, (byte)( value >> 24 ) );
+        UnsafeUtil.putByte( p + 5, (byte)( value >> 16 ) );
+        UnsafeUtil.putByte( p + 6, (byte)( value >> 8  ) );
+        UnsafeUtil.putByte( p + 7, (byte)( value       ) );
     }
 
     @Override
     public int getInt()
     {
-        int i = page.getInt( offset );
-        offset += 4;
+        int i = getInt( offset );
+        offset += SIZE_OF_INT;
         return i;
     }
 
     @Override
     public int getInt( int offset )
     {
-        return page.getInt( offset );
+        long p = getBoundedPointer( offset, SIZE_OF_INT );
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            int x = UnsafeUtil.getInt( p );
+            return UnsafeUtil.storeByteOrderIsNative ? x : Integer.reverseBytes( x );
+        }
+        return getIntBigEndian( p );
+    }
+
+    private int getIntBigEndian( long p )
+    {
+        int a = UnsafeUtil.getByte( p     ) & 0xFF;
+        int b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
+        int c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
+        int d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
+        return (a << 24) | (b << 16) | (c << 8) | d;
     }
 
     @Override
     public void putInt( int value )
     {
-        page.putInt( value, offset );
-        offset += 4;
+        putInt( offset, value );
+        offset += SIZE_OF_INT;
     }
 
     @Override
     public void putInt( int offset, int value )
     {
-        page.putInt( value, offset );
+        long p = getBoundedPointer( offset, SIZE_OF_INT );
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putInt( p, UnsafeUtil.storeByteOrderIsNative ? value : Integer.reverseBytes( value ) );
+        }
+        else
+        {
+            putIntBigEndian( value, p );
+        }
     }
 
-    @Override
-    public long getUnsignedInt()
+    private void putIntBigEndian( int value, long p )
     {
-        return getInt() & 0xFFFFFFFFL;
-    }
-
-    @Override
-    public long getUnsignedInt( int offset )
-    {
-        return getInt(offset) & 0xFFFFFFFFL;
+        UnsafeUtil.putByte( p    , (byte)( value >> 24 ) );
+        UnsafeUtil.putByte( p + 1, (byte)( value >> 16 ) );
+        UnsafeUtil.putByte( p + 2, (byte)( value >> 8  ) );
+        UnsafeUtil.putByte( p + 3, (byte)( value       ) );
     }
 
     @Override
@@ -367,7 +579,14 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public void getBytes( byte[] data, int arrayOffset, int length )
     {
-        page.getBytes( data, offset, arrayOffset, length );
+        long p = getBoundedPointer( offset, length );
+        if ( !outOfBounds )
+        {
+            for ( int i = 0; i < length; i++ )
+            {
+                data[arrayOffset + i] = UnsafeUtil.getByte( p + i );
+            }
+        }
         offset += length;
     }
 
@@ -380,44 +599,101 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public void putBytes( byte[] data, int arrayOffset, int length )
     {
-        page.putBytes( data, offset, arrayOffset, length );
+        long p = getBoundedPointer( offset, length );
+        if ( !outOfBounds )
+        {
+            for ( int i = 0; i < length; i++ )
+            {
+                byte b = data[arrayOffset + i];
+                UnsafeUtil.putByte( p + i, b );
+            }
+        }
         offset += length;
     }
 
     @Override
     public final short getShort()
     {
-        short s = page.getShort( offset );
-        offset += 2;
+        short s = getShort( offset );
+        offset += SIZE_OF_SHORT;
         return s;
     }
 
     @Override
     public short getShort( int offset )
     {
-        return page.getShort( offset );
+        long p = getBoundedPointer( offset, SIZE_OF_SHORT );
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            short x = UnsafeUtil.getShort( p );
+            return UnsafeUtil.storeByteOrderIsNative ? x : Short.reverseBytes( x );
+        }
+        return getShortBigEndian( p );
+    }
+
+    private short getShortBigEndian( long p )
+    {
+        short a = (short) (UnsafeUtil.getByte( p     ) & 0xFF);
+        short b = (short) (UnsafeUtil.getByte( p + 1 ) & 0xFF);
+        return (short) ((a << 8) | b);
     }
 
     @Override
     public void putShort( short value )
     {
-        page.putShort( value, offset );
-        offset += 2;
+        putShort( offset, value );
+        offset += SIZE_OF_SHORT;
     }
 
     @Override
     public void putShort( int offset, short value )
     {
-        page.putShort( value, offset );
+        long p = getBoundedPointer( offset, SIZE_OF_SHORT );
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putShort( p, UnsafeUtil.storeByteOrderIsNative ? value : Short.reverseBytes( value ) );
+        }
+        else
+        {
+            putShortBigEndian( value, p );
+        }
+    }
+
+    private void putShortBigEndian( short value, long p )
+    {
+        UnsafeUtil.putByte( p    , (byte)( value >> 8 ) );
+        UnsafeUtil.putByte( p + 1, (byte)( value      ) );
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
+    {
+        int sourcePageSize = getCurrentPageSize();
+        int targetPageSize = targetCursor.getCurrentPageSize();
+        if ( targetCursor.getClass() != MuninnWritePageCursor.class )
+        {
+            throw new IllegalArgumentException( "Target cursor must be writable" );
+        }
+        if ( sourceOffset >= 0
+             & targetOffset >= 0
+             & sourceOffset < sourcePageSize
+             & targetOffset < targetPageSize
+             & lengthInBytes > 0 )
+        {
+            MuninnPageCursor cursor = (MuninnPageCursor) targetCursor;
+            int remainingSource = sourcePageSize - sourceOffset;
+            int remainingTarget = targetPageSize - targetOffset;
+            int bytes = Math.min( lengthInBytes, Math.min( remainingSource, remainingTarget ) );
+            UnsafeUtil.copyMemory( pointer + sourceOffset, cursor.pointer + targetOffset, bytes );
+            return bytes;
+        }
+        outOfBounds = true;
+        return 0;
     }
 
     @Override
     public void setOffset( int offset )
     {
-        if ( offset < 0 )
-        {
-            throw new IndexOutOfBoundsException();
-        }
         this.offset = offset;
     }
 
@@ -425,5 +701,79 @@ abstract class MuninnPageCursor implements PageCursor
     public final int getOffset()
     {
         return offset;
+    }
+
+    @Override
+    public boolean checkAndClearBoundsFlag()
+    {
+        MuninnPageCursor cursor = this;
+        boolean result = false;
+        do
+        {
+            result |= cursor.outOfBounds;
+            cursor.outOfBounds = false;
+            cursor = cursor.linkedCursor;
+        }
+        while ( cursor != null );
+        return result;
+    }
+
+    @Override
+    public void checkAndClearCursorException() throws CursorException
+    {
+        MuninnPageCursor cursor = this;
+        do
+        {
+            Object error = cursor.cursorException;
+            if ( error != null )
+            {
+                clearCursorError( cursor );
+                if ( usePreciseCursorErrorStackTraces )
+                {
+                    throw (CursorExceptionWithPreciseStackTrace) error;
+                }
+                else
+                {
+                    throw new CursorException( (String) error );
+                }
+            }
+            cursor = cursor.linkedCursor;
+        }
+        while ( cursor != null );
+    }
+
+    @Override
+    public void clearCursorException()
+    {
+        clearCursorError( this );
+    }
+
+    private void clearCursorError( MuninnPageCursor cursor )
+    {
+        while ( cursor != null )
+        {
+            cursor.cursorException = null;
+            cursor = cursor.linkedCursor;
+        }
+    }
+
+    @Override
+    public void raiseOutOfBounds()
+    {
+        outOfBounds = true;
+    }
+
+    @Override
+    public void setCursorException( String message )
+    {
+        Objects.requireNonNull( message );
+        if ( usePreciseCursorErrorStackTraces )
+        {
+            this.cursorException = new CursorExceptionWithPreciseStackTrace( message );
+        }
+        else
+        {
+            this.cursorException = message;
+        }
     }
 }

@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -46,7 +50,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * A read will, similarly, pass through {@link LockingStatementOperations}. It then reaches
  * {@link StateHandlingStatementOperations}, which includes any changes that exist in the current transaction, and then
- * finally {@link org.neo4j.kernel.impl.api.store.StoreReadLayer} will read the current committed state from
+ * finally {@link org.neo4j.storageengine.api.StoreReadLayer} will read the current committed state from
  * the stores or caches.
  *
  * <h1>Refactoring</h1>
@@ -63,23 +67,25 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 {
     private final KernelTransactions transactions;
     private final TransactionHooks hooks;
-    private final KernelHealth health;
+    private final DatabaseHealth health;
     private final TransactionMonitor transactionMonitor;
+    private final Procedures procedures;
 
     public Kernel( KernelTransactions transactionFactory,
-                   TransactionHooks hooks, KernelHealth health, TransactionMonitor transactionMonitor )
+                   TransactionHooks hooks, DatabaseHealth health, TransactionMonitor transactionMonitor, Procedures procedures )
     {
         this.transactions = transactionFactory;
         this.hooks = hooks;
         this.health = health;
         this.transactionMonitor = transactionMonitor;
+        this.procedures = procedures;
     }
 
     @Override
-    public KernelTransaction newTransaction() throws TransactionFailureException
+    public KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode ) throws TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
-        KernelTransaction transaction = transactions.newInstance();
+        KernelTransaction transaction = transactions.newInstance( type, accessMode );
         transactionMonitor.transactionStarted();
         return transaction;
     }
@@ -94,6 +100,12 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public void unregisterTransactionHook( TransactionHook hook )
     {
         hooks.unregister( hook );
+    }
+
+    @Override
+    public void registerProcedure( CallableProcedure signature ) throws ProcedureException
+    {
+        procedures.register( signature );
     }
 
     @Override

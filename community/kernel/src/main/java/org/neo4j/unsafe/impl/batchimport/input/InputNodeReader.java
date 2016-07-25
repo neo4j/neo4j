@@ -23,11 +23,13 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_LABEL_CHANGES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_LABEL_FIELD;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_ADDITION;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_REMOVAL;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
@@ -36,21 +38,22 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
  */
 public class InputNodeReader extends InputEntityReader<InputNode>
 {
-    private String[] previousLabels = InputNode.NO_LABELS;
-
-    public InputNodeReader( StoreChannel channel, StoreChannel header, int bufferSize ) throws IOException
+    public InputNodeReader( StoreChannel channel, StoreChannel header, int bufferSize, Runnable closeAction,
+            int maxNbrOfProcessors ) throws IOException
     {
-        super( channel, header, bufferSize, 1 );
+        super( channel, header, bufferSize, closeAction, maxNbrOfProcessors );
     }
 
     @Override
-    protected InputNode readNextOrNull( Object properties ) throws IOException
+    protected InputNode readNextOrNull( Object properties, ProcessorState state ) throws IOException
     {
+        ReadableClosablePositionAwareChannel channel = state.batchChannel;
+
         // group
-        Group group = readGroup( 0 );
+        Group group = readGroup( 0, state );
 
         // id
-        Object id = readValue();
+        Object id = readValue( channel );
 
         // labels (diff from previous node)
         byte labelsMode = channel.get();
@@ -61,24 +64,25 @@ public class InputNodeReader extends InputEntityReader<InputNode>
         }
         else if ( labelsMode == END_OF_LABEL_CHANGES )
         {   // Same as for previous node
-            labels = previousLabels;
+            labels = state.previousLabels;
         }
         else
         {
-            String[] newLabels = previousLabels.clone();
+            String[] newLabels = state.previousLabels.clone();
             int cursor = newLabels.length;
             while ( labelsMode != END_OF_LABEL_CHANGES )
             {
                 switch ( labelsMode )
                 {
-                case LABEL_REMOVAL: remove( readToken(), newLabels, cursor-- ); break;
+                case LABEL_REMOVAL: remove( (String) readToken( LABEL_TOKEN, channel ), newLabels, cursor-- ); break;
                 case LABEL_ADDITION:
-                    (newLabels = ensureRoomForOneMore( newLabels, cursor ))[cursor++] = readToken(); break;
+                    (newLabels = ensureRoomForOneMore( newLabels, cursor ))[cursor++] =
+                    (String) readToken( LABEL_TOKEN, channel ); break;
                 default: throw new IllegalArgumentException( "Unrecognized label mode " + labelsMode );
                 }
                 labelsMode = channel.get();
             }
-            labels = previousLabels = cursor == newLabels.length ? newLabels : Arrays.copyOf( newLabels, cursor );
+            labels = state.previousLabels = cursor == newLabels.length ? newLabels : Arrays.copyOf( newLabels, cursor );
         }
 
         return new InputNode( sourceDescription(), lineNumber(), position(),

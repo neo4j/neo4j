@@ -24,7 +24,7 @@ import java.net.URI;
 
 public class ServerIdElectionCredentials implements ElectionCredentials, Serializable
 {
-    private final URI credentials;
+    private URI credentials;
 
     public ServerIdElectionCredentials( URI credentials )
     {

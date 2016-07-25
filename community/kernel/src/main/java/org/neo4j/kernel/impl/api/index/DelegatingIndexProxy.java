@@ -27,7 +27,7 @@ public class DelegatingIndexProxy extends AbstractDelegatingIndexProxy
     {
         this.delegate = delegate;
     }
-    
+
     @Override
     protected IndexProxy getDelegate()
     {

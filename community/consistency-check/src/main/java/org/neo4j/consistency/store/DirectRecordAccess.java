@@ -38,6 +38,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+
 public class DirectRecordAccess implements RecordAccess
 {
     final StoreAccess access;
@@ -155,11 +157,10 @@ public class DirectRecordAccess implements RecordAccess
         return referenceTo( access.getPropertyKeyNameStore(), id );
     }
 
-
     @Override
     public RecordReference<NeoStoreRecord> graph()
     {
-        return new DirectRecordReference<>( access.getRawNeoStores().getMetaDataStore().asRecord(), this );
+        return new DirectRecordReference<>( access.getRawNeoStores().getMetaDataStore().graphPropertyRecord(), this );
     }
 
     @Override
@@ -170,7 +171,7 @@ public class DirectRecordAccess implements RecordAccess
 
     <RECORD extends AbstractBaseRecord> DirectRecordReference<RECORD> referenceTo( RecordStore<RECORD> store, long id )
     {
-        return new DirectRecordReference<>( store.forceGetRecord( id ), this);
+        return new DirectRecordReference<>( store.getRecord( id, store.newRecord(), FORCE ), this);
     }
 
     @Override

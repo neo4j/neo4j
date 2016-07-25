@@ -21,12 +21,12 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class PredicatesTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Predicates"
-  val css = "general c2-2 c3-3 c4-1 c5-4 c6-6"
+  val css = "general c2-2 c3-3 c4-1 c5-1 c6-4"
   override val linkId = "query-where"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -123,10 +123,10 @@ Check for node labels.
 ###assertion=returns-one
 MATCH (n), (m)
 WHERE id(n) = %A% AND id(m) = %B%
-OPTIONAL MATCH (n)-[identifier]->(m)
+OPTIONAL MATCH (n)-[variable]->(m)
 WHERE
 
-identifier IS NULL
+variable IS NULL
 
 RETURN n, m###
 
@@ -176,7 +176,7 @@ String matching.
 
 ###assertion=returns-one parameters=regex
 MATCH (n)
-WHERE EXISTS(n.property) AND
+WHERE exists(n.property) AND
 
 n.property =~ "Tob.*"
 
@@ -212,6 +212,6 @@ n.property IN [{value1}, {value2}]
 
 RETURN n###
 
-Check if an element exists in a collection.
+Check if an element exists in a list.
 """
 }

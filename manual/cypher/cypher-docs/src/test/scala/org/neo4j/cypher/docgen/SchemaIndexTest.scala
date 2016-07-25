@@ -23,10 +23,10 @@ import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.IndexSeekByRange
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.Planner
-import org.neo4j.cypher.internal.compiler.v2_3.{DPPlannerName, GreedyPlannerName, IDPPlannerName, RulePlannerName}
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.IndexSeekByRange
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.Planner
+import org.neo4j.cypher.internal.compiler.v3_1.{DPPlannerName, IDPPlannerName, RulePlannerName}
 import org.neo4j.cypher.internal.helpers.GraphIcing
 
 class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSupport with GraphIcing {
@@ -122,6 +122,16 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
   }
 
   @Test def use_index_with_in() {
+
+    executePreparationQueries(
+      List(
+        "FOREACH(x in range(0,100) | CREATE (:Person) )",
+        "FOREACH(x in range(0,400) | CREATE (:Person {name: x}) )"
+      )
+    )
+
+    sampleAllIndicesAndWait()
+
     profileQuery(
       title = "Use index with IN",
       text =
@@ -149,9 +159,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     profileQuery(
       title = "Use index with STARTS WITH",
       text =
-        """The `STARTS WITH` predicate on `person.name` in the following query will use the `Person(name)` index, if it exists.
-          |
-          |NOTE: The similar operators `ENDS WITH` and `CONTAINS` cannot currently be solved using indexes.""".stripMargin,
+        "The `STARTS WITH` predicate on `person.name` in the following query will use the `Person(name)` index, if it exists. ",
       queryText = "MATCH (person:Person) WHERE person.name STARTS WITH 'And' return person",
       assertions = {
         (p) =>
@@ -161,7 +169,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     )
   }
 
-  @Test def use_index_with_has_property() {
+  @Test def use_index_with_exists_property() {
     // Need to make index preferable in terms of cost
     executePreparationQueries((0 to 250).map { i =>
       "CREATE (:Person)"
@@ -170,7 +178,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       title = "Use index when checking for the existence of a property",
       text =
         "The `has(p.name)` predicate in the following query will use the `Person(name)` index, if it exists.",
-      queryText = "MATCH (p:Person) WHERE has(p.name) RETURN p",
+      queryText = "MATCH (p:Person) WHERE exists(p.name) RETURN p",
       assertions = {
         (p) =>
           assertEquals(2, p.size)
@@ -190,8 +198,6 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     plannerArgument match {
       case Some(Planner(RulePlannerName.name)) =>
         assertThat(planDescription.toString, containsString(ruleString))
-      case Some(Planner(GreedyPlannerName.name)) =>
-        assertThat(planDescription.toString, containsString(costString))
       case Some(Planner(IDPPlannerName.name)) =>
         assertThat(planDescription.toString, containsString(costString))
       case Some(Planner(DPPlannerName.name)) =>

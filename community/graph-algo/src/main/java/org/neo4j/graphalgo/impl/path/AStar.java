@@ -39,13 +39,11 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
 import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
 public class AStar implements PathFinder<WeightedPath>
 {
@@ -53,12 +51,6 @@ public class AStar implements PathFinder<WeightedPath>
     private final CostEvaluator<Double> lengthEvaluator;
     private final EstimateEvaluator<Double> estimateEvaluator;
     private Metadata lastMetadata;
-
-    public AStar( RelationshipExpander expander,
-            CostEvaluator<Double> lengthEvaluator, EstimateEvaluator<Double> estimateEvaluator )
-    {
-        this( toPathExpander( expander ), lengthEvaluator, estimateEvaluator );
-    }
 
     public AStar( PathExpander<?> expander,
             CostEvaluator<Double> lengthEvaluator, EstimateEvaluator<Double> estimateEvaluator )

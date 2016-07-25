@@ -30,9 +30,9 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.RecordState;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.util.Objects.requireNonNull;
-
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
@@ -55,7 +55,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     @Override
     public void incrementNodeCount( int labelId, long delta )
     {
-        counts( nodeKey( labelId ) ).increment( 0l, delta );
+        counts( nodeKey( labelId ) ).increment( 0L, delta );
     }
 
     @Override
@@ -78,7 +78,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     {
         if ( delta != 0 )
         {
-            counts( relationshipKey( startLabelId, typeId, endLabelId ) ).increment( 0l, delta );
+            counts( relationshipKey( startLabelId, typeId, endLabelId ) ).increment( 0L, delta );
         }
     }
 
@@ -98,7 +98,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     @Override
     public void incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
     {
-        counts( indexStatisticsKey( labelId, propertyKeyId ) ).increment( delta, 0l );
+        counts( indexStatisticsKey( labelId, propertyKeyId ) ).increment( delta, 0L );
     }
 
     @Override
@@ -124,7 +124,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     }
 
     @Override
-    public void extractCommands( Collection<Command> target )
+    public void extractCommands( Collection<StorageCommand> target )
     {
         accept( new CommandCollector( target ) );
     }
@@ -140,17 +140,6 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     public boolean hasChanges()
     {
         return !counts.isEmpty();
-    }
-
-    /**
-     * Set this counter up to a pristine state, as if it had just been initialized.
-     */
-    public void clear()
-    {
-        if ( !counts.isEmpty() )
-        {
-            counts.clear();
-        }
     }
 
     public static final class Difference
@@ -248,9 +237,9 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
 
     private static class CommandCollector extends CountsVisitor.Adapter
     {
-        private final Collection<Command> commands;
+        private final Collection<StorageCommand> commands;
 
-        CommandCollector( Collection<Command> commands )
+        CommandCollector( Collection<StorageCommand> commands )
         {
             this.commands = commands;
         }
@@ -260,7 +249,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
         {
             if ( count != 0 )
             {   // Only add commands for counts that actually change
-                commands.add( new Command.NodeCountsCommand().init( labelId, count ) );
+                commands.add( new Command.NodeCountsCommand( labelId, count ) );
             }
         }
 
@@ -269,7 +258,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
         {
             if ( count != 0 )
             {   // Only add commands for counts that actually change
-                commands.add( new Command.RelationshipCountsCommand().init( startLabelId, typeId, endLabelId, count ) );
+                commands.add( new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, count ) );
             }
         }
     }

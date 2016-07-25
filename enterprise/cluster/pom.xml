@@ -3,12 +3,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.7-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-cluster</artifactId>
-  <version>2.3.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
 
   <name>Neo4j - Clustering Infrastructure</name>
   <description>Library implementing Paxos and Heartbeat components required for High Availability Neo4j</description>
@@ -23,7 +23,9 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/neo4j/tree/master/enterprise/cluster</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
   <licenses>
@@ -55,6 +57,11 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>annotations</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -99,29 +106,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-source-based-documentation</id>
-            <phase>${generate-config-docs-phase}</phase>
-            <configuration>
-              <target>
-                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
-                      classpathref="maven.compile.classpath" failonerror="true">
-                  <arg value="org.neo4j.cluster.ClusterSettings" />
-                  <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
-                </java>
-              </target>
-            </configuration>
-            <goals><goal>run</goal></goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
 </project>

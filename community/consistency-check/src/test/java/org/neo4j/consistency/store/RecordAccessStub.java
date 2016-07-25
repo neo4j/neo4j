@@ -55,11 +55,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
+import static java.util.Collections.singletonMap;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-
-import static java.util.Collections.singletonMap;
+import static org.neo4j.helpers.collection.Iterables.resourceIterable;
 
 public class RecordAccessStub implements RecordAccess
 {
@@ -212,14 +212,14 @@ public class RecordAccessStub implements RecordAccess
     public void populateCache()
     {
         CacheTask action = new CacheTask.CacheNextRel( CheckStage.Stage3_NS_NextRel, cacheAccess,
-                new IterableWrapper<NodeRecord,Delta<NodeRecord>>( nodes.values() )
+                resourceIterable( new IterableWrapper<NodeRecord,Delta<NodeRecord>>( nodes.values() )
         {
             @Override
             protected NodeRecord underlyingObjectToObject( Delta<NodeRecord> node )
             {
                 return node.newRecord;
             }
-        } );
+        } ) );
         action.run();
     }
 
@@ -272,13 +272,13 @@ public class RecordAccessStub implements RecordAccess
 
     private static <R extends AbstractBaseRecord> R add( Map<Long, Delta<R>> records, R record )
     {
-        records.put( record.getLongId(), new Delta<>( record ) );
+        records.put( record.getId(), new Delta<>( record ) );
         return record;
     }
 
     private static <R extends AbstractBaseRecord> void add( Map<Long, Delta<R>> records, R oldRecord, R newRecord )
     {
-        records.put( newRecord.getLongId(), new Delta<>( oldRecord, newRecord ) );
+        records.put( newRecord.getId(), new Delta<>( oldRecord, newRecord ) );
     }
 
     public DynamicRecord addSchema( DynamicRecord schema )

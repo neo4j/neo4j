@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.lang.Math.min;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.mebiBytes;
@@ -62,7 +61,7 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         {
             // Get the upper bound of what we can get from the default config calculation
             // We even want to limit amount of memory a bit more since we don't need very much during import
-            return min( MAX_PAGE_CACHE_MEMORY, new Config().get( pagecache_memory ) );
+            return min( MAX_PAGE_CACHE_MEMORY, Config.defaults().get( pagecache_memory ) );
         }
 
         @Override

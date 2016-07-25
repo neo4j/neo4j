@@ -30,7 +30,7 @@ import javax.management.StandardMBean;
 
 import org.neo4j.jmx.Description;
 import org.neo4j.jmx.Kernel;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.internal.KernelData;
 
 public abstract class Neo4jMBean extends StandardMBean
 {

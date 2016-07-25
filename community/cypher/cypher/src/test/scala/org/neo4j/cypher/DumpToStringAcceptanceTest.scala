@@ -24,19 +24,20 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("format node") {
     createNode(Map("prop1" -> "A", "prop2" -> 2))
 
-    executeWithAllPlanners("match n return n").dumpToString() should equal("""+----------------------------+
-                                                                                         || n                          |
-                                                                                         |+----------------------------+
-                                                                                         || Node[0]{prop1:"A",prop2:2} |
-                                                                                         |+----------------------------+
-                                                                                         |1 row
-                                                                                         |""".stripMargin)
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n) return n").dumpToString() should
+      equal( """+----------------------------+
+               || n                          |
+               |+----------------------------+
+               || Node[0]{prop1:"A",prop2:2} |
+               |+----------------------------+
+               |1 row
+               |""".stripMargin)
   }
 
   test("format relationship") {
     relate(createNode(), createNode(), "T", Map("prop1" -> "A", "prop2" -> 2))
 
-    executeWithAllPlanners("match ()-[r]->() return r").dumpToString() should equal("""+--------------------------+
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match ()-[r]->() return r").dumpToString() should equal("""+--------------------------+
                                                                                                   || r                        |
                                                                                                   |+--------------------------+
                                                                                                   || :T[0]{prop1:"A",prop2:2} |
@@ -46,7 +47,7 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("format collection of maps") {
-    executeWithAllPlanners( """RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""").dumpToString() should
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode( """RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""").dumpToString() should
       equal( """+----------------------------------------+
                || [{ inner: 'Map1' }, { inner: 'Map2' }] |
                |+----------------------------------------+

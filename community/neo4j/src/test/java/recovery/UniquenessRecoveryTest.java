@@ -45,17 +45,19 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.SuppressOutput;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.lang.Boolean.getBoolean;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.test.SuppressOutput.suppress;
-import static org.neo4j.test.TargetDirectory.testDirForTest;
+
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.test.rule.SuppressOutput.suppress;
+import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 @RunWith( Parameterized.class )
 public class UniquenessRecoveryTest
@@ -110,13 +112,13 @@ public class UniquenessRecoveryTest
         assumeNotNull( "this test can only run on UNIX", PID );
 
         // given
-        String path = dir.graphDbDir().getAbsolutePath();
+        File path = dir.graphDbDir().getAbsoluteFile();
         System.out.println( "in path: " + path );
         ProcessBuilder prototype = new ProcessBuilder( "java", "-ea", "-Xmx1G", "-Djava.awt.headless=true",
                 "-Dforce_create_constraint=" + config.force_create_constraint,
                 "-D" + param( "use_cypher" ) + "=" + USE_CYPHER,
                 "-cp", System.getProperty( "java.class.path" ),
-                getClass().getName(), path );
+                getClass().getName(), path.getPath() );
         prototype.environment().put( "JAVA_HOME", System.getProperty( "java.home" ) );
 
         // when
@@ -162,7 +164,7 @@ public class UniquenessRecoveryTest
     public static void main( String... args ) throws Exception
     {
         System.out.println( "hello world" );
-        String path = args[0];
+        File path = new File( args[0] );
         boolean createConstraint = getBoolean( "force_create_constraint" ) || !new File( path, "neostore" ).isFile();
         GraphDatabaseService db = graphdb( path );
         System.out.println( "database started" );
@@ -288,9 +290,9 @@ public class UniquenessRecoveryTest
         }
     }
 
-    private static GraphDatabaseService graphdb( String path )
+    private static GraphDatabaseService graphdb( File path )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
     }
 
     private static void flushPageCache( GraphDatabaseService db )

@@ -20,14 +20,12 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Predicate;
-import org.neo4j.function.Supplier;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.IdTypeConfiguration;
-import org.neo4j.kernel.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 
 /**
  * Wraps {@link IdGenerator} for those that have {@link IdTypeConfiguration#allowAggressiveReuse() aggressive id reuse}
@@ -43,24 +41,18 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     private final IdGeneratorFactory delegate;
     private final IdTypeConfigurationProvider idTypeConfigurationProvider;
 
-    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate,
-            IdTypeConfigurationProvider idTypeConfigurationProvider )
+    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate, Supplier<KernelTransactionsSnapshot> boundaries,
+            IdReuseEligibility eligibleForReuse, IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         this.delegate = delegate;
         this.idTypeConfigurationProvider = idTypeConfigurationProvider;
+        initialize( boundaries, eligibleForReuse );
     }
 
-    public void initialize( Supplier<KernelTransactionsSnapshot> boundaries, final IdReuseEligibility eligibleForReuse )
+    private void initialize( Supplier<KernelTransactionsSnapshot> boundaries, IdReuseEligibility eligibleForReuse )
     {
         this.boundaries = boundaries;
-        this.safeThreshold = new Predicate<KernelTransactionsSnapshot>()
-        {
-            @Override
-            public boolean test( KernelTransactionsSnapshot snapshot )
-            {
-                return snapshot.allClosed() && eligibleForReuse.isEligible( snapshot );
-            }
-        };
+        this.safeThreshold = snapshot -> snapshot.allClosed() && eligibleForReuse.isEligible( snapshot );
         for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
@@ -71,16 +63,16 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, long highId )
+    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
     {
         IdTypeConfiguration typeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-        return open( filename, typeConfiguration.getGrabSize(), idType, highId);
+        return open( filename, typeConfiguration.getGrabSize(), idType, highId, maxId);
     }
 
     @Override
-    public IdGenerator open( File filename, int grabSize, IdType idType, long highId )
+    public IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId )
     {
-        IdGenerator generator = delegate.open( filename, grabSize, idType, highId );
+        IdGenerator generator = delegate.open( filename, grabSize, idType, highId, maxId );
         IdTypeConfiguration typeConfiguration = getIdTypeConfiguration(idType);
         if ( typeConfiguration.allowAggressiveReuse() )
         {
@@ -118,11 +110,6 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
         delegate.create( filename, highId, throwIfFileExists );
     }
 
-    private IdTypeConfiguration getIdTypeConfiguration( IdType idType )
-    {
-        return idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-    }
-
     @Override
     public IdGenerator get( IdType idType )
     {
@@ -150,5 +137,10 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
                 generator.clear();
             }
         }
+    }
+
+    private IdTypeConfiguration getIdTypeConfiguration( IdType idType )
+    {
+        return idTypeConfigurationProvider.getIdTypeConfiguration( idType );
     }
 }

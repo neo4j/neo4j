@@ -19,11 +19,27 @@
  */
 package org.neo4j.kernel.api;
 
+/**
+ * Lookup of names from token ids. Tokens are mostly referred to by ids throughout several abstractions.
+ * Sometimes token names are required, this is a way to lookup names in those cases.
+ */
 public interface TokenNameLookup
 {
+    /**
+     * @param labelId id of label to get name for.
+     * @return name of label token with given id.
+     */
     String labelGetName( int labelId );
 
-    String relationshipTypeGetName( int relTypeId );
+    /**
+     * @param relationshipTypeId id of relationship type to get name for.
+     * @return name of relationship type token with given id.
+     */
+    String relationshipTypeGetName( int relationshipTypeId );
 
+    /**
+     * @param propertyKeyId id of property key to get name for.
+     * @return name of property key token with given id.
+     */
     String propertyKeyGetName( int propertyKeyId );
 }

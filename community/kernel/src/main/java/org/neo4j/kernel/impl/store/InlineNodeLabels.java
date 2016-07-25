@@ -39,12 +39,10 @@ import static org.neo4j.kernel.impl.util.Bits.bitsFromLongs;
 public class InlineNodeLabels implements NodeLabels
 {
     private static final int LABEL_BITS = 36;
-    private final long labelField;
     private final NodeRecord node;
 
-    public InlineNodeLabels( long labelField, NodeRecord node )
+    public InlineNodeLabels( NodeRecord node )
     {
-        this.labelField = labelField;
         this.node = node;
     }
 
@@ -62,7 +60,7 @@ public class InlineNodeLabels implements NodeLabels
     @Override
     public long[] getIfLoaded()
     {
-        return parseInlined( labelField );
+        return parseInlined( node.getLabelField() );
     }
 
     @Override
@@ -86,8 +84,8 @@ public class InlineNodeLabels implements NodeLabels
     @Override
     public Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator )
     {
-        long[] augmentedLabelIds = labelCount( labelField ) == 0 ? new long[]{labelId} :
-                                   concatAndSort( parseInlined( labelField ), labelId );
+        long[] augmentedLabelIds = labelCount( node.getLabelField() ) == 0 ? new long[]{labelId} :
+                                   concatAndSort( parseInlined( node.getLabelField() ), labelId );
 
         return putSorted( node, augmentedLabelIds, nodeStore, allocator );
     }
@@ -95,7 +93,7 @@ public class InlineNodeLabels implements NodeLabels
     @Override
     public Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore )
     {
-        long[] newLabelIds = filter( parseInlined( labelField ), labelId );
+        long[] newLabelIds = filter( parseInlined( node.getLabelField() ), labelId );
         boolean inlined = tryInlineInNodeRecord( node, newLabelIds, node.getDynamicLabelRecords() );
         assert inlined;
         return Collections.emptyList();

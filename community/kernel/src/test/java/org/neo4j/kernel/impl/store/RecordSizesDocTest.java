@@ -23,21 +23,26 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.test.docs.DocsIncludeFile;
+import org.neo4j.test.rule.docs.DocsIncludeFile;
+import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
 
 import static java.util.Arrays.asList;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.array_block_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.string_block_size;
 import static org.neo4j.kernel.impl.store.StoreFactory.NODE_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_ARRAYS_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STRINGS_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.Configuration.array_block_size;
-import static org.neo4j.kernel.impl.store.StoreFactory.Configuration.string_block_size;
 
 public class RecordSizesDocTest
 {
-    public final @Rule DocsIncludeFile writer = DocsIncludeFile.inSection( "ops" );
+    @Rule
+    public final DocsIncludeFile writer = DocsIncludeFile.inSection( "ops" );
 
     @Test
     public void record_sizes_table() throws Exception
@@ -46,9 +51,9 @@ public class RecordSizesDocTest
         writer.println( "|======================================" );
         writer.println( "| Store file  | Record size  | Contents" );
         for ( Store store : asList(
-                store( NODE_STORE_NAME, NodeStore.RECORD_SIZE, "Nodes" ),
-                store( RELATIONSHIP_STORE_NAME, RelationshipStore.RECORD_SIZE, "Relationships" ),
-                store( PROPERTY_STORE_NAME, PropertyStore.RECORD_SIZE, "Properties for nodes and relationships" ),
+                store( NODE_STORE_NAME, NodeRecordFormat.RECORD_SIZE, "Nodes" ),
+                store( RELATIONSHIP_STORE_NAME, RelationshipRecordFormat.RECORD_SIZE, "Relationships" ),
+                store( PROPERTY_STORE_NAME, PropertyRecordFormat.RECORD_SIZE, "Properties for nodes and relationships" ),
                 dynamicStore( PROPERTY_STRINGS_STORE_NAME, string_block_size, "Values of string properties" ),
                 dynamicStore( PROPERTY_ARRAYS_STORE_NAME, array_block_size, "Values of array properties" )
         ) )
@@ -71,7 +76,7 @@ public class RecordSizesDocTest
 
     private static int defaultDynamicSize( Setting<Integer> setting )
     {
-        return AbstractDynamicStore.BLOCK_HEADER_SIZE + Integer.parseInt( setting.getDefaultValue() );
+        return DynamicRecordFormat.RECORD_HEADER_SIZE + Integer.parseInt( setting.getDefaultValue() );
     }
 
     private static class Store

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.neo4j.helpers.HostnamePort;
@@ -45,7 +46,6 @@ public class Pinger
         }
     }
 
-
     public void ping() throws IOException
     {
         pingCount++;
@@ -58,7 +58,7 @@ public class Pinger
         {
             uri.append( key );
             uri.append( "=" );
-            uri.append( URLEncoder.encode( usageDataMap.get( key ), "UTF-8") );
+            uri.append( URLEncoder.encode( usageDataMap.get( key ), StandardCharsets.UTF_8.name() ) );
             uri.append( "+" );
         }
 

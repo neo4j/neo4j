@@ -19,107 +19,101 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
-import org.neo4j.helpers.collection.IteratorUtil;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class LuceneAllDocumentsReaderTest
 {
-    @Test
-    public void shouldIterateOverAllLuceneDocumentsWhereNoDocumentsHaveBeenDeleted() throws Exception
-    {
-        // given
-        String[] elements = {"A", "B", "C"};
 
+    private final PartitionSearcher partitionSearcher1 = createPartitionSearcher( 1, 0, 2 );
+    private final PartitionSearcher partitionSearcher2 = createPartitionSearcher( 2, 1, 2 );
+
+    public LuceneAllDocumentsReaderTest() throws IOException
+    {
+    }
+
+    @Test
+    public void allDocumentsMaxCount()
+    {
+        LuceneAllDocumentsReader allDocumentsReader = createAllDocumentsReader();
+        assertEquals( 3, allDocumentsReader.maxCount());
+    }
+
+    @Test
+    public void closeCorrespondingSearcherOnClose() throws IOException
+    {
+        LuceneAllDocumentsReader allDocumentsReader = createAllDocumentsReader();
+        allDocumentsReader.close();
+
+        verify( partitionSearcher1 ).close();
+        verify( partitionSearcher2 ).close();
+    }
+
+    @Test
+    public void readAllDocuments()
+    {
+        LuceneAllDocumentsReader allDocumentsReader = createAllDocumentsReader();
+        List<Document> documents = Iterators.asList( allDocumentsReader.iterator() );
+
+        assertEquals( "Should have 1 document from first partition and 2 from second one.", 3, documents.size() );
+        assertEquals( "1", documents.get( 0 ).getField( "value" ).stringValue() );
+        assertEquals( "3", documents.get( 1 ).getField( "value" ).stringValue() );
+        assertEquals( "4", documents.get( 2 ).getField( "value" ).stringValue() );
+    }
+
+    private LuceneAllDocumentsReader createAllDocumentsReader()
+    {
+        return new LuceneAllDocumentsReader(createPartitionReaders());
+    }
+
+    private List<LucenePartitionAllDocumentsReader> createPartitionReaders()
+    {
+        LucenePartitionAllDocumentsReader reader1 = new LucenePartitionAllDocumentsReader( partitionSearcher1 );
+        LucenePartitionAllDocumentsReader reader2 = new LucenePartitionAllDocumentsReader( partitionSearcher2 );
+        return Arrays.asList(reader1, reader2);
+    }
+
+    private static PartitionSearcher createPartitionSearcher( int maxDoc, int partition, int maxSize )
+            throws IOException
+    {
+        PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
+        IndexSearcher indexSearcher = mock( IndexSearcher.class );
         IndexReader indexReader = mock( IndexReader.class );
-        when( indexReader.isDeleted( anyInt() ) ).thenReturn( false );
 
-        LuceneAllDocumentsReader reader =
-                new LuceneAllDocumentsReader(
-                        new SearcherManagerStub( new SearcherStub( indexReader, elements ) ) );
+        when(partitionSearcher.getIndexSearcher()).thenReturn( indexSearcher );
+        when( indexSearcher.getIndexReader() ).thenReturn( indexReader );
+        when( indexReader.maxDoc() ).thenReturn( maxDoc );
 
-        // when
-        Iterator<Document> iterator = reader.iterator();
-        List<Document> actualDocuments = new ArrayList<>( IteratorUtil.asCollection( iterator ) );
+        when( indexSearcher.doc( 0 ) ).thenReturn( createDocument( uniqueDocValue( 1, partition, maxSize ) ) );
+        when( indexSearcher.doc( 1 ) ).thenReturn( createDocument( uniqueDocValue( 2, partition, maxSize ) ) );
+        when( indexSearcher.doc( 2 ) ).thenReturn( createDocument( uniqueDocValue( 3, partition, maxSize ) ) );
 
-        // then
-        for ( int i = 0; i < elements.length; i++ )
-        {
-            assertEquals( elements[i], actualDocuments.get( i ).get( "element" ) );
-        }
+        return partitionSearcher;
     }
 
-    @Test
-    public void shouldFindNoDocumentsIfTheyHaveAllBeenDeleted() throws Exception
+    private static String uniqueDocValue(int value, int partition, int maxSize )
     {
-        // given
-        final String[] elements = {"A", "B", "C"};
-
-        final IndexReader indexReader = mock( IndexReader.class );
-        when( indexReader.isDeleted( anyInt() ) ).thenAnswer( new Answer<Boolean>()
-        {
-            @Override
-            public Boolean answer( InvocationOnMock invocation ) throws Throwable
-            {
-                if ( (int) invocation.getArguments()[0] >= elements.length )
-                {
-                    throw new IllegalArgumentException( "Doc id out of range" );
-                }
-                return true;
-            }
-        } );
-
-        LuceneAllDocumentsReader reader =
-                new LuceneAllDocumentsReader(
-                        new SearcherManagerStub( new SearcherStub( indexReader, elements ) ) );
-
-        // when
-        Iterator<Document> iterator = reader.iterator();
-
-        // then
-        assertFalse( iterator.hasNext() );
+        return String.valueOf( value + (partition * maxSize) );
     }
 
-    private static class SearcherStub extends IndexSearcher
-    {
-        private final String[] elements;
-
-        public SearcherStub( IndexReader r, String[] elements )
-        {
-            super( r );
-            this.elements = elements;
-        }
-
-        @Override
-        public Document doc( int docID ) throws IOException
-        {
-            Document document = new Document();
-            document.add( new Field( "element", elements[docID], Field.Store.YES, Field.Index.NO ) );
-            return document;
-        }
-
-        @Override
-        public int maxDoc()
-        {
-            return elements.length;
-        }
+    private static Document createDocument(String value) {
+        Document document = new Document();
+        document.add( new StoredField( "value",  value) );
+        return document;
     }
-
 }

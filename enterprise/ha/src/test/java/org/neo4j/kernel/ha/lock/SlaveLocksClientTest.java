@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -99,7 +100,7 @@ public class SlaveLocksClientTest
     {
         return when( master.acquireSharedLock(
                 any( RequestContext.class ),
-                any( Locks.ResourceType.class ),
+                any( ResourceType.class ),
                 Matchers.<long[]>anyVararg() ) );
     }
 
@@ -107,7 +108,7 @@ public class SlaveLocksClientTest
     {
         return when( master.acquireExclusiveLock(
                 any( RequestContext.class ),
-                any( Locks.ResourceType.class ),
+                any( ResourceType.class ),
                 Matchers.<long[]>anyVararg() ) );
     }
 

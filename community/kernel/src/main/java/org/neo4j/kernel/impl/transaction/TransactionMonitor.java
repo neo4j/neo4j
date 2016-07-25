@@ -28,7 +28,9 @@ public interface TransactionMonitor
 {
     void transactionStarted();
 
-    void transactionFinished( boolean successful );
+    void transactionFinished( boolean successful, boolean writeTx );
 
-    void transactionTerminated();
+    void transactionTerminated( boolean writeTx );
+
+    void upgradeToWriteTransaction();
 }

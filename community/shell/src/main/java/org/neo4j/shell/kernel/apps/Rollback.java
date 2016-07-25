@@ -21,9 +21,9 @@ package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
 
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -51,7 +51,7 @@ public class Rollback extends NonTransactionProvidingApp
             return Continuation.INPUT_COMPLETE;
         }
 
-        TopLevelTransaction tx = Begin.currentTransaction( getServer() );
+        KernelTransaction tx = Begin.currentTransaction( getServer() );
         if ( tx == null )
         {
             throw Commit.fail( session, "Not in a transaction" );

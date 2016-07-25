@@ -23,12 +23,12 @@ import org.neo4j.graphdb.Node
 
 class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
 
-  val THREADS = 100
+  val THREADS = 50
   val UPDATES = 100
 
   test("Should work around read isolation limitations using multiple set") {
     // Given
-    val n = createNode("x" -> 0, "y" -> 0, "z" -> 0)
+    val n = createNode("x" -> 0L, "y" -> 0L, "z" -> 0L)
 
     // When
     val unlocked = updateAndCount(n, "x", "MATCH (n) SET n.x = n.x + 1")
@@ -39,8 +39,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     locked1 should equal(THREADS * UPDATES)
     locked2 should equal(THREADS * UPDATES)
 
-    // In some glorious future with increased isolation levels the following should fail and we should re-write this test
-    unlocked should be < locked1
+    unlocked should equal(locked1)
   }
 
   def updateAndCount(node: Node, property: String, query: String): Long = {
@@ -49,7 +48,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
       new Thread(new Runnable {
         override def run() =
           (1 to UPDATES) foreach { x =>
-            eengine.execute(query)
+            execute(query)
           }
       })
     }

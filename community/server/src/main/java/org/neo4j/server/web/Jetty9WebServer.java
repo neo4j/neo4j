@@ -19,9 +19,22 @@
  */
 package org.neo4j.server.web;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
-import ch.qos.logback.access.servlet.TeeFilter;
+import java.io.IOException;
+import java.net.BindException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.function.Consumer;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -37,29 +50,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.BindException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.BlockingQueue;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.PortBindException;
 import org.neo4j.kernel.configuration.Config;
@@ -67,7 +58,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.security.ssl.KeyStoreInformation;
 import org.neo4j.server.security.ssl.SslSocketConnectorFactory;
 
 import static java.lang.String.format;
@@ -81,6 +71,8 @@ public class Jetty9WebServer implements WebServer
 {
     private boolean wadlEnabled;
     private Collection<InjectableProvider<?>> defaultInjectables;
+    private Consumer<Server> jettyCreatedCallback;
+    private RequestLog requestLog;
 
     private static class FilterDefinition
     {
@@ -109,15 +101,12 @@ public class Jetty9WebServer implements WebServer
         }
     }
 
-    private static final int DEFAULT_HTTPS_PORT = 7473;
-    public static final int DEFAULT_PORT = 80;
-    public static final String DEFAULT_ADDRESS = "0.0.0.0";
+    public static final HostnamePort DEFAULT_ADDRESS = new HostnamePort( "0.0.0.0", 80 );
 
     private Server jetty;
     private HandlerCollection handlers;
-    private int jettyHttpPort = DEFAULT_PORT;
-    private int jettyHttpsPort = DEFAULT_HTTPS_PORT;
-    private String jettyAddr = DEFAULT_ADDRESS;
+    private HostnamePort jettyAddress = DEFAULT_ADDRESS;
+    private Optional<HostnamePort> jettyHttpsAddress = Optional.empty();
 
     private final HashMap<String, String> staticContent = new HashMap<>();
     private final Map<String, JaxRsServletHolderFactory> jaxRSPackages =
@@ -126,12 +115,10 @@ public class Jetty9WebServer implements WebServer
             new HashMap<>();
     private final List<FilterDefinition> filters = new ArrayList<>();
 
-    private int jettyMaxThreads;
-    private boolean httpsEnabled = false;
+    private int jettyMaxThreads = 1;
     private KeyStoreInformation httpsCertificateInformation = null;
     private final SslSocketConnectorFactory sslSocketFactory;
     private final HttpConnectorFactory connectorFactory;
-    private File requestLoggingConfiguration;
     private final Log log;
 
     public Jetty9WebServer( LogProvider logProvider, Config config )
@@ -146,41 +133,39 @@ public class Jetty9WebServer implements WebServer
     {
         if ( jetty == null )
         {
-            JettyThreadCalculator jettyThreadCalculator = new JettyThreadCalculator(jettyMaxThreads);
-            QueuedThreadPool pool = createQueuedThreadPool( jettyThreadCalculator );
+            JettyThreadCalculator jettyThreadCalculator = new JettyThreadCalculator( jettyMaxThreads );
 
-            jetty = new Server( pool );
+            jetty = new Server( createQueuedThreadPool( jettyThreadCalculator ) );
+            jetty.addConnector( connectorFactory.createConnector( jetty, jettyAddress, jettyThreadCalculator ) );
 
-            jetty.addConnector( connectorFactory.createConnector( jetty, jettyAddr, jettyHttpPort, jettyThreadCalculator ) );
-
-            if ( httpsEnabled )
+            jettyHttpsAddress.ifPresent( ( address ) ->
             {
-                if ( httpsCertificateInformation != null )
-                {
-                    jetty.addConnector(
-                            sslSocketFactory.createConnector( jetty, httpsCertificateInformation, jettyAddr,
-                                    jettyHttpsPort, jettyThreadCalculator ) );
-                }
-                else
+                if ( httpsCertificateInformation == null )
                 {
                     throw new RuntimeException( "HTTPS set to enabled, but no HTTPS configuration provided" );
                 }
-            }
+                jetty.addConnector( sslSocketFactory.createConnector(
+                        jetty, httpsCertificateInformation, address, jettyThreadCalculator ) );
+            } );
 
+            if ( jettyCreatedCallback != null )
+            {
+                jettyCreatedCallback.accept( jetty );
+            }
         }
 
         handlers = new HandlerList();
-
         jetty.setHandler( handlers );
-
-        MovedContextHandler redirector = new MovedContextHandler();
-
-        handlers.addHandler( redirector );
+        handlers.addHandler( new MovedContextHandler() );
 
         loadAllMounts();
 
-        startJetty();
+        if ( requestLog != null )
+        {
+            loadRequestLogging();
+        }
 
+        startJetty();
     }
 
     private QueuedThreadPool createQueuedThreadPool( JettyThreadCalculator jtc )
@@ -215,15 +200,9 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setPort( int portNo )
+    public void setAddress( HostnamePort address )
     {
-        jettyHttpPort = portNo;
-    }
-
-    @Override
-    public void setAddress( String addr )
-    {
-        jettyAddr = addr;
+        jettyAddress = address;
     }
 
     @Override
@@ -278,6 +257,11 @@ public class Jetty9WebServer implements WebServer
     public void setDefaultInjectables( Collection<InjectableProvider<?>> defaultInjectables )
     {
         this.defaultInjectables = defaultInjectables;
+    }
+
+    public void setJettyCreatedCallback( Consumer<Server> callback )
+    {
+        this.jettyCreatedCallback = callback;
     }
 
     @Override
@@ -340,25 +324,15 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setHttpLoggingConfiguration( File logbackConfigFile, boolean enableContentLogging )
+    public void setRequestLog( RequestLog requestLog )
     {
-        this.requestLoggingConfiguration = logbackConfigFile;
-        if(enableContentLogging)
-        {
-            addFilter( new TeeFilter(), "/*" );
-        }
+        this.requestLog = requestLog;
     }
 
     @Override
-    public void setEnableHttps( boolean enable )
+    public void setHttpsAddress( Optional<HostnamePort> address )
     {
-        httpsEnabled = enable;
-    }
-
-    @Override
-    public void setHttpsPort( int portNo )
-    {
-        jettyHttpsPort = portNo;
+        jettyHttpsAddress = address;
     }
 
     @Override
@@ -380,22 +354,15 @@ public class Jetty9WebServer implements WebServer
         }
         catch( BindException e )
         {
-            throw new PortBindException( new HostnamePort( jettyAddr, jettyHttpPort ), e );
+            throw new PortBindException( jettyAddress, e );
         }
     }
 
-    private void loadAllMounts()
+    private void loadAllMounts() throws IOException
     {
         SessionManager sm = new HashSessionManager();
 
-        final SortedSet<String> mountpoints = new TreeSet<>( new Comparator<String>()
-        {
-            @Override
-            public int compare( final String o1, final String o2 )
-            {
-                return o2.compareTo( o1 );
-            }
-        } );
+        final SortedSet<String> mountpoints = new TreeSet<>( (Comparator<String>) ( o1, o2 ) -> o2.compareTo( o1 ) );
 
         mountpoints.addAll( staticContent.keySet() );
         mountpoints.addAll( jaxRSPackages.keySet() );
@@ -429,12 +396,6 @@ public class Jetty9WebServer implements WebServer
                 throw new RuntimeException( format( "content-key '%s' is not mapped", contentKey ) );
             }
         }
-
-        if ( requestLoggingConfiguration != null )
-        {
-            loadRequestLogging();
-        }
-
     }
 
     private int countSet( boolean... booleans )
@@ -452,9 +413,6 @@ public class Jetty9WebServer implements WebServer
 
     private void loadRequestLogging()
     {
-        final RequestLogImpl requestLog = new RequestLogImpl();
-        requestLog.setFileName( requestLoggingConfiguration.getAbsolutePath() );
-
         // This makes the request log handler decorate whatever other handlers are already set up
         final RequestLogHandler requestLogHandler = new RequestLogHandler();
         requestLogHandler.setRequestLog( requestLog );
@@ -501,7 +459,6 @@ public class Jetty9WebServer implements WebServer
     private void loadStaticContent( SessionManager sm, String mountPoint )
     {
         String contentLocation = staticContent.get( mountPoint );
-        log.info( "Mounting static content at %s", mountPoint );
         try
         {
             SessionHandler sessionHandler = new SessionHandler( sm );
@@ -511,8 +468,7 @@ public class Jetty9WebServer implements WebServer
             staticContext.setContextPath( mountPoint );
             staticContext.setSessionHandler( sessionHandler );
             staticContext.setInitParameter( "org.eclipse.jetty.servlet.Default.dirAllowed", "false" );
-            URL resourceLoc = getClass().getClassLoader()
-                    .getResource( contentLocation );
+            URL resourceLoc = getClass().getClassLoader().getResource( contentLocation );
             if ( resourceLoc != null )
             {
                 URL url = resourceLoc.toURI().toURL();
@@ -527,9 +483,8 @@ public class Jetty9WebServer implements WebServer
             }
             else
             {
-                log.warn(
-                        "No static content available for Neo Server at port %d, management console may not be available.",
-                        jettyHttpPort );
+                log.warn( "No static content available for Neo Server at %s, management console may not be available.",
+                        jettyAddress );
             }
         }
         catch ( Exception e )

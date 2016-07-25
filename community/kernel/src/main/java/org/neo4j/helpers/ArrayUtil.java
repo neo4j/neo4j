@@ -21,7 +21,7 @@ package org.neo4j.helpers;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
-
+import java.util.function.Function;
 import static java.util.Arrays.copyOf;
 
 /**
@@ -29,22 +29,6 @@ import static java.util.Arrays.copyOf;
  */
 public abstract class ArrayUtil
 {
-    /**
-     * Convert an array to a {@link String}.
-     * I can't believe this method is missing from {@link Arrays}.
-     *
-     * @see Arrays#toString(byte[]) for similar functionality.
-     * @deprecated use {@link ObjectUtil#toString(Object)} instead.
-     * @param array Array to convert.
-     * @return A String representing the array.
-     */
-    @Deprecated
-    public static String toString( Object array )
-    {
-        assert array.getClass().isArray() : array + " is not an array";
-        return ObjectUtil.arrayToString( array );
-    }
-
     public static int hashCode( Object array )
     {
         assert array.getClass().isArray() : array + " is not an array";
@@ -410,8 +394,7 @@ public abstract class ArrayUtil
      * @param <TO> type of the converted items
      * @return a new array with all items from {@code from} converted into type {@code toClass}.
      */
-    public static <FROM,TO> TO[] map( FROM[] from, org.neo4j.function.Function<FROM,TO> transformer,
-            Class<TO> toClass )
+    public static <FROM, TO> TO[] map( FROM[] from, Function<FROM,TO> transformer, Class<TO> toClass )
     {
         @SuppressWarnings( "unchecked" )
         TO[] result = (TO[]) Array.newInstance( toClass, from.length );
@@ -441,8 +424,12 @@ public abstract class ArrayUtil
     }
 
     /**
-     * @return a concatenated array where {@code first} as the item at index {@code 0} and the additional
-     * items following it.
+     * Create a array from a existing array and additional items following it.
+     *
+     * @param initial the initial array
+     * @param additional the additional items that would be added into the initial array
+     * @param <T> the type of the array items
+     * @return a concatenated array and the additional items following it.
      */
     public static <T> T[] concat( T[] initial, T... additional )
     {
@@ -454,6 +441,8 @@ public abstract class ArrayUtil
     }
 
     /**
+     * Returns the array version of the vararg argument.
+     *
      * @param varargs the items
      * @param <T> the type of the items
      * @return the array version of the vararg argument.

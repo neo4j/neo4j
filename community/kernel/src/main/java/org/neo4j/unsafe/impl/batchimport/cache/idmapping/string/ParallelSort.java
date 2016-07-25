@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.collection.primitive.PrimitiveLongStack;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
@@ -368,8 +367,7 @@ public class ParallelSort
                     return i;
                 }
             }
-            throw new ThisShouldNotHappenError( "Mattias and Raghu",
-                    "The middle value somehow dissappeared in front of our eyes" );
+            throw new IllegalStateException( "The middle value somehow disappeared in front of our eyes" );
         }
     }
 

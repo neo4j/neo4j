@@ -40,6 +40,11 @@ public interface Configuration
     boolean multilineFields();
 
     /**
+     * Whether or not strings should be trimmed for whitespaces.
+     */
+    boolean trimStrings();
+
+    /**
      * @return {@code true} for treating empty strings, i.e. {@code ""} as null, instead of an empty string.
      */
     boolean emptyQuotedStringsAsNull();
@@ -68,6 +73,12 @@ public interface Configuration
 
         @Override
         public boolean emptyQuotedStringsAsNull()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean trimStrings()
         {
             return false;
         }
@@ -106,6 +117,12 @@ public interface Configuration
         public boolean emptyQuotedStringsAsNull()
         {
             return defaults.emptyQuotedStringsAsNull();
+        }
+
+        @Override
+        public boolean trimStrings()
+        {
+            return defaults.trimStrings();
         }
     }
 }

@@ -20,16 +20,17 @@
 package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.Math.pow;
-import static java.lang.Math.round;
 import static org.neo4j.helpers.Format.duration;
 
 /**
@@ -56,6 +57,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
 
     private final PrintStream out;
     private final int width;
+    private long tick;
 
     public SpectrumExecutionMonitor( long interval, TimeUnit unit, PrintStream out, int width )
     {
@@ -76,6 +78,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
             out.print( executions[i].getStageName() );
         }
         out.println();
+        tick = 0;
     }
 
     @Override
@@ -96,20 +99,30 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
     @Override
     public void check( StageExecution[] executions )
     {
-        float partWidth = (float) width / executions.length;
-        StringBuilder builder = new StringBuilder();
-        boolean allPrinted = true;
-        for ( StageExecution execution : executions )
+        StageExecution execution = rotatedExecution( executions );
+        if ( execution != null )
         {
-            allPrinted &= printSpectrum( builder, execution, round( partWidth ) );
-        }
-        if ( allPrinted )
-        {
+            StringBuilder builder = new StringBuilder();
+            printSpectrum( builder, execution, width );
             out.print( "\r" + builder );
         }
     }
 
-    private boolean printSpectrum( StringBuilder builder, StageExecution execution, int width )
+    private StageExecution rotatedExecution( StageExecution[] executions )
+    {
+        List<StageExecution> active = new ArrayList<>( executions.length );
+        for ( StageExecution execution : executions )
+        {
+            if ( execution.stillExecuting() )
+            {
+                active.add( execution );
+            }
+        }
+
+        return !active.isEmpty() ? active.get( (int) ((tick++)%active.size()) ) : null;
+    }
+
+    private void printSpectrum( StringBuilder builder, StageExecution execution, int width )
     {
         long[] values = values( execution );
         long total = total( values );
@@ -126,7 +139,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         for ( Step<?> step : execution.steps() )
         {
             StepStats stats = step.stats();
-            if ( !projection.next( avg( stats ) ) )
+            if ( !projection.next( values[stepIndex] ) )
             {
                 break; // odd though
             }
@@ -141,11 +154,11 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
                 boolean isBottleNeck = bottleNeck.first() == step;
                 String name =
                         (isBottleNeck ? "*" : "") +
-                        stats.toString( DetailLevel.IMPORTANT ) + (step.numberOfProcessors() > 1
-                        ? "(" + step.numberOfProcessors() + ")"
+                        stats.toString( DetailLevel.IMPORTANT ) + (step.processors( 0 ) > 1
+                        ? "(" + step.processors( 0 ) + ")"
                         : "");
                 int charIndex = 0; // negative value "delays" the text, i.e. pushes it to the right
-                char backgroundChar = step.numberOfProcessors() > 1 ? '=' : '-';
+                char backgroundChar = step.processors( 0 ) > 1 ? '=' : '-';
                 for ( int i = 0; i < stepWidth; i++, charIndex++ )
                 {
                     char ch = backgroundChar;
@@ -163,7 +176,6 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
 
         long progress = lastDoneBatches * execution.getConfig().batchSize();
         builder.append( "]" ).append( fitInProgress( progress ) );
-        return true;
     }
 
     private static String fitInProgress( long value )

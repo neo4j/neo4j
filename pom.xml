@@ -11,34 +11,32 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>parent</artifactId>
-  <version>2.3.7-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
+
   <packaging>pom</packaging>
   <name>Neo4j</name>
   <description>Neo4j Graph Database</description>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
-    <jta.groupId>org.apache.geronimo.specs</jta.groupId>
-    <jta.artifactId>geronimo-jta_1.1_spec</jta.artifactId>
-    <jta.version>1.1.1</jta.version>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <neo4j.java.version>${maven.compiler.source}</neo4j.java.version>
     <pico.version>2.14.3</pico.version>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>compile</licensing.phase>
-    <lucene.version>3.6.2</lucene.version>
-    <powermock.version>1.5.5</powermock.version>
-    <logback-classic.version>1.1.2</logback-classic.version>
-    <bouncycastle.version>1.52</bouncycastle.version>
+    <lucene.version>5.5.0</lucene.version>
+    <bouncycastle.version>1.53</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <hsqldb.version>2.3.2</hsqldb.version>
-    <test.runner.jvm.settings>-XX:MaxPermSize=128M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true -XX:-OmitStackTraceInFastThrow</test.runner.jvm.settings>
+    <test.runner.jvm.settings>-Xmx2G -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.CHECK_NATIVE_ACCESS=true -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields</test.runner.jvm.settings>
     <doclint-groups>reference</doclint-groups>
+    <jetty.version>9.2.9.v20150224</jetty.version>
+    <findbugs.version>3.0.0</findbugs.version>
   </properties>
 
   <modules>
     <module>community</module>
-    <module>advanced</module>
     <module>enterprise</module>
     <module>integrationtests</module>
     <module>stresstests</module>
@@ -74,18 +72,34 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>2.17</version>
+        <configuration>
+          <configLocation>build/checkstyle.xml</configLocation>
+          <consoleOutput>true</consoleOutput>
+          <logViolationsToConsole>true</logViolationsToConsole>
+          <failsOnError>true</failsOnError>
+          <failOnViolation>true</failOnViolation>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+        </configuration>
+        <executions>
+          <execution>
+            <id>validate</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>clirr-maven-plugin</artifactId>
-          <version>2.4</version>
-        </plugin>
-        <plugin>
           <groupId>org.neo4j.build.plugins</groupId>
           <artifactId>clirr-maven-plugin</artifactId>
-          <version>1.0</version>
+          <version>1.0.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -100,7 +114,33 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>findbugs-maven-plugin</artifactId>
-          <version>2.5.2</version>
+          <version>3.0.3</version>
+          <configuration>
+            <!--
+                Enables analysis which takes more memory but finds more bugs.
+                If you run out of memory, changes the value of the effort element
+                to 'Low'.
+            -->
+            <effort>Max</effort>
+            <!-- (values are low, medium, and max) -->
+            <threshold>Medium</threshold>
+            <!-- Fail the build or only generate report -->
+            <failOnError>false</failOnError>
+            <!-- Produces XML report -->
+            <xmlOutput>true</xmlOutput>
+            <includeTests>true</includeTests>
+            <!-- Configures the directory in which the XML report is created -->
+            <findbugsXmlOutputDirectory>${project.build.directory}/findbugs</findbugsXmlOutputDirectory>
+          </configuration>
+          <executions>
+            <!-- Run with as part of the build -->
+              <execution>
+                <phase>verify</phase>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -138,8 +178,9 @@
             <plainTextReport>true</plainTextReport>
             <prependText>${licensing.prepend.text}</prependText>
             <excludedGroups>
-              ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.browser){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1}|(org.neo4j.bolt){1}|(org.neo4j.build){1}|(org.neo4j.examples){1})$
+              ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1}|(org.neo4j.bolt){1}|(org.neo4j.build){1}|(org.neo4j.examples){1}|(org.neo4j.test){1})$
             </excludedGroups>
+            <excludedArtifacts>^((neo4j-browser))$</excludedArtifacts>
             <includedScopes>compile</includedScopes>
           </configuration>
           <executions>
@@ -280,6 +321,21 @@
         <module>packaging</module>
         <module>packaging/installer-linux</module>
       </modules>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>findbugs-maven-plugin</artifactId>
+            <dependencies>
+              <dependency>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>annotations</artifactId>
+                <version>${findbugs.version}</version>
+              </dependency>
+            </dependencies>
+          </plugin>
+        </plugins>
+      </build>
       <properties>
         <attach-docs-phase>verify</attach-docs-phase>
       </properties>
@@ -311,15 +367,6 @@
                 </goals>
               </execution>
             </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>findbugs-maven-plugin</artifactId>
-            <configuration>
-              <xmlOutput>true</xmlOutput>
-              <findbugsXmlOutput>true</findbugsXmlOutput>
-              <!-- For jenkins to pick stuff up -->
-            </configuration>
           </plugin>
         </plugins>
       </build>
@@ -406,6 +453,12 @@
       </build>
     </profile>
     <profile>
+      <id>core-edge-tests-only</id>
+      <properties>
+        <test-phase>none</test-phase>
+      </properties>
+    </profile>
+    <profile>
       <id>java8-set-javadoc-doclint</id>
       <activation>
         <jdk>[1.8,)</jdk>
@@ -427,14 +480,33 @@
     <dependencies>
       <dependency>
         <groupId>org.apache.lucene</groupId>
+        <artifactId>lucene-analyzers-common</artifactId>
+        <version>${lucene.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-core</artifactId>
         <version>${lucene.version}</version>
       </dependency>
-      <!-- special -->
       <dependency>
-        <groupId>${jta.groupId}</groupId>
-        <artifactId>${jta.artifactId}</artifactId>
-        <version>${jta.version}</version>
+        <groupId>org.apache.lucene</groupId>
+        <artifactId>lucene-codecs</artifactId>
+        <version>${lucene.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.lucene</groupId>
+        <artifactId>lucene-queryparser</artifactId>
+        <version>${lucene.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-queries</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-sandbox</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <!-- testing -->
       <dependency>
@@ -467,7 +539,7 @@
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>4.11</version>
+        <version>4.12</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -486,47 +558,17 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>1.9.5</version>
+        <version>1.10.19</version>
         <scope>test</scope>
       </dependency>
 
-      <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-all</artifactId>
-        <version>1.9.5</version>
-        <scope>test</scope>
-      </dependency>
       <dependency>
           <groupId>org.objenesis</groupId>
           <artifactId>objenesis</artifactId>
-          <version>1.3</version>
+          <version>2.2</version>
           <scope>test</scope>
       </dependency>
 
-      <dependency>
-        <groupId>org.powermock</groupId>
-        <artifactId>powermock-module-junit4</artifactId>
-        <version>${powermock.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.powermock</groupId>
-        <artifactId>powermock-api-mockito</artifactId>
-        <version>${powermock.version}</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>geronimo-spec</groupId>
-        <artifactId>geronimo-spec-j2ee</artifactId>
-        <version>1.4-rc4</version>
-        <scope>test</scope>
-      </dependency>
       <dependency>
         <groupId>org.hsqldb</groupId>
         <artifactId>hsqldb</artifactId>
@@ -601,21 +643,6 @@
         <version>1.2.17</version>
       </dependency>
       <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-classic</artifactId>
-        <version>${logback-classic.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-core</artifactId>
-        <version>${logback-classic.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-access</artifactId>
-        <version>${logback-classic.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.codehaus.janino</groupId>
         <artifactId>janino</artifactId>
         <version>2.6.1</version>
@@ -684,14 +711,24 @@
         <version>1.9.13</version>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-server</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-webapp</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-servlet</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-client</artifactId>
         <version>9.2.10.v20150310</version>
-      </dependency>
-      <dependency>
-        <groupId>org.rrd4j</groupId>
-        <artifactId>rrd4j</artifactId>
-        <version>2.2</version>
       </dependency>
       <dependency>
         <groupId>org.mozilla</groupId>
@@ -741,10 +778,12 @@
         <artifactId>metrics-graphite</artifactId>
         <version>3.1.2</version>
       </dependency>
+
       <dependency>
-        <groupId>io.dropwizard.metrics</groupId>
-        <artifactId>metrics-ganglia</artifactId>
-        <version>3.1.2</version>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>annotations</artifactId>
+        <version>${findbugs.version}</version>
+        <scope>provided</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>

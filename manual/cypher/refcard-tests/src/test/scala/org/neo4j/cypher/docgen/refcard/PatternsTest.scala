@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class PatternsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person:Swedish KNOWS B", "B KNOWS C", "C KNOWS ROOT")
@@ -40,7 +40,7 @@ class PatternsTest extends RefcardTest with QueryStatisticsTestSupport {
       case "empty" =>
         assert(result.toList.size === 0)
       case "create" =>
-        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 1)
+        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesWritten = 1)
         assert(result.toList.size === 1)
     }
   }
@@ -150,7 +150,7 @@ WHERE id(n) = %A% AND id(m) = %B%
 
 RETURN r###
 
-Bind the relationship to identifier `r`.
+Bind the relationship to variable `r`.
 
 ###assertion=related
 MATCH

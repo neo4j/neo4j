@@ -12,45 +12,71 @@
                    dest="${project.build.outputDirectory}"
                    compression="gzip"/>
 
-            <!-- Handle the case of the arbiter -->
-            <copy toDir="${project.build.outputDirectory}/neo4j-arbiter-${neo4j.version}" failonerror="false">
-                <fileset dir="${project.build.outputDirectory}/neo4j-enterprise-${neo4j.version}"/>
-            </copy>
-
             <!-- Move distributions into build folders -->
             <move toDir="${project.build.outputDirectory}/@{name}/server">
                 <fileset dir="${project.build.outputDirectory}/neo4j-@{name}-${neo4j.version}"
                          includes="**"/>
             </move>
 
-            <!-- Make the arbiter init scripts available to debuild -->
-            <copy toDir="${project.build.outputDirectory}/@{name}/server">
-                <fileset dir="${project.build.sourceDirectory}/../resources/@{name}/debian/">
-                    <include name="neo4j-arbiter-service"/>
-                </fileset>
-            </copy>
-
             <!-- Make the Neo4j init scripts available to debuild -->
             <copy toDir="${project.build.outputDirectory}/@{name}/server">
                 <fileset dir="${project.build.sourceDirectory}/../resources/common">
-                    <include name="neo4j-service"/>
+                    <include name="neo4j"/>
                 </fileset>
             </copy>
 
-            <replace file="${project.build.outputDirectory}/@{name}/server/conf/neo4j-wrapper.conf"
-                     token="neo4j.ext.udc.source=tarball"
-                     value="neo4j.ext.udc.source=debian"/>
+            <!-- Make the default values file available to debuild -->
+            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j.default"
+                  tofile="${project.build.outputDirectory}/@{name}/server/default/neo4j"/>
+
+            <!-- Make the Neo4j wrapper scripts available to debuild -->
+            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
+                  toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j"/>
+            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
+                  toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-admin"/>
+            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
+                  toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-backup"/>
+            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
+                  toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-import"/>
+            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
+                  toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-shell"/>
+
+            <!-- Set the directories to match the FHS. -->
+            <replace file="${project.build.outputDirectory}/@{name}/server/conf/neo4j.conf"
+                     token="#dbms.directories.data=data"
+                     value="dbms.directories.data=/var/lib/neo4j/data"/>
+
+            <replace file="${project.build.outputDirectory}/@{name}/server/conf/neo4j.conf"
+                     token="#dbms.directories.plugins=plugins"
+                     value="dbms.directories.plugins=/var/lib/neo4j/plugins"/>
+
+            <replace file="${project.build.outputDirectory}/@{name}/server/conf/neo4j.conf"
+                     token="#dbms.directories.import=import"
+                     value="dbms.directories.import=/var/lib/neo4j/import"/>
+
+            <concat destfile="${project.build.outputDirectory}/@{name}/server/conf/neo4j.conf"
+                    append="true">
+
+# Directory settings.
+dbms.directories.logs=/var/log/neo4j
+dbms.directories.run=/var/run/neo4j
+dbms.directories.lib=/usr/share/neo4j/lib
+dbms.directories.certificates=/var/lib/neo4j/certificates
+            </concat>
 
             <chmod perm="700">
                 <fileset dir="${project.build.outputDirectory}/@{name}">
                     <include name="**/server/bin/neo4j"/>
                     <include name="**/server/bin/neo4j-shell"/>
                     <include name="**/server/bin/neo4j-import"/>
-                    <include name="**/server/bin/utils"/>
                     <include name="**/server/bin/neo4j-backup"/>
-                    <include name="**/server/bin/neo4j-arbiter"/>
-                    <include name="**/server/bin/neo4j-coordinator"/>
-                    <include name="**/server/bin/neo4j-coordinator-shell"/>
+                    <include name="**/server/bin/neo4j-admin"/>
+
+                    <include name="**/server/scripts/neo4j"/>
+                    <include name="**/server/scripts/neo4j-shell"/>
+                    <include name="**/server/scripts/neo4j-import"/>
+                    <include name="**/server/scripts/neo4j-backup"/>
+                    <include name="**/server/scripts/neo4j-admin"/>
                 </fileset>
             </chmod>
 
@@ -71,16 +97,9 @@
         </sequential>
     </macrodef>
 
-    <target name="arbiter_dependency">
-        <copy file="${project.build.directory}/neo4j-enterprise-${neo4j.version}-unix.tar.gz"
-              tofile="${project.build.directory}/neo4j-arbiter-${neo4j.version}-unix.tar.gz" />
-    </target>
-
     <target name="generate">
         <package name="community"/>
-        <package name="advanced"/>
         <package name="enterprise"/>
-        <package name="arbiter"/>
     </target>
 
     <target name="publish_to_target" depends="generate">
@@ -89,15 +108,9 @@
                 file="${project.build.outputDirectory}/neo4j_${neo4j.version.debian_compliant}_all.deb"
                 toFile="${project.build.directory}/neo4j_${neo4j.version.debian_compliant}_all.deb"/>
         <copy
-                file="${project.build.outputDirectory}/neo4j-advanced_${neo4j.version.debian_compliant}_all.deb"
-                toFile="${project.build.directory}/neo4j-advanced_${neo4j.version.debian_compliant}_all.deb"/>
-        <copy
                 file="${project.build.outputDirectory}/neo4j-enterprise_${neo4j.version.debian_compliant}_all.deb"
                 toFile="${project.build.directory}/neo4j-enterprise_${neo4j.version.debian_compliant}_all.deb"/>
-        <copy
-                file="${project.build.outputDirectory}/neo4j-arbiter_${neo4j.version.debian_compliant}_all.deb"
-                toFile="${project.build.directory}/neo4j-arbiter_${neo4j.version.debian_compliant}_all.deb"/>
     </target>
 
-    <target name="debian" depends="arbiter_dependency, publish_to_target"/>
+    <target name="debian" depends="publish_to_target"/>
 </project>

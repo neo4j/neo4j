@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 /**
  * An executor for the background threads for the page caches.
@@ -48,15 +47,4 @@ final class BackgroundThreadExecutor implements Executor
         executor.execute( command );
     }
 
-    private static final class DaemonThreadFactory implements ThreadFactory
-    {
-        @Override
-        public Thread newThread( Runnable r )
-        {
-            ThreadFactory def = Executors.defaultThreadFactory();
-            Thread thread = def.newThread( r );
-            thread.setDaemon( true );
-            return thread;
-        }
-    }
 }

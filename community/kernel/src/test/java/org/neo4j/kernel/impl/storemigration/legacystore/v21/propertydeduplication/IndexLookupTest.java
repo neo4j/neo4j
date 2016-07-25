@@ -26,25 +26,25 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil.findTokenFor;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil
+        .findTokenFor;
 
 public class IndexLookupTest
 {
@@ -72,8 +72,8 @@ public class IndexLookupTest
         String notUsedIndexPropKey = "notUsed";
         String usedIndexPropKey = "used";
 
-        Label usedLabel = DynamicLabel.label( "UsedLabel" );
-        Label notUsedLabel = DynamicLabel.label( "NotUsedLabel" );
+        Label usedLabel = Label.label( "UsedLabel" );
+        Label notUsedLabel = Label.label( "NotUsedLabel" );
 
         try ( Transaction transaction = api.beginTx() )
         {
@@ -101,8 +101,7 @@ public class IndexLookupTest
         }
 
         DependencyResolver resolver = api.getDependencyResolver();
-        NeoStoresSupplier neoStoresSupplier = resolver.resolveDependency( NeoStoresSupplier.class );
-        NeoStores neoStores = neoStoresSupplier.get();
+        NeoStores neoStores = resolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         SchemaStore schemaStore = neoStores.getSchemaStore();
         SchemaIndexProvider schemaIndexProvider = resolver.resolveDependency( SchemaIndexProvider.class );
         indexLookup = new IndexLookup( schemaStore, schemaIndexProvider );
@@ -156,7 +155,7 @@ public class IndexLookupTest
         assertFalse( index.contains( notIndexedNode, indexedNodePropertyValue ) );
         assertFalse( index.contains( notIndexedNode, notIndexedNodePropertyValue ) );
     }
-    
+
     @Test
     public void containsMustReturnFalseWhenTheValueIsNotIndexed() throws Exception
     {

@@ -23,20 +23,18 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.function.IntFunction;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 
@@ -48,14 +46,7 @@ public class ReadOnlySlaveTest
     @ClassRule
     public static final ClusterRule clusterRule = new ClusterRule( ReadOnlySlaveTest.class )
             .withSharedSetting( tx_push_factor, "2" )
-            .withInstanceSetting( read_only, new IntFunction<String>()
-            {
-                @Override
-                public String apply( int oneBasedServerId )
-                {
-                    return oneBasedServerId == 2 ? Settings.TRUE : null;
-                }
-            } );
+            .withInstanceSetting( read_only, oneBasedServerId -> oneBasedServerId == 2 ? Settings.TRUE : null );
 
     @Test
     public void givenClusterWithReadOnlySlaveWhenWriteTxOnSlaveThenCommitFails() throws Throwable
@@ -96,7 +87,6 @@ public class ReadOnlySlaveTest
         {
             Node slaveNode = readOnlySlave.getNodeById( node.getId() );
 
-
             // Then
             slaveNode.setProperty( "foo", "bar" );
             tx.success();
@@ -128,9 +118,8 @@ public class ReadOnlySlaveTest
         {
             Node slaveNode = readOnlySlave.getNodeById( node.getId() );
 
-
             // Then
-            slaveNode.addLabel( DynamicLabel.label( "FOO" ) );
+            slaveNode.addLabel( Label.label( "FOO" ) );
             tx.success();
         }
         catch ( TransactionFailureException ex )
@@ -163,9 +152,8 @@ public class ReadOnlySlaveTest
             Node slaveNode = readOnlySlave.getNodeById( node.getId() );
             Node slaveNode2 = readOnlySlave.getNodeById( node2.getId() );
 
-
             // Then
-            slaveNode.createRelationshipTo( slaveNode2, DynamicRelationshipType.withName( "KNOWS" ) );
+            slaveNode.createRelationshipTo( slaveNode2, RelationshipType.withName( "KNOWS" ) );
             tx.success();
         }
         catch ( TransactionFailureException ex )

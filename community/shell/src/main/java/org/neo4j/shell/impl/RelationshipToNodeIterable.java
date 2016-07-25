@@ -38,7 +38,7 @@ public class RelationshipToNodeIterable extends IterableWrapper<Node, Relationsh
     {
         return rel.getOtherNode( fromNode );
     }
-    
+
     public static Iterable<Node> wrap( Iterable<Relationship> relationships, Node fromNode )
     {
         return new RelationshipToNodeIterable( relationships, fromNode );

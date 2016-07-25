@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -31,8 +32,8 @@ import javax.ws.rs.core.Response.Status;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
@@ -58,11 +59,11 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 {
     protected static final String NODES = "http://localhost:7474/db/data/node/";
 
-    public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
+    @Rule
+    public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
-    public @Rule
-    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
+    @Rule
+    public TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     @Before
     public void setUp()
@@ -87,7 +88,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         String script = createScript( scriptTemplate );
         String queryString = "{\"query\": \"" + script + "\",\"params\":{" + parameterString + "}}";
 
-        String snippet = org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier$.MODULE$.apply( script );
+        String snippet = org.neo4j.cypher.internal.compiler.v3_1.prettifier.Prettifier$.MODULE$.apply( script );
         gen().expectedStatus( status.getStatusCode() )
                 .payload( queryString )
                 .description( AsciidocHelper.createAsciiDocSnippet( "cypher", snippet ) );
@@ -264,7 +265,8 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     public String getNodesWithLabelAndPropertyUri( String label, String property, Object value ) throws UnsupportedEncodingException
     {
-        return format( "%slabel/%s/nodes?%s=%s", getDataUri(), label, property, encode( createJsonFrom( value ), "UTF-8" ) );
+        return format( "%slabel/%s/nodes?%s=%s", getDataUri(), label, property,
+                encode( createJsonFrom( value ), StandardCharsets.UTF_8.name() ) );
     }
 
     public String getSchemaIndexUri()

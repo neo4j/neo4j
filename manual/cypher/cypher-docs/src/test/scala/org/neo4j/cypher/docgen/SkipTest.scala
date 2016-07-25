@@ -53,7 +53,7 @@ class SkipTest extends DocumentingTestBase {
   @Test def returnFromExpression() {
     testQuery(
       title = "Skip first from expression",
-      text = "Skip accepts any expression that evaluates to a positive integer as long as it is not referring to any external identifiers:",
+      text = "Skip accepts any expression that evaluates to a positive integer as long as it is not referring to any external variables:",
       queryText = "match (n) return n order by n.name skip toInt(3*rand()) + 1",
       optionalResultExplanation = "The first three nodes are skipped, and only the last two are returned in the result.",
       assertions = (p) => assertTrue(p.columnAs[Node]("n").nonEmpty))

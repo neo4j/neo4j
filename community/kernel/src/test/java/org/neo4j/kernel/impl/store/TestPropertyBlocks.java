@@ -27,11 +27,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.IdType;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -635,7 +635,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     {
         Relationship rel = getGraphDb().createNode()
                                        .createRelationshipTo( getGraphDb().createNode(),
-                                                              DynamicRelationshipType.withName( "INVALIDATES" ) );
+                                               RelationshipType.withName( "INVALIDATES" ) );
 
         long recordsInUseAtStart = propertyRecordsInUse();
         long valueRecordsInUseAtStart = dynamicArrayRecordsInUse();
@@ -680,7 +680,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     private void testYoyoArrayBase( boolean withNewTx )
     {
         Relationship rel = getGraphDb().createNode().createRelationshipTo( getGraphDb().createNode(),
-                                                                           DynamicRelationshipType.withName( "LOCKS" ) );
+                RelationshipType.withName( "LOCKS" ) );
 
         long recordsInUseAtStart = propertyRecordsInUse();
         long valueRecordsInUseAtStart = dynamicArrayRecordsInUse();
@@ -688,7 +688,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         List<Long> theYoyoData = new ArrayList<Long>();
         for ( int i = 0; i < PropertyType.getPayloadSizeLongs() - 1; i++ )
         {
-            theYoyoData.add( 1l << 63 );
+            theYoyoData.add( 1L << 63 );
             Long[] value = theYoyoData.toArray( new Long[] {} );
             rel.setProperty( "yoyo", value );
             if ( withNewTx )
@@ -699,7 +699,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
             }
         }
 
-        theYoyoData.add( 1l << 63 );
+        theYoyoData.add( 1L << 63 );
         Long[] value = theYoyoData.toArray( new Long[] {} );
         rel.setProperty( "yoyo", value );
 
@@ -715,7 +715,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     public void testRemoveZigZag()
     {
         Relationship rel = getGraphDb().createNode().createRelationshipTo( getGraphDb().createNode(),
-                                                                           DynamicRelationshipType.withName( "LOCKS" ) );
+                RelationshipType.withName( "LOCKS" ) );
 
         long recordsInUseAtStart = propertyRecordsInUse();
 

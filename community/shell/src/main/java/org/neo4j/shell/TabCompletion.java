@@ -24,8 +24,10 @@ import java.util.Collection;
 
 public class TabCompletion implements Serializable
 {
-    private final Collection<String> candidates;
-    private final int cursor;
+    private static final long serialVersionUID = -3960128927108659417L;
+
+    private Collection<String> candidates;
+    private int cursor;
 
     public TabCompletion( Collection<String> candidates, int cursor )
     {

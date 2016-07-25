@@ -21,10 +21,10 @@ package org.neo4j.ext.monitorlogging;
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
-import org.neo4j.logging.Logger;
 import org.neo4j.kernel.monitoring.MonitorListenerInvocationHandler;
+import org.neo4j.logging.Logger;
 
 public class LoggingListener implements MonitorListenerInvocationHandler
 {

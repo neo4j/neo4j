@@ -19,12 +19,12 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import org.junit.Test;
 
 import org.neo4j.cluster.DelayedDirectExecutor;
 import org.neo4j.cluster.InstanceId;
@@ -55,7 +55,7 @@ public class HeartbeatContextImplTest
         Timeouts timeouts = mock( Timeouts.class );
 
         CommonContextState commonState = mock( CommonContextState.class );
-        ClusterConfiguration configuration = mock (ClusterConfiguration.class);
+        ClusterConfiguration configuration = mock( ClusterConfiguration.class );
         when( commonState.configuration() ).thenReturn( configuration );
         when( configuration.getMembers() ).thenReturn( members( 3 ) );
         when( configuration.getMemberIds() ).thenReturn( ids( 3 ) );
@@ -92,7 +92,7 @@ public class HeartbeatContextImplTest
         Timeouts timeouts = mock( Timeouts.class );
 
         CommonContextState commonState = mock( CommonContextState.class );
-        ClusterConfiguration configuration = mock ( ClusterConfiguration.class );
+        ClusterConfiguration configuration = mock( ClusterConfiguration.class );
         when( commonState.configuration() ).thenReturn( configuration );
         when( configuration.getMembers() ).thenReturn( members( 3 ) );
         when( configuration.getMemberIds() ).thenReturn( ids( 3 ) );
@@ -102,7 +102,7 @@ public class HeartbeatContextImplTest
                 new HeartbeatContextImpl( me, commonState, NullLogProvider.getInstance(), timeouts,
                         executor );
 
-        final List<InstanceId> failed = new ArrayList<>( 2 );
+        List<InstanceId> failed = new ArrayList<>( 2 );
         HeartbeatListener listener = new HeartbeatListener()
         {
             @Override
@@ -161,7 +161,7 @@ public class HeartbeatContextImplTest
         Timeouts timeouts = mock( Timeouts.class );
 
         CommonContextState commonState = mock( CommonContextState.class );
-        ClusterConfiguration configuration = mock ( ClusterConfiguration.class );
+        ClusterConfiguration configuration = mock( ClusterConfiguration.class );
         when( commonState.configuration() ).thenReturn( configuration );
         when( configuration.getMembers() ).thenReturn( members( 5 ) );
         when( configuration.getMemberIds() ).thenReturn( ids( 5 ) );

@@ -19,29 +19,36 @@
  */
 package org.neo4j.graphdb;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.CleanupRule;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.iterableWithSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class GraphDatabaseServiceTest
 {
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     @Test
     public void givenShutdownDatabaseWhenBeginTxThenExceptionIsThrown() throws Exception
     {
@@ -50,17 +57,11 @@ public class GraphDatabaseServiceTest
 
         db.shutdown();
 
+        // Expect
+        exception.expect( DatabaseShutdownException.class );
+
         // When
-        try
-        {
-            db.beginTx();
-            fail();
-        }
-        catch ( Exception e )
-        {
-            // Then
-            assertThat( e.getClass().getName(), CoreMatchers.equalTo( TransactionFailureException.class.getName() ) );
-        }
+        db.beginTx();
     }
 
     @Test
@@ -183,7 +184,7 @@ public class GraphDatabaseServiceTest
 
         // When
         final CountDownLatch shutdown = new CountDownLatch( 1 );
-        final AtomicReference result = new AtomicReference();
+        final AtomicReference<Object> result = new AtomicReference<>();
         Executors.newSingleThreadExecutor().submit( new Runnable()
         {
             @Override
@@ -229,7 +230,7 @@ public class GraphDatabaseServiceTest
                 }
                 catch ( Throwable e )
                 {
-                    e.printStackTrace();
+                    throw new RuntimeException( e );
                 }
             }
         } );
@@ -245,7 +246,7 @@ public class GraphDatabaseServiceTest
             }
         }
 
-        assertThat( result.get().getClass(), CoreMatchers.<Object>equalTo( TransactionFailureException.class ) );
+        assertThat( result.get(), instanceOf( DatabaseShutdownException.class ) );
     }
 
     @Test
@@ -323,7 +324,7 @@ public class GraphDatabaseServiceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 2, Iterables.count( db.getAllNodes() ) );
+            assertThat( db.getAllNodes(), is( iterableWithSize( 2 ) ) );
             tx.success();
         }
     }
@@ -387,5 +388,4 @@ public class GraphDatabaseServiceTest
         }
     }
 
-    public final @Rule CleanupRule cleanup = new CleanupRule();
 }

@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
 
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 
 public class RelationshipPropertyExistenceConstraintRule extends RelationshipPropertyConstraintRule
 {

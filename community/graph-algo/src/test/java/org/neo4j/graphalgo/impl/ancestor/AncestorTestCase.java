@@ -19,22 +19,22 @@
  */
 package org.neo4j.graphalgo.impl.ancestor;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.Traversal;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
@@ -45,20 +45,18 @@ import static org.junit.Assert.assertEquals;
 
 public class AncestorTestCase implements GraphHolder
 {
-
-    public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
-            this, true ) );
+    @Rule
+    public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
     private static GraphDatabaseService gdb;
 
     @Test
     @Graph( { "root contains child1", "child1 contains child11",
-            "child1 contains child12", "root contains child2", 
-            "child12 contains child121", "child1 contains child13" } )    
+            "child1 contains child12", "root contains child2",
+            "child12 contains child121", "child1 contains child13" } )
     public void test()
     {
-        RelationshipExpander expander = Traversal.expanderForTypes(Rels.contains, Direction.INCOMING);
-        
+        PathExpander expander = PathExpanders.forTypeAndDirection( Rels.contains, Direction.INCOMING );
+
         List<Node> nodeSet = new ArrayList<Node>();
         Map<String, Node> graph = data.get();
         nodeSet.add( graph.get( "child1" ) );

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.locking.community;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
@@ -38,43 +37,38 @@ public class LockManagerImpl
         this.ragManager = ragManager;
     }
 
-    public long getDetectedDeadlockCount()
-    {
-        return ragManager.getDeadlockCount();
-    }
-
     public boolean getReadLock( Object resource, Object tx )
-        throws DeadlockDetectedException, IllegalResourceException
+            throws DeadlockDetectedException, IllegalResourceException
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireReadLock( tx ) );
     }
 
     public boolean tryReadLock( Object resource, Object tx )
-        throws IllegalResourceException
+            throws IllegalResourceException
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).tryAcquireReadLock( tx ) );
     }
 
     public boolean getWriteLock( Object resource, Object tx )
-        throws DeadlockDetectedException, IllegalResourceException
+            throws DeadlockDetectedException, IllegalResourceException
     {
-        return unusedResourceGuard(resource, tx, getRWLockForAcquiring( resource, tx ).acquireWriteLock( tx ) );
+        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireWriteLock( tx ) );
     }
 
     public boolean tryWriteLock( Object resource, Object tx )
-        throws IllegalResourceException
+            throws IllegalResourceException
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).tryAcquireWriteLock( tx ) );
     }
 
     public void releaseReadLock( Object resource, Object tx )
-        throws LockNotFoundException, IllegalResourceException
+            throws LockNotFoundException, IllegalResourceException
     {
         getRWLockForReleasing( resource, tx, 1, 0, true ).releaseReadLock( tx );
     }
 
     public void releaseWriteLock( Object resource, Object tx )
-        throws LockNotFoundException, IllegalResourceException
+            throws LockNotFoundException, IllegalResourceException
     {
         getRWLockForReleasing( resource, tx, 0, 1, true ).releaseWriteLock( tx );
     }
@@ -91,14 +85,9 @@ public class LockManagerImpl
             }
             lock = resourceLockMap.get( resource );
         }
-        logger.bulk( new Consumer<Logger>()
-        {
-            @Override
-            public void accept( Logger bulkLogger )
-            {
-                bulkLogger.log( "Dump locks on resource %s", resource );
-                lock.logTo( bulkLogger );
-            }
+        logger.bulk( bulkLogger -> {
+            bulkLogger.log( "Dump locks on resource %s", resource );
+            lock.logTo( bulkLogger );
         } );
     }
 
@@ -108,8 +97,9 @@ public class LockManagerImpl
      *
      * @return {@code lockObtained }
      **/
-    private boolean unusedResourceGuard(Object resource, Object tx, boolean lockObtained) {
-        if (!lockObtained)
+    private boolean unusedResourceGuard( Object resource, Object tx, boolean lockObtained )
+    {
+        if ( !lockObtained )
         {
             // if lock was not acquired cleaning up optimistically allocated value
             // for case when it was only used by current call, if it was used by somebody else
@@ -121,12 +111,12 @@ public class LockManagerImpl
 
     /**
      * Visit all locks.
-     *
+     * <p/>
      * The supplied visitor may not block.
      *
      * @param visitor visitor for visiting each lock.
      */
-    public void accept( Visitor<RWLock, RuntimeException> visitor )
+    public void accept( Visitor<RWLock,RuntimeException> visitor )
     {
         synchronized ( resourceLockMap )
         {
@@ -171,24 +161,25 @@ public class LockManagerImpl
     }
 
     private RWLock getRWLockForReleasing( Object resource, Object tx, int readCountPrerequisite,
-            int writeCountPrerequisite, boolean strict )
+                                          int writeCountPrerequisite, boolean strict )
     {
         assertValidArguments( resource, tx );
         synchronized ( resourceLockMap )
         {
             RWLock lock = resourceLockMap.get( resource );
-            if (lock == null )
+            if ( lock == null )
             {
-                if (!strict)
+                if ( !strict )
                 {
                     return null;
                 }
                 throw new LockNotFoundException( "Lock not found for: "
-                    + resource + " tx:" + tx );
+                                                 + resource + " tx:" + tx );
             }
             // we need to get info from a couple of synchronized methods
             // to make it info consistent we need to synchronized lock to make sure it will not change between
             // various calls
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized ( lock )
             {
                 if ( !lock.isMarked() && lock.getReadCount() == readCountPrerequisite &&

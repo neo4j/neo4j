@@ -19,27 +19,29 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CommitContentionTests
 {
@@ -128,32 +130,31 @@ public class CommitContentionTests
     {
         GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
         //noinspection deprecation
-        return new CommunityFacadeFactory()
+        return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
             protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
-                return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
                 {
                     @Override
-                    protected TransactionCounters createTransactionCounters()
+                    protected TransactionStats createTransactionStats()
                     {
-                        return new TransactionCounters()
+                        return new TransactionStats()
                         {
                             public boolean skip;
 
                             @Override
-                            public void transactionFinished( boolean successful )
+                            public void transactionFinished( boolean committed, boolean write )
                             {
-                                super.transactionFinished( successful );
+                                super.transactionFinished( committed, write );
 
                                 if ( isTheRemoveOrphanedConstraintIndexesOnStartupTransaction() )
                                 {
                                     return;
                                 }
 
-
-                                if ( successful )
+                                if ( committed )
                                 {
                                     // skip signal and waiting for second transaction
                                     if ( skip )
@@ -183,7 +184,7 @@ public class CommitContentionTests
                     }
                 };
             }
-        }.newFacade( storeLocation.graphDbDir(), stringMap(), state.databaseDependencies() );
+        }.newFacade( storeLocation.graphDbDir(), emptyMap(), state.databaseDependencies() );
     }
 
     private void waitForFirstTransactionToStartPushing() throws InterruptedException

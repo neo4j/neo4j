@@ -32,7 +32,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -49,8 +48,8 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.UNKNOWN;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 import static org.neo4j.kernel.impl.api.KernelTransactions.tx_termination_aware_locks;
 import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
@@ -89,30 +88,15 @@ public class TransactionThroughMasterSwitchStressIT
     public TransactionThroughMasterSwitchStressIT( boolean txTerminationAwareLocks )
     {
         clusterRule = new ClusterRule( getClass() )
-                .withSharedSetting( tx_termination_aware_locks, String.valueOf( txTerminationAwareLocks ) )
                 .withInstanceSetting( HaSettings.slave_only,
-                        new IntFunction<String>() // instances 1 and 2 are slave only
-                        {
-                            @Override
-                            public String apply( int value )
-                            {
-                                if ( value == 1 || value == 2 )
-                                {
-                                    return Settings.TRUE;
-                                }
-                                else
-                                {
-                                    return Settings.FALSE;
-                                }
-                            }
-                        }
-                );
+                        value -> value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE )
+                .withSharedSetting( tx_termination_aware_locks, String.valueOf( txTerminationAwareLocks ) );
     }
 
     @Parameters(name = "txTerminationAwareLocks={0}")
-    public static List<Object[]> txTerminationAwareLocks()
+    public static List<Object> txTerminationAwareLocks()
     {
-        return Arrays.asList( new Object[]{false}, new Object[]{true} );
+        return Arrays.asList( false, true );
     }
 
     @Test
@@ -120,19 +104,19 @@ public class TransactionThroughMasterSwitchStressIT
     {
         // Duration of this test. If the timeout is hit in the middle of a round, the round will be completed
         // and exit after that.
-        ManagedCluster cluster = clusterRule.startCluster();
         long duration = parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "30s" ) );
         long endTime = currentTimeMillis() + duration;
         while ( currentTimeMillis() < endTime )
         {
-            oneRound( cluster );
+            oneRound();
         }
     }
 
-    private void oneRound( ManagedCluster cluster ) throws Throwable
+    private void oneRound() throws Throwable
     {
         // GIVEN a cluster and a node
         final String key = "key";
+        ManagedCluster cluster = clusterRule.startCluster();
         final GraphDatabaseService master = cluster.getMaster();
         final long nodeId = createNode( master );
         cluster.sync();
@@ -209,8 +193,9 @@ public class TransactionThroughMasterSwitchStressIT
     private void reelectTheSameMasterMakingItGoToPendingAndBack( ManagedCluster cluster ) throws Throwable
     {
         HighlyAvailableGraphDatabase master = cluster.getMaster();
+
         // Fail master and wait for master to go to pending, since it detects it's partitioned away
-        RepairKit masterRepair = cluster.fail( master, NetworkFlag.IN, NetworkFlag.OUT );
+        RepairKit masterRepair = cluster.fail( master, false, NetworkFlag.IN, NetworkFlag.OUT );
         cluster.await( memberThinksItIsRole( master, UNKNOWN ) );
 
         // Then Immediately repair

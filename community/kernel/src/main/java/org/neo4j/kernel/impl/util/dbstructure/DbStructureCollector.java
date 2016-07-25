@@ -25,10 +25,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.function.Function;
-import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -48,7 +46,7 @@ public class DbStructureCollector implements DbStructureVisitor
     private final Set<RelationshipPropertyExistenceConstraint> relPropertyExistenceConstraints = new HashSet<>();
     private final Map<Integer, Long> nodeCounts = new HashMap<>();
     private final Map<RelSpecifier, Long> relCounts = new HashMap<>();
-    private long allNodesCount = -1l;
+    private long allNodesCount = -1L;
 
     public DbStructureLookup lookup()
     {
@@ -87,39 +85,27 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public Iterator<Pair<String, String>> knownUniqueConstraints()
             {
-                return Iterables.map( new Function<UniquenessConstraint,Pair<String,String>>()
-                {
-                    @Override
-                    public Pair<String,String> apply( UniquenessConstraint uniquenessConstraint )
-                            throws RuntimeException
-                    {
-                        String label = labels.byIdOrFail( uniquenessConstraint.label() );
-                        String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKey() );
-                        return Pair.of( label, propertyKey );
-                    }
+                return Iterators.map( uniquenessConstraint -> {
+                    String label = labels.byIdOrFail( uniquenessConstraint.label() );
+                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKey() );
+                    return Pair.of( label, propertyKey );
                 }, uniquenessConstraints.iterator() );
             }
 
             @Override
             public Iterator<Pair<String,String>> knownNodePropertyExistenceConstraints()
             {
-                return Iterables.map( new Function<NodePropertyExistenceConstraint,Pair<String,String>>()
-                {
-                    @Override
-                    public Pair<String,String> apply( NodePropertyExistenceConstraint uniquenessConstraint )
-                            throws RuntimeException
-                    {
-                        String label = labels.byIdOrFail( uniquenessConstraint.label() );
-                        String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKey() );
-                        return Pair.of( label, propertyKey );
-                    }
+                return Iterators.map( uniquenessConstraint -> {
+                    String label = labels.byIdOrFail( uniquenessConstraint.label() );
+                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKey() );
+                    return Pair.of( label, propertyKey );
                 }, nodePropertyExistenceConstraints.iterator() );
             }
 
             @Override
             public Iterator<Pair<String,String>> knownRelationshipPropertyExistenceConstraints()
             {
-                return IteratorUtil.emptyIterator();
+                return Iterators.emptyIterator();
             }
 
             @Override
@@ -402,7 +388,6 @@ public class DbStructureCollector implements DbStructureVisitor
                         format( "Duplicate id %s for name %s in %s token map", token, name, tokenType )
                 );
             }
-
 
             if ( backward.containsKey( name ) )
             {

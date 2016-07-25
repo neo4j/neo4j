@@ -5,19 +5,18 @@
 
 By default, the Neo4j Server is bundled with a Web server that binds to host +localhost+ on port +7474+, answering only requests from the local machine.
 
-This is configured in the _conf/neo4j-server.properties_ file:
+This is configured in <<file-locations, _neo4j.conf_>>:
 
 [source,properties]
 ----
-# http port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.port=7474
-
 # Let the webserver only listen on the specified IP. Default is localhost (only
 # accept local connections). Uncomment to allow any connection.
-#org.neo4j.server.webserver.address=0.0.0.0
+dbms.connector.http.type=HTTP
+dbms.connector.http.enabled=true
+#dbms.connector.http.address=0.0.0.0:7474
 ----
 
-If you want the server to listen to external hosts, configure the Web server in the _conf/neo4j-server.properties_ by setting the property +org.neo4j.server.webserver.address=0.0.0.0+ which will cause the server to bind to all available network interfaces.
+If you want the server to listen to external hosts, configure the Web server in _neo4j.conf_ by setting the property +dbms.connector.http.address=0.0.0.0:7474+ which will cause the server to bind to all available network interfaces.
 Note that firewalls et cetera have to be configured accordingly as well.
 
 [[security-server-auth]]
@@ -52,15 +51,19 @@ The Neo4j server includes built in support for SSL encrypted communication over 
 The first time the server starts, it automatically generates a self-signed SSL certificate and a private key.
 Because the certificate is self signed, it is not safe to rely on for production use, instead, you should provide your own key and certificate for the server to use.
 
-To provide your own key and certificate, replace the generated key and certificate, or change the _conf/neo4j-server.properties_ file to set the location of your certificate and key:
+[CAUTION]
+Using auto-generation of self-signed SSL certificates will not work if the Neo4j server has been configured with multiple connectors that bind to different IP addresses.
+If you need to use multiple IP addresses, please configure certificates manually and use multi-host or wildcard certificates instead.
+
+To provide your own key and certificate put them in the <<file-locations, _certificates_>> directory.
+The files must be named _neo4j.key_ and _neo4j.cert_.
+The location of the directory can be configured by setting _dbms.directories.certificates_ in <<file-locations, _neo4j.conf_>>.
 
 [source,properties]
 ----
-# Certificate location (auto generated if the file does not exist)
-dbms.security.tls_certificate_file=ssl/snakeoil.cert
+# Certificates location (auto generated if the file does not exist)
+dbms.directories.certificates=certificates
 
-# Private key location (auto generated if the file does not exist)
-dbms.security.tls_key_file=ssl/snakeoil.key
 ----
 
 Note that the key should be unencrypted.
@@ -69,15 +72,14 @@ Make sure you set correct permissions on the private key, so that only the Neo4j
 Neo4j also supports chained SSL certificates.
 This requires to have all certificates in PEM format combined in one file and the private key needs to be in DER format.
 
-You can set what port the HTTPS connector should bind to in the same configuration file, as well as turn HTTPS off:
+You can set what port the HTTPS connector should bind to in the same configuration file, as well as turn HTTPS on or off:
 
 [source,properties]
 ----
-# Turn https-support on/off
-org.neo4j.server.webserver.https.enabled=true
-
-# https port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.https.port=443
+dbms.connector.https.type=HTTP
+dbms.connector.https.enabled=true
+dbms.connector.https.encryption=TLS
+dbms.connector.https.address=localhost:7473
 ----
 
 == Arbitrary code execution ==
@@ -152,10 +154,10 @@ ProxyPass /test balancer://mycluster
 
 The Cypher `LOAD CSV` clause can load files from the filesystem, and its default configuration allows any file on the system to be read using a `file:///` URL.
 This presents a security vulnerability in production environments where database users should not otherwise have access to files on the system.
-For production deployments, configure the <<config_dbms.security.load_csv_file_url_root>> setting, which will make all files identified in a `file:///` URL relative to the specified directory, similarly to how a unix chroot works.
-Alternatively, set the <<config_allow_file_urls>> setting to false, which disables the use of `file:///` URLs entirely.
+For production deployments, configure the <<config_dbms.directories.import>> setting, which will make all files identified in a `file:///` URL relative to the specified directory, similarly to how a unix chroot works.
+Alternatively, set the <<config_dbms.security.allow_csv_import_from_file_urls>> setting to false, which disables the use of `file:///` URLs entirely.
 Further information can be found in <<query-load-csv>>.
 
 == Neo4j Web Interface Security
 
-For configuration settings to consider in order to get the level of security you want to achieve, see <<server-browser-config>>.
+For configuration settings to consider in order to get the level of security you want to achieve, see <<configuration-settings>>.

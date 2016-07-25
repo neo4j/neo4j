@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store;
 import java.util.Collections;
 import java.util.Set;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static java.lang.String.format;

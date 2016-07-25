@@ -4,13 +4,13 @@
            compression="gzip" dest="${project.build.directory}"/>
 
     <replaceregexp
-            file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j-server.properties"
-            match="org.neo4j.server.database.location=.*"
-            replace="org.neo4j.server.database.location=/var/lib/neo4j"
+            file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j.conf"
+            match="dbms.directories.data=.*"
+            replace="dbms.directories.data=/var/lib/neo4j/data"
             />
 
     <replaceregexp
-            file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j-server.properties"
+            file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j.conf"
             match="org.neo4j.server.http.log.enabled=false"
             replace="org.neo4j.server.http.log.enabled=true"
             />
@@ -20,9 +20,5 @@
             match=".fileNamePattern.*"
             replace="&lt;fileNamePattern&gt;/var/log/neo4j/http.%d{yyyy-MM-dd_HH}.log&lt;/fileNamePattern&gt;"
             />
-
-    <replace file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j-wrapper.conf"
-             token="neo4j.ext.udc.source=tarball"
-             value="neo4j.ext.udc.source=rpm"/>
 
 </project>

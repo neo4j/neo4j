@@ -161,7 +161,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
         }
     }
 
-    static abstract class NameOwner<RECORD extends TokenRecord, REPORT extends ConsistencyReport.NameConsistencyReport> extends DynamicOwner<RECORD>
+    abstract static class NameOwner<RECORD extends TokenRecord, REPORT extends ConsistencyReport.NameConsistencyReport> extends DynamicOwner<RECORD>
             implements ComparativeRecordChecker<RECORD, AbstractBaseRecord, REPORT>
     {
         @SuppressWarnings("ConstantConditions")
@@ -193,7 +193,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
 
         PropertyKey( PropertyKeyTokenRecord record )
         {
-            this.id = record.getId();
+            this.id = record.getIntId();
         }
 
         @Override
@@ -209,7 +209,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
 
         LabelToken( LabelTokenRecord record )
         {
-            this.id = record.getId();
+            this.id = record.getIntId();
         }
 
         @Override
@@ -225,7 +225,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
 
         RelationshipTypeToken( RelationshipTypeTokenRecord record )
         {
-            this.id = record.getId();
+            this.id = record.getIntId();
         }
 
         @Override
@@ -249,6 +249,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
             return skipReference();
         }
 
+        @Override
         public void checkOrphanage()
         {
             PendingReferenceCheck<AbstractBaseRecord> reporter = pop();

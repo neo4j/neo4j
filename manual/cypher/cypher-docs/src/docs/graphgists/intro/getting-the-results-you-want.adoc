@@ -62,14 +62,14 @@ RETURN m
 1 row
 ----
 
-Other options are numeric comparisons, matching regular expressions and checking the existence of values within a collection.
+Other options are numeric comparisons, matching regular expressions and checking the existence of values within a list.
 
-The `WHERE` clause below includes a regular expression match, a greater than comparison and a test to see if a value exists in a collection.
+The `WHERE` clause below includes a regular expression match, a greater than comparison and a test to see if a value exists in a list.
 
 [source,cypher]
 ----
 MATCH (p:Person)-[r:ACTED_IN]->(m:Movie)
-WHERE p.name =~ "K.+" 
+WHERE p.name =~ "K.+"
    OR m.released > 2000
    OR "Neo" IN r.roles
 RETURN p,r,m
@@ -102,11 +102,11 @@ RETURN p,m
 
 Here we find actors, because they sport an `ACTED_IN` relationship but then skip those that ever `DIRECTED` any movie.
 
-There are also more advanced ways of filtering like collection-predicates which we will look at later on.
+There are also more advanced ways of filtering like list-predicates which we will look at later on.
 
 == Returning Results
 
-So far we've returned only nodes, relationships, or paths directly via their identifiers.
+So far we've returned only nodes, relationships, or paths directly via their variables.
 But the `RETURN` clause can actually return any number of expressions.
 But what are actually expressions in Cypher?
 
@@ -197,13 +197,13 @@ LIMIT 10;
 
 == Collecting Aggregation
 
-The most helpful aggregation function is `collect`, which, as the name says, collects all aggregated values into a _real_ array or list.
-This comes very handy in many situations as you don't loose the detail information while aggregating.
+The most helpful aggregation function is `collect()`, which, appropriately collects all aggregated values into a list.
+This comes very handy in many situations as no information of details is lost while aggregating.
 
-Collect is well suited for retrieving the typical parent-child structures, where one core entity (parent, root or head) is returned per row with all it's dependent information in associated collections created with `collect`.
-This means there's no need to repeat the parent information per each child-row or even running 1+n statements to retrieve the parent and its children individually.
+`collect()` is well suited for retrieving typical parent-child structures, where one core entity (parent, root or head) is returned per row with all its dependent information in associated lists created with `collect()`.
+This means that there is no need to repeat the parent information per each child-row, or even running `n+1` statements to retrieve the parent and its children individually.
 
-To retrieve the cast of each movie in our database you could use this statement:
+To retrieve the cast of each movie in our database this statement could be used:
 
 [source,cypher]
 ----
@@ -213,5 +213,5 @@ RETURN m.title as movie, collect(a.name) as cast, count(*) as actors
 
 //table
 
-The lists created by collect can either be used from the client consuming the Cypher results or directly within a statement with any of the collection functions or predicates.
+The lists created by `collect()` can either be used from the client consuming the Cypher results or directly within a statement with any of the list functions or predicates.
 

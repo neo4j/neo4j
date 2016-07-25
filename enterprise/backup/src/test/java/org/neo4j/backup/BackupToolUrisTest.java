@@ -95,7 +95,7 @@ public class BackupToolUrisTest
                     eq( host ),
                     eq( port ),
                     eq( new File( "/var/backup/graph" ) ),
-                    eq( ConsistencyCheck.DEFAULT ),
+                    eq( ConsistencyCheck.FULL ),
                     any( Config.class ),
                     eq( BackupClient.BIG_READ_TIMEOUT ),
                     eq( false )
@@ -199,7 +199,7 @@ public class BackupToolUrisTest
                     eq( host ),
                     eq( port ),
                     eq( new File( "/var/backup/graph" ) ),
-                    eq( ConsistencyCheck.DEFAULT ),
+                    eq( ConsistencyCheck.FULL ),
                     any( Config.class ),
                     eq( BackupClient.BIG_READ_TIMEOUT ),
                     eq( false )

@@ -31,17 +31,22 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class AbstractDynamicStoreTest
 {
@@ -53,6 +58,7 @@ public class AbstractDynamicStoreTest
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     private final File fileName = new File( "store" );
+    private final RecordFormats formats = StandardV3_0.RECORD_FORMATS;
     private PageCache pageCache;
     private FileSystemAbstraction fs;
 
@@ -71,38 +77,20 @@ public class AbstractDynamicStoreTest
     }
 
     @Test
-    public void shouldRecognizeDesignatedInUseBit() throws Exception
-    {
-        // GIVEN
-        try ( AbstractDynamicStore store = newTestableDynamicStore() )
-        {
-            // WHEN
-            byte otherBitsInTheInUseByte = 0;
-            for ( int i = 0; i < 8; i++ )
-            {
-                // THEN
-                assertRecognizesByteAsInUse( store, otherBitsInTheInUseByte );
-                otherBitsInTheInUseByte <<= 1;
-                otherBitsInTheInUseByte |= 1;
-            }
-        }
-    }
-
-    @Test
     public void dynamicRecordCursorReadsInUseRecords()
     {
         try ( AbstractDynamicStore store = newTestableDynamicStore() )
         {
-            DynamicRecord first = createDynamicRecord( 1, store );
-            DynamicRecord second = createDynamicRecord( 2, store );
-            DynamicRecord third = createDynamicRecord( 3, store );
+            DynamicRecord first = createDynamicRecord( 1, store, 0 );
+            DynamicRecord second = createDynamicRecord( 2, store, 0 );
+            DynamicRecord third = createDynamicRecord( 3, store, 10 );
 
             first.setNextBlock( second.getId() );
-            store.forceUpdateRecord( first );
+            store.updateRecord( first );
             second.setNextBlock( third.getId() );
-            store.forceUpdateRecord( second );
+            store.updateRecord( second );
 
-            AbstractDynamicStore.DynamicRecordCursor recordsCursor = store.getRecordsCursor( 1 );
+            RecordCursor<DynamicRecord> recordsCursor = store.newRecordCursor( store.newRecord() ).acquire( 1, NORMAL );
             assertTrue( recordsCursor.next() );
             assertEquals( first, recordsCursor.get() );
             assertTrue( recordsCursor.next() );
@@ -118,48 +106,44 @@ public class AbstractDynamicStoreTest
     {
         try ( AbstractDynamicStore store = newTestableDynamicStore() )
         {
-            DynamicRecord first = createDynamicRecord( 1, store );
-            DynamicRecord second = createDynamicRecord( 2, store );
-            DynamicRecord third = createDynamicRecord( 3, store );
+            DynamicRecord first = createDynamicRecord( 1, store, 0 );
+            DynamicRecord second = createDynamicRecord( 2, store, 0 );
+            DynamicRecord third = createDynamicRecord( 3, store, 10 );
 
             first.setNextBlock( second.getId() );
-            store.forceUpdateRecord( first );
+            store.updateRecord( first );
             second.setNextBlock( third.getId() );
-            store.forceUpdateRecord( second );
+            store.updateRecord( second );
             second.setInUse( false );
-            store.forceUpdateRecord( second );
+            store.updateRecord( second );
 
-            AbstractDynamicStore.DynamicRecordCursor recordsCursor = store.getRecordsCursor( 1 );
+            RecordCursor<DynamicRecord> recordsCursor = store.newRecordCursor( store.newRecord() ).acquire( 1, FORCE );
             assertTrue( recordsCursor.next() );
             assertEquals( first, recordsCursor.get() );
-            assertTrue( recordsCursor.next() );
+            assertFalse( recordsCursor.next() );
             assertEquals( second, recordsCursor.get() );
+            // because mode == FORCE we can still move through the chain
             assertTrue( recordsCursor.next() );
             assertEquals( third, recordsCursor.get() );
             assertFalse( recordsCursor.next() );
         }
     }
 
-    private static DynamicRecord createDynamicRecord( long id, AbstractDynamicStore store )
+    private DynamicRecord createDynamicRecord( long id, AbstractDynamicStore store, int dataSize )
     {
         DynamicRecord first = new DynamicRecord( id );
         first.setInUse( true );
-        first.setData( RandomUtils.nextBytes( 10 ) );
-        store.forceUpdateRecord( first );
+        first.setData( RandomUtils.nextBytes( dataSize == 0 ? BLOCK_SIZE - formats.dynamic().getRecordHeaderSize() : 10 ) );
+        store.updateRecord( first );
         return first;
-    }
-
-    private void assertRecognizesByteAsInUse( AbstractDynamicStore store, byte inUseByte )
-    {
-        assertTrue(  store.isInUse( (byte) (inUseByte | 0x10) ) );
-        assertFalse( store.isInUse( (byte) (inUseByte & ~0x10) ) );
     }
 
     private AbstractDynamicStore newTestableDynamicStore()
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        AbstractDynamicStore store = new AbstractDynamicStore( fileName, new Config(), IdType.ARRAY_BLOCK,
-                idGeneratorFactory, pageCache, NullLogProvider.getInstance(), BLOCK_SIZE )
+        AbstractDynamicStore store = new AbstractDynamicStore( fileName, Config.empty(), IdType.ARRAY_BLOCK,
+                idGeneratorFactory, pageCache, NullLogProvider.getInstance(), "test", BLOCK_SIZE,
+                formats.dynamic(), formats.storeVersion() )
         {
             @Override
             public void accept( Processor processor, DynamicRecord record )

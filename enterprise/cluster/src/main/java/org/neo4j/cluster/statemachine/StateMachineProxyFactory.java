@@ -51,7 +51,6 @@ public class StateMachineProxyFactory
 
     private final Map<String, ResponseFuture> responseFutureMap = new ConcurrentHashMap<String, ResponseFuture>();
 
-
     public StateMachineProxyFactory( StateMachines stateMachines, StateMachineConversations conversations, InstanceId me )
     {
         this.stateMachines = stateMachines;
@@ -168,8 +167,9 @@ public class StateMachineProxyFactory
                     if ( foundMatch )
                     // State machine could only partially handle this interface
                     {
-                        exception = new IllegalArgumentException( "State machine for " + stateMachine.getMessageType
-                                ().getName() + " cannot handle method:" + method.getName() );
+                        exception = new IllegalArgumentException(
+                                "State machine for " + stateMachine.getMessageType().getName() +
+                                " cannot handle method:" + method.getName() );
                     }
 
                     // Continue searching

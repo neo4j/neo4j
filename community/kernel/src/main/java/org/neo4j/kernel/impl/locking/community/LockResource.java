@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.helpers.MathUtil;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 public class LockResource
 {
-    private final Locks.ResourceType resourceType;
+    private final ResourceType resourceType;
     private final long resourceId;
 
     /** Local reference count, used for each client to count references to a lock. */
     private int refCount = 1;
 
-    public LockResource( Locks.ResourceType resourceType, long resourceId )
+    public LockResource( ResourceType resourceType, long resourceId )
     {
         this.resourceType = resourceType;
         this.resourceId = resourceId;
@@ -48,17 +49,8 @@ public class LockResource
         }
 
         LockResource that = (LockResource) o;
+        return resourceId == that.resourceId && resourceType.equals( that.resourceType );
 
-        if ( resourceId != that.resourceId )
-        {
-            return false;
-        }
-        if ( !resourceType.equals( that.resourceType ) )
-        {
-            return false;
-        }
-
-        return true;
     }
 
     @Override
@@ -77,12 +69,12 @@ public class LockResource
 
     public void acquireReference()
     {
-        refCount++;
+        refCount = Math.incrementExact( refCount );
     }
 
     public int releaseReference()
     {
-        return --refCount;
+        return refCount = MathUtil.decrementExactNotPastZero( refCount );
     }
 
     public long resourceId()
@@ -90,7 +82,7 @@ public class LockResource
         return resourceId;
     }
 
-    public Locks.ResourceType type()
+    public ResourceType type()
     {
         return resourceType;
     }

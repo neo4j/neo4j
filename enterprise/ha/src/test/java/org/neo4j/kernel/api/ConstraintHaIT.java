@@ -40,7 +40,8 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ConstraintHaIT.NodePropertyExistenceConstraintHaIT;
 import org.neo4j.kernel.api.ConstraintHaIT.RelationshipPropertyExistenceConstraintHaIT;
 import org.neo4j.kernel.api.ConstraintHaIT.UniquenessConstraintHaIT;
@@ -53,7 +54,6 @@ import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstra
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -66,8 +66,6 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.helpers.collection.Iterables.toList;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 @RunWith( Suite.class )
@@ -93,7 +91,7 @@ public class ConstraintHaIT
         @Override
         protected ConstraintDefinition getConstraint( GraphDatabaseService db, String type, String value )
         {
-            return singleOrNull( db.schema().getConstraints( DynamicLabel.label( type ) ) );
+            return Iterables.singleOrNull( db.schema().getConstraints( DynamicLabel.label( type ) ) );
         }
 
         @Override
@@ -153,7 +151,7 @@ public class ConstraintHaIT
         @Override
         protected ConstraintDefinition getConstraint( GraphDatabaseService db, String type, String value )
         {
-            return singleOrNull( db.schema().getConstraints( DynamicRelationshipType.withName( type ) ) );
+            return Iterables.singleOrNull( db.schema().getConstraints( DynamicRelationshipType.withName( type ) ) );
         }
 
         @Override
@@ -189,7 +187,7 @@ public class ConstraintHaIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+                for ( Relationship relationship : db.getAllRelationships() )
                 {
                     if ( relationship.isType( withName( type ) ) )
                     {
@@ -218,13 +216,13 @@ public class ConstraintHaIT
         @Override
         protected ConstraintDefinition getConstraint( GraphDatabaseService db, String type, String value )
         {
-            return singleOrNull( db.schema().getConstraints( DynamicLabel.label( type ) ) );
+            return Iterables.singleOrNull( db.schema().getConstraints( DynamicLabel.label( type ) ) );
         }
 
         @Override
         protected IndexDefinition getIndex( GraphDatabaseService db, String type, String value )
         {
-            return singleOrNull( db.schema().getIndexes( DynamicLabel.label( type ) ) );
+            return Iterables.singleOrNull( db.schema().getIndexes( DynamicLabel.label( type ) ) );
         }
 
         @Override
@@ -250,7 +248,7 @@ public class ConstraintHaIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                assertEquals( 1, toList( db.findNodes( label( type ), propertyKey, value ) ).size() );
+                assertEquals( 1, Iterators.asList( db.findNodes( label( type ), propertyKey, value ) ).size() );
                 tx.success();
             }
         }
@@ -416,7 +414,7 @@ public class ConstraintHaIT
             // And given that I begin a transaction that will create a constraint violation
             slave.beginTx();
             createConstraintViolation( slave, type, key, "Foo" );
-            TopLevelTransaction slaveTx = txBridge.getTopLevelTransactionBoundToThisThread( true );
+            KernelTransaction slaveTx = txBridge.getTopLevelTransactionBoundToThisThread( true );
             txBridge.unbindTransactionFromCurrentThread();
 
             // When I create a constraint

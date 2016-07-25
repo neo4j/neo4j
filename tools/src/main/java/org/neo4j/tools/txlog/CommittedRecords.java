@@ -19,11 +19,13 @@
  */
 package org.neo4j.tools.txlog;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.tools.txlog.checktypes.CheckType;
 
 /**
  * Contains mapping from entity id ({@link NodeRecord#getId()}, {@link PropertyRecord#getId()}, ...) to
@@ -33,29 +35,23 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
  *
  * @param <R> the type of the record
  */
-class CommittedRecords<R extends Abstract64BitRecord>
+class CommittedRecords<R extends AbstractBaseRecord>
 {
     private final CheckType<?,R> checkType;
-    private final PrimitiveLongObjectMap<LogRecord<R>> recordsById;
+    private final Map<Long,RecordInfo<R>> recordsById;
 
     CommittedRecords( CheckType<?,R> check )
     {
         this.checkType = check;
-        this.recordsById = Primitive.longObjectMap();
+        this.recordsById = new HashMap<>();
     }
 
-    boolean isValid( R record )
+    public void put( R record, long logVersion, long txId )
     {
-        LogRecord<R> current = recordsById.get( record.getId() );
-        return current == null || checkType.equal( record, current.record() );
+        recordsById.put( record.getId(), new RecordInfo<>( record, logVersion, txId ) );
     }
 
-    void put( R record, long logVersion )
-    {
-        recordsById.put( record.getId(), new LogRecord<>( record, logVersion ) );
-    }
-
-    LogRecord<R> get( long id )
+    public RecordInfo<R> get( long id )
     {
         return recordsById.get( id );
     }
@@ -63,6 +59,8 @@ class CommittedRecords<R extends Abstract64BitRecord>
     @Override
     public String toString()
     {
-        return "CommittedRecords{" + "command=" + checkType.name() + ", recordsById.size=" + recordsById.size() + "}";
+        return "CommittedRecords{" +
+               "command=" + checkType.name() +
+               ", recordsById.size=" + recordsById.size() + "}";
     }
 }

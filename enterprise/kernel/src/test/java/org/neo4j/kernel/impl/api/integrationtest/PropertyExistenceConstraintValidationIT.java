@@ -281,7 +281,7 @@ public class PropertyExistenceConstraintValidationIT
             // then
             catch ( ConstraintViolationTransactionFailureException e )
             {
-                Status expected = Status.Schema.ConstraintViolation;
+                Status expected = Status.Schema.ConstraintValidationFailed;
                 assertThat( e.status(), is( expected ) );
             }
         }
@@ -304,7 +304,7 @@ public class PropertyExistenceConstraintValidationIT
             // then
             catch ( ConstraintViolationTransactionFailureException e )
             {
-                Status expected = Status.Schema.ConstraintViolation;
+                Status expected = Status.Schema.ConstraintValidationFailed;
                 assertThat( e.status(), is( expected ) );
             }
         }

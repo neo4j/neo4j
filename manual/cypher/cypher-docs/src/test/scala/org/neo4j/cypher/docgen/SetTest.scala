@@ -98,7 +98,7 @@ Use a parameter to give the value of a property.
       parameters = Map("surname" -> "Taylor"),
       queryText = "match (n {name: 'Andres'}) set n.surname = {surname} return n",
       optionalResultExplanation = "The Andres node has got an surname added.",
-      assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 1))
+      assertions = (p) => assertStats(p, nodesCreated = 0, propertiesWritten = 1))
   }
 
   @Test def set_all_properties_using_a_parameter() {
@@ -110,7 +110,7 @@ This will replace all existing properties on the node with the new set provided 
       parameters = Map("props" -> Map("name" -> "Andres", "position" -> "Developer")),
       queryText = "match (n {name: 'Andres'}) set n = {props} return n",
       optionalResultExplanation = "The Andres node has had all it's properties replaced by the properties in the +props+ parameter.",
-      assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 4))
+      assertions = (p) => assertStats(p, nodesCreated = 0, propertiesWritten = 4))
   }
 
   @Test def set_multiple_properties_in_one_set_clause() {
@@ -119,7 +119,7 @@ This will replace all existing properties on the node with the new set provided 
       text = "If you want to set multiple properties in one go, simply separate them with a comma.",
       queryText = "match (n {name: 'Andres'}) set n.position = 'Developer', n.surname = 'Taylor'",
       optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 2))
+      assertions = (p) => assertStats(p, nodesCreated = 0, propertiesWritten = 2))
   }
 
   @Test def set_single_label_on_a_node() {

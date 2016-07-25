@@ -20,7 +20,7 @@
 package examples;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.QueryParser.Operator;
+import org.apache.lucene.queryparser.classic.QueryParser.Operator;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.junit.After;
@@ -40,10 +40,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
@@ -67,8 +67,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class ImdbDocTest
 {
@@ -136,7 +136,7 @@ public class ImdbDocTest
 
             // START SNIPPET: createRelationships
             // we need a relationship type
-            DynamicRelationshipType ACTS_IN = DynamicRelationshipType.withName( "ACTS_IN" );
+            RelationshipType ACTS_IN = RelationshipType.withName( "ACTS_IN" );
             // create relationships
             Relationship role1 = reeves.createRelationshipTo( theMatrix, ACTS_IN );
             role1.setProperty( "name", "Neo" );
@@ -313,9 +313,6 @@ public class ImdbDocTest
         assertEquals( "Keanu Reeves", reeves.getProperty( "name" ) );
     }
 
-    // @Test
-    // public void getSameFromDifferentValuesO
-
     @Test
     public void doGetForRelationships()
     {
@@ -330,7 +327,7 @@ public class ImdbDocTest
         assertEquals( "Monica Bellucci", actor.getProperty( "name" ) );
         assertEquals( "The Matrix Reloaded", movie.getProperty( "title" ) );
 
-        @SuppressWarnings("serial") List<String> expectedActors = new ArrayList<String>()
+        List<String> expectedActors = new ArrayList<String>()
         {
             {
                 add( "Keanu Reeves" );
@@ -360,14 +357,14 @@ public class ImdbDocTest
         Index<Node> actors = index.forNodes( "actors" );
         Index<Node> movies = index.forNodes( "movies" );
         Set<String> found = new HashSet<>();
-        @SuppressWarnings("serial") Set<String> expectedActors = new HashSet<String>()
+        Set<String> expectedActors = new HashSet<String>()
         {
             {
                 add( "Monica Bellucci" );
                 add( "Keanu Reeves" );
             }
         };
-        @SuppressWarnings("serial") Set<String> expectedMovies = new HashSet<String>()
+        Set<String> expectedMovies = new HashSet<String>()
         {
             {
                 add( "The Matrix" );
@@ -469,7 +466,7 @@ public class ImdbDocTest
                         .sortNumeric( "year-numeric", false ) );
         // END SNIPPET: sortedNumericRange
         List<String> sortedMovies = new ArrayList<>();
-        @SuppressWarnings("serial") List<String> expectedSortedMovies = new ArrayList<String>()
+        List<String> expectedSortedMovies = new ArrayList<String>()
         {
             {
                 add( "The Matrix" );
@@ -614,10 +611,10 @@ public class ImdbDocTest
     @Test
     public void batchInsert() throws Exception
     {
-        Neo4jTestCase.deleteFileOrDirectory( new File(
-                "target/neo4jdb-batchinsert" ) );
+        File file = new File( "target/neo4jdb-batchinsert" );
+        Neo4jTestCase.deleteFileOrDirectory( file );
         // START SNIPPET: batchInsert
-        BatchInserter inserter = BatchInserters.inserter( "target/neo4jdb-batchinsert" );
+        BatchInserter inserter = BatchInserters.inserter( file );
         BatchInserterIndexProvider indexProvider =
                 new LuceneBatchInserterIndexProvider( inserter );
         BatchInserterIndex actors =
@@ -636,7 +633,7 @@ public class ImdbDocTest
         inserter.shutdown();
         // END SNIPPET: batchInsert
 
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( "target/neo4jdb-batchinsert" );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( file );
         try ( Transaction tx = db.beginTx() )
         {
             Index<Node> index = db.index().forNodes( "actors" );

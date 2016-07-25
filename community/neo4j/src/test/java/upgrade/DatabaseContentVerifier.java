@@ -33,16 +33,14 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.makeLongArray;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.makeLongString;
 
@@ -64,7 +62,7 @@ public class DatabaseContentVerifier
         try ( Transaction tx = database.beginTx() )
         {
             int traversalCount = 0;
-            for ( Relationship rel : GlobalGraphOperations.at( database ).getAllRelationships() )
+            for ( Relationship rel : database.getAllRelationships() )
             {
                 traversalCount++;
                 verifyProperties( rel );
@@ -79,7 +77,7 @@ public class DatabaseContentVerifier
         int nodeCount = 0;
         try ( Transaction tx = database.beginTx() )
         {
-            for ( Node node : GlobalGraphOperations.at( database ).getAllNodes() )
+            for ( Node node : database.getAllNodes() )
             {
                 nodeCount++;
                 if ( node.getId() >= numberOfUnrelatedNodes )
@@ -140,11 +138,11 @@ public class DatabaseContentVerifier
     {
         try ( Transaction tx = database.beginTx() )
         {
-            List<IndexDefinition> indexDefinitions = Iterables.toList( database.schema().getIndexes() );
+            List<IndexDefinition> indexDefinitions = Iterables.asList( database.schema().getIndexes() );
             assertEquals( 1, indexDefinitions.size() );
             IndexDefinition indexDefinition = indexDefinitions.get( 0 );
             assertEquals( "Label", indexDefinition.getLabel().name() );
-            List<String> propKeys = Iterables.toList( indexDefinition.getPropertyKeys() );
+            List<String> propKeys = Iterables.asList( indexDefinition.getPropertyKeys() );
             assertEquals( 1, propKeys.size() );
             String propKey = propKeys.get( 0 );
             assertEquals( "prop", propKey );

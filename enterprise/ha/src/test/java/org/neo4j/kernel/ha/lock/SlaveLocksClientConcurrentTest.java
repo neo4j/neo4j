@@ -40,9 +40,9 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertTrue;
@@ -96,7 +96,7 @@ public class SlaveLocksClientConcurrentTest
         when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).then(
                 new WaitLatchAnswer( resourceLatch, readerCompletedLatch ) );
 
-        long nodeId = 10l;
+        long nodeId = 10L;
         ResourceReader resourceReader =
                 new ResourceReader( reader, ResourceTypes.NODE, nodeId, resourceLatch, readerCompletedLatch );
         ResourceWriter resourceWriter = new ResourceWriter( writer, ResourceTypes.NODE, nodeId );
@@ -157,7 +157,7 @@ public class SlaveLocksClientConcurrentTest
 
     private class ResourceWriter extends ResourceWorker
     {
-        public ResourceWriter( SlaveLocksClient locksClient, Locks.ResourceType resourceType, long id )
+        public ResourceWriter( SlaveLocksClient locksClient, ResourceType resourceType, long id )
         {
             super( locksClient, resourceType, id );
         }
@@ -175,7 +175,7 @@ public class SlaveLocksClientConcurrentTest
         private final CountDownLatch resourceLatch;
         private final CountDownLatch resourceReleaseLatch;
 
-        public ResourceReader( SlaveLocksClient locksClient, Locks.ResourceType resourceType, long id, CountDownLatch
+        public ResourceReader( SlaveLocksClient locksClient, ResourceType resourceType, long id, CountDownLatch
                 resourceLatch, CountDownLatch resourceReleaseLatch )
         {
             super( locksClient, resourceType, id );
@@ -203,10 +203,10 @@ public class SlaveLocksClientConcurrentTest
     private abstract class ResourceWorker implements Runnable
     {
         protected final SlaveLocksClient locksClient;
-        protected final Locks.ResourceType resourceType;
+        protected final ResourceType resourceType;
         protected final long id;
 
-        public ResourceWorker( SlaveLocksClient locksClient, Locks.ResourceType resourceType, long id )
+        public ResourceWorker( SlaveLocksClient locksClient, ResourceType resourceType, long id )
         {
             this.locksClient = locksClient;
             this.resourceType = resourceType;

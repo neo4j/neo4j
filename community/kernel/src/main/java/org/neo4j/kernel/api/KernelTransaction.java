@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.security.AccessMode;
 
 /**
  * Represents a transaction of changes to the underlying graph.
@@ -74,10 +75,22 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
  */
 public interface KernelTransaction extends AutoCloseable
 {
+    enum Type {
+        implicit,
+        explicit
+    }
+
     interface CloseListener
     {
-        void notify( boolean success );
+        /**
+         * @param txId On success, the actual id of the current transaction if writes have been performed, 0 otherwise.
+         * On rollback, always -1.
+         */
+        void notify( long txId );
     }
+
+    long ROLLBACK = -1;
+    long READ_ONLY = 0;
 
     /**
      * Acquires a new {@link Statement} for this transaction which allows for reading and writing data from and
@@ -101,11 +114,25 @@ public interface KernelTransaction extends AutoCloseable
     void failure();
 
     /**
-     * Closes this transaction, committing its changes iff {@link #success()} has been called and
-     * {@link #failure()} has NOT been called. Otherwise its changes will be rolled back.
+     * Closes this transaction, committing its changes if {@link #success()} has been called and neither
+     * {@link #failure()} nor {@link #markForTermination()} has been called.
+     * Otherwise its changes will be rolled back.
+     *
+     * @return id of the committed transaction or {@link #ROLLBACK} if transaction was rolled back or
+     * {@link #READ_ONLY} if transaction was read-only.
+     */
+    long closeTransaction() throws TransactionFailureException;
+
+    /**
+     * Closes this transaction, committing its changes if {@link #success()} has been called and neither
+     * {@link #failure()} nor {@link #markForTermination()} has been called.
+     * Otherwise its changes will be rolled back.
      */
     @Override
-    void close() throws TransactionFailureException;
+    default void close() throws TransactionFailureException
+    {
+        closeTransaction();
+    }
 
     /**
      * @return {@code true} if the transaction is still open, i.e. if {@link #close()} hasn't been called yet.
@@ -113,7 +140,12 @@ public interface KernelTransaction extends AutoCloseable
     boolean isOpen();
 
     /**
-     * @return {@link Status} if {@link #markForTermination(Status)} has been invoked, otherwise {@code null}.
+     * @return the mode this transaction is currently executing in.
+     */
+    AccessMode mode();
+
+    /**
+     * @return {@code true} if {@link #markForTermination(Status)} has been invoked, otherwise {@code false}.
      */
     Status getReasonIfTerminated();
 
@@ -135,4 +167,22 @@ public interface KernelTransaction extends AutoCloseable
      * @param listener {@link CloseListener} to get these notifications.
      */
     void registerCloseListener( CloseListener listener );
+
+    /**
+     * Kernel transaction type
+     *
+     * Implicit if created internally in the database
+     * Explicit if created by the end user
+     *
+     * @return the transaction type: implicit or explicit
+     */
+    Type transactionType();
+
+    Revertable restrict( AccessMode mode );
+
+    interface Revertable extends AutoCloseable
+    {
+        @Override
+        void close();
+    }
 }

@@ -61,7 +61,7 @@ public interface Configuration
         @Override
         public int movingAverageSize()
         {
-            return 100;
+            return 500;
         }
 
         @Override

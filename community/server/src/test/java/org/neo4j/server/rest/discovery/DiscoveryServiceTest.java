@@ -19,15 +19,18 @@
  */
 package org.neo4j.server.rest.discovery;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static org.hamcrest.Matchers.containsString;
@@ -41,31 +44,71 @@ import static org.mockito.Mockito.when;
 
 public class DiscoveryServiceTest
 {
-    @Test
-    public void shouldReturnValidJSONWithDataAndManagementUris() throws Exception
+    private String baseUri;
+    private HostnamePort boltAddress;
+    private URI dataUri;
+    private URI managementUri;
+
+    @Before
+    public void setUp() throws URISyntaxException
+    {
+        baseUri = "http://www.example.com";
+        boltAddress = new HostnamePort( "example.com:7687" );
+        dataUri = new URI( "/data" );
+        managementUri = new URI( "/management" );
+    }
+
+    private Config mockConfig() throws URISyntaxException
     {
         Config mockConfig = mock( Config.class );
-        URI managementUri = new URI( "/management" );
-        when( mockConfig.get( ServerInternalSettings.management_api_path ) ).thenReturn( managementUri );
-        URI dataUri = new URI( "/data" );
-        when( mockConfig.get( ServerInternalSettings.rest_api_path ) ).thenReturn( dataUri );
-        when(mockConfig.get( ServerSettings.auth_enabled )).thenReturn( false );
+        when( mockConfig.get( GraphDatabaseSettings.auth_enabled ) ).thenReturn( false );
+        when( mockConfig.get( GraphDatabaseSettings.bolt_advertised_address ) ).thenReturn( boltAddress );
+        when( mockConfig.get( ServerSettings.management_api_path ) ).thenReturn( managementUri );
+        when( mockConfig.get( ServerSettings.rest_api_path ) ).thenReturn( dataUri );
+        return mockConfig;
+    }
 
-        String baseUri = "http://www.example.com";
-        DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
+    private DiscoveryService testDiscoveryService() throws URISyntaxException
+    {
+        Config mockConfig = mockConfig();
+        return new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
                 baseUri ), null ) );
-        Response response = ds.getDiscoveryDocument();
+    }
 
+    @Test
+    public void shouldReturnValidJSON() throws Exception
+    {
+        Response response = testDiscoveryService().getDiscoveryDocument();
         String json = new String( (byte[]) response.getEntity() );
 
         assertNotNull( json );
         assertThat( json.length(), is( greaterThan( 0 ) ) );
         assertThat( json, is( not( "\"\"" ) ) );
         assertThat( json, is( not( "null" ) ) );
+    }
 
-        assertThat( json, containsString( "\"management\" : \"" + baseUri + managementUri + "/\"" ) );
+    @Test
+    public void shouldReturnBoltURI() throws Exception
+    {
+        Response response = testDiscoveryService().getDiscoveryDocument();
+        String json = new String( (byte[]) response.getEntity() );
+        assertThat( json, containsString( "\"bolt\" : \"bolt://" + boltAddress + "\"" ) );
+    }
+
+    @Test
+    public void shouldReturnDataURI() throws Exception
+    {
+        Response response = testDiscoveryService().getDiscoveryDocument();
+        String json = new String( (byte[]) response.getEntity() );
         assertThat( json, containsString( "\"data\" : \"" + baseUri + dataUri + "/\"" ) );
+    }
 
+    @Test
+    public void shouldReturnManagementURI() throws Exception
+    {
+        Response response = testDiscoveryService().getDiscoveryDocument();
+        String json = new String( (byte[]) response.getEntity() );
+        assertThat( json, containsString( "\"management\" : \"" + baseUri + managementUri + "/\"" ) );
     }
 
     @Test
@@ -73,7 +116,7 @@ public class DiscoveryServiceTest
     {
         Config mockConfig = mock( Config.class );
         URI browserUri = new URI( "/browser/" );
-        when( mockConfig.get( ServerInternalSettings.browser_path ) ).thenReturn(
+        when( mockConfig.get( ServerSettings.browser_path ) ).thenReturn(
                 browserUri );
 
         String baseUri = "http://www.example.com:5435";

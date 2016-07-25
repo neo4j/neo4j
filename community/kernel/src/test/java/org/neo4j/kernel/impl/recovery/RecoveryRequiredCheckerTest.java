@@ -31,9 +31,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -99,13 +99,11 @@ public class RecoveryRequiredCheckerTest
         final GraphDatabaseService db =
                 new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( store );
 
-
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
             tx.success();
         }
-
 
         EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
         db.shutdown();

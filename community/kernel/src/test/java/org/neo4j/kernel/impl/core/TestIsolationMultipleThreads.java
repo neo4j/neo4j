@@ -84,7 +84,7 @@ public class TestIsolationMultipleThreads
         ExecutorService executor = Executors.newFixedThreadPool( 1 );
 
         final AtomicBoolean done = new AtomicBoolean( false );
-        
+
         executor.submit( new DataChecker( done, database ) );
 
         new DataChanger( database, COUNT, done ).call();
@@ -407,8 +407,6 @@ public class TestIsolationMultipleThreads
                             System.out.println("Deadlock detected");
                             deadLocks = deadLocks+1;
                             ex = e;
-
-
 
                             if (deadLocks > 100)
                             {

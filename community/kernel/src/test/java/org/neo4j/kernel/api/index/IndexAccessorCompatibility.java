@@ -29,17 +29,18 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.schema.IndexReader;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
 
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
@@ -57,8 +58,8 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     @Before
     public void before() throws Exception
     {
-        IndexConfiguration indexConfig = new IndexConfiguration( isUnique );
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexConfiguration indexConfig = IndexConfiguration.of( isUnique );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexConfig, indexSamplingConfig );
         populator.create();
         populator.close( true );
@@ -123,7 +124,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
                 NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "b", new long[]{1000} ) ) );
 
         assertThat( getAllNodesFromIndexSeekByPrefix( "a" ), equalTo( asList( 1L, 3L, 4L ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "A" ), equalTo( asList( 2L ) ) );
+        assertThat( getAllNodesFromIndexSeekByPrefix( "A" ), equalTo( Collections.singletonList( 2L ) ) );
         assertThat( getAllNodesFromIndexSeekByPrefix( "ba" ), equalTo( EMPTY_LIST ) );
         assertThat( getAllNodesFromIndexSeekByPrefix( "" ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
     }
@@ -139,66 +140,45 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 
     protected List<Long> getAllNodesWithProperty( String propertyValue ) throws IOException
     {
-        try ( IndexReader reader = accessor.newReader() )
-        {
-            List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.seek( propertyValue ); iterator.hasNext(); )
-            {
-                list.add( iterator.next() );
-            }
-            Collections.sort( list );
-            return list;
-        }
+        return metaGet( reader -> reader.seek( propertyValue ));
     }
 
     protected List<Long> getAllNodesFromInclusiveIndexSeekByNumber( Number lower, Number upper ) throws IOException
     {
-        try ( IndexReader reader = accessor.newReader() )
-        {
-            List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.rangeSeekByNumberInclusive( lower, upper ); iterator.hasNext(); )
-            {
-                list.add( iterator.next() );
-            }
-            Collections.sort( list );
-            return list;
-        }
+        return metaGet( reader -> reader.rangeSeekByNumberInclusive( lower, upper ));
     }
 
     protected List<Long> getAllNodesFromIndexSeekByString( String lower, boolean includeLower, String upper, boolean includeUpper ) throws IOException
     {
-        try ( IndexReader reader = accessor.newReader() )
-        {
-            List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.rangeSeekByString( lower, includeLower, upper, includeUpper ); iterator.hasNext(); )
-            {
-                list.add( iterator.next() );
-            }
-            Collections.sort( list );
-            return list;
-        }
+        return metaGet( reader -> reader.rangeSeekByString( lower, includeLower, upper, includeUpper ));
     }
 
     protected List<Long> getAllNodesFromIndexSeekByPrefix( String prefix ) throws IOException
     {
-        try ( IndexReader reader = accessor.newReader() )
-        {
-            List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.rangeSeekByPrefix( prefix ); iterator.hasNext(); )
-            {
-                list.add( iterator.next() );
-            }
-            Collections.sort( list );
-            return list;
-        }
+        return metaGet( reader -> reader.rangeSeekByPrefix( prefix));
+    }
+
+    protected List<Long> getAllNodesFromIndexScanByContains( String term ) throws IOException
+    {
+        return metaGet( reader -> reader.containsString( term ) );
+    }
+
+    protected List<Long> getAllNodesFromIndexScanEndsWith( String term ) throws IOException
+    {
+        return metaGet( reader -> reader.endsWith( term ) );
     }
 
     protected List<Long> getAllNodes() throws IOException
     {
+        return metaGet( IndexReader::scan );
+    }
+
+    private List<Long> metaGet( ReaderInteraction interaction )
+    {
         try ( IndexReader reader = accessor.newReader() )
         {
             List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.scan(); iterator.hasNext(); )
+            for ( PrimitiveLongIterator iterator = interaction.results( reader ); iterator.hasNext(); )
             {
                 list.add( iterator.next() );
             }
@@ -207,8 +187,13 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         }
     }
 
+    private interface ReaderInteraction
+    {
+        PrimitiveLongIterator results( IndexReader reader );
+    }
+
     protected void updateAndCommit( List<NodePropertyUpdate> updates )
-            throws IOException, IndexEntryConflictException, IndexCapacityExceededException
+            throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

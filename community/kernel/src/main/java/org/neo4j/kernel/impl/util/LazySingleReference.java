@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
 
 /**
  * Manages a lazy initialized single reference that can be {@link #invalidate() invalidated}.
@@ -28,7 +28,7 @@ import org.neo4j.function.Supplier;
 public abstract class LazySingleReference<T> implements Supplier<T>
 {
     private volatile T reference;
-    
+
     /**
      * @return whether or not the managed reference has been initialized, i.e {@link #get() evaluated}
      * for the first time, or after {@link #invalidate() invalidated}.
@@ -37,7 +37,7 @@ public abstract class LazySingleReference<T> implements Supplier<T>
     {
         return reference != null;
     }
-    
+
     /**
      * Returns the reference, initializing it if need be.
      */
@@ -57,7 +57,7 @@ public abstract class LazySingleReference<T> implements Supplier<T>
         }
         return result;
     }
-    
+
     /**
      * Invalidates any initialized reference. A future call to {@link #get()} will have it initialized again.
      */
@@ -65,7 +65,7 @@ public abstract class LazySingleReference<T> implements Supplier<T>
     {
         reference = null;
     }
-    
+
     /**
      * Provides a reference to manage.
      */

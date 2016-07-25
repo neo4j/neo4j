@@ -34,19 +34,24 @@ public class DiscoveryRepresentationTest
     {
         String managementUri = "/management";
         String dataUri = "/data";
-        DiscoveryRepresentation dr = new DiscoveryRepresentation( managementUri, dataUri );
+        String boltAddress = "localhost:7687";
+        String boltUri = "bolt://" + boltAddress;
+        DiscoveryRepresentation dr = new DiscoveryRepresentation( managementUri, dataUri, boltAddress );
 
         Map<String, Object> mapOfUris = RepresentationTestAccess.serialize( dr );
 
         Object mappedManagementUri = mapOfUris.get( "management" );
         Object mappedDataUri = mapOfUris.get( "data" );
+        Object mappedBoltUri = mapOfUris.get( "bolt" );
 
         assertNotNull( mappedManagementUri );
         assertNotNull( mappedDataUri );
+        assertNotNull( mappedBoltUri );
 
         URI baseUri = RepresentationTestBase.BASE_URI;
 
         assertEquals( mappedManagementUri.toString(), Serializer.joinBaseWithRelativePath( baseUri, managementUri ) );
         assertEquals( mappedDataUri.toString(), Serializer.joinBaseWithRelativePath( baseUri, dataUri ) );
+        assertEquals( mappedBoltUri.toString(), boltUri );
     }
 }

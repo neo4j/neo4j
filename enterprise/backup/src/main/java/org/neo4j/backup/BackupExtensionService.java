@@ -60,7 +60,7 @@ public abstract class BackupExtensionService extends Service
 
     /**
      * The source specific target to valid backup host translation method.
-     * 
+     *
      * @param address Cluster address as passed in the command line
      * @param arguments all arguments to the backup command
      * @param logService the logging service to use

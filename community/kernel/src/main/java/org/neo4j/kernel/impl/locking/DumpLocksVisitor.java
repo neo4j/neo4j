@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.locking;
 
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 public class DumpLocksVisitor implements Locks.Visitor
 {
@@ -31,7 +32,7 @@ public class DumpLocksVisitor implements Locks.Visitor
     }
 
     @Override
-    public void visit( Locks.ResourceType resourceType, long resourceId, String description, long estimatedWaitTime,
+    public void visit( ResourceType resourceType, long resourceId, String description, long estimatedWaitTime,
             long lockIdentityHashCode )
     {
         log.info( "%s{id=%d, waitTime=%d, description=%s, lockHash=%d}", resourceType, resourceId, estimatedWaitTime,

@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
+
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class DummyExtensionFactory extends KernelExtensionFactory<DummyExtensionFactory.Dependencies>
@@ -43,7 +46,7 @@ public class DummyExtensionFactory extends KernelExtensionFactory<DummyExtension
     }
 
     @Override
-    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         return new DummyExtension( dependencies );
     }

@@ -22,15 +22,16 @@ package org.neo4j.kernel;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
@@ -53,18 +54,24 @@ public class HACountsPropagationTest
         try ( Transaction tx = master.beginTx() )
         {
             master.createNode();
-            master.createNode( DynamicLabel.label( "A" ) );
+            master.createNode( Label.label( "A" ) );
             tx.success();
         }
 
-        waitForPullUpdates();
+        cluster.sync();
 
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            CountsTracker counts = db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+            CountsTracker counts = counts( db );
             assertEquals( 2, counts.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
             assertEquals( 1, counts.nodeCount( 0 /* A */, newDoubleLongRegister() ).readSecond() );
         }
+    }
+
+    private CountsTracker counts( GraphDatabaseAPI db )
+    {
+        return db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                .testAccessNeoStores().getCounts();
     }
 
     @Test
@@ -75,32 +82,20 @@ public class HACountsPropagationTest
         try ( Transaction tx = master.beginTx() )
         {
             Node left = master.createNode();
-            Node right = master.createNode( DynamicLabel.label( "A" ) );
-            left.createRelationshipTo( right, DynamicRelationshipType.withName( "Type" ) );
+            Node right = master.createNode( Label.label( "A" ) );
+            left.createRelationshipTo( right, RelationshipType.withName( "Type" ) );
             tx.success();
         }
 
-        waitForPullUpdates();
+        cluster.sync();
 
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            CountsTracker counts = db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+            CountsTracker counts = counts( db );
             assertEquals( 1, counts.relationshipCount( -1, -1, -1, newDoubleLongRegister() ).readSecond() );
             assertEquals( 1, counts.relationshipCount( -1, -1, 0, newDoubleLongRegister() ).readSecond() );
             assertEquals( 1, counts.relationshipCount( -1, 0, -1, newDoubleLongRegister() ).readSecond() );
             assertEquals( 1, counts.relationshipCount( -1, 0, 0, newDoubleLongRegister() ).readSecond() );
-        }
-    }
-
-    private void waitForPullUpdates()
-    {
-        try
-        {
-            Thread.sleep( PULL_INTERVAL * 2 );
-        }
-        catch ( InterruptedException ex )
-        {
-            // ignore me
         }
     }
 }

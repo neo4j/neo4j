@@ -60,7 +60,7 @@ public class RecordChangesTest
     public void shouldCountChanges() throws Exception
     {
         // Given
-        RecordChanges<Object, Object, Object> change = new RecordChanges<>( loader, false, new IntCounter() );
+        RecordChanges<Object, Object, Object> change = new RecordChanges<>( loader, new IntCounter() );
 
         // When
         change.getOrLoad( "K1", null ).forChangingData();

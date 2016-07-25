@@ -19,79 +19,75 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.io.IOException;
+import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Consumer;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.storageengine.api.PropertyItem;
+
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
  * Cursor for all properties on a node or relationship.
  */
 public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
 {
-    private final PropertyStore propertyStore;
     private final Consumer<StorePropertyCursor> instanceCache;
     private final StorePropertyPayloadCursor payload;
+    private final RecordCursor<PropertyRecord> recordCursor;
 
-    private long nextPropertyRecordId;
     private Lock lock;
 
-    public StorePropertyCursor( PropertyStore propertyStore, Consumer<StorePropertyCursor> instanceCache )
+    public StorePropertyCursor( RecordCursors cursors, Consumer<StorePropertyCursor> instanceCache )
     {
-        this.propertyStore = propertyStore;
         this.instanceCache = instanceCache;
-        this.payload = new StorePropertyPayloadCursor( propertyStore.getStringStore(), propertyStore.getArrayStore() );
+        this.payload = new StorePropertyPayloadCursor( cursors.propertyString(), cursors.propertyArray() );
+        this.recordCursor = cursors.property();
     }
 
-    public StorePropertyCursor init( long firstPropertyId, Lock lock )
+    public StorePropertyCursor init( long firstPropertyId, Lock readLock )
     {
-        nextPropertyRecordId = firstPropertyId;
-        this.lock = lock;
+        recordCursor.placeAt( firstPropertyId, FORCE );
+        payload.clear();
+        lock = readLock;
         return this;
     }
 
     @Override
     public boolean next()
     {
+        // Are there more properties to return for this current record we're at?
         if ( payload.next() )
         {
             return true;
         }
 
-        while ( nextPropertyRecordId != Record.NO_NEXT_PROPERTY.intValue() )
+        // No, OK continue down the chain and hunt for more...
+        while ( true )
         {
-            try ( PageCursor cursor = propertyStore.newReadCursor( nextPropertyRecordId ) )
+            if ( recordCursor.next() )
             {
-                int offset = cursor.getOffset();
-                do
+                // All good, we can get values off of this record
+                PropertyRecord propertyRecord = recordCursor.get();
+                payload.init( propertyRecord.getBlocks(), propertyRecord.getNumberOfBlocks() );
+                if ( payload.next() )
                 {
-                    cursor.setOffset( offset );
-                    nextPropertyRecordId = readNextPropertyRecordId( cursor );
-
-                    payload.clear();
-                    payload.init( cursor );
+                    return true;
                 }
-                while ( cursor.shouldRetry() );
             }
-            catch ( IOException e )
+            else if ( Record.NO_NEXT_PROPERTY.is( recordCursor.get().getNextProp() ) )
             {
-                throw new UnderlyingStorageException( e );
+                // No more records in this chain, i.e. no more properties.
+                return false;
             }
 
-            if ( payload.next() )
-            {
-                return true;
-            }
+            // Sort of alright, this record isn't in use, but could just be due to concurrent delete.
+            // Continue to next record in the chain and try there.
         }
-
-        return false;
     }
 
     @Override
@@ -103,7 +99,7 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     @Override
     public Object value()
     {
-        return payloadValueAsObject( payload );
+        return payload.value();
     }
 
     @Override
@@ -124,54 +120,5 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
         {
             lock.release();
         }
-    }
-
-    static Object payloadValueAsObject( StorePropertyPayloadCursor payload )
-    {
-        switch ( payload.type() )
-        {
-        case BOOL:
-            return payload.booleanValue();
-        case BYTE:
-            return payload.byteValue();
-        case SHORT:
-            return payload.shortValue();
-        case CHAR:
-            return payload.charValue();
-        case INT:
-            return payload.intValue();
-        case LONG:
-            return payload.longValue();
-        case FLOAT:
-            return payload.floatValue();
-        case DOUBLE:
-            return payload.doubleValue();
-        case SHORT_STRING:
-            return payload.shortStringValue();
-        case STRING:
-            return payload.stringValue();
-        case SHORT_ARRAY:
-            return payload.shortArrayValue();
-        case ARRAY:
-            return payload.arrayValue();
-        default:
-            throw new IllegalStateException( "No such type:" + payload.type() );
-        }
-    }
-
-    private static long readNextPropertyRecordId( PageCursor cursor )
-    {
-        byte modifiers = cursor.getByte();
-        // We don't care about previous pointer (prevProp)
-        cursor.getUnsignedInt();
-        long nextProp = cursor.getUnsignedInt();
-
-        long nextMod = (modifiers & 0x0FL) << 32;
-        return longFromIntAndMod( nextProp, nextMod );
-    }
-
-    private static long longFromIntAndMod( long base, long modifier )
-    {
-        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
     }
 }

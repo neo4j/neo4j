@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.info;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.CompilationMXBean;
@@ -35,6 +34,7 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -44,14 +44,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.logging.Logger;
 
 import static java.net.NetworkInterface.getNetworkInterfaces;
 import static org.neo4j.helpers.Format.bytes;
-import static org.neo4j.io.fs.FileUtils.newBufferedFileReader;
-import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
 
 enum SystemDiagnostics implements DiagnosticsProvider
 {
@@ -60,11 +59,11 @@ enum SystemDiagnostics implements DiagnosticsProvider
         @Override
         void dump( Logger logger )
         {
-            logOsBeanValue( logger, "Total Physical memory: ", OsBeanUtil.getTotalPhysicalMemory() );
-            logOsBeanValue( logger, "Free Physical memory: ", OsBeanUtil.getFreePhysicalMemory() );
-            logOsBeanValue( logger, "Committed virtual memory: ", OsBeanUtil.getCommittedVirtualMemory() );
-            logOsBeanValue( logger, "Total swap space: ", OsBeanUtil.getTotalSwapSpace() );
-            logOsBeanValue( logger, "Free swap space: ", OsBeanUtil.getFreeSwapSpace() );
+            logBytes( logger, "Total Physical memory: ", OsBeanUtil.getTotalPhysicalMemory() );
+            logBytes( logger, "Free Physical memory: ", OsBeanUtil.getFreePhysicalMemory() );
+            logBytes( logger, "Committed virtual memory: ", OsBeanUtil.getCommittedVirtualMemory() );
+            logBytes( logger, "Total swap space: ", OsBeanUtil.getTotalSwapSpace() );
+            logBytes( logger, "Free swap space: ", OsBeanUtil.getFreeSwapSpace() );
         }
     },
     JAVA_MEMORY( "JVM memory information:" )
@@ -98,8 +97,8 @@ enum SystemDiagnostics implements DiagnosticsProvider
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             logger.log( String.format( "Operating System: %s; version: %s; arch: %s; cpus: %s", os.getName(),
                     os.getVersion(), os.getArch(), os.getAvailableProcessors() ) );
-            logOsBeanValue( logger, "Max number of file descriptors: ", OsBeanUtil.getMaxFileDescriptors() );
-            logOsBeanValue( logger, "Number of open file descriptors: ", OsBeanUtil.getOpenFileDescriptors() );
+            logLong( logger, "Max number of file descriptors: ", OsBeanUtil.getMaxFileDescriptors() );
+            logLong( logger, "Number of open file descriptors: ", OsBeanUtil.getOpenFileDescriptors() );
             logger.log( "Process id: " + runtime.getName() );
             logger.log( "Byte order: " + ByteOrder.nativeOrder() );
             logger.log( "Local timezone: " + getLocalTimeZone() );
@@ -215,7 +214,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
                          || key.equals( "line.separator" ) ) continue;
                     logger.log( key + " = " + System.getProperty( key ) );
                 }
-            }            
+            }
         }
     },
     LINUX_SCHEDULERS( "Linux scheduler information:" )
@@ -243,18 +242,9 @@ enum SystemDiagnostics implements DiagnosticsProvider
                 File scheduler = new File( subdir, "queue/scheduler" );
                 if ( scheduler.isFile() )
                 {
-                    try
+                    try ( Stream<String> lines = Files.lines( scheduler.toPath() ) )
                     {
-                        BufferedReader reader = newBufferedFileReader( scheduler, UTF_8 );
-                        try
-                        {
-                            for ( String line; null != ( line = reader.readLine() ); )
-                                logger.log( line );
-                        }
-                        finally
-                        {
-                            reader.close();
-                        }
+                        lines.forEach( logger::log );
                     }
                     catch ( IOException e )
                     {
@@ -293,13 +283,13 @@ enum SystemDiagnostics implements DiagnosticsProvider
         }
     },
     ;
-    
+
     private final String message;
 
     private SystemDiagnostics(String message) {
         this.message = message;
     }
-    
+
     static void registerWith( DiagnosticsManager manager )
     {
         for ( SystemDiagnostics provider : values() )
@@ -349,11 +339,19 @@ enum SystemDiagnostics implements DiagnosticsProvider
         }
     }
 
-    private static void logOsBeanValue( Logger logger, String message, long value )
+    private static void logBytes( Logger logger, String message, long value )
     {
         if ( value != OsBeanUtil.VALUE_UNAVAILABLE )
         {
             logger.log( message + bytes( value ) );
+        }
+    }
+
+    private static void logLong( Logger logger, String message, long value )
+    {
+        if ( value != OsBeanUtil.VALUE_UNAVAILABLE )
+        {
+            logger.log( message + value );
         }
     }
 }

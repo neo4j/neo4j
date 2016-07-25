@@ -28,7 +28,8 @@ import java.io.File;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.runner.ParameterizedSuiteRunner;
 
 @RunWith( ParameterizedSuiteRunner.class )
 @Suite.SuiteClasses( {
@@ -53,7 +54,7 @@ public abstract class IndexProviderCompatibilityTestSuite
 
     protected abstract SchemaIndexProvider createIndexProvider();
 
-    public static abstract class Compatibility
+    public abstract static class Compatibility
     {
         protected final SchemaIndexProvider indexProvider;
         protected IndexDescriptor descriptor = new IndexDescriptor( 1, 2 );

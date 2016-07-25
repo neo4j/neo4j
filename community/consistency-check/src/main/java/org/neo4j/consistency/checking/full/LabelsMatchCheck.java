@@ -19,15 +19,15 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class LabelsMatchCheck implements
         RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport>
@@ -44,7 +44,7 @@ public class LabelsMatchCheck implements
                        RecordAccess records )
     {
         Set<Long> labelsFromNode = NodeLabelReader.getListOfLabels( record, records, engine );
-        Iterator<Long> labelsFromLabelScanStore = labelScanReader.labelsForNode( record.getId() );
+        PrimitiveLongIterator labelsFromLabelScanStore = labelScanReader.labelsForNode( record.getId() );
 
         while ( labelsFromLabelScanStore.hasNext() )
         {

@@ -21,14 +21,15 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.storageengine.api.Direction;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import static org.neo4j.kernel.impl.api.store.RelationshipIterator.EMPTY;
+
 public class RelationshipChangesForNodeTest
 {
     private static final int REL_0 = 0;

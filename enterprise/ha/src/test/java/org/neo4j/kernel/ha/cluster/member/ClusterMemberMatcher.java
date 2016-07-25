@@ -19,18 +19,19 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
-import static java.util.Arrays.asList;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.management.ClusterMemberInfo;
+
+import static java.util.Arrays.asList;
 
 public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo>>
 {
@@ -70,8 +71,8 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
                         return false;
                     }
 
-                    HashSet<URI> memberUris = new HashSet<>( Iterables.toList( member.getRoleURIs() ) );
-                    HashSet<URI> clusterMemberUris = new HashSet<>( Iterables.toList( clusterMember.getRoleURIs() ) );
+                    HashSet<URI> memberUris = new HashSet<>( Iterables.asList( member.getRoleURIs() ) );
+                    HashSet<URI> clusterMemberUris = new HashSet<>( Iterables.asList( clusterMember.getRoleURIs() ) );
                     return memberUris.equals( clusterMemberUris );
                 }
                 else
@@ -125,12 +126,12 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
         }
         return true;
     }
-    
+
     public static ClusterMemberMatch member( URI member )
     {
         return new ClusterMemberMatch( member );
     }
-    
+
     public static ClusterMemberMatcher containsMembers( ClusterMemberMatch... expected )
     {
         return new ClusterMemberMatcher( false, expected );
@@ -140,7 +141,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
     {
         return new ClusterMemberMatcher( true, expected );
     }
-    
+
     public static class ClusterMemberMatch
     {
         private URI member;
@@ -153,19 +154,19 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
         {
             this.member = member;
         }
-        
+
         public ClusterMemberMatch available( boolean available )
         {
             this.available = available;
             return this;
         }
-        
+
         public ClusterMemberMatch alive( boolean alive )
         {
             this.alive = alive;
             return this;
         }
-        
+
         private boolean match( ClusterMemberInfo toMatch )
         {
             if ( !member.toString().equals( toMatch.getInstanceId() ) )
@@ -180,7 +181,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
                 return false;
             return true;
         }
-        
+
         @Override
         public String toString()
         {
@@ -209,7 +210,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
             this.haRole = role;
             return this;
         }
-        
+
         public ClusterMemberMatch uris( URI... uris )
         {
             this.uris = new HashSet<>();

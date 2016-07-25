@@ -105,8 +105,7 @@ public abstract class BatchOperations
         return baseUri.resolve("." + requestedPath);
     }
 
-
-    private final static Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d{1,10})\\}");
+    private static final Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d{1,10})\\}");
 
     protected String replaceLocationPlaceholders( String str,
                                                   Map<Integer, String> locations )
@@ -177,6 +176,8 @@ public abstract class BatchOperations
                     case BODY_KEY:
                         jobBody = readBody( jp );
                         break;
+                    default:
+                        break;
                     }
                 }
                 // Read one job description. Execute it.
@@ -210,7 +211,6 @@ public abstract class BatchOperations
         InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body, res, outerReq );
         req.setScheme( targetUri.getScheme() );
         addHeaders( req, httpHeaders );
-
 
         invoke( method, path, body, id, targetUri, req, res );
     }

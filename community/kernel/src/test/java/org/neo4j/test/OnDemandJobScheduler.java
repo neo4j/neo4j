@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -94,7 +95,10 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
 
     public void runJob()
     {
-        job.run();
+        if ( job != null )
+        {
+            job.run();
+        }
     }
 
     private class OnDemandJobHandle implements JobHandle
@@ -103,6 +107,12 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
         public void cancel( boolean mayInterruptIfRunning )
         {
             job = null;
+        }
+
+        @Override
+        public void waitTermination() throws InterruptedException, ExecutionException
+        {
+            // on demand
         }
     }
 }

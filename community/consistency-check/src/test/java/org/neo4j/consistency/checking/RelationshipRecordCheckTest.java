@@ -24,10 +24,8 @@ import org.junit.Test;
 import org.neo4j.consistency.checking.RelationshipRecordCheck.RelationshipField;
 import org.neo4j.consistency.checking.RelationshipRecordCheck.RelationshipTypeField;
 import org.neo4j.consistency.checking.full.CheckStage;
-import org.neo4j.consistency.checking.full.MandatoryProperties.Check;
 import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.function.Functions;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -36,7 +34,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
 import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
 
@@ -51,8 +48,7 @@ public class RelationshipRecordCheckTest extends
                 RelationshipTypeField.RELATIONSHIP_TYPE, NodeField.SOURCE, RelationshipField.SOURCE_PREV,
                 RelationshipField.SOURCE_NEXT, NodeField.TARGET, RelationshipField.TARGET_PREV,
                 RelationshipField.TARGET_NEXT,
-                new PropertyChain<>(
-                Functions.<RelationshipRecord,Check<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport>>nullFunction() ) ),
+                new PropertyChain<>( from -> null ) ),
                 ConsistencyReport.RelationshipConsistencyReport.class,
                 CheckStage.Stage6_RS_Forward.getCacheSlotSizes(), MultiPassStore.RELATIONSHIPS );
     }

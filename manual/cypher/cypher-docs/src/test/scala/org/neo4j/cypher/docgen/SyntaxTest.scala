@@ -20,7 +20,7 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class SyntaxTest extends DocumentingTestBase {
   override def graphDescription = List(
@@ -41,9 +41,9 @@ class SyntaxTest extends DocumentingTestBase {
   def section = "syntax"
 
   val common_arguments = List(
-    "collection" -> "An expression that returns a collection",
-    "identifier" -> "This is the identifier that can be used from the predicate.",
-    "predicate" -> "A predicate that is tested against all items in the collection."
+    "list" -> "An expression that returns a list",
+    "variable" -> "This is the variable that can be used from the predicate.",
+    "predicate" -> "A predicate that is tested against all items in the list."
   )
 
 

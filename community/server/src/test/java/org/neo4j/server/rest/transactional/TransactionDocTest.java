@@ -38,12 +38,13 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsMapContaining.hasKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.test.server.HTTP.GET;
 import static org.neo4j.test.server.HTTP.POST;
@@ -92,6 +93,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
 
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );
+        assertThat(result, hasKey( "transaction" ));
         assertNoErrors( result );
     }
 
@@ -150,7 +152,6 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
                 .expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ ] }" ) )
                 .post( location );
-
 
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );
@@ -317,7 +318,30 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
 
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );
-        assertErrors( result, Status.Statement.InvalidSyntax );
+        assertErrors( result, Status.Statement.SyntaxError );
+    }
+
+    @Test
+    @Documented("Handling errors in an open transaction\n" +
+                "\n" +
+                "Whenever there is an error in a request the server will rollback the transaction.\n" +
+                  "By inspecting the response for the presence/absence of the `transaction` key you can tell if the " +
+                 "transaction is still open")
+    public void errors_in_open_transaction() throws JsonParseException
+    {
+        // Given
+        String location = POST( getDataUri() + "transaction" ).location();
+
+        // Document
+        ResponseEntity response = gen.get()
+                .noGraph()
+                .expectedStatus( 200 )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'This is not a valid Cypher Statement.' } ] }" ) )
+                .post( location );
+
+        // Then
+        Map<String, Object> result = jsonToMap( response.entity() );
+        assertThat(result, not(hasKey( "transaction" )));
     }
 
     @Test
@@ -338,14 +362,12 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         Map<String,Object> entity = jsonToMap( response.entity() );
         assertNoErrors( entity );
         Map<String,Object> firstResult = ((List<Map<String,Object>>) entity.get( "results" )).get( 0 );
-        
+
         assertThat( firstResult, hasKey( "stats" ) );
         Map<String,Object> stats = (Map<String,Object>) firstResult.get( "stats" );
         assertThat( (Integer) stats.get( "nodes_created" ), equalTo( 1 ) );
     }
 
-    
-    
     private void assertNoErrors( Map<String, Object> response )
     {
         assertErrors( response );

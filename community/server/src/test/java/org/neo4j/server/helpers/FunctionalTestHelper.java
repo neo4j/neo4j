@@ -19,17 +19,17 @@
  */
 package org.neo4j.server.helpers;
 
-import com.sun.jersey.api.client.Client;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
-
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import com.sun.jersey.api.client.Client;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
@@ -195,7 +195,6 @@ public final class FunctionalTestHelper
         return indexNodeUri( indexName ) + "/" + key + "/" + value;
     }
 
-
     public String indexRelationshipUri( String indexName )
     {
         return relationshipIndexUri() + indexName;
@@ -234,13 +233,6 @@ public final class FunctionalTestHelper
     public GraphDatabaseAPI getDatabase()
     {
         return server.getDatabase().getGraph();
-    }
-
-    public String webAdminUri()
-    {
-        // the trailing slash prevents a 302 redirect
-        return server.baseUri()
-                .toString() + "webadmin" + "/";
     }
 
     public JaxRsResponse get(String path) {

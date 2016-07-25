@@ -19,41 +19,44 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import static java.lang.Math.pow;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.core.BigStoreIT.machineIsOkToRunThisTest;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.IdType;
-import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.validation.ReservedIdException;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.unsafe.batchinsert.BatchInserters;
-import org.neo4j.unsafe.batchinsert.BatchRelationship;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.unsafe.batchinsert.internal.BatchInserterImpl;
+
+import static java.lang.Math.pow;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.core.BigStoreIT.machineIsOkToRunThisTest;
 
 public class BigBatchStoreIT implements RelationshipType
 {
     private static final File PATH = new File( "target/var/bigb" );
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private org.neo4j.unsafe.batchinsert.BatchInserter db;
-    public @Rule
-    TestName testName = new TestName()
+    @Rule
+    public TestName testName = new TestName()
     {
         @Override
         public String getMethodName()
@@ -61,41 +64,41 @@ public class BigBatchStoreIT implements RelationshipType
             return BigBatchStoreIT.this.getClass().getSimpleName() + "#" + super.getMethodName();
         }
     };
-    
+
     @Before
     public void doBefore() throws Exception
     {
         db = BatchInserters.inserter( PATH.getAbsoluteFile(), fs.get());
     }
-    
+
     @After
     public void doAfter()
     {
         db.shutdown();
     }
-    
+
     @Override
     public String name()
     {
         return "BIG_TYPE";
     }
-    
+
     @Test
     public void create4BPlusStuff() throws Exception
     {
         testHighIds( (long) pow( 2, 32 ), 2, 1000 );
     }
-    
+
     @Test
     public void create8BPlusStuff() throws Exception
     {
         testHighIds( (long) pow( 2, 33 ), 1, 1600 );
     }
-    
+
     private void testHighIds( long highMark, int minus, int requiredHeapMb ) throws Exception
     {
         assumeTrue( machineIsOkToRunThisTest(requiredHeapMb ) );
-        
+
         long idBelow = highMark-minus;
         setHighId( IdType.NODE, idBelow );
         setHighId( IdType.RELATIONSHIP, idBelow );
@@ -106,7 +109,7 @@ public class BigBatchStoreIT implements RelationshipType
         int intPropertyValue = 123;
         String stringPropertyValue = "Long string, longer than would fit in shortstring";
         long[] arrayPropertyValue = new long[] { 1021L, 321L, 343212L };
-        
+
         long nodeBelowTheLine = db.createNode( map( propertyKey, intPropertyValue ) );
         assertEquals( idBelow, nodeBelowTheLine );
         long nodeAboveTheLine = db.createNode( map( propertyKey, stringPropertyValue ) );
@@ -124,24 +127,24 @@ public class BigBatchStoreIT implements RelationshipType
         db = BatchInserters.inserter( PATH.getAbsoluteFile(), fs.get() );
         assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ), asIds( db.getRelationships( idBelow ) ) );
         db.shutdown();
-        
+
         GraphDatabaseService edb = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( PATH );
         assertEquals( nodeAboveTheLine, edb.getNodeById( highMark ).getId() );
         assertEquals( relBelowTheLine, edb.getNodeById( idBelow ).getSingleRelationship( this, Direction.OUTGOING ).getId() );
         assertEquals( relAboveTheLine, edb.getNodeById( idBelow ).getSingleRelationship( this, Direction.INCOMING ).getId() );
         assertEquals(   asSet( asList( edb.getRelationshipById( relBelowTheLine ), edb.getRelationshipById( relAboveTheLine ) ) ),
-                        asSet( asCollection( edb.getNodeById( idBelow ).getRelationships() ) ) );
+                        asSet( Iterables.asCollection( edb.getNodeById( idBelow ).getRelationships() ) ) );
         edb.shutdown();
         db = BatchInserters.inserter( PATH.getAbsoluteFile(), fs.get() );
     }
-    
-    @Test( expected=IllegalArgumentException.class )
+
+    @Test( expected = ReservedIdException.class )
     public void makeSureCantCreateNodeWithMagicNumber()
     {
-        long id = (long) Math.pow( 2, 32 )-1;
+        long id = IdGeneratorImpl.INTEGER_MINUS_ONE;
         db.createNode( id, null );
     }
-    
+
     private Collection<Long> asIds( Iterable<BatchRelationship> relationships )
     {
         Collection<Long> ids = new HashSet<Long>();

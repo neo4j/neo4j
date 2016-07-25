@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 

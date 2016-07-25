@@ -113,7 +113,7 @@ public class NetworkSender
     private URI me;
 
     private final Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
-    private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
+    private final Listeners<NetworkChannelsListener> listeners = new Listeners<>();
 
     private volatile boolean paused;
 
@@ -244,7 +244,6 @@ public class NetworkSender
         this.paused = paused;
     }
 
-
     private URI getURI( InetSocketAddress address ) throws URISyntaxException
     {
         return new URI( CLUSTER_SCHEME + ":/" + address ); // Socket.toString() already prepends a /
@@ -337,21 +336,14 @@ public class NetworkSender
         } );
     }
 
-    protected void openedChannel( final URI uri, Channel ctxChannel )
+    protected void openedChannel( URI uri, Channel ctxChannel )
     {
         connections.put( uri, ctxChannel );
 
-        Listeners.notifyListeners( listeners, new Listeners.Notification<NetworkChannelsListener>()
-        {
-            @Override
-            public void notify( NetworkChannelsListener listener )
-            {
-                listener.channelOpened( uri );
-            }
-        } );
+        listeners.notify( listener -> listener.channelOpened( uri ) );
     }
 
-    protected void closedChannel( final Channel channelClosed )
+    protected void closedChannel( Channel channelClosed )
     {
         /*
          * Netty channels do not have the remote address set when closed (technically, when not connected). So
@@ -378,17 +370,9 @@ public class NetworkSender
 
         connections.remove( to );
 
-        final URI uri = to;
+        URI uri = to;
 
-
-        Listeners.notifyListeners( listeners, new Listeners.Notification<NetworkChannelsListener>()
-        {
-            @Override
-            public void notify( NetworkChannelsListener listener )
-            {
-                listener.channelClosed( uri );
-            }
-        } );
+        listeners.notify( listener -> listener.channelClosed( uri ) );
     }
 
     public Channel getChannel( URI uri )
@@ -398,7 +382,7 @@ public class NetworkSender
 
     public void addNetworkChannelsListener( NetworkChannelsListener listener )
     {
-        listeners = Listeners.addListener( listener, listeners );
+        listeners.add( listener );
     }
 
     private Channel openChannel( URI clusterUri )

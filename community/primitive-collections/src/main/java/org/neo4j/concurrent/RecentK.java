@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Tracks an (approximate) set of recently seen unique elements in a stream, based on a concurrent LRU implementation.
  *
  * This class is thread safe. For the common case of items that are recently seen being seen again, this class is
- * lock free. 
+ * lock free.
  *
  * @param <Type> the entry type stored
  */

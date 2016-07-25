@@ -19,23 +19,30 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.Set;
-
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+
+import java.util.Set;
+
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
+import static org.neo4j.helpers.collection.Iterators.single;
 
 public class LabelScanStoreIT
 {
+
+    @Rule
+    public final DatabaseRule dbRule = new EmbeddedDatabaseRule();
+
     @Test
     public void shouldGetNodesWithCreatedLabel() throws Exception
     {
@@ -45,19 +52,19 @@ public class LabelScanStoreIT
         Node node3 = createLabeledNode( Labels.Third );
         Node node4 = createLabeledNode( Labels.First, Labels.Second, Labels.Third );
         Node node5 = createLabeledNode( Labels.First, Labels.Third );
-        
+
         // THEN
         assertEquals(
                 asSet( node1, node4, node5 ),
-                asSet( getAllNodesWithLabel( Labels.First ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Labels.First ) ) );
         assertEquals(
                 asSet( node2, node4 ),
-                asSet( getAllNodesWithLabel( Labels.Second ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Labels.Second ) ) );
         assertEquals(
                 asSet( node3, node4, node5 ),
-                asSet( getAllNodesWithLabel( Labels.Third ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Labels.Third ) ) );
     }
-    
+
     @Test
     public void shouldGetNodesWithAddedLabel() throws Exception
     {
@@ -67,33 +74,33 @@ public class LabelScanStoreIT
         Node node3 = createLabeledNode( Labels.Third );
         Node node4 = createLabeledNode( Labels.First );
         Node node5 = createLabeledNode( Labels.First );
-        
+
         // WHEN
         addLabels( node4, Labels.Second, Labels.Third );
         addLabels( node5, Labels.Third );
-        
+
         // THEN
         assertEquals(
                 asSet( node1, node4, node5 ),
-                asSet( getAllNodesWithLabel( Labels.First ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Labels.First ) ) );
         assertEquals(
                 asSet( node2, node4 ),
-                asSet( getAllNodesWithLabel( Labels.Second ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Labels.Second ) ) );
         assertEquals(
                 asSet( node3, node4, node5 ),
-                asSet( getAllNodesWithLabel( Labels.Third ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Labels.Third ) ) );
     }
-    
+
     @Test
     public void shouldGetNodesAfterDeletedNodes() throws Exception
     {
         // GIVEN
         Node node1 = createLabeledNode( Labels.First, Labels.Second );
         Node node2 = createLabeledNode( Labels.First, Labels.Third );
-        
+
         // WHEN
         deleteNode( node1 );
-        
+
         // THEN
         assertEquals(
                 asSet( node2 ),
@@ -105,18 +112,18 @@ public class LabelScanStoreIT
                 asSet( node2 ),
                 getAllNodesWithLabel( Labels.Third ) );
     }
-    
+
     @Test
     public void shouldGetNodesAfterRemovedLabels() throws Exception
     {
         // GIVEN
         Node node1 = createLabeledNode( Labels.First, Labels.Second );
         Node node2 = createLabeledNode( Labels.First, Labels.Third );
-        
+
         // WHEN
         removeLabels( node1, Labels.First );
         removeLabels( node2, Labels.Third );
-        
+
         // THEN
         assertEquals(
                 asSet( node2 ),
@@ -139,30 +146,30 @@ public class LabelScanStoreIT
 
         // When
         Node node;
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
 
             // I create a lot of labels, enough to push the store to use two dynamic records
-            for(int l=0;l<labelsToAdd;l++)
+            for ( int l = 0; l < labelsToAdd; l++ )
             {
-                node.addLabel( label("Label-" + l) );
+                node.addLabel( label( "Label-" + l ) );
             }
 
             // and I delete some of them, enough to bring the number of dynamic records needed down to 1
-            for(int l=0;l<labelsToRemove;l++)
+            for ( int l = 0; l < labelsToRemove; l++ )
             {
-                node.removeLabel( label("Label-" + l) );
+                node.removeLabel( label( "Label-" + l ) );
             }
 
             tx.success();
         }
 
         // Then
-        try( Transaction ignore = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             // All the labels remaining should be in the label scan store
-            for(int l=labelsToAdd-1;l>=labelsToRemove;l--)
+            for ( int l = labelsToAdd - 1; l >= labelsToRemove; l-- )
             {
                 Label label = label( "Label-" + l );
                 assertThat( "Should have founnd node when looking for label " + label,
@@ -170,10 +177,10 @@ public class LabelScanStoreIT
             }
         }
     }
-    
+
     private void removeLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
             for ( Label label : labels )
             {
@@ -185,7 +192,7 @@ public class LabelScanStoreIT
 
     private void deleteNode( Node node )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
             node.delete();
             tx.success();
@@ -194,25 +201,25 @@ public class LabelScanStoreIT
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
-            return asSet( dbRule.getGraphDatabaseService().findNodes( label ) );
+            return asSet( dbRule.getGraphDatabaseAPI().findNodes( label ) );
         }
     }
 
     private Node createLabeledNode( Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
-            Node node = dbRule.getGraphDatabaseService().createNode( labels );
+            Node node = dbRule.getGraphDatabaseAPI().createNode( labels );
             tx.success();
             return node;
         }
     }
-    
+
     private void addLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
             for ( Label label : labels )
             {
@@ -222,9 +229,7 @@ public class LabelScanStoreIT
         }
     }
 
-    public final @Rule DatabaseRule dbRule = new ImpermanentDatabaseRule();
-    
-    private static enum Labels implements Label
+    private enum Labels implements Label
     {
         First,
         Second,

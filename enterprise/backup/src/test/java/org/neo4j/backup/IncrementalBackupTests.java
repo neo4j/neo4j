@@ -32,24 +32,28 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 
 public class IncrementalBackupTests
 {
-    private File serverPath;
-    private File backupPath;
-
     @Rule
     public TestName testName = new TestName();
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
+    private File serverPath;
+    private File backupPath;
     private ServerInterface server;
     private GraphDatabaseService db;
 
@@ -88,7 +92,7 @@ public class IncrementalBackupTests
         backup.full( backupPath.getPath() );
 
         // END SNIPPET: onlineBackup
-        assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
+        assertEquals( initialDataSetRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = addMoreData2( serverPath );
@@ -96,10 +100,9 @@ public class IncrementalBackupTests
         // START SNIPPET: onlineBackup
         backup.incremental( backupPath.getPath() );
         // END SNIPPET: onlineBackup
-        assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
+        assertEquals( furtherRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
     }
-
 
     @Test
     public void shouldNotServeTransactionsWithInvalidHighIds() throws Exception
@@ -132,7 +135,7 @@ public class IncrementalBackupTests
         backup.full( backupPath.getPath() );
 
         // END SNIPPET: onlineBackup
-        assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
+        assertEquals( initialDataSetRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = createTransactiongWithWeirdRelationshipGroupRecord( serverPath );
@@ -140,7 +143,7 @@ public class IncrementalBackupTests
         // START SNIPPET: onlineBackup
         backup.incremental( backupPath.getPath() );
         // END SNIPPET: onlineBackup
-        assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
+        assertEquals( furtherRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
     }
 
@@ -155,7 +158,7 @@ public class IncrementalBackupTests
             Node daisy = db.createNode();
             daisy.setProperty( "name", "Daisy" );
             Relationship knows = donald.createRelationshipTo( daisy,
-                    DynamicRelationshipType.withName( "LOVES" ) );
+                    RelationshipType.withName( "LOVES" ) );
             knows.setProperty( "since", 1940 );
             tx.success();
         }
@@ -173,7 +176,7 @@ public class IncrementalBackupTests
             Node gladstone = db.createNode();
             gladstone.setProperty( "name", "Gladstone" );
             Relationship hates = donald.createRelationshipTo( gladstone,
-                    DynamicRelationshipType.withName( "HATES" ) );
+                    RelationshipType.withName( "HATES" ) );
             hates.setProperty( "since", 1948 );
             tx.success();
         }
@@ -219,7 +222,7 @@ public class IncrementalBackupTests
     private GraphDatabaseService startGraphDatabase( File path )
     {
         return new TestGraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( path.getPath() ).
+                newEmbeddedDatabaseBuilder( path ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                 setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
                 newGraphDatabase();
@@ -227,7 +230,7 @@ public class IncrementalBackupTests
 
     private ServerInterface startServer( File path, String serverAddress ) throws Exception
     {
-        ServerInterface server = new EmbeddedServer( path.getPath(), serverAddress );
+        ServerInterface server = new EmbeddedServer( path, serverAddress );
         server.awaitStarted();
         return server;
     }
@@ -236,5 +239,10 @@ public class IncrementalBackupTests
     {
         server.shutdown();
         Thread.sleep( 1000 );
+    }
+
+    private DbRepresentation getBackupDbRepresentation()
+    {
+        return DbRepresentation.of( backupPath );
     }
 }

@@ -123,7 +123,7 @@ public class EvaluatorFactory
         }
     }
 
-    private static abstract class ScriptedEvaluator
+    private abstract static class ScriptedEvaluator
     {
         private final ScriptExecutor executor;
         private final Map<String, Object> scriptContext = new HashMap<>(1);
@@ -154,7 +154,7 @@ public class EvaluatorFactory
         {
             super( executor );
         }
-        
+
         @Override
         public Evaluation evaluate( Path path )
         {
