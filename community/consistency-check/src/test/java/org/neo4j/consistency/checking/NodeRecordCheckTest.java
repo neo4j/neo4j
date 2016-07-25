@@ -19,10 +19,10 @@
  */
 package org.neo4j.consistency.checking;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collection;
-
-import org.junit.Test;
 
 import org.neo4j.consistency.checking.NodeRecordCheck.LabelsField;
 import org.neo4j.consistency.checking.NodeRecordCheck.RelationshipField;
@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PreAllocatedRecords;
+import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -252,8 +252,8 @@ public class NodeRecordCheckTest
         Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
 
         labelIds[12] = labelIds.length;
-        DynamicArrayStore.allocateFromNumbers( new ArrayList<DynamicRecord>(), labelIds, labelRecords.iterator(),
-                new PreAllocatedRecords( 52 ) );
+        DynamicArrayStore.allocateFromNumbers( new ArrayList<>(), labelIds,
+                new ReusableRecordsAllocator( 52, labelRecords ) );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
@@ -301,8 +301,8 @@ public class NodeRecordCheckTest
         Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
 
         labelIds[12] = 11;
-        DynamicArrayStore.allocateFromNumbers( new ArrayList<DynamicRecord>(), labelIds, labelRecords.iterator(),
-                new PreAllocatedRecords( 52 ) );
+        DynamicArrayStore.allocateFromNumbers( new ArrayList<>(), labelIds,
+                new ReusableRecordsAllocator( 52, labelRecords ) );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
@@ -403,8 +403,8 @@ public class NodeRecordCheckTest
         long temp = labelIds[12];
         labelIds[12] = labelIds[11];
         labelIds[11] = temp;
-        DynamicArrayStore.allocateFromNumbers( new ArrayList<DynamicRecord>(), labelIds, labelRecords.iterator(),
-                new PreAllocatedRecords( 52 ) );
+        DynamicArrayStore.allocateFromNumbers( new ArrayList<>(), labelIds,
+                new ReusableRecordsAllocator( 52, labelRecords ) );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
@@ -431,8 +431,8 @@ public class NodeRecordCheckTest
         DynamicRecord labelsRecord2 = notInUse( array( new DynamicRecord( 2 ) ) );
         Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
 
-        DynamicArrayStore.allocateFromNumbers( new ArrayList<DynamicRecord>(), labelIds,
-                labelRecords.iterator(), new PreAllocatedRecords( 52 ) );
+        DynamicArrayStore.allocateFromNumbers( new ArrayList<>(), labelIds,
+                new NotUsedReusableRecordsAllocator( 52, labelRecords ) );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
@@ -467,6 +467,23 @@ public class NodeRecordCheckTest
                 assertEquals( records[i].getId(), records[i - 1].getNextBlock() );
             }
             assertTrue( Record.NO_NEXT_BLOCK.is( records[records.length - 1].getNextBlock() ) );
+        }
+    }
+
+    private class NotUsedReusableRecordsAllocator extends ReusableRecordsAllocator
+    {
+
+        public NotUsedReusableRecordsAllocator( int recordSize, Collection<DynamicRecord> records )
+        {
+            super( recordSize, records );
+        }
+
+        @Override
+        public DynamicRecord nextRecord()
+        {
+            DynamicRecord record = super.nextRecord();
+            record.setInUse( false );
+            return record;
         }
     }
 

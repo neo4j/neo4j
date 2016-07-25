@@ -26,10 +26,10 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -73,8 +73,9 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
         RecordSerializer serializer = new RecordSerializer();
         serializer = serializer.append( (AbstractSchemaRule)rule );
         List<DynamicRecord> records = new ArrayList<>();
-        allocateRecordsFromBytes( records, serializer.serialize(),
-        Iterators.iterator( getRecord( rule.getId(), newRecord(), CHECK ) ), this );
+        DynamicRecord record = getRecord( rule.getId(), nextRecord(), CHECK );
+        ReusableRecordsAllocator recordAllocator = new ReusableRecordsAllocator( this.getRecordSize(), record );
+        allocateRecordsFromBytes( records, serializer.serialize(), recordAllocator );
         return records;
     }
 

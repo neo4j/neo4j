@@ -34,6 +34,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -431,23 +432,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             record.setPrevProp( 4 );
             record.setInUse( true );
             PropertyBlock block = new PropertyBlock();
-            DynamicRecordAllocator stringAllocator = new DynamicRecordAllocator()
-            {
-                @Override
-                public int getRecordDataSize()
-                {
-                    return 64;
-                }
-
-                @Override
-                public DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst )
-                {
-                    DynamicRecord record = new DynamicRecord( 7 );
-                    record.setCreated();
-                    record.setInUse( true );
-                    return record;
-                }
-            };
+            DynamicRecordAllocator stringAllocator = new ReusableRecordsAllocator( 64, new DynamicRecord( 7 ) );
             String value = "a string too large to fit in the property block itself";
             PropertyStore.encodeValue( block, 6, value, stringAllocator, null );
             if ( light )

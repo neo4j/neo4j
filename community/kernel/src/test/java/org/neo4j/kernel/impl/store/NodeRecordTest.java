@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.store;
 import org.junit.Test;
 
 import java.util.Collection;
-import java.util.Collections;
 
+import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -93,12 +93,13 @@ public class NodeRecordTest
         // GIVEN
         IdSequence ids = mock( IdSequence.class );
         when( ids.nextId() ).thenReturn( 1L, 2L );
-        DynamicRecordAllocator allocator = new ExistingThenNewRecordAllocator( 30, ids );
+        ReusableRecordsAllocator recordAllocator =
+                new ReusableRecordsAllocator( 30, new DynamicRecord( 1 ), new DynamicRecord( 2 ) );
         NodeRecord node = newUsedNodeRecord( 0 );
         long labelId = 10_123;
         // A dynamic label record
-        Collection<DynamicRecord> existing = allocateRecordsForDynamicLabels( node.getId(),
-                new long[] {labelId}, Collections.<DynamicRecord>emptyIterator(), allocator );
+        Collection<DynamicRecord> existing = allocateRecordsForDynamicLabels( node.getId(), new long[]{labelId},
+                recordAllocator );
         // and a deleted one as well (simulating some deleted labels)
         DynamicRecord unused = newDeletedDynamicRecord( ids.nextId() );
         unused.setInUse( false );

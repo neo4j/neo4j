@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.util.Iterator;
-
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 public interface DynamicRecordAllocator
 {
     int getRecordDataSize();
 
-    DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst );
+    DynamicRecord nextRecord();
 }

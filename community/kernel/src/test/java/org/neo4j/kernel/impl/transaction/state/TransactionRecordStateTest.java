@@ -1331,7 +1331,7 @@ public class TransactionRecordStateTest
     private void assertDynamicLabelRecordInUse( NeoStores store, long id, boolean inUse )
     {
         DynamicArrayStore dynamicLabelStore = store.getNodeStore().getDynamicLabelStore();
-        DynamicRecord record = dynamicLabelStore.getRecord( id, dynamicLabelStore.newRecord(), FORCE );
+        DynamicRecord record = dynamicLabelStore.getRecord( id, dynamicLabelStore.nextRecord(), FORCE );
         assertTrue( inUse == record.inUse() );
     }
 

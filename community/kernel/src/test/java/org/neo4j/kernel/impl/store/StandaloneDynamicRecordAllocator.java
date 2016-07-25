@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.util.Iterator;
-
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 public class StandaloneDynamicRecordAllocator implements DynamicRecordAllocator
@@ -34,8 +32,8 @@ public class StandaloneDynamicRecordAllocator implements DynamicRecordAllocator
     }
 
     @Override
-    public DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst )
+    public DynamicRecord nextRecord()
     {
-        return recordsToUseFirst.hasNext() ? recordsToUseFirst.next() : new DynamicRecord( next++ );
+        return new DynamicRecord( next++ );
     }
 }
