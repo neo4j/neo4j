@@ -174,7 +174,7 @@ public final class PathImpl implements Path
     @Override
     public Iterable<Node> reverseNodes()
     {
-        return nodeIterator( end, reverseRelationships() );
+        return nodeIterator( endNode(), reverseRelationships() );
     }
 
     private Iterable<Node> nodeIterator( final Node start, final Iterable<Relationship> relationships )
