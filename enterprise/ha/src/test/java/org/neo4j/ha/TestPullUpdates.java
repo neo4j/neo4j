@@ -45,10 +45,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -133,15 +131,14 @@ public class TestPullUpdates
     }
 
     @Test
-    public void terminatedTransactionDoesNotForceUpdatePullingWithTxTerminationAwareLocks() throws Throwable
+    public void terminatedTransactionDoesNotForceUpdatePulling() throws Throwable
     {
         int testTxsOnMaster = 42;
         File root = testDirectory.directory( testName.getMethodName() );
         ClusterManager clusterManager = new ClusterManager.Builder( root )
                 .withSharedConfig( MapUtil.stringMap(
                         HaSettings.pull_interval.name(), "0s",
-                        HaSettings.tx_push_factor.name(), "0",
-                        KernelTransactions.tx_termination_aware_locks.name(), Settings.TRUE ) ).build();
+                        HaSettings.tx_push_factor.name(), "0" ) ).build();
         clusterManager.start();
         cluster = clusterManager.getCluster();
 

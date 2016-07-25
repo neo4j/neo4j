@@ -35,10 +35,10 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
-import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static org.neo4j.kernel.impl.locking.LockType.READ;
 import static org.neo4j.kernel.impl.locking.LockType.WRITE;
@@ -63,7 +63,6 @@ class SlaveLocksClient implements Locks.Client
     private final Map<ResourceType, Map<Long, AtomicInteger>> sharedLocks;
     private final Map<ResourceType, Map<Long, AtomicInteger>> exclusiveLocks;
     private final Log log;
-    private final boolean txTerminationAwareLocks;
     private boolean initialized;
     private volatile boolean stopped;
 
@@ -73,8 +72,7 @@ class SlaveLocksClient implements Locks.Client
             Locks localLockManager,
             RequestContextFactory requestContextFactory,
             AvailabilityGuard availabilityGuard,
-            LogProvider logProvider,
-            boolean txTerminationAwareLocks )
+            LogProvider logProvider )
     {
         this.master = master;
         this.client = local;
@@ -82,7 +80,6 @@ class SlaveLocksClient implements Locks.Client
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
         this.log = logProvider.getLog( getClass() );
-        this.txTerminationAwareLocks = txTerminationAwareLocks;
         sharedLocks = new HashMap<>();
         exclusiveLocks = new HashMap<>();
     }
@@ -206,12 +203,9 @@ class SlaveLocksClient implements Locks.Client
     @Override
     public void stop()
     {
-        if ( txTerminationAwareLocks )
-        {
-            client.stop();
-            stopLockSessionOnMaster();
-            stopped = true;
-        }
+        client.stop();
+        stopLockSessionOnMaster();
+        stopped = true;
     }
 
     @Override

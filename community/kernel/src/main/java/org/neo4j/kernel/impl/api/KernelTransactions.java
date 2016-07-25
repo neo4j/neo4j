@@ -29,14 +29,11 @@ import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -52,7 +49,6 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.util.Collections.newSetFromMap;
-import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
  * Central source of transactions in the database.
@@ -65,13 +61,9 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 public class KernelTransactions extends LifecycleAdapter
         implements Supplier<KernelTransactionsSnapshot>   // For providing KernelTransactionSnapshots
 {
-    public static final Setting<Boolean> tx_termination_aware_locks = setting(
-            "unsupported.dbms.tx_termination_aware_locks", Settings.BOOLEAN, Settings.FALSE );
-
     // Transaction dependencies
 
     private final Locks locks;
-    private final boolean txTerminationAwareLocks;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StatementOperationParts statementOperations;
     private final SchemaWriteGuard schemaWriteGuard;
@@ -118,11 +110,9 @@ public class KernelTransactions extends LifecycleAdapter
                                StorageEngine storageEngine,
                                Procedures procedures,
                                TransactionIdStore transactionIdStore,
-                               Config config,
                                Clock clock )
     {
         this.locks = locks;
-        this.txTerminationAwareLocks = config.get( tx_termination_aware_locks );
         this.constraintIndexCreator = constraintIndexCreator;
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -152,7 +142,7 @@ public class KernelTransactions extends LifecycleAdapter
                     statementOperations, schemaWriteGuard, hooks, constraintIndexCreator, procedures,
                     transactionHeaderInformationFactory, transactionCommitProcess, transactionMonitor,
                     legacyIndexTxStateSupplier, localTxPool, clock, tracers.transactionTracer,
-                    storageEngine, txTerminationAwareLocks );
+                    storageEngine );
 
             allTransactions.add( tx );
             return tx;

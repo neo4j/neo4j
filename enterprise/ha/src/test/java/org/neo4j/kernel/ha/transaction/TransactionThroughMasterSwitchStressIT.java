@@ -21,12 +21,7 @@ package org.neo4j.kernel.ha.transaction;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,7 +46,6 @@ import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
-import static org.neo4j.kernel.impl.api.KernelTransactions.tx_termination_aware_locks;
 import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
 
 /**
@@ -79,25 +73,12 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
  * This test is a stress test and duration of execution can be controlled via system property
  * -D{@link org.neo4j.kernel.ha.transaction.TransactionThroughMasterSwitchStressIT}.duration
  */
-@RunWith( Parameterized.class )
 public class TransactionThroughMasterSwitchStressIT
 {
     @Rule
-    public final ClusterRule clusterRule;
-
-    public TransactionThroughMasterSwitchStressIT( boolean txTerminationAwareLocks )
-    {
-        clusterRule = new ClusterRule( getClass() )
-                .withInstanceSetting( HaSettings.slave_only,
-                        value -> value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE )
-                .withSharedSetting( tx_termination_aware_locks, String.valueOf( txTerminationAwareLocks ) );
-    }
-
-    @Parameters(name = "txTerminationAwareLocks={0}")
-    public static List<Object> txTerminationAwareLocks()
-    {
-        return Arrays.asList( false, true );
-    }
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withInstanceSetting( HaSettings.slave_only,
+                    value -> value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE );
 
     @Test
     public void shouldNotHaveTransactionsRunningThroughRoleSwitchProduceInconsistencies() throws Throwable

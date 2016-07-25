@@ -97,30 +97,29 @@ public class KernelTransactionTestBase
         return newTransaction( 0, accessMode );
     }
 
-    public KernelTransactionImplementation newTransaction( AccessMode accessMode, Locks.Client locks,
-            boolean txTerminationAwareLocks )
+    public KernelTransactionImplementation newTransaction( AccessMode accessMode, Locks.Client locks )
     {
-        return newTransaction( 0, accessMode, locks, txTerminationAwareLocks );
+        return newTransaction( 0, accessMode, locks );
     }
 
     public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode )
     {
-        return newTransaction( lastTransactionIdWhenStarted, accessMode, new NoOpClient(), false );
+        return newTransaction( lastTransactionIdWhenStarted, accessMode, new NoOpClient() );
     }
 
     public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode,
-            Locks.Client locks, boolean txTerminationAwareLocks )
+            Locks.Client locks )
     {
-        KernelTransactionImplementation tx = newNotInitializedTransaction( txTerminationAwareLocks );
+        KernelTransactionImplementation tx = newNotInitializedTransaction();
         tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP,locks, Type.implicit, accessMode );
         return tx;
     }
 
-    public KernelTransactionImplementation newNotInitializedTransaction( boolean txTerminationAwareLocks )
+    public KernelTransactionImplementation newNotInitializedTransaction()
     {
         return new KernelTransactionImplementation( null, schemaWriteGuard, hooks, null, null, headerInformationFactory,
                 commitProcess, transactionMonitor, legacyIndexStateSupplier, txPool, clock, TransactionTracer.NULL,
-                storageEngine, txTerminationAwareLocks );
+                storageEngine );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

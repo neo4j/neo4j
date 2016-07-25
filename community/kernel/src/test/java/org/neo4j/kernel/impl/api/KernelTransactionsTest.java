@@ -39,13 +39,9 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TransactionId;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -436,8 +432,7 @@ public class KernelTransactionsTest
                 null, null, null, TransactionHeaderInformationFactory.DEFAULT,
                 commitProcess, null,
                 null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                tracers, storageEngine, new Procedures(), transactionIdStore, Config.empty(),
-                Clock.SYSTEM_CLOCK );
+                tracers, storageEngine, new Procedures(), transactionIdStore, Clock.SYSTEM_CLOCK );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )

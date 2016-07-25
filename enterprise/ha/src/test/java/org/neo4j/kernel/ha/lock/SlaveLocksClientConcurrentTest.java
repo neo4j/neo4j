@@ -42,8 +42,8 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.logging.Log;
-import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -111,7 +111,7 @@ public class SlaveLocksClientConcurrentTest
     private SlaveLocksClient createClient()
     {
         return new SlaveLocksClient( master, lockManager.newClient(), lockManager,
-                requestContextFactory, availabilityGuard, NullLogProvider.getInstance(), false );
+                requestContextFactory, availabilityGuard, NullLogProvider.getInstance() );
     }
 
     private static class LockedOnMasterAnswer implements Answer
