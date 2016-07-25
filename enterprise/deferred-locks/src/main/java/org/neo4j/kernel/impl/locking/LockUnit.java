@@ -95,14 +95,14 @@ public class LockUnit implements Comparable<LockUnit>
     @Override
     public int compareTo( LockUnit o )
     {
-        // The important thing isn't the order itself, it's the presence of an order
-        // so that all lock clients gets the same order
+        // Exclusive locks go first to minimize amount of potential deadlocks
         int exclusiveCompare = Boolean.compare( exclusive, o.exclusive );
         if ( exclusiveCompare != 0 )
         {
-            return exclusiveCompare;
+            return -exclusiveCompare;
         }
 
+        // Then shared/exclusive locks are compared by resourceTypeId and then by resourceId
         return resourceType.typeId() == o.resourceType.typeId() ? Long.compare( resourceId, o.resourceId )
                                                                 : resourceType.typeId() - o.resourceType.typeId();
     }

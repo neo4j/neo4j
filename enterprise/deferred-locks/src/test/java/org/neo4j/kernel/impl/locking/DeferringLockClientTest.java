@@ -22,8 +22,10 @@ package org.neo4j.kernel.impl.locking;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.neo4j.kernel.impl.locking.Locks.ResourceType;
@@ -327,6 +329,39 @@ public class DeferringLockClientTest
     }
 
     @Test
+    public void exclusiveLocksAcquiredFirst()
+    {
+        // GIVEN
+        TestLocks actualLocks = new TestLocks();
+        TestLocksClient actualClient = actualLocks.newClient();
+        DeferringLockClient client = new DeferringLockClient( actualClient );
+
+        client.acquireShared( ResourceTypes.NODE, 1 );
+        client.acquireExclusive( ResourceTypes.NODE, 2 );
+        client.acquireExclusive( ResourceTypes.NODE, 3 );
+        client.acquireExclusive( ResourceTypes.RELATIONSHIP, 1 );
+        client.acquireShared( ResourceTypes.RELATIONSHIP, 2 );
+        client.acquireShared( ResourceTypes.SCHEMA, 1 );
+        client.acquireExclusive( ResourceTypes.NODE, 42 );
+
+        // WHEN
+        client.acquireDeferredLocks();
+
+        // THEN
+        Set<LockUnit> expectedLocks = new LinkedHashSet<>(
+                Arrays.asList( new LockUnit( ResourceTypes.NODE, 2, true ),
+                        new LockUnit( ResourceTypes.NODE, 3, true ),
+                        new LockUnit( ResourceTypes.NODE, 42, true ),
+                        new LockUnit( ResourceTypes.RELATIONSHIP, 1, true ),
+                        new LockUnit( ResourceTypes.NODE, 1, false ),
+                        new LockUnit( ResourceTypes.RELATIONSHIP, 2, false ),
+                        new LockUnit( ResourceTypes.SCHEMA, 1, false ) )
+        );
+
+        actualClient.assertRegisteredLocks( expectedLocks );
+    }
+
+    @Test
     public void acquireBothSharedAndExclusiveLockThenReleaseExclusive()
     {
         // GIVEN
@@ -361,7 +396,7 @@ public class DeferringLockClientTest
 
     private static class TestLocksClient implements Locks.Client
     {
-        private final Set<LockUnit> actualLockUnits = new HashSet<>();
+        private final Set<LockUnit> actualLockUnits = new LinkedHashSet<>();
 
         @Override
         public void acquireShared( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
