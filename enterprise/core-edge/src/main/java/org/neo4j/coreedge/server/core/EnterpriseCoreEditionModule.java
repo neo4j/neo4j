@@ -27,49 +27,28 @@ import java.io.PrintWriter;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.CoreServerModule;
 import org.neo4j.coreedge.CoreStateMachinesModule;
 import org.neo4j.coreedge.ReplicationModule;
-import org.neo4j.coreedge.catchup.CatchupServer;
-import org.neo4j.coreedge.catchup.CheckpointerSupplier;
-import org.neo4j.coreedge.catchup.DataSourceSupplier;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
-import org.neo4j.coreedge.catchup.storecopy.core.CoreToCoreClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyClient;
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
-import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
-import org.neo4j.coreedge.raft.BatchingMessageHandler;
 import org.neo4j.coreedge.raft.ConsensusModule;
-import org.neo4j.coreedge.raft.ContinuousJob;
-import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.RaftServer;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.pruning.PruningScheduler;
-import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
-import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
-import org.neo4j.coreedge.raft.net.LoggingInbound;
 import org.neo4j.coreedge.raft.net.LoggingOutbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.net.RaftChannelInitializer;
 import org.neo4j.coreedge.raft.net.RaftOutbound;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.raft.state.CoreState;
-import org.neo4j.coreedge.raft.state.CoreStateApplier;
-import org.neo4j.coreedge.raft.state.CoreStateDownloader;
 import org.neo4j.coreedge.raft.state.DurableStateStorage;
-import org.neo4j.coreedge.raft.state.LongIndexMarshal;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.MemberId;
 import org.neo4j.coreedge.server.MemberId.MemberIdMarshal;
-import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.NonBlockingChannels;
 import org.neo4j.coreedge.server.SenderService;
 import org.neo4j.coreedge.server.logging.BetterMessageLogger;
@@ -94,15 +73,12 @@ import org.neo4j.kernel.impl.enterprise.StandardSessionTracker;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
@@ -113,9 +89,7 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 
-import static java.time.Clock.systemUTC;
 import static org.neo4j.coreedge.server.core.RoleProcedure.CoreOrEdge.CORE;
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -153,8 +127,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
     EnterpriseCoreEditionModule( final PlatformModule platformModule, DiscoveryServiceFactory discoveryServiceFactory )
     {
-        ioLimiter = new ConfigurableIOLimiter( platformModule.config );
-
         final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
         final LogService logging = platformModule.logging;
@@ -162,13 +134,11 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final File storeDir = platformModule.storeDir;
         final File clusterStateDirectory = createClusterStateDirectory( storeDir, fileSystem );
         final LifeSupport life = platformModule.life;
-        final GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
         MemberId myself;
-        StateStorage<Long> lastFlushedStorage;
 
         try
         {
@@ -182,11 +152,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 idStorage.persistStoreData( member );
             }
             myself = member;
-
-            lastFlushedStorage = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "last-flushed-state" ),
-                            "last-flushed", new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
-                            databaseHealthSupplier, logProvider ) );
         }
         catch ( IOException e )
         {
@@ -197,11 +162,11 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         life.add( dependencies.satisfyDependency( discoveryService ) );
 
-        final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
-        int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
         long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );
+        int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
+
         final SenderService senderService =
-                new SenderService( new RaftChannelInitializer( marshal, logProvider ), logProvider, platformModule.monitors,
+                new SenderService( new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider ), logProvider, platformModule.monitors,
                         maxQueueSize, new NonBlockingChannels() );
         life.add( senderService );
 
@@ -216,8 +181,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
             messageLogger = new NullMessageLogger<>();
         }
 
-        ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );
-
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
 
@@ -227,46 +190,13 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier,
                 logProvider);
 
-        final DelayedRenewableTimeoutService raftTimeoutService =
-                new DelayedRenewableTimeoutService( systemUTC(), logProvider );
-
-        NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
-
-        CoreToCoreClient.ChannelInitializer channelInitializer =
-                new CoreToCoreClient.ChannelInitializer( logProvider, nonBlockingChannels );
-        CoreToCoreClient coreToCoreClient = life.add(
-                new CoreToCoreClient( logProvider, channelInitializer, platformModule.monitors, maxQueueSize,
-                        nonBlockingChannels, discoveryService, logThresholdMillis ) );
-        channelInitializer.setOwner( coreToCoreClient );
-
-        StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
-                new StoreCopyClient( coreToCoreClient ), new TxPullClient( coreToCoreClient ),
-                new TransactionLogCatchUpFactory() );
-
         RaftOutbound raftOutbound =
                 new RaftOutbound( discoveryService, senderService, localDatabase, logProvider, logThresholdMillis );
         Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>(
                 raftOutbound, myself, messageLogger );
 
-        CoreStateApplier coreStateApplier = new CoreStateApplier( logProvider );
-        CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher,
-                coreToCoreClient, logProvider );
-
-        InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
-
-        NotMyselfSelectionStrategy someoneElse = new NotMyselfSelectionStrategy( discoveryService, myself );
-
         consensusModule =
-                new ConsensusModule( myself, platformModule, raftOutbound, clusterStateDirectory, raftTimeoutService,
-                        discoveryService, lastFlushedStorage.getInitialState() );
-
-        RaftServer raftServer = new RaftServer( marshal, raftListenAddress, logProvider );
-
-        LoggingInbound<RaftMessages.StoreIdAwareMessage> loggingRaftInbound =
-                new LoggingInbound<>( raftServer, messageLogger, myself );
-
-        int queueSize = config.get( CoreEdgeClusterSettings.raft_in_queue_size );
-        int maxBatch = config.get( CoreEdgeClusterSettings.raft_in_queue_max_batch );
+                new ConsensusModule( myself, platformModule, raftOutbound, clusterStateDirectory, discoveryService );
 
         dependencies.satisfyDependency( consensusModule.raftInstance() );
 
@@ -286,56 +216,27 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.lockManager = coreStateMachinesModule.lockManager;
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
 
-        CoreState coreState = new CoreState( coreStateMachinesModule.coreStateMachines, consensusModule.raftLog(),
-                config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
-                config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ), databaseHealthSupplier,
-                logProvider, replicationModule.getProgressTracker(), lastFlushedStorage,
-                replicationModule.getSessionTracker(), someoneElse, coreStateApplier, downloader, inFlightMap,
-                platformModule.monitors );
-
-        dependencies.satisfyDependency( coreState );
-
-        life.add( new PruningScheduler( coreState, platformModule.jobScheduler,
-                config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ) ) );
-
-        BatchingMessageHandler batchingMessageHandler =
-                new BatchingMessageHandler( consensusModule.raftInstance(), logProvider, queueSize, maxBatch, localDatabase, coreState );
-
-        long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
-        MembershipWaiter membershipWaiter =
-                new MembershipWaiter( myself, platformModule.jobScheduler, electionTimeout * 4, batchingMessageHandler, logProvider );
-
-        life.add( new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
-                batchingMessageHandler ) );
-
-        loggingRaftInbound.registerHandler( batchingMessageHandler );
-
-        dependencies.satisfyDependency(
-                createKernelData( fileSystem, platformModule.pageCache, storeDir, config, graphDatabaseFacade, life ) );
+        CoreServerModule coreServerModule = new CoreServerModule( myself, platformModule, consensusModule,
+                coreStateMachinesModule, replicationModule, clusterStateDirectory, discoveryService, localDatabase, messageLogger );
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 
         this.lockManager = dependencies.satisfyDependency( lockManager );
 
-        CatchupServer catchupServer = new CatchupServer( logProvider, localDatabase,
-                platformModule.dependencies.provideDependency( TransactionIdStore.class ),
-                platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
-                new DataSourceSupplier( platformModule ), new CheckpointerSupplier( platformModule.dependencies ),
-                coreState, config.get( CoreEdgeClusterSettings.transaction_listen_address ), platformModule.monitors );
-
-        long joinCatchupTimeout = config.get( CoreEdgeClusterSettings.join_catch_up_timeout );
-
         life.add( CoreStartupProcess.createLifeSupport(
-                platformModule.dataSourceManager, coreStateMachinesModule.replicatedIdGeneratorFactory, consensusModule.raftInstance(), coreState, raftServer,
-                catchupServer, raftTimeoutService, membershipWaiter, joinCatchupTimeout, logProvider ) );
-
-        dependencies.satisfyDependency( createSessionTracker() );
+                platformModule.dataSourceManager, coreStateMachinesModule.replicatedIdGeneratorFactory, coreServerModule.startupLifecycle, consensusModule.raftTimeoutService(), coreServerModule.membershipWaiterLifecycle ) );
     }
 
     private void editionInvariants( PlatformModule platformModule, Dependencies dependencies, Config config,
             LogService logging, LifeSupport life )
     {
+        dependencies.satisfyDependency(
+                createKernelData( platformModule.fileSystem, platformModule.pageCache, platformModule.storeDir,
+                        config, platformModule.graphDatabaseFacade, life ) );
+
         life.add( dependencies.satisfyDependency( createAuthManager( config, logging ) ) );
+
+        ioLimiter = new ConfigurableIOLimiter( platformModule.config );
 
         headerInformationFactory = createHeaderInformationFactory();
 
@@ -351,6 +252,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
+
+        dependencies.satisfyDependency( createSessionTracker() );
     }
 
     public boolean isLeader()

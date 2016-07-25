@@ -58,7 +58,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
     private final RaftGroup.Builder<MemberId> memberSetBuilder;
     private final ReadableRaftLog raftLog;
     private final Log log;
-    private final long recoverFromIndex;
+    private long recoverFromIndex = -1;
 
     private final StateStorage<RaftMembershipState> storage;
     private final RaftMembershipState state;
@@ -72,8 +72,9 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
     private Set<MemberId> additionalReplicationMembers = new HashSet<>();
 
     public RaftMembershipManager( SendToMyself sendToMyself, RaftGroup.Builder<MemberId> memberSetBuilder,
-            ReadableRaftLog raftLog, LogProvider logProvider, int expectedClusterSize, long electionTimeout,
-            Clock clock, long catchupTimeout, StateStorage<RaftMembershipState> membershipStorage, long recoverFromIndex )
+                                  ReadableRaftLog raftLog, LogProvider logProvider, int expectedClusterSize,
+                                  long electionTimeout,  Clock clock, long catchupTimeout,
+                                  StateStorage<RaftMembershipState> membershipStorage )
     {
         this.sendToMyself = sendToMyself;
         this.memberSetBuilder = memberSetBuilder;
@@ -83,9 +84,13 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
         this.state = membershipStorage.getInitialState();
 
         this.log = logProvider.getLog( getClass() );
-        this.recoverFromIndex = recoverFromIndex;
         this.membershipChanger = new RaftMembershipChanger( raftLog, clock,
                 electionTimeout, logProvider, catchupTimeout, this );
+    }
+
+    public void setRecoverFromIndex( long recoverFromIndex )
+    {
+        this.recoverFromIndex = recoverFromIndex;
     }
 
     @Override
