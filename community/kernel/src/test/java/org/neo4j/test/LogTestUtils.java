@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -124,18 +125,41 @@ public class LogTestUtils
         }
     }
 
+    /**
+     * Opens a {@link LogEntryCursor} over all log files found in the storeDirectory
+     *
+     * @param fs {@link FileSystemAbstraction} to find {@code storeDirectory} in.
+     * @param storeDirectory the store directory where the log files are.
+     */
+    public static LogEntryCursor openLogs( final FileSystemAbstraction fs, File storeDirectory )
+    {
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, fs );
+        File firstFile = logFiles.getLogFileForVersion( logFiles.getLowestLogVersion() );
+        return openLogEntryCursor( fs, firstFile, new ReaderLogVersionBridge( fs, logFiles ) );
+    }
+
+    /**
+     * Opens a {@link LogEntryCursor} over one log file
+     */
     public static LogEntryCursor openLog( FileSystemAbstraction fs, File log )
+    {
+        return openLogEntryCursor( fs, log, LogVersionBridge.NO_MORE_CHANNELS );
+    }
+
+    private static LogEntryCursor openLogEntryCursor( FileSystemAbstraction fs, File firstFile,
+            LogVersionBridge versionBridge )
     {
         StoreChannel channel = null;
         try
         {
-            channel = fs.open( log, "r" );
-            LogHeader header = LogHeaderReader.readLogHeader( ByteBuffer.allocate( LogHeader.LOG_HEADER_SIZE ), channel, true );
+            channel = fs.open( firstFile, "r" );
+            ByteBuffer buffer = ByteBuffer.allocate( LogHeader.LOG_HEADER_SIZE );
+            LogHeader header = LogHeaderReader.readLogHeader( buffer, channel, true );
 
             PhysicalLogVersionedStoreChannel logVersionedChannel = new PhysicalLogVersionedStoreChannel( channel,
                     header.logVersion, header.logFormatVersion );
             ReadableLogChannel logChannel = new ReadAheadLogChannel( logVersionedChannel,
-                    LogVersionBridge.NO_MORE_CHANNELS );
+                    versionBridge, ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE );
 
             return new LogEntryCursor( new VersionAwareLogEntryReader<>(), logChannel );
         }
