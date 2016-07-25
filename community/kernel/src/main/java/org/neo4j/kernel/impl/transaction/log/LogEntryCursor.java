@@ -32,6 +32,7 @@ public class LogEntryCursor implements IOCursor<LogEntry>
 {
     private final LogEntryReader<ReadableLogChannel> logEntryReader;
     private final ReadableLogChannel channel;
+    private final LogPositionMarker position = new LogPositionMarker();
     private LogEntry entry;
 
     public LogEntryCursor( ReadableLogChannel channel )
@@ -63,5 +64,17 @@ public class LogEntryCursor implements IOCursor<LogEntry>
     public void close() throws IOException
     {
         channel.close();
+    }
+
+    /**
+     * Reading {@link LogEntry log entries} may have the source move over physically multiple log files.
+     * This accessor returns the log version of the most recent call to {@link #next()}.
+     *
+     * @return the log version of the most recent {@link LogEntry} returned from {@link #next().
+     */
+    public long getCurrentLogVersion() throws IOException
+    {
+        channel.getCurrentPosition( position );
+        return position.getLogVersion();
     }
 }
