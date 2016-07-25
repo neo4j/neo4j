@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.record;
 import java.util.Objects;
 
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 public class RelationshipGroupRecord extends AbstractBaseRecord
 {
@@ -85,8 +86,9 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
     @Override
     public void clear()
     {
-        initialize( false, -1, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue(),
-                NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue() );
+        initialize( false, NULL_REFERENCE.intValue(), NO_NEXT_RELATIONSHIP.intValue(),
+                NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue(),
+                NO_NEXT_RELATIONSHIP.intValue() );
         prev = NO_NEXT_RELATIONSHIP.intValue();
     }
 
