@@ -71,8 +71,6 @@ class CreateUniqueEnterpriseConcurrencyIT extends ExecutionEngineFunSuite with E
 
     threads.foreach(_.start())
     threads.foreach(_.join)
-    if (deadlockCounter.get() > 0)
-      println(s"Deadlocks found: ${deadlockCounter.get()}")
     counter.get()
   }
 
