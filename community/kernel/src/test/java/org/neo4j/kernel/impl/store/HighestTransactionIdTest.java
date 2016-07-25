@@ -25,12 +25,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.test.Race;
 
+import static java.lang.Math.max;
+import static java.lang.Runtime.getRuntime;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import static java.lang.Math.max;
-import static java.lang.Runtime.getRuntime;
 
 public class HighestTransactionIdTest
 {
@@ -38,34 +37,34 @@ public class HighestTransactionIdTest
     public void shouldHardSetHighest() throws Exception
     {
         // GIVEN
-        HighestTransactionId highest = new HighestTransactionId( 10, 10 );
+        HighestTransactionId highest = new HighestTransactionId( 10, 10, 10 );
 
         // WHEN
-        highest.set( 8, 1299128 );
+        highest.set( 8, 1299128, 42 );
 
         // THEN
-        assertEquals( new TransactionId( 8, 1299128 ), highest.get() );
+        assertEquals( new TransactionId( 8, 1299128, 42 ), highest.get() );
     }
 
     @Test
     public void shouldOnlyKeepTheHighestOffered() throws Exception
     {
         // GIVEN
-        HighestTransactionId highest = new HighestTransactionId( -1, -1 );
+        HighestTransactionId highest = new HighestTransactionId( -1, -1, -1 );
 
         // WHEN/THEN
-        assertAccepted( highest, 2, 123 );
-        assertAccepted( highest, 5, 1231 );
-        assertRejected( highest, 3, 334343 );
-        assertRejected( highest, 4, 3343 );
-        assertAccepted( highest, 10, 3343857 );
+        assertAccepted( highest, 2 );
+        assertAccepted( highest, 5 );
+        assertRejected( highest, 3 );
+        assertRejected( highest, 4 );
+        assertAccepted( highest, 10 );
     }
 
     @Test
     public void shouldKeepHighestDuringConcurrentOfferings() throws Throwable
     {
         // GIVEN
-        final HighestTransactionId highest = new HighestTransactionId( -1, -1 );
+        final HighestTransactionId highest = new HighestTransactionId( -1, -1, -1 );
         Race race = new Race();
         int updaters = max( 2, getRuntime().availableProcessors() );
         final AtomicInteger accepted = new AtomicInteger();
@@ -77,7 +76,7 @@ public class HighestTransactionIdTest
                 @Override
                 public void run()
                 {
-                    if ( highest.offer( id, id ) )
+                    if ( highest.offer( id, id, id ) )
                     {
                         accepted.incrementAndGet();
                     }
@@ -93,17 +92,17 @@ public class HighestTransactionIdTest
         assertEquals( updaters, highest.get().transactionId() );
     }
 
-    private void assertAccepted( HighestTransactionId highest, long txId, long checksum )
+    private void assertAccepted( HighestTransactionId highest, long txId )
     {
         TransactionId current = highest.get();
-        assertTrue( highest.offer( txId, checksum ) );
+        assertTrue( highest.offer( txId, -1, -1 ) );
         assertTrue( txId > current.transactionId() );
     }
 
-    private void assertRejected( HighestTransactionId highest, long txId, long checksum )
+    private void assertRejected( HighestTransactionId highest, long txId )
     {
         TransactionId current = highest.get();
-        assertFalse( highest.offer( txId, checksum ) );
+        assertFalse( highest.offer( txId, -1, -1 ) );
         assertEquals( current, highest.get() );
     }
 }

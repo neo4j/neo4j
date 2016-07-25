@@ -90,6 +90,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
@@ -271,6 +273,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final TransactionEventHandlers transactionEventHandlers;
     private final IdGeneratorFactory idGeneratorFactory;
     private final IdReuseEligibility eligibleForReuse;
+    private final IdTypeConfigurationProvider idTypeConfigurationProvider;
     private final JobScheduler scheduler;
     private final Config config;
     private final LockService lockService;
@@ -312,6 +315,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             IdReuseEligibility eligibleForReuse,
+            IdTypeConfigurationProvider idTypeConfigurationProvider,
             LogService logService,
             JobScheduler scheduler,
             TokenNameLookup tokenNameLookup,
@@ -343,6 +347,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.eligibleForReuse = eligibleForReuse;
+        this.idTypeConfigurationProvider = idTypeConfigurationProvider;
         this.tokenNameLookup = tokenNameLookup;
         this.dependencyResolver = dependencyResolver;
         this.scheduler = scheduler;
@@ -574,10 +579,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         Supplier<KernelTransactionsSnapshot> transactionSnapshotSupplier =
                 () -> kernelModule.kernelTransactions().get();
         RecordStorageEngine storageEngine = new RecordStorageEngine( storeDir, config, idGeneratorFactory,
-                eligibleForReuse, pageCache, fs, logProvider, propertyKeyTokenHolder, labelTokens,
-                relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler, tokenNameLookup,
-                lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth, labelScanStore,
-                legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
+                eligibleForReuse, idTypeConfigurationProvider, pageCache, fs, logProvider, propertyKeyTokenHolder,
+                labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
+                tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
+                labelScanStore, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
                 transactionSnapshotSupplier );
 
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
@@ -791,7 +796,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( locks, constraintIndexCreator,
                 statementOperations, schemaWriteGuard, transactionHeaderInformationFactory, transactionCommitProcess,
                 indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor, life, tracers, storageEngine,
-                procedures, transactionIdStore, config ) );
+                procedures, transactionIdStore, config, Clock.SYSTEM_CLOCK ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures );
 

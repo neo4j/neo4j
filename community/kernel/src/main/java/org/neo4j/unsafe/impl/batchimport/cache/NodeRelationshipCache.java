@@ -138,6 +138,11 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         this.chunkChangedArray = new byte[chunkOf( nodeId ) + 1];
     }
 
+    public long getHighNodeId()
+    {
+        return this.highId;
+    }
+
     private static int getCount( ByteArray array, long index, int offset )
     {
         long rawCount = array.getInt( index, offset ) & COUNT_MASK;

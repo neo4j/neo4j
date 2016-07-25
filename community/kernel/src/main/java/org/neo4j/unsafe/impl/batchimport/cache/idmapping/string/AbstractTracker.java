@@ -49,4 +49,10 @@ abstract class AbstractTracker<ARRAY extends NumberArray> implements Tracker
     {
         array.swap( fromIndex, toIndex, count );
     }
+
+    @Override
+    public void close()
+    {
+        array.close();
+    }
 }

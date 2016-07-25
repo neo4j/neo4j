@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,13 +44,13 @@ import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -63,6 +64,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class SlaveLocksClientTest
 {
@@ -71,6 +73,7 @@ public class SlaveLocksClientTest
     private Locks.Client local;
     private SlaveLocksClient client;
     private AvailabilityGuard availabilityGuard;
+    private AssertableLogProvider logProvider;
 
     @Before
     public void setUp() throws Exception
@@ -80,6 +83,7 @@ public class SlaveLocksClientTest
 
         lockManager = new CommunityLockManger();
         local = spy( lockManager.newClient() );
+        logProvider = new AssertableLogProvider();
 
         LockResult lockResultOk = new LockResult( LockStatus.OK_LOCKED );
         TransactionStreamResponse<LockResult> responseOk =
@@ -318,34 +322,144 @@ public class SlaveLocksClientTest
         }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void acquireSharedFailsWhenClientStopped()
     {
-        stoppedClient().acquireShared( NODE, 1 );
+        SlaveLocksClient client = stoppedClient();
+        try
+        {
+            client.acquireShared( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void releaseSharedFailsWhenClientStopped()
     {
-        stoppedClient().releaseShared( NODE, 1 );
+        SlaveLocksClient client = stoppedClient();
+        try
+        {
+            client.releaseShared( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void acquireExclusiveFailsWhenClientStopped()
     {
-        stoppedClient().acquireExclusive( NODE, 1 );
+        SlaveLocksClient client = stoppedClient();
+        try
+        {
+            client.acquireExclusive( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void releaseExclusiveFailsWhenClientStopped()
     {
-        stoppedClient().releaseExclusive( NODE, 1 );
+        SlaveLocksClient client = stoppedClient();
+        try
+        {
+            client.releaseExclusive( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void getLockSessionIdWhenClientStopped()
     {
-        stoppedClient().getLockSessionId();
+        SlaveLocksClient client = stoppedClient();
+        try
+        {
+            client.getLockSessionId();
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
+    }
+
+    @Test
+    public void acquireSharedFailsWhenClientClosed()
+    {
+        SlaveLocksClient client = closedClient();
+        try
+        {
+            client.acquireShared( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
+    }
+
+    @Test
+    public void releaseSharedFailsWhenClientClosed()
+    {
+        SlaveLocksClient client = closedClient();
+        try
+        {
+            client.releaseShared( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
+    }
+
+    @Test
+    public void acquireExclusiveFailsWhenClientClosed()
+    {
+        SlaveLocksClient client = closedClient();
+        try
+        {
+            client.acquireExclusive( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
+    }
+
+    @Test
+    public void releaseExclusiveFailsWhenClientClosed()
+    {
+        SlaveLocksClient client = closedClient();
+        try
+        {
+            client.releaseExclusive( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
+    }
+
+    @Test
+    public void getLockSessionIdWhenClientClosed()
+    {
+        SlaveLocksClient client = closedClient();
+        try
+        {
+            client.getLockSessionId();
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
     @Test
@@ -393,37 +507,29 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void stopThrowsWhenMasterCommunicationThrowsComException()
+    public void stopDoesNotThrowWhenMasterCommunicationThrowsComException()
     {
         ComException error = new ComException( "Communication failure" );
         when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( error );
 
-        try
-        {
-            client.stop();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( DistributedLockFailureException.class ) );
-        }
+        client.stop();
+
+        logProvider.assertExactly( inLog( SlaveLocksClient.class )
+                .warn( equalTo( "Unable to stop lock session on master" ),
+                        CoreMatchers.<Throwable>instanceOf( DistributedLockFailureException.class ) ) );
     }
 
     @Test
-    public void stopThrowsWhenMasterCommunicationThrows()
+    public void stopDoesNotThrowWhenMasterCommunicationThrows()
     {
         RuntimeException error = new IllegalArgumentException( "Wrong params" );
         when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( error );
 
-        try
-        {
-            client.stop();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertEquals( error, e );
-        }
+        client.stop();
+
+        logProvider.assertExactly( inLog( SlaveLocksClient.class )
+                .warn( equalTo( "Unable to stop lock session on master" ),
+                        CoreMatchers.<Throwable>equalTo( error ) ) );
     }
 
     @Test
@@ -440,12 +546,19 @@ public class SlaveLocksClientTest
     private SlaveLocksClient newSlaveLocksClient( Locks lockManager, boolean txTerminationAwareLocks )
     {
         return new SlaveLocksClient( master, local, lockManager, mock( RequestContextFactory.class ),
-                availabilityGuard, txTerminationAwareLocks );
+                availabilityGuard, logProvider, txTerminationAwareLocks );
     }
 
     private SlaveLocksClient stoppedClient()
     {
         client.stop();
+        return client;
+    }
+
+    private SlaveLocksClient closedClient()
+    {
+        client.acquireShared( NODE, 1 ); // trigger new lock session initialization
+        client.close();
         return client;
     }
 }

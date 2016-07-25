@@ -52,6 +52,11 @@ public class RecordInfo<R extends AbstractBaseRecord>
         return txId;
     }
 
+    long logVersion()
+    {
+        return logVersion;
+    }
+
     @Override
     public String toString()
     {

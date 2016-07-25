@@ -134,10 +134,16 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
     val phaseTracer = compilationTracer.compileQuery(queryText)
     try {
 
-      val preParsedQuery = preParseQuery(queryText)
+      val externalTransactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.METADATA_KEY))
+      val preParsedQuery = try {
+        preParseQuery(queryText)
+      } catch {
+        case e: SyntaxException =>
+          externalTransactionalContext.close(success = false)
+          throw e
+      }
       val executionMode = preParsedQuery.executionMode
       val cacheKey = preParsedQuery.statementWithVersionAndPlanner
-      val externalTransactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.METADATA_KEY))
 
       var n = 0
       while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {

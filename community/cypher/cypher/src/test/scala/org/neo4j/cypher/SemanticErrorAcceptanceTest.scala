@@ -498,13 +498,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("should give type error for actions on mixed collection") {
-    executeAndEnsureError(
-      "RETURN (['a', 1][0]).prop",
-      "Type mismatch: expected Map, Node or Relationship but was Any (line 1, column 19 (offset: 18))"
-    )
-  }
-
   test("should fail if using non update clause inside foreach") {
     executeAndEnsureError(
       "FOREACH (n in [1] | WITH foo RETURN bar)",

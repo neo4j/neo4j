@@ -40,11 +40,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
@@ -66,6 +66,51 @@ public class CheckTxLogsTest
     public final SuppressOutput mute = SuppressOutput.suppressAll();
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final File storeDirectory = new File( "db" );
+
+    @Test
+    public void shouldReportNoInconsistenciesFromValidLog() throws Exception
+    {
+
+        // Given
+        File log = logFile( 1 );
+
+        writeTxContent( log, 1,
+                new Command.NodeCommand(
+                        new NodeRecord( 42, false, false, -1, -1, 1 ),
+                        new NodeRecord( 42, true, false, 42, -1, 1 )
+                ),
+                new Command.PropertyCommand(
+                        propertyRecord( 5, false, -1, -1 ),
+                        propertyRecord( 5, true, -1, -1, 777 )
+                ),
+                new Command.NodeCommand(
+                        new NodeRecord( 1, true, true, 2, -1, 1 ),
+                        new NodeRecord( 1, true, false, -1, -1, 1 )
+                )
+        );
+
+        writeTxContent( log, 2,
+                new Command.NodeCommand(
+                        new NodeRecord( 2, false, false, -1, -1, 1 ),
+                        new NodeRecord( 2, true, false, -1, -1, 1 )
+                ),
+                new Command.NodeCommand(
+                        new NodeRecord( 42, true, false, 42, -1, 1 ),
+                        new NodeRecord( 42, true, false, 24, 5, 1 )
+                )
+        );
+        CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
+
+        // When
+        boolean success = checker.scan( storeDirectory, handler, NODE );
+
+        // Then
+        assertTrue( success );
+
+        assertEquals( 0, handler.recordInconsistencies.size() );
+    }
 
     @Test
     public void shouldReportNodeInconsistenciesFromSingleLog() throws IOException
@@ -100,12 +145,13 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log}, handler, NODE );
+        boolean success = checker.scan( storeDirectory, handler, NODE );
 
         // Then
+        assertFalse( success );
         assertEquals( 1, handler.recordInconsistencies.size() );
 
         NodeRecord seenRecord = (NodeRecord) handler.recordInconsistencies.get( 0 ).committed.record();
@@ -163,10 +209,10 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log}, handler, NODE );
+        checker.scan( storeDirectory, handler, NODE );
 
         // Then
         assertEquals( 2, handler.recordInconsistencies.size() );
@@ -220,12 +266,13 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log1, log2, log3}, handler, NODE );
+        boolean success = checker.scan( storeDirectory, handler, NODE );
 
         // Then
+        assertFalse( success );
         assertEquals( 2, handler.recordInconsistencies.size() );
 
         NodeRecord seenRecord1 = (NodeRecord) handler.recordInconsistencies.get( 0 ).committed.record();
@@ -274,12 +321,13 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log}, handler, PROPERTY );
+        boolean success = checker.scan( storeDirectory, handler, PROPERTY );
 
         // Then
+        assertFalse( success );
         assertEquals( 1, handler.recordInconsistencies.size() );
 
         PropertyRecord seenRecord = (PropertyRecord) handler.recordInconsistencies.get( 0 ).committed.record();
@@ -337,30 +385,37 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log1, log2, log3}, handler, PROPERTY );
+        boolean success = checker.scan( storeDirectory, handler, PROPERTY );
 
         // Then
+        assertFalse( success );
         assertEquals( 2, handler.recordInconsistencies.size() );
 
-        PropertyRecord seenRecord1 = (PropertyRecord) handler.recordInconsistencies.get( 0 ).committed.record();
-        PropertyRecord currentRecord1 = (PropertyRecord) handler.recordInconsistencies.get( 0 ).current.record();
+        RecordInconsistency inconsistency1 = handler.recordInconsistencies.get( 0 );
+        PropertyRecord seenRecord1 = (PropertyRecord) inconsistency1.committed.record();
+        PropertyRecord currentRecord1 = (PropertyRecord) inconsistency1.current.record();
 
         assertEquals( 24, seenRecord1.getId() );
         assertTrue( seenRecord1.inUse() );
         assertEquals( 24, currentRecord1.getId() );
         assertFalse( currentRecord1.inUse() );
+        assertEquals( 2, inconsistency1.committed.logVersion() );
+        assertEquals( 3, inconsistency1.current.logVersion() );
 
-        PropertyRecord seenRecord2 = (PropertyRecord) handler.recordInconsistencies.get( 1 ).committed.record();
-        PropertyRecord currentRecord2 = (PropertyRecord) handler.recordInconsistencies.get( 1 ).current.record();
+        RecordInconsistency inconsistency2 = handler.recordInconsistencies.get( 1 );
+        PropertyRecord seenRecord2 = (PropertyRecord) inconsistency2.committed.record();
+        PropertyRecord currentRecord2 = (PropertyRecord) inconsistency2.current.record();
 
         assertEquals( 5, seenRecord2.getId() );
         assertEquals( 777, seenRecord2.getPropertyBlock( 0 ).getSingleValueInt() );
         assertEquals( 5, currentRecord2.getId() );
         assertEquals( 777, currentRecord2.getPropertyBlock( 0 ).getSingleValueInt() );
         assertEquals( 888, currentRecord2.getPropertyBlock( 1 ).getSingleValueInt() );
+        assertEquals( 1, inconsistency2.committed.logVersion() );
+        assertEquals( 3, inconsistency2.current.logVersion() );
     }
 
     @Test
@@ -396,10 +451,10 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log}, handler, RELATIONSHIP );
+        checker.scan( storeDirectory, handler, RELATIONSHIP );
 
         // Then
         assertEquals( 1, handler.recordInconsistencies.size() );
@@ -455,16 +510,17 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log1, log2, log3}, handler, RELATIONSHIP );
+        checker.scan( storeDirectory, handler, RELATIONSHIP );
 
         // Then
         assertEquals( 2, handler.recordInconsistencies.size() );
 
         RelationshipRecord seenRecord1 = (RelationshipRecord) handler.recordInconsistencies.get( 0 ).committed.record();
-        RelationshipRecord currentRecord1 = (RelationshipRecord) handler.recordInconsistencies.get( 0 ).current.record();
+        RelationshipRecord currentRecord1 =
+                (RelationshipRecord) handler.recordInconsistencies.get( 0 ).current.record();
 
         assertEquals( 42, seenRecord1.getId() );
         assertEquals( 4, seenRecord1.getFirstPrevRel() );
@@ -472,12 +528,13 @@ public class CheckTxLogsTest
         assertEquals( 9, currentRecord1.getFirstPrevRel() );
 
         RelationshipRecord seenRecord2 = (RelationshipRecord) handler.recordInconsistencies.get( 1 ).committed.record();
-        RelationshipRecord currentRecord2 = (RelationshipRecord) handler.recordInconsistencies.get( 1 ).current.record();
+        RelationshipRecord currentRecord2 =
+                (RelationshipRecord) handler.recordInconsistencies.get( 1 ).current.record();
 
         assertEquals( 42, seenRecord2.getId() );
         assertTrue( seenRecord2.isFirstInFirstChain() );
         assertEquals( 42, currentRecord2.getId() );
-        assertFalse(currentRecord2.isFirstInFirstChain() );
+        assertFalse( currentRecord2.isFirstInFirstChain() );
     }
 
     @Test
@@ -513,16 +570,18 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log}, handler, RELATIONSHIP_GROUP );
+        checker.scan( storeDirectory, handler, RELATIONSHIP_GROUP );
 
         // Then
         assertEquals( 1, handler.recordInconsistencies.size() );
 
-        RelationshipGroupRecord seenRecord = (RelationshipGroupRecord) handler.recordInconsistencies.get( 0 ).committed.record();
-        RelationshipGroupRecord currentRecord = (RelationshipGroupRecord) handler.recordInconsistencies.get( 0 ).current.record();
+        RelationshipGroupRecord seenRecord =
+                (RelationshipGroupRecord) handler.recordInconsistencies.get( 0 ).committed.record();
+        RelationshipGroupRecord currentRecord =
+                (RelationshipGroupRecord) handler.recordInconsistencies.get( 0 ).current.record();
 
         assertEquals( 42, seenRecord.getId() );
         assertEquals( 4, seenRecord.getFirstLoop() );
@@ -572,29 +631,33 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log1, log2, log3}, handler, RELATIONSHIP_GROUP );
+        checker.scan( storeDirectory, handler, RELATIONSHIP_GROUP );
 
         // Then
         assertEquals( 2, handler.recordInconsistencies.size() );
 
-        RelationshipGroupRecord seenRecord1 = (RelationshipGroupRecord) handler.recordInconsistencies.get( 0 ).committed.record();
-        RelationshipGroupRecord currentRecord1 = (RelationshipGroupRecord) handler.recordInconsistencies.get( 0 ).current.record();
+        RelationshipGroupRecord seenRecord1 =
+                (RelationshipGroupRecord) handler.recordInconsistencies.get( 0 ).committed.record();
+        RelationshipGroupRecord currentRecord1 =
+                (RelationshipGroupRecord) handler.recordInconsistencies.get( 0 ).current.record();
 
         assertEquals( 42, seenRecord1.getId() );
         assertEquals( 4, seenRecord1.getFirstLoop() );
         assertEquals( 42, currentRecord1.getId() );
         assertEquals( 9, currentRecord1.getFirstLoop() );
 
-        RelationshipGroupRecord seenRecord2 = (RelationshipGroupRecord) handler.recordInconsistencies.get( 1 ).committed.record();
-        RelationshipGroupRecord currentRecord2 = (RelationshipGroupRecord) handler.recordInconsistencies.get( 1 ).current.record();
+        RelationshipGroupRecord seenRecord2 =
+                (RelationshipGroupRecord) handler.recordInconsistencies.get( 1 ).committed.record();
+        RelationshipGroupRecord currentRecord2 =
+                (RelationshipGroupRecord) handler.recordInconsistencies.get( 1 ).current.record();
 
         assertEquals( 42, seenRecord2.getId() );
         assertTrue( seenRecord2.inUse() );
         assertEquals( 42, currentRecord2.getId() );
-        assertFalse(currentRecord2.inUse() );
+        assertFalse( currentRecord2.inUse() );
     }
 
     @Test
@@ -626,10 +689,10 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log}, handler, NEO_STORE );
+        checker.scan( storeDirectory, handler, NEO_STORE );
 
         // Then
         assertEquals( 1, handler.recordInconsistencies.size() );
@@ -679,10 +742,10 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log1, log2, log3}, handler, NEO_STORE );
+        checker.scan( storeDirectory, handler, NEO_STORE );
 
         // Then
         assertEquals( 2, handler.recordInconsistencies.size() );
@@ -700,16 +763,35 @@ public class CheckTxLogsTest
         assertEquals( 13, currentRecord2.getNextProp() );
     }
 
+    private File logFile( long version )
+    {
+        fsRule.get().mkdirs( storeDirectory );
+        return new File( storeDirectory,
+                PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + version );
+    }
+
+    private static PropertyRecord propertyRecord( long id, boolean inUse, long prevProp, long nextProp, long... blocks )
+    {
+        PropertyRecord record = new PropertyRecord( id );
+        record.setInUse( inUse );
+        record.setPrevProp( prevProp );
+        record.setNextProp( nextProp );
+        for ( int i = 0; i < blocks.length; i++ )
+        {
+            long blockValue = blocks[i];
+            PropertyBlock block = new PropertyBlock();
+            long value = PropertyStore.singleBlockLongValue( i, PropertyType.INT, blockValue );
+            block.setSingleBlock( value );
+            record.addPropertyBlock( block );
+        }
+        return record;
+    }
+
     private NeoStoreRecord createNeoStoreRecord( int nextProp )
     {
         NeoStoreRecord neoStoreRecord = new NeoStoreRecord();
         neoStoreRecord.setNextProp( nextProp );
         return neoStoreRecord;
-    }
-
-    private static File logFile( long version )
-    {
-        return new File( PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + version );
     }
 
     private void writeTxContent( File log, long txId, Command... commands ) throws IOException
@@ -735,23 +817,6 @@ public class CheckTxLogsTest
 
             txWriter.append( tx, txId );
         }
-    }
-
-    private static PropertyRecord propertyRecord( long id, boolean inUse, long prevProp, long nextProp, long... blocks )
-    {
-        PropertyRecord record = new PropertyRecord( id );
-        record.setInUse( inUse );
-        record.setPrevProp( prevProp );
-        record.setNextProp( nextProp );
-        for ( int i = 0; i < blocks.length; i++ )
-        {
-            long blockValue = blocks[i];
-            PropertyBlock block = new PropertyBlock();
-            long value = PropertyStore.singleBlockLongValue( i, PropertyType.INT, blockValue );
-            block.setSingleBlock( value );
-            record.addPropertyBlock( block );
-        }
-        return record;
     }
 
     private static class CapturingInconsistenciesHandler implements InconsistenciesHandler

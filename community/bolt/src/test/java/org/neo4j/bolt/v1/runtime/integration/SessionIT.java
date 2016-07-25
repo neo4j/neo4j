@@ -50,6 +50,7 @@ import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.recorded;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.streamContaining;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
 
+@SuppressWarnings( "unchecked" )
 public class SessionIT
 {
     private static final Map<String,Object> EMPTY_PARAMS = emptyMap();
@@ -69,6 +70,21 @@ public class SessionIT
 
         // When
         session.run( "", EMPTY_PARAMS, null, responses );
+
+        // Then
+        assertThat( responses.next(), failedWith( Status.Statement.SyntaxError ) );
+    }
+
+    @Test
+    public void shouldHandleNewLine() throws Throwable
+    {
+        // Given
+        Session session = env.newSession( "<test>" );
+        session.init( "TestClient/1.0", emptyMap(), null, null );
+
+        // When
+        session.run( System.lineSeparator(), EMPTY_PARAMS, null, responses );
+        session.pullAll( "",  responses );
 
         // Then
         assertThat( responses.next(), failedWith( Status.Statement.SyntaxError ) );

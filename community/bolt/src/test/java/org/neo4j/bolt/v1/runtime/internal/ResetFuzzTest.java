@@ -43,11 +43,12 @@ import org.neo4j.bolt.v1.runtime.integration.RecordingCallback;
 import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -142,7 +143,7 @@ public class ResetFuzzTest
         {
             Message message = messages.get( rand.nextInt( messages.size() ) );
             sent.add( message );
-            message.dispatch( session );
+            message.<RuntimeException>dispatch( session );
         }
     }
 
@@ -265,15 +266,21 @@ public class ResetFuzzTest
         }
 
         @Override
-        public boolean shouldBeTerminated()
+        public Status getReasonIfTerminated()
         {
-            return false;
+            return null;
         }
 
         @Override
-        public void markForTermination()
+        public void markForTermination( Status reason )
         {
 
+        }
+
+        @Override
+        public long lastTransactionTimestampWhenStarted()
+        {
+            return 0;
         }
 
         @Override

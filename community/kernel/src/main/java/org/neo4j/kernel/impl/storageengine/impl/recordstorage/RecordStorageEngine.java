@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
@@ -33,7 +32,6 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -71,11 +69,15 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.DefaultIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.command.CacheInvalidationBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.HighIdBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
@@ -117,11 +119,13 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
-    private static final boolean safeIdBuffering = flag( RecordStorageEngine.class, "safeIdBuffering", false );
+    private static final boolean takePropertyReadLocks = FeatureToggles.flag(
+            RecordStorageEngine.class, "propertyReadLocks", false );
+    private static final boolean safeIdBuffering = FeatureToggles.flag(
+            RecordStorageEngine.class, "safeIdBuffering", true );
 
     private final StoreReadLayer storeLayer;
     private final IndexingService indexingService;
@@ -150,9 +154,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
     private final Supplier<StorageStatement> storeStatementSupplier;
-
-    private BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
-    private JobScheduler.JobHandle idBufferMaintenance;
+    private final IdController idController;
 
     // Immutable state for creating/applying commands
     private final Loaders loaders;
@@ -166,6 +168,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             IdReuseEligibility eligibleForReuse,
+            IdTypeConfigurationProvider idTypeConfigurationProvider,
             PageCache pageCache,
             FileSystemAbstraction fs,
             LogProvider logProvider,
@@ -198,17 +201,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.constraintSemantics = constraintSemantics;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
 
-        if ( safeIdBuffering )
-        {
-            // This buffering id generator factory will have properly buffering id generators injected into
-            // the stores. The buffering depends on knowledge about active transactions,
-            // so we'll initialize it below when all those components have been instantiated.
-            bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(
-                    idGeneratorFactory, transactionsSnapshotSupplier, eligibleForReuse );
-
-            idGeneratorFactory = bufferingIdGeneratorFactory;
-        }
-        StoreFactory factory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
+        this.idController = createStorageIdController( idGeneratorFactory, eligibleForReuse,
+            idTypeConfigurationProvider, transactionsSnapshotSupplier );
+        StoreFactory factory = new StoreFactory( storeDir, config, idController.getIdGeneratorFactory(), pageCache, fs, logProvider );
         neoStores = factory.openAllNeoStores( true );
 
         try
@@ -261,11 +256,21 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
     }
 
+    private IdController createStorageIdController( IdGeneratorFactory idGeneratorFactory,
+            IdReuseEligibility eligibleForReuse,
+            IdTypeConfigurationProvider idTypeConfigurationProvider,
+            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier )
+    {
+        return safeIdBuffering ?
+               new BufferedIdController( idGeneratorFactory, transactionsSnapshotSupplier,
+                       eligibleForReuse, idTypeConfigurationProvider, scheduler ) :
+               new DefaultIdController( idGeneratorFactory );
+    }
+
     private Supplier<StorageStatement> storeStatementSupplier( NeoStores neoStores )
     {
         Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
-        LockService lockService =
-                FeatureToggles.flag( getClass(), "propertyReadLocks", true ) ? this.lockService : NO_LOCK_SERVICE;
+        LockService lockService = takePropertyReadLocks ? this.lockService : NO_LOCK_SERVICE;
 
         return () -> new StoreStatement( neoStores, indexReaderFactory, labelScanStore::newReader, lockService );
     }
@@ -397,6 +402,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         // providing TransactionIdStore, LogVersionRepository
         satisfier.satisfyDependency( neoStores.getMetaDataStore() );
         satisfier.satisfyDependency( indexStoreView );
+        satisfier.satisfyDependency( idController );
     }
 
     @Override
@@ -422,12 +428,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         loadSchemaCache();
         indexingService.start();
         labelScanStore.start();
-        if ( safeIdBuffering )
-        {
-            Runnable maintenance = bufferingIdGeneratorFactory::maintenance;
-            idBufferMaintenance = scheduler.scheduleRecurring(
-                    JobScheduler.Groups.storageMaintenance, maintenance, 1, TimeUnit.SECONDS );
-        }
+        idController.start();
     }
 
     @Override
@@ -440,19 +441,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void clearBufferedIds()
     {
-        if ( bufferingIdGeneratorFactory != null )
-        {
-            bufferingIdGeneratorFactory.clear();
-        }
-    }
-
-    @Override
-    public void maintenance()
-    {
-        if ( bufferingIdGeneratorFactory != null )
-        {
-            bufferingIdGeneratorFactory.maintenance();
-        }
+        idController.clear();
     }
 
     @Override
@@ -460,10 +449,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         labelScanStore.stop();
         indexingService.stop();
-        if ( safeIdBuffering )
-        {
-            idBufferMaintenance.cancel( false );
-        }
+        idController.stop();
     }
 
     @Override

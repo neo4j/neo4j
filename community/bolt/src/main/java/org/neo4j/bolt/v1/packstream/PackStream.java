@@ -167,6 +167,20 @@ public class PackStream
         private PackOutput out;
         private UTF8Encoder utf8 = UTF8Encoder.fastestAvailableEncoder();
 
+        private static final String[] PACKED_CHARS = prePackChars();
+        private static final char PACKED_CHAR_START_CHAR = (char) 32;
+        private static final char PACKED_CHAR_END_CHAR = (char) 126;
+        private static String[] prePackChars()
+        {
+            int size = PACKED_CHAR_END_CHAR + 1 - PACKED_CHAR_START_CHAR;
+            String[] packedChars = new String[size];
+            for ( int i = 0; i < size; i++ )
+            {
+                packedChars[i] = ( String.valueOf( (char)(i + PACKED_CHAR_START_CHAR) ) );
+            }
+            return packedChars;
+        }
+
         public Packer( PackOutput out )
         {
             this.out = out;
@@ -216,6 +230,18 @@ public class PackStream
             out.writeByte( FLOAT_64 ).writeDouble( value );
         }
 
+        public void pack( char character ) throws IOException
+        {
+            if( character >= PACKED_CHAR_START_CHAR && character <= PACKED_CHAR_END_CHAR )
+            {
+                pack( PACKED_CHARS[character - PACKED_CHAR_START_CHAR] );
+            }
+            else
+            {
+                pack( String.valueOf( character ) );
+            }
+        }
+
         public void pack( String value ) throws IOException
         {
             if ( value == null ) { packNull(); }
@@ -235,7 +261,7 @@ public class PackStream
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                out.writeShort( (short) (STRING_8 << 8 | (byte) size) );
+                out.writeShort( (short) (STRING_8 << 8 | size) );
             }
             else if ( size <= Short.MAX_VALUE )
             {
@@ -255,7 +281,7 @@ public class PackStream
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                out.writeShort( (short) (LIST_8 << 8 | (byte) size) );
+                out.writeShort( (short) (LIST_8 << 8 | size) );
             }
             else if ( size <= Short.MAX_VALUE )
             {
@@ -280,7 +306,7 @@ public class PackStream
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                out.writeShort( (short) (MAP_8 << 8 | (byte) size) );
+                out.writeShort( (short) (MAP_8 << 8 | size) );
             }
             else if ( size <= Short.MAX_VALUE )
             {
@@ -301,7 +327,7 @@ public class PackStream
         {
             if ( size < 0x10 )
             {
-                out.writeShort( (short) ((byte) (TINY_STRUCT | size) << 8 | signature) );
+                out.writeShort( (short) ((byte) (TINY_STRUCT | size) << 8 | (signature & 0xFF)) );
             }
             else if ( size <= Byte.MAX_VALUE )
             {

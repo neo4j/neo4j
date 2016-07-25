@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,11 +32,13 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.ha.TestRunConditions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
@@ -60,6 +63,14 @@ public class FailoverWithAdditionalSlaveFailuresIT
                 {5, new int[]{3}},
                 {5, new int[]{4}},
 
+                /*
+                 * The following cases for 6 and 7 size clusters are too big to consistently verify behaviour. In many
+                 * cases the cluster takes longer to form because of cumulative timeouts since the machines we run
+                 * these tests on cannot cope with the number of threads spun up. The basic scenario is sufficiently
+                 * tested with the 5-size cluster, but the 6 and 7 size cases are good to keep around for posterity,
+                 * since a better, multi machine setup can and should test them. Hence, they are ignored through the
+                 * JUnit assumption in the @Before method
+                 */
                 {6, new int[]{1}},
                 {6, new int[]{3}},
                 {6, new int[]{5}},
@@ -68,6 +79,12 @@ public class FailoverWithAdditionalSlaveFailuresIT
                 {7, new int[]{3, 4}},
                 {7, new int[]{5, 6}},
         });
+    }
+
+    @Before
+    public void shouldRun()
+    {
+        assumeTrue( TestRunConditions.shouldRunAtClusterSize( clusterSize ) );
     }
 
     public FailoverWithAdditionalSlaveFailuresIT( int clusterSize, int[] slavesToFail )

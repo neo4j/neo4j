@@ -19,14 +19,19 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientDatabaseFailureException;
+import org.neo4j.ha.TestRunConditions;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.NetworkFlag;
 import org.neo4j.test.LoggerRule;
@@ -34,14 +39,16 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.instanceEvicted;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.memberSeesOtherMemberAsFailed;
 
-import java.util.function.Predicate;
+import java.util.concurrent.CountDownLatch;
 
 public class ClusterPartitionIT
 {
@@ -75,10 +82,15 @@ public class ClusterPartitionIT
 
             HighlyAvailableGraphDatabase oldMaster = cluster.getMaster();
 
+            CountDownLatch masterTransitionLatch = new CountDownLatch( 1 );
+            setupForWaitOnSwitchToDetached( oldMaster, masterTransitionLatch );
+
             addSomeData( oldMaster );
 
             ClusterManager.RepairKit fail = cluster.fail( oldMaster, NetworkFlag.values() );
             cluster.await( instanceEvicted( oldMaster ), 20 );
+
+            masterTransitionLatch.await();
 
             ensureInstanceIsReadOnlyInPendingState( oldMaster );
 
@@ -115,10 +127,15 @@ public class ClusterPartitionIT
 
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
+            CountDownLatch slaveTransitionLatch = new CountDownLatch( 1 );
+            setupForWaitOnSwitchToDetached( slave, slaveTransitionLatch );
+
             addSomeData( slave );
 
             ClusterManager.RepairKit fail = cluster.fail( slave, NetworkFlag.values() );
             cluster.await( instanceEvicted( slave ), 20 );
+
+            slaveTransitionLatch.await();
 
             ensureInstanceIsReadOnlyInPendingState( slave );
 
@@ -138,12 +155,13 @@ public class ClusterPartitionIT
     public void losingQuorumIncrementallyShouldMakeAllInstancesPendingAndReadOnly() throws Throwable
     {
         int clusterSize = 5; // we need 5 to differentiate between all other instances gone and just quorum being gone
+        assumeTrue( TestRunConditions.shouldRunAtClusterSize( clusterSize ) );
 
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
                 .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                         ClusterSettings.heartbeat_interval.name(), "1",
-                        ClusterSettings.heartbeat_timeout.name(), "3",
+//                        ClusterSettings.heartbeat_timeout.name(), "3",
                         HaSettings.tx_push_factor.name(), "4" ) ) // so we know the initial data made it everywhere
                 .build();
 
@@ -176,6 +194,12 @@ public class ClusterPartitionIT
             failed3 = cluster.getAnySlave( failed1, failed2 );
             remainingSlave = cluster.getAnySlave( failed1, failed2, failed3 );
 
+            CountDownLatch masterTransitionLatch = new CountDownLatch( 1 );
+            CountDownLatch slaveTransitionLatch = new CountDownLatch( 1 );
+
+            setupForWaitOnSwitchToDetached( master, masterTransitionLatch );
+            setupForWaitOnSwitchToDetached( remainingSlave, slaveTransitionLatch);
+
             rk1 = killIncrementally( cluster, failed1, failed2, failed3 );
 
             cluster.await( memberSeesOtherMemberAsFailed( remainingSlave, failed1 ) );
@@ -185,6 +209,9 @@ public class ClusterPartitionIT
             cluster.await( memberSeesOtherMemberAsFailed( master, failed1 ) );
             cluster.await( memberSeesOtherMemberAsFailed( master, failed2 ) );
             cluster.await( memberSeesOtherMemberAsFailed( master, failed3 ) );
+
+            masterTransitionLatch.await();
+            slaveTransitionLatch.await();
 
             ensureInstanceIsReadOnlyInPendingState( master );
             ensureInstanceIsReadOnlyInPendingState( remainingSlave );
@@ -209,12 +236,13 @@ public class ClusterPartitionIT
     public void losingQuorumAbruptlyShouldMakeAllInstancesPendingAndReadOnly() throws Throwable
     {
         int clusterSize = 5; // we need 5 to differentiate between all other instances gone and just quorum being gone
+        assumeTrue( TestRunConditions.shouldRunAtClusterSize( clusterSize ) );
 
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
                 .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                         ClusterSettings.heartbeat_interval.name(), "1",
-                        ClusterSettings.heartbeat_timeout.name(), "3",
+//                        ClusterSettings.heartbeat_timeout.name(), "3",
                         HaSettings.tx_push_factor.name(), "4" ) ) // so we know the initial data made it everywhere
                 .build();
 
@@ -247,6 +275,12 @@ public class ClusterPartitionIT
             failed3 = cluster.getAnySlave( failed1, failed2 );
             remainingSlave = cluster.getAnySlave( failed1, failed2, failed3 );
 
+            CountDownLatch masterTransitionLatch = new CountDownLatch( 1 );
+            CountDownLatch slaveTransitionLatch = new CountDownLatch( 1 );
+
+            setupForWaitOnSwitchToDetached( master, masterTransitionLatch );
+            setupForWaitOnSwitchToDetached( remainingSlave, slaveTransitionLatch);
+
             rk1 = killAbruptly( cluster, failed1, failed2, failed3 );
 
             cluster.await( memberSeesOtherMemberAsFailed( remainingSlave, failed1 ) );
@@ -256,6 +290,9 @@ public class ClusterPartitionIT
             cluster.await( memberSeesOtherMemberAsFailed( master, failed1 ) );
             cluster.await( memberSeesOtherMemberAsFailed( master, failed2 ) );
             cluster.await( memberSeesOtherMemberAsFailed( master, failed3 ) );
+
+            masterTransitionLatch.await();
+            slaveTransitionLatch.await();
 
             ensureInstanceIsReadOnlyInPendingState( master );
             ensureInstanceIsReadOnlyInPendingState( remainingSlave );
@@ -336,7 +373,7 @@ public class ClusterPartitionIT
             instance.getNodeById( testNodeId ).delete();
             fail( "Should not be able to do write transactions when detached" );
         }
-        catch ( TransientDatabaseFailureException e )
+        catch ( TransientDatabaseFailureException | TransactionFailureException expected )
         {
             // expected
         }
@@ -351,24 +388,16 @@ public class ClusterPartitionIT
         }
     }
 
-    private Predicate<ClusterManager.ManagedCluster> instanceEvicted( final HighlyAvailableGraphDatabase instance )
+    private void setupForWaitOnSwitchToDetached( HighlyAvailableGraphDatabase db, final CountDownLatch latch )
     {
-        return managedCluster -> {
-            InstanceId instanceId = managedCluster.getServerId( instance );
-
-            Iterable<HighlyAvailableGraphDatabase> members = managedCluster.getAllMembers();
-            for ( HighlyAvailableGraphDatabase member : members )
-            {
-                if ( instanceId.equals( managedCluster.getServerId( member ) ) )
+        db.getDependencyResolver().resolveDependency( HighAvailabilityMemberStateMachine.class )
+                .addHighAvailabilityMemberListener( new HighAvailabilityMemberListener.Adapter()
                 {
-                    if ( member.role().equals( "UNKNOWN" ) )
+                    @Override
+                    public void instanceDetached( HighAvailabilityMemberChangeEvent event )
                     {
-                        return true;
+                        latch.countDown();
                     }
-                }
-            }
-            return false;
-
-        };
+                } );
     }
 }

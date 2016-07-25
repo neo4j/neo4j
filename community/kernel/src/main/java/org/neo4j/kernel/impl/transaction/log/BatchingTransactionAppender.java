@@ -209,7 +209,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                     transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() );
             transactionMetadataCache.cacheTransactionMetadata(
                     transactionId, logPositionBeforeCommit, transaction.getMasterId(), transaction.getAuthorId(),
-                    transactionChecksum );
+                    transactionChecksum, transaction.getTimeCommitted() );
 
             transaction.accept( indexCommandDetector );
             boolean hasLegacyIndexChanges = indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
@@ -219,8 +219,8 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                 legacyIndexTransactionOrdering.offer( transactionId );
             }
             return new TransactionCommitment(
-                    hasLegacyIndexChanges, transactionId, transactionChecksum, logPositionAfterCommit,
-                    transactionIdStore );
+                    hasLegacyIndexChanges, transactionId, transactionChecksum, transaction.getTimeCommitted(),
+                    logPositionAfterCommit, transactionIdStore );
         }
         catch ( final Throwable panic )
         {

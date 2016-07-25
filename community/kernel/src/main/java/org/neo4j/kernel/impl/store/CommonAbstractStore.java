@@ -649,20 +649,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      */
     protected void openIdGenerator()
     {
-        idGenerator = openIdGenerator( getIdFileName(), idType.getGrabSize() );
-    }
-
-    /**
-     * Opens the {@link IdGenerator} given by the fileName.
-     * <p>
-     * Note: This method may be called both while the store has the store file mapped in the
-     * page cache, and while the store file is not mapped. Implementers must therefore
-     * map their own temporary PagedFile for the store file, and do their file IO through that,
-     * if they need to access the data in the store file.
-     */
-    protected IdGenerator openIdGenerator( File fileName, int grabSize )
-    {
-        return idGeneratorFactory.open( fileName, grabSize, getIdType(), scanForHighId(), recordFormat.getMaxId() );
+        idGenerator = idGeneratorFactory.open( getIdFileName(), getIdType(), scanForHighId(), recordFormat.getMaxId() );
     }
 
     /**

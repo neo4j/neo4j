@@ -50,7 +50,9 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.RECORD_SIZE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader>
@@ -81,7 +83,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         UPGRADE_TRANSACTION_CHECKSUM( 10, "Checksum of transaction id the most recent upgrade was performed at" ),
         LAST_CLOSED_TRANSACTION_LOG_VERSION( 11, "Log version where the last transaction commit entry has been written into" ),
         LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET( 12, "Byte offset in the log file where the last transaction commit entry " +
-                                                     "has been written into" );
+                                                     "has been written into" ),
+        LAST_TRANSACTION_COMMIT_TIMESTAMP( 13, "Commit time timestamp for last committed transaction" ),
+        UPGRADE_TRANSACTION_COMMIT_TIMESTAMP( 14, "Commit timestamp of transaction the most recent upgrade was performed at" );
 
         private final int id;
         private final String description;
@@ -115,11 +119,12 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private volatile long latestConstraintIntroducingTxField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTxIdField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTimeField = FIELD_NOT_INITIALIZED;
+    private volatile long upgradeCommitTimestampField = FIELD_NOT_INITIALIZED;
 
     // This is not a field in the store, but something keeping track of which is the currently highest
     // committed transaction id, together with its checksum.
     private final HighestTransactionId highestCommittedTransaction =
-            new HighestTransactionId( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
+            new HighestTransactionId( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
 
     // This is not a field in the store, but something keeping track of which of the committed
     // transactions have been closed. Useful in rotation and shutdown.
@@ -165,10 +170,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         // If metaDataStore.creationTime == metaDataStore.upgradeTime && metaDataStore.upgradeTransactionId == BASE_TX_ID
         // then store has never been upgraded
         setUpgradeTime( storeId.getCreationTime() );
-        setUpgradeTransaction( BASE_TX_ID, BASE_TX_CHECKSUM );
+        setUpgradeTransaction( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP );
         setCurrentLogVersion( 0 );
         setLastCommittedAndClosedTransactionId(
-                BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
+                BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_BYTE_OFFSET, BASE_TX_LOG_VERSION );
         setStoreVersion( storeVersionAsLong );
         setGraphNextProp( -1 );
         setLatestConstraintIntroducingTx( 0 );
@@ -180,17 +185,18 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     // Only for initialization and recovery, so we don't need to lock the records
     @Override
     public void setLastCommittedAndClosedTransactionId(
-            long transactionId, long checksum, long logVersion, long byteOffset )
+            long transactionId, long checksum, long commitTimestamp, long byteOffset, long logVersion )
     {
         assertNotClosed();
         setRecord( Position.LAST_TRANSACTION_ID, transactionId );
         setRecord( Position.LAST_TRANSACTION_CHECKSUM, checksum );
         setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion );
         setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset );
+        setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, commitTimestamp );
         checkInitialized( lastCommittingTxField.get() );
         lastCommittingTxField.set( transactionId );
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
-        highestCommittedTransaction.set( transactionId, checksum );
+        highestCommittedTransaction.set( transactionId, checksum, commitTimestamp );
     }
 
     /**
@@ -265,12 +271,12 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         MetaDataRecordFormat format = new MetaDataRecordFormat();
         int pageSize = getPageSize( pageCache );
-        long value = MetaDataRecordFormat.FIELD_NOT_PRESENT;
+        long value = FIELD_NOT_PRESENT;
         try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize ) )
         {
             if ( pagedFile.getLastPageId() >= 0 )
             {
-                try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
                 {
                     if ( cursor.next() )
                     {
@@ -324,7 +330,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         }
     }
 
-    public void setUpgradeTransaction( long id, long checksum )
+    public void setUpgradeTransaction( long id, long checksum, long timestamp )
     {
         long pageId = pageIdForRecord( Position.UPGRADE_TRANSACTION_ID.id );
         assert pageId == pageIdForRecord( Position.UPGRADE_TRANSACTION_CHECKSUM.id );
@@ -338,7 +344,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 }
                 setRecord( cursor, Position.UPGRADE_TRANSACTION_ID, id );
                 setRecord( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM, checksum );
+                setRecord( cursor, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, timestamp );
                 upgradeTxIdField = id;
+                upgradeCommitTimestampField = timestamp;
             }
             catch ( IOException e )
             {
@@ -393,6 +401,17 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         {
             setRecord( Position.LOG_VERSION, version );
             versionField = version;
+        }
+    }
+
+    public void setLastTransactionCommitTimestamp( long timestamp )
+    {
+        // Preventing race with transactionCommitted() and assure record is consistent with highestCommittedTransaction
+        synchronized ( transactionCommittedLock )
+        {
+            setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp );
+            TransactionId transactionId = highestCommittedTransaction.get();
+            highestCommittedTransaction.set( transactionId.transactionId(), transactionId.checksum(), timestamp );
         }
     }
 
@@ -504,7 +523,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             lastClosedTx.set( lastCommittedTxId,
                     new long[]{lastClosedTransactionLogVersion, lastClosedTransactionLogByteOffset} );
             highestCommittedTransaction.set( lastCommittedTxId,
-                    getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ) );
+                    getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ),
+                    getRecordValue( cursor, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, UNKNOWN_TX_COMMIT_TIMESTAMP
+                    ) );
+            upgradeCommitTimestampField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP,
+                    BASE_TX_COMMIT_TIMESTAMP );
         }
         while ( cursor.shouldRetry() );
         if ( cursor.checkAndClearBoundsFlag() )
@@ -518,12 +541,21 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     long getRecordValue( PageCursor cursor, Position position )
     {
+        return getRecordValue( cursor, position, FIELD_NOT_PRESENT );
+    }
+
+    private long getRecordValue( PageCursor cursor, Position position, long defaultValue )
+    {
         MetaDataRecord record = newRecord();
         try
         {
             record.setId( position.id );
-            recordFormat.read( record, cursor, NORMAL, RECORD_SIZE );
-            return record.getValue();
+            recordFormat.read( record, cursor, FORCE, RECORD_SIZE );
+            if ( record.inUse() )
+            {
+                return record.getValue();
+            }
+            return defaultValue;
         }
         catch ( IOException e )
         {
@@ -611,7 +643,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         int length = storeVersion.length();
         if ( length == 0 || length > 7 )
         {
-            throw new IllegalArgumentException( String.format(
+            throw new IllegalArgumentException( format(
                     "The given string %s is not of proper size for a store version string", storeVersion ) );
         }
         bits.put( length, 8 );
@@ -620,7 +652,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             char c = storeVersion.charAt( i );
             if ( c >= 256 )
             {
-                throw new IllegalArgumentException( String.format(
+                throw new IllegalArgumentException( format(
                         "Store version strings should be encode-able as Latin1 - %s is not", storeVersion ) );
             }
             bits.put( c, 8 ); // Just the lower byte
@@ -638,7 +670,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         int length = bits.getShort( 8 );
         if ( length == 0 || length > 7 )
         {
-            throw new IllegalArgumentException( String.format( "The read version string length %d is not proper.",
+            throw new IllegalArgumentException( format( "The read version string length %d is not proper.",
                     length ) );
         }
         char[] result = new char[length];
@@ -658,14 +690,14 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public void transactionCommitted( long transactionId, long checksum )
+    public void transactionCommitted( long transactionId, long checksum, long commitTimestamp )
     {
         assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
-        if ( highestCommittedTransaction.offer( transactionId, checksum ) )
+        if ( highestCommittedTransaction.offer( transactionId, checksum, commitTimestamp ) )
         {
-            // We need to synchronize here in order to guarantee that the two field are written consistently
-            // together. Note that having a write lock on tha page is not enough for 3 reasons:
+            // We need to synchronize here in order to guarantee that the three fields are written consistently
+            // together. Note that having a write lock on the page is not enough for 3 reasons:
             // 1. page write locks are not exclusive
             // 2. the records might be in different pages
             // 3. some other thread might kick in while we have been written only one record
@@ -684,6 +716,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                         {
                             setRecord( cursor, Position.LAST_TRANSACTION_ID, transactionId );
                             setRecord( cursor, Position.LAST_TRANSACTION_CHECKSUM, checksum );
+                            setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, commitTimestamp );
                         }
                     }
                     catch ( IOException e )
@@ -719,6 +752,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         assert pageId == pageIdForRecord( Position.UPGRADE_TRANSACTION_CHECKSUM.id );
         long upgradeTxIdField;
         long upgradeTxChecksumField;
+        long upgradeCommitTimestampField;
         try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
             if ( !cursor.next() )
@@ -729,6 +763,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             {
                 upgradeTxIdField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_ID );
                 upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
+                upgradeCommitTimestampField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP,
+                        BASE_TX_COMMIT_TIMESTAMP );
             }
             while ( cursor.shouldRetry() );
             checkForDecodingErrors( cursor, Position.UPGRADE_TRANSACTION_ID.id, NORMAL );
@@ -737,7 +773,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         {
             throw new UnderlyingStorageException( e );
         }
-        return new TransactionId( upgradeTxIdField, upgradeTxChecksumField );
+        return new TransactionId( upgradeTxIdField, upgradeTxChecksumField, upgradeCommitTimestampField );
     }
 
     @Override

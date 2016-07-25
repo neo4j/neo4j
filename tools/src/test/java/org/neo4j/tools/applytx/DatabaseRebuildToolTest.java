@@ -39,6 +39,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.Matchers.containsString;
@@ -54,6 +55,8 @@ import static org.neo4j.tools.console.input.ConsoleUtil.NULL_PRINT_STREAM;
 
 public class DatabaseRebuildToolTest
 {
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
     public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 

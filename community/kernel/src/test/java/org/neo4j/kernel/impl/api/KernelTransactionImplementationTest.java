@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -48,6 +49,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -59,6 +61,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 @RunWith( Parameterized.class )
 public class KernelTransactionImplementationTest extends KernelTransactionTestBase
@@ -75,9 +78,11 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Parameterized.Parameters( name = "{2}" )
     public static Collection<Object[]> parameters()
     {
-        Consumer<KernelTransaction> readTxInitializer = tx -> {
+        Consumer<KernelTransaction> readTxInitializer = tx ->
+        {
         };
-        Consumer<KernelTransaction> writeTxInitializer = tx -> {
+        Consumer<KernelTransaction> writeTxInitializer = tx ->
+        {
             KernelStatement statement = (KernelStatement) tx.acquireStatement();
             statement.txState().nodeDoCreate( 42 );
         };
@@ -171,7 +176,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         transactionInitializer.accept( transaction );
         transaction.success();
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownError );
 
         try
         {
@@ -197,8 +202,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         {
             // WHEN
             transactionInitializer.accept( transaction );
-            transaction.markForTermination();
-            assertTrue( transaction.shouldBeTerminated() );
+            transaction.markForTermination( Status.General.UnknownError );
+            assertEquals( Status.General.UnknownError, transaction.getReasonIfTerminated() );
         }
 
         // THEN
@@ -214,9 +219,9 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         KernelTransaction transaction = newTransaction( accessMode() );
 
         transactionInitializer.accept( transaction );
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownError );
         transaction.success();
-        assertTrue( transaction.shouldBeTerminated() );
+        assertEquals( Status.General.UnknownError, transaction.getReasonIfTerminated() );
 
         try
         {
@@ -242,9 +247,9 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         {
             // WHEN
             transactionInitializer.accept( transaction );
-            transaction.markForTermination();
+            transaction.markForTermination( Status.General.UnknownError );
             transaction.failure();
-            assertTrue( transaction.shouldBeTerminated() );
+            assertEquals( Status.General.UnknownError, transaction.getReasonIfTerminated() );
         }
 
         // THEN
@@ -260,7 +265,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         transactionInitializer.accept( transaction );
         transaction.success();
         transaction.close();
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownError );
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( true, isWriteTx );
@@ -273,7 +278,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         KernelTransaction transaction = newTransaction( accessMode() );
         transactionInitializer.accept( transaction );
         transaction.close();
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownError );
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
@@ -286,7 +291,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         KernelTransaction transaction = newTransaction( accessMode() );
         transactionInitializer.accept( transaction );
         transaction.success();
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownError );
+
         transaction.close();
     }
 
@@ -295,7 +301,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         KernelTransaction transaction = newTransaction( accessMode() );
         transactionInitializer.accept( transaction );
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownError );
         transaction.close();
 
         // THEN
@@ -318,9 +324,10 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         final KernelTransaction transaction = newTransaction( accessMode() );
         transactionInitializer.accept( transaction );
 
-        Future<?> terminationFuture = Executors.newSingleThreadExecutor().submit( () -> {
+        Future<?> terminationFuture = Executors.newSingleThreadExecutor().submit( () ->
+        {
             latch.awaitStart();
-            transaction.markForTermination();
+            transaction.markForTermination( Status.General.UnknownError );
             latch.finish();
         } );
 
@@ -352,7 +359,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         // GIVEN a transaction starting at one point in time
         long startingTime = clock.currentTimeMillis();
         when( legacyIndexState.hasChanges() ).thenReturn( true );
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             Collection<StorageCommand> commands = invocation.getArgumentAt( 0, Collection.class );
             commands.add( mock( Command.class ) );
             return null;
@@ -365,7 +373,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         try ( KernelTransactionImplementation transaction = newTransaction( accessMode() ) )
         {
-            transaction.initialize( 5L, mock( Locks.Client.class ), KernelTransaction.Type.implicit,
+            transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, mock( Locks.Client.class ),
+                    KernelTransaction.Type.implicit,
                     AccessMode.Static.FULL );
             try ( KernelStatement statement = transaction.acquireStatement() )
             {
@@ -425,7 +434,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         // WHEN
         transaction.close();
-        transaction.initialize( 1, new NoOpClient(), KernelTransaction.Type.implicit, accessMode() );
+        transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, new NoOpClient(), KernelTransaction.Type.implicit,
+                accessMode() );
 
         // THEN
         assertEquals( reuseCount + 1, transaction.getReuseCount() );
@@ -436,9 +446,9 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         KernelTransactionImplementation tx = newNotInitializedTransaction( true );
 
-        tx.markForTermination();
+        tx.markForTermination( Status.General.UnknownError );
 
-        assertTrue( tx.shouldBeTerminated() );
+        assertEquals( Status.General.UnknownError, tx.getReasonIfTerminated() );
     }
 
     @Test
@@ -447,9 +457,9 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         Locks.Client locksClient = mock( Locks.Client.class );
         KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
 
-        tx.markForTermination();
+        tx.markForTermination( Status.General.UnknownError );
 
-        assertTrue( tx.shouldBeTerminated() );
+        assertEquals( Status.General.UnknownError, tx.getReasonIfTerminated() );
         verify( locksClient ).stop();
     }
 
@@ -460,11 +470,11 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
         transactionInitializer.accept( tx );
 
-        tx.markForTermination();
-        tx.markForTermination();
-        tx.markForTermination();
+        tx.markForTermination( Status.Transaction.Terminated );
+        tx.markForTermination( Status.Transaction.Outdated );
+        tx.markForTermination( Status.Transaction.LockClientStopped );
 
-        assertTrue( tx.shouldBeTerminated() );
+        assertEquals( Status.Transaction.Terminated, tx.getReasonIfTerminated() );
         verify( locksClient ).stop();
         verify( transactionMonitor ).transactionTerminated( isWriteTx );
     }
@@ -475,7 +485,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         Locks.Client locksClient = mock( Locks.Client.class );
         KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
         transactionInitializer.accept( tx );
-        tx.markForTermination();
+        tx.markForTermination( Status.General.UnknownError );
 
         tx.close();
 
@@ -490,7 +500,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
         transactionInitializer.accept( tx );
         tx.success();
-        tx.markForTermination();
+        tx.markForTermination( Status.General.UnknownError );
 
         try
         {
@@ -510,7 +520,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
         transactionInitializer.accept( tx );
         tx.failure();
-        tx.markForTermination();
+        tx.markForTermination( Status.General.UnknownError );
 
         tx.close();
 
@@ -526,7 +536,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         transactionInitializer.accept( tx );
         tx.success();
         tx.failure();
-        tx.markForTermination();
+        tx.markForTermination( Status.General.UnknownError );
 
         try
         {
@@ -554,5 +564,30 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         {
             assertThat( e, instanceOf( TransactionFailureException.class ) );
         }
+    }
+
+    @Test
+    public void initializedTransactionShouldHaveNoTerminationReason() throws Exception
+    {
+        KernelTransactionImplementation tx = newTransaction( accessMode() );
+        assertNull( tx.getReasonIfTerminated() );
+    }
+
+    @Test
+    public void shouldReportCorrectTerminationReason() throws Exception
+    {
+        Status status = Status.Transaction.Terminated;
+        KernelTransactionImplementation tx = newTransaction( accessMode() );
+        tx.markForTermination( status );
+        assertSame( status, tx.getReasonIfTerminated() );
+    }
+
+    @Test
+    public void closedTransactionShouldHaveNoTerminationReason() throws Exception
+    {
+        KernelTransactionImplementation tx = newTransaction( accessMode() );
+        tx.markForTermination( Status.Transaction.Terminated );
+        tx.close();
+        assertNull( tx.getReasonIfTerminated() );
     }
 }

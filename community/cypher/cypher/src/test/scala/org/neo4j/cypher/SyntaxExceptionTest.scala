@@ -22,56 +22,56 @@ package org.neo4j.cypher
 import scala.util.matching.Regex
 
 class SyntaxExceptionTest extends ExecutionEngineFunSuite {
-  test("shouldRaiseErrorWhenMissingIndexValue") {
+  test("should raise error when missing index value") {
     test(
       "start s = node:index(key=) return s",
       "Invalid input ')': expected whitespace, \"...string...\" or a parameter (line 1, column 26)"
     )
   }
 
-  test("shouldGiveNiceErrorWhenMissingEqualsSign") {
+  test("should give nice error when missing equals sign") {
     test(
       "start n=node:customer(id : {id}) return n",
       "Invalid input ':': expected whitespace, comment or '=' (line 1, column 26)"
     )
   }
 
-  test("shouldRaiseErrorWhenMissingIndexKey") {
+  test("should raise error when missing index key") {
     test(
       "start s = node:index(=\"value\") return s",
       "Invalid input '=': expected whitespace, an identifier, \"...string...\" or a parameter (line 1, column 22)"
     )
   }
 
-  test("startWithoutNodeOrRel") {
+  test("start without node or rel") {
     test(
       "start s return s",
       "Invalid input 'r': expected whitespace, comment or '=' (line 1, column 9)"
     )
   }
 
-  test("shouldRaiseErrorWhenMissingReturnColumns") {
+  test("should raise error when missing return columns") {
     test(
       "match (s) where id(s) = 0 return",
       "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 33)"
     )
   }
 
-  test("shouldRaiseErrorWhenMissingReturn") {
+  test("should raise error when missing return") {
     test(
       "match (s) where id(s) = 0",
       "Query cannot conclude with MATCH (must be RETURN or an update clause) (line 1, column 1)"
     )
   }
 
-  test("shouldComplainAboutWholeNumbers") {
+  test("should complain about whole numbers") {
     test(
       "match (s) where id(s) = 0 return s limit -1",
       "Invalid input '-1' is not a valid value, must be a positive integer (line 1, column 42 (offset: 41))"
     )
   }
 
-  test("matchWithoutVariableHasToHaveParenthesis") {
+  test("match without variable has to have parenthesis") {
     test(
       "match (a) where id(a) = 0 match a--b, --> a return a",
       "Invalid input '-': expected whitespace, comment or a pattern (line 1, column 39)"
@@ -85,91 +85,91 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("shouldComplainAboutAStringBeingExpected") {
+  test("should complain about a string being expected") {
     test(
       "start s=node:index(key = value) return s",
       "Invalid input 'v': expected whitespace, comment, \"...string...\" or a parameter (line 1, column 26)"
     )
   }
 
-  test("shortestPathCanNotHaveMinimumDepthDifferentFromZeroOrOne") {
+  test("shortest path can not have minimum depth different from zero or one") {
     test(
       "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath(a-[*2..3]->b) return p",
       "shortestPath(...) does not support a minimal length different from 0 or 1 (line 1, column 54)"
     )
   }
 
-  test("shortestPathCanNotHaveMultipleLinksInIt") {
+  test("shortest path can not have multiple links in it") {
     test(
       "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath(a-->()-->b) return p",
       "shortestPath(...) requires a pattern containing a single relationship (line 1, column 54)"
     )
   }
 
-  test("oldNodeSyntaxGivesHelpfulError") {
+  test("old node syntax gives helpful error") {
     test(
       "start a=(0) return a",
       "Invalid input '(': expected whitespace, NODE or RELATIONSHIP (line 1, column 9)"
     )
   }
 
-  test("weirdSpelling") {
+  test("weird spelling") {
     test(
       "start a=ndoe(0) return a",
       "Invalid input 'd': expected 'o/O' (line 1, column 10)"
     )
   }
 
-  test("unclosedParenthesis") {
+  test("unclosed parenthesis") {
     test(
       "start a=node(0 return a",
       "Invalid input 'r': expected whitespace, comment, ',' or ')' (line 1, column 16)"
     )
   }
 
-  test("trailingComa") {
+  test("trailing comma") {
     test(
       "start a=node(0,1,) return a",
       "Invalid input ')': expected whitespace or an unsigned integer (line 1, column 18)"
     )
   }
 
-  test("unclosedCurly") {
+  test("unclosed curly") {
     test(
       "start a=node({0) return a",
       "Invalid input ')': expected whitespace or '}' (line 1, column 16)"
     )
   }
 
-  test("twoEqualSigns") {
+  test("two equal signs") {
     test(
       "start a==node(0) return a",
       "Invalid input '=' (line 1, column 9)"
     )
   }
 
-  test("forgetByInOrderBy") {
+  test("forget by in order by") {
     test(
       "match (a) where id(a) = 0 return a order a.name",
       "Invalid input 'a': expected whitespace, comment or BY (line 1, column 42)"
     )
   }
 
-  test("unknownFunction") {
-    test(
-      "match (a) where id(a) = 0 return foo(a)",
-      "Unknown function 'foo' (line 1, column 34)"
-    )
-  }
-
-  test("usingRandomFunctionInAggregate") {
+  test("using random function in aggregate") {
     test(
       "match (a) where id(a) = 0 return count(rand())",
       "Can't use non-deterministic (random) functions inside of aggregate functions."
     )
   }
 
-  test("handlesMultiLineQueries") {
+  test("unknown function") {
+    test(
+      "match (a) where id(a) = 0 return foo(a)",
+      "Unknown function 'foo' (line 1, column 34)"
+    )
+  }
+
+  test("handles multiline queries") {
     test(
       """start
          a=node(0),
@@ -184,7 +184,7 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("createNodeWithout") {
+  test("create node without") {
     test(
       """start
          a=node(0),
@@ -199,7 +199,7 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("shouldRaiseErrorForInvalidHexLiteral") {
+  test("should raise error for invalid hexliteral") {
     test(
       "return 0x23G34",
       "invalid literal number (line 1, column 8)"
@@ -208,6 +208,15 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
       "return 0x23j",
       "invalid literal number (line 1, column 8)"
     )
+  }
+
+  test("should handle empty string") {
+    test(" ", "Unexpected end of input: expected whitespace, comment, CYPHER options, EXPLAIN, PROFILE or Query (line 1, column 2 (offset: 1))")
+  }
+
+  test("should handle newline") {
+    val sep = System.lineSeparator()
+    test(sep, s"Unexpected end of input: expected whitespace, comment, CYPHER options, EXPLAIN, PROFILE or Query (line 2, column 1 (offset: ${sep.length}))")
   }
 
   def test(query: String, message: String) {

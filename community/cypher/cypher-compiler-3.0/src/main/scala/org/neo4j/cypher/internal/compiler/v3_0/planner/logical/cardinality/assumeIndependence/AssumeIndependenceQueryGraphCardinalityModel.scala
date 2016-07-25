@@ -19,40 +19,48 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.cardinality.assumeIndependence
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.LabelName
+import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.cardinality.{ExpressionSelectivityCalculator, SelectivityCombiner}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, Selectivity}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_0.ast.LabelName
 
 case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, combiner: SelectivityCombiner)
   extends QueryGraphCardinalityModel {
+  import AssumeIndependenceQueryGraphCardinalityModel.MAX_OPTIONAL_MATCH
 
   private val expressionSelectivityEstimator = ExpressionSelectivityCalculator(stats, combiner)
   private val patternSelectivityEstimator = PatternSelectivityCalculator(stats, combiner)
 
   /**
    * When there are optional matches, the cardinality is always the maximum of any matches that exist,
-   * because no matches are limiting. So we need to calculate cardinality of all possible combinations
-   * of matches, and then take the max.
+   * because no matches are limiting. So in principle we need to calculate cardinality of all possible combinations
+   * of matches, and then take the max but since the number of combinations grow exponentially we cap it at a threshold.
    */
   def apply(queryGraph: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
-    val combinations: Seq[QueryGraph] = findQueryGraphCombinations(queryGraph)
+    val combinations: Seq[QueryGraph] = findQueryGraphCombinations(queryGraph, input, semanticTable)
+
     val cardinalities = combinations.map(cardinalityForQueryGraph(_, input)(semanticTable))
     cardinalities.max
   }
 
-  private def findQueryGraphCombinations(queryGraph: QueryGraph): Seq[QueryGraph] =
+  private def findQueryGraphCombinations(queryGraph: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Seq[QueryGraph] =
     if (queryGraph.optionalMatches.isEmpty)
       Seq(queryGraph)
     else {
-      (0 to queryGraph.optionalMatches.length).flatMap(queryGraph.optionalMatches.combinations)
+      //the number of combinations we need to consider grows exponentially, so above a threshold we only consider all
+      //combinations of the most expensive query graphs
+      val optionalMatches =
+        if (queryGraph.optionalMatches.size <= MAX_OPTIONAL_MATCH) queryGraph.optionalMatches
+        else queryGraph.optionalMatches.sortBy(-cardinalityForQueryGraph(_, input)(semanticTable).amount).take(MAX_OPTIONAL_MATCH)
+
+      (0 to optionalMatches.length).flatMap(optionalMatches.combinations)
         .map(_.map(_.withoutArguments()))
-        .map(_.foldLeft(QueryGraph.empty)(_.withOptionalMatches(Seq.empty) ++ _.withOptionalMatches(Seq.empty)))
-        .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
+        .map(_.foldLeft(QueryGraph.empty)(_.withOptionalMatches(Vector.empty) ++ _.withOptionalMatches(Vector.empty)))
+        .map(queryGraph.withOptionalMatches(Vector.empty) ++ _)
     }
 
   private def calculateNumberOfPatternNodes(qg: QueryGraph) = {
@@ -108,4 +116,11 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
 
     (selectivity.getOrElse(Selectivity.ONE), numberOfZeroZeroRels)
   }
+}
+
+object AssumeIndependenceQueryGraphCardinalityModel {
+  //Since the number of combinations of optional matches grows exponentially and the reward of considering
+  //more combination diminishes with the number of combinations, we cap it at this threshold.
+  //The value chosen is mostly arbitrary but having it at 8 means 256 combinations which is still reasonably fast.
+  private val MAX_OPTIONAL_MATCH = 8
 }

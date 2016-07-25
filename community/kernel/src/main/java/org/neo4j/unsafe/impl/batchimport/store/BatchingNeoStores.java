@@ -47,10 +47,13 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
+import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
@@ -67,9 +70,12 @@ import static java.lang.String.valueOf;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 
 /**
  * Creator and accessor of {@link NeoStores} with some logic to provide very batch friendly services to the
@@ -89,11 +95,16 @@ public class BatchingNeoStores implements AutoCloseable
     private final LifeSupport life = new LifeSupport();
     private final LabelScanStore labelScanStore;
     private final IoTracer ioTracer;
+    private final RecordFormats recordFormats;
+
+    private NeoStores replacementNeoStores;
+    private StoreType[] replacementStoreTypes;
 
     public BatchingNeoStores( FileSystemAbstraction fileSystem, File storeDir, RecordFormats recordFormats,
             Configuration config, LogService logService, AdditionalInitialIds initialIds, Config dbConfig )
     {
         this.fileSystem = fileSystem;
+        this.recordFormats = recordFormats;
         this.logProvider = logService.getInternalLogProvider();
         this.storeDir = storeDir;
         long mappedMemory = config.pageCacheMemory();
@@ -109,7 +120,7 @@ public class BatchingNeoStores implements AutoCloseable
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
         this.pageCache = createPageCache( fileSystem, neo4jConfig, logProvider, tracer );
         this.ioTracer = tracer::bytesWritten;
-        this.neoStores = newNeoStores( pageCache, recordFormats );
+        this.neoStores = newNeoStores();
         if ( alreadyContainsData( neoStores ) )
         {
             neoStores.close();
@@ -125,7 +136,8 @@ public class BatchingNeoStores implements AutoCloseable
         }
         neoStores.getMetaDataStore().setLastCommittedAndClosedTransactionId(
                 initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum(),
-                initialIds.lastCommittedTransactionLogVersion(), initialIds.lastCommittedTransactionLogByteOffset() );
+                BASE_TX_COMMIT_TIMESTAMP, initialIds.lastCommittedTransactionLogByteOffset(),
+                initialIds.lastCommittedTransactionLogVersion() );
         this.propertyKeyRepository = new BatchingPropertyKeyTokenRepository(
                 neoStores.getPropertyKeyTokenStore() );
         this.labelRepository = new BatchingLabelTokenRepository(
@@ -206,12 +218,43 @@ public class BatchingNeoStores implements AutoCloseable
         }
     }
 
-    private NeoStores newNeoStores( PageCache pageCache, RecordFormats recordFormats )
+    private NeoStores newNeoStores()
     {
-        BatchingIdGeneratorFactory idGeneratorFactory = new BatchingIdGeneratorFactory( fileSystem );
-        StoreFactory storeFactory = new StoreFactory( storeDir, neo4jConfig, idGeneratorFactory, pageCache, fileSystem,
-                recordFormats, logProvider );
+        return newNeoStores( storeDir );
+    }
+
+    private NeoStores newNeoStores( File storeDir )
+    {
+        StoreFactory storeFactory = newStoreFactory( pageCache, recordFormats, storeDir );
         return storeFactory.openAllNeoStores( true );
+    }
+
+    private StoreFactory newStoreFactory( PageCache pageCache, RecordFormats recordFormats, File storeDir )
+    {
+        StoreFactory storeFactory = new StoreFactory( storeDir, neo4jConfig,
+                new BatchingIdGeneratorFactory( fileSystem ), pageCache, fileSystem, recordFormats, logProvider );
+        return storeFactory;
+    }
+
+    /**
+     * The idea with replacement stores is that at some point a store is decided to be restructured
+     * one way or another, so that store is opened in the replacement store. When the {@link BatchingNeoStores}
+     * is closed those replacement stores will be swapped in.
+     */
+    public NeoStores getReplacementNeoStores( StoreType... stores )
+    {
+        if ( replacementNeoStores == null )
+        {
+            StoreFactory storeFactory = newStoreFactory( pageCache, recordFormats, replacementStoreDir() );
+            replacementNeoStores = storeFactory.openNeoStores( true, stores );
+            replacementStoreTypes = stores;
+        }
+        return replacementNeoStores;
+    }
+
+    private File replacementStoreDir()
+    {
+        return new File( storeDir, "replacement" );
     }
 
     public IoTracer getIoTracer()
@@ -270,7 +313,27 @@ public class BatchingNeoStores implements AutoCloseable
         // Close the neo store
         life.shutdown();
         neoStores.close();
+        if ( replacementNeoStores != null )
+        {
+            replacementNeoStores.close();
+        }
         pageCache.close();
+
+        if ( replacementNeoStores != null )
+        {
+            StoreFile.fileOperation( MOVE, fileSystem, replacementStoreDir(), storeDir, replacementStoreFiles(),
+                    false, ExistingTargetStrategy.OVERWRITE );
+        }
+    }
+
+    private Iterable<StoreFile> replacementStoreFiles()
+    {
+        StoreFile[] files = new StoreFile[replacementStoreTypes.length];
+        for ( int i = 0; i < files.length; i++ )
+        {
+            files[i] = replacementStoreTypes[i].getStoreFile();
+        }
+        return iterable( files );
     }
 
     public long getLastCommittedTransactionId()

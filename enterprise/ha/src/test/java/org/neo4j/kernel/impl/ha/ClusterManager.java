@@ -108,8 +108,14 @@ import static org.neo4j.io.fs.FileUtils.copyRecursively;
 public class ClusterManager
         extends LifecycleAdapter
 {
-    private static final int CLUSTER_MIN_PORT = 30_000;
-    private static final int CLUSTER_MAX_PORT = 40_000;
+    /*
+     * The following ports are used by cluster instances to setup listening sockets. It is important that the range
+     * used remains below 30000, since that is where the ephemeral ports start in some linux kernels. If they are
+     * used, they can conflict with ephemeral sockets and result in address already in use errors, resulting in
+     * false failures.
+     */
+    private static final int CLUSTER_MIN_PORT = 11_000;
+    private static final int CLUSTER_MAX_PORT = 21_000;
     private static final int HA_MIN_PORT = CLUSTER_MAX_PORT + 1;
     private static final int HA_MAX_PORT = HA_MIN_PORT + 10_000;
 
@@ -542,6 +548,31 @@ public class ClusterManager
                 }
             }
             return true;
+        };
+    }
+
+    public static Predicate<ClusterManager.ManagedCluster> instanceEvicted( final HighlyAvailableGraphDatabase instance )
+    {
+        return new Predicate<ClusterManager.ManagedCluster>()
+        {
+            @Override
+            public boolean test( ClusterManager.ManagedCluster managedCluster )
+            {
+                InstanceId instanceId = managedCluster.getServerId( instance );
+
+                Iterable<HighlyAvailableGraphDatabase> members = managedCluster.getAllMembers();
+                for ( HighlyAvailableGraphDatabase member : members )
+                {
+                    if ( instanceId.equals( managedCluster.getServerId( member ) ) )
+                    {
+                        if ( member.role().equals( "UNKNOWN" ) )
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
         };
     }
 

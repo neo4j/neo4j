@@ -27,7 +27,11 @@ import org.junit.rules.TestName;
 import java.io.File;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -38,13 +42,17 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
@@ -52,8 +60,12 @@ import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
 
 import static java.lang.System.currentTimeMillis;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
@@ -116,6 +128,68 @@ public class TestPullUpdates
 
         cluster.info( "### Awaiting change propagation" );
         awaitPropagation( 2, commonNodeId, cluster );
+    }
+
+    @Test
+    public void terminatedTransactionDoesNotForceUpdatePullingWithTxTerminationAwareLocks() throws Throwable
+    {
+        int testTxsOnMaster = 42;
+        File root = testDirectory.directory( testName.getMethodName() );
+        ClusterManager clusterManager = new ClusterManager.Builder( root )
+                .withSharedConfig( MapUtil.stringMap(
+                        HaSettings.pull_interval.name(), "0s",
+                        HaSettings.tx_push_factor.name(), "0",
+                        KernelTransactions.tx_termination_aware_locks.name(), Settings.TRUE ) ).build();
+        clusterManager.start();
+        cluster = clusterManager.getCluster();
+
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        final HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+
+        createNodeOn( master );
+        cluster.sync();
+
+        long lastClosedTxIdOnMaster = lastClosedTxIdOn( master );
+        long lastClosedTxIdOnSlave = lastClosedTxIdOn( slave );
+
+        final CountDownLatch slaveTxStarted = new CountDownLatch( 1 );
+        final CountDownLatch slaveShouldCommit = new CountDownLatch( 1 );
+        final AtomicReference<Transaction> slaveTx = new AtomicReference<>();
+        Future<?> slaveCommit = Executors.newSingleThreadExecutor().submit( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try ( Transaction tx = slave.beginTx() )
+                {
+                    slaveTx.set( tx );
+                    slaveTxStarted.countDown();
+                    await( slaveShouldCommit );
+                    tx.success();
+                }
+            }
+        } );
+
+        await( slaveTxStarted );
+        createNodesOn( master, testTxsOnMaster );
+
+        assertNotNull( slaveTx.get() );
+        slaveTx.get().terminate();
+        slaveShouldCommit.countDown();
+
+        try
+        {
+            slaveCommit.get();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ExecutionException.class ) );
+            assertThat( e.getCause(), instanceOf( TransientTransactionFailureException.class ) );
+        }
+
+        assertEquals( lastClosedTxIdOnMaster + testTxsOnMaster, lastClosedTxIdOn( master ) );
+        assertEquals( lastClosedTxIdOnSlave, lastClosedTxIdOn( slave ) );
     }
 
     @Test
@@ -231,9 +305,22 @@ public class TestPullUpdates
 
     private long createNodeOnMaster()
     {
-        try ( Transaction tx = cluster.getMaster().beginTx() )
+        return createNodeOn( cluster.getMaster() );
+    }
+
+    private static void createNodesOn( GraphDatabaseService db, int count )
+    {
+        for ( int i = 0; i < count; i++ )
         {
-            long id = cluster.getMaster().createNode().getId();
+            createNodeOn( db );
+        }
+    }
+
+    private static long createNodeOn( GraphDatabaseService db )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            long id = db.createNode().getId();
             tx.success();
             return id;
         }
@@ -293,5 +380,23 @@ public class TestPullUpdates
             db.getNodeById( nodeId ).setProperty( "i", i );
             tx.success();
         }
+    }
+
+    private void await( CountDownLatch latch )
+    {
+        try
+        {
+            assertTrue( latch.await( 1, TimeUnit.MINUTES ) );
+        }
+        catch ( InterruptedException e )
+        {
+            throw new AssertionError( e );
+        }
+    }
+
+    private long lastClosedTxIdOn( GraphDatabaseAPI db )
+    {
+        TransactionIdStore txIdStore = db.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        return txIdStore.getLastClosedTransactionId();
     }
 }

@@ -23,37 +23,12 @@ import java.io.File;
 
 public interface IdGeneratorFactory
 {
+    IdGenerator open( File filename, IdType idType, long highId, long maxId );
+
     IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId );
 
     void create( File filename, long highId, boolean throwIfFileExists );
 
     IdGenerator get( IdType idType );
 
-    class Delegate implements IdGeneratorFactory
-    {
-        private final IdGeneratorFactory delegate;
-
-        public Delegate( IdGeneratorFactory delegate )
-        {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId )
-        {
-            return delegate.open( filename, grabSize, idType, highId, maxId );
-        }
-
-        @Override
-        public void create( File filename, long highId, boolean throwIfFileExists )
-        {
-            delegate.create( filename, highId, throwIfFileExists );
-        }
-
-        @Override
-        public IdGenerator get( IdType idType )
-        {
-            return delegate.get( idType );
-        }
-    }
 }

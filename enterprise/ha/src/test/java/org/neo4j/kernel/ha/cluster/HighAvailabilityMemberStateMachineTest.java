@@ -506,7 +506,7 @@ public class HighAvailabilityMemberStateMachineTest
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenReturn( pagedFileMock );
 
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );
-        when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new TransactionId( 0, 0 ) );
+        when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new TransactionId( 0, 0, 0 ) );
         SwitchToSlave switchToSlave = new SwitchToSlave( new File( "" ), NullLogService.getInstance(),
                 mock( FileSystemAbstraction.class ),
                 config, dependencyResolver,

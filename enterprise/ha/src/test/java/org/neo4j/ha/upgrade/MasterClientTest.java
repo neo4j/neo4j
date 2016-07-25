@@ -22,6 +22,7 @@ package org.neo4j.ha.upgrade;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.Matchers;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
@@ -41,11 +42,13 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
+import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
 import org.neo4j.kernel.ha.com.master.MasterImplTest;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -70,10 +73,13 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
+import static org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
@@ -124,9 +130,10 @@ public class MasterClientTest
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
         when( deps.commitProcess() ).thenReturn( commitProcess );
         when( deps.logService() ).thenReturn( NullLogService.getInstance() );
+        when( deps.kernelTransactions() ).thenReturn( mock( KernelTransactions.class ) );
 
         ResponseUnpacker unpacker = life.add(
-                new TransactionCommittingResponseUnpacker( deps, DEFAULT_BATCH_SIZE) );
+                new TransactionCommittingResponseUnpacker( deps, DEFAULT_BATCH_SIZE, 0 ) );
 
         MasterClient masterClient = newMasterClient214( StoreId.DEFAULT, unpacker );
 
@@ -136,6 +143,37 @@ public class MasterClientTest
         // Then
         verify( commitProcess ).commit( any( TransactionToApply.class ),
                 any( CommitEvent.class ), any( TransactionApplicationMode.class ) );
+    }
+
+    @Test
+    public void endLockSessionDoesNotUnpackResponse() throws Throwable
+    {
+        StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
+        long txChecksum = 123;
+        long lastAppliedTx = 5;
+
+        ResponseUnpacker responseUnpacker = mock( ResponseUnpacker.class );
+        MasterImpl.SPI masterImplSPI = MasterImplTest.mockedSpi( storeId );
+        when( masterImplSPI.packTransactionObligationResponse( any( RequestContext.class ), Matchers.anyObject() ) )
+                .thenReturn( Response.empty() );
+        when( masterImplSPI.getTransactionChecksum( anyLong() ) ).thenReturn( txChecksum );
+
+        newMasterServer( masterImplSPI );
+
+        MasterClient214 client = newMasterClient214( storeId, responseUnpacker );
+
+        HandshakeResult handshakeResult;
+        try ( Response<HandshakeResult> handshakeResponse = client.handshake( 1, storeId ) )
+        {
+            handshakeResult = handshakeResponse.response();
+        }
+        verify( responseUnpacker ).unpackResponse( any( Response.class ), any( TxHandler.class ) );
+        reset( responseUnpacker );
+
+        RequestContext context = new RequestContext( handshakeResult.epoch(), 1, 1, lastAppliedTx, txChecksum );
+
+        client.endLockSession( context, false );
+        verify( responseUnpacker, never() ).unpackResponse( any( Response.class ), any( TxHandler.class ) );
     }
 
     private static MasterImpl.SPI mockMasterImplSpiWith( StoreId storeId )

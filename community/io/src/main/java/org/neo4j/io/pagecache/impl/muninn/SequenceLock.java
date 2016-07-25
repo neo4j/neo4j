@@ -155,6 +155,7 @@ public class SequenceLock
             n = s + CNT_UNIT;
             if ( compareAndSetState( s, n ) )
             {
+                UnsafeUtil.storeFence();
                 return true;
             }
         }
@@ -215,7 +216,9 @@ public class SequenceLock
     public boolean tryExclusiveLock()
     {
         long s = getState();
-        return ((s & UNL_MASK) == 0) && compareAndSetState( s, s + EXL_MASK );
+        boolean res = ((s & UNL_MASK) == 0) && compareAndSetState( s, s + EXL_MASK );
+        UnsafeUtil.storeFence();
+        return res;
     }
 
     /**
@@ -271,7 +274,9 @@ public class SequenceLock
     public boolean tryFlushLock()
     {
         long s = getState();
-        return ((s & FAE_MASK) == 0) && compareAndSetState( s, s + FLS_MASK );
+        boolean res = ((s & FAE_MASK) == 0) && compareAndSetState( s, s + FLS_MASK );
+        UnsafeUtil.storeFence();
+        return res;
     }
 
     /**

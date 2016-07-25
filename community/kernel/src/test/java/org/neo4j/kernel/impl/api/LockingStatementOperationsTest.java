@@ -82,8 +82,6 @@ public class LockingStatementOperationsTest
         );
         state.initialize( locks );
         state.acquire();
-
-        when( transaction.shouldBeTerminated() ).thenReturn( false );
     }
 
     @Test
