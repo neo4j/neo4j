@@ -25,6 +25,7 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.graphdb.Node;
@@ -37,7 +38,9 @@ import org.neo4j.kernel.impl.core.RelationshipProxy;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -46,6 +49,28 @@ public class PathImplTest
 
     private NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
     private RelationshipProxy.RelationshipActions relationshipActions = mock( RelationshipProxy.RelationshipActions.class );
+
+    @Test
+    public void singularNodeWorksForwardsAndBackwards()
+    {
+        Node node = createNode( 1337L );
+        Path path = PathImpl.singular( node );
+
+        assertEquals( node, path.startNode() );
+        assertEquals( node, path.endNode() );
+
+        Iterator<Node> forwardIterator = path.nodes().iterator();
+
+        assertTrue( forwardIterator.hasNext() );
+        assertEquals( node, forwardIterator.next() );
+        assertFalse( forwardIterator.hasNext() );
+
+        Iterator<Node> reverseIterator = path.reverseNodes().iterator();
+
+        assertTrue( reverseIterator.hasNext() );
+        assertEquals( node, reverseIterator.next() );
+        assertFalse( reverseIterator.hasNext() );
+    }
 
     @Test
     public void pathsWithTheSameContentsShouldBeEqual() throws Exception
