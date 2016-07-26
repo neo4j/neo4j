@@ -24,13 +24,14 @@ import java.util.function.Predicate;
 public class StackTraceElementGuardedAdversary implements Adversary
 {
     private final Adversary delegate;
-    private final Predicate<StackTraceElement> check;
+    private final Predicate<StackTraceElement>[] checks;
     private volatile boolean enabled;
 
-    public StackTraceElementGuardedAdversary( Adversary delegate, Predicate<StackTraceElement> check )
+    @SafeVarargs
+    public StackTraceElementGuardedAdversary( Adversary delegate, Predicate<StackTraceElement>... checks )
     {
         this.delegate = delegate;
-        this.check = check;
+        this.checks = checks;
         enabled = true;
     }
 
@@ -68,10 +69,14 @@ public class StackTraceElementGuardedAdversary implements Adversary
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         for ( StackTraceElement element : stackTrace )
         {
-            if ( check.test( element ) )
+            for ( Predicate<StackTraceElement> check : checks )
             {
-                return true;
+                if ( check.test( element ) )
+                {
+                    return true;
+                }
             }
+
         }
         return false;
     }
