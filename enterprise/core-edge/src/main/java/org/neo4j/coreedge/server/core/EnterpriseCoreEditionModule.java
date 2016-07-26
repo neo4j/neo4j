@@ -104,11 +104,10 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
@@ -426,45 +425,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
             new RemoveOrphanConstraintIndexesOnStartup(
                     dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getKernel(),
                     dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider() ).perform();
-        }
-    }
-
-    private final class DefaultKernelData extends KernelData implements Lifecycle
-    {
-        private final GraphDatabaseAPI graphDb;
-
-        DefaultKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config,
-                GraphDatabaseAPI graphDb )
-        {
-            super( fileSystem, pageCache, storeDir, config );
-            this.graphDb = graphDb;
-        }
-
-        @Override
-        public Version version()
-        {
-            return Version.getKernel();
-        }
-
-        @Override
-        public GraphDatabaseAPI graphDatabase()
-        {
-            return graphDb;
-        }
-
-        @Override
-        public void init() throws Throwable
-        {
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
         }
     }
 

@@ -65,8 +65,8 @@ import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
-import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.StandardSessionTracker;
+import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -81,11 +81,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.internal.KernelData;
-import org.neo4j.kernel.internal.Version;
+import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -247,45 +244,6 @@ public class EnterpriseEdgeEditionModule extends EditionModule
     private CommitProcessFactory readOnly()
     {
         return ( appender, storageEngine, config ) -> new ReadOnlyTransactionCommitProcess();
-    }
-
-    private final class DefaultKernelData extends KernelData implements Lifecycle
-    {
-        private final GraphDatabaseAPI graphDb;
-
-        DefaultKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
-                           Config config, GraphDatabaseAPI graphDb )
-        {
-            super( fileSystem, pageCache, storeDir, config );
-            this.graphDb = graphDb;
-        }
-
-        @Override
-        public Version version()
-        {
-            return Version.getKernel();
-        }
-
-        @Override
-        public GraphDatabaseAPI graphDatabase()
-        {
-            return graphDb;
-        }
-
-        @Override
-        public void init() throws Throwable
-        {
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-        }
     }
 
     @Override
