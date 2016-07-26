@@ -112,7 +112,7 @@ Function Get-Neo4jPrunsrv
           "`"--Jvm=$($JvmDLL)`"",
           '--LogPath=logs',
           '--StdOutput=logs\neo4j.log',
-          '--StdError=logs\neo4j-error.log',
+          '--StdError=logs\service-error.log',
           '--LogPrefix=neo4j-service',
           '--Classpath=lib/*;plugins/*',
           "`"--JvmOptions=$($JvmOptions -join ';')`"",
