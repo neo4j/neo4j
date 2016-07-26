@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.logging.AssertableLogProvider;
 
 import static java.util.Collections.emptyList;
 import static org.mockito.Matchers.any;
@@ -43,8 +44,9 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
 public class TransactionBatchCommitterTest
 {
-    private KernelTransactions kernelTransactions = mock( KernelTransactions.class );
-    private TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
+    private final KernelTransactions kernelTransactions = mock( KernelTransactions.class );
+    private final TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Test
     public void shouldCommitSmallBatch() throws Exception
@@ -137,6 +139,8 @@ public class TransactionBatchCommitterTest
         // then
         verify( txToTerminate ).markForTermination( Status.Transaction.Outdated );
         verify( tx, never() ).markForTermination( any() );
+        logProvider.assertContainsLogCallContaining( "Marking transaction for termination" );
+        logProvider.assertContainsLogCallContaining( "lastCommittedTxId:" + (BASE_TX_ID + txCount - 1) );
     }
 
     private KernelTransaction newKernelTransaction( long lastTransactionTimestampWhenStarted )
@@ -148,7 +152,8 @@ public class TransactionBatchCommitterTest
 
     private TransactionBatchCommitter newBatchCommitter( long safeZone )
     {
-        return new TransactionBatchCommitter( kernelTransactions, safeZone, commitProcess );
+        return new TransactionBatchCommitter( kernelTransactions, safeZone, commitProcess,
+                logProvider.getLog( TransactionBatchCommitter.class ) );
     }
 
     private TransactionChain createTxChain( int txCount, long firstCommitTimestamp, long commitTimestampInterval )

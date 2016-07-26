@@ -28,7 +28,10 @@ import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.logging.Log;
 
+import static org.neo4j.helpers.Format.duration;
+import static org.neo4j.helpers.Format.time;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
 class TransactionBatchCommitter implements TransactionQueue.Applier
@@ -36,13 +39,15 @@ class TransactionBatchCommitter implements TransactionQueue.Applier
     private final KernelTransactions kernelTransactions;
     private final long idReuseSafeZoneTime;
     private final TransactionCommitProcess commitProcess;
+    private final Log log;
 
     TransactionBatchCommitter( KernelTransactions kernelTransactions, long idReuseSafeZoneTime,
-            TransactionCommitProcess commitProcess )
+            TransactionCommitProcess commitProcess, Log log )
     {
         this.kernelTransactions = kernelTransactions;
         this.idReuseSafeZoneTime = idReuseSafeZoneTime;
         this.commitProcess = commitProcess;
+        this.log = log;
     }
 
     @Override
@@ -82,7 +87,7 @@ class TransactionBatchCommitter implements TransactionQueue.Applier
             kernelTransactions.blockNewTransactions();
             try
             {
-                markUnsafeTransactionsForTermination( last );
+                markUnsafeTransactionsForTermination( first, last );
                 commit( first );
             }
             finally
@@ -92,7 +97,7 @@ class TransactionBatchCommitter implements TransactionQueue.Applier
         }
         else
         {
-            markUnsafeTransactionsForTermination( last );
+            markUnsafeTransactionsForTermination( first, last );
             commit( first );
         }
     }
@@ -111,10 +116,11 @@ class TransactionBatchCommitter implements TransactionQueue.Applier
         return chunkLength > idReuseSafeZoneTime;
     }
 
-    private void markUnsafeTransactionsForTermination( TransactionToApply last )
+    private void markUnsafeTransactionsForTermination( TransactionToApply first, TransactionToApply last )
     {
-        long lastAppliedTimestamp = last.transactionRepresentation().getTimeCommitted();
-        long earliestSafeTimestamp = lastAppliedTimestamp - idReuseSafeZoneTime;
+        long firstCommittedTimestamp = first.transactionRepresentation().getTimeCommitted();
+        long lastCommittedTimestamp = last.transactionRepresentation().getTimeCommitted();
+        long earliestSafeTimestamp = lastCommittedTimestamp - idReuseSafeZoneTime;
 
         for ( KernelTransaction tx : kernelTransactions.activeTransactions() )
         {
@@ -123,8 +129,33 @@ class TransactionBatchCommitter implements TransactionQueue.Applier
             if ( commitTimestamp != TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP &&
                  commitTimestamp < earliestSafeTimestamp )
             {
+                log.info( "Marking transaction for termination, " +
+                        "invalidated due to an upcoming batch of changes being applied:" +
+                        "\n" +
+                        "  Batch: firstCommittedTxId:" + first.transactionId() +
+                        ", firstCommittedTimestamp:" + informativeTimestamp( firstCommittedTimestamp ) +
+                        ", lastCommittedTxId:" + last.transactionId() +
+                        ", lastCommittedTimestamp:" + informativeTimestamp( lastCommittedTimestamp ) +
+                        ", batchTimeRange:" + informativeDuration( lastCommittedTimestamp - firstCommittedTimestamp ) +
+                        ", earliestSafeTimstamp:" + informativeTimestamp( earliestSafeTimestamp ) +
+                        ", safeZoneDuration:" + informativeDuration( idReuseSafeZoneTime ) +
+                        "\n" +
+                        "  Transaction: lastCommittedTimestamp:" +
+                        informativeTimestamp( tx.lastTransactionTimestampWhenStarted() ) +
+                        ", lastCommittedTxId:" + tx.lastTransactionIdWhenStarted() +
+                        ", localStartTimestamp:" + informativeTimestamp( tx.localStartTime() ) );
                 tx.markForTermination( Status.Transaction.Outdated );
             }
         }
+    }
+
+    private static String informativeDuration( long duration )
+    {
+        return duration( duration ) + "/" + duration;
+    }
+
+    private static String informativeTimestamp( long timestamp )
+    {
+        return time( timestamp ) + "/" + timestamp;
     }
 }

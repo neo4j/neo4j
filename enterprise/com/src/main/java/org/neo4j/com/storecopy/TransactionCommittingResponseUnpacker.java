@@ -310,7 +310,7 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
     {
         this.obligationFulfiller = dependencies.obligationFulfiller();
         this.batchCommitter = new TransactionBatchCommitter( dependencies.kernelTransactions(), idReuseSafeZoneTime,
-                dependencies.commitProcess() );
+                dependencies.commitProcess(), log );
         this.log = dependencies.logService().getInternalLog( BatchingResponseHandler.class );
         this.stopped = false;
     }

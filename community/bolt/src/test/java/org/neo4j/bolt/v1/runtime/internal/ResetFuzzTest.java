@@ -300,5 +300,17 @@ public class ResetFuzzTest
         {
             return null;
         }
+
+        @Override
+        public long lastTransactionIdWhenStarted()
+        {
+            return 0;
+        }
+
+        @Override
+        public long localStartTime()
+        {
+            return 0;
+        }
     }
 }
