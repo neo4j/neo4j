@@ -31,20 +31,24 @@ import org.neo4j.kernel.api.exceptions.Status;
 class KernelTransactionImplementationHandle implements KernelTransactionHandle
 {
     private final long txReuseCount;
+    private final long lastTransactionIdWhenStarted;
     private final long lastTransactionTimestampWhenStarted;
+    private final long localStartTime;
     private final KernelTransactionImplementation tx;
 
     KernelTransactionImplementationHandle( KernelTransactionImplementation tx )
     {
         this.txReuseCount = tx.getReuseCount();
+        this.lastTransactionIdWhenStarted = tx.lastTransactionIdWhenStarted();
         this.lastTransactionTimestampWhenStarted = tx.lastTransactionTimestampWhenStarted();
+        this.localStartTime = tx.localStartTime();
         this.tx = tx;
     }
 
     @Override
     public long lastTransactionIdWhenStarted()
     {
-        return tx.lastTransactionIdWhenStarted();
+        return lastTransactionIdWhenStarted;
     }
 
     @Override
@@ -56,7 +60,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     @Override
     public long localStartTime()
     {
-        return tx.localStartTime();
+        return localStartTime;
     }
 
     @Override
