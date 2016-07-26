@@ -50,7 +50,7 @@ public class RaftMembershipManagerTest
         RaftMembershipManager membershipManager = new RaftMembershipManager(
                 null, RaftTestMemberSetBuilder.INSTANCE, log,
                 NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ), 0 );
+                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ) );
 
         // when
         membershipManager.processLog( 0, asList(
@@ -72,7 +72,7 @@ public class RaftMembershipManagerTest
         RaftMembershipManager membershipManager = new RaftMembershipManager(
                 null,
                 RaftTestMemberSetBuilder.INSTANCE, log, NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ), 0 );
+                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ) );
 
         // when
         List<RaftLogCommand> logCommands = asList(
@@ -102,7 +102,7 @@ public class RaftMembershipManagerTest
         RaftMembershipManager membershipManager = new RaftMembershipManager(
                 null,
                 RaftTestMemberSetBuilder.INSTANCE, log, NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ), 0 );
+                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ) );
 
         // when
         List<RaftLogCommand> logCommands = asList(

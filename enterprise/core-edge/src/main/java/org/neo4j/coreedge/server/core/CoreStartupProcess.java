@@ -19,87 +19,25 @@
  */
 package org.neo4j.coreedge.server.core;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
-import org.neo4j.coreedge.catchup.CatchupServer;
-import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
-import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.coreedge.raft.RaftServer;
-import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
-import org.neo4j.coreedge.raft.state.CoreState;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class CoreStartupProcess
 {
     public static LifeSupport createLifeSupport( DataSourceManager dataSourceManager,
-            ReplicatedIdGeneratorFactory idGeneratorFactory, RaftInstance raft, CoreState coreState,
-            RaftServer raftServer, CatchupServer catchupServer,
-            DelayedRenewableTimeoutService raftTimeoutService, MembershipWaiter membershipWaiter,
-            long joinCatchupTimeout, LogProvider logProvider )
+            ReplicatedIdGeneratorFactory idGeneratorFactory, Lifecycle raftTimeoutService, Lifecycle coreServerStartupLifecycle,
+                                                 MembershipWaiterLifecycle membershipWaiterLifecycle )
     {
         LifeSupport services = new LifeSupport();
         services.add( dataSourceManager );
         services.add( idGeneratorFactory );
-        services.add( coreState );
-        services.add( raftServer );
-        services.add( catchupServer );
+        services.add( coreServerStartupLifecycle );
         services.add( raftTimeoutService );
-        services.add( new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, raft, logProvider ) );
+        services.add( membershipWaiterLifecycle );
 
         return services;
     }
 
-    private static class MembershipWaiterLifecycle extends LifecycleAdapter
-    {
-        private final MembershipWaiter membershipWaiter;
-        private final Long joinCatchupTimeout;
-        private final RaftInstance raft;
-        private final Log log;
-
-        private MembershipWaiterLifecycle( MembershipWaiter membershipWaiter, Long joinCatchupTimeout,
-                                           RaftInstance raft, LogProvider logProvider )
-        {
-            this.membershipWaiter = membershipWaiter;
-            this.joinCatchupTimeout = joinCatchupTimeout;
-            this.raft = raft;
-            this.log = logProvider.getLog( getClass() );
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-            CompletableFuture<Boolean> caughtUp = membershipWaiter.waitUntilCaughtUpMember( raft.state() );
-
-            try
-            {
-                caughtUp.get( joinCatchupTimeout, MILLISECONDS );
-            }
-            catch ( ExecutionException e )
-            {
-                log.error( "Server failed to join cluster", e.getCause() );
-                throw e.getCause();
-            }
-            catch ( InterruptedException | TimeoutException e )
-            {
-                String message =
-                        format( "Server failed to join cluster within catchup time limit [%d ms]", joinCatchupTimeout );
-                log.error( message, e );
-                throw new RuntimeException( message, e );
-            }
-            finally
-            {
-                caughtUp.cancel( true );
-            }
-        }
-    }
 }

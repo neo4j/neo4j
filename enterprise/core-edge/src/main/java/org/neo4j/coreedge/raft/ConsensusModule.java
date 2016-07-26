@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
 
 import static java.time.Clock.systemUTC;
@@ -73,11 +74,12 @@ public class ConsensusModule
 {
     private final MonitoredRaftLog raftLog;
     private final RaftInstance raftInstance;
+    private final DelayedRenewableTimeoutService raftTimeoutService;
+    private final RaftMembershipManager raftMembershipManager;
 
     public ConsensusModule( MemberId myself, final PlatformModule platformModule,
                             RaftOutbound raftOutbound, File clusterStateDirectory,
-                            DelayedRenewableTimeoutService raftTimeoutService,
-                            CoreTopologyService discoveryService, long recoverFromIndex )
+                            CoreTopologyService discoveryService )
     {
         final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
@@ -156,11 +158,10 @@ public class ConsensusModule
         SendToMyself leaderOnlyReplicator =
                 new SendToMyself( myself, loggingOutbound );
 
-        RaftMembershipManager raftMembershipManager =
-                new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
-                        expectedClusterSize, electionTimeout1, systemUTC(),
-                        config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage,
-                        recoverFromIndex );
+        raftMembershipManager = new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
+               expectedClusterSize, electionTimeout1, systemUTC(),
+               config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage
+        );
 
         life.add( raftMembershipManager );
 
@@ -169,6 +170,8 @@ public class ConsensusModule
                         myself, raftMembershipManager, electionTimeout1,
                         config.get( CoreEdgeClusterSettings.catchup_batch_size ),
                         config.get( CoreEdgeClusterSettings.log_shipping_max_lag ), inFlightMap );
+
+        raftTimeoutService = new DelayedRenewableTimeoutService( systemUTC(), logProvider );
 
         raftInstance =
                 new RaftInstance( myself, termState, voteState, raftLog, electionTimeout1,
@@ -236,5 +239,15 @@ public class ConsensusModule
     public RaftInstance raftInstance()
     {
         return raftInstance;
+    }
+
+    public Lifecycle raftTimeoutService()
+    {
+        return raftTimeoutService;
+    }
+
+    public RaftMembershipManager raftMembershipManager()
+    {
+        return raftMembershipManager;
     }
 }
