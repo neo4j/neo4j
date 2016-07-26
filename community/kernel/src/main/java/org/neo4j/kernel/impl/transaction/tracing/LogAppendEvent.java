@@ -25,8 +25,7 @@ package org.neo4j.kernel.impl.transaction.tracing;
  */
 public interface LogAppendEvent extends LogForceEvents, AutoCloseable
 {
-
-    LogAppendEvent NULL = new LogAppendEvent()
+    class Empty implements LogAppendEvent
     {
         @Override
         public void close()
@@ -62,7 +61,9 @@ public interface LogAppendEvent extends LogForceEvents, AutoCloseable
         {
             return LogForceEvent.NULL;
         }
-    };
+    }
+
+    LogAppendEvent NULL = new Empty();
 
     /**
      * Mark the end of the process of appending a transaction to the transaction log.

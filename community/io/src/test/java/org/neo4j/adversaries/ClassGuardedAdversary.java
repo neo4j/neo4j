@@ -19,25 +19,63 @@
  */
 package org.neo4j.adversaries;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import org.neo4j.function.Predicate;
 
 /**
- * An adversary that delegates failure injection only when invoked through certain classes.
+ * An adversary that delegates failure injection only when invoked through certain call sites.
+ * For every potential failure injection the current stack trace (the elements of it) are analyzed
+ * and if there's a match with the specified victims then failure will be delegated to the actual
+ * {@link Adversary} underneath.
  */
 public class ClassGuardedAdversary implements Adversary
 {
     private final Adversary delegate;
-    private final Set<String> victimClasses;
+    private final Predicate<StackTraceElement>[] victimFilters;
     private volatile boolean enabled;
 
+    /**
+     * Specifies victims as class names
+     *
+     * @param delegate {@link Adversary} to delegate calls to.
+     * @param victimClassNames fully qualified names of classes which will provoke failures.
+     */
     public ClassGuardedAdversary( Adversary delegate, String... victimClassNames )
     {
+        this( delegate, toVictims( victimClassNames ) );
+    }
+
+    /**
+     * Specifies victims as arbitrary {@link StackTraceElement} {@link Predicate}.
+     *
+     * @param delegate {@link Adversary} to delegate calls to.
+     * @param victims arbitrary {@link Predicate} for {@link StackTraceElement} in the executing
+     * thread and if any of the elements in the current stack trace matches then failure is injected.
+     */
+    @SafeVarargs
+    public ClassGuardedAdversary( Adversary delegate, Predicate<StackTraceElement>... victims )
+    {
         this.delegate = delegate;
-        victimClasses = new HashSet<String>();
-        Collections.addAll( victimClasses, victimClassNames );
+        victimFilters = victims;
         enabled = true;
+    }
+
+    @SuppressWarnings( {"unchecked", "deprecation"} )
+    private static Predicate<StackTraceElement>[] toVictims( String[] victimClassNames )
+    {
+        Predicate[] victims = new Predicate[victimClassNames.length];
+        for ( int i = 0; i < victimClassNames.length; i++ )
+        {
+            final String victimClassName = victimClassNames[i];
+            victims[i] = new Predicate<StackTraceElement>()
+            {
+                @Override
+                public boolean test( StackTraceElement element )
+                {
+                    return element.getClassName().equals( victimClassName );
+                }
+            };
+        }
+        return victims;
     }
 
     @Override
@@ -74,9 +112,12 @@ public class ClassGuardedAdversary implements Adversary
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         for ( StackTraceElement element : stackTrace )
         {
-            if ( victimClasses.contains( element.getClassName() ) )
+            for ( Predicate<StackTraceElement> victimFilter : victimFilters )
             {
-                return true;
+                if ( victimFilter.test( element ) )
+                {
+                    return true;
+                }
             }
         }
         return false;
