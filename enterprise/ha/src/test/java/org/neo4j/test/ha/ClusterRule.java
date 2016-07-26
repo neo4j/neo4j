@@ -164,6 +164,12 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
         return set( clusterManagerBuilder.withConsistencyCheckAfterwards() );
     }
 
+    @Override
+    public ClusterRule withFirstInstanceId( int firstInstanceId )
+    {
+        return set( clusterManagerBuilder.withFirstInstanceId( firstInstanceId ) );
+    }
+
     private ClusterRule set( Builder builder )
     {
         clusterManagerBuilder = builder;

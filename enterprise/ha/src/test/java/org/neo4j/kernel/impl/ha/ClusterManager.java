@@ -169,6 +169,7 @@ public class ClusterManager
     private final Listener<GraphDatabaseService> initialDatasetCreator;
     private final List<Predicate<ManagedCluster>> availabilityChecks;
     private final boolean consistencyCheck;
+    private final int firstInstanceId;
     LifeSupport life;
 
     private ClusterManager( Builder builder )
@@ -182,6 +183,7 @@ public class ClusterManager
         this.initialDatasetCreator = builder.initialDatasetCreator;
         this.availabilityChecks = builder.availabilityChecks;
         this.consistencyCheck = builder.consistencyCheck;
+        this.firstInstanceId = builder.firstInstanceId;
     }
 
     private Map<String,IntFunction<String>> withDefaults( Map<String,IntFunction<String>> commonConfig )
@@ -853,6 +855,14 @@ public class ClusterManager
          * Runs consistency checks on the databases after cluster has been shut down.
          */
         SELF withConsistencyCheckAfterwards();
+
+        /**
+         * Sets the instance id of the first cluster member to be started. The rest of the cluster members will have
+         * instance ids incremented by one, sequentially. Default is 1.
+
+         * @param firstInstanceId The lowest instance id that will be used in the cluster
+         */
+        SELF withFirstInstanceId( int firstInstanceId );
     }
 
     public static class Builder implements ClusterBuilder<Builder>
@@ -865,6 +875,7 @@ public class ClusterManager
         private Listener<GraphDatabaseService> initialDatasetCreator;
         private List<Predicate<ManagedCluster>> availabilityChecks = Collections.emptyList();
         private boolean consistencyCheck;
+        private int firstInstanceId = 1;
 
         public Builder( File root )
         {
@@ -968,6 +979,13 @@ public class ClusterManager
         public Builder withConsistencyCheckAfterwards()
         {
             this.consistencyCheck = true;
+            return this;
+        }
+
+        @Override
+        public Builder withFirstInstanceId( int firstInstanceId )
+        {
+            this.firstInstanceId = firstInstanceId;
             return this;
         }
 
@@ -1142,7 +1160,7 @@ public class ClusterManager
             this.name = spec.getName();
             for ( int i = 0; i < spec.getMembers().size(); i++ )
             {
-                startMember( new InstanceId( i + 1 ) );
+                startMember( new InstanceId( firstInstanceId + i ) );
             }
             for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
             {
@@ -1352,7 +1370,7 @@ public class ClusterManager
 
         private void startMember( InstanceId serverId ) throws URISyntaxException, IOException
         {
-            Clusters.Member member = spec.getMembers().get( serverId.toIntegerIndex() - 1 );
+            Clusters.Member member = spec.getMembers().get( serverId.toIntegerIndex() - firstInstanceId );
             StringBuilder initialHosts = new StringBuilder();
             for ( int i = 0; i < spec.getMembers().size(); i++ )
             {
