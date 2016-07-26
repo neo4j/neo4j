@@ -24,6 +24,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -44,7 +45,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.NamedThreadFactory.named;
+import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class NodeProxyTest extends PropertyContainerProxyTest
 {
@@ -234,13 +237,13 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         }
     }
 
-    @Test( timeout = 10_000 )
+    @Test
     public void getAllPropertiesShouldWorkFineWithConcurrentPropertyModifications() throws Exception
     {
         // Given
         ExecutorService executor = cleanup.add( Executors.newFixedThreadPool( 2, named( "Test-executor-thread" ) ) );
 
-        final int propertiesCount = 1000;
+        final int propertiesCount = 100;
 
         final long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -254,7 +257,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
             tx.success();
         }
 
-        final AtomicBoolean start = new AtomicBoolean();
+        final CountDownLatch start = new CountDownLatch( 1 );
         final AtomicBoolean writerDone = new AtomicBoolean();
 
         Runnable writer = new Runnable()
@@ -262,20 +265,27 @@ public class NodeProxyTest extends PropertyContainerProxyTest
             @Override
             public void run()
             {
-                try ( Transaction tx = db.beginTx() )
+                try
                 {
-                    Node node = db.getNodeById( nodeId );
-                    while ( !start.get() )
+                    awaitLatch( start );
+                    int propertyKey = 0;
+                    while ( propertyKey < propertiesCount )
                     {
-                        // busy wait
+                        try ( Transaction tx = db.beginTx() )
+                        {
+                            Node node = db.getNodeById( nodeId );
+                            for ( int i = 0; i < 10 && propertyKey < propertiesCount; i++, propertyKey++ )
+                            {
+                                node.setProperty( "property-" + propertyKey, UUID.randomUUID().toString() );
+                            }
+                            tx.success();
+                        }
                     }
-                    for ( int i = 0; i < propertiesCount; i++ )
-                    {
-                        node.setProperty( "property-" + i, UUID.randomUUID().toString() );
-                    }
-                    tx.success();
                 }
-                writerDone.set( true );
+                finally
+                {
+                    writerDone.set( true );
+                }
             }
         };
         Runnable reader = new Runnable()
@@ -286,10 +296,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
                 try ( Transaction tx = db.beginTx() )
                 {
                     Node node = db.getNodeById( nodeId );
-                    while ( !start.get() )
-                    {
-                        // busy wait
-                    }
+                    awaitLatch( start );
                     while ( !writerDone.get() )
                     {
                         int size = node.getAllProperties().size();
@@ -303,7 +310,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         Future<?> readerFuture = executor.submit( reader );
         Future<?> writerFuture = executor.submit( writer );
 
-        start.set( true );
+        start.countDown();
 
         // When
         writerFuture.get();
