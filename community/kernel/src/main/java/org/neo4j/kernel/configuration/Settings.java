@@ -319,30 +319,7 @@ public class Settings
         }
     };
 
-    public static final Function<String, List<String>> STRING_LIST = new Function<String, List<String>>()
-    {
-        @Override
-        public List<String> apply( String value )
-        {
-            String[] list = value.split( SEPARATOR );
-            List<String> result = new ArrayList();
-            for( String item : list)
-            {
-                item = item.trim();
-                if( StringUtils.isNotEmpty( item ) )
-                {
-                    result.add( item );
-                }
-            }
-            return result;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "a comma-seperated string";
-        }
-    };
+    public static final Function<String,List<String>> STRING_LIST = list( SEPARATOR, STRING );
 
     public static final Function<String,HostnamePort> HOSTNAME_PORT = new Function<String, HostnamePort>()
     {
@@ -509,17 +486,22 @@ public class Settings
         }
     };
 
-    public static <T extends Enum> Function<String, T> options( final Class<T> enumClass )
+    public static <T extends Enum<T>> Function<String, T> options( final Class<T> enumClass )
     {
-        return options( EnumSet.allOf( enumClass ) );
+        return options( EnumSet.allOf( enumClass ), false );
     }
 
     public static <T> Function<String, T> options( T... optionValues )
     {
-        return Settings.<T>options( Iterables.<T,T>iterable( optionValues ) );
+        return options( Iterables.<T,T>iterable( optionValues ), false );
     }
 
-    public static <T> Function<String, T> options( final Iterable<T> optionValues )
+    public static <T> Function<String, T> optionsIgnoreCase( T... optionValues )
+    {
+        return options( Iterables.<T,T>iterable( optionValues ), true );
+    }
+
+    public static <T> Function<String, T> options( final Iterable<T> optionValues, final boolean ignoreCase )
     {
         return new Function<String, T>()
         {
@@ -528,12 +510,16 @@ public class Settings
             {
                 for ( T optionValue : optionValues )
                 {
-                    if ( optionValue.toString().equals( value ) )
+                    String allowedValue = optionValue.toString();
+
+                    if ( allowedValue.equals( value ) || (ignoreCase && allowedValue.equalsIgnoreCase( value )) )
                     {
                         return optionValue;
                     }
                 }
-                throw new IllegalArgumentException( "must be one of " + Iterables.toList( optionValues ).toString() );
+                String possibleValues = Iterables.toList( optionValues ).toString();
+                throw new IllegalArgumentException(
+                        "must be one of " + possibleValues + " case " + (ignoreCase ? "insensitive" : "sensitive") );
             }
 
             @Override
@@ -560,11 +546,12 @@ public class Settings
             @Override
             public List<T> apply( String value )
             {
-                List<T> list = new ArrayList<T>();
-                if ( value.length() > 0 )
+                List<T> list = new ArrayList<>();
+                String[] parts = value.split( separator );
+                for ( String part : parts )
                 {
-                    String[] parts = value.split( separator );
-                    for ( String part : parts )
+                    part = part.trim();
+                    if ( StringUtils.isNotEmpty( part ) )
                     {
                         list.add( itemParser.apply( part ) );
                     }

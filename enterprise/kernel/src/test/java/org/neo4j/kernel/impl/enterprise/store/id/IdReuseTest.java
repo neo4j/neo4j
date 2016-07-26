@@ -52,10 +52,10 @@ public class IdReuseTest
     public EmbeddedDatabaseRule dbRule = new EnterpriseDatabaseRule()
     {
         @Override
-        protected void configure(GraphDatabaseBuilder builder )
+        protected void configure( GraphDatabaseBuilder builder )
         {
             super.configure( builder );
-            builder.setConfig( EnterpriseEditionSettings.idTypesToReuse, IdType.RELATIONSHIP.name() );
+            builder.setConfig( EnterpriseEditionSettings.idTypesToReuse, IdType.NODE + "," + IdType.RELATIONSHIP );
         }
     };
 
@@ -125,6 +125,29 @@ public class IdReuseTest
     }
 
     @Test
+    public void sequentialOperationNodeIdReuse()
+    {
+        Label marker = DynamicLabel.label( "marker" );
+
+        long node1 = createNode( marker );
+        long node2 = createNode( marker );
+        long node3 = createNode( marker );
+
+        assertEquals( "Ids should be sequential", node1 + 1, node2 );
+        assertEquals( "Ids should be sequential", node2 + 1, node3 );
+
+        NeoStoreDataSource.BufferedIdMaintenanceController idMaintenanceController = getIdMaintenanceController();
+
+        deleteNodesByLabel( marker );
+
+        idMaintenanceController.maintenance();
+
+        assertEquals( "Nodes have reused id", node1, createNode( marker ) );
+        assertEquals( "Nodes have reused id", node2, createNode( marker ) );
+        assertEquals( "Nodes have reused id", node3, createNode( marker ) );
+    }
+
+    @Test
     public void sequentialOperationRelationshipIdReuse()
     {
         Label marker = DynamicLabel.label( "marker" );
@@ -136,7 +159,7 @@ public class IdReuseTest
         assertEquals( "Ids should be sequential", relationship1 + 1, relationship2 );
         assertEquals( "Ids should be sequential", relationship2 + 1, relationship3 );
 
-        final NeoStoreDataSource.BufferedIdMaintenanceController idMaintenanceController = getIdMaintenanceController();
+        NeoStoreDataSource.BufferedIdMaintenanceController idMaintenanceController = getIdMaintenanceController();
 
         deleteRelationshipByLabelAndRelationshipType( marker );
 
@@ -148,12 +171,40 @@ public class IdReuseTest
     }
 
     @Test
+    public void nodeIdReusableOnlyAfterTransactionFinish()
+    {
+        Label testLabel = DynamicLabel.label( "testLabel" );
+        long nodeId = createNode( testLabel );
+
+        NeoStoreDataSource.BufferedIdMaintenanceController idMaintenanceController = getIdMaintenanceController();
+
+        try ( Transaction tx = dbRule.beginTx();
+              ResourceIterator<Node> nodes = dbRule.findNodes( testLabel ) )
+        {
+            while ( nodes.hasNext() )
+            {
+                nodes.next().delete();
+            }
+
+            idMaintenanceController.maintenance();
+
+            Node newNode = dbRule.createNode( testLabel );
+
+            assertNotEquals( "Nodes should have different ids.", nodeId, newNode.getId() );
+            tx.success();
+        }
+
+        idMaintenanceController.maintenance();
+        assertEquals( "New node should have id of a removed node", nodeId, createNode( testLabel ) );
+    }
+
+    @Test
     public void relationshipIdReusableOnlyAfterTransactionFinish()
     {
         Label testLabel = DynamicLabel.label( "testLabel" );
         long relationshipId = createRelationship( testLabel );
 
-        final NeoStoreDataSource.BufferedIdMaintenanceController idMaintenanceController = getIdMaintenanceController();
+        NeoStoreDataSource.BufferedIdMaintenanceController idMaintenanceController = getIdMaintenanceController();
 
         try ( Transaction transaction = dbRule.beginTx();
               ResourceIterator<Node> nodes = dbRule.findNodes( testLabel ) )
@@ -177,6 +228,23 @@ public class IdReuseTest
 
             assertNotEquals( "Relatioships should have different ids.", relationshipId, relationshipTo.getId() );
             transaction.success();
+        }
+
+        idMaintenanceController.maintenance();
+        assertEquals( "New relationship should have id of a removed relationship", relationshipId,
+                createRelationship( testLabel ) );
+    }
+
+    private void deleteNodesByLabel( Label marker )
+    {
+        try ( Transaction tx = dbRule.beginTx();
+              ResourceIterator<Node> nodes = dbRule.findNodes( marker ) )
+        {
+            while ( nodes.hasNext() )
+            {
+                nodes.next().delete();
+            }
+            tx.success();
         }
     }
 
@@ -202,6 +270,16 @@ public class IdReuseTest
     {
         return dbRule.getDependencyResolver()
                 .resolveDependency( NeoStoreDataSource.BufferedIdMaintenanceController.class );
+    }
+
+    private long createNode( Label label )
+    {
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            Node node = dbRule.createNode( label );
+            tx.success();
+            return node.getId();
+        }
     }
 
     private long createRelationship( Label label )
