@@ -24,7 +24,9 @@ import org.apache.lucene.index.IndexWriterAccessor;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.Node;
@@ -40,32 +42,87 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class LuceneDataSourceTest
 {
-    public final @Rule LifeRule life = new LifeRule( true );
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final LifeRule life = new LifeRule( true );
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
     private IndexConfigStore indexStore;
     private LuceneDataSource dataSource;
 
     @Before
-    public void setup()
+    public void setUp()
     {
         indexStore = new IndexConfigStore( directory.directory(), new DefaultFileSystemAbstraction() );
         addIndex( "foo" );
     }
 
-    private void addIndex( String name )
+    @Test
+    public void doNotTryToCommitWritersOnForceInReadOnlyMode() throws IOException
     {
-        indexStore.set( Node.class, name, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
+        IndexIdentifier indexIdentifier = identifier( "foo" );
+        prepareIndexesByIdentifiers( indexIdentifier );
+
+        Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
+        LuceneDataSource readOnlyDataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig,
+                indexStore, new DefaultFileSystemAbstraction() ) );
+        assertNotNull( readOnlyDataSource.getIndexSearcher( indexIdentifier ) );
+
+        readOnlyDataSource.force();
     }
 
-    private IndexIdentifier identifier( String name )
+    @Test
+    public void notAllowIndexDeletionInReadOnlyMode() throws IOException
     {
-        return new IndexIdentifier( IndexEntityType.Node, name );
+        IndexIdentifier indexIdentifier = identifier( "foo" );
+        prepareIndexesByIdentifiers( indexIdentifier );
+
+        Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
+        dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig, indexStore, new DefaultFileSystemAbstraction() ) );
+        expectedException.expect( IllegalStateException.class );
+        expectedException.expectMessage("Index deletion in read only mode is not supported.");
+        dataSource.deleteIndex( indexIdentifier, false );
+    }
+
+    @Test
+    public void useReadOnlyIndexSearcherInReadOnlyMode() throws IOException
+    {
+        IndexIdentifier indexIdentifier = identifier( "foo" );
+        prepareIndexesByIdentifiers( indexIdentifier );
+
+        Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
+        dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig, indexStore, new DefaultFileSystemAbstraction() ) );
+
+        IndexReference indexSearcher = dataSource.getIndexSearcher( indexIdentifier );
+        assertTrue( "Read only index reference should be used in read only mode.",
+                ReadOnlyIndexReference.class.isInstance( indexSearcher ) );
+    }
+
+    @Test
+    public void refreshReadOnlyIndexSearcherInReadOnlyMode() throws IOException
+    {
+        IndexIdentifier indexIdentifier = identifier( "foo" );
+        prepareIndexesByIdentifiers( indexIdentifier );
+
+        Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
+        dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig, indexStore, new DefaultFileSystemAbstraction() ) );
+
+        IndexReference indexSearcher = dataSource.getIndexSearcher( indexIdentifier );
+        IndexReference indexSearcher2 = dataSource.getIndexSearcher( indexIdentifier );
+        IndexReference indexSearcher3 = dataSource.getIndexSearcher( indexIdentifier );
+        IndexReference indexSearcher4 = dataSource.getIndexSearcher( indexIdentifier );
+        assertSame( "Refreshed read only searcher should be the same.", indexSearcher, indexSearcher2 );
+        assertSame( "Refreshed read only searcher should be the same.", indexSearcher2, indexSearcher3 );
+        assertSame( "Refreshed read only searcher should be the same.", indexSearcher3, indexSearcher4 );
     }
 
     @Test
@@ -175,6 +232,31 @@ public class LuceneDataSourceTest
 
     private Map<String, String> config()
     {
-        return MapUtil.stringMap( "store_dir", directory.directory().getPath() );
+        return MapUtil.stringMap();
+    }
+
+    private void prepareIndexesByIdentifiers( IndexIdentifier indexIdentifier )
+    {
+        Config config = new Config( config(), GraphDatabaseSettings.class );
+        dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, new DefaultFileSystemAbstraction() ) );
+        dataSource.getIndexSearcher( indexIdentifier );
+        dataSource.force();
+    }
+
+    private Map<String, String> readOnlyConfig()
+    {
+        Map<String,String> config = config();
+        config.put( GraphDatabaseSettings.read_only.name(), "true" );
+        return config;
+    }
+
+    private void addIndex( String name )
+    {
+        indexStore.set( Node.class, name, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
+    }
+
+    private IndexIdentifier identifier( String name )
+    {
+        return new IndexIdentifier( IndexEntityType.Node, name );
     }
 }

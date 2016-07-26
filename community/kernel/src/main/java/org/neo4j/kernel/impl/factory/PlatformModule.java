@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -63,6 +64,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 /**
  * Platform module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. This creates
@@ -105,7 +107,8 @@ public class PlatformModule
     public final TransactionCounters transactionMonitor;
 
     public PlatformModule( File storeDir, Map<String, String> params, final GraphDatabaseFacadeFactory.Dependencies externalDependencies,
-                                                  final GraphDatabaseFacade graphDatabaseFacade)
+            final GraphDatabaseFacade graphDatabaseFacade,
+            OperationalMode operationalMode )
     {
         dependencies = new org.neo4j.kernel.impl.util.Dependencies( new Supplier<DependencyResolver>()
         {
@@ -170,20 +173,8 @@ public class PlatformModule
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionCounters() );
 
-        KernelContext kernelContext = dependencies.satisfyDependency( new KernelContext()
-        {
-            @Override
-            public FileSystemAbstraction fileSystem()
-            {
-                return PlatformModule.this.fileSystem;
-            }
-
-            @Override
-            public File storeDir()
-            {
-                return PlatformModule.this.storeDir;
-            }
-        } );
+        KernelContext kernelContext = dependencies.satisfyDependency(
+                new SimpleKernelContext( this.fileSystem, this.storeDir, operationalMode ));
 
         kernelExtensions = dependencies.satisfyDependency( new KernelExtensions(
                 kernelContext,
@@ -200,7 +191,7 @@ public class PlatformModule
     {
         sysInfo.set( UsageDataKeys.version, Version.getKernel().getReleaseVersion() );
         sysInfo.set( UsageDataKeys.revision, Version.getKernel().getVersion() );
-        sysInfo.set( UsageDataKeys.operationalMode, UsageDataKeys.OperationalMode.ha );
+        sysInfo.set( UsageDataKeys.operationalMode, OperationalMode.ha );
     }
 
     public LifeSupport createLife()

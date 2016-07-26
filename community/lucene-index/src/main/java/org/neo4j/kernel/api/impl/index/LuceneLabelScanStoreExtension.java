@@ -66,7 +66,8 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
     @Override
     public LabelScanStoreProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        boolean ephemeral = dependencies.getConfig().get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
+        Config config = dependencies.getConfig();
+        boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, context.fileSystem() );
 
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore(
@@ -77,6 +78,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
 
                 context.fileSystem(), tracking(),
                 fullStoreLabelUpdateStream( dependencies.getNeoStoreSupplier() ),
+                config, context.operationalMode(),
                 monitor != null ? monitor : loggerMonitor( dependencies.getLogService().getInternalLogProvider() ) );
 
         return new LabelScanStoreProvider( scanStore, priority );

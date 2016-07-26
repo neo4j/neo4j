@@ -24,11 +24,37 @@ import java.io.File;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.udc.UsageDataKeys;
 
-public interface KernelContext
+/**
+ * Default implementation of {@link KernelContext}
+ */
+public class SimpleKernelContext implements KernelContext
 {
-    FileSystemAbstraction fileSystem();
+    private final FileSystemAbstraction fileSystem;
+    private final File storeDir;
+    private final UsageDataKeys.OperationalMode operationalMode;
 
-    File storeDir();
+    public SimpleKernelContext( FileSystemAbstraction fileSystem, File storeDir, UsageDataKeys.OperationalMode operationalMode )
+    {
+        this.fileSystem = fileSystem;
+        this.storeDir = storeDir;
+        this.operationalMode = operationalMode;
+    }
 
-    UsageDataKeys.OperationalMode operationalMode();
+    @Override
+    public FileSystemAbstraction fileSystem()
+    {
+        return fileSystem;
+    }
+
+    @Override
+    public File storeDir()
+    {
+        return storeDir;
+    }
+
+    @Override
+    public UsageDataKeys.OperationalMode operationalMode()
+    {
+        return operationalMode;
+    }
 }

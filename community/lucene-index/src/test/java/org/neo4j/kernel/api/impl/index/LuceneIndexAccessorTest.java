@@ -215,7 +215,8 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        return new NonUniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, dir, 100_000 );
+                        return new NonUniqueLuceneIndexAccessor( documentLogic, false, reserving(), dirFactory, dir,
+                                100_000 );
                     }
 
                     @Override
@@ -230,7 +231,7 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        return new UniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, dir );
+                        return new UniqueLuceneIndexAccessor( documentLogic, false, reserving(), dirFactory, dir );
                     }
 
                     @Override

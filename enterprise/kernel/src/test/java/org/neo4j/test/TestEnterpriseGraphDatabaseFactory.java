@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.AbstractLogService;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
 {
@@ -49,7 +50,8 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
                 {
                     @Override
                     protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
-                            Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                            Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade,
+                            OperationalMode operationalMode)
                     {
                         return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, dependencies,
                                 graphDatabaseFacade )

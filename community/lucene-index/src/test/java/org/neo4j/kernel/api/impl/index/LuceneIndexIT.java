@@ -98,9 +98,8 @@ public class LuceneIndexIT
     public void before() throws Exception
     {
         dirFactory = DirectoryFactory.PERSISTENT;
-        accessor = new NonUniqueLuceneIndexAccessor(
-                documentLogic, reserving(), dirFactory, testDir.directory(), 100_000
-        );
+        accessor = new NonUniqueLuceneIndexAccessor( documentLogic, false, reserving(),
+                dirFactory, testDir.directory(), 100_000 );
     }
 
     @After

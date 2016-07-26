@@ -24,15 +24,16 @@ import java.util.Map;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.STRING;
@@ -93,6 +94,7 @@ public abstract class GraphDatabaseFacadeFactory
                 setting( "dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
 
         public static final Setting<String> editionName = setting( "edition", Settings.STRING, "Community" );
+
     }
 
     /**
@@ -109,6 +111,20 @@ public abstract class GraphDatabaseFacadeFactory
     }
 
     /**
+     * Instantiate a graph database given configuration and dependencies in single instance operational mode
+     * @param storeDir
+     * @param params
+     * @param dependencies
+     * @param graphDatabaseFacade
+     * @return
+     */
+    public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, final Dependencies dependencies,
+            final GraphDatabaseFacade graphDatabaseFacade)
+    {
+        return newFacade( storeDir, params, dependencies, new GraphDatabaseFacade(), OperationalMode.single );
+    }
+
+    /**
      * Instantiate a graph database given configuration, dependencies, and a custom implementation of {@link org
      * .neo4j.kernel.impl.factory.GraphDatabaseFacade}.
      *
@@ -119,9 +135,10 @@ public abstract class GraphDatabaseFacadeFactory
      * @return
      */
     public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, final Dependencies dependencies,
-                                          final GraphDatabaseFacade graphDatabaseFacade )
+                                          final GraphDatabaseFacade graphDatabaseFacade,
+                                          OperationalMode operationalMode )
     {
-        PlatformModule platform = createPlatform( storeDir, params, dependencies, graphDatabaseFacade );
+        PlatformModule platform = createPlatform( storeDir, params, dependencies, graphDatabaseFacade, operationalMode );
         EditionModule edition = createEdition( platform );
         final DataSourceModule dataSource = createDataSource( dependencies, platform, edition );
 
@@ -176,9 +193,10 @@ public abstract class GraphDatabaseFacadeFactory
      * @return
      */
     protected PlatformModule createPlatform( File storeDir, Map<String, String> params, final Dependencies dependencies,
-                                             final GraphDatabaseFacade graphDatabaseFacade )
+                                             final GraphDatabaseFacade graphDatabaseFacade,
+                                             OperationalMode operationalMode )
     {
-        return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
+        return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade, operationalMode );
     }
 
     /**

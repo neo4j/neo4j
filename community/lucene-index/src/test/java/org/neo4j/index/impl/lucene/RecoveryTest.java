@@ -28,10 +28,12 @@ import java.io.IOException;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -46,10 +48,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.index.RelationshipIndex;
 
 /**
  * Don't extend Neo4jTestCase since these tests restarts the db in the tests.
@@ -167,8 +166,7 @@ public class RecoveryTest
 
         // NB: AddRelToIndex will start and shutdown the db
         Process process = Runtime.getRuntime().exec( new String[]{
-                "java", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005", "-cp",
-                System.getProperty( "java.class.path" ),
+                "java", "-cp", System.getProperty( "java.class.path" ),
                 AddRelToIndex.class.getName(), storeDir
         } );
         assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );

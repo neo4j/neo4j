@@ -19,11 +19,16 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -38,12 +43,18 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.Function;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
@@ -51,12 +62,18 @@ import org.neo4j.kernel.api.direct.NodeLabelRange;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -67,10 +84,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -82,6 +95,65 @@ import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 public class LuceneLabelScanStoreTest
 {
     private static final long[] NO_LABELS = new long[0];
+    private LuceneLabelScanStore labelScanStore;
+
+    @Test
+    public void failToDeleteDocumentsOnReadOnlyScanStore() throws Exception
+    {
+        startReadOnlyLabelScanStore();
+        expectedException.expect( UnsupportedOperationException.class );
+        labelScanStore.deleteDocuments( new Term( "key", "value" ) );
+    }
+
+    @Test
+    public void failToUpdateDocumentsOnReadOnlyScanStore() throws IOException, IndexCapacityExceededException
+    {
+        startReadOnlyLabelScanStore();
+        expectedException.expect( UnsupportedOperationException.class );
+        labelScanStore.updateDocument( new Term( "key", "value" ), new Document() );
+    }
+
+    @Test
+    public void forceShouldNotForceWriterOnReadOnlyScanStore()
+    {
+        startReadOnlyLabelScanStore();
+        labelScanStore.force();
+    }
+
+    @Test
+    public void failToGetWriterOnReadOnlyScanStore() throws Exception
+    {
+        startReadOnlyLabelScanStore();
+        expectedException.expect( UnsupportedOperationException.class );
+        labelScanStore.newWriter();
+    }
+
+    @Test
+    public void failToStartIfLabelScanStoreIndexDoesNotExistInReadOnlyMode()
+    {
+        expectedException.expectCause( Matchers.<Throwable>instanceOf( IOException.class ) );
+        startLabelScanStore( MapUtil.stringMap(GraphDatabaseSettings.read_only.name(), "true") );
+        assertTrue( monitor.noIndexCalled );
+    }
+
+    @Test
+    public void snapshotReadOnlyLabelScanStore() throws IOException
+    {
+        startReadOnlyLabelScanStore();
+        try (ResourceIterator<File> indexFiles = labelScanStore.snapshotStoreFiles())
+        {
+            List<String> filesNames = Iterables.toList( Iterables.map( new Function<File,String>()
+            {
+                @Override
+                public String apply( File file )
+                {
+                    return file.getName();
+                }
+            }, indexFiles ) );
+
+            assertThat( "Should have at least index segment file.", filesNames, contains( startsWith( IndexFileNames.SEGMENTS ) ) );
+        }
+    }
 
     @Test
     public void shouldUpdateIndexOnLabelChange() throws Exception
@@ -419,6 +491,8 @@ public class LuceneLabelScanStoreTest
 
     @Rule
     public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     private final Random random = new Random();
     private DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
@@ -444,14 +518,33 @@ public class LuceneLabelScanStoreTest
 
     private void start( List<NodeLabelUpdate> existingData )
     {
+        startLabelScanStore( existingData, MapUtil.stringMap() );
+        assertTrue( monitor.initCalled );
+    }
+
+    private void startReadOnlyLabelScanStore()
+    {
+        // create label scan store and shutdown it
+        startLabelScanStore( MapUtil.stringMap() );
+        life.shutdown();
+
+        startLabelScanStore( MapUtil.stringMap(GraphDatabaseSettings.read_only.name(), "true") );
+    }
+
+    private void startLabelScanStore( Map<String,String> configParams )
+    {
+        startLabelScanStore( Collections.<NodeLabelUpdate>emptyList(), configParams );
+    }
+
+    private void startLabelScanStore( List<NodeLabelUpdate> existingData, Map<String,String> configParams )
+    {
         life = new LifeSupport();
         monitor = new TrackingMonitor();
-        store = life.add( new LuceneLabelScanStore(
-                strategy,
+        labelScanStore = new LuceneLabelScanStore( strategy,
                 directoryFactory, dir, new DefaultFileSystemAbstraction(), tracking(), asStream( existingData ),
-                monitor ) );
+                new Config( configParams ), OperationalMode.single, monitor );
+        store = life.add( labelScanStore );
         life.start();
-        assertTrue( monitor.initCalled );
     }
 
     private FullStoreChangeStream asStream( final List<NodeLabelUpdate> existingData )

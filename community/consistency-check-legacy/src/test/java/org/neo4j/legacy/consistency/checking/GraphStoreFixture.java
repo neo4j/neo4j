@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -64,6 +65,7 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -83,23 +85,29 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
             StoreAccess nativeStores = new StoreAccess( fileSystem, pageCache, directory ).initialize();
+            Config config = new Config();
+            OperationalMode operationalMode = OperationalMode.single;
             directStoreAccess = new DirectStoreAccess(
                     nativeStores,
                     new LuceneLabelScanStoreBuilder(
                             directory,
                             nativeStores.getRawNeoStores(),
                             fileSystem,
+                            config,
+                            operationalMode,
                             FormattedLogProvider.toOutputStream( System.out )
                     ).build(),
-                    createIndexes( fileSystem )
+                    createIndexes( fileSystem, config, operationalMode )
             );
         }
         return directStoreAccess;
     }
 
-    private SchemaIndexProvider createIndexes( FileSystemAbstraction fileSystem )
+    private SchemaIndexProvider createIndexes( FileSystemAbstraction fileSystem, Config config,
+            OperationalMode operationalMode )
     {
-        return new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT, directory );
+        return new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT, directory, config,
+                operationalMode );
     }
 
     public File directory()

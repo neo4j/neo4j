@@ -72,12 +72,10 @@ import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterRule;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -558,14 +556,14 @@ public class SchemaIndexHaIT
             {
                 ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider(
                         new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
-                                DirectoryFactory.PERSISTENT, context.storeDir() ) );
+                                DirectoryFactory.PERSISTENT, context.storeDir(), deps.config(), context.operationalMode() ) );
                 perDbIndexProvider.put( deps.db(), provider );
                 return provider;
             }
             else
             {
                 return new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
-                        DirectoryFactory.PERSISTENT, context.storeDir() );
+                        DirectoryFactory.PERSISTENT, context.storeDir(), deps.config(), context.operationalMode() );
             }
         }
     }

@@ -17,19 +17,44 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.index.impl.lucene;
 
-import java.io.File;
+
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+
 import java.io.IOException;
 
-class NonUniqueLuceneIndexAccessor extends LuceneIndexAccessor
+public class ReadOnlyIndexReference extends IndexReference
 {
-    NonUniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-            boolean readOnly, IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
-            DirectoryFactory dirFactory, File indexFolder,
-            int bufferSizeLimit ) throws IOException
+
+    ReadOnlyIndexReference( IndexIdentifier identifier, IndexSearcher searcher )
     {
-        super( documentStructure, readOnly, indexWriterFactory, dirFactory, indexFolder, bufferSizeLimit );
+        super(identifier, searcher);
+    }
+
+    @Override
+    public IndexWriter getWriter()
+    {
+        throw new UnsupportedOperationException( "Read only indexes do not have index writers." );
+    }
+
+    @Override
+    public synchronized void dispose() throws IOException
+    {
+        disposeSearcher();
+    }
+
+    @Override
+    public boolean checkAndClearStale()
+    {
+        return false;
+    }
+
+    @Override
+    public void setStale()
+    {
+        throw new UnsupportedOperationException("Read only indexes can't be marked as stale.");
     }
 
 }

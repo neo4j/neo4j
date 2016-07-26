@@ -31,6 +31,8 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -129,6 +131,8 @@ public class StoreUpgraderInterruptionTestIT
         assertTrue( checkNeoStoreHasLatestVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
+        // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
+        startStopDatabase( workingDirectory );
         assertConsistentStore( workingDirectory );
     }
 
@@ -172,8 +176,6 @@ public class StoreUpgraderInterruptionTestIT
         assertTrue( checkNeoStoreHasLatestVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
-        assertConsistentStore( workingDirectory );
-
         progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, config, logService );
         newUpgrader( migrator ).migrateIfNeeded( workingDirectory, upgradableDatabase, schemaIndexProvider );
@@ -183,6 +185,8 @@ public class StoreUpgraderInterruptionTestIT
 
         pageCache.close();
 
+        // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
+        startStopDatabase( workingDirectory );
         assertConsistentStore( workingDirectory );
     }
 
@@ -192,6 +196,12 @@ public class StoreUpgraderInterruptionTestIT
                 new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
         upgrader.addParticipant( migrator );
         return upgrader;
+    }
+
+    private void startStopDatabase( File workingDirectory )
+    {
+        GraphDatabaseService databaseService = new GraphDatabaseFactory().newEmbeddedDatabase( workingDirectory );
+        databaseService.shutdown();
     }
 
     @Rule

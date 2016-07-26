@@ -60,6 +60,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.tooling.GlobalGraphOperations;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
@@ -683,7 +684,9 @@ public class LabelsAcceptanceTest
                                     }
 
                                     @Override
-                                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params,
+                                            Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade,
+                                            OperationalMode operationalMode )
                                     {
                                         return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
                                     }

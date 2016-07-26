@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -84,9 +85,12 @@ public class PartialTransactionFailureIT
                 new CommunityFacadeFactory()
                 {
                     @Override
-                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params,
+                            Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade,
+                            OperationalMode operationalMode )
                     {
-                        return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                        return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade,
+                                operationalMode )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()

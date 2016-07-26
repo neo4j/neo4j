@@ -118,7 +118,7 @@ public class UniqueLuceneIndexAccessorTest
 
     private UniqueLuceneIndexAccessor createAccessor() throws IOException
     {
-        return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(), reserving(),
+        return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(), false, reserving(),
                 directoryFactory, indexDirectory );
     }
 

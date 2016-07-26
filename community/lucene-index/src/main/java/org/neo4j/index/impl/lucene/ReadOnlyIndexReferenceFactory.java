@@ -19,27 +19,32 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.IndexSearcher;
+
+import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.cache.ClockCache;
-
-public class IndexClockCache extends ClockCache<IndexIdentifier, IndexReference>
+public class ReadOnlyIndexReferenceFactory extends IndexReferenceFactory
 {
-    public IndexClockCache( int maxSize )
+    public ReadOnlyIndexReferenceFactory( LuceneDataSource.LuceneFilesystemFacade filesystemFacade, File baseStorePath,
+            IndexTypeCache typeCache )
     {
-        super( "IndexSearcherCache", maxSize );
+        super( filesystemFacade, baseStorePath, typeCache );
     }
 
     @Override
-    public void elementCleaned( IndexReference searcher )
+    IndexReference createIndexReference( IndexIdentifier identifier ) throws IOException
     {
-        try
-        {
-            searcher.dispose();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        IndexReader reader = IndexReader.open( getIndexDirectory( identifier ) );
+        IndexSearcher indexSearcher = newIndexSearcher( identifier, reader );
+        return new ReadOnlyIndexReference( identifier, indexSearcher );
     }
+
+    @Override
+    IndexReference refresh( IndexReference indexReference )
+    {
+        return indexReference;
+    }
+
 }

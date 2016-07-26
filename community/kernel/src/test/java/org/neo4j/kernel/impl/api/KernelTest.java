@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -78,7 +79,9 @@ public class KernelTest
             new CommunityFacadeFactory()
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                protected PlatformModule createPlatform( File storeDir, Map<String, String> params,
+                        Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade,
+                        OperationalMode operationalMode )
                 {
                     return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
                 }

@@ -20,13 +20,17 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
+import org.apache.lucene.store.Directory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
@@ -54,18 +58,22 @@ public class LuceneSnapshotter
         }
     }
 
-    private class LuceneSnapshotIterator extends PrefetchingIterator<File> implements ResourceIterator<File>
+    ResourceIterator<File> snapshot( File indexDir, Directory directory ) throws IOException
+    {
+        Collection<IndexCommit> indexCommits = IndexReader.listCommits( directory );
+        IndexCommit indexCommit = Iterables.last( indexCommits );
+        return new ReadOnlyIndexSnapshotIterator( indexDir, indexCommit );
+    }
+
+    private class ReadOnlyIndexSnapshotIterator extends PrefetchingIterator<File> implements ResourceIterator<File>
     {
         private final File indexDirectory;
-        private final SnapshotDeletionPolicy deletionPolicy;
         private final Iterator<String> fileNames;
 
-        LuceneSnapshotIterator( File indexDirectory, IndexCommit snapshotPoint, SnapshotDeletionPolicy deletionPolicy )
-                throws IOException
+        ReadOnlyIndexSnapshotIterator( File indexDirectory, IndexCommit indexCommit ) throws IOException
         {
             this.indexDirectory = indexDirectory;
-            this.deletionPolicy = deletionPolicy;
-            this.fileNames = snapshotPoint.getFileNames().iterator();
+            this.fileNames = indexCommit.getFileNames().iterator();
         }
 
         @Override
@@ -81,17 +89,33 @@ public class LuceneSnapshotter
         @Override
         public void close()
         {
+            // nothing by default
+        }
+    }
+
+    private class LuceneSnapshotIterator extends ReadOnlyIndexSnapshotIterator implements ResourceIterator<File>
+    {
+        private final SnapshotDeletionPolicy deletionPolicy;
+
+        LuceneSnapshotIterator( File indexDirectory, IndexCommit indexCommit, SnapshotDeletionPolicy deletionPolicy )
+                throws IOException
+        {
+            super(indexDirectory, indexCommit);
+            this.deletionPolicy = deletionPolicy;
+        }
+
+        @Override
+        public void close()
+        {
             try
             {
                 deletionPolicy.release( ID );
             }
             catch ( IOException e )
             {
-                // TODO What to do here?
                 throw new RuntimeException( "Unable to close lucene index snapshot", e );
             }
         }
     }
-
 
 }

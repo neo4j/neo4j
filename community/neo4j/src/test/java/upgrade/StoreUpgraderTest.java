@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -64,6 +65,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.emptyCollectionOf;
@@ -143,6 +145,8 @@ public class StoreUpgraderTest
         // We leave logical logs in place since the new version can read the old
 
         assertFalse( containsAnyStoreFiles( fileSystem, isolatedMigrationDirectoryOf( dbDirectory ) ) );
+        // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
+        startStopDatabase();
         assertConsistentStore( dbDirectory );
     }
 
@@ -450,5 +454,11 @@ public class StoreUpgraderTest
         } );
         assertNotNull( "Some IO errors occurred", tmpDirs );
         return Arrays.asList( tmpDirs );
+    }
+
+    private void startStopDatabase()
+    {
+        GraphDatabaseService databaseService = new TestGraphDatabaseFactory().newEmbeddedDatabase( dbDirectory );
+        databaseService.shutdown();
     }
 }
