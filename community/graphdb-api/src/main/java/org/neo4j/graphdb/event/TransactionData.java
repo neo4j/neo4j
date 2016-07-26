@@ -36,16 +36,6 @@ public interface TransactionData
 {
 
     /**
-     * Not committed transaction id.
-     */
-    int UNASSIGNED_TRANSACTION_ID = -1;
-
-    /**
-     * Not committed transaction commit time.
-     */
-    int UNASSIGNED_COMMIT_TIME = -1;
-
-    /**
      * Get the nodes that were created during the transaction.
      *
      * @return all nodes that were created during the transaction.
@@ -172,22 +162,22 @@ public interface TransactionData
     Iterable<PropertyEntry<Relationship>> removedRelationshipProperties();
 
     /**
-     * Return transaction id if it was already assigned or {@link #UNASSIGNED_TRANSACTION_ID} otherwise.
-     * Transaction id is assigned as soon as transaction committed.
+     * Return transaction id that assigned during transaction commit process.
      * @return transaction id.
+     * @throws IllegalStateException if transaction id is not assigned yet
      */
     default long getTransactionId()
     {
-        return UNASSIGNED_TRANSACTION_ID;
+        throw new IllegalStateException( "Transaction id is not available." );
     }
 
     /**
-     * Return transaction commit time if it was already assigned or {@link #UNASSIGNED_COMMIT_TIME} otherwise.
-     * Transaction commit time is assigned as soon as transaction committed.
+     * Return transaction commit time (in millis) that assigned during transaction commit process.
      * @return transaction commit time
+     * @throws IllegalStateException if commit time is not assigned yet
      */
     default long getCommitTime()
     {
-        return UNASSIGNED_COMMIT_TIME;
+        throw new IllegalStateException( "Transaction commit time it not available." );
     }
 }

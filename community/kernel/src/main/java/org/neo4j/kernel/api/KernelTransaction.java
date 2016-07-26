@@ -170,16 +170,18 @@ public interface KernelTransaction extends AutoCloseable
     Type transactionType();
 
     /**
-     * Return transaction id if it was already assigned.
-     * Transaction id is assigned as soon as transaction committed.
+     * Return transaction id that assigned during transaction commit process.
+     * @see org.neo4j.kernel.impl.api.TransactionCommitProcess
      * @return transaction id.
+     * @throws IllegalStateException if transaction id is not assigned yet
      */
     long getTransactionId();
 
     /**
-     * Return transaction commit time if it was already assigned.
-     * Transaction commit time is assigned as soon as transaction committed.
+     * Return transaction commit time (in millis) that assigned during transaction commit process.
+     * @see org.neo4j.kernel.impl.api.TransactionCommitProcess
      * @return transaction commit time
+     * @throws IllegalStateException if commit time is not assigned yet
      */
     long getCommitTime();
 

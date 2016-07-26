@@ -19,11 +19,17 @@
  */
 package org.neo4j.kernel.impl.event;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -38,7 +44,6 @@ import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.RandomRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -46,10 +51,12 @@ import static org.junit.Assert.assertTrue;
  */
 public class TransactionEventsIT
 {
+    private final DatabaseRule db = new ImpermanentDatabaseRule();
+    private final RandomRule random = new RandomRule();
+    private final ExpectedException expectedException = ExpectedException.none();
+
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
-    @Rule
-    public final RandomRule random = new RandomRule();
+    public RuleChain ruleChain = RuleChain.outerRule( random ).around( expectedException ).around( db );
 
     @Test
     public void shouldSeeExpectedTransactionData() throws Exception
@@ -102,7 +109,6 @@ public class TransactionEventsIT
 
         long firstTransactionId = commitTimeTracker.getTransactionIdAfterCommit();
         long firstTransactionCommitTime = commitTimeTracker.getCommitTimeAfterCommit();
-        verifyBeforeCommitData( commitTimeTracker );
         assertTrue("Should be positive tx id.", firstTransactionId > 0 );
         assertTrue("Should be positive.", firstTransactionCommitTime > 0);
 
@@ -110,22 +116,42 @@ public class TransactionEventsIT
 
         long secondTransactionId = commitTimeTracker.getTransactionIdAfterCommit();
         long secondTransactionCommitTime = commitTimeTracker.getCommitTimeAfterCommit();
-        verifyBeforeCommitData( commitTimeTracker );
         assertTrue("Should be positive tx id.", secondTransactionId > 0 );
         assertTrue("Should be positive commit time value.", secondTransactionCommitTime > 0);
 
         assertTrue( "Second tx id should be higher then first one.", secondTransactionId > firstTransactionId );
         assertTrue( "Second commit time should be higher or equals then first one.",
                 secondTransactionCommitTime >= firstTransactionCommitTime );
-
     }
 
-    private void verifyBeforeCommitData( TransactionIdCommitTimeTracker commitTimeTracker )
+    @Test
+    public void transactionIdNotAccessibleBeforeCommit()
     {
-        assertEquals("Should be unassigned.", TransactionData.UNASSIGNED_TRANSACTION_ID,
-                commitTimeTracker.getTransactionIdBeforeCommit());
-        assertEquals("Should be unassigned.", TransactionData.UNASSIGNED_COMMIT_TIME,
-                commitTimeTracker.getCommitTimeBeforeCommit());
+        db.registerTransactionEventHandler( getBeforeCommitHandler( TransactionData::getTransactionId ) );
+        String message = "Transaction id is not assigned yet. It will be assigned during transaction commit.";
+        expectedException.expectCause( new RootCauseMatcher<>( IllegalStateException.class, message ) );
+        runTransaction();
+    }
+
+    @Test
+    public void commitTimeNotAccessibleBeforeCommit()
+    {
+        db.registerTransactionEventHandler( getBeforeCommitHandler( TransactionData::getCommitTime ) );
+        String message = "Transaction commit time is not assigned yet. It will be assigned during transaction commit.";
+        expectedException.expectCause( new RootCauseMatcher<>( IllegalStateException.class, message ) );
+        runTransaction();
+    }
+
+    private TransactionEventHandler.Adapter<Object> getBeforeCommitHandler(Consumer<TransactionData> dataConsumer)
+    {
+        return new TransactionEventHandler.Adapter<Object>(){
+            @Override
+            public Object beforeCommit( TransactionData data ) throws Exception
+            {
+                dataConsumer.accept( data );
+                return super.beforeCommit( data );
+            }
+        };
     }
 
     private void runTransaction()
@@ -405,14 +431,10 @@ public class TransactionEventsIT
 
         private long transactionIdAfterCommit;
         private long commitTimeAfterCommit;
-        private long transactionIdBeforeCommit;
-        private long commitTimeBeforeCommit;
 
         @Override
         public Object beforeCommit( TransactionData data ) throws Exception
         {
-            commitTimeBeforeCommit = data.getCommitTime();
-            transactionIdBeforeCommit = data.getTransactionId();
             return super.beforeCommit( data );
         }
 
@@ -433,15 +455,40 @@ public class TransactionEventsIT
         {
             return commitTimeAfterCommit;
         }
+    }
 
-        public long getTransactionIdBeforeCommit()
+    private class RootCauseMatcher<T extends Throwable> extends TypeSafeMatcher<T>
+    {
+        private Class<T> rootCause;
+        private String message;
+        private Throwable cause;
+
+        RootCauseMatcher( Class<T> rootCause, String message )
         {
-            return transactionIdBeforeCommit;
+            this.rootCause = rootCause;
+            this.message = message;
         }
 
-        public long getCommitTimeBeforeCommit()
+        @Override
+        protected boolean matchesSafely( T item )
         {
-            return commitTimeBeforeCommit;
+            cause = ExceptionUtils.getRootCause( item );
+            return rootCause.isInstance( cause ) && cause.getMessage().equals( message );
         }
+
+        @Override
+        public void describeTo( Description description )
+        {
+            description.appendText( "Expected root cause of " )
+                    .appendValue( rootCause )
+                    .appendText( " with message: " )
+                    .appendValue( message )
+                    .appendText( ", but was " )
+                    .appendValue( cause.getClass() )
+                    .appendText( " with message: " )
+                    .appendValue( cause.getMessage() );
+        }
+
+
     }
 }

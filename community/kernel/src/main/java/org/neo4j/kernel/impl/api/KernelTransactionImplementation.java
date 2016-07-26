@@ -27,7 +27,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
@@ -117,6 +116,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             return SCHEMA;
         }
     }
+
+    // default values for not committed tx id and tx commit time
+    private static final long NOT_COMMITTED_TRANSACTION_ID = -1;
+    private static final long NOT_COMMITTED_TRANSACTION_COMMIT_TIME = -1;
 
     // Logic
     private final SchemaWriteGuard schemaWriteGuard;
@@ -219,8 +222,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionEvent = tracer.beginTransaction();
         assert transactionEvent != null : "transactionEvent was null!";
         this.accessMode = accessMode;
-        this.transactionId = TransactionData.UNASSIGNED_TRANSACTION_ID;
-        this.commitTime = TransactionData.UNASSIGNED_COMMIT_TIME;
+        this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
+        this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.currentStatement.initialize( statementLocks );
         return this;
     }
@@ -738,12 +741,22 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public long getTransactionId()
     {
+        if ( transactionId == NOT_COMMITTED_TRANSACTION_ID )
+        {
+            throw new IllegalStateException( "Transaction id is not assigned yet. " +
+                                             "It will be assigned during transaction commit." );
+        }
         return transactionId;
     }
 
     @Override
     public long getCommitTime()
     {
+        if ( commitTime == NOT_COMMITTED_TRANSACTION_COMMIT_TIME )
+        {
+            throw new IllegalStateException( "Transaction commit time is not assigned yet. " +
+                                             "It will be assigned during transaction commit." );
+        }
         return commitTime;
     }
 
