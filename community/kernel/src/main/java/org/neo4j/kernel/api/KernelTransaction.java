@@ -22,6 +22,7 @@ package org.neo4j.kernel.api;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.impl.api.Kernel;
 
 /**
  * Represents a transaction of changes to the underlying graph.
@@ -160,6 +161,17 @@ public interface KernelTransaction extends AutoCloseable
      * @return The timestamp of the last transaction that was committed to the store when this transaction started.
      */
     long lastTransactionTimestampWhenStarted();
+
+    /**
+     * @return The id of the last transaction that was committed to the store when this transaction started.
+     */
+    long lastTransactionIdWhenStarted();
+
+    /**
+     * @return start time of this transaction, i.e. basically {@link System#currentTimeMillis()} when user called
+     * {@link Kernel#newTransaction()}.
+     */
+    long localStartTime();
 
     /**
      * Register a {@link CloseListener} to be invoked after commit, but before transaction events "after" hooks

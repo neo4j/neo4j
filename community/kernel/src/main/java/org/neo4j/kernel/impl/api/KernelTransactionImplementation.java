@@ -224,6 +224,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
+    public long localStartTime()
+    {
+        return startTimeMillis;
+    }
+
+    @Override
+    public long lastTransactionIdWhenStarted()
+    {
+        return lastTransactionIdWhenStarted;
+    }
+
+    @Override
     public void success()
     {
         this.success = true;

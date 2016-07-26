@@ -205,6 +205,7 @@ public class ConstraintIndexCreatorTest
                     throw new UnsupportedOperationException();
                 }
 
+                @Override
                 public Status getReasonIfTerminated()
                 {
                     return null;
@@ -236,6 +237,18 @@ public class ConstraintIndexCreatorTest
                 public Revertable restrict( AccessMode read )
                 {
                     return null;
+                }
+
+                @Override
+                public long lastTransactionIdWhenStarted()
+                {
+                    return 0;
+                }
+
+                @Override
+                public long localStartTime()
+                {
+                    return 0;
                 }
             };
         }
