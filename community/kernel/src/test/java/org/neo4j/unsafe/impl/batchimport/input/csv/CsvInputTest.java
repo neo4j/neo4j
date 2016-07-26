@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.Iterator;
 import java.util.Set;
@@ -28,8 +29,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.csv.reader.CharReadable;
-import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.graphdb.ResourceIterator;
@@ -57,7 +56,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -125,8 +123,8 @@ public class CsvInputTest
     public void shouldCloseDataIteratorsInTheEnd() throws Exception
     {
         // GIVEN
-        CharReadable nodeData = spy( charReader( "1" ) );
-        CharReadable relationshipData = spy( charReader( "1,1" ) );
+        CharReadable nodeData = charReader( "1" );
+        CharReadable relationshipData = charReader( "1,1" );
         IdType idType = IdType.STRING;
         Iterable<DataFactory<InputNode>> nodeDataIterable = dataIterable( given( nodeData ) );
         Iterable<DataFactory<InputRelationship>> relationshipDataIterable =
@@ -150,8 +148,21 @@ public class CsvInputTest
         }
 
         // THEN
-        verify( nodeData, times( 1 ) ).close();
-        verify( relationshipData, times( 1 ) ).close();
+        assertClosed( nodeData );
+        assertClosed( relationshipData );
+    }
+
+    private void assertClosed( CharReadable reader )
+    {
+        try
+        {
+            reader.read( new char[1], 0, 1 );
+            fail( reader + " not closed" );
+        }
+        catch ( IOException e )
+        {
+            assertTrue( e.getMessage().contains( "closed" ) );
+        }
     }
 
     @Test
@@ -947,11 +958,6 @@ public class CsvInputTest
             return 1_000;
         }
     };
-
-    private static CharSeeker charSeeker( String data )
-    {
-        return CharSeekers.charSeeker( charReader( data ), SEEKER_CONFIG, false );
-    }
 
     private static CharReadable charReader( String data )
     {
