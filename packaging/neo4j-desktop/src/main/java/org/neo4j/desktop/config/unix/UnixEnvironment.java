@@ -27,7 +27,7 @@ import org.neo4j.desktop.config.portable.Environment;
 class UnixEnvironment extends Environment
 {
 
-    public void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory ) throws IOException
+    public void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory, File configurationDirectory ) throws IOException
     {
         throw new UnsupportedOperationException(
                 "Opening a command prompt is not currently supported on this operating system." );
