@@ -240,6 +240,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         // This is okay, however, because unparkAll() spins when it sees a null next pointer.
         ThreadLink threadLink = new ThreadLink( Thread.currentThread() );
         threadLink.next = threadLinkHead.getAndSet( threadLink );
+        boolean attemptedForce = false;
 
         try ( LogForceWaitEvent logForceWaitEvent = logForceEvents.beginLogForceWait() )
         {
@@ -247,9 +248,11 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             {
                 if ( forceLock.tryLock() )
                 {
+                    attemptedForce = true;
                     try
                     {
                         forceLog( logForceEvents );
+                        // In the event of any failure a database panic will be raised and thrown here
                     }
                     finally
                     {
@@ -269,6 +272,14 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                 }
             }
             while ( !threadLink.done );
+
+            // If there were many threads committing simultaneously and I wasn't the lucky one
+            // actually doing the forcing (where failure would throw panic exception) I need to
+            // explicitly check if everything is OK before considering this transaction committed.
+            if ( !attemptedForce )
+            {
+                databaseHealth.assertHealthy( IOException.class );
+            }
         }
     }
 

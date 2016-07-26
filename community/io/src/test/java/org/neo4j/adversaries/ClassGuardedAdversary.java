@@ -26,10 +26,14 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * An adversary that delegates failure injection only when invoked through certain classes.
+ * An adversary that delegates failure injection only when invoked through certain call sites.
+ * For every potential failure injection the current stack trace (the elements of it) are analyzed
+ * and if there's a match with the specified victims then failure will be delegated to the actual
+ * {@link Adversary} underneath.
  */
 public class ClassGuardedAdversary extends StackTraceElementGuardedAdversary
 {
+
     public ClassGuardedAdversary( Adversary delegate, Class<?>... victimClassSet )
     {
         super( delegate, new Predicate<StackTraceElement>()
@@ -42,5 +46,18 @@ public class ClassGuardedAdversary extends StackTraceElementGuardedAdversary
                 return victimClasses.contains( stackTraceElement.getClassName() );
             }
         } );
+    }
+
+    /**
+     * Specifies victims as arbitrary {@link StackTraceElement} {@link Predicate}.
+     *
+     * @param delegate {@link Adversary} to delegate calls to.
+     * @param victims arbitrary {@link Predicate} for {@link StackTraceElement} in the executing
+     * thread and if any of the elements in the current stack trace matches then failure is injected.
+     */
+    @SafeVarargs
+    public ClassGuardedAdversary( Adversary delegate, Predicate<StackTraceElement>... victims )
+    {
+        super(delegate, victims);
     }
 }
