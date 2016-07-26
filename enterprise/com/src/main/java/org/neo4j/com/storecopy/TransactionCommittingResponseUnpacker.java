@@ -51,6 +51,8 @@ import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
+import static org.neo4j.helpers.Format.duration;
+import static org.neo4j.helpers.Format.time;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 
 /**
@@ -399,8 +401,9 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
 
     private void markUnsafeTransactionsForTermination()
     {
-        long lastAppliedTimestamp = transactionQueue.last().getCommitEntry().getTimeWritten();
-        long earliestSafeTimestamp = lastAppliedTimestamp - idReuseSafeZoneTime;
+        long firstCommittedTimestamp = transactionQueue.first().getCommitEntry().getTimeWritten();
+        long lastCommittedTimestamp = transactionQueue.last().getCommitEntry().getTimeWritten();
+        long earliestSafeTimestamp = lastCommittedTimestamp - idReuseSafeZoneTime;
 
         for ( KernelTransaction tx : kernelTransactions.activeTransactions() )
         {
@@ -409,9 +412,34 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             if ( commitTimestamp != TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP &&
                  commitTimestamp < earliestSafeTimestamp )
             {
+                log.info( "Marking transaction for termination, " +
+                        "invalidated due to an upcoming batch of changes being applied:" +
+                        "\n" +
+                        "  Batch: firstCommittedTxId:" + transactionQueue.first().getCommitEntry().getTxId() +
+                        ", firstCommittedTimestamp:" + informativeTimestamp( firstCommittedTimestamp ) +
+                        ", lastCommittedTxId:" + transactionQueue.last().getCommitEntry().getTxId() +
+                        ", lastCommittedTimestamp:" + informativeTimestamp( lastCommittedTimestamp ) +
+                        ", batchTimeRange:" + informativeDuration( lastCommittedTimestamp - firstCommittedTimestamp ) +
+                        ", earliestSafeTimstamp:" + informativeTimestamp( earliestSafeTimestamp ) +
+                        ", safeZoneDuration:" + informativeDuration( idReuseSafeZoneTime ) +
+                        "\n" +
+                        "  Transaction: lastCommittedTimestamp:" +
+                        informativeTimestamp( tx.lastTransactionTimestampWhenStarted() ) +
+                        ", lastCommittedTxId:" + tx.lastTransactionIdWhenStarted() +
+                        ", localStartTimestamp:" + informativeTimestamp( tx.localStartTime() ) );
                 tx.markForTermination( Status.Transaction.Outdated );
             }
         }
+    }
+
+    private static String informativeDuration( long duration )
+    {
+        return duration( duration ) + "/" + duration;
+    }
+
+    private static String informativeTimestamp( long timestamp )
+    {
+        return time( timestamp ) + "/" + timestamp;
     }
 
     private void applyQueuedTransactions() throws IOException

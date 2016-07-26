@@ -218,6 +218,18 @@ public class ConstraintIndexCreatorTest
                 public void registerCloseListener( CloseListener listener )
                 {
                 }
+
+                @Override
+                public long lastTransactionIdWhenStarted()
+                {
+                    return 0;
+                }
+
+                @Override
+                public long localStartTime()
+                {
+                    return 0;
+                }
             };
         }
 
