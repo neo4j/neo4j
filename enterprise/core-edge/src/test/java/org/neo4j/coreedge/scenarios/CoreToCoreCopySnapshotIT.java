@@ -128,7 +128,7 @@ public class CoreToCoreCopySnapshotIT
         // when
         for ( CoreClusterMember coreDb : cluster.coreMembers() )
         {
-            coreDb.coreState().compact();
+            coreDb.coreState().prune();
         }
 
         cluster.removeCoreMember( leader ); // to force a change of leader

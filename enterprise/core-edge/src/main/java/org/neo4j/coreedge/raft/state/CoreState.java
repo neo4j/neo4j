@@ -22,183 +22,107 @@ package org.neo4j.coreedge.raft.state;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
-import org.neo4j.coreedge.SessionTracker;
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.discovery.CoreMemberSelectionException;
-import org.neo4j.coreedge.raft.RaftStateMachine;
-import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
+import org.neo4j.coreedge.raft.MismatchedStoreIdService;
+import org.neo4j.coreedge.raft.RaftInstance;
+import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.pruning.LogPruner;
-import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
-import org.neo4j.coreedge.raft.replication.DistributedOperation;
-import org.neo4j.coreedge.raft.replication.ProgressTracker;
-import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
+import org.neo4j.coreedge.raft.net.Inbound.MessageHandler;
+import org.neo4j.coreedge.raft.outcome.ConsensusOutcome;
 import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.coreedge.server.edge.CoreMemberSelectionStrategy;
-import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.lang.Math.max;
-import static java.lang.String.format;
-
-public class CoreState extends LifecycleAdapter implements RaftStateMachine, LogPruner
+public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessage>, LogPruner, MismatchedStoreIdService, Lifecycle
 {
-    private static final long NOTHING = -1;
-    private final RaftLog raftLog;
-    private final StateStorage<Long> lastFlushedStorage;
-    private final int flushEvery;
-    private final ProgressTracker progressTracker;
-    private final SessionTracker sessionTracker;
-    private final Supplier<DatabaseHealth> dbHealth;
-    private final InFlightMap<Long,RaftLogEntry> inFlightMap;
+    private final RaftInstance raftInstance;
+    private final LocalDatabase localDatabase;
     private final Log log;
-    private final CoreStateApplier applier;
     private final CoreMemberSelectionStrategy someoneElse;
     private final CoreStateDownloader downloader;
-    private final RaftLogCommitIndexMonitor commitIndexMonitor;
-    private final OperationBatcher batcher;
-
-    private CoreStateMachines coreStateMachines;
-
-    private long lastApplied = NOTHING;
-    private long lastSeenCommitIndex = NOTHING;
-    private long lastFlushed = NOTHING;
+    private final List<MismatchedStoreIdService.MismatchedStoreListener> listeners = new ArrayList<>(  );
+    private final CommandApplicationProcess applicationProcess;
 
     public CoreState(
-            CoreStateMachines coreStateMachines, RaftLog raftLog,
-            int maxBatchSize,
-            int flushEvery,
-            Supplier<DatabaseHealth> dbHealth,
+            RaftInstance raftInstance,
+            LocalDatabase localDatabase,
             LogProvider logProvider,
-            ProgressTracker progressTracker,
-            StateStorage<Long> lastFlushedStorage,
-            SessionTracker sessionTracker,
             CoreMemberSelectionStrategy someoneElse,
-            CoreStateApplier applier,
             CoreStateDownloader downloader,
-            InFlightMap<Long, RaftLogEntry> inFlightMap,
-            Monitors monitors )
+            CommandApplicationProcess commandApplicationProcess )
     {
-        this.coreStateMachines = coreStateMachines;
-        this.raftLog = raftLog;
-        this.lastFlushedStorage = lastFlushedStorage;
-        this.flushEvery = flushEvery;
-        this.progressTracker = progressTracker;
-        this.sessionTracker = sessionTracker;
+        this.raftInstance = raftInstance;
+        this.localDatabase = localDatabase;
         this.someoneElse = someoneElse;
-        this.applier = applier;
         this.downloader = downloader;
         this.log = logProvider.getLog( getClass() );
-        this.dbHealth = dbHealth;
-        this.inFlightMap = inFlightMap;
-        this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass() );
-        this.batcher = new OperationBatcher( maxBatchSize );
+        this.applicationProcess = commandApplicationProcess;
     }
 
-    @Override
-    public synchronized void notifyCommitted( long commitIndex )
+    public void handle( RaftMessages.StoreIdAwareMessage storeIdAwareMessage )
     {
-        assert this.lastSeenCommitIndex <= commitIndex;
-        if ( this.lastSeenCommitIndex < commitIndex )
+        // Break out each if branch into a new CoreState instance
+        StoreId storeId = storeIdAwareMessage.storeId();
+        if ( storeId.equals( localDatabase.storeId() ) )
         {
-            this.lastSeenCommitIndex = commitIndex;
-            submitApplyJob( commitIndex );
-            commitIndexMonitor.commitIndex( commitIndex );
-        }
-    }
-
-    private void submitApplyJob( long lastToApply )
-    {
-        applier.submit( ( status ) -> () -> {
-            try ( InFlightLogEntryReader logEntrySupplier = new InFlightLogEntryReader( raftLog, inFlightMap, true ) )
+            try
             {
-                for ( long logIndex = lastApplied + 1; !status.isCancelled() && logIndex <= lastToApply; logIndex++ )
+                ConsensusOutcome outcome = raftInstance.handle( storeIdAwareMessage.message() );
+                if ( outcome.needsFreshSnapshot() )
                 {
-                    RaftLogEntry entry = logEntrySupplier.get( logIndex );
-                    if ( entry == null )
-                    {
-                        throw new IllegalStateException( "Committed log entry must exist." );
-                    }
-
-                    if ( entry.content() instanceof DistributedOperation )
-                    {
-                        DistributedOperation distributedOperation = (DistributedOperation) entry.content();
-                        progressTracker.trackReplication( distributedOperation );
-                        batcher.add( logIndex, distributedOperation );
-                    }
-                    else
-                    {
-                        batcher.flush();
-                        lastApplied = logIndex;
-                    }
+                    notifyNeedFreshSnapshot();
                 }
-                batcher.flush();
+                else
+                {
+                    notifyCommitted( outcome.getCommitIndex());
+                }
             }
             catch ( Throwable e )
             {
-                log.error( "Failed to apply up to index " + lastToApply, e );
-                dbHealth.get().panic( e );
+                raftInstance.stopTimers();
+                localDatabase.panic( e );
             }
-        } );
+
+        }
+        else
+        {
+            RaftMessages.RaftMessage message = storeIdAwareMessage.message();
+            if ( localDatabase.isEmpty() )
+            {
+                log.info( "StoreId mismatch but store was empty so downloading new store from %s. Expected: " +
+                        "%s, Encountered: %s. ", message.from(), storeId, localDatabase.storeId() );
+                downloadSnapshot( message.from() );
+            }
+            else
+            {
+                log.info( "Discarding message[%s] owing to mismatched storeId and non-empty store. " +
+                        "Expected: %s, Encountered: %s", message,  storeId, localDatabase.storeId() );
+                listeners.forEach( l -> {
+                    MismatchedStoreIdService.MismatchedStoreIdException ex = new MismatchedStoreIdService.MismatchedStoreIdException( storeId, localDatabase.storeId() );
+                    l.onMismatchedStore( ex );
+                } );
+            }
+
+        }
     }
 
-    public synchronized long lastApplied()
+    public void addMismatchedStoreListener( MismatchedStoreListener listener )
     {
-        return lastApplied;
+        listeners.add(listener);
     }
 
-    private class OperationBatcher
+    private synchronized void notifyCommitted( long commitIndex )
     {
-        private List<DistributedOperation> batch;
-        private int maxBatchSize;
-        private long lastIndex;
-
-        OperationBatcher( int maxBatchSize )
-        {
-            this.batch = new ArrayList<>( maxBatchSize );
-            this.maxBatchSize = maxBatchSize;
-        }
-
-        private void add( long index, DistributedOperation operation ) throws Exception
-        {
-            if ( batch.size() > 0 )
-            {
-                assert index == (lastIndex + 1);
-            }
-
-            batch.add( operation );
-            lastIndex = index;
-
-            if ( batch.size() == maxBatchSize )
-            {
-                flush();
-            }
-        }
-
-        private void flush() throws Exception
-        {
-            if ( batch.size() == 0 )
-            {
-                return;
-            }
-
-            long startIndex = lastIndex - batch.size() + 1;
-            handleOperations( startIndex, batch );
-            lastApplied = lastIndex;
-
-            batch.clear();
-            maybeFlush();
-        }
+        applicationProcess.notifyCommitted( commitIndex );
     }
 
-    @Override
-    public synchronized void notifyNeedFreshSnapshot()
+    private synchronized void notifyNeedFreshSnapshot()
     {
         try
         {
@@ -210,11 +134,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         }
     }
 
-    public void compact() throws IOException
-    {
-        raftLog.prune( lastFlushed );
-    }
-
     /**
      * Attempts to download a fresh snapshot from another core instance.
      *
@@ -224,7 +143,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     {
         try
         {
-            applier.sync( true );
+            applicationProcess.sync();
             downloader.downloadSnapshot( source, this );
         }
         catch ( InterruptedException | StoreCopyFailedException e )
@@ -233,109 +152,43 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         }
     }
 
-    private void handleOperations( long commandIndex, List<DistributedOperation> operations )
-    {
-        try ( CommandDispatcher dispatcher = coreStateMachines.commandDispatcher() )
-        {
-            for ( DistributedOperation operation : operations )
-            {
-                if ( !sessionTracker.validateOperation( operation.globalSession(), operation.operationId() ) )
-                {
-                    commandIndex++;
-                    continue;
-                }
-
-                CoreReplicatedContent command = (CoreReplicatedContent) operation.content();
-                command.dispatch( dispatcher, commandIndex,
-                        result -> progressTracker.trackResult( operation, result ) );
-
-                sessionTracker.update( operation.globalSession(), operation.operationId(), commandIndex );
-                commandIndex++;
-            }
-        }
-    }
-
-    private void maybeFlush() throws IOException
-    {
-        if ( (lastApplied - lastFlushed) > flushEvery )
-        {
-            flush();
-        }
-    }
-
-    private void flush() throws IOException
-    {
-        coreStateMachines.flush();
-        sessionTracker.flush();
-        lastFlushedStorage.persistStoreData( lastApplied );
-        lastFlushed = lastApplied;
-    }
-
-    @Override
-    public synchronized void start() throws IOException, InterruptedException
-    {
-        lastFlushed = lastApplied = lastFlushedStorage.getInitialState();
-        log.info( format( "Restoring last applied index to %d", lastApplied ) );
-        sessionTracker.start();
-
-        /* Considering the order in which state is flushed, the state machines will
-         * always be furthest ahead and indicate the furthest possible state to
-         * which we must replay to reach a consistent state. */
-        long lastPossiblyApplying = max( coreStateMachines.getLastAppliedIndex(), sessionTracker.getLastAppliedIndex() );
-
-        if ( lastPossiblyApplying > lastApplied )
-        {
-            log.info( "Recovering up to: " + lastPossiblyApplying );
-            submitApplyJob( lastPossiblyApplying );
-            applier.sync( false );
-        }
-    }
-
-    @Override
-    public synchronized void stop() throws Throwable
-    {
-        applier.sync( true );
-        flush();
-    }
-
     public synchronized CoreSnapshot snapshot() throws IOException, InterruptedException
     {
-        applier.sync( false );
-
-        long prevIndex = lastApplied;
-        long prevTerm = raftLog.readEntryTerm( prevIndex );
-        CoreSnapshot coreSnapshot = new CoreSnapshot( prevIndex, prevTerm );
-
-        coreStateMachines.addSnapshots( coreSnapshot );
-        sessionTracker.addSnapshots( coreSnapshot );
-
-        return coreSnapshot;
+        return applicationProcess.snapshot();
     }
 
     synchronized void installSnapshot( CoreSnapshot coreSnapshot )
     {
-        coreStateMachines.installSnapshots( coreSnapshot );
-        long snapshotPrevIndex = coreSnapshot.prevIndex();
-        try
-        {
-            if ( snapshotPrevIndex > 1 )
-            {
-                raftLog.skip( snapshotPrevIndex, coreSnapshot.prevTerm() );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        this.lastApplied = this.lastFlushed = snapshotPrevIndex;
-        log.info( format( "Skipping lastApplied index forward to %d", snapshotPrevIndex ) );
-
-        sessionTracker.installSnapshots( coreSnapshot );
+        applicationProcess.installSnapshot( coreSnapshot );
     }
 
     @Override
     public void prune() throws IOException
     {
-        compact();
+        applicationProcess.prune();
+    }
+
+    @Override
+    public void start() throws IOException, InterruptedException
+    {
+        applicationProcess.start();
+    }
+
+    @Override
+    public void stop() throws IOException, InterruptedException
+    {
+        applicationProcess.stop();
+    }
+
+    @Override
+    public void init() throws Throwable
+    {
+        applicationProcess.init();
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        applicationProcess.shutdown();
     }
 }
