@@ -448,30 +448,7 @@ public class Settings
         }
     };
 
-    public static final Function<String, List<String>> STRING_LIST = new Function<String, List<String>>()
-    {
-        @Override
-        public List<String> apply( String value )
-        {
-            String[] list = value.split( SEPARATOR );
-            List<String> result = new ArrayList<>();
-            for( String item : list)
-            {
-                item = item.trim();
-                if( StringUtils.isNotEmpty( item ) )
-                {
-                    result.add( item );
-                }
-            }
-            return result;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "a comma-seperated string";
-        }
-    };
+    public static final Function<String,List<String>> STRING_LIST = list( SEPARATOR, STRING );
 
     public static final Function<String,HostnamePort> HOSTNAME_PORT = new Function<String, HostnamePort>()
     {
@@ -634,17 +611,22 @@ public class Settings
      */
     public static final Function<String, Long> LONG_WITH_OPTIONAL_UNIT = Settings::parseLongWithUnit;
 
-    public static <T extends Enum> Function<String, T> options( final Class<T> enumClass )
+    public static <T extends Enum<T>> Function<String, T> options( final Class<T> enumClass )
     {
-        return options( EnumSet.allOf( enumClass ) );
+        return options( EnumSet.allOf( enumClass ), false );
     }
 
     public static <T> Function<String, T> options( T... optionValues )
     {
-        return Settings.options( Iterables.iterable( optionValues ) );
+        return options( Iterables.<T,T>iterable( optionValues ), false );
     }
 
-    public static <T> Function<String, T> options( final Iterable<T> optionValues )
+    public static <T> Function<String, T> optionsIgnoreCase( T... optionValues )
+    {
+        return options( Iterables.<T,T>iterable( optionValues ), true );
+    }
+
+    public static <T> Function<String, T> options( final Iterable<T> optionValues, final boolean ignoreCase )
     {
         return new Function<String, T>()
         {
@@ -653,12 +635,16 @@ public class Settings
             {
                 for ( T optionValue : optionValues )
                 {
-                    if ( optionValue.toString().equals( value ) )
+                    String allowedValue = optionValue.toString();
+
+                    if ( allowedValue.equals( value ) || (ignoreCase && allowedValue.equalsIgnoreCase( value )) )
                     {
                         return optionValue;
                     }
                 }
-                throw new IllegalArgumentException( "must be one of " + Iterables.asList( optionValues ).toString() );
+                String possibleValues = Iterables.asList( optionValues ).toString();
+                throw new IllegalArgumentException(
+                        "must be one of " + possibleValues + " case " + (ignoreCase ? "insensitive" : "sensitive") );
             }
 
             @Override
@@ -686,10 +672,11 @@ public class Settings
             public List<T> apply( String value )
             {
                 List<T> list = new ArrayList<>();
-                if ( value.length() > 0 )
+                String[] parts = value.split( separator );
+                for ( String part : parts )
                 {
-                    String[] parts = value.split( separator );
-                    for ( String part : parts )
+                    part = part.trim();
+                    if ( StringUtils.isNotEmpty( part ) )
                     {
                         list.add( itemParser.apply( part ) );
                     }
@@ -980,7 +967,7 @@ public class Settings
         private final Function<String, T> parser;
         private final Function<Function<String, String>, String> valueLookup;
         private final Function<Function<String, String>, String> defaultLookup;
-        private BiFunction<T, Function<String, String>, T>[] valueConverters;
+        private final BiFunction<T, Function<String, String>, T>[] valueConverters;
 
         public DefaultSetting( String name, Function<String, T> parser,
                                Function<Function<String, String>, String> valueLookup, Function<Function<String,
@@ -1011,11 +998,13 @@ public class Settings
             return config.get( this );
         }
 
+        @Override
         public String lookup( Function<String, String> settings )
         {
             return valueLookup.apply( settings );
         }
 
+        @Override
         public String defaultLookup( Function<String, String> settings )
         {
             return defaultLookup.apply( settings );

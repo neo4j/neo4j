@@ -53,7 +53,7 @@ public class IdReuseTest
         protected void configure(GraphDatabaseBuilder builder )
         {
             super.configure( builder );
-            builder.setConfig( EnterpriseEditionSettings.idTypesToReuse, IdType.RELATIONSHIP.name() );
+            builder.setConfig( EnterpriseEditionSettings.idTypesToReuse, IdType.NODE + "," + IdType.RELATIONSHIP );
         }
     };
 

@@ -41,14 +41,17 @@ import static org.junit.Assert.assertTrue;
 @RunWith( Parameterized.class )
 public class EnterpriseIdTypeConfigurationProviderTest
 {
-
-    private IdType reusableType;
+    private final IdType reusableType;
 
     @Parameterized.Parameters
     public static List<IdType> data()
     {
-        return Arrays.asList( IdType.PROPERTY, IdType.STRING_BLOCK, IdType.ARRAY_BLOCK,
-                IdType.RELATIONSHIP, IdType.NODE_LABELS );
+        return Arrays.asList( IdType.PROPERTY,
+                IdType.STRING_BLOCK,
+                IdType.ARRAY_BLOCK,
+                IdType.NODE,
+                IdType.RELATIONSHIP,
+                IdType.NODE_LABELS );
     }
 
     public EnterpriseIdTypeConfigurationProviderTest( IdType reusableType )
@@ -60,9 +63,9 @@ public class EnterpriseIdTypeConfigurationProviderTest
     public void nonReusableTypeConfiguration()
     {
         IdTypeConfigurationProvider provider = createIdTypeProvider();
-        IdTypeConfiguration typeConfiguration = provider.getIdTypeConfiguration( IdType.NODE );
-        assertFalse( "Node ids are not reusable.", typeConfiguration.allowAggressiveReuse() );
-        assertEquals( "Node ids are not reusable.", 1024, typeConfiguration.getGrabSize() );
+        IdTypeConfiguration typeConfiguration = provider.getIdTypeConfiguration( IdType.SCHEMA );
+        assertFalse( "Schema record ids are not reusable.", typeConfiguration.allowAggressiveReuse() );
+        assertEquals( "Schema record ids are not reusable.", 1024, typeConfiguration.getGrabSize() );
     }
 
     @Test
@@ -77,9 +80,8 @@ public class EnterpriseIdTypeConfigurationProviderTest
     private IdTypeConfigurationProvider createIdTypeProvider()
     {
         Map<String,String> params = MapUtil.stringMap( EnterpriseEditionSettings.idTypesToReuse.name(),
-                IdType.RELATIONSHIP.name() );
+                IdType.NODE + "," + IdType.RELATIONSHIP );
         Config config = new Config( params );
         return new EnterpriseIdTypeConfigurationProvider( config );
     }
-
 }
