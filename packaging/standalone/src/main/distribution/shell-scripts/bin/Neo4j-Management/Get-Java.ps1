@@ -149,6 +149,7 @@ Function Get-Java
     $ShellArgs = @()
     if ($PsCmdlet.ParameterSetName -eq 'ServerInvoke')
     {
+      $NeoLibDir = Join-Path -Path $Neo4jServer.Home -ChildPath $Neo4jServer.LibDir
       $serverMainClass = ''
       if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseEntryPoint' }
       if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityEntryPoint' }
@@ -157,7 +158,7 @@ Function Get-Java
       if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }
 
       # Build the Java command line
-      $ClassPath="$($Neo4jServer.Home)/lib/*;$($Neo4jServer.Home)/plugins/*"
+      $ClassPath="$($NeoLibDir)/*;$($Neo4jServer.Home)/plugins/*"
       $ShellArgs = @("-cp `"$($ClassPath)`""`
                     ,'-server' `
                     ,'-Dlog4j.configuration=file:conf/log4j.properties' `
@@ -204,10 +205,11 @@ Function Get-Java
     # Shell arguments for the utility classes e.g. Import, Shell
     if ($PsCmdlet.ParameterSetName -eq 'UtilityInvoke')
     {
+      $NeoLibDir = Join-Path -Path $Neo4jServer.Home -ChildPath $Neo4jServer.LibDir
       # Generate the commandline args
       $ClassPath = ''
       # Enumerate all JARS in the lib directory and add to the class path
-      Get-ChildItem -Path (Join-Path  -Path $Neo4jServer.Home -ChildPath 'lib') | Where-Object { $_.Extension -eq '.jar'} | % {
+      Get-ChildItem -Path $NeoLibDir | Where-Object { $_.Extension -eq '.jar'} | % {
         $ClassPath += "`"$($_.FullName)`";"
       }
       # Enumerate all JARS in the bin directory and add to the class path

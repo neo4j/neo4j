@@ -99,10 +99,19 @@ Function Get-Neo4jServer
       'ServerVersion' = '';
       'ServerType' = 'Community';
       'DatabaseMode' = '';
+      'LibDir' = '';
     }
-    
+    $serverObject = New-Object -TypeName PSCustomObject -Property $serverProperties
+
+    # Get the lib directory from the settings
+    #  Assumes the property is ALWAYS relative to the home, much like ConfDir
+    $LibDir = 'lib'
+    $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'dbms.directories.lib' -Neo4jServer $serverObject)
+    if ($setting -ne $null) { $LibDir = $setting.Value }
+    $serverProperties.LibDir = $LibDir
+
     # Check if the lib dir exists
-    $libPath = (Join-Path -Path $Neo4jHome -ChildPath 'lib')
+    $libPath = (Join-Path -Path $Neo4jHome -ChildPath $LibDir)
     if (-not (Test-Path -Path $libPath))
     {
       Write-Error "$Neo4jHome is not a valid Neo4j installation.  Missing $libPath"
@@ -110,7 +119,7 @@ Function Get-Neo4jServer
     }
     
     # Scan the lib dir...
-    Get-ChildItem (Join-Path -Path $Neo4jHome -ChildPath 'lib') | Where-Object { $_.Name -like 'neo4j-server-*.jar' } | ForEach-Object -Process `
+    Get-ChildItem $libPath | Where-Object { $_.Name -like 'neo4j-server-*.jar' } | ForEach-Object -Process `
     {
       # if neo4j-server-enterprise-<version>.jar exists then this is the enterprise version
       if ($_.Name -like 'neo4j-server-enterprise-*.jar') { $serverProperties.ServerType = 'Enterprise' }

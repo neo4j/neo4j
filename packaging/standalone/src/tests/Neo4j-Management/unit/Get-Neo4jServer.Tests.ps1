@@ -109,5 +109,16 @@ InModuleScope Neo4j-Management {
          $neoServer.ConfDir | Should Be 'TestDrive:\neo4j-conf'
       }
     }
+
+    Context "Valid install with non-default directories" {
+      $mockLib = 'mock_lib'
+      $mockServer = global:New-MockNeo4jInstall -ServerType 'Community' -ServerVersion '99.99' -Lib $mockLib
+
+      $neoServer = Get-Neo4jServer -Neo4jHome $mockServer.Home -ErrorAction Stop
+  
+      It "detects lib dir" {
+        $neoServer.LibDir | Should Be $mockLib
+      }
+    }
   }
 }
