@@ -71,6 +71,9 @@ import org.neo4j.storageengine.api.Token;
 
 public class CoreStateMachinesModule
 {
+    public static final String ID_ALLOCATION_NAME = "id-allocation";
+    public static final String LOCK_TOKEN_NAME = "lock-token";
+
     public final IdGeneratorFactory idGeneratorFactory;
     public final IdTypeConfigurationProvider idTypeConfigurationProvider;
     public final LabelTokenHolder labelTokenHolder;
@@ -97,14 +100,14 @@ public class CoreStateMachinesModule
         try
         {
             lockTokenState = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "lock-token-state" ),
-                            "lock-token", new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() ),
+                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, LOCK_TOKEN_NAME,
+                            new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() ),
                             config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ),
                             databaseHealthSupplier, logProvider ) );
 
             idAllocationState = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "id-allocation-state" ),
-                            "id-allocation", new IdAllocationState.Marshal(),
+                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, ID_ALLOCATION_NAME,
+                            new IdAllocationState.Marshal(),
                             config.get( CoreEdgeClusterSettings.id_alloc_state_size ), databaseHealthSupplier,
                             logProvider ) );
         }

@@ -200,12 +200,12 @@ public class DurableStateStorageTest
 
     private File stateFileA()
     {
-        return new File( testDir.directory(), "state.a" );
+        return new File( new File( testDir.directory(), "state-state" ), "state.a" );
     }
 
     private File stateFileB()
     {
-        return new File( testDir.directory(), "state.b" );
+        return new File( new File( testDir.directory(), "state-state" ), "state.b" );
     }
 
     @SuppressWarnings("unchecked")

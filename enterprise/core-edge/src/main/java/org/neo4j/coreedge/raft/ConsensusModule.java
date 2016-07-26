@@ -72,6 +72,10 @@ import static java.time.Clock.systemUTC;
 
 public class ConsensusModule
 {
+    public static final String RAFT_MEMBERSHIP_NAME = "membership";
+    public static final String RAFT_TERM_NAME = "term";
+    public static final String RAFT_VOTE_NAME = "vote";
+
     private final MonitoredRaftLog raftLog;
     private final RaftInstance raftInstance;
     private final DelayedRenewableTimeoutService raftTimeoutService;
@@ -124,24 +128,22 @@ public class ConsensusModule
         try
         {
             StateStorage<TermState> durableTermState = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "term-state" ),
-                            "term-state", new TermState.Marshal(),
-                            config.get( CoreEdgeClusterSettings.term_state_size ), databaseHealthSupplier,
-                            logProvider ) );
+                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_TERM_NAME,
+                            new TermState.Marshal(), config.get( CoreEdgeClusterSettings.term_state_size ),
+                            databaseHealthSupplier, logProvider ) );
 
             termState = new MonitoredTermStateStorage( durableTermState, platformModule.monitors );
 
             voteState = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "vote-state" ),
-                            "vote-state", new VoteState.Marshal( new MemberId.MemberIdMarshal() ),
+                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_VOTE_NAME,
+                            new VoteState.Marshal( new MemberId.MemberIdMarshal() ),
                             config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
                             logProvider ) );
 
             raftMembershipStorage = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "membership-state" ),
-                            "membership-state", new RaftMembershipState.Marshal(),
-                            config.get( CoreEdgeClusterSettings.raft_membership_state_size ), databaseHealthSupplier,
-                            logProvider ) );
+                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_MEMBERSHIP_NAME,
+                            new RaftMembershipState.Marshal(), config.get( CoreEdgeClusterSettings.raft_membership_state_size ),
+                            databaseHealthSupplier, logProvider ) );
         }
         catch ( IOException e )
         {

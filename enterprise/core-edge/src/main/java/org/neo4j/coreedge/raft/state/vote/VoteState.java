@@ -120,4 +120,13 @@ public class VoteState
             return state.term();
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return "VoteState{" +
+               "votedFor=" + votedFor +
+               ", term=" + term +
+               '}';
+    }
 }

@@ -93,8 +93,8 @@ public class CoreServerModule
         try
         {
             lastFlushedStorage = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "last-flushed-state" ),
-                            "last-flushed", new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
+                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, ReplicationModule.LAST_FLUSHED_NAME,
+                            new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
                             databaseHealthSupplier, logProvider ) );
         }
         catch ( IOException e )

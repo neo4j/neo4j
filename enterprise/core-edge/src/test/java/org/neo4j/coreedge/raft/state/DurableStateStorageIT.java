@@ -98,7 +98,7 @@ public class DurableStateStorageIT
                         FileSystemAbstraction.class.getMethod( "truncate", File.class, long.class ) ),
                 normalFSA );
         SelectiveFileSystemAbstraction combinedFSA = new SelectiveFileSystemAbstraction(
-                new File( testDir.directory(), "long.a" ), breakingFSA, normalFSA );
+                new File( new File( testDir.directory(), "long-state" ), "long.a" ), breakingFSA, normalFSA );
 
         LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 );
         long lastValue = 0;
@@ -140,7 +140,7 @@ public class DurableStateStorageIT
                         StoreChannel.class.getMethod( "force", boolean.class ) ),
                 normalFSA );
         SelectiveFileSystemAbstraction combinedFSA = new SelectiveFileSystemAbstraction(
-                new File( testDir.directory(), "long.a" ), breakingFSA, normalFSA );
+                new File( new File( testDir.directory(), "long-state" ), "long.a" ), breakingFSA, normalFSA );
 
         LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 );
         long lastValue = 0;
@@ -210,7 +210,7 @@ public class DurableStateStorageIT
                         StoreChannel.class.getMethod( "close" ) ),
                 normalFSA );
         SelectiveFileSystemAbstraction combinedFSA = new SelectiveFileSystemAbstraction(
-                new File( testDir.directory(), "long.a" ), breakingFSA, normalFSA );
+                new File( new File( testDir.directory(), "long-state" ), "long.a" ), breakingFSA, normalFSA );
 
         LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 );
         long lastValue = 0;

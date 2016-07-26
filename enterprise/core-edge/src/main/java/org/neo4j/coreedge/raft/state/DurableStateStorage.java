@@ -45,7 +45,12 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
 
     private PhysicalFlushableChannel currentStoreChannel;
 
-    public DurableStateStorage( FileSystemAbstraction fileSystemAbstraction, File stateDir, String name,
+    private File stateDir( File baseDir, String name )
+    {
+        return new File( baseDir, name + "-state" );
+    }
+
+    public DurableStateStorage( FileSystemAbstraction fileSystemAbstraction, File baseDir, String name,
                                 StateMarshal<STATE> marshal, int numberOfEntriesBeforeRotation,
                                 Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
             throws IOException
@@ -56,8 +61,8 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
         this.numberOfEntriesBeforeRotation = numberOfEntriesBeforeRotation;
         this.databaseHealthSupplier = databaseHealthSupplier;
 
-        fileA = new File( stateDir, name + ".a" );
-        fileB = new File( stateDir, name + ".b" );
+        fileA = new File( stateDir( baseDir, name ), name + ".a" );
+        fileB = new File( stateDir( baseDir, name ), name + ".b" );
 
         StateRecoveryManager<STATE> recoveryManager =
                 new StateRecoveryManager<>( fileSystemAbstraction, marshal );
@@ -109,7 +114,7 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
         }
     }
 
-    protected void switchStoreFile() throws IOException
+    void switchStoreFile() throws IOException
     {
         currentStoreChannel.close();
 
