@@ -25,12 +25,11 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.kernel.impl.store.id.IdType;
 
-import static org.neo4j.kernel.impl.store.id.IdType.NODE;
-import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP;
-import static org.neo4j.kernel.configuration.Settings.EMPTY;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.impl.store.id.IdType.NODE;
+import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP;
 
 /**
  * Enterprise edition specific settings
@@ -40,5 +39,6 @@ public class EnterpriseEditionSettings
     @Description( "Specified names of id types (comma separated) that should be reused. " +
                   "Currently only 'node' and 'relationship' types are supported. " )
     public static Setting<List<IdType>> idTypesToReuse = setting(
-            "dbms.ids.reuse.types.override", list( ",", optionsIgnoreCase( NODE, RELATIONSHIP ) ), EMPTY );
+            "dbms.ids.reuse.types.override", list( ",", optionsIgnoreCase( NODE, RELATIONSHIP ) ),
+            String.join( ",", IdType.RELATIONSHIP.name(), IdType.NODE.name() ) );
 }
