@@ -1474,8 +1474,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         }
 
+        AtomicBoolean end = new AtomicBoolean( false );
         Runnable writer = () -> {
-            while ( !Thread.currentThread().isInterrupted() )
+            while ( !end.get() )
             {
                 try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
                 {
@@ -1512,7 +1513,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         }
 
-        writerFuture.cancel( true );
+        end.set( true );
+        writerFuture.get();
         pagedFile.close();
     }
 
