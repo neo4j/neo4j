@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.executor;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -28,6 +29,9 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import org.neo4j.test.Race;
+import org.neo4j.test.RepeatRule;
+import org.neo4j.test.RepeatRule.Repeat;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy.Park;
 
 import static org.junit.Assert.assertEquals;
@@ -36,6 +40,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_ABORT_QUEUED;
 import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_AWAIT_ALL_COMPLETED;
@@ -43,6 +48,9 @@ import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_AWAIT_A
 public class DynamicTaskExecutorTest
 {
     private static final Park PARK = new ParkStrategy.Park( 1, MILLISECONDS );
+
+    @Rule
+    public final RepeatRule repeater = new RepeatRule();
 
     @Test
     public void shouldExecuteTasksInParallel() throws Exception
@@ -294,6 +302,23 @@ public class DynamicTaskExecutorTest
         assertEquals( 1, executor.processors( -2 ) );
         assertEquals( 1, executor.processors( 0 ) );
         executor.shutdown( SF_AWAIT_ALL_COMPLETED );
+    }
+
+    @Repeat( times = 100 )
+    @Test
+    public void shouldCopeWithConcurrentIncrementOfProcessorsAndShutdown() throws Throwable
+    {
+        // GIVEN
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
+        Race race = new Race( true );
+        race.addContestant( () -> executor.shutdown( SF_AWAIT_ALL_COMPLETED ) );
+        race.addContestant( () -> executor.processors( 1 ) );
+
+        // WHEN
+        race.go( 10, SECONDS );
+
+        // THEN we should be able to do so, there was a recent fix here and before that fix
+        // shutdown() would hang, that's why we wait for 10 seconds here to cap it if there's an issue.
     }
 
     private void assertExceptionOnSubmit( TaskExecutor<Void> executor, IOException exception )
