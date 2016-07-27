@@ -20,20 +20,24 @@
 package org.neo4j.bolt.v1.transport;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.kernel.impl.logging.NullLogService;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class BoltProtocolV1Test
 {
@@ -41,9 +45,13 @@ public class BoltProtocolV1Test
     public void shouldNotTalkToChannelDirectlyOnFatalError() throws Throwable
     {
         // Given
-        PackStreamMessageFormatV1.Writer output = mock( PackStreamMessageFormatV1.Writer.class );
+        Channel outputChannel = mock( Channel.class );
+        ByteBufAllocator allocator = mock( ByteBufAllocator.class, RETURNS_MOCKS );
+        when( outputChannel.alloc() ).thenReturn( allocator );
+
         Session session = mock( Session.class );
-        BoltProtocolV1 protocol = new BoltProtocolV1( NullLogService.getInstance(), session, output );
+        BoltProtocolV1 protocol = new BoltProtocolV1( session, outputChannel, NullLogService.getInstance() );
+        verify( outputChannel ).alloc();
 
         // And given inbound data that'll explode when the protocol tries to interpret it
         ByteBuf bomb = mock(ByteBuf.class);
@@ -53,10 +61,28 @@ public class BoltProtocolV1Test
         protocol.handle( mock(ChannelHandlerContext.class), bomb );
 
         // Then the protocol should not mess with the channel (because it runs on the IO thread, and only the worker thread should produce writes)
-        verifyNoMoreInteractions( output );
+        verifyNoMoreInteractions( outputChannel );
 
         // But instead signal to the session that shit hit the fan.
         verify( session ).externalError( any(), any(), any() );
         verify( session ).close();
+    }
+
+    @Test
+    public void closesInputAndOutput()
+    {
+        Channel outputChannel = mock( Channel.class );
+        ByteBufAllocator allocator = mock( ByteBufAllocator.class );
+        ByteBuf buffer = mock( ByteBuf.class );
+        when( outputChannel.alloc() ).thenReturn( allocator );
+        when( allocator.buffer( anyInt(), anyInt() ) ).thenReturn( buffer );
+
+        Session session = mock( Session.class );
+
+        BoltProtocolV1 protocol = new BoltProtocolV1( session, outputChannel, NullLogService.getInstance() );
+        protocol.close();
+
+        verify( session ).close();
+        verify( buffer ).release();
     }
 }

@@ -41,15 +41,13 @@ import org.neo4j.bolt.transport.Netty4LogBridge;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.runtime.MonitoredSessions;
+import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.bolt.v1.runtime.internal.EncryptionRequiredSessions;
 import org.neo4j.bolt.v1.runtime.internal.StandardSessions;
 import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
-import org.neo4j.bolt.v1.transport.ChunkedOutput;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
@@ -224,12 +222,14 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
             Sessions sessions )
     {
         PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions = longObjectMap();
-        availableVersions.put( BoltProtocolV1.VERSION, ( channel, isEncrypted ) -> {
-            String descriptor = format( "\tclient%s\tserver%s", channel.remoteAddress(), channel.localAddress() );
-            ChunkedOutput output = new ChunkedOutput( channel, 8192 );
-            return new BoltProtocolV1( logging, sessions.newSession( descriptor, isEncrypted ),
-                    new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( output ), output ) );
-        } );
+        availableVersions.put(
+                BoltProtocolV1.VERSION,
+                ( channel, isEncrypted ) -> {
+                    String descriptor = format( "\tclient%s\tserver%s", channel.remoteAddress(), channel.localAddress() );
+                    Session session = sessions.newSession( descriptor, isEncrypted );
+                    return new BoltProtocolV1( session, channel, logging );
+                }
+        );
         return availableVersions;
     }
 
