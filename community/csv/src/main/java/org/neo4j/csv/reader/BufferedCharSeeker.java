@@ -271,8 +271,11 @@ public class BufferedCharSeeker implements CharSeeker
         {
             if ( bufferPos - seekStartPos >= charBuffer.pivot() )
             {
-                throw new IllegalStateException( "Tried to read in a value larger than effective buffer size " +
-                        charBuffer.pivot() );
+                throw new IllegalStateException( "Tried to read a field larger than buffer size " +
+                        charBuffer.pivot() + ". A common cause of this is that a field has an unterminated " +
+                        "quote and so will try to seek until the next quote, which ever line it may be on." +
+                        " This should not happen if multi-line fields are disabled, given that the fields contains " +
+                        "no new-line characters. This field started at " + sourceDescription() + ":" + lineNumber() );
             }
 
             absoluteBufferStartPosition += charBuffer.available();

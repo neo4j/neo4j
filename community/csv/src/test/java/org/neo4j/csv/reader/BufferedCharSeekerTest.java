@@ -27,6 +27,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,6 +49,7 @@ import static org.neo4j.csv.reader.Readables.wrap;
 @RunWith( Parameterized.class )
 public class BufferedCharSeekerTest
 {
+    private static final String TEST_SOURCE = "TestSource";
     private final boolean useThreadAhead;
 
     @Parameters( name = "{1}" )
@@ -560,6 +562,42 @@ public class BufferedCharSeekerTest
         shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLine( "%n" );
     }
 
+    @Test
+    public void shouldFailOnReadingFieldLargerThanBufferSize() throws Exception
+    {
+        // GIVEN
+        String data = lines( "\n",
+                "a,b,c",
+                "d,e,f",
+                "\"g,h,i",
+                "abcdefghijlkmopqrstuvwxyz,l,m" );
+        seeker = seeker( data, config( 20, true ) );
+
+        // WHEN
+        assertNextValue( seeker, mark, COMMA, "a" );
+        assertNextValue( seeker, mark, COMMA, "b" );
+        assertNextValue( seeker, mark, COMMA, "c" );
+        assertTrue( mark.isEndOfLine() );
+        assertNextValue( seeker, mark, COMMA, "d" );
+        assertNextValue( seeker, mark, COMMA, "e" );
+        assertNextValue( seeker, mark, COMMA, "f" );
+        assertTrue( mark.isEndOfLine() );
+
+        // THEN
+        try
+        {
+            seeker.seek( mark, COMMA );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // Good
+            String source = seeker.sourceDescription();
+            assertTrue( e.getMessage().contains( "Tried to read" ) );
+            assertTrue( e.getMessage().contains( source + ":3" ) );
+        }
+    }
+
     private void shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLine( String newline ) throws Exception
     {
         // GIVEN
@@ -712,7 +750,19 @@ public class BufferedCharSeekerTest
 
     private CharSeeker seeker( String data, Configuration config )
     {
-        return seeker( wrap( new StringReader( data ) ), config );
+        return seeker( wrap( stringReaderWithName( data, TEST_SOURCE ) ), config );
+    }
+
+    private Reader stringReaderWithName( String data, final String name )
+    {
+        return new StringReader( data )
+        {
+            @Override
+            public String toString()
+            {
+                return name;
+            }
+        };
     }
 
     private static Configuration config( final int bufferSize )
