@@ -32,6 +32,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -67,10 +68,11 @@ public class LuceneDataSourceTest
     }
 
     @Test
-    public void doNotTryToCommitWritersOnForceInReadOnlyMode() throws IOException
+    public void doNotTryToCommitWritersOnForceInReadOnlyMode() throws Throwable
     {
         IndexIdentifier indexIdentifier = identifier( "foo" );
         prepareIndexesByIdentifiers( indexIdentifier );
+        stopDataSource();
 
         Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
         LuceneDataSource readOnlyDataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig,
@@ -85,6 +87,7 @@ public class LuceneDataSourceTest
     {
         IndexIdentifier indexIdentifier = identifier( "foo" );
         prepareIndexesByIdentifiers( indexIdentifier );
+        stopDataSource();
 
         Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig, indexStore, new DefaultFileSystemAbstraction() ) );
@@ -98,6 +101,7 @@ public class LuceneDataSourceTest
     {
         IndexIdentifier indexIdentifier = identifier( "foo" );
         prepareIndexesByIdentifiers( indexIdentifier );
+        stopDataSource();
 
         Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig, indexStore, new DefaultFileSystemAbstraction() ) );
@@ -112,6 +116,7 @@ public class LuceneDataSourceTest
     {
         IndexIdentifier indexIdentifier = identifier( "foo" );
         prepareIndexesByIdentifiers( indexIdentifier );
+        stopDataSource();
 
         Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig, indexStore, new DefaultFileSystemAbstraction() ) );
@@ -258,5 +263,18 @@ public class LuceneDataSourceTest
     private IndexIdentifier identifier( String name )
     {
         return new IndexIdentifier( IndexEntityType.Node, name );
+    }
+
+    private void stopDataSource() throws IOException
+    {
+        try
+        {
+            dataSource.stop();
+            dataSource.shutdown();
+        }
+        catch ( Throwable e )
+        {
+            throw Exceptions.launderedException( IOException.class, e );
+        }
     }
 }
