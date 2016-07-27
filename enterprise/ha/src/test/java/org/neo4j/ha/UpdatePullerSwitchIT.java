@@ -43,6 +43,8 @@ import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 
@@ -58,6 +60,7 @@ public class UpdatePullerSwitchIT
         managedCluster = clusterRule.withCluster( ClusterManager.clusterOfSize( 2 ) )
                                     .withSharedSetting( tx_push_factor, "0" )
                                     .withSharedSetting( HaSettings.pull_interval, "100s" )
+                                    .withFirstInstanceId( 6 )
                                     .startCluster();
     }
 
@@ -113,22 +116,26 @@ public class UpdatePullerSwitchIT
         InstanceId slaveId = managedCluster.getAnySlave().getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
         Map<Thread,StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
         Set<Thread> threads = allStackTraces.keySet();
-        assertFalse( "Master should not have any puller threads", findThreadWithPrefix( threads,
+        assertNull( "Master should not have any puller threads", findThreadWithPrefix( threads,
                 SlaveUpdatePuller.UPDATE_PULLER_THREAD_PREFIX + masterId ) );
-        assertTrue( "Slave should have active puller thread", findThreadWithPrefix( threads,
+        assertNotNull( "Slave should have active puller thread", findThreadWithPrefix( threads,
                 SlaveUpdatePuller.UPDATE_PULLER_THREAD_PREFIX + slaveId ) );
     }
 
-    private boolean findThreadWithPrefix( Set<Thread> threads, String prefix )
+    /*
+     * Returns the name, as a String, of first thread found that has a name starting with the provided prefix,
+     * null otherwise.
+     */
+    private String findThreadWithPrefix( Set<Thread> threads, String prefix )
     {
         for ( Thread thread : threads )
         {
             if ( thread.getName().startsWith( prefix ) )
             {
-                return true;
+                return thread.getName();
             }
         }
-        return false;
+        return null;
     }
 
     private void pullUpdatesOnSlave() throws InterruptedException
