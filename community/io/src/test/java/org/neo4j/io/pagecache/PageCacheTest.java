@@ -1416,12 +1416,13 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
 
+        final AtomicBoolean end = new AtomicBoolean( false );
         Runnable writer = new Runnable()
         {
             @Override
             public void run()
             {
-                while ( !Thread.currentThread().isInterrupted() )
+                while ( !end.get() )
                 {
                     try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
                     {
@@ -1459,7 +1460,8 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
 
-        writerFuture.cancel( true );
+        end.set( true );
+        writerFuture.get();
         pagedFile.close();
     }
 
