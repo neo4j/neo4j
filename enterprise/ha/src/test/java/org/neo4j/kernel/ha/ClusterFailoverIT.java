@@ -29,10 +29,12 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.ha.TestRunConditions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.rule.LoggerRule;
 import org.neo4j.test.rule.TargetDirectory;
 
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @RunWith( Parameterized.class )
@@ -97,6 +99,7 @@ public class ClusterFailoverIT
     @Test
     public void testFailOver() throws Throwable
     {
+        assumeTrue( TestRunConditions.shouldRunAtClusterSize( clusterSize ) );
         testFailOver( clusterSize );
     }
 }
