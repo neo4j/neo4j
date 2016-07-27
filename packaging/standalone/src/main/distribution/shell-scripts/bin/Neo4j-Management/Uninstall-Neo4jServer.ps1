@@ -86,7 +86,7 @@ Function Uninstall-Neo4jServer
     } else {
       Write-Host "Neo4j service did not uninstall"
       # Write out STDERR if it did not uninstall
-      Get-Contet -Path $stdError -ErrorAction 'SilentlyContinue' | ForEach-Object -Process {
+      Get-Content -Path $stdError -ErrorAction 'SilentlyContinue' | ForEach-Object -Process {
         Write-Host $_
       }
     }

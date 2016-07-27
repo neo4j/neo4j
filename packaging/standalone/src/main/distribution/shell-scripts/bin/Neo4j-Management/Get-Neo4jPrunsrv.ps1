@@ -95,15 +95,24 @@ Function Get-Neo4jPrunsrv
       "ServerInstallInvoke"   {
         $PrunArgs += @("//IS//$($Name)")
 
-        $JvmOptions = @('-Dfile.encoding=UTF-8')
+        $JvmOptions = @()
+
+        Write-Verbose "Reading JVM settings from configuration"
         # Try neo4j.conf first, but then fallback to neo4j-wrapper.conf for backwards compatibility reasons
         $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)
         if ($setting -ne $null) {
-          $JvmOptions += $setting.Value
+          $JvmOptions = [array](Merge-Neo4jJavaSettings -Source $JvmOptions -Add $setting.Value)
         } else {
           $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)
-          if ($setting -ne $null) { $JvmOptions += $setting.Value }
+          if ($setting -ne $null) {
+            $JvmOptions = [array](Merge-Neo4jJavaSettings -Source $JvmOptions -Add $setting.Value)
+          }
         }
+
+        # Pass through appropriate args from Java invocation to Prunsrv
+        # These options take priority over settings in the wrapper
+        Write-Verbose "Reading JVM settings from console java invocation"
+        $JvmOptions = [array](Merge-Neo4jJavaSettings -Source $JvmOptions -Add ($JavaCMD.args | Where-Object { $_ -match '(^-D|^-X)' }))
 
         $PrunArgs += @('--StartMode=jvm',
           '--StartMethod=start',
@@ -124,6 +133,22 @@ Function Get-Neo4jPrunsrv
           "`"--JvmOptions=$($JvmOptions -join ';')`"",
           '--Startup=auto'
         )
+
+        # Check if Java invocation includes Java memory sizing
+        $JvmMs = ''
+        $JvmMx = ''
+        $JavaCMD.args | ForEach-Object -Process {
+          if ($Matches -ne $null) { $Matches.Clear() }
+          if ($_ -match '^-Xms([\d]+)m$') {
+            $PrunArgs += "--JvmMs $($matches[1])"
+            Write-Verbose "Use JVM Start Memory of $($matches[1]) MB"
+          }
+          if ($Matches -ne $null) { $Matches.Clear() }
+          if ($_ -match '^-Xmx([\d]+)m$') {
+            $PrunArgs += "--JvmMx $($matches[1])"
+            Write-Verbose "Use JVM Max Memory of $($matches[1]) MB"
+          }
+        }
 
         if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseEntryPoint' }
         if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityEntryPoint' }
