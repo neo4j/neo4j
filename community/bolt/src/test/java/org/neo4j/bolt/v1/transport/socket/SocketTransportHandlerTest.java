@@ -29,11 +29,8 @@ import java.util.function.BiFunction;
 
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.transport.SocketTransportHandler;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
-import org.neo4j.bolt.v1.transport.ChunkedOutput;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.AssertableLogProvider;
@@ -106,11 +103,7 @@ public class SocketTransportHandlerTest
     {
         PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions = longObjectMap();
         availableVersions.put( BoltProtocolV1.VERSION,
-                ( channel, isSecure ) -> {
-                    ChunkedOutput output = new ChunkedOutput( channel, 8192 );
-                    return new BoltProtocolV1( NullLogService.getInstance(), session,
-                            new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( output ), output ));
-                }
+                ( channel, isSecure ) -> new BoltProtocolV1( session, channel, NullLogService.getInstance() )
         );
 
         return new SocketTransportHandler.ProtocolChooser( availableVersions, true );
