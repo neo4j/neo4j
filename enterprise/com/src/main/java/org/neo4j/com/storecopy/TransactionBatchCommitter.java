@@ -44,6 +44,8 @@ class TransactionBatchCommitter implements TransactionQueue.Applier
     TransactionBatchCommitter( KernelTransactions kernelTransactions, long idReuseSafeZoneTime,
             TransactionCommitProcess commitProcess, Log log )
     {
+        assert log != null;
+
         this.kernelTransactions = kernelTransactions;
         this.idReuseSafeZoneTime = idReuseSafeZoneTime;
         this.commitProcess = commitProcess;

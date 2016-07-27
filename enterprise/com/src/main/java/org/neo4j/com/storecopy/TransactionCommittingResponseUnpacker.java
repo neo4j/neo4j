@@ -309,9 +309,9 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
     public void start()
     {
         this.obligationFulfiller = dependencies.obligationFulfiller();
+        this.log = dependencies.logService().getInternalLog( BatchingResponseHandler.class );
         this.batchCommitter = new TransactionBatchCommitter( dependencies.kernelTransactions(), idReuseSafeZoneTime,
                 dependencies.commitProcess(), log );
-        this.log = dependencies.logService().getInternalLog( BatchingResponseHandler.class );
         this.stopped = false;
     }
 
