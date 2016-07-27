@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.Predicate;
 
+import static java.lang.String.format;
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
 
@@ -141,9 +142,17 @@ public class DebugUtil
         };
     }
 
+    public static void dumpThreads( PrintStream out )
+    {
+        for ( Map.Entry<Thread,StackTraceElement[]> stack : Thread.getAllStackTraces().entrySet() )
+        {
+            out.println( new DebugUtil.CallStack( stack.getValue(), "Thread: " + stack.getKey() ) );
+        }
+    }
+
     public static class StackTracer
     {
-        private final Map<Stack, AtomicInteger> uniqueStackTraces = new HashMap<>();
+        private final Map<CallStack, AtomicInteger> uniqueStackTraces = new HashMap<>();
         private boolean considerMessages = true;
 
         /**
@@ -152,7 +161,7 @@ public class DebugUtil
          */
         public AtomicInteger add( Throwable t )
         {
-            Stack key = new Stack( t, considerMessages );
+            CallStack key = new CallStack( t, considerMessages );
             AtomicInteger count = uniqueStackTraces.get( key );
             if ( count == null )
             {
@@ -167,7 +176,7 @@ public class DebugUtil
         {
             System.out.println( "Printing stack trace counts:" );
             long total = 0;
-            for ( Map.Entry<Stack, AtomicInteger> entry : uniqueStackTraces.entrySet() )
+            for ( Map.Entry<CallStack, AtomicInteger> entry : uniqueStackTraces.entrySet() )
             {
                 if ( entry.getValue().get() >= interestThreshold )
                 {
@@ -200,25 +209,34 @@ public class DebugUtil
         }
     }
 
-    private static class Stack
+    public static class CallStack
     {
+        private final String message;
         private final Throwable stackTrace;
         private final StackTraceElement[] elements;
         private final boolean considerMessage;
 
-        Stack( Throwable stackTrace, boolean considerMessage )
+        public CallStack( Throwable stackTrace, boolean considerMessage )
         {
+            this.message = stackTrace.getMessage();
             this.stackTrace = stackTrace;
             this.considerMessage = considerMessage;
             this.elements = stackTrace.getStackTrace();
         }
 
+        public CallStack( StackTraceElement[] elements, String message )
+        {
+            this.message = message;
+            this.stackTrace = null;
+            this.elements = elements;
+            this.considerMessage = true;
+        }
+
         @Override
         public int hashCode()
         {
-            int hashCode = stackTrace.getMessage() == null || !considerMessage ? 31 :
-                stackTrace.getMessage().hashCode();
-            for ( StackTraceElement element : stackTrace.getStackTrace() )
+            int hashCode = message == null || !considerMessage ? 31 : message.hashCode();
+            for ( StackTraceElement element : elements )
             {
                 hashCode = hashCode * 9 + element.hashCode();
             }
@@ -228,22 +246,22 @@ public class DebugUtil
         @Override
         public boolean equals( Object obj )
         {
-            if ( !( obj instanceof Stack) )
+            if ( !( obj instanceof CallStack) )
             {
                 return false;
             }
 
-            Stack o = (Stack) obj;
+            CallStack o = (CallStack) obj;
             if ( considerMessage )
             {
-                if ( stackTrace.getMessage() == null )
+                if ( message == null )
                 {
-                    if ( o.stackTrace.getMessage() != null )
+                    if ( o.message != null )
                     {
                         return false;
                     }
                 }
-                else if ( !stackTrace.getMessage().equals( o.stackTrace.getMessage() ) )
+                else if ( !message.equals( o.message ) )
                 {
                     return false;
                 }
@@ -260,6 +278,19 @@ public class DebugUtil
                 }
             }
             return true;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.append( stackTrace != null ? stackTrace.getClass().getName() + ": " : "" )
+                    .append( message != null ? message : "" );
+            for ( StackTraceElement element : elements )
+            {
+                builder.append( format( "%n" ) ).append( "    at " ).append( element.toString() );
+            }
+            return builder.toString();
         }
     }
 
