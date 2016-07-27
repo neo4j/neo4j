@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,6 +43,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -70,8 +73,8 @@ public class PropertyConstraintsStressIT
 
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    @ClassRule
+    public static final ClusterRule clusterRule = new ClusterRule( PropertyConstraintsStressIT.class );
 
     @Rule
     public OtherThreadRule<Object> slaveWork = new OtherThreadRule<>();
@@ -111,6 +114,37 @@ public class PropertyConstraintsStressIT
     public void setup() throws Exception
     {
         cluster = clusterRule.withSharedSetting( HaSettings.pull_interval, "0" ).startCluster();
+        clearData();
+    }
+
+    private void clearData() throws InterruptedException
+    {
+        HighlyAvailableGraphDatabase db = cluster.getMaster();
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( ConstraintDefinition constraint : db.schema().getConstraints() )
+            {
+                constraint.drop();
+            }
+            for ( IndexDefinition index : db.schema().getIndexes() )
+            {
+                index.drop();
+            }
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Relationship relationship : db.getAllRelationships() )
+            {
+                relationship.delete();
+            }
+            for ( Node node : db.getAllNodes() )
+            {
+                node.delete();
+            }
+            tx.success();
+        }
+        cluster.sync();
     }
 
     /* The different orders and delays in the below variations try to stress all known scenarios, as well as
