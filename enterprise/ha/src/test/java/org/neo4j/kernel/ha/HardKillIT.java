@@ -186,10 +186,10 @@ public class HardKillIT
     {
         GraphDatabaseBuilder builder = new TestHighlyAvailableGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( path )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003" )
-                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:7102,127.0.0.1:7103" )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (7101 + serverId) )
                 .setConfig( ClusterSettings.server_id, "" + serverId )
-                .setConfig( HaSettings.ha_server, ":" + (8001 + serverId) )
+                .setConfig( HaSettings.ha_server, ":" + (7501 + serverId) )
                 .setConfig( HaSettings.tx_push_factor, "0" );
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) builder.newGraphDatabase();
         db.beginTx().close();
