@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v1.transport;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.io.IOException;
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.v1.messaging.MessageFormat;
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.messaging.msgprocess.TransportBridge;
 import org.neo4j.bolt.v1.runtime.Session;
@@ -42,6 +44,10 @@ import org.neo4j.kernel.impl.logging.LogService;
 public class BoltProtocolV1 implements BoltProtocol
 {
     public static final int VERSION = 1;
+
+    private static final int DEFAULT_OUTPUT_BUFFER_SIZE = 8192;
+
+    private final ChunkedOutput chunkedOutput;
     private final MessageFormat.Writer packer;
     private final BoltV1Dechunker dechunker;
 
@@ -50,14 +56,15 @@ public class BoltProtocolV1 implements BoltProtocol
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
     private final TransportBridge bridge;
 
-    public BoltProtocolV1( final LogService logging, Session session, PackStreamMessageFormatV1.Writer output )
+    public BoltProtocolV1( Session session, Channel outputChannel, LogService logging )
     {
         // TODO; this part of the Bolt server side is rather messy - notably, the MessageHandler, Session and Session.Callback interfaces all
         //       should reasonably be able to be refactored into something much less complicated.
         //       Likewise the tracking of when to flush the outbound channel - if we moved that logic to ThreadedSessions, a lot of the complexity
         //       below could likely be undone.
+        this.chunkedOutput = new ChunkedOutput( outputChannel, DEFAULT_OUTPUT_BUFFER_SIZE );
+        this.packer = new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( chunkedOutput ), chunkedOutput );
         this.session = session;
-        this.packer = output;
         this.bridge = new TransportBridge( logging.getInternalLog( getClass() ), session, packer, this::onMessageDone );
         this.dechunker = new BoltV1Dechunker( bridge, this::onMessageStarted );
     }
@@ -78,7 +85,10 @@ public class BoltProtocolV1 implements BoltProtocol
         catch ( Throwable e )
         {
             bridge.handleFatalError( Neo4jError.from( e ) );
-            close();
+
+            // close input, keep output open. we still need to write error back to the client higher in the
+            // call stack. we are not going to read anything after the error.
+            closeInput();
         }
         finally
         {
@@ -95,8 +105,19 @@ public class BoltProtocolV1 implements BoltProtocol
     @Override
     public synchronized void close()
     {
+        closeInput();
+        closeOutput();
+    }
+
+    private void closeInput()
+    {
         dechunker.close();
         session.close();
+    }
+
+    private void closeOutput()
+    {
+        chunkedOutput.close();
     }
 
     /*
