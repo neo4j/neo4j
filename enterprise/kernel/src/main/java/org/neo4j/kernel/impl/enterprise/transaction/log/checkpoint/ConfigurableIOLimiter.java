@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
@@ -55,7 +56,6 @@ public class ConfigurableIOLimiter implements IOLimiter
     ConfigurableIOLimiter( Config config, ObjLongConsumer<Object> pauseNanos )
     {
         this.pauseNanos = pauseNanos;
-        int quantumsPerSecond = (int) (TimeUnit.SECONDS.toMillis( 1 ) / QUANTUM_MILLIS);
         Integer iops = config.get( GraphDatabaseSettings.check_point_iops_limit );
         if ( iops == null || iops < 1 )
         {
@@ -64,9 +64,13 @@ public class ConfigurableIOLimiter implements IOLimiter
         }
         else
         {
-            this.iopq = iops / quantumsPerSecond;
+            this.iopq = iops / quantumsPerSecond();
         }
+    }
 
+    private int quantumsPerSecond()
+    {
+        return (int) (TimeUnit.SECONDS.toMillis( 1 ) / QUANTUM_MILLIS);
     }
 
     // The stamp is in two 32-bit parts:
@@ -123,6 +127,16 @@ public class ConfigurableIOLimiter implements IOLimiter
     public void enableLimit()
     {
         disableCountUpdater.getAndDecrement( this );
+    }
+
+    @Override
+    public Optional<Integer> getMaxIOPS()
+    {
+        if ( iopq == NO_LIMIT )
+        {
+            return Optional.empty();
+        }
+        return Optional.of( iopq * quantumsPerSecond() );
     }
 
     private long currentTimeMillis()

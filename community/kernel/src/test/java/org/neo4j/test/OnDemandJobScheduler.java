@@ -67,13 +67,6 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable job, long initialDelay, TimeUnit timeUnit )
-    {
-        this.job = job;
-        return new OnDemandJobHandle();
-    }
-
-    @Override
     public JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
     {
         this.job = runnable;

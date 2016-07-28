@@ -20,32 +20,32 @@
 package org.neo4j.kernel.impl.util;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.concurrent.Scheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static java.util.concurrent.Executors.newCachedThreadPool;
-import static org.neo4j.helpers.NamedThreadFactory.daemon;
-import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
+import static java.util.concurrent.Executors.callable;
+import static org.neo4j.concurrent.Scheduler.OnRejection.THROW;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.NO_METADATA;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
-    private ExecutorService globalPool;
-    private ScheduledThreadPoolExecutor scheduledExecutor;
+    private final ConcurrentHashMap<Object, JobHandle> recurringJobs = new ConcurrentHashMap<>();
 
     @Override
     public void init()
     {
-        this.globalPool = newCachedThreadPool( daemon( "neo4j.Pooled" + trackTest() ) );
-        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2, daemon( "neo4j.Scheduled" + trackTest() ) );
+    }
+
+    @Override
+    public void stop()
+    {
     }
 
     @Override
@@ -69,13 +69,10 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     @Override
     public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
     {
-        if (globalPool == null)
-            throw new RejectedExecutionException( "Scheduler is not started" );
-
         switch( group.strategy() )
         {
         case POOLED:
-            return new PooledJobHandle( this.globalPool.submit( job ) );
+            return new PooledJobHandle( Scheduler.executeIOBound( callable( job ), THROW ) );
         case NEW_THREAD:
             Thread thread = createNewThread( group, job, metadata );
             thread.start();
@@ -95,74 +92,42 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     public JobHandle scheduleRecurring( Group group, final Runnable runnable, long initialDelay, long period,
                                         TimeUnit timeUnit )
     {
+        Object jobTag = new Object();
         switch ( group.strategy() )
         {
         case POOLED:
-            return new PooledJobHandle( scheduledExecutor.scheduleAtFixedRate( runnable, initialDelay, period, timeUnit ) );
+            Future<?> future = Scheduler.executeRecurring( runnable, initialDelay, period, timeUnit );
+            PooledJobHandle handle = new PooledJobHandle( future );
+            return register( jobTag, handle );
         default:
             throw new IllegalArgumentException( "Unsupported strategy to use for recurring jobs: " + group.strategy() );
         }
     }
 
-    @Override
-    public JobHandle schedule( Group group, final Runnable runnable, long initialDelay, TimeUnit timeUnit )
+    private JobHandle register( Object jobTag, PooledJobHandle handle )
     {
-        switch ( group.strategy() )
+        recurringJobs.put( jobTag, handle );
+        return new JobHandle()
         {
-        case POOLED:
-            return new PooledJobHandle( scheduledExecutor.schedule( runnable, initialDelay, timeUnit ) );
-        default:
-            throw new IllegalArgumentException( "Unsupported strategy to use for delayed jobs: " + group.strategy() );
-        }
-    }
+            @Override
+            public void cancel( boolean mayInterruptIfRunning )
+            {
+                handle.cancel( mayInterruptIfRunning );
+                recurringJobs.remove( jobTag );
+            }
 
-    @Override
-    public void stop()
-    {
+            @Override
+            public void waitTermination() throws InterruptedException, ExecutionException
+            {
+                handle.waitTermination();
+            }
+        };
     }
 
     @Override
     public void shutdown()
     {
-        RuntimeException exception = null;
-        try
-        {
-            if( globalPool != null)
-            {
-                globalPool.shutdownNow();
-                globalPool.awaitTermination( 5, TimeUnit.SECONDS );
-                globalPool = null;
-            }
-        } catch(RuntimeException e)
-        {
-            exception = e;
-        }
-        catch ( InterruptedException e )
-        {
-            exception = new RuntimeException(e);
-        }
-
-        try
-        {
-            if(scheduledExecutor != null)
-            {
-                scheduledExecutor.shutdown();
-                scheduledExecutor.awaitTermination( 5, TimeUnit.SECONDS );
-                scheduledExecutor = null;
-            }
-        } catch(RuntimeException e)
-        {
-            exception = e;
-        }
-        catch ( InterruptedException e )
-        {
-            exception = new RuntimeException(e);
-        }
-
-        if(exception != null)
-        {
-            throw new RuntimeException( "Unable to shut down job scheduler properly.", exception);
-        }
+        recurringJobs.forEach( (tag, handle) -> handle.cancel( false ) );
     }
 
     /**
