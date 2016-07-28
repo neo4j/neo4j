@@ -19,11 +19,36 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.neo4j.kernel.configuration.Config;
+
+import static java.util.Objects.requireNonNull;
+
+/**
+ * A {@link StatementLocksFactory} that creates {@link SimpleStatementLocks}.
+ */
 public class SimpleStatementLocksFactory implements StatementLocksFactory
 {
-    @Override
-    public StatementLocks newInstance( Locks.Client locksClient )
+    private final Locks locks;
+
+    public SimpleStatementLocksFactory( Locks locks )
     {
-        return new SimpleStatementLocks( locksClient );
+        this.locks = requireNonNull( locks );
+    }
+
+    /**
+     * Inherited from the {@link StatementLocksFactory} interface but does nothing for this factory.
+     *
+     * @param locks will not be used.
+     * @param config will not be used.
+     */
+    @Override
+    public void initialize( Locks locks, Config config )
+    {
+    }
+
+    @Override
+    public StatementLocks newInstance()
+    {
+        return new SimpleStatementLocks( locks.newClient() );
     }
 }

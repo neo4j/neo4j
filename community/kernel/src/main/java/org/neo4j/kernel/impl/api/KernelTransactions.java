@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TransactionId;
@@ -83,7 +82,6 @@ public class KernelTransactions extends LifecycleAdapter
     private final NeoStoreTransactionContextFactory neoStoreTransactionContextFactory;
     private final NeoStores neoStores;
     private final StatementLocksFactory statementLocksFactory;
-    private final Locks locks;
     private final boolean txTerminationAwareLocks;
     private final IntegrityValidator integrityValidator;
     private final ConstraintIndexCreator constraintIndexCreator;
@@ -125,7 +123,7 @@ public class KernelTransactions extends LifecycleAdapter
 
     public KernelTransactions( NeoStoreTransactionContextFactory neoStoreTransactionContextFactory,
                                NeoStores neoStores,
-                               Locks locks, StatementLocksFactory statementLocksFactory,
+                               StatementLocksFactory statementLocksFactory,
                                IntegrityValidator integrityValidator,
                                ConstraintIndexCreator constraintIndexCreator,
                                IndexingService indexingService, LabelScanStore labelScanStore,
@@ -146,7 +144,6 @@ public class KernelTransactions extends LifecycleAdapter
     {
         this.neoStoreTransactionContextFactory = neoStoreTransactionContextFactory;
         this.neoStores = neoStores;
-        this.locks = locks;
         this.statementLocksFactory = statementLocksFactory;
         this.txTerminationAwareLocks = config.get( tx_termination_aware_locks );
         this.integrityValidator = integrityValidator;
@@ -189,7 +186,7 @@ public class KernelTransactions extends LifecycleAdapter
                     labelScanStore, indexingService, updateableSchemaState, recordState, providerMap,
                     neoStores, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
                     transactionCommitProcess, transactionMonitor, storeLayer, legacyIndexTransactionState,
-                    localTxPool, constraintSemantics, clock, tracers.transactionTracer, procedureCache, locks,
+                    localTxPool, constraintSemantics, clock, tracers.transactionTracer, procedureCache,
                     statementLocksFactory, context, txTerminationAwareLocks );
 
             allTransactions.add( tx );

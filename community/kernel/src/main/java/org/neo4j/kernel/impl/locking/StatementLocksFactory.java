@@ -19,7 +19,26 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.neo4j.kernel.configuration.Config;
+
+/**
+ * Factory to create {@link StatementLocks} instances.
+ */
 public interface StatementLocksFactory
 {
-    StatementLocks newInstance( Locks.Client locksClient );
+    /**
+     * Initialize this factory with the given {@code locks} and {@code config}. Callers should ensure this method
+     * is called once during database startup.
+     *
+     * @param locks the locks to use.
+     * @param config the database config that can contain settings interesting for factory implementations.
+     */
+    void initialize( Locks locks, Config config );
+
+    /**
+     * Create new {@link StatementLocks} instance.
+     *
+     * @return new statement locks.
+     */
+    StatementLocks newInstance();
 }

@@ -339,7 +339,7 @@ public class KernelTransactionsTest
         MetaDataStore metaDataStore = mock( MetaDataStore.class );
         when( metaDataStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 2, 3, 4 ) );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
-        return new KernelTransactions( contextSupplier, neoStores, locks, new SimpleStatementLocksFactory(),
+        return new KernelTransactions( contextSupplier, neoStores, new SimpleStatementLocksFactory( locks ),
                 mock( IntegrityValidator.class ), null, null, null, null, null, null, null,
                 TransactionHeaderInformationFactory.DEFAULT, readLayer, commitProcess, null,
                 null, new TransactionHooks(), mock( ConstraintSemantics.class ), mock( TransactionMonitor.class ),

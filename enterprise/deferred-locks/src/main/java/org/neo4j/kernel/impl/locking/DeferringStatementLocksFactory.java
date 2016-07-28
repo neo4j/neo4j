@@ -19,11 +19,47 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.Description;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.kernel.configuration.Settings;
+
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.kernel.configuration.Settings.setting;
+
+/**
+ * A {@link StatementLocksFactory} that created {@link DeferringStatementLocks} based on the given
+ * {@link Locks} and {@link Config}.
+ */
 public class DeferringStatementLocksFactory implements StatementLocksFactory
 {
+    @Internal
+    @Description( "Enable deferring of locks to commit time. This feature is really dangerous and impacts the " +
+                  "isolation level. It can result in both domain and storage level inconsistencies if used " +
+                  "without an additional transaction management layer on top." )
+    public static final Setting<Boolean> deferred_locks_enabled =
+            setting( "unsupported.dbms.deferred_locks.enabled", Settings.BOOLEAN, Settings.FALSE );
+
+    private Locks locks;
+    private boolean deferredLocksEnabled;
+
     @Override
-    public StatementLocks newInstance( Locks.Client locksClient )
+    public void initialize( Locks locks, Config config )
     {
-        return new DeferringStatementLocks( locksClient );
+        this.locks = requireNonNull( locks );
+        this.deferredLocksEnabled = config.get( deferred_locks_enabled );
+    }
+
+    @Override
+    public StatementLocks newInstance()
+    {
+        if ( locks == null )
+        {
+            throw new IllegalStateException( "Factory has not been initialized" );
+        }
+
+        Locks.Client client = locks.newClient();
+        return deferredLocksEnabled ? new DeferringStatementLocks( client ) : new SimpleStatementLocks( client );
     }
 }

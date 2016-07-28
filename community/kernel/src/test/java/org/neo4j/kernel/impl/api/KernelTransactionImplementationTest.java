@@ -635,7 +635,7 @@ public class KernelTransactionImplementationTest
         return new KernelTransactionImplementation( null, null, null, null, null, recordState, null, neoStores,
                 hooks, null, headerInformationFactory, commitProcess,
                 transactionMonitor, storeReadLayer, legacyIndexState, pool, new StandardConstraintSemantics(), clock,
-                TransactionTracer.NULL, new ProcedureCache(), locks, new SimpleStatementLocksFactory(),
+                TransactionTracer.NULL, new ProcedureCache(), new SimpleStatementLocksFactory( locks ),
                 mock( NeoStoreTransactionContext.class ), txTerminationAware );
     }
 

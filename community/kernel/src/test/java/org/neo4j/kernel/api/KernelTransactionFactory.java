@@ -65,7 +65,7 @@ public class KernelTransactionFactory
                 Clock.SYSTEM_CLOCK,
                 TransactionTracer.NULL,
                 new ProcedureCache(),
-                new NoOpLocks(), new SimpleStatementLocksFactory(),
+                new SimpleStatementLocksFactory( new NoOpLocks() ),
                 mock( NeoStoreTransactionContext.class ),
                 false );
     }

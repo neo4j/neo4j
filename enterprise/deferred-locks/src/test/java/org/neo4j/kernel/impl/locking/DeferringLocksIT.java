@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -29,12 +30,14 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
@@ -52,19 +55,30 @@ import static org.neo4j.helpers.collection.Iterables.count;
 
 public class DeferringLocksIT
 {
+    private static final long TEST_TIMEOUT = 30_000;
+
     private static final Label LABEL = DynamicLabel.label( "label" );
     private static final String PROPERTY_KEY = "key";
     private static final String VALUE_1 = "value1";
     private static final String VALUE_2 = "value2";
 
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    public final DatabaseRule dbRule = new ImpermanentDatabaseRule().startLazily();
     @Rule
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
     @Rule
     public final OtherThreadRule<Void> t3 = new OtherThreadRule<>();
 
-    @Test
+    private GraphDatabaseService db;
+
+    @Before
+    public void initDb() throws Exception
+    {
+        dbRule.setConfig( DeferringStatementLocksFactory.deferred_locks_enabled, Settings.TRUE );
+        db = dbRule.getGraphDatabaseAPI();
+    }
+
+    @Test( timeout = TEST_TIMEOUT )
     public void shouldNotFreakOutIfTwoTransactionsDecideToEachAddTheSameProperty() throws Exception
     {
         // GIVEN
@@ -106,7 +120,7 @@ public class DeferringLocksIT
         }
     }
 
-    @Test
+    @Test( timeout = TEST_TIMEOUT )
     public void firstRemoveSecondChangeProperty() throws Exception
     {
         // GIVEN
@@ -150,7 +164,7 @@ public class DeferringLocksIT
         }
     }
 
-    @Test
+    @Test( timeout = TEST_TIMEOUT )
     public void removeNodeChangeNodeProperty() throws Exception
     {
         // GIVEN
@@ -211,7 +225,7 @@ public class DeferringLocksIT
         }
     }
 
-    @Test
+    @Test( timeout = TEST_TIMEOUT )
     public void readOwnChangesFromRacingIndexNoBlock() throws Throwable
     {
         t2.execute( new WorkerCommand<Void,Void>()
@@ -247,7 +261,7 @@ public class DeferringLocksIT
         assertInTxNodeWith( LABEL, PROPERTY_KEY, VALUE_1 );
     }
 
-    @Test
+    @Test( timeout = TEST_TIMEOUT )
     public void readOwnChangesWithoutIndex() throws Exception
     {
         // WHEN
@@ -264,7 +278,7 @@ public class DeferringLocksIT
         assertInTxNodeWith( LABEL, PROPERTY_KEY, VALUE_1 );
     }
 
-    @Test
+    @Test( timeout = TEST_TIMEOUT )
     public void racingMultipleUniquenessConstraintCreation() throws Exception
     {
         final Future<Void> t2ConstraintCreator = t2.execute( createUniquenessConstraintOn( LABEL, PROPERTY_KEY ) );
@@ -273,7 +287,7 @@ public class DeferringLocksIT
         assertOnlyOneSucceeds( t2ConstraintCreator, t3ConstraintCreator, ConstraintViolationException.class );
     }
 
-    @Test
+    @Test( timeout = TEST_TIMEOUT )
     public void racingMultipleIndexCreation() throws Exception
     {
         final Future<Void> t2IndexCreator = t2.execute( createIndexOn( LABEL, PROPERTY_KEY ) );
@@ -282,7 +296,7 @@ public class DeferringLocksIT
         assertOnlyOneSucceeds( t2IndexCreator, t3IndexCreator, ConstraintViolationException.class );
     }
 
-    @Test
+    @Test( timeout = TEST_TIMEOUT )
     public void racingCreationOfNodesWithDuplicatedProperties() throws Exception
     {
         try ( Transaction tx = db.beginTx() )

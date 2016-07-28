@@ -70,7 +70,6 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -160,7 +159,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionMonitor transactionMonitor;
     private final StoreReadLayer storeLayer;
     private final ProcedureCache procedureCache;
-    private final Locks locks;
     private final StatementLocksFactory statementLocksFactory;
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
@@ -221,7 +219,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             Clock clock,
                                             TransactionTracer tracer,
                                             ProcedureCache procedureCache,
-                                            Locks locks,
                                             StatementLocksFactory statementLocksFactory,
                                             NeoStoreTransactionContext context,
                                             boolean txTerminationAwareLocks )
@@ -241,7 +238,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMonitor = transactionMonitor;
         this.storeLayer = storeLayer;
         this.procedureCache = procedureCache;
-        this.locks = locks;
         this.statementLocksFactory = statementLocksFactory;
         this.context = context;
         this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
@@ -257,7 +253,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp )
     {
-        this.statementLocks = statementLocksFactory.newInstance( locks.newClient() );
+        this.statementLocks = statementLocksFactory.newInstance();
         this.terminationReason = null;
         this.closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
