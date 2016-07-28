@@ -87,7 +87,7 @@ public class StateMachineErrorTest
         SessionStateMachine machine = newIdleMachine();
 
         // When
-        machine.run( "this is nonsense", EMPTY_PARAMS, null, responses );
+        machine.run( "this is nonsense", EMPTY_PARAMS, responses );
 
         // Then
         assertThat( responses.next(), failedWith( Status.Statement.SyntaxError ) );
@@ -99,7 +99,7 @@ public class StateMachineErrorTest
         SessionStateMachine.SPI spi = new StandardStateMachineSPI( "<idle>", new UsageData( scheduler ), db, runner,
                 NullLogService.getInstance(), Authentication.NONE, txBridge, () -> transactionIdStore, sessionTracker );
         SessionStateMachine machine = new SessionStateMachine( spi );
-        machine.init( "FunClient", map(), -1, null, Session.Callback.noOp() );
+        machine.init( "FunClient", map(), -1, Session.Callback.noOp() );
         return machine;
     }
 
@@ -110,7 +110,7 @@ public class StateMachineErrorTest
         RecordingCallback<RecordStream, Object> failingCallback = new RecordingCallback<RecordStream, Object>()
         {
             @Override
-            public void result( RecordStream result, Object attachment )
+            public void result( RecordStream result )
             {
                 throw new RuntimeException( "Well, that didn't work out very well." );
             }
@@ -121,10 +121,10 @@ public class StateMachineErrorTest
         SessionStateMachine machine = newIdleMachine();
 
         // and Given there is a result ready to be retrieved
-        machine.run( "something", null, null, Session.Callbacks.<StatementMetadata, Object>noop() );
+        machine.run( "something", null, Session.Callbacks.<StatementMetadata>noop() );
 
         // When
-        machine.pullAll( null, failingCallback );
+        machine.pullAll( failingCallback );
 
         // Then
         assertThat( failingCallback.next(), failedWith( Status.General.UnknownError ) );
@@ -180,15 +180,15 @@ public class StateMachineErrorTest
         assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
 
         // this includes externally triggered actions
-        machine.run( "src/test", EMPTY_PARAMS, null, messages );
+        machine.run( "src/test", EMPTY_PARAMS, messages );
         assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
         assertThat( messages.next(), SessionMatchers.ignored() );
 
-        machine.pullAll( null, pulling );
+        machine.pullAll( pulling );
         assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
         assertThat( pulling.next(), SessionMatchers.ignored() );
 
-        machine.init( "", Collections.emptyMap(), -1, null, initializing );
+        machine.init( "", Collections.emptyMap(), -1, initializing );
         assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
         assertThat( initializing.next(), SessionMatchers.ignored() );
 
@@ -209,13 +209,13 @@ public class StateMachineErrorTest
         machine.commitTransaction(); // No tx to be committed!
 
         // When
-        machine.reset( null, failures );
+        machine.reset( failures );
 
         // Then
         assertThat( failures.next(), SessionMatchers.success() );
 
         // And when I know run some other operation
-        machine.run( "src/test", EMPTY_PARAMS, null, messages );
+        machine.run( "src/test", EMPTY_PARAMS, messages );
 
         // Then
         assertThat( messages.next(), SessionMatchers.success() );
@@ -232,7 +232,7 @@ public class StateMachineErrorTest
         SessionStateMachine machine = new SessionStateMachine( spi );
 
         // When
-        machine.run( "RETURN 1", null, null, messages );
+        machine.run( "RETURN 1", null, messages );
 
         // Then
         assertThat( messages.next(), failedWith( Status.Request.Invalid ) );

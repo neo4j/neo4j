@@ -52,56 +52,56 @@ class ErrorReportingSession extends HaltableUserSession.Adapter implements Sessi
         return connectionDescriptor;
     }
 
-    private <V, A> void reportError( A attachment, Callback<V,A> callback )
+    private <V, A> void reportError( Callback<V> callback )
     {
         if ( callback != null )
         {
-            callback.failure( error, attachment );
-            callback.completed( attachment );
+            callback.failure( error );
+            callback.completed();
         }
     }
 
     @Override
-    public <A> void init( String clientName, Map<String,Object> authToken, long currentHighestTransactionId,
-            A attachment, Callback<Boolean,A> callback )
+    public void init( String clientName, Map<String, Object> authToken, long currentHighestTransactionId,
+                      Callback<Boolean> callback )
     {
-        reportError( attachment, callback );
+        reportError( callback );
     }
 
     @Override
-    public <A> void run( String statement, Map<String,Object> params, A attachment, Callback<StatementMetadata,A> callback )
+    public void run( String statement, Map<String, Object> params, Callback<StatementMetadata> callback )
     {
-        reportError( attachment, callback );
+        reportError( callback );
     }
 
     @Override
-    public <A> void pullAll( A attachment, Callback<RecordStream,A> callback )
+    public void pullAll( Callback<RecordStream> callback )
     {
-        reportError( attachment, callback );
+        reportError( callback );
     }
 
     @Override
-    public <A> void discardAll( A attachment, Callback<Void,A> callback )
+    public void discardAll( Callback<Void> callback )
     {
-        reportError( attachment, callback );
+        reportError( callback );
     }
 
     @Override
-    public <A> void ackFailure( A attachment, Callback<Void,A> callback )
+    public void ackFailure( Callback<Void> callback )
     {
-        reportError( attachment, callback );
+        reportError( callback );
     }
 
     @Override
-    public <A> void reset( A attachment, Callback<Void,A> callback )
+    public void reset( Callback<Void> callback )
     {
-        reportError( attachment, callback );
+        reportError( callback );
     }
 
     @Override
-    public <A> void externalError( Neo4jError error, A attachment, Callback<Void,A> callback )
+    public void externalError( Neo4jError error, Callback<Void> callback )
     {
-        reportError( attachment, callback );
+        reportError( callback );
     }
 
     @Override

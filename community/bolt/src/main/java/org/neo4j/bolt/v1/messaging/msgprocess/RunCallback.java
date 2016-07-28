@@ -35,7 +35,7 @@ public class RunCallback extends MessageProcessingCallback<StatementMetadata>
     }
 
     @Override
-    public void result( StatementMetadata result, Void none ) throws Exception
+    public void result( StatementMetadata result ) throws Exception
     {
         successMetadata.put( "fields", result.fieldNames() );
     }

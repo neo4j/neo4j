@@ -35,7 +35,7 @@ import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.helpers.collection.Iterables;
 
-public class RecordingCallback<V, A> implements Session.Callback<V,A>
+public class RecordingCallback<V, A> implements Session.Callback<V>
 {
     private final BlockingQueue<Call> calls = new ArrayBlockingQueue<>( 64 );
 
@@ -58,13 +58,13 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
     }
 
     @Override
-    public void started( A attachment )
+    public void started()
     {
 
     }
 
     @Override
-    public void result( V result, A attachment )
+    public void result( V result )
     {
         if ( result instanceof RecordStream )
         {
@@ -95,13 +95,13 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
     }
 
     @Override
-    public void failure( Neo4jError err, A attachment )
+    public void failure( Neo4jError err )
     {
         errors.add( err );
     }
 
     @Override
-    public void completed( A attachment )
+    public void completed()
     {
         try
         {
@@ -135,7 +135,7 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
     }
 
     @Override
-    public void ignored( A attachment )
+    public void ignored()
     {
         this.ignored = true;
     }

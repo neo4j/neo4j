@@ -51,8 +51,8 @@ public class SessionAuthIT
         session.init( "TestClient/1.0.0", map(
                 "scheme", "basic",
                 "principal", "neo4j",
-                "credentials", "neo4j" ), -1, null, recorder );
-        session.run( "CREATE ()", map(), null, recorder );
+                "credentials", "neo4j" ), -1, recorder );
+        session.run( "CREATE ()", map(), recorder );
 
         // then
         assertThat( recorder, recorded(
@@ -73,9 +73,9 @@ public class SessionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
-        ), -1, null, recorder );
-        session.ackFailure( null, recorder );
-        session.run( "RETURN 1337", map(), null, recorder );
+        ), -1, recorder );
+        session.ackFailure( recorder );
+        session.run( "RETURN 1337", map(), recorder );
 
         // then
         assertThat( recorder, recorded(
@@ -97,9 +97,9 @@ public class SessionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
-        ), -1, null, recorder );
-        session.reset( null, recorder );
-        session.run( "RETURN 1337", map(), null, recorder );
+        ), -1, recorder );
+        session.reset( recorder );
+        session.run( "RETURN 1337", map(), recorder );
 
         // then
         assertThat( recorder, recorded(
@@ -117,8 +117,8 @@ public class SessionAuthIT
         RecordingCallback recorder = new RecordingCallback();
 
         // when
-        session.ackFailure( null, recorder );
-        session.run( "RETURN 1337", map(), null, recorder );
+        session.ackFailure( recorder );
+        session.run( "RETURN 1337", map(), recorder );
 
         // then
         assertThat( recorder, recorded(
@@ -136,8 +136,8 @@ public class SessionAuthIT
         RecordingCallback recorder = new RecordingCallback();
 
         // when
-        session.run( "RETURN 1337", map(), null, recorder );
-        session.run( "RETURN 1337", map(), null, recorder );
+        session.run( "RETURN 1337", map(), recorder );
+        session.run( "RETURN 1337", map(), recorder );
 
         // then
         assertThat( recorder, recorded( failedWith(Status.Request.Invalid), ignored() ));
@@ -152,8 +152,8 @@ public class SessionAuthIT
         RecordingCallback recorder = new RecordingCallback();
 
         // when
-        session.reset( null, recorder );
-        session.run( "RETURN 1337", map(), null, recorder );
+        session.reset( recorder );
+        session.run( "RETURN 1337", map(), recorder );
 
         // then
         assertThat( recorder, recorded( failedWith( Status.Request.Invalid ), ignored() ));
@@ -172,14 +172,14 @@ public class SessionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
-        ), -1, null, recorder );
-        session.ackFailure( null, recorder );
+        ), -1, recorder );
+        session.ackFailure( recorder );
         // when
         session.init( "TestClient/1.0.0", map(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j"
-        ), -1, null, recorder );
+        ), -1, recorder );
 
         // then
         assertThat( recorder, recorded( failed(), success(), success() ));
@@ -198,14 +198,14 @@ public class SessionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
-        ), -1, null, recorder );
-        session.reset( null, recorder );
+        ), -1, recorder );
+        session.reset( recorder );
         // when
         session.init( "TestClient/1.0.0", map(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j"
-        ), -1, null, recorder );
+        ), -1, recorder );
 
         // then
         assertThat( recorder, recorded( failed(), success(), success() ));
@@ -225,8 +225,8 @@ public class SessionAuthIT
                 "principal", "neo4j",
                 "credentials", "neo4j",
                 "new_credentials", "secret"
-                ), -1, null, recorder );
-        session.run( "CREATE ()", map(), null, recorder );
+                ), -1, recorder );
+        session.run( "CREATE ()", map(), recorder );
 
         // then
         assertThat( recorder, recorded( success(), success() ));

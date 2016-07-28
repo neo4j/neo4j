@@ -33,14 +33,14 @@ public class SessionWorkerTest
         // Given
         Session session = Mockito.mock( Session.class );
         SessionWorker worker = new SessionWorker( session, NullLogService.getInstance() );
-        worker.handle( s -> s.run( "Hello, world!", null, null, null ) );
+        worker.handle( s -> s.run( "Hello, world!", null, null ) );
         worker.handle( SessionWorker.SHUTDOWN );
 
         // When
         worker.run();
 
         // Then
-        Mockito.verify( session ).run( "Hello, world!", null, null, null );
+        Mockito.verify( session ).run( "Hello, world!", null, null );
         Mockito.verify( session ).close();
         Mockito.verifyNoMoreInteractions( session );
     }

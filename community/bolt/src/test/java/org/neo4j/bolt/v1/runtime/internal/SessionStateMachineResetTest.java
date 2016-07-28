@@ -44,15 +44,15 @@ public class SessionStateMachineResetTest
         SessionStateMachine.SPI spi = mock( SessionStateMachine.SPI.class );
         when( spi.authenticate( any() ) ).thenReturn( mock( BasicAuthenticationResult.class ) );
         SessionStateMachine ssm = new SessionStateMachine( spi );
-        ssm.init( "bob/1.0", map(), -1, null, noOp() );
+        ssm.init( "bob/1.0", map(), -1, noOp() );
 
         // When
         ssm.interrupt();
 
         // Then
-        ssm.run( "hello", map(), null, recorder );
-        ssm.reset( null, recorder );
-        ssm.run( "hello", map(), null, recorder );
+        ssm.run( "hello", map(), recorder );
+        ssm.reset( recorder );
+        ssm.run( "hello", map(), recorder );
         assertThat( recorder, recorded(
             ignored(),
             success(),
@@ -68,16 +68,16 @@ public class SessionStateMachineResetTest
         SessionStateMachine.SPI spi = mock( SessionStateMachine.SPI.class );
         when( spi.authenticate( any() ) ).thenReturn( mock( BasicAuthenticationResult.class ) );
         SessionStateMachine ssm = new SessionStateMachine( spi );
-        ssm.init( "bob/1.0", map(), -1, null, noOp() );
+        ssm.init( "bob/1.0", map(), -1, noOp() );
 
         // When
         ssm.interrupt();
         ssm.interrupt();
 
         // Then
-        ssm.run( "hello", map(), null, recorder );
-        ssm.reset( null, recorder );
-        ssm.run( "hello", map(), null, recorder );
+        ssm.run( "hello", map(), recorder );
+        ssm.reset( recorder );
+        ssm.run( "hello", map(), recorder );
         assertThat( recorder, recorded(
                 ignored(),
                 ignored(),
@@ -87,10 +87,10 @@ public class SessionStateMachineResetTest
         recorder = new RecordingCallback(); // to get a clean recording
 
         // But when
-        ssm.reset( null, recorder );
+        ssm.reset( recorder );
 
         // Then
-        ssm.run( "hello", map(), null, recorder );
+        ssm.run( "hello", map(), recorder );
         assertThat( recorder, recorded(
                 success(),
                 success()

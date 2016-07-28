@@ -46,63 +46,62 @@ public interface Session extends AutoCloseable, HaltableUserSession
      * reply, and are guaranteed that your callbacks will be called in order.
      *
      * @param <V>
-     * @param <A>
      */
-    interface Callback<V, A>
+    interface Callback<V>
     {
         Callback NO_OP = new Adapter()
         {
         };
 
-        static <V,A> Callback<V,A> noOp()
+        static <V> Callback<V> noOp()
         {
             //noinspection unchecked
             return NO_OP;
         }
 
         /** Called exactly once, before the request is processed by the Session State Machine */
-        void started( A attachment );
+        void started();
 
         /** Called zero or more times with results, if the operation invoked yields results. */
-        void result( V result, A attachment ) throws Exception;
+        void result( V result ) throws Exception;
 
         /** Called zero or more times if there are failures */
-        void failure( Neo4jError err, A attachment );
+        void failure( Neo4jError err );
 
         /** Called when the operation is completed. */
-        void completed( A attachment );
+        void completed();
 
         /** Called when the state machine ignores an operation, because it is waiting for an error to be acknowledged */
-        void ignored( A attachment );
+        void ignored();
 
-        abstract class Adapter<V, A> implements Callback<V,A>
+        abstract class Adapter<V> implements Callback<V>
         {
             @Override
-            public void started( A attachment )
+            public void started()
             {
                 // this page intentionally left blank
             }
 
             @Override
-            public void result( V result, A attachment ) throws Exception
+            public void result( V result ) throws Exception
             {
                 // this page intentionally left blank
             }
 
             @Override
-            public void failure( Neo4jError err, A attachment )
+            public void failure( Neo4jError err )
             {
                 // this page intentionally left blank
             }
 
             @Override
-            public void completed( A attachment )
+            public void completed()
             {
                 // this page intentionally left blank
             }
 
             @Override
-            public void ignored( A attachment )
+            public void ignored()
             {
                 // this page intentionally left blank
             }
@@ -116,9 +115,9 @@ public interface Session extends AutoCloseable, HaltableUserSession
         }
 
         @SuppressWarnings( "unchecked" )
-        public static <V, A> Callback<V,A> noop()
+        public static <V> Callback<V> noop()
         {
-            return (Callback<V,A>) Callback.NO_OP;
+            return (Callback<V>) Callback.NO_OP;
         }
     }
 
@@ -131,32 +130,31 @@ public interface Session extends AutoCloseable, HaltableUserSession
     /**
      * Initialize the session.
      */
-    <A> void init( String clientName, Map<String,Object> authToken, long currentHighestTransactionId, A attachment, Callback<Boolean,A> callback );
+    void init( String clientName, Map<String, Object> authToken, long currentHighestTransactionId, Callback<Boolean> callback );
 
     /**
      * Run a statement, yielding a result stream which can be retrieved through pulling it in a subsequent call.
      * <p/>
-     * If there is a statement running already, all remaining items in its stream must be {@link #pullAll(Object,
-     * Session.Callback) pulled} or {@link #discardAll(Object, Session.Callback)
+     * If there is a statement running already, all remaining items in its stream must be {@link #pullAll(Callback) pulled} or {@link #discardAll(Callback)
      * discarded}.
      */
-    <A> void run( String statement, Map<String,Object> params, A attachment, Callback<StatementMetadata,A> callback );
+    void run( String statement, Map<String, Object> params, Callback<StatementMetadata> callback );
 
     /**
      * Retrieve all remaining entries in the current result. This is a distinct operation from 'run' in order to
      * enable pulling the output stream in chunks controlled by the user
      */
-    <A> void pullAll( A attachment, Callback<RecordStream,A> callback );
+    void pullAll( Callback<RecordStream> callback );
 
     /**
      * Discard all the remaining entries in the current result stream. This has the same semantic behavior as
-     * {@link #pullAll(Object, Session.Callback)}, but without actually retrieving the stream.
+     * {@link #pullAll(Callback)}, but without actually retrieving the stream.
      * This is useful for completing the run of a statement when you don't care about the data result.
      */
-    <A> void discardAll( A attachment, Callback<Void,A> callback );
+    void discardAll( Callback<Void> callback );
 
     /**
-     * Clear any outstanding error condition. This differs from {@link #reset(Object, Callback)} in two
+     * Clear any outstanding error condition. This differs from {@link #reset(Callback)} in two
      * important ways:
      *
      * 1) If there was an explicitly created transaction, the session will move back
@@ -166,13 +164,13 @@ public interface Session extends AutoCloseable, HaltableUserSession
      *
      * 2) It will not interrupt any ahead-in-line messages.
      */
-    <A> void ackFailure( A attachment, Callback<Void,A> callback );
+    void ackFailure( Callback<Void> callback );
 
     /**
      * Reset the session to an IDLE state. This clears any outstanding failure condition, disposes
      * of any outstanding result records and rolls back the current transaction (if any).
      *
-     * This differs from {@link #ackFailure(Object, Callback)} in that it is more "radical" - it does not
+     * This differs from {@link #ackFailure(Callback)} in that it is more "radical" - it does not
      * matter what the state of the session is, as long as it is open, reset will move it back to IDLE.
      *
      * This is designed to cater to two use cases:
@@ -182,7 +180,7 @@ public interface Session extends AutoCloseable, HaltableUserSession
      *    this is quite helpful.
      * 2) Kill any stuck or long running operation
      */
-    <A> void reset( A attachment, Callback<Void,A> callback );
+    void reset( Callback<Void> callback );
 
     /**
      * Signals that the infrastructure around the session has failed in some non-recoverable way; it will
@@ -194,13 +192,13 @@ public interface Session extends AutoCloseable, HaltableUserSession
      *
      * @param error cause of the fatal error
      */
-    <A> void externalError( Neo4jError error, A attachment, Callback<Void,A> callback  );
+    void externalError( Neo4jError error, Callback<Void> callback );
 
     /**
      * This is a special mechanism, it is the only method on this interface
      * that is thread safe. When this is invoked, the machine will make attempts
      * at interrupting any currently running action,
-     * and will then ignore all inbound messages until a {@link #reset(Object, Callback) reset}
+     * and will then ignore all inbound messages until a {@link #reset(Callback) reset}
      * message is received. If this is called multiple times, an equivalent number
      * of reset messages must be received before the SSM goes back to a good state.
      *

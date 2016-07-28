@@ -49,17 +49,17 @@ public class TransactionIT
         // Given
         RecordingCallback<StatementMetadata,?> responses = new RecordingCallback<>();
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient", emptyMap(), -1, null, null );
+        session.init( "TestClient", emptyMap(), -1, null );
 
         // When
-        session.run( "BEGIN", emptyMap(), null, responses );
-        session.discardAll( null, Session.Callbacks.noop() );
+        session.run( "BEGIN", emptyMap(), responses );
+        session.discardAll( Session.Callbacks.noop() );
 
-        session.run( "CREATE (n:InTx)", emptyMap(), null, responses );
-        session.discardAll( null, Session.Callbacks.noop() );
+        session.run( "CREATE (n:InTx)", emptyMap(), responses );
+        session.discardAll( Session.Callbacks.noop() );
 
-        session.run( "COMMIT", emptyMap(), null, responses );
-        session.discardAll( null, Session.Callbacks.noop() );
+        session.run( "COMMIT", emptyMap(), responses );
+        session.discardAll( Session.Callbacks.noop() );
 
         // Then
         assertThat( responses.next(), success() );
@@ -73,17 +73,17 @@ public class TransactionIT
         // Given
         RecordingCallback<StatementMetadata,?> responses = new RecordingCallback<>();
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient", emptyMap(), -1, null, null );
+        session.init( "TestClient", emptyMap(), -1, null );
 
         // When
-        session.run( "BEGIN", emptyMap(), null, responses );
-        session.discardAll( null, Session.Callbacks.noop() );
+        session.run( "BEGIN", emptyMap(), responses );
+        session.discardAll( Session.Callbacks.noop() );
 
-        session.run( "CREATE (n:InTx)", emptyMap(), null, responses );
-        session.discardAll( null, Session.Callbacks.noop() );
+        session.run( "CREATE (n:InTx)", emptyMap(), responses );
+        session.discardAll( Session.Callbacks.noop() );
 
-        session.run( "ROLLBACK", emptyMap(), null, responses );
-        session.discardAll( null, Session.Callbacks.noop() );
+        session.run( "ROLLBACK", emptyMap(), responses );
+        session.discardAll( Session.Callbacks.noop() );
 
         // Then
         assertThat( responses.next(), success() );
@@ -98,11 +98,11 @@ public class TransactionIT
         RecordingCallback<StatementMetadata,?> runResponse = new RecordingCallback<>();
         RecordingCallback<RecordStream,Object> pullResponse = new RecordingCallback<>();
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient", emptyMap(), -1, null, null );
+        session.init( "TestClient", emptyMap(), -1, null );
 
         // When
-        session.run( "ROLLBACK", emptyMap(), null, runResponse );
-        session.pullAll( null, pullResponse );
+        session.run( "ROLLBACK", emptyMap(), runResponse );
+        session.pullAll( pullResponse );
 
         // Then
         assertThat( runResponse.next(), SessionMatchers
@@ -130,10 +130,10 @@ public class TransactionIT
             {
                 try ( Session session = env.newSession( "<write>" ) )
                 {
-                    session.init( "TestClient", emptyMap(), -1, null, null );
+                    session.init( "TestClient", emptyMap(), -1, null );
                     latch.await();
-                    session.run( "MATCH (n:A) SET n.prop = 'two'", emptyMap(), null, Session.Callbacks.noop() );
-                    session.pullAll( null, Session.Callbacks.noop() );
+                    session.run( "MATCH (n:A) SET n.prop = 'two'", emptyMap(), Session.Callbacks.noop() );
+                    session.pullAll( Session.Callbacks.noop() );
                 }
             }
         };
@@ -142,11 +142,11 @@ public class TransactionIT
         long dbVersionAfterWrite = dbVersion + 1;
         try ( Session session = env.newSession( "<read>" ) )
         {
-            session.init( "TestClient", emptyMap(), dbVersionAfterWrite, null, null );
+            session.init( "TestClient", emptyMap(), dbVersionAfterWrite, null );
             latch.release();
-            session.run( "MATCH (n:A) RETURN n.prop", emptyMap(), null, Session.Callbacks.noop() );
+            session.run( "MATCH (n:A) RETURN n.prop", emptyMap(), Session.Callbacks.noop() );
             RecordingCallback<RecordStream,Object> pullResponse = new RecordingCallback<>();
-            session.pullAll( null, pullResponse );
+            session.pullAll( pullResponse );
 
             Record[] records = ((RecordingCallback.Result) pullResponse.next()).records();
 
