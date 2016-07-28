@@ -107,6 +107,8 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal(INVALID_ARGUMENT_TYPE)
     else if (msg.matches(semanticError("Variable `.+` not defined")))
       detail should equal(UNDEFINED_VARIABLE)
+    else if (msg.matches(semanticError(".+ not defined")))
+      detail should equal(UNDEFINED_VARIABLE)
     else if (msg.matches(semanticError("Type mismatch: .+ already defined with conflicting type .+ \\(expected .+\\)")))
       detail should equal(VARIABLE_TYPE_CONFLICT)
     else if (msg.matches(semanticError("Cannot use the same relationship variable '.+' for multiple patterns")))
