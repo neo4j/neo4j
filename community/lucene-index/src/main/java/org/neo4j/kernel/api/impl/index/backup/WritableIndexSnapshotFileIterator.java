@@ -31,11 +31,11 @@ import java.io.IOException;
  * Internally uses {@link SnapshotDeletionPolicy#snapshot()} to create an {@link IndexCommit} that represents
  * consistent state of the index for a particular point in time.
  */
-public class LuceneIndexSnapshotFileIterator extends ReadOnlyIndexSnapshotFileIterator
+public class WritableIndexSnapshotFileIterator extends ReadOnlyIndexSnapshotFileIterator
 {
     private final SnapshotDeletionPolicy snapshotDeletionPolicy;
 
-    LuceneIndexSnapshotFileIterator( File indexDirectory, SnapshotDeletionPolicy snapshotDeletionPolicy )
+    WritableIndexSnapshotFileIterator( File indexDirectory, SnapshotDeletionPolicy snapshotDeletionPolicy )
             throws IOException
     {
         super( indexDirectory, snapshotDeletionPolicy.snapshot() );

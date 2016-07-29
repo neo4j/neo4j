@@ -326,7 +326,7 @@ public class LuceneLabelScanStoreTest
         start( label0Updates );
 
         // when
-        write( Collections.<NodeLabelUpdate>emptyIterator() );
+        write( Collections.emptyIterator() );
 
         // then
         LabelScanReader reader = store.newReader();
@@ -549,19 +549,15 @@ public class LuceneLabelScanStoreTest
 
     private FullStoreChangeStream asStream( final List<NodeLabelUpdate> existingData )
     {
-        return new FullStoreChangeStream()
+        return writer ->
         {
-            @Override
-            public long applyTo( LabelScanWriter writer ) throws IOException
+            long count = 0;
+            for ( NodeLabelUpdate update : existingData )
             {
-                long count = 0;
-                for ( NodeLabelUpdate update : existingData )
-                {
-                    writer.write( update );
-                    count++;
-                }
-                return count;
+                writer.write( update );
+                count++;
             }
+            return count;
         };
     }
 

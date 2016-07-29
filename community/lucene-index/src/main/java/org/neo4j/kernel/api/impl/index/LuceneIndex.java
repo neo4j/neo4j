@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.impl.index.backup.WritableIndexSnapshotFileIterator;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 
 /**
@@ -106,7 +107,7 @@ public interface LuceneIndex extends Closeable
      *
      * @return iterator over all index files.
      * @throws IOException
-     * @see org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshotFileIterator
+     * @see WritableIndexSnapshotFileIterator
      */
     ResourceIterator<File> snapshot() throws IOException;
 

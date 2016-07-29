@@ -56,7 +56,7 @@ public class LuceneIndexSnapshots
         {
             SnapshotDeletionPolicy policy = (SnapshotDeletionPolicy) deletionPolicy;
             return hasCommits( indexWriter )
-                   ? new LuceneIndexSnapshotFileIterator( indexFolder, policy )
+                   ? new WritableIndexSnapshotFileIterator( indexFolder, policy )
                    : emptyIterator();
         }
         else
@@ -77,6 +77,10 @@ public class LuceneIndexSnapshots
      */
     public static ResourceIterator<File> forIndex( File indexFolder, Directory directory ) throws IOException
     {
+        if ( !hasCommits( directory ) )
+        {
+            return emptyIterator();
+        }
         Collection<IndexCommit> indexCommits = DirectoryReader.listCommits( directory );
         IndexCommit indexCommit = Iterables.last( indexCommits );
         return new ReadOnlyIndexSnapshotFileIterator( indexFolder, indexCommit );
@@ -85,6 +89,11 @@ public class LuceneIndexSnapshots
     private static boolean hasCommits( IndexWriter indexWriter ) throws IOException
     {
         Directory directory = indexWriter.getDirectory();
+        return hasCommits( directory );
+    }
+
+    private static boolean hasCommits( Directory directory ) throws IOException
+    {
         return DirectoryReader.indexExists( directory ) && SegmentInfos.readLatestCommit( directory ) != null;
     }
 }

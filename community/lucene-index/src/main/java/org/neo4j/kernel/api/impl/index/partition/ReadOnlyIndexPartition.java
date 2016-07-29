@@ -70,7 +70,7 @@ public class ReadOnlyIndexPartition extends AbstractIndexPartition
     @Override
     public void maybeRefreshBlocking() throws IOException
     {
-
+        // nothing to refresh in read only partition
     }
 
     @Override

@@ -37,6 +37,7 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.impl.index.backup.WritableIndexSnapshotFileIterator;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
@@ -238,7 +239,7 @@ public abstract class AbstractLuceneIndex
      *
      * @return iterator over all index files.
      * @throws IOException
-     * @see org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshotFileIterator
+     * @see WritableIndexSnapshotFileIterator
      */
     public ResourceIterator<File> snapshot() throws IOException
     {
