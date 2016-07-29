@@ -80,7 +80,7 @@ public class BlockTypeTest
     private static final List<String> PARAMS = Arrays.asList( "[source, json, role=parameters]", "----",
             "{\"name\": \"Adam\"}", "----" );
     private static final List<String> ADAM_PARAMS_QUERY = Arrays.asList( "[source, cypher]", "----",
-            "RETURN {name} = 'Adam';", "----" );
+            "RETURN $name = 'Adam';", "----" );
     private static final List<String> RETURN_ONE_QUERY = Arrays.asList( "[source, cypher]", "----",
             "CREATE (n:Person {name:'Alice'}), (m:Person {name:'Bob'}) ", "RETURN m;", "----" );
     private static final List<String> TWO_NODES_ONE_REL = Arrays.asList( "[source, cypher]", "----",

@@ -76,7 +76,7 @@ class WhereTest extends DocumentingTestBase {
     testQuery(
       title = "Filter on dynamic node property",
       text = "To filter on a property using a dynamically computed name, use square bracket syntax.",
-      queryText = """match (n) where n[toLower({prop})] < 30 return n""",
+      queryText = """match (n) where n[toLower($prop)] < 30 return n""",
       optionalResultExplanation = """"+Tobias+" is returned because he is younger than 30.""",
       parameters = Map("prop" -> "AGE"),
       assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))

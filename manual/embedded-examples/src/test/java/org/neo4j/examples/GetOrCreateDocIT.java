@@ -340,7 +340,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
         ResourceIterator<Node> resultIterator = null;
         try ( Transaction tx = graphDb.beginTx() )
         {
-            String queryString = "MERGE (n:User {name: {name}}) RETURN n";
+            String queryString = "MERGE (n:User {name: $name}) RETURN n";
             Map<String, Object> parameters = new HashMap<>();
             parameters.put( "name", username );
             resultIterator = graphDb.execute( queryString, parameters ).columnAs( "n" );

@@ -61,7 +61,7 @@ class MergeTest extends RefcardTest with QueryStatisticsTestSupport {
 ###assertion=merge parameters=aname
 //
 
-MERGE (n:Person {name: {value}})
+MERGE (n:Person {name: $value})
 ON CREATE SET n.created = timestamp()
 ON MATCH SET
     n.counter = coalesce(n.counter, 0) + 1,
@@ -75,8 +75,8 @@ Use +ON CREATE+ and +ON MATCH+ for conditional updates.
 ###assertion=merge-rel parameters=names
 //
 
-MATCH (a:Person {name: {value1}}),
-      (b:Person {name: {value2}})
+MATCH (a:Person {name: $value1}),
+      (b:Person {name: $value2})
 MERGE (a)-[r:LOVES]->(b)
 
 RETURN r###
@@ -86,9 +86,9 @@ RETURN r###
 ###assertion=merge-sub parameters=names
 //
 
-MATCH (a:Person {name: {value1}})
+MATCH (a:Person {name: $value1})
 MERGE
-  (a)-[r:KNOWS]->(b:Person {name: {value3}})
+  (a)-[r:KNOWS]->(b:Person {name: $value3})
 
 RETURN r, b###
 

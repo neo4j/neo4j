@@ -57,8 +57,8 @@ class SetTest extends RefcardTest with QueryStatisticsTestSupport {
 ###assertion=set parameters=set
 MATCH (n) WHERE id(n) = %A%
 
-SET n.property1 = {value1},
-    n.property2 = {value2}
+SET n.property1 = $value1,
+    n.property2 = $value2
 
 RETURN n.property1###
 
@@ -67,7 +67,7 @@ Update or create a property.
 ###assertion=map parameters=map
 CREATE (n)
 
-SET n = {map}
+SET n = $map
 
 RETURN n.property###
 
@@ -77,7 +77,7 @@ This will remove any existing properties.
 ###assertion=map parameters=map
 CREATE (n)
 
-SET n += {map}
+SET n += $map
 
 RETURN n.property###
 

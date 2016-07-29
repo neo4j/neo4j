@@ -177,7 +177,7 @@ So for instance if you return `person.name` you can still `ORDER BY person.age` 
 You cannot order by things that you can't infer from the information you return.
 This is especially important with aggregation and `DISTINCT` return values as both remove the visibility of data that is aggregated.
 
-Pagination is a straightforward use of `SKIP {offset} LIMIT {count}`.
+Pagination is a straightforward use of `SKIP $offset LIMIT $count`.
 
 A common pattern is to aggregate for a count (score or frequency), order by it and only return the top-n entries.
 

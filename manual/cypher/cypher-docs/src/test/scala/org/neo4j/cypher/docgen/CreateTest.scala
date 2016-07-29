@@ -157,7 +157,7 @@ All the key/value pairs in the map will be set as properties on the created rela
 In this case we add a +Person+ label to the node as well.
 """,
       parameters = Map("props" -> Map("name" -> "Andres", "position" -> "Developer")),
-      queryText = "create (n:Person {props}) return n",
+      queryText = "create (n:Person $props) return n",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesWritten = 2, labelsAdded = 1))
   }
@@ -169,7 +169,7 @@ In this case we add a +Person+ label to the node as well.
       parameters = Map("props" -> List(
         Map("name" -> "Andres", "position" -> "Developer"),
         Map("name" -> "Michael", "position" -> "Developer"))),
-      queryText = "UNWIND {props} as map CREATE (n) SET n = map",
+      queryText = "UNWIND $props as map CREATE (n) SET n = map",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 2, propertiesWritten = 4))
   }

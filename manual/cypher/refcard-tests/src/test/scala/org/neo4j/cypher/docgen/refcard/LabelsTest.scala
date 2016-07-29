@@ -66,7 +66,7 @@ class LabelsTest extends RefcardTest with QueryStatisticsTestSupport {
 ###assertion=create parameters=bname
 //
 
-CREATE (n:Person {name: {value}})
+CREATE (n:Person {name: $value})
 
 DELETE n
 RETURN n###
@@ -76,7 +76,7 @@ Create a node with label and property.
 ###assertion=create parameters=bname
 //
 
-MERGE (n:Person {name: {value}})
+MERGE (n:Person {name: $value})
 
 DELETE n
 RETURN n###
@@ -105,7 +105,7 @@ Matches nodes labeled `Person`.
 //
 
 MATCH (n:Person)
-WHERE n.name = {value}
+WHERE n.name = $value
 
 RETURN n###
 

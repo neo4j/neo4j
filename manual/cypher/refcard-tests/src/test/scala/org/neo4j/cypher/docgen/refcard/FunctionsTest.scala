@@ -38,9 +38,9 @@ class FunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 0)
       case "toInt" =>
-        assert(result.toList === List(Map("toInt({expr})" -> 10)))
+        assert(result.toList === List(Map("toInt($expr)" -> 10)))
       case "toFloat" =>
-        assert(result.toList === List(Map("toFloat({expr})" -> 10.1)))
+        assert(result.toList === List(Map("toFloat($expr)" -> 10.1)))
     }
   }
 
@@ -68,7 +68,7 @@ class FunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
 MATCH (n)  WHERE id(n) = %A%
 RETURN
 
-coalesce(n.property, {defaultValue})###
+coalesce(n.property, $defaultValue)###
 
 The first non-++NULL++ expression.
 
@@ -91,21 +91,21 @@ The internal id of the relationship or node.
 ###assertion=toInt parameters=toInt
 RETURN
 
-toInt({expr})###
+toInt($expr)###
 
 Converts the given input into an integer if possible; otherwise it returns +NULL+.
 
 ###assertion=toFloat parameters=toFloat
 RETURN
 
-toFloat({expr})###
+toFloat($expr)###
 
 Converts the given input into a floating point number if possible; otherwise it returns +NULL+.
 
 ###assertion=returns-one parameters=map
 RETURN
 
-keys({expr})###
+keys($expr)###
 
 Returns a list of string representations for the property names of a node, relationship, or map."""
 }

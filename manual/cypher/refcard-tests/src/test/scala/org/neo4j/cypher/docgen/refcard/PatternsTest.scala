@@ -82,11 +82,20 @@ Node with both `Person` and `Swedish` labels.
 ###assertion=related parameters=alice
 MATCH
 
-(n:Person {name: {value}})
+(n:Person {name: $value})
 
 RETURN n###
 
 Node with the declared properties.
+
+###assertion=empty parameters=alice
+MATCH
+
+()-[r {name: $value}]-()
+
+RETURN r###
+
+Matches relationships with the declared properties.
 
 ###assertion=related
 MATCH
@@ -179,7 +188,7 @@ Variable length path of any number of relationships from `n` to `m`.
 MATCH (n) WHERE id(n) = %A%
 CREATE UNIQUE
 
-(n)-[:KNOWS]->(m {property: {value}})
+(n)-[:KNOWS]->(m {property: $value})
 
 RETURN m###
 
@@ -206,7 +215,7 @@ RETURN p###
 Find all shortest paths.
 
 ###assertion=returns-one parameters=alice
-MATCH (n:Person {name: {value}})
+MATCH (n:Person {name: $value})
 RETURN
 
 size((n)-->()-->())
@@ -216,14 +225,4 @@ AS fof###
 Count the paths matching the pattern.
 """
 }
-/* confirm this, then add.
-###assertion=empty parameters=alice
-MATCH
 
-()-[r {name: {value}}]-()
-
-RETURN r###
-
-Matches relationships with the declared properties.
-
-*/

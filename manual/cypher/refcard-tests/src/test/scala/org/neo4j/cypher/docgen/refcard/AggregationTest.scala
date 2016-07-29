@@ -111,9 +111,9 @@ Sum numerical values. Similar functions are +avg+, +min+, +max+.
 MATCH (n) WHERE id(n) IN [%A%, %B%, %C%]
 RETURN
 
-percentileDisc(n.property, {percentile})
+percentileDisc(n.property, $percentile)
 
-,percentileCont(n.property, {percentile})
+,percentileCont(n.property, $percentile)
 ###
 
 Discrete percentile. Continuous percentile is +percentileCont+.

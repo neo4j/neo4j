@@ -57,7 +57,7 @@ class WithTest extends RefcardTest with QueryStatisticsTestSupport {
 //
 
 MATCH (user)-[:FRIEND]-(friend)
-WHERE user.name = {name}
+WHERE user.name = $name
 WITH user, count(friend) AS friends
 WHERE friends > 10
 RETURN user

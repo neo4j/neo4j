@@ -75,8 +75,8 @@ Nested maps and list are supported.
 ###assertion=returns-one-merge parameters=map
 //
 
-MERGE (p:Person {name: {map}.name})
-ON CREATE SET p = {map}
+MERGE (p:Person {name: $map.name})
+ON CREATE SET p = $map
 
 RETURN p
 ###
