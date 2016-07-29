@@ -71,6 +71,7 @@ public class LuceneDataSourceTest
     {
         IndexIdentifier indexIdentifier = identifier( "foo" );
         prepareIndexesByIdentifiers( indexIdentifier );
+        stopDataSource();
 
         Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
         LuceneDataSource readOnlyDataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig,
@@ -85,6 +86,7 @@ public class LuceneDataSourceTest
     {
         IndexIdentifier indexIdentifier = identifier( "foo" );
         prepareIndexesByIdentifiers( indexIdentifier );
+        stopDataSource();
 
         Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig, indexStore, new DefaultFileSystemAbstraction() ) );
@@ -98,6 +100,7 @@ public class LuceneDataSourceTest
     {
         IndexIdentifier indexIdentifier = identifier( "foo" );
         prepareIndexesByIdentifiers( indexIdentifier );
+        stopDataSource();
 
         Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig, indexStore, new DefaultFileSystemAbstraction() ) );
@@ -112,6 +115,7 @@ public class LuceneDataSourceTest
     {
         IndexIdentifier indexIdentifier = identifier( "foo" );
         prepareIndexesByIdentifiers( indexIdentifier );
+        stopDataSource();
 
         Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig, indexStore, new DefaultFileSystemAbstraction() ) );
@@ -228,6 +232,11 @@ public class LuceneDataSourceTest
         IndexWriter newFooIndexWriter = dataSource.getIndexSearcher( fooIdentifier ).getWriter();
         assertNotSame( oldFooIndexWriter, newFooIndexWriter );
         assertTrue( newFooIndexWriter.isOpen() );
+    }
+
+    private void stopDataSource() throws IOException
+    {
+        dataSource.shutdown();
     }
 
     private Map<String, String> config()
