@@ -230,7 +230,7 @@ class QueryTaggerTest extends CypherFunSuite {
   test(queryTag(StringFunctionTag)) {
     QueryTagger("RETURN toString(0)") should contain(StringFunctionTag)
     QueryTagger("RETURN ltrim('   s')") should contain(StringFunctionTag)
-    QueryTagger("RETURN lower('ALLCAPS')") should contain(StringFunctionTag)
+    QueryTagger("RETURN toLower('ALLCAPS')") should contain(StringFunctionTag)
     QueryTagger("RETURN substring('string', 'str')") should contain(StringFunctionTag)
     QueryTagger("RETURN split('orig', 'r')") should contain(StringFunctionTag)
   }

@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast.{Function, FunctionInvocation
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheck, SemanticCheckResult, SemanticError, SemanticState}
 
-case object ToInt extends Function {
+case object ToInteger extends Function {
 
-  def name = "toInt"
+  def name = "toInteger"
 
   override protected def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation): SemanticCheck =
     checkMinArgs(invocation, 1) ifOkChain

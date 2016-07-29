@@ -84,6 +84,11 @@ public enum NotificationCode
         Status.Statement.FeatureDeprecationWarning,
         "Use of bare node patterns has been deprecated. Please enclose the identifier in parenthesis."
     ),
+    DEPRECATED_FUNCTION(
+        SeverityLevel.WARNING,
+        Status.Statement.FeatureDeprecationWarning,
+        "The query used a deprecated function. Please use the new function"
+    ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
         Status.Statement.EagerOperatorWarning,

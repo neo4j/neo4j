@@ -109,7 +109,6 @@ object ExpressionConverters {
       case Length => commandexpressions.LengthFunction(toCommandExpression(invocation.arguments.head))
       case Log => commandexpressions.LogFunction(toCommandExpression(invocation.arguments.head))
       case Log10 => commandexpressions.Log10Function(toCommandExpression(invocation.arguments.head))
-      case Lower => commandexpressions.LowerFunction(toCommandExpression(invocation.arguments.head))
       case LTrim => commandexpressions.LTrimFunction(toCommandExpression(invocation.arguments.head))
       case Max =>
         val inner = toCommandExpression(invocation.arguments.head)
@@ -158,7 +157,7 @@ object ExpressionConverters {
           toCommandExpression(invocation.arguments(1)),
           toCommandExpression(invocation.arguments.lift(2)).getOrElse(commandexpressions.Literal(1))
         )
-      case Relationships | Rels => commandexpressions.RelationshipFunction(toCommandExpression(invocation.arguments.head))
+      case Relationships => commandexpressions.RelationshipFunction(toCommandExpression(invocation.arguments.head))
       case Replace =>
         commandexpressions.ReplaceFunction(
           toCommandExpression(invocation.arguments.head),
@@ -218,15 +217,15 @@ object ExpressionConverters {
         )
       case Tan => commandexpressions.TanFunction(toCommandExpression(invocation.arguments.head))
       case Timestamp => commandexpressions.TimestampFunction()
+      case ToBoolean => commandexpressions.ToBooleanFunction(toCommandExpression(invocation.arguments.head))
       case ToFloat => commandexpressions.ToFloatFunction(toCommandExpression(invocation.arguments.head))
-      case ToInt => commandexpressions.ToIntFunction(toCommandExpression(invocation.arguments.head))
-      case ToLower => commandexpressions.LowerFunction(toCommandExpression(invocation.arguments.head))
+      case ToInteger => commandexpressions.ToIntegerFunction(toCommandExpression(invocation.arguments.head))
+      case ToLower => commandexpressions.ToLowerFunction(toCommandExpression(invocation.arguments.head))
       case ToString => commandexpressions.ToStringFunction(toCommandExpression(invocation.arguments.head))
-      case ToUpper => commandexpressions.UpperFunction(toCommandExpression(invocation.arguments.head))
+      case ToUpper => commandexpressions.ToUpperFunction(toCommandExpression(invocation.arguments.head))
       case Properties => commandexpressions.PropertiesFunction(toCommandExpression(invocation.arguments.head))
       case Trim => commandexpressions.TrimFunction(toCommandExpression(invocation.arguments.head))
       case Type => commandexpressions.RelationshipTypeFunction(toCommandExpression(invocation.arguments.head))
-      case Upper => commandexpressions.UpperFunction(toCommandExpression(invocation.arguments.head))
     }
 
   def toCommandExpression(expression: ast.Expression): CommandExpression = expression match {

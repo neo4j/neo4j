@@ -55,3 +55,5 @@ case class MissingPropertyNameNotification(position: InputPosition, name: String
 case class UnboundedShortestPathNotification(position: InputPosition) extends InternalNotification
 
 case class ExhaustiveShortestPathForbiddenNotification(position: InputPosition) extends InternalNotification
+
+case class DeprecatedFunctionNotification(position: InputPosition, oldName: String, newName: String) extends InternalNotification

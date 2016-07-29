@@ -20,49 +20,9 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
+import org.neo4j.graphdb.Relationship
 
 class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
-
-  test("toInt should accept type Any") {
-    // When
-    val query = "WITH [2, 2.9, '1.7'] AS numbers RETURN [n in numbers | toInt(n)] AS int_numbers"
-
-    val result = executeWithAllPlanners(query)
-
-    result.toList should equal(List(Map("int_numbers" -> List(2, 2, 1))))
-  }
-
-  test("toInt should fail statically on type boolean") {
-    val query = "RETURN toInt(true)"
-
-    a [SyntaxException] should be thrownBy {
-      executeWithAllPlanners(query)
-    }
-  }
-
-  test("toFloat should work on type Any") {
-    // When
-    val query = "WITH [3.4, 3, '5'] AS numbers RETURN [n in numbers | toFloat(n)] AS float_numbers"
-
-    val result = executeWithAllPlanners(query)
-
-    result.toList should equal(List(Map("float_numbers" -> List(3.4, 3.0, 5.0))))
-  }
-
-  test("toFloat should fail statically on type Boolean") {
-    // When
-    val query = "RETURN toFloat(false)"
-
-    a [SyntaxException] should be thrownBy executeWithAllPlanners(query)
-  }
-
-  test("toFloat should work on string collection") {
-    // When
-    val result = executeWithAllPlannersAndCompatibilityMode("WITH ['1', '2', 'foo'] AS numbers RETURN [n in numbers | toFloat(n)] AS float_numbers")
-
-    // Then
-    result.toList should equal(List(Map("float_numbers" -> List(1.0, 2.0, null))))
-  }
 
   test("id on a node should work in both runtimes")  {
     // GIVEN
@@ -87,80 +47,13 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("id(r)" -> expected)))
   }
 
-  test("type() should accept type Any") {
-    relate(createNode(), createNode(), "T")
+  test("deprecated functions still work") {
+    val r = relate(createNode(), createNode())
 
-    val query = """
-      |MATCH (a)-[r]->()
-      |WITH [a, r, 1] AS list
-      |RETURN type(list[1]) AS t
-    """.stripMargin
-
-    val result = executeWithAllPlanners(query)
-
-    result.toList should equal(List(Map("t" -> "T")))
+    executeWithAllPlannersAndCompatibilityMode("RETURN toInt('1') AS one").columnAs[Long]("one").next should equal(1L)
+    executeWithAllPlannersAndCompatibilityMode("RETURN upper('abc') AS a").columnAs[String]("a").next should equal("ABC")
+    executeWithAllPlannersAndCompatibilityMode("RETURN lower('ABC') AS a").columnAs[String]("a").next should equal("abc")
+    executeWithAllPlannersAndCompatibilityMode("MATCH p = ()-->() RETURN rels(p) AS r").columnAs[List[Relationship]]("r").next should equal(List(r))
   }
 
-  test("type() should fail statically when given type Node") {
-    relate(createNode(), createNode(), "T")
-
-    val query = """
-      |MATCH (a)-[r]->()
-      |RETURN type(a) AS t
-    """.stripMargin
-
-    a [SyntaxException] should be thrownBy executeWithAllPlanners(query)
-  }
-
-  test("type() should fail at runtime when given type Any but bad value")  {
-    relate(createNode(), createNode(), "T")
-
-    val query = """
-                  |MATCH (a)-[r]->()
-                  |WITH [a, r, 1] AS list
-                  |RETURN type(list[0]) AS t
-                """.stripMargin
-
-    a [ParameterWrongTypeException] should be thrownBy executeWithAllPlanners(query)
-  }
-
-  test("labels() should accept type Any") {
-    createLabeledNode("Foo")
-    createLabeledNode("Foo", "Bar")
-
-    val query = """
-      |MATCH (a)
-      |WITH [a, 1] AS list
-      |RETURN labels(list[0]) AS l
-    """.stripMargin
-
-    val result = executeWithAllPlanners(query)
-
-    result.toList should equal(List(Map("l" -> List("Foo")), Map("l" -> List("Foo", "Bar"))))
-  }
-
-  test("labels() should fail statically on type Path") {
-    createLabeledNode("Foo")
-    createLabeledNode("Foo", "Bar")
-
-    val query = """
-      |MATCH p = (a)
-      |RETURN labels(p) AS l
-    """.stripMargin
-
-    a [SyntaxException] should be thrownBy executeWithAllPlanners(query)
-  }
-
-  test("labels() should fail at runtime on type Any with bad values") {
-    createLabeledNode("Foo")
-    createLabeledNode("Foo", "Bar")
-
-    val query = """
-                  |MATCH (a)
-                  |WITH [a, 1] AS list
-                  |RETURN labels(list[1]) AS l
-                """.stripMargin
-
-    a [ParameterWrongTypeException] should be thrownBy executeWithAllPlanners(query)
-  }
 }

@@ -458,4 +458,28 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     result.notifications shouldBe empty
   }
+
+  test("warn for use of deprecated toInt") {
+    val result = innerExecute("EXPLAIN RETURN toInt('1') AS one")
+
+    result.notifications should contain(DeprecatedFunctionNotification(InputPosition(7, 1, 8), "toInt", "toInteger"))
+  }
+
+  test("warn for use of deprecated upper") {
+    val result = innerExecute("EXPLAIN RETURN upper('foo') AS one")
+
+    result.notifications should contain(DeprecatedFunctionNotification(InputPosition(7, 1, 8), "upper", "toUpper"))
+  }
+
+  test("warn for use of deprecated lower") {
+    val result = innerExecute("EXPLAIN RETURN lower('BAR') AS one")
+
+    result.notifications should contain(DeprecatedFunctionNotification(InputPosition(7, 1, 8), "lower", "toLower"))
+  }
+
+  test("warn for use of deprecated rels") {
+    val result = innerExecute("EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r")
+
+    result.notifications should contain(DeprecatedFunctionNotification(InputPosition(25, 1, 26), "rels", "relationships"))
+  }
 }

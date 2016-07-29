@@ -86,7 +86,7 @@ class StringFunctionsTest extends CypherFunSuite {
   }
 
   test("lowerTests") {
-    def lower(x: Any) = LowerFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
+    def lower(x: Any) = ToLowerFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
 
     lower("HELLO") should equal("hello")
     lower("Hello") should equal("hello")
@@ -96,7 +96,7 @@ class StringFunctionsTest extends CypherFunSuite {
   }
 
   test("upperTests") {
-    def upper(x: Any) = UpperFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
+    def upper(x: Any) = ToUpperFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
 
     upper("HELLO") should equal("HELLO")
     upper("Hello") should equal("HELLO")

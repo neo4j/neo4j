@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-class ToIntTest extends FunctionTestBase("toInt")  {
+class ToIntegerTest extends FunctionTestBase("toInteger")  {
 
   test("shouldAcceptCorrectTypes") {
     testValidTypes(CTString)(CTInteger)
@@ -47,10 +47,10 @@ class ToIntTest extends FunctionTestBase("toInt")  {
 
   test("shouldFailIfWrongNumberOfArguments") {
     testInvalidApplication()(
-      "Insufficient parameters for function 'toInt'"
+      "Insufficient parameters for function 'toInteger'"
     )
     testInvalidApplication(CTString, CTString)(
-      "Too many parameters for function 'toInt'"
+      "Too many parameters for function 'toInteger'"
     )
   }
 }

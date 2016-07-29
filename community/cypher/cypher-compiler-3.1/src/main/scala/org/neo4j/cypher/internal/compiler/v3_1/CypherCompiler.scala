@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_1
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase.{AST_REWRITE, PARSING, SEMANTIC_CHECK}
-import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.replaceAliasedFunctionInvocations.aliases
+import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses, replaceAliasedFunctionInvocations}
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.procs.DelegatingProcedureExecutablePlanBuilder
@@ -32,8 +33,8 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_1.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_1.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{FunctionInvocation, FunctionName, Statement}
+import org.neo4j.cypher.internal.frontend.v3_1.notification.{DeprecatedFunctionNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, SemanticTable, inSequence}
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -189,7 +190,8 @@ case class CypherCompiler(parser: CypherParser,
 
     val mkException = new SyntaxExceptionCreator(rawQueryText, offset)
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException),
-                                                                             normalizeWithClauses(mkException)))
+                                                                             normalizeWithClauses(mkException),
+                                                                             replaceAliasedFunctionInvocations))
     val originalSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
       semanticChecker.check(queryText, cleanedStatement, mkException)
     }
@@ -221,9 +223,11 @@ case class CypherCompiler(parser: CypherParser,
     result
   }
 
-  private def syntaxDeprecationNotifications( statement: Statement) =
-    // We don't have any deprecations in 3.1 yet
-    Seq.empty[InternalNotification]
+  private def syntaxDeprecationNotifications(statement: Statement): Set[InternalNotification] =
+    statement.treeFold(Set.empty[InternalNotification]) {
+      case f@FunctionInvocation(FunctionName(name), _, _) if aliases.get(name).nonEmpty =>
+        (seq) => (seq + DeprecatedFunctionNotification(f.position, name, aliases(name)), None)
+    }
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                            monitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],
