@@ -35,9 +35,8 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 public class DeferringStatementLocksFactory implements StatementLocksFactory
 {
     @Internal
-    @Description( "Enable deferring of locks to commit time. This feature is really dangerous and impacts the " +
-                  "isolation level. It can result in both domain and storage level inconsistencies if used " +
-                  "without an additional transaction management layer on top." )
+    @Description( "Enable deferring of locks to commit time. This feature weakens the isolation level. " +
+                  "It can result in both domain and storage level inconsistencies." )
     public static final Setting<Boolean> deferred_locks_enabled =
             setting( "unsupported.dbms.deferred_locks.enabled", Settings.BOOLEAN, Settings.FALSE );
 

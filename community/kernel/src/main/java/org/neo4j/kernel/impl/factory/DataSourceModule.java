@@ -397,7 +397,7 @@ public class DataSourceModule
         List<StatementLocksFactory> factories = Iterables.toList( Service.load( StatementLocksFactory.class ) );
         if ( factories.isEmpty() )
         {
-            statementLocksFactory = new SimpleStatementLocksFactory( locks );
+            statementLocksFactory = new SimpleStatementLocksFactory();
 
             log.info( "No services implementing " + serviceName + " found. " +
                       "Using " + SimpleStatementLocksFactory.class.getSimpleName() );

@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.locking;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.configuration.Config;
+
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
@@ -58,5 +60,35 @@ public class SimpleStatementLocksFactoryTest
         assertThat( statementLocks, instanceOf( SimpleStatementLocks.class ) );
         assertSame( client, statementLocks.optimistic() );
         assertSame( client, statementLocks.pessimistic() );
+    }
+
+    @Test
+    public void newInstanceThrowsWhenNotInitialized()
+    {
+        SimpleStatementLocksFactory factory = new SimpleStatementLocksFactory();
+        try
+        {
+            factory.newInstance();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalStateException.class ) );
+        }
+    }
+
+    @Test
+    public void initializeThrowsForNullLocks()
+    {
+        SimpleStatementLocksFactory factory = new SimpleStatementLocksFactory();
+        try
+        {
+            factory.initialize( null, new Config() );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( NullPointerException.class ) );
+        }
     }
 }

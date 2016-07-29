@@ -28,27 +28,37 @@ import static java.util.Objects.requireNonNull;
  */
 public class SimpleStatementLocksFactory implements StatementLocksFactory
 {
-    private final Locks locks;
+    private Locks locks;
 
-    public SimpleStatementLocksFactory( Locks locks )
+    public SimpleStatementLocksFactory()
     {
-        this.locks = requireNonNull( locks );
     }
 
     /**
-     * Inherited from the {@link StatementLocksFactory} interface but does nothing for this factory.
+     * Creates a new factory initialized with given {@code locks}.
+     * <b>Note:</b> should be used for tests only.
      *
-     * @param locks will not be used.
-     * @param config will not be used.
+     * @param locks the locks to use.
      */
+    public SimpleStatementLocksFactory( Locks locks )
+    {
+        initialize( locks, null );
+    }
+
     @Override
     public void initialize( Locks locks, Config config )
     {
+        this.locks = requireNonNull( locks );
     }
 
     @Override
     public StatementLocks newInstance()
     {
+        if ( locks == null )
+        {
+            throw new IllegalStateException( "Factory has not been initialized" );
+        }
+
         return new SimpleStatementLocks( locks.newClient() );
     }
 }
