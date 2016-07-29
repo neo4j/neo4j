@@ -20,87 +20,75 @@
 package org.neo4j.kernel.api.impl.index.partition;
 
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshotFileIterator;
+import org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshots;
 
 /**
- * Represents a single partition of a partitioned lucene index. Each partition is a separate Lucene index.
- * Contains and manages lifecycle of the corresponding {@link Directory}, {@link IndexWriter writer} and
- * {@link SearcherManager}.
+ * Represents a single read only partition of a partitioned lucene index.
+ * Read only partition do not support write to index and performs all read operations based on index opened in read
+ * only mode.
  */
-public class IndexPartition implements Closeable
+public class ReadOnlyIndexPartition extends AbstractIndexPartition
 {
-    private final IndexWriter indexWriter;
-    private final Directory directory;
     private final SearcherManager searcherManager;
-    private final File indexFolder;
 
-    public IndexPartition( File partitionFolder, Directory directory, IndexWriterConfig writerConfig )
-            throws IOException
+    ReadOnlyIndexPartition( File partitionFolder, Directory directory ) throws IOException
     {
-        this.indexFolder = partitionFolder;
-        this.directory = directory;
-        this.indexWriter = new IndexWriter( directory, writerConfig );
-        this.searcherManager = new SearcherManager( indexWriter, new SearcherFactory() );
+        super(partitionFolder, directory);
+        this.searcherManager = new SearcherManager( directory, new SearcherFactory() );
     }
 
+    @Override
     public IndexWriter getIndexWriter()
     {
-        return indexWriter;
-    }
-
-    public Directory getDirectory()
-    {
-        return directory;
+        throw new UnsupportedOperationException( "Retrieving index writer from read only index partition is " +
+                                                 "unsupported." );
     }
 
     /**
-     * Return searcher for requested partition.
-     * There is no tracking of acquired searchers, so the expectation is that callers will call close on acquired
-     * searchers to release resources.
-     *
-     * @return partition searcher
-     * @throws IOException if exception happened during searcher acquisition
+     * {@inheritDoc}
      */
+    @Override
     public PartitionSearcher acquireSearcher() throws IOException
     {
         return new PartitionSearcher( searcherManager );
     }
 
     /**
-     * Refresh partition to make newly inserted data visible for readers.
+     *  Refresh partition. No-op in read only partition.
      *
      * @throws IOException if refreshing fails.
      */
+    @Override
     public void maybeRefreshBlocking() throws IOException
     {
-        searcherManager.maybeRefreshBlocking();
+
     }
 
     @Override
     public void close() throws IOException
     {
-        IOUtils.closeAll( searcherManager, indexWriter, directory );
+        IOUtils.closeAll( searcherManager, directory );
     }
 
     /**
-     * Retrieve list of consistent Lucene index files for this partition.
+     * Retrieve list of consistent Lucene index files for read only partition.
      *
      * @return the iterator over index files.
      * @throws IOException if any IO operation fails.
      */
+    @Override
     public ResourceIterator<File> snapshot() throws IOException
     {
-        return LuceneIndexSnapshotFileIterator.forIndex( indexFolder, indexWriter );
+        return LuceneIndexSnapshots.forIndex( partitionFolder, directory );
     }
 }
+

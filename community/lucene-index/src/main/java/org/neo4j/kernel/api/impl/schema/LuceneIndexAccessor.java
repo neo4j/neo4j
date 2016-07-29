@@ -37,17 +37,21 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 public class LuceneIndexAccessor implements IndexAccessor
 {
     private final LuceneIndexWriter writer;
-    private LuceneSchemaIndex luceneIndex;
+    private SchemaIndex luceneIndex;
 
-    public LuceneIndexAccessor( LuceneSchemaIndex luceneIndex ) throws IOException
+    public LuceneIndexAccessor( SchemaIndex luceneIndex ) throws IOException
     {
         this.luceneIndex = luceneIndex;
-        this.writer = luceneIndex.getIndexWriter();
+        this.writer = luceneIndex.isReadOnly() ? null : luceneIndex.getIndexWriter();
     }
 
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
+        if ( luceneIndex.isReadOnly() )
+        {
+            throw new UnsupportedOperationException( "Can't create updated for read only index." );
+        }
         switch ( mode )
         {
         case ONLINE:

@@ -25,6 +25,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.neo4j.function.Factory;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
+import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
+import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -109,9 +111,12 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
      *
      * @return lucene schema index
      */
-    public LuceneSchemaIndex build()
+    public SchemaIndex build()
     {
-        return new LuceneSchemaIndex( storageBuilder.build(), indexConfig, samplingConfig, writerConfigFactory );
+        return isReadOnly() ? new ReadOnlyLuceneSchemaIndex( storageBuilder.build(), indexConfig, samplingConfig,
+                                                             new ReadOnlyIndexPartitionFactory() )
+                            : new WritableLuceneSchemaIndex( storageBuilder.build(), indexConfig, samplingConfig,
+                                    new WritableIndexPartitionFactory( writerConfigFactory ) );
     }
 
 }

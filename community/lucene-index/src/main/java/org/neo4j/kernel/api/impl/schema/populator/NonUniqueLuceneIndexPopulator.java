@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
+import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -39,7 +39,7 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     private final NonUniqueIndexSampler sampler;
 
-    public NonUniqueLuceneIndexPopulator( LuceneSchemaIndex luceneIndex, IndexSamplingConfig samplingConfig )
+    public NonUniqueLuceneIndexPopulator( SchemaIndex luceneIndex, IndexSamplingConfig samplingConfig )
     {
         super( luceneIndex );
         this.sampler = new NonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );

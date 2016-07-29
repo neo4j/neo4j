@@ -76,7 +76,7 @@ public class LuceneIndexSnapshotFileIteratorTest
         Set<String> files = listDir( dir );
         assertFalse( files.isEmpty() );
 
-        try ( ResourceIterator<File> snapshot = LuceneIndexSnapshotFileIterator.forIndex( indexDir, writer ) )
+        try ( ResourceIterator<File> snapshot = LuceneIndexSnapshots.forIndex( indexDir, writer ) )
         {
             Set<String> snapshotFiles = Iterators.asList( snapshot ).stream().map( File::getName ).collect( toSet() );
             assertEquals( files, snapshotFiles );
@@ -86,7 +86,7 @@ public class LuceneIndexSnapshotFileIteratorTest
     @Test
     public void shouldReturnEmptyIteratorWhenNoCommitsHaveBeenMade() throws IOException
     {
-        try ( ResourceIterator<File> snapshot = LuceneIndexSnapshotFileIterator.forIndex( indexDir, writer ) )
+        try ( ResourceIterator<File> snapshot = LuceneIndexSnapshots.forIndex( indexDir, writer ) )
         {
             assertFalse( snapshot.hasNext() );
         }

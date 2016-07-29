@@ -31,12 +31,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
 
 import org.neo4j.kernel.api.impl.index.collector.FirstHitCollector;
-import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
+import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndex;
+import org.neo4j.kernel.api.impl.labelscan.WritableLuceneLabelScanIndex;
 import org.neo4j.kernel.api.impl.labelscan.bitmaps.Bitmap;
 import org.neo4j.kernel.api.impl.labelscan.storestrategy.BitmapDocumentFormat;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -62,9 +61,9 @@ public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
 
     private final List<NodeLabelUpdate> updates;
     private long currentRange;
-    private LuceneLabelScanIndex index;
+    private WritableLuceneLabelScanIndex index;
 
-    public PartitionedLuceneLabelScanWriter( LuceneLabelScanIndex index, BitmapDocumentFormat format)
+    public PartitionedLuceneLabelScanWriter( WritableLuceneLabelScanIndex index, BitmapDocumentFormat format)
     {
         this.index = index;
         this.format = format;
@@ -129,7 +128,7 @@ public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
         {
             return;
         }
-        IndexPartition partition = getCurrentPartition();
+        AbstractIndexPartition partition = getCurrentPartition();
         try ( PartitionSearcher partitionSearcher = partition.acquireSearcher() )
         {
             IndexSearcher searcher = partitionSearcher.getIndexSearcher();
@@ -163,7 +162,7 @@ public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
 
     // since only one writer is allowed at any point in time
     // its safe to do partition allocation without any additional lock
-    private IndexPartition getCurrentPartition() throws IOException
+    private AbstractIndexPartition getCurrentPartition() throws IOException
     {
         int partition = getPartitionForRange();
 

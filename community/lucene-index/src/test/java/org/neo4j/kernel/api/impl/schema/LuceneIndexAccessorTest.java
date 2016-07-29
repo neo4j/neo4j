@@ -79,7 +79,7 @@ public class LuceneIndexAccessorTest
         final File dir = new File( "dir" );
         return Arrays.asList(
                 arg( dirFactory1 -> {
-                    LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create()
                             .withFileSystem( new EphemeralFileSystemAbstraction() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( dir )
@@ -91,7 +91,7 @@ public class LuceneIndexAccessorTest
                     return new LuceneIndexAccessor( index );
                 } ),
                 arg( dirFactory1 -> {
-                    LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create()
                             .uniqueIndex()
                             .withFileSystem( new EphemeralFileSystemAbstraction() )
                             .withDirectoryFactory( dirFactory1 )

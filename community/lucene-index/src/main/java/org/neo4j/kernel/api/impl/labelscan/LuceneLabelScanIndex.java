@@ -24,8 +24,8 @@ import java.io.UncheckedIOException;
 import java.util.List;
 
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
-import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
-import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
+import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
+import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.labelscan.reader.PartitionedLuceneLabelScanStoreReader;
@@ -45,26 +45,25 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
  * Each partition stores {@link org.apache.lucene.document.Document documents} according to the given
  * {@link BitmapDocumentFormat} and {@link LabelScanStorageStrategy}.
  */
-public class LuceneLabelScanIndex extends AbstractLuceneIndex
+class LuceneLabelScanIndex extends AbstractLuceneIndex
 {
     private final BitmapDocumentFormat format;
     private final LabelScanStorageStrategy storageStrategy;
 
-    public LuceneLabelScanIndex( BitmapDocumentFormat format, PartitionedIndexStorage indexStorage )
+    LuceneLabelScanIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory,
+            BitmapDocumentFormat format )
     {
-        super( indexStorage, IndexWriterConfigs::standard );
+        super( indexStorage, partitionFactory );
         this.format = format;
         this.storageStrategy = new NodeRangeDocumentLabelScanStorageStrategy( format );
     }
 
-
     public LabelScanReader getLabelScanReader()
     {
         ensureOpen();
-        partitionsLock.lock();
         try
         {
-            List<IndexPartition> partitions = getPartitions();
+            List<AbstractIndexPartition> partitions = getPartitions();
             return hasSinglePartition( partitions ) ? createSimpleReader( partitions )
                                                     : createPartitionedReader( partitions );
         }
@@ -72,16 +71,13 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
         {
             throw new UncheckedIOException( e );
         }
-        finally
-        {
-            partitionsLock.unlock();
-        }
+
     }
 
-    public LabelScanWriter getLabelScanWriter()
+    public LabelScanWriter getLabelScanWriter( WritableLuceneLabelScanIndex labelScanIndex )
     {
         ensureOpen();
-        return new PartitionedLuceneLabelScanWriter( this, format );
+        return new PartitionedLuceneLabelScanWriter( labelScanIndex, format );
     }
 
     /**
@@ -89,7 +85,7 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
      * <p>
      * <b>NOTE:</b>
      * There are no guarantees that reader returned from this method will see consistent documents with respect to
-     * {@link #getLabelScanReader() regular reader} and {@link #getLabelScanWriter() regular writer}.
+     * {@link #getLabelScanReader() regular reader} and {@link #getLabelScanWriter(WritableLuceneLabelScanIndex) regular writer}.
      *
      * @return the {@link AllEntriesLabelScanReader reader}.
      */
@@ -98,14 +94,14 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
         return storageStrategy.newNodeLabelReader( allDocumentsReader() );
     }
 
-    private LabelScanReader createSimpleReader( List<IndexPartition> partitions ) throws IOException
+    private LabelScanReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
-        IndexPartition partition = getFirstPartition( partitions );
+        AbstractIndexPartition partition = getFirstPartition( partitions );
         PartitionSearcher searcher = partition.acquireSearcher();
         return new SimpleLuceneLabelScanStoreReader( searcher, storageStrategy );
     }
 
-    private LabelScanReader createPartitionedReader( List<IndexPartition> partitions ) throws IOException
+    private LabelScanReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
         return new PartitionedLuceneLabelScanStoreReader(searchers, storageStrategy);

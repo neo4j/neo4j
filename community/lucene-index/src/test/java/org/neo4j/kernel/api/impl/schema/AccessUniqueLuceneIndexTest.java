@@ -127,7 +127,7 @@ public class AccessUniqueLuceneIndexTest
 
     private LuceneIndexAccessor createAccessor( PartitionedIndexStorage indexStorage ) throws IOException
     {
-        LuceneSchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
                 .withIndexStorage( indexStorage )
                 .uniqueIndex()
                 .build();

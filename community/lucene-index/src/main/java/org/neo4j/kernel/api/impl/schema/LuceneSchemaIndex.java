@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
@@ -29,11 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.function.Factory;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
-import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
+import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
+import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.reader.PartitionedIndexReader;
@@ -53,7 +52,7 @@ import static java.util.Collections.singletonMap;
 /**
  * Implementation of Lucene schema index that support multiple partitions.
  */
-public class LuceneSchemaIndex extends AbstractLuceneIndex
+class LuceneSchemaIndex extends AbstractLuceneIndex
 {
     private static final String KEY_STATUS = "status";
     private static final String ONLINE = "online";
@@ -64,34 +63,26 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
 
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
 
-    public LuceneSchemaIndex( PartitionedIndexStorage indexStorage, IndexConfiguration config,
-            IndexSamplingConfig samplingConfig, Factory<IndexWriterConfig> writerConfigFactory )
+    LuceneSchemaIndex( PartitionedIndexStorage indexStorage, IndexConfiguration config,
+            IndexSamplingConfig samplingConfig, IndexPartitionFactory partitionFactory )
     {
-        super( indexStorage, writerConfigFactory );
+        super( indexStorage, partitionFactory );
         this.config = config;
         this.samplingConfig = samplingConfig;
     }
 
-    public LuceneIndexWriter getIndexWriter() throws IOException
+    public LuceneIndexWriter getIndexWriter( WritableLuceneSchemaIndex writableLuceneSchemaIndex ) throws IOException
     {
         ensureOpen();
-        return new PartitionedIndexWriter( this );
+        return new PartitionedIndexWriter( writableLuceneSchemaIndex );
     }
 
     public IndexReader getIndexReader() throws IOException
     {
         ensureOpen();
-        partitionsLock.lock();
-        try
-        {
-            List<IndexPartition> partitions = getPartitions();
-            return hasSinglePartition( partitions ) ? createSimpleReader( partitions )
-                                                    : createPartitionedReader( partitions );
-        }
-        finally
-        {
-            partitionsLock.unlock();
-        }
+        List<AbstractIndexPartition> partitions = getPartitions();
+        return hasSinglePartition( partitions ) ? createSimpleReader( partitions )
+                                                : createPartitionedReader( partitions );
     }
 
     /**
@@ -155,7 +146,7 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
     public boolean isOnline() throws IOException
     {
         ensureOpen();
-        IndexPartition partition = getFirstPartition( getPartitions() );
+        AbstractIndexPartition partition = getFirstPartition( getPartitions() );
         Directory directory = partition.getDirectory();
         try ( DirectoryReader reader = DirectoryReader.open( directory ) )
         {
@@ -172,18 +163,10 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
     public void markAsOnline() throws IOException
     {
         ensureOpen();
-        commitCloseLock.lock();
-        try
-        {
-            IndexPartition partition = getFirstPartition( getPartitions() );
-            IndexWriter indexWriter = partition.getIndexWriter();
-            indexWriter.setCommitData( ONLINE_COMMIT_USER_DATA );
-            flush();
-        }
-        finally
-        {
-            commitCloseLock.unlock();
-        }
+        AbstractIndexPartition partition = getFirstPartition( getPartitions() );
+        IndexWriter indexWriter = partition.getIndexWriter();
+        indexWriter.setCommitData( ONLINE_COMMIT_USER_DATA );
+        flush();
     }
 
     /**
@@ -201,31 +184,31 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
     {
         ensureOpen();
         maybeRefreshBlocking();
-        List<IndexPartition> partitions = getPartitions();
+        List<AbstractIndexPartition> partitions = getPartitions();
         return hasSinglePartition( partitions ) ? createSimpleUniquenessVerifier( partitions )
                                                 : createPartitionedUniquenessVerifier( partitions );
     }
 
-    private SimpleIndexReader createSimpleReader( List<IndexPartition> partitions ) throws IOException
+    private SimpleIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
-        IndexPartition singlePartition = getFirstPartition( partitions );
+        AbstractIndexPartition singlePartition = getFirstPartition( partitions );
         return new SimpleIndexReader( singlePartition.acquireSearcher(), config, samplingConfig, taskCoordinator );
     }
 
-    private UniquenessVerifier createSimpleUniquenessVerifier( List<IndexPartition> partitions ) throws IOException
+    private UniquenessVerifier createSimpleUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException
     {
-        IndexPartition singlePartition = getFirstPartition( partitions );
+        AbstractIndexPartition singlePartition = getFirstPartition( partitions );
         PartitionSearcher partitionSearcher = singlePartition.acquireSearcher();
         return new SimpleUniquenessVerifier( partitionSearcher );
     }
 
-    private PartitionedIndexReader createPartitionedReader( List<IndexPartition> partitions ) throws IOException
+    private PartitionedIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
         return new PartitionedIndexReader( searchers, config, samplingConfig, taskCoordinator );
     }
 
-    private UniquenessVerifier createPartitionedUniquenessVerifier( List<IndexPartition> partitions ) throws IOException
+    private UniquenessVerifier createPartitionedUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
         return new PartitionedUniquenessVerifier( searchers );

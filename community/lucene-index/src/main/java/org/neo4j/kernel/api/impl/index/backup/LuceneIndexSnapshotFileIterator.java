@@ -19,74 +19,27 @@
  */
 package org.neo4j.kernel.api.impl.index.backup;
 
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexDeletionPolicy;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
-import org.apache.lucene.store.Directory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
-
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.PrefetchingIterator;
-
-import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 
 /**
  * Iterator over Lucene index files for a particular {@link IndexCommit snapshot}.
  * Applicable only to a single Lucene index partition.
  * Internally uses {@link SnapshotDeletionPolicy#snapshot()} to create an {@link IndexCommit} that represents
  * consistent state of the index for a particular point in time.
- *
- * Turns to be an empty iterator if index does not have any commits yet.
  */
-public class LuceneIndexSnapshotFileIterator extends PrefetchingIterator<File> implements ResourceIterator<File>
+public class LuceneIndexSnapshotFileIterator extends ReadOnlyIndexSnapshotFileIterator
 {
-    private final File indexDirectory;
     private final SnapshotDeletionPolicy snapshotDeletionPolicy;
-    private final Iterator<String> fileNames;
-    private final IndexCommit snapshot;
 
-    public static ResourceIterator<File> forIndex( File indexFolder, IndexWriter indexWriter ) throws IOException
-    {
-        IndexDeletionPolicy deletionPolicy = indexWriter.getConfig().getIndexDeletionPolicy();
-        if ( deletionPolicy instanceof SnapshotDeletionPolicy )
-        {
-            SnapshotDeletionPolicy policy = (SnapshotDeletionPolicy) deletionPolicy;
-            return hasCommits( indexWriter )
-                   ? new LuceneIndexSnapshotFileIterator( indexFolder, policy )
-                   : emptyIterator();
-        }
-        else
-        {
-            throw new UnsupportedIndexDeletionPolicy( "Can't perform index snapshot with specified index deleiton " +
-                                                      "policy: " + deletionPolicy.getClass().getName() + ". " +
-                                                      "Only " + SnapshotDeletionPolicy.class.getName() + " is " +
-                                                      "supported" );
-        }
-    }
-
-    private LuceneIndexSnapshotFileIterator( File indexDirectory, SnapshotDeletionPolicy snapshotDeletionPolicy )
+    LuceneIndexSnapshotFileIterator( File indexDirectory, SnapshotDeletionPolicy snapshotDeletionPolicy )
             throws IOException
     {
-        this.snapshot = snapshotDeletionPolicy.snapshot();
-        this.indexDirectory = indexDirectory;
+        super( indexDirectory, snapshotDeletionPolicy.snapshot() );
         this.snapshotDeletionPolicy = snapshotDeletionPolicy;
-        this.fileNames = snapshot.getFileNames().iterator();
-    }
-
-    @Override
-    protected File fetchNextOrNull()
-    {
-        if ( !fileNames.hasNext() )
-        {
-            return null;
-        }
-        return new File( indexDirectory, fileNames.next() );
     }
 
     @Override
@@ -94,19 +47,13 @@ public class LuceneIndexSnapshotFileIterator extends PrefetchingIterator<File> i
     {
         try
         {
-            snapshotDeletionPolicy.release( snapshot );
+            snapshotDeletionPolicy.release( getIndexCommit() );
         }
         catch ( IOException e )
         {
             throw new SnapshotReleaseException( "Unable to release lucene index snapshot for index in: " +
-                                                indexDirectory, e );
+                                                getIndexDirectory(), e );
         }
-    }
-
-    private static boolean hasCommits( IndexWriter indexWriter ) throws IOException
-    {
-        Directory directory = indexWriter.getDirectory();
-        return DirectoryReader.indexExists( directory ) && SegmentInfos.readLatestCommit( directory ) != null;
     }
 
 }

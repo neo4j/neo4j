@@ -46,8 +46,8 @@ import org.neo4j.helpers.Strings;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
+import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
@@ -71,7 +71,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Parameter
     public int nodesToCreate;
 
-    private LuceneSchemaIndex index;
+    private SchemaIndex index;
 
     @Parameters( name = "created nodes: {0}" )
     public static Iterable<Object[]> data()

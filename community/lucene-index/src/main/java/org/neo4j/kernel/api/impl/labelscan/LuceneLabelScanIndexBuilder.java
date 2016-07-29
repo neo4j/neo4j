@@ -66,8 +66,9 @@ public class LuceneLabelScanIndexBuilder extends AbstractLuceneIndexBuilder<Luce
      *
      * @return lucene label scan index
      */
-    public LuceneLabelScanIndex build()
+    public LabelScanIndex build()
     {
-        return new LuceneLabelScanIndex( format, storageBuilder.build() );
+        return isReadOnly() ? new ReadOnlyLuceneLabelScanIndex( format, storageBuilder.build() )
+                            : new WritableLuceneLabelScanIndex( format, storageBuilder.build() );
     }
 }

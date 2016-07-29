@@ -28,7 +28,7 @@ import java.util.Iterator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
+import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -38,10 +38,10 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
  */
 public abstract class LuceneIndexPopulator implements IndexPopulator
 {
-    protected LuceneSchemaIndex luceneIndex;
+    protected SchemaIndex luceneIndex;
     protected LuceneIndexWriter writer;
 
-    LuceneIndexPopulator( LuceneSchemaIndex luceneIndex )
+    LuceneIndexPopulator( SchemaIndex luceneIndex )
     {
         this.luceneIndex = luceneIndex;
     }

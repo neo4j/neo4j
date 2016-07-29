@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
+import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -33,19 +33,19 @@ import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 /**
  * A {@link LuceneIndexPopulatingUpdater} used for unique Lucene schema indexes.
  * Verifies uniqueness of added and changed values when closed using
- * {@link LuceneSchemaIndex#verifyUniqueness(PropertyAccessor, int, List)} method.
+ * {@link SchemaIndex#verifyUniqueness(PropertyAccessor, int, List)} method.
  */
 public class UniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpdater
 {
     private final int propertyKeyId;
-    private final LuceneSchemaIndex luceneIndex;
+    private final SchemaIndex luceneIndex;
     private final PropertyAccessor propertyAccessor;
     private final UniqueIndexSampler sampler;
 
     private final List<Object> updatedPropertyValues = new ArrayList<>();
 
     public UniqueLuceneIndexPopulatingUpdater( LuceneIndexWriter writer, int propertyKeyId,
-            LuceneSchemaIndex luceneIndex, PropertyAccessor propertyAccessor, UniqueIndexSampler sampler )
+            SchemaIndex luceneIndex, PropertyAccessor propertyAccessor, UniqueIndexSampler sampler )
     {
         super( writer );
         this.propertyKeyId = propertyKeyId;
