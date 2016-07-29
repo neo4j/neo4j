@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.server;
 
+import static java.lang.String.format;
+
 import java.util.Objects;
 
 public final class StoreId
@@ -84,6 +86,7 @@ public final class StoreId
     @Override
     public String toString()
     {
-        return "Store{" + Long.toString( randomId, Character.MAX_RADIX )+ "_" + upgradeId + '}';
+        return format( "Store{creationTime:%d, randomId:%s, upgradeTime:%d, upgradeId:%d}",
+                creationTime, Long.toString( randomId, Character.MAX_RADIX ), upgradeTime, upgradeId );
     }
 }
