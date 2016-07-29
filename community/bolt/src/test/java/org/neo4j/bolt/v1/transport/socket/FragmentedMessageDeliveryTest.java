@@ -127,7 +127,7 @@ public class FragmentedMessageDeliveryTest
         // Then the session should've received the specified messages, and the protocol should be in a nice clean state
         try
         {
-            verify( sess ).run( eq( "Mjölnir" ), any( Map.class ), any(), any( Session.Callback.class ) );
+            verify( sess ).run( eq( "Mjölnir" ), any( Map.class ), any( Session.Callback.class ) );
         }
         catch ( AssertionError e )
         {

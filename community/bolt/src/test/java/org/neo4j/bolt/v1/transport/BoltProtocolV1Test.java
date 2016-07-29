@@ -64,7 +64,7 @@ public class BoltProtocolV1Test
         verifyNoMoreInteractions( outputChannel );
 
         // But instead signal to the session that shit hit the fan.
-        verify( session ).externalError( any(), any(), any() );
+        verify( session ).externalError( any(), any() );
         verify( session ).close();
     }
 

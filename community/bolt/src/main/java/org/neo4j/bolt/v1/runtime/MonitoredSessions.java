@@ -83,54 +83,54 @@ public class MonitoredSessions implements Sessions
         }
 
         @Override
-        public <A> void init( String clientName, Map<String,Object> authToken, long currentHighestTransactionId,
-                A attachment, Callback<Boolean,A> callback )
+        public void init( String clientName, Map<String, Object> authToken, long currentHighestTransactionId,
+                          Callback<Boolean> callback )
         {
             monitor.messageReceived();
-            delegate.init( clientName, authToken, currentHighestTransactionId, attachment, withMonitor( callback ) );
+            delegate.init( clientName, authToken, currentHighestTransactionId, withMonitor( callback ) );
         }
 
         @Override
-        public <A> void run( String statement, Map<String,Object> params, A attachment,
-                Callback<StatementMetadata,A> callback )
+        public void run( String statement, Map<String, Object> params,
+                         Callback<StatementMetadata> callback )
         {
             monitor.messageReceived();
-            delegate.run( statement, params, attachment, withMonitor( callback ) );
+            delegate.run( statement, params, withMonitor( callback ) );
         }
 
         @Override
-        public <A> void pullAll( A attachment, Callback<RecordStream,A> callback )
+        public void pullAll( Callback<RecordStream> callback )
         {
             monitor.messageReceived();
-            delegate.pullAll( attachment, withMonitor( callback ) );
+            delegate.pullAll( withMonitor( callback ) );
         }
 
         @Override
-        public <A> void discardAll( A attachment, Callback<Void,A> callback )
+        public void discardAll( Callback<Void> callback )
         {
             monitor.messageReceived();
-            delegate.discardAll( attachment, withMonitor( callback ) );
+            delegate.discardAll( withMonitor( callback ) );
         }
 
         @Override
-        public <A> void reset( A attachment, Callback<Void,A> callback )
+        public void reset( Callback<Void> callback )
         {
             monitor.messageReceived();
-            delegate.reset( attachment, withMonitor( callback ) );
+            delegate.reset( withMonitor( callback ) );
         }
 
         @Override
-        public <A> void externalError( Neo4jError error, A attachment, Callback<Void,A> callback )
+        public void externalError( Neo4jError error, Callback<Void> callback )
         {
             monitor.messageReceived();
-            delegate.externalError( error, attachment, withMonitor( callback ) );
+            delegate.externalError( error, withMonitor( callback ) );
         }
 
         @Override
-        public <A> void ackFailure( A attachment, Callback<Void,A> callback )
+        public void ackFailure( Callback<Void> callback )
         {
             monitor.messageReceived();
-            delegate.ackFailure( attachment, withMonitor( callback ) );
+            delegate.ackFailure( withMonitor( callback ) );
         }
 
         @Override
@@ -163,45 +163,45 @@ public class MonitoredSessions implements Sessions
             delegate.close();
         }
 
-        private <R, A> Callback<R,A> withMonitor( Callback<R,A> callback )
+        private <R, A> Callback<R> withMonitor( Callback<R> callback )
         {
-            return new Callback<R,A>()
+            return new Callback<R>()
             {
                 private final long start = clock.millis();
                 private long queueTime = 0;
 
                 @Override
-                public void started( A attachment )
+                public void started()
                 {
                     queueTime = clock.millis() - start;
                     monitor.processingStarted( queueTime );
-                    callback.started( attachment );
+                    callback.started();
                 }
 
                 @Override
-                public void result( R result, A attachment ) throws Exception
+                public void result( R result ) throws Exception
                 {
-                    callback.result( result, attachment );
+                    callback.result( result );
                 }
 
                 @Override
-                public void failure( Neo4jError err, A attachment )
+                public void failure( Neo4jError err )
                 {
-                    callback.failure( err, attachment );
+                    callback.failure( err );
                     callMonitorDone();
                 }
 
                 @Override
-                public void completed( A attachment )
+                public void completed()
                 {
-                    callback.completed( attachment );
+                    callback.completed();
                     callMonitorDone();
                 }
 
                 @Override
-                public void ignored( A attachment )
+                public void ignored()
                 {
-                    callback.ignored( attachment );
+                    callback.ignored();
                     callMonitorDone();
                 }
 

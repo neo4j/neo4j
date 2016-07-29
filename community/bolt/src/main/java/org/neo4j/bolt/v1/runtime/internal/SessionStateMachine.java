@@ -634,7 +634,7 @@ class SessionStateMachine implements Session, SessionState
 
     /**
      * This is incremented each time {@link #interrupt()} is called,
-     * and decremented each time a {@link #reset(Object, Callback)} message
+     * and decremented each time a {@link Session#reset(Callback)} message
      * arrives. When this is above 0, all messages will be ignored.
      * This way, when a reset message arrives on the network, interrupt
      * can be called to "purge" all the messages ahead of the reset message.
@@ -661,9 +661,6 @@ class SessionStateMachine implements Session, SessionState
 
     /** Callback poised to receive the next response */
     private Callback currentCallback;
-
-    /** Callback attachment */
-    private Object currentAttachment;
 
     /** The current session auth state to be used for starting transactions */
     private AuthSubject authSubject;
@@ -746,10 +743,10 @@ class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void init( String clientName, Map<String,Object> authToken, long currentHighestTransactionId,
-            A attachment, Callback<Boolean,A> callback )
+    public void init( String clientName, Map<String, Object> authToken, long currentHighestTransactionId,
+                      Callback<Boolean> callback )
     {
-        before( attachment, callback );
+        before( callback );
         try
         {
             state = state.init( this, clientName, authToken, currentHighestTransactionId );
@@ -758,10 +755,10 @@ class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void run( String statement, Map<String,Object> params, A attachment,
-            Callback<StatementMetadata,A> callback )
+    public void run( String statement, Map<String, Object> params,
+                     Callback<StatementMetadata> callback )
     {
-        before( attachment, callback );
+        before( callback );
         try
         {
             state = state.runStatement( this, statement, params );
@@ -770,9 +767,9 @@ class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void pullAll( A attachment, Callback<RecordStream,A> callback )
+    public void pullAll( Callback<RecordStream> callback )
     {
-        before( attachment, callback );
+        before( callback );
         try
         {
             state = state.pullAll( this );
@@ -781,9 +778,9 @@ class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void discardAll( A attachment, Callback<Void,A> callback )
+    public void discardAll( Callback<Void> callback )
     {
-        before( attachment, callback );
+        before( callback );
         try
         {
             state = state.discardAll( this );
@@ -792,9 +789,9 @@ class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void ackFailure( A attachment, Callback<Void,A> callback )
+    public void ackFailure( Callback<Void> callback )
     {
-        before( attachment, callback );
+        before( callback );
         try
         {
             state = state.ackFailure( this );
@@ -803,9 +800,9 @@ class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void externalError( Neo4jError error, A attachment, Callback<Void,A> callback )
+    public void externalError( Neo4jError error, Callback<Void> callback )
     {
-        before( attachment, callback );
+        before( callback );
         try
         {
             state = state.error( this, error );
@@ -815,9 +812,9 @@ class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void reset( A attachment, Callback<Void,A> callback )
+    public void reset( Callback<Void> callback )
     {
-        before( attachment, callback );
+        before( callback );
         try
         {
             state = state.reset( this );
@@ -878,7 +875,7 @@ class SessionStateMachine implements Session, SessionState
     @Override
     public void close()
     {
-        before( null, null );
+        before( null );
         try
         {
             state = state.halt( this );
@@ -941,13 +938,13 @@ class SessionStateMachine implements Session, SessionState
     /**
      * Set the callback to receive the next response. This will receive one completion or one failure, and then be
      * detached again. This exists both to ensure that each callback only gets called once, as well as to avoid
-     * repeating the callback and attachments in every method signature in the state machine.
+     * repeating the callback in every method signature in the state machine.
      */
-    private void before( Object attachment, Callback cb )
+    private void before( Callback cb )
     {
         if ( cb != null )
         {
-            cb.started( attachment );
+            cb.started();
         }
 
         if ( haltMark.isMarked() )
@@ -967,9 +964,7 @@ class SessionStateMachine implements Session, SessionState
             spi.bindTransactionToCurrentThread( currentTransaction );
         }
         assert this.currentCallback == null;
-        assert this.currentAttachment == null;
         this.currentCallback = cb;
-        this.currentAttachment = attachment;
     }
 
     /** Signal to the currently attached client callback that the request has been processed */
@@ -981,12 +976,11 @@ class SessionStateMachine implements Session, SessionState
             {
                 try
                 {
-                    currentCallback.completed( currentAttachment );
+                    currentCallback.completed();
                 }
                 finally
                 {
                     currentCallback = null;
-                    currentAttachment = null;
                 }
             }
         }
@@ -1009,7 +1003,7 @@ class SessionStateMachine implements Session, SessionState
 
         if ( currentCallback != null )
         {
-            currentCallback.failure( err, currentAttachment );
+            currentCallback.failure( err );
         }
     }
 
@@ -1018,7 +1012,7 @@ class SessionStateMachine implements Session, SessionState
     {
         if ( currentCallback != null )
         {
-            currentCallback.result( result, currentAttachment );
+            currentCallback.result( result );
         }
     }
 
@@ -1030,7 +1024,7 @@ class SessionStateMachine implements Session, SessionState
     {
         if ( currentCallback != null )
         {
-            currentCallback.ignored( currentAttachment );
+            currentCallback.ignored();
         }
     }
 

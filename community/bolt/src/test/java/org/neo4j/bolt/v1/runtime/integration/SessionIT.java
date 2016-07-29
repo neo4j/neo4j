@@ -66,10 +66,10 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
 
         // When
-        session.run( "", EMPTY_PARAMS, null, responses );
+        session.run( "", EMPTY_PARAMS, responses );
 
         // Then
         assertThat( responses.next(), failedWith( Status.Statement.SyntaxError ) );
@@ -80,11 +80,11 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
 
         // When
-        session.run( System.lineSeparator(), EMPTY_PARAMS, null, responses );
-        session.pullAll( "",  responses );
+        session.run( System.lineSeparator(), EMPTY_PARAMS, responses );
+        session.pullAll( responses );
 
         // Then
         assertThat( responses.next(), failedWith( Status.Statement.SyntaxError ) );
@@ -95,16 +95,16 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap() , -1, null, null );
+        session.init( "TestClient/1.0", emptyMap() , -1, null );
 
         // When
-        session.run( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS, null, responses );
+        session.run( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS, responses );
 
         // Then
         assertThat( responses.next(), success() );
 
         // When
-        session.pullAll( null, pulling );
+        session.pullAll( pulling );
 
         // Then
         assertThat( pulling.next(), streamContaining( StreamMatchers.eqRecord( equalTo( "k" ) ) ) );
@@ -115,14 +115,14 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
 
         // And Given that I've ran and pulled one stream
-        session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
-        session.pullAll( null, Session.Callbacks.<RecordStream,Object>noop() );
+        session.run( "RETURN 1", EMPTY_PARAMS, Session.Callbacks.<StatementMetadata>noop() );
+        session.pullAll( Session.Callbacks.<RecordStream>noop() );
 
         // When I run a new statement
-        session.run( "RETURN 1", EMPTY_PARAMS, null, responses );
+        session.run( "RETURN 1", EMPTY_PARAMS, responses );
 
         // Then
         assertThat( responses.next(), success() );
@@ -133,14 +133,14 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
 
         // And Given that I've ran and pulled one stream
-        session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata,Object>noop() );
-        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
+        session.run( "RETURN 1", EMPTY_PARAMS, Session.Callbacks.<StatementMetadata>noop() );
+        session.discardAll( Session.Callbacks.<Void>noop() );
 
         // When I run a new statement
-        session.run( "RETURN 1", EMPTY_PARAMS, null, responses );
+        session.run( "RETURN 1", EMPTY_PARAMS, responses );
 
         // Then
         assertThat( responses.next(), success() );
@@ -151,16 +151,16 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
 
         // And Given that I've ran and pulled one stream
-        session.run( "BEGIN", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
-        session.pullAll( null, Session.Callbacks.<RecordStream,Object>noop() );
-        session.run( "COMMIT", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata,Object>noop() );
-        session.pullAll( null, Session.Callbacks.<RecordStream,Object>noop() );
+        session.run( "BEGIN", EMPTY_PARAMS, Session.Callbacks.<StatementMetadata>noop() );
+        session.pullAll( Session.Callbacks.<RecordStream>noop() );
+        session.run( "COMMIT", EMPTY_PARAMS, Session.Callbacks.<StatementMetadata>noop() );
+        session.pullAll( Session.Callbacks.<RecordStream>noop() );
 
         // When I run a new statement
-        session.run( "BEGIN", EMPTY_PARAMS, null, responses );
+        session.run( "BEGIN", EMPTY_PARAMS, responses );
 
         // Then
         assertThat( responses.next(), success() );
@@ -171,13 +171,13 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
 
         // And Given that I've ran one statement
-        session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
+        session.run( "RETURN 1", EMPTY_PARAMS, Session.Callbacks.<StatementMetadata>noop() );
 
         // When I run a new statement, before consuming the stream
-        session.run( "RETURN 1", EMPTY_PARAMS, null, responses );
+        session.run( "RETURN 1", EMPTY_PARAMS, responses );
 
         // Then
         assertThat( responses.next(), failedWith( Status.Request.Invalid ) );
@@ -188,14 +188,14 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
 
         // And Given that I've ran and pulled one stream
-        session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
-        session.pullAll( null, Session.Callbacks.<RecordStream,Object>noop() );
+        session.run( "RETURN 1", EMPTY_PARAMS, Session.Callbacks.<StatementMetadata>noop() );
+        session.pullAll( Session.Callbacks.<RecordStream>noop() );
 
         // When I attempt to pull more items from the stream
-        session.pullAll( null, pulling );
+        session.pullAll( pulling );
 
         // Then
         assertThat( pulling.next(), failedWith( Status.Request.Invalid ) );
@@ -206,14 +206,14 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
 
         // And Given that I've ran and pulled one stream
-        session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
-        session.pullAll( null, Session.Callbacks.<RecordStream,Object>noop() );
+        session.run( "RETURN 1", EMPTY_PARAMS, Session.Callbacks.<StatementMetadata>noop() );
+        session.pullAll( Session.Callbacks.<RecordStream>noop() );
 
         // When I attempt to pull more items from the stream
-        session.discardAll( null, discarding );
+        session.discardAll( discarding );
 
         // Then
         assertThat( discarding.next(), failedWith( Status.Request.Invalid ) );
@@ -224,14 +224,14 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
 
         // And Given that I've ran and pulled one stream
-        session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
-        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
+        session.run( "RETURN 1", EMPTY_PARAMS, Session.Callbacks.<StatementMetadata>noop() );
+        session.discardAll( Session.Callbacks.<Void>noop() );
 
         // When I attempt to pull more items from the stream
-        session.discardAll( null, discarding );
+        session.discardAll( discarding );
 
         // Then
         assertThat( discarding.next(), failedWith( Status.Request.Invalid ) );
@@ -242,14 +242,14 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
 
         // And Given that I've ran and pulled one stream
-        session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
-        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
+        session.run( "RETURN 1", EMPTY_PARAMS, Session.Callbacks.<StatementMetadata>noop() );
+        session.discardAll( Session.Callbacks.<Void>noop() );
 
         // When I attempt to pull more items from the stream
-        session.pullAll( null, pulling );
+        session.pullAll( pulling );
 
         // Then
         assertThat( pulling.next(), failedWith( Status.Request.Invalid ) );
@@ -260,13 +260,13 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
-        session.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
-        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
+        session.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, Session.Callbacks.<StatementMetadata>noop() );
+        session.discardAll( Session.Callbacks.<Void>noop() );
 
         // When I perform an action that will fail on commit
-        session.run( "MATCH (n:Victim) DELETE n", EMPTY_PARAMS, null, responses );
-        session.discardAll( null, discarding );
+        session.run( "MATCH (n:Victim) DELETE n", EMPTY_PARAMS, responses );
+        session.discardAll( discarding );
 
         // Then the statement running should have succeeded
         assertThat( responses.next(), success() );
@@ -284,22 +284,22 @@ public class SessionIT
         // transaction, be they client-local or inside neo, can be handled the
         // same way by a driver.
         Session session = env.newSession("bolt-test");
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
 
-        session.run( "BEGIN", EMPTY_PARAMS, null, noOp() );
-        session.discardAll( null, noOp() );
-        session.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, null, noOp() );
-        session.discardAll( null, noOp() );
+        session.run( "BEGIN", EMPTY_PARAMS, noOp() );
+        session.discardAll( noOp() );
+        session.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, noOp() );
+        session.discardAll( noOp() );
 
         // When I perform an action that will fail
-        session.run( "this is not valid syntax", EMPTY_PARAMS, null, responses );
+        session.run( "this is not valid syntax", EMPTY_PARAMS, responses );
 
         // Then I should see a failure
         assertThat( responses.next(), failed() );
 
         // And when I acknowledge that failure, and roll back the transaction
-        session.ackFailure( null, responses );
-        session.run( "ROLLBACK", EMPTY_PARAMS, null, responses );
+        session.ackFailure( responses );
+        session.run( "ROLLBACK", EMPTY_PARAMS, responses );
 
         // Then both operations should succeed
         assertThat( responses, recorded(
@@ -313,29 +313,29 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
 
         final CountDownLatch pullAllCallbackCalled = new CountDownLatch( 1 );
         final AtomicReference<Neo4jError> error = new AtomicReference<>();
 
         // When something fails while publishing the result stream
-        session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
-        session.pullAll( null, new Session.Callback.Adapter<RecordStream,Object>()
+        session.run( "RETURN 1", EMPTY_PARAMS, Session.Callbacks.<StatementMetadata>noop() );
+        session.pullAll( new Session.Callback.Adapter<RecordStream>()
         {
             @Override
-            public void result( RecordStream result, Object attachment ) throws Exception
+            public void result( RecordStream result ) throws Exception
             {
                 throw new RuntimeException( "Ooopsies!" );
             }
 
             @Override
-            public void failure( Neo4jError err, Object attachment )
+            public void failure( Neo4jError err )
             {
                 error.set( err );
             }
 
             @Override
-            public void completed( Object attachment )
+            public void completed()
             {
                 pullAllCallbackCalled.countDown();
             }
@@ -353,9 +353,9 @@ public class SessionIT
     {
         // Given
         Session firstSession = env.newSession( "<test>" );
-        firstSession.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        firstSession.init( "TestClient/1.0", emptyMap(), -1, null );
         Session secondSession = env.newSession( "<test>" );
-        secondSession.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        secondSession.init( "TestClient/1.0", emptyMap(), -1, null );
 
         // And given I've started a transaction in one session
         runAndPull( firstSession, "BEGIN" );
@@ -377,7 +377,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
         Map<String, Object> params = new HashMap<>();
         params.put( "csvFileUrl", createLocalIrisData( session ) );
 
@@ -424,7 +424,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
         Map<String, Object> params = new HashMap<>();
         params.put( "csvFileUrl", createLocalIrisData( session ) );
         runAndPull( session, "BEGIN" );
@@ -439,7 +439,6 @@ public class SessionIT
                         "CREATE (c)<-[:HAS_CLASS]-(s)\n" +
                         "RETURN count(*) AS c",
                 params,
-                null,
                 responses
         );
 
@@ -454,12 +453,12 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null );
 
         // And given I've started a transaction that failed
         runAndPull( session, "BEGIN" );
-        session.run( "invalid", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
-        session.reset( null, Session.Callbacks.<Void,Object>noop() );
+        session.run( "invalid", EMPTY_PARAMS, Session.Callbacks.<StatementMetadata>noop() );
+        session.reset( Session.Callbacks.<Void>noop() );
 
         // When
         runAndPull( session, "BEGIN" );
@@ -489,8 +488,8 @@ public class SessionIT
     private Object[] runAndPull( Session session, String statement, Map<String, Object> params ) throws InterruptedException
     {
         RecordingCallback<RecordStream, ?> cb = new RecordingCallback<>();
-        session.run( statement, params, null, Session.Callbacks.<StatementMetadata,Object>noop() );
-        session.pullAll( null, cb );
+        session.run( statement, params, Session.Callbacks.<StatementMetadata>noop() );
+        session.pullAll( cb );
         return ((RecordingCallback.Result) cb.next()).records();
     }
 

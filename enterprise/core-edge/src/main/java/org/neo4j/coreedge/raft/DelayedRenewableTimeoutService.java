@@ -72,8 +72,7 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
     }
 
     /**
-     * Set up a new timeout. The attachment is optional data to pass along to the trigger, and can be set to Object
-     * and null if you don't care about it.
+     * Set up a new timeout.
      * <p>
      * The randomRangeInMillis attribute allows you to introduce a bit of arbitrariness in when the timeout is triggered, which
      * is a useful way to avoid "thundering herds" when multiple timeouts are likely to trigger at the same time.

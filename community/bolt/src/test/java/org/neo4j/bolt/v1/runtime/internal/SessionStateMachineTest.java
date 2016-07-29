@@ -64,18 +64,18 @@ public class SessionStateMachineTest
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
 
-        machine.init( "FunClient/1.2", emptyMap(), -1, null, noOp()  );
+        machine.init( "FunClient/1.2", emptyMap(), -1, noOp()  );
         machine.beginImplicitTransaction();
 
         // When
-        machine.run( "Hello, world!", emptyMap(), null, noOp() );
+        machine.run( "Hello, world!", emptyMap(), noOp() );
 
         // Then
         assertThat( machine.state(), equalTo( ERROR ) );
         verify( ktx ).failure();
 
         // And when
-        machine.reset( null, noOp()  );
+        machine.reset( noOp()  );
 
         // Then the machine goes back to an idle (no open transaction) state
         verify( ktx ).close();
@@ -86,7 +86,7 @@ public class SessionStateMachineTest
     public void shouldStopRunningTxOnHalt() throws Throwable
     {
         // When
-        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, Session.Callback.NO_OP );
         machine.beginTransaction();
         machine.close();
 
@@ -101,7 +101,7 @@ public class SessionStateMachineTest
     public void shouldPublishClientName() throws Throwable
     {
         // When
-        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, Session.Callback.NO_OP );
 
         // Then
         verify( spi ).udcRegisterClient( "FunClient/1.2" );
@@ -111,11 +111,11 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnIdle() throws Throwable
     {
         // Given
-        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, Session.Callback.NO_OP );
 
         // When
         TestCallback<Void> callback = new TestCallback<>();
-        machine.reset( null, callback );
+        machine.reset( callback );
 
         // Then
         assertThat( machine.state(), equalTo( IDLE ) );
@@ -126,12 +126,12 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnInTransaction() throws Throwable
     {
         // Given
-        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, Session.Callback.NO_OP );
         machine.beginTransaction();
 
         // When
         TestCallback<Void> callback = new TestCallback<>();
-        machine.reset( null, callback );
+        machine.reset( callback );
 
         // Then
         assertThat( machine.state(), equalTo( IDLE ) );
@@ -144,13 +144,13 @@ public class SessionStateMachineTest
         // Given
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenReturn( mock( RecordStream.class ) );
-        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, Session.Callback.NO_OP );
         machine.beginTransaction();
-        machine.run( "RETURN 1", emptyMap(), null, Session.Callback.NO_OP );
+        machine.run( "RETURN 1", emptyMap(), Session.Callback.NO_OP );
 
         // When
         TestCallback<Void> callback = new TestCallback<>();
-        machine.reset( null, callback );
+        machine.reset( callback );
 
         // Then
         assertThat( machine.state(), equalTo( IDLE ) );
@@ -163,12 +163,12 @@ public class SessionStateMachineTest
         // Given
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenReturn( mock( RecordStream.class ) );
-        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
-        machine.run( "RETURN 1", emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, Session.Callback.NO_OP );
+        machine.run( "RETURN 1", emptyMap(), Session.Callback.NO_OP );
 
         // When
         TestCallback<Void> callback = new TestCallback<>();
-        machine.reset( null, callback );
+        machine.reset( callback );
 
         // Then
         assertThat( machine.state(), equalTo( IDLE ) );
@@ -182,7 +182,7 @@ public class SessionStateMachineTest
         TestCallback<Boolean> callback = new TestCallback<>();
 
         // When
-        machine.init( "FunClient/1.2",  emptyMap(), -1, null, callback );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, callback );
 
         // Then
         assertThat( callback.startedCount, equalTo( 1 ) );
@@ -194,12 +194,12 @@ public class SessionStateMachineTest
         // Given
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
-        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
-        machine.run( "RETURN 1", emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, Session.Callback.NO_OP );
+        machine.run( "RETURN 1", emptyMap(), Session.Callback.NO_OP );
 
         // When
         TestCallback<Void> callback = new TestCallback<>();
-        machine.reset( null, callback );
+        machine.reset( callback );
 
         // Then
         assertThat( machine.state(), equalTo( IDLE ) );
@@ -212,10 +212,10 @@ public class SessionStateMachineTest
         // Given
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
-        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, Session.Callback.NO_OP );
 
         // When
-        machine.run( "ROLLBACK", emptyMap(), null, Session.Callback.NO_OP );
+        machine.run( "ROLLBACK", emptyMap(), Session.Callback.NO_OP );
 
         // Then
         assertThat( machine.state(), equalTo( ERROR ) );
@@ -227,11 +227,11 @@ public class SessionStateMachineTest
         // Given
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
-        machine.init( "FunClient/1.2",  emptyMap(), -1, null, noOp() );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, noOp() );
 
         // When
-        machine.run( "Statement that fails", emptyMap(), null, noOp() );
-        machine.ackFailure( null, noOp() );
+        machine.run( "Statement that fails", emptyMap(), noOp() );
+        machine.ackFailure( noOp() );
 
         // Then
         assertThat( machine.state(), equalTo( IDLE ) );
@@ -243,12 +243,12 @@ public class SessionStateMachineTest
         // Given all statements will fail
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
-        machine.init( "FunClient/1.2",  emptyMap(), -1, null, noOp() );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, noOp() );
 
         // When
         machine.beginTransaction();
-        machine.run( "statement that fails", emptyMap(), null, noOp() );
-        machine.ackFailure( null, noOp() );
+        machine.run( "statement that fails", emptyMap(), noOp() );
+        machine.ackFailure( noOp() );
 
         // Then
         assertThat( machine.state(), equalTo( SessionStateMachine.State.IN_TRANSACTION ) );
@@ -263,7 +263,7 @@ public class SessionStateMachineTest
         // When
         machine.close();
         machine.interrupt();
-        machine.reset( null, callback ); // could be any method call who invokes before
+        machine.reset( callback ); // could be any method call who invokes before
 
         // Then
         assertThat( machine.state(), equalTo( SessionStateMachine.State.STOPPED ) );
@@ -285,32 +285,32 @@ public class SessionStateMachineTest
 
     }
 
-    private static class TestCallback<V> extends Session.Callback.Adapter<V, Object>
+    private static class TestCallback<V> extends Session.Callback.Adapter<V>
     {
         private int completedCount;
         int ignoredCount;
         int startedCount;
 
         @Override
-        public void started( Object attachment )
+        public void started()
         {
             startedCount += 1;
         }
 
         @Override
-        public void completed( Object attachment )
+        public void completed()
         {
             completedCount += 1;
         }
 
         @Override
-        public void ignored( Object attachment )
+        public void ignored()
         {
             ignoredCount += 1;
         }
 
         @Override
-        public void failure( Neo4jError err, Object attachment )
+        public void failure( Neo4jError err )
         {
             err.cause().printStackTrace( System.err );
         }

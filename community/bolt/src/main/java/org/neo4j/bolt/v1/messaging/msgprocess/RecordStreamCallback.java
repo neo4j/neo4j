@@ -37,7 +37,7 @@ public class RecordStreamCallback extends MessageProcessingCallback<RecordStream
     }
 
     @Override
-    public void result( RecordStream stream, Void ignore ) throws Exception
+    public void result( RecordStream stream ) throws Exception
     {
         stream.accept( new RecordStream.Visitor()
         {

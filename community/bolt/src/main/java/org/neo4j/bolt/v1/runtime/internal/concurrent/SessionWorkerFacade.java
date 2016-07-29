@@ -57,48 +57,48 @@ class SessionWorkerFacade implements Session
     }
 
     @Override
-    public <A> void init( final String clientName, Map<String,Object> authToken, long currentHighestTransactionId, A attachment,
-                          Callback<Boolean,A> callback )
+    public void init( final String clientName, Map<String, Object> authToken, long currentHighestTransactionId,
+                      Callback<Boolean> callback )
     {
-        queue( session -> session.init( clientName, authToken, currentHighestTransactionId, attachment, callback ) );
+        queue( session -> session.init( clientName, authToken, currentHighestTransactionId, callback ) );
     }
 
     @Override
-    public <A> void run( final String statement, final Map<String,Object> params, final A attachment,
-            final Callback<StatementMetadata,A> callback )
+    public void run( final String statement, final Map<String, Object> params,
+                     final Callback<StatementMetadata> callback )
     {
-        queue( session -> session.run( statement, params, attachment, callback ) );
+        queue( session -> session.run( statement, params, callback ) );
     }
 
     @Override
-    public <A> void pullAll( final A attachment, final Callback<RecordStream,A> callback )
+    public void pullAll( final Callback<RecordStream> callback )
     {
-        queue( session -> session.pullAll( attachment, callback ) );
+        queue( session -> session.pullAll( callback ) );
     }
 
     @Override
-    public <A> void discardAll( final A attachment, final Callback<Void,A> callback )
+    public void discardAll( final Callback<Void> callback )
     {
-        queue( session -> session.discardAll( attachment, callback ) );
+        queue( session -> session.discardAll( callback ) );
     }
 
     @Override
-    public <A> void reset( final A attachment, final Callback<Void,A> callback )
+    public void reset( final Callback<Void> callback )
     {
         worker.interrupt();
-        queue( session -> session.reset( attachment, callback ) );
+        queue( session -> session.reset( callback ) );
     }
 
     @Override
-    public <A> void ackFailure( A attachment, Callback<Void,A> callback )
+    public void ackFailure( Callback<Void> callback )
     {
-        queue( session -> session.ackFailure( attachment, callback ) );
+        queue( session -> session.ackFailure( callback ) );
     }
 
     @Override
-    public <A> void externalError( Neo4jError error, A attachment, Callback<Void,A> callback )
+    public void externalError( Neo4jError error, Callback<Void> callback )
     {
-        queue( session -> session.externalError( error, attachment, callback ) );
+        queue( session -> session.externalError( error, callback ) );
     }
 
     @Override

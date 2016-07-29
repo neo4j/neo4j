@@ -60,41 +60,41 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
     {
         // TODO: make the client transmit the version for now it is hardcoded to -1 to ensure current behaviour
         long currentHighestTransactionId = -1;
-        session.init( clientName, authToken, currentHighestTransactionId, null, initCallback );
+        session.init( clientName, authToken, currentHighestTransactionId, initCallback );
     }
 
     @Override
     public void handleRunMessage( String statement, Map<String,Object> params )
     {
-        session.run( statement, params, null, runCallback );
+        session.run( statement, params, runCallback );
     }
 
     @Override
     public void handlePullAllMessage()
     {
-        session.pullAll( null, resultStreamCallback );
+        session.pullAll( resultStreamCallback );
     }
 
     @Override
     public void handleDiscardAllMessage()
     {
-        session.discardAll( null, simpleCallback );
+        session.discardAll( simpleCallback );
     }
 
     @Override
     public void handleResetMessage() throws RuntimeException
     {
-        session.reset( null, simpleCallback );
+        session.reset( simpleCallback );
     }
 
     @Override
     public void handleAckFailureMessage() throws RuntimeException
     {
-        session.ackFailure( null, simpleCallback );
+        session.ackFailure( simpleCallback );
     }
 
     public void handleFatalError( Neo4jError from )
     {
-        session.externalError( from, null, simpleCallback );
+        session.externalError( from, simpleCallback );
     }
 }

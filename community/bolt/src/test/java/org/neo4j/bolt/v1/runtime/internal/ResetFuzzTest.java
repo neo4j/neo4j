@@ -95,7 +95,7 @@ public class ResetFuzzTest
         // given
         life.start();
         Session session = sessions.newSession( "<test>" );
-        session.init( "Test/0.0.0", map(), -1, null, Session.Callback.NO_OP );
+        session.init( "Test/0.0.0", map(), -1, Session.Callback.NO_OP );
 
         TransportBridge bridge = new TransportBridge(
                 NullLog.getInstance(), session, new MessageHandler.Adapter<>(), ( () -> {} ) );
@@ -117,7 +117,7 @@ public class ResetFuzzTest
     private void assertSessionWorks( Session session )
     {
         RecordingCallback recorder = new RecordingCallback();
-        session.reset( null, recorder );
+        session.reset( recorder );
 
         try
         {

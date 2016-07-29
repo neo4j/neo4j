@@ -28,7 +28,7 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.logging.Log;
 
-public class MessageProcessingCallback<T> extends Session.Callback.Adapter<T,Void>
+public class MessageProcessingCallback<T> extends Session.Callback.Adapter<T>
 {
     // TODO: move this somewhere more sane (when modules are unified)
     public static void publishError( MessageHandler<IOException> out, Neo4jError error )
@@ -73,19 +73,19 @@ public class MessageProcessingCallback<T> extends Session.Callback.Adapter<T,Voi
     }
 
     @Override
-    public void failure( Neo4jError err, Void none )
+    public void failure( Neo4jError err )
     {
         this.error = err;
     }
 
     @Override
-    public void ignored( Void none )
+    public void ignored()
     {
         this.ignored = true;
     }
 
     @Override
-    public void completed( Void none )
+    public void completed()
     {
         try
         {

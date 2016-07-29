@@ -34,7 +34,7 @@ public class InitCallback extends MessageProcessingCallback<Boolean>
     }
 
     @Override
-    public void result( Boolean credentialsExpired, Void none ) throws Exception
+    public void result( Boolean credentialsExpired ) throws Exception
     {
         if ( credentialsExpired )
         {
