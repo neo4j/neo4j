@@ -19,12 +19,13 @@
  */
 package org.neo4j.coreedge.raft.membership;
 
-import org.junit.Test;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
+import org.junit.Test;
+
 import org.neo4j.coreedge.raft.BatchingMessageHandler;
+import org.neo4j.coreedge.raft.MismatchedStoreIdService;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.state.RaftState;
@@ -34,6 +35,7 @@ import org.neo4j.test.OnDemandJobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
@@ -47,7 +49,7 @@ public class MembershipWaiterTest
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, 500,
-                mock(BatchingMessageHandler.class), NullLogProvider.getInstance() );
+                mock( MismatchedStoreIdService.class ), NullLogProvider.getInstance() );
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
@@ -69,7 +71,7 @@ public class MembershipWaiterTest
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, 1,
-                mock(BatchingMessageHandler.class), NullLogProvider.getInstance());
+                mock( MismatchedStoreIdService.class ), NullLogProvider.getInstance() );
 
         RaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 1 ) )
@@ -96,7 +98,7 @@ public class MembershipWaiterTest
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, 1,
-                mock(BatchingMessageHandler.class), NullLogProvider.getInstance() );
+                mock( MismatchedStoreIdService.class ), NullLogProvider.getInstance() );
 
         RaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 0 ), member( 1 ) )

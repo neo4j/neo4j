@@ -41,4 +41,6 @@ public interface RaftStateMachine
     void notifyNeedFreshSnapshot();
 
     void downloadSnapshot( MemberId from );
+
+    void innerHandle( RaftMessages.StoreIdAwareMessage raftMessage );
 }

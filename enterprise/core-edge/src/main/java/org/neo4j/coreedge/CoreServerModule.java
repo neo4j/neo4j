@@ -44,6 +44,7 @@ import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.net.LoggingInbound;
+import org.neo4j.coreedge.raft.state.CommandApplicationProcess;
 import org.neo4j.coreedge.raft.state.CoreState;
 import org.neo4j.coreedge.raft.state.CoreStateApplier;
 import org.neo4j.coreedge.raft.state.CoreStateDownloader;
@@ -135,12 +136,14 @@ public class CoreServerModule
 
         NotMyselfSelectionStrategy someoneElse = new NotMyselfSelectionStrategy( discoveryService, myself );
 
-        CoreState coreState = new CoreState( coreStateMachinesModule.coreStateMachines, consensusModule.raftLog(),
-                config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
-                config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ), databaseHealthSupplier,
-                logProvider, replicationModule.getProgressTracker(), lastFlushedStorage,
-                replicationModule.getSessionTracker(), someoneElse, coreStateApplier, downloader, inFlightMap,
-                platformModule.monitors );
+        CoreState coreState = new CoreState(
+                consensusModule.raftInstance(), localDatabase,
+                logProvider,
+                someoneElse, downloader,
+                new CommandApplicationProcess( coreStateMachinesModule.coreStateMachines, consensusModule.raftLog(), config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
+
+                        config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ), databaseHealthSupplier, logProvider, replicationModule.getProgressTracker(), lastFlushedStorage, replicationModule.getSessionTracker(), coreStateApplier,
+                        inFlightMap, platformModule.monitors ) );
 
         dependencies.satisfyDependency( coreState );
 
@@ -151,12 +154,12 @@ public class CoreServerModule
         int maxBatch = config.get( CoreEdgeClusterSettings.raft_in_queue_max_batch );
 
         BatchingMessageHandler batchingMessageHandler =
-                new BatchingMessageHandler( consensusModule.raftInstance(), logProvider, queueSize, maxBatch, localDatabase, coreState );
+                new BatchingMessageHandler( coreState, queueSize, maxBatch, logProvider );
 
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
 
         MembershipWaiter membershipWaiter =
-                new MembershipWaiter( myself, platformModule.jobScheduler, electionTimeout * 4, batchingMessageHandler, logProvider );
+                new MembershipWaiter( myself, platformModule.jobScheduler, electionTimeout * 4, coreState, logProvider );
         long joinCatchupTimeout = config.get( CoreEdgeClusterSettings.join_catch_up_timeout );
         membershipWaiterLifecycle = new MembershipWaiterLifecycle( membershipWaiter,
                 joinCatchupTimeout, consensusModule.raftInstance(), logProvider );

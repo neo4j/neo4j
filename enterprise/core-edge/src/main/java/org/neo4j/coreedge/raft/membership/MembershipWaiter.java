@@ -22,7 +22,6 @@ package org.neo4j.coreedge.raft.membership;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.coreedge.raft.BatchingMessageHandler;
 import org.neo4j.coreedge.raft.MismatchedStoreIdService;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.server.MemberId;
@@ -31,6 +30,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
@@ -139,7 +139,7 @@ public class MembershipWaiter
         }
 
         @Override
-        public void onMismatchedStore(BatchingMessageHandler.MismatchedStoreIdException ex)
+        public void onMismatchedStore( MismatchedStoreIdService.MismatchedStoreIdException ex )
         {
             catchUpFuture.completeExceptionally( ex );
         }

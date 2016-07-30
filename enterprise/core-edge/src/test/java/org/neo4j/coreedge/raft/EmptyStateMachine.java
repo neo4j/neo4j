@@ -37,4 +37,9 @@ class EmptyStateMachine implements RaftStateMachine
     public void downloadSnapshot( MemberId from )
     {
     }
+
+    @Override
+    public void innerHandle( RaftMessages.StoreIdAwareMessage raftMessage )
+    {
+    }
 }

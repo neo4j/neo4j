@@ -166,7 +166,7 @@ public class ClusterIdentityIT
 
         for ( CoreClusterMember db : cluster.coreMembers() )
         {
-            db.coreState().compact();
+            db.coreState().prune();
         }
 
         // WHEN
@@ -201,7 +201,7 @@ public class ClusterIdentityIT
 
         for ( CoreClusterMember db : cluster.coreMembers() )
         {
-            db.coreState().compact();
+            db.coreState().prune();
         }
 
         // WHEN
@@ -231,7 +231,7 @@ public class ClusterIdentityIT
 
         for ( CoreClusterMember db : cluster.coreMembers() )
         {
-            db.coreState().compact();
+            db.coreState().prune();
         }
 
         // WHEN

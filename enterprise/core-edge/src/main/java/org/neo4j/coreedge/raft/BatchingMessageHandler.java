@@ -24,36 +24,28 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.raft.net.Inbound.MessageHandler;
-import org.neo4j.coreedge.raft.outcome.ConsensusOutcome;
 import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMessages.StoreIdAwareMessage>, MismatchedStoreIdService
+public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMessages.StoreIdAwareMessage>
 {
     private final Log log;
-    private final RaftInstance raftInstance;
     private final BlockingQueue<RaftMessages.StoreIdAwareMessage> messageQueue;
 
     private final int maxBatch;
-    private final List<RaftMessages.RaftMessage> batch;
+    private final List<RaftMessages.StoreIdAwareMessage> batch;
 
-    private final LocalDatabase localDatabase;
-    private RaftStateMachine raftStateMachine;
-    private final List<MismatchedStoreListener> listeners = new ArrayList<>(  );
+    private MessageHandler<RaftMessages.StoreIdAwareMessage> handler;
 
-    public BatchingMessageHandler( RaftInstance raftInstance, LogProvider logProvider,
-                                   int queueSize, int maxBatch, LocalDatabase localDatabase,
-                                   RaftStateMachine raftStateMachine )
+    public BatchingMessageHandler( MessageHandler<RaftMessages.StoreIdAwareMessage> handler,
+                                   int queueSize, int maxBatch, LogProvider logProvider )
     {
-        this.raftInstance = raftInstance;
-        this.localDatabase = localDatabase;
-        this.raftStateMachine = raftStateMachine;
+        this.handler = handler;
         this.log = logProvider.getLog( getClass() );
         this.maxBatch = maxBatch;
 
@@ -89,89 +81,46 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
 
         if ( message != null )
         {
-            RaftMessages.RaftMessage innerMessage = message.message();
-            StoreId storeId = message.storeId();
-
-            if ( message.storeId().equals( localDatabase.storeId() ) )
+            if ( messageQueue.isEmpty() )
             {
-                if ( messageQueue.isEmpty() )
-                {
-                    innerHandle( message.message() );
-                }
-                else
-                {
-                    batch.clear();
-                    batch.add( innerMessage );
-                    drain( messageQueue, batch, maxBatch - 1 );
-                    collateAndHandleBatch( batch );
-                }
+                handler.handle( message );
             }
             else
             {
-                if ( localDatabase.isEmpty() )
-                {
-                    log.info( "StoreId mismatch but store was empty so downloading new store from %s. Expected: " +
-                            "%s, Encountered: %s. ", innerMessage.from(), storeId, localDatabase.storeId() );
-                    raftStateMachine.downloadSnapshot( innerMessage.from() );
-                }
-                else
-                {
-                    log.info( "Discarding message[%s] owing to mismatched storeId and non-empty store. " +
-                            "Expected: %s, Encountered: %s", innerMessage,  storeId, localDatabase.storeId() );
-                    listeners.forEach( l -> {
-                        MismatchedStoreIdException ex = new MismatchedStoreIdException( storeId, localDatabase.storeId() );
-                        l.onMismatchedStore( ex );
-                    } );
-                }
-
+                batch.clear();
+                batch.add( message );
+                drain( messageQueue, batch, maxBatch - 1 );
+                collateAndHandleBatch( batch );
             }
-        }
-    }
-
-    private void innerHandle( RaftMessage raftMessage )
-    {
-        try
-        {
-            ConsensusOutcome outcome = raftInstance.handle( raftMessage );
-            if ( outcome.needsFreshSnapshot() )
-            {
-                raftStateMachine.notifyNeedFreshSnapshot();
-            }
-            else
-            {
-                raftStateMachine.notifyCommitted( outcome.getCommitIndex());
-            }
-        }
-        catch ( Throwable e )
-        {
-            raftInstance.stopTimers();
-            localDatabase.panic( e );
         }
     }
 
     private void drain( BlockingQueue<RaftMessages.StoreIdAwareMessage> messageQueue,
-                        List<RaftMessage> batch, int maxElements )
+                        List<RaftMessages.StoreIdAwareMessage> batch, int maxElements )
     {
         List<RaftMessages.StoreIdAwareMessage> tempDraining = new ArrayList<>();
         messageQueue.drainTo( tempDraining, maxElements );
 
         for ( RaftMessages.StoreIdAwareMessage storeIdAwareMessage : tempDraining )
         {
-            batch.add( storeIdAwareMessage.message() );
+            batch.add( storeIdAwareMessage );
         }
     }
 
-    public void addMismatchedStoreListener( BatchingMessageHandler.MismatchedStoreListener listener )
-    {
-        listeners.add(listener);
-    }
-
-    private void collateAndHandleBatch( List<RaftMessages.RaftMessage> batch )
+    private void collateAndHandleBatch( List<RaftMessages.StoreIdAwareMessage> batch )
     {
         RaftMessages.NewEntry.Batch batchRequest = null;
+        StoreId storeId = batch.get( 0 ).storeId();
 
-        for ( RaftMessages.RaftMessage message : batch )
+        for ( RaftMessages.StoreIdAwareMessage storeIdAwareMessage : batch )
         {
+            if ( batchRequest != null && !storeIdAwareMessage.storeId().equals( storeId ))
+            {
+                handler.handle( new RaftMessages.StoreIdAwareMessage( storeId, batchRequest ) );
+                batchRequest = null;
+            }
+            storeId = storeIdAwareMessage.storeId();
+            RaftMessage message = storeIdAwareMessage.message();
             if ( message instanceof RaftMessages.NewEntry.Request )
             {
                 RaftMessages.NewEntry.Request newEntryRequest = (RaftMessages.NewEntry.Request) message;
@@ -184,13 +133,13 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
             }
             else
             {
-                innerHandle( message );
+                handler.handle( storeIdAwareMessage );
             }
         }
 
         if ( batchRequest != null )
         {
-            innerHandle( batchRequest );
+            handler.handle( new RaftMessages.StoreIdAwareMessage( storeId, batchRequest ) );
         }
     }
 }

@@ -31,6 +31,7 @@ import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftInstance.BootstrapException;
 import org.neo4j.coreedge.raft.RaftInstanceBuilder;
+import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.RaftTestNetwork;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
@@ -150,6 +151,11 @@ public class Fixture
 
         @Override
         public void downloadSnapshot( MemberId from )
+        {
+        }
+
+        @Override
+        public void innerHandle( RaftMessages.StoreIdAwareMessage raftMessage )
         {
         }
 
