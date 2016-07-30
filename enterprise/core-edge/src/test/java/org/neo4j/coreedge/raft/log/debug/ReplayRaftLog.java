@@ -25,10 +25,10 @@ import java.time.Clock;
 
 import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
-import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
-import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.core.state.tx.ReplicatedTransaction;
+import org.neo4j.coreedge.core.state.tx.ReplicatedTransactionFactory;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;

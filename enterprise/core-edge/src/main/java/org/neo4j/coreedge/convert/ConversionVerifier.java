@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.convert;
 
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.identity.StoreId;
 
 public class ConversionVerifier
 {

@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
-import org.neo4j.coreedge.raft.state.CoreSnapshot;
+import org.neo4j.coreedge.core.state.CoreSnapshot;
 
 public class CoreSnapshotEncoder extends MessageToMessageEncoder<CoreSnapshot>
 {

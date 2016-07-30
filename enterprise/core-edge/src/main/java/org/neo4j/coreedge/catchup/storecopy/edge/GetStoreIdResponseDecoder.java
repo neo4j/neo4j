@@ -28,8 +28,8 @@ import java.util.List;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
-import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
+import org.neo4j.coreedge.identity.StoreId;
 
 public class GetStoreIdResponseDecoder  extends MessageToMessageDecoder<ByteBuf>
 {

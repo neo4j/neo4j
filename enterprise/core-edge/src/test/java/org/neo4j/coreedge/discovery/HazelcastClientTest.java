@@ -35,7 +35,7 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.UUID;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;

@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft.net;
 
-import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.messaging.Message;
 
 public interface Inbound<M extends Message>
 {

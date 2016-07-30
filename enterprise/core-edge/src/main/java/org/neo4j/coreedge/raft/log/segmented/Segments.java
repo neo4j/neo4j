@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.ListIterator;
 
 import org.neo4j.coreedge.raft.log.segmented.OpenEndRangeMap.ValueRange;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.messaging.ChannelMarshal;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;

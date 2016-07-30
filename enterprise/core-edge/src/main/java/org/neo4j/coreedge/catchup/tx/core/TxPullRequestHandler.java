@@ -29,7 +29,7 @@ import org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullRequest;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;

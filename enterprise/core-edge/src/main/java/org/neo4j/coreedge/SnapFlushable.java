@@ -21,7 +21,7 @@ package org.neo4j.coreedge;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.raft.state.CoreSnapshot;
+import org.neo4j.coreedge.core.state.CoreSnapshot;
 
 public interface SnapFlushable
 {

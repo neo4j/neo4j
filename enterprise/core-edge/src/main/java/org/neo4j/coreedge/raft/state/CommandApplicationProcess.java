@@ -25,13 +25,19 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.SessionTracker;
+import org.neo4j.coreedge.core.replication.DistributedOperation;
+import org.neo4j.coreedge.core.replication.ProgressTracker;
+import org.neo4j.coreedge.core.state.CommandDispatcher;
+import org.neo4j.coreedge.core.state.CoreSnapshot;
+import org.neo4j.coreedge.core.state.CoreStateApplier;
+import org.neo4j.coreedge.core.state.CoreStateMachines;
+import org.neo4j.coreedge.core.state.InFlightLogEntryReader;
+import org.neo4j.coreedge.core.state.StateStorage;
+import org.neo4j.coreedge.core.state.tx.CoreReplicatedContent;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
-import org.neo4j.coreedge.raft.replication.DistributedOperation;
-import org.neo4j.coreedge.raft.replication.ProgressTracker;
-import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -190,7 +196,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
         }
     }
 
-    void prune() throws IOException
+    public void prune() throws IOException
     {
         raftLog.prune( lastFlushed );
     }
@@ -274,7 +280,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
         return coreSnapshot;
     }
 
-    synchronized void installSnapshot( CoreSnapshot coreSnapshot )
+    public synchronized void installSnapshot( CoreSnapshot coreSnapshot )
     {
         coreStateMachines.installSnapshots( coreSnapshot );
         long snapshotPrevIndex = coreSnapshot.prevIndex();

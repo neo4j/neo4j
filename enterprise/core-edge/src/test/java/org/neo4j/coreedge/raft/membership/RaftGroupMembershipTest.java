@@ -27,12 +27,12 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.raft.DirectNetworking;
 import org.neo4j.coreedge.raft.RaftTestFixture;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.identity.MemberId;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -42,7 +42,7 @@ import static org.neo4j.coreedge.raft.RaftInstance.Timeouts.ELECTION;
 import static org.neo4j.coreedge.raft.RaftInstance.Timeouts.HEARTBEAT;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
-import static org.neo4j.coreedge.server.RaftTestMember.member;
+import static org.neo4j.coreedge.identity.RaftTestMember.member;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RaftGroupMembershipTest

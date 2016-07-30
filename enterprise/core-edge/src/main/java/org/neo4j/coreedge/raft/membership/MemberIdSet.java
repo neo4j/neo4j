@@ -21,7 +21,7 @@ package org.neo4j.coreedge.raft.membership;
 
 import java.util.Set;
 
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.identity.MemberId;
 
 public class MemberIdSet implements RaftGroup<MemberId>
 {

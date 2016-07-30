@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.raft.net;
 
-import org.neo4j.coreedge.network.Message;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.logging.MessageLogger;
+import org.neo4j.coreedge.messaging.Message;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.logging.MessageLogger;
 
 public class LoggingInbound<M extends Message> implements Inbound<M>
 {

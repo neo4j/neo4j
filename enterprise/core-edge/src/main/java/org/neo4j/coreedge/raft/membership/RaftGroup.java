@@ -21,7 +21,7 @@ package org.neo4j.coreedge.raft.membership;
 
 import java.util.Set;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
 
 public interface RaftGroup<MEMBER> extends ReplicatedContent
 {

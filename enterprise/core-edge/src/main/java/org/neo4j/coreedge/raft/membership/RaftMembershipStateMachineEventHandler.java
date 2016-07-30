@@ -22,8 +22,8 @@ package org.neo4j.coreedge.raft.membership;
 import java.util.Set;
 
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.raft.roles.follower.FollowerStates;
+import org.neo4j.coreedge.identity.MemberId;
 
 interface RaftMembershipStateMachineEventHandler
 {

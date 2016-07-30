@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.catchup;
 
-import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.messaging.Message;
 
 import static java.lang.String.format;
 

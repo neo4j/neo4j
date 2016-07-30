@@ -25,8 +25,8 @@ import java.util.concurrent.ExecutionException;
 import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreIdDownloadFailedException;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.StoreId;
 
 public class StoreCopyClient
 {

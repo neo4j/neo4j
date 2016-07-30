@@ -27,7 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.FakeClock;
 
-import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_strategy;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 
 public class SegmentedConcurrentStressIT extends ConcurrentStressIT<SegmentedRaftLog>
 {

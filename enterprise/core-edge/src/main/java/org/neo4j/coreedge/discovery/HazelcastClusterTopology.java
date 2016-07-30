@@ -29,10 +29,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
+import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.edge.EnterpriseEdgeEditionModule;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;

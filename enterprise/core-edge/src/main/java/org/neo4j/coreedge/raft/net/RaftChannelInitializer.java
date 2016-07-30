@@ -25,9 +25,9 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldPrepender;
 
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageEncoder;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.messaging.ChannelMarshal;
+import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 

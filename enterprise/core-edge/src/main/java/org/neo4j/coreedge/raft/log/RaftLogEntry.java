@@ -21,7 +21,7 @@ package org.neo4j.coreedge.raft.log;
 
 import java.util.Objects;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
 
 import static java.lang.String.format;
 

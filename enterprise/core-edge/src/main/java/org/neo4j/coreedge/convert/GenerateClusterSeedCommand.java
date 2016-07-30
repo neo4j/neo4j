@@ -22,7 +22,7 @@ package org.neo4j.coreedge.convert;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;

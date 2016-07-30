@@ -44,9 +44,9 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseHandler;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseHandler;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
-import org.neo4j.coreedge.server.IdleChannelReaperHandler;
-import org.neo4j.coreedge.server.NonBlockingChannels;
-import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
+import org.neo4j.coreedge.messaging.IdleChannelReaperHandler;
+import org.neo4j.coreedge.messaging.NonBlockingChannels;
+import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 

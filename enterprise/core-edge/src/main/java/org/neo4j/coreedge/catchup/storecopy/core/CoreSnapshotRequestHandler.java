@@ -26,8 +26,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
-import org.neo4j.coreedge.raft.state.CoreSnapshot;
-import org.neo4j.coreedge.raft.state.CoreState;
+import org.neo4j.coreedge.core.state.CoreSnapshot;
+import org.neo4j.coreedge.core.state.CoreState;
 
 import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.impl.util.Listener;
 
 public interface LeaderLocator

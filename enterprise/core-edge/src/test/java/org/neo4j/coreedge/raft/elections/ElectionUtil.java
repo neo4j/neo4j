@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.Listener;
 

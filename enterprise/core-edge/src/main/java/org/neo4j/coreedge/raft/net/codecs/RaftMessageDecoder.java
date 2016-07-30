@@ -29,12 +29,12 @@ import java.util.List;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.raft.state.EndOfStreamException;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
+import org.neo4j.coreedge.messaging.ChannelMarshal;
+import org.neo4j.coreedge.messaging.EndOfStreamException;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.storageengine.api.ReadableChannel;
 
 import static org.neo4j.coreedge.raft.RaftMessages.Type.APPEND_ENTRIES_REQUEST;

@@ -27,8 +27,8 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreIdRequest;
-import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
+import org.neo4j.coreedge.identity.StoreId;
 
 import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 

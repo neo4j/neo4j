@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 
 public class TxPullResponse

@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.Base64;
 import java.util.Objects;
 
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.identity.StoreId;
 
 public class ClusterSeed
 {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.kernel.impl.store.StoreFailureException;
 
 public interface MismatchedStoreIdService

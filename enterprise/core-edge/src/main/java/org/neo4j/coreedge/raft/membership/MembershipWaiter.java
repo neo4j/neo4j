@@ -23,8 +23,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.coreedge.raft.MismatchedStoreIdService;
-import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.core.state.ReadableRaftState;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

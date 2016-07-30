@@ -27,8 +27,8 @@ import java.util.UUID;
 
 import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
-import org.neo4j.coreedge.raft.state.EndOfStreamException;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.messaging.EndOfStreamException;
+import org.neo4j.coreedge.identity.MemberId;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;

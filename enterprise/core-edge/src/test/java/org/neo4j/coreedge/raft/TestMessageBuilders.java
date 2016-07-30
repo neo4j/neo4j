@@ -19,6 +19,11 @@
  */
 package org.neo4j.coreedge.raft;
 
+import org.neo4j.coreedge.raft.roles.AppendEntriesRequestBuilder;
+import org.neo4j.coreedge.raft.roles.AppendEntriesResponseBuilder;
+import org.neo4j.coreedge.raft.vote.VoteRequestBuilder;
+import org.neo4j.coreedge.raft.vote.VoteResponseBuilder;
+
 public class TestMessageBuilders
 {
     public static AppendEntriesRequestBuilder appendEntriesRequest()

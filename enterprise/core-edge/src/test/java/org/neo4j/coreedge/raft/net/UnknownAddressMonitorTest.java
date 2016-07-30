@@ -31,7 +31,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.coreedge.server.RaftTestMember.member;
+import static org.neo4j.coreedge.identity.RaftTestMember.member;
 
 public class UnknownAddressMonitorTest
 {

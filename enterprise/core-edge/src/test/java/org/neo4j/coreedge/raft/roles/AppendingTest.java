@@ -30,8 +30,8 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.outcome.RaftLogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
-import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.core.state.ReadableRaftState;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.NullLog;
 
 import static org.junit.Assert.fail;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.coreedge.server.RaftTestMember.member;
+import static org.neo4j.coreedge.identity.RaftTestMember.member;
 
 public class AppendingTest
 {

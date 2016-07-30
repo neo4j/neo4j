@@ -23,7 +23,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Predicate;
 
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.helpers.collection.Iterables;
 

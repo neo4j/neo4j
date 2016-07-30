@@ -25,11 +25,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.StoreId;
 
 import static java.lang.String.format;
 

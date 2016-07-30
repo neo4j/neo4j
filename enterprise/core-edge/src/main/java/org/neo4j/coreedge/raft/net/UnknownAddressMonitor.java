@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft.net;
 import java.time.Clock;
 import java.util.HashMap;
 
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.Log;
 
 public class UnknownAddressMonitor

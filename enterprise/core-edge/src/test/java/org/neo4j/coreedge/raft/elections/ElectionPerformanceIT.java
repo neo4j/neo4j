@@ -23,14 +23,14 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import org.neo4j.coreedge.raft.RaftTestNetwork;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.messaging.TestNetwork;
+import org.neo4j.coreedge.identity.MemberId;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.neo4j.coreedge.server.RaftTestMember.member;
+import static org.neo4j.coreedge.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
@@ -61,7 +61,7 @@ public class ElectionPerformanceIT
         final long heartbeatInterval = 250L;
         final int iterations = 10;
 
-        RaftTestNetwork net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
+        TestNetwork net = new TestNetwork<>( ( i, o ) -> networkLatency );
         Set<MemberId> members = asSet( member( 0 ), member( 1 ), member( 2 ) );
         Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval );
         DisconnectLeaderScenario scenario = new DisconnectLeaderScenario( fixture, electionTimeout );
@@ -102,7 +102,7 @@ public class ElectionPerformanceIT
         final long heartbeatInterval = 15L;
         final int iterations = 100;
 
-        RaftTestNetwork net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
+        TestNetwork net = new TestNetwork<>( ( i, o ) -> networkLatency );
         Set<MemberId> members = asSet( member( 0 ), member( 1 ), member( 2 ) );
         Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval );
         DisconnectLeaderScenario scenario = new DisconnectLeaderScenario( fixture, electionTimeout );

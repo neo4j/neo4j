@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
 
 /**
  * When a new leader is elected, it replicates one entry of this type to mark the start of its reign.

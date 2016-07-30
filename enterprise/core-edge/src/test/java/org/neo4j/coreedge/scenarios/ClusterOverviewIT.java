@@ -28,7 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.server.core.ClusterOverviewProcedure;
+import org.neo4j.coreedge.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;

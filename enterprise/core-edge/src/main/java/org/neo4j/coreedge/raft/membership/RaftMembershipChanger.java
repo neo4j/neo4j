@@ -25,8 +25,8 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.raft.roles.follower.FollowerStates;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 

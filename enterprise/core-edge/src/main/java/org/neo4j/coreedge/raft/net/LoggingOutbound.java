@@ -21,9 +21,9 @@ package org.neo4j.coreedge.raft.net;
 
 import java.util.Collection;
 
-import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.messaging.Message;
 
-import org.neo4j.coreedge.server.logging.MessageLogger;
+import org.neo4j.coreedge.logging.MessageLogger;
 
 public class LoggingOutbound<MEMBER, MESSAGE extends Message> implements Outbound<MEMBER, MESSAGE>
 {

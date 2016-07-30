@@ -30,9 +30,11 @@ import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.LoggingOutbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
-import org.neo4j.coreedge.server.logging.NullMessageLogger;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.RaftTestMemberSetBuilder;
+import org.neo4j.coreedge.logging.NullMessageLogger;
+import org.neo4j.coreedge.raft.schedule.ControlledRenewableTimeoutService;
+import org.neo4j.coreedge.raft.schedule.RenewableTimeoutService;
 
 import static java.lang.String.format;
 

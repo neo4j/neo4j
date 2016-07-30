@@ -33,7 +33,7 @@ import java.util.Collection;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
-import org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation;
+import org.neo4j.coreedge.core.EnterpriseCoreEditionModule.RaftLogImplementation;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
@@ -47,7 +47,7 @@ import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.hasNoContent;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
-import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation.SEGMENTED;
+import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.RaftLogImplementation.SEGMENTED;
 
 @RunWith(Parameterized.class)
 public class RaftLogDurabilityTest

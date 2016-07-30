@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
 
 public class CoreAddresses
 {

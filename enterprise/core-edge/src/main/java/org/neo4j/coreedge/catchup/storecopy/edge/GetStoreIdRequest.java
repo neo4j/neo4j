@@ -20,7 +20,7 @@
 package org.neo4j.coreedge.catchup.storecopy.edge;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
-import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.messaging.Message;
 
 public class GetStoreIdRequest implements Message
 {

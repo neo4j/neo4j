@@ -23,10 +23,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.storecopy.CoreClient;
-import org.neo4j.coreedge.raft.ControlledRenewableTimeoutService;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.StoreId;
-import org.neo4j.coreedge.server.edge.CoreMemberSelectionStrategy;
+import org.neo4j.coreedge.raft.schedule.ControlledRenewableTimeoutService;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.CoreMemberSelectionStrategy;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.NullLogProvider;

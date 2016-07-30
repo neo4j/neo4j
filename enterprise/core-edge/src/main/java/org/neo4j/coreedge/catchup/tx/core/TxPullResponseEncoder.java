@@ -28,7 +28,7 @@ import java.util.List;
 import org.neo4j.com.CommittedTransactionSerializer;
 import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
-import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
+import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
 
 public class TxPullResponseEncoder extends MessageToMessageEncoder<TxPullResponse>
 {

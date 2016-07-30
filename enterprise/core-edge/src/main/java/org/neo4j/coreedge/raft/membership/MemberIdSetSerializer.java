@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.coreedge.raft.state.EndOfStreamException;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.messaging.EndOfStreamException;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 

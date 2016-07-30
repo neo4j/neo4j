@@ -27,11 +27,11 @@ import java.util.List;
 import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
+import org.neo4j.coreedge.messaging.ChannelMarshal;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.StoreId;
 
 public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.StoreIdAwareMessage>
 {

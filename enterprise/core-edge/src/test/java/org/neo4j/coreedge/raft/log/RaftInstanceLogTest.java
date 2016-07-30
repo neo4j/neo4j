@@ -29,15 +29,15 @@ import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftInstanceBuilder;
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.RaftTestMemberSetBuilder;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
-import static org.neo4j.coreedge.server.RaftTestMember.member;
+import static org.neo4j.coreedge.identity.RaftTestMember.member;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RaftInstanceLogTest

@@ -28,8 +28,8 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.coreedge.network.Message;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.messaging.Message;
+import org.neo4j.coreedge.identity.MemberId;
 
 public class DirectNetworking
 {

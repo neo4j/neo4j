@@ -28,8 +28,8 @@ import java.util.Collection;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.raft.state.RaftState;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.core.state.RaftState;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -39,8 +39,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteRequest;
-import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
-import static org.neo4j.coreedge.server.RaftTestMember.member;
+import static org.neo4j.coreedge.core.state.RaftStateBuilder.raftState;
+import static org.neo4j.coreedge.identity.RaftTestMember.member;
 
 /**
  * Most behaviour for handling vote requests is identical for all roles.

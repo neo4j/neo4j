@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.identity.MemberId;
 
 /**
  * The RAFT external entity that is interested in log entries and

@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.catchup.storecopy.core;
 
-import org.neo4j.coreedge.raft.state.CoreSnapshot;
+import org.neo4j.coreedge.core.state.CoreSnapshot;
 
 public interface CoreSnapshotListener
 {

@@ -21,7 +21,7 @@ package org.neo4j.coreedge.raft.net;
 
 import java.util.Collection;
 
-import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.messaging.Message;
 
 /**
  * A best effort service for delivery of messages to members. No guarantees are made about any of the methods

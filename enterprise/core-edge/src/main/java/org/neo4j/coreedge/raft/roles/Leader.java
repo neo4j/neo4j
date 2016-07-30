@@ -28,11 +28,11 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.Heartbeat;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.coreedge.raft.state.follower.FollowerState;
-import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.core.state.ReadableRaftState;
+import org.neo4j.coreedge.raft.roles.follower.FollowerState;
+import org.neo4j.coreedge.raft.roles.follower.FollowerStates;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.logging.Log;
 

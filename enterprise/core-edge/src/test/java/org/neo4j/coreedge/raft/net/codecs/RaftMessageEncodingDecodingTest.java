@@ -29,18 +29,18 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.UUID;
 
-import org.neo4j.coreedge.raft.AppendEntriesRequestBuilder;
-import org.neo4j.coreedge.raft.AppendEntriesResponseBuilder;
+import org.neo4j.coreedge.raft.roles.AppendEntriesRequestBuilder;
+import org.neo4j.coreedge.raft.roles.AppendEntriesResponseBuilder;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
-import org.neo4j.coreedge.raft.VoteRequestBuilder;
-import org.neo4j.coreedge.raft.VoteResponseBuilder;
+import org.neo4j.coreedge.raft.vote.VoteRequestBuilder;
+import org.neo4j.coreedge.raft.vote.VoteResponseBuilder;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.raft.state.SafeChannelMarshal;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.messaging.ChannelMarshal;
+import org.neo4j.coreedge.core.state.SafeChannelMarshal;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 

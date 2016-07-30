@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
-import org.neo4j.coreedge.raft.state.follower.FollowerState;
+import org.neo4j.coreedge.raft.roles.follower.FollowerState;
 import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

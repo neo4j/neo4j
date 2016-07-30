@@ -27,8 +27,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
-import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
+import org.neo4j.coreedge.core.CoreGraphDatabase;
+import org.neo4j.coreedge.edge.EdgeGraphDatabase;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;

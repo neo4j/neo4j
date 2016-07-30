@@ -29,8 +29,8 @@ import org.neo4j.coreedge.raft.outcome.BatchAppendLogEntries;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.state.ReadableRaftState;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.core.state.ReadableRaftState;
 import org.neo4j.logging.Log;
 
 public class Appending

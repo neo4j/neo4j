@@ -21,7 +21,7 @@ package org.neo4j.coreedge.raft.membership;
 
 import java.util.Set;
 
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.identity.MemberId;
 
 /**
  * Exposes a view of the members of a Raft cluster. Essentially it gives access to two sets - the set of voting

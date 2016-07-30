@@ -31,13 +31,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.coreedge.raft.net.monitoring.MessageQueueMonitor;
-import org.neo4j.coreedge.server.Disposable;
 import org.neo4j.logging.Log;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 
-public class NonBlockingChannel implements Disposable
+public class NonBlockingChannel
 {
     private static final int CONNECT_BACKOFF_IN_MS = 250;
     /* This pause is a maximum for retrying in case of a park/unpark race as well as for any other abnormal
@@ -108,7 +107,6 @@ public class NonBlockingChannel implements Disposable
         }
     }
 
-    @Override
     public void dispose()
     {
         stillRunning = false;

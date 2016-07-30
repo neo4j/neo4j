@@ -23,10 +23,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding;
-import org.neo4j.coreedge.raft.state.DurableStateStorageImporter;
-import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.core.state.tx.LogIndexTxHeaderEncoding;
+import org.neo4j.coreedge.core.state.DurableStateStorageImporter;
+import org.neo4j.coreedge.core.state.id.IdAllocationState;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;

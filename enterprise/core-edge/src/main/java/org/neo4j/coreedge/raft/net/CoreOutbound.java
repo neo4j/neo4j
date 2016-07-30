@@ -25,9 +25,9 @@ import java.util.Collection;
 import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.discovery.TopologyService;
-import org.neo4j.coreedge.network.Message;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.messaging.Message;
+import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.LogProvider;
 
 public class CoreOutbound implements Outbound<MemberId, Message>

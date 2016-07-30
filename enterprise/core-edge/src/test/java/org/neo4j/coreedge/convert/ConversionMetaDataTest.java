@@ -21,7 +21,7 @@ package org.neo4j.coreedge.convert;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.identity.StoreId;
 
 import static org.junit.Assert.assertEquals;
 

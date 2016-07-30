@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.identity.MemberId;
 
 public class Messages implements Iterable<Map.Entry<MemberId, RaftMessages.RaftMessage>>
 {

@@ -35,7 +35,7 @@ import org.neo4j.test.rule.Resources;
 import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_strategy;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
 import static org.neo4j.test.rule.Resources.TestPath.EXISTING_DIRECTORY;
 

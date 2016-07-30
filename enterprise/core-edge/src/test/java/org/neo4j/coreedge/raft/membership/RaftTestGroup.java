@@ -22,10 +22,10 @@ package org.neo4j.coreedge.raft.membership;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.identity.MemberId;
 
 import static java.lang.String.format;
-import static org.neo4j.coreedge.server.RaftTestMember.member;
+import static org.neo4j.coreedge.identity.RaftTestMember.member;
 
 public class RaftTestGroup implements RaftGroup
 {

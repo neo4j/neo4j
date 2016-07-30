@@ -24,12 +24,12 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.core.state.ReadableRaftState;
+import org.neo4j.coreedge.raft.roles.follower.FollowerStates;
+import org.neo4j.coreedge.identity.MemberId;
 
 /**
  * Holds the outcome of a RAFT role's handling of a message. The role handling logic is stateless

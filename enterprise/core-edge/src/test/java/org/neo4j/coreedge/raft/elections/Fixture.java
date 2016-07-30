@@ -27,17 +27,17 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
+import org.neo4j.coreedge.raft.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftInstance.BootstrapException;
 import org.neo4j.coreedge.raft.RaftInstanceBuilder;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftStateMachine;
-import org.neo4j.coreedge.raft.RaftTestNetwork;
+import org.neo4j.coreedge.messaging.TestNetwork;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.RaftTestMemberSetBuilder;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.NullLogProvider;
@@ -51,16 +51,16 @@ public class Fixture
     private final Set<BootstrapWaiter> bootstrapWaiters = new HashSet<>();
     private final List<DelayedRenewableTimeoutService> timeoutServices = new ArrayList<>();
     final Set<RaftInstance> rafts = new HashSet<>();
-    final RaftTestNetwork net;
+    final TestNetwork net;
 
-    Fixture( Set<MemberId> memberIds, RaftTestNetwork net, long electionTimeout, long heartbeatInterval )
+    Fixture( Set<MemberId> memberIds, TestNetwork net, long electionTimeout, long heartbeatInterval )
     {
         this.net = net;
 
         for ( MemberId member : memberIds )
         {
-            RaftTestNetwork.Inbound inbound = net.new Inbound( member );
-            RaftTestNetwork.Outbound outbound = net.new Outbound( member );
+            TestNetwork.Inbound inbound = net.new Inbound( member );
+            TestNetwork.Outbound outbound = net.new Outbound( member );
 
             members.add( member );
 

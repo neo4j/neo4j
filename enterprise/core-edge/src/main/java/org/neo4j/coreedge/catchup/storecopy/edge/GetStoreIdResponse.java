@@ -21,7 +21,7 @@ package org.neo4j.coreedge.catchup.storecopy.edge;
 
 import java.util.Objects;
 
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.identity.StoreId;
 
 public class GetStoreIdResponse
 {

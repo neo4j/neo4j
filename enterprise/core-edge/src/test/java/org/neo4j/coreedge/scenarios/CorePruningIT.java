@@ -27,14 +27,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
-import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.EnterpriseCoreEditionModule;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.scenarios.CoreToCoreCopySnapshotIT.createData;
-import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_strategy;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class CorePruningIT

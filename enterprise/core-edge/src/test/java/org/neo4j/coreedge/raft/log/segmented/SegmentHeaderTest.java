@@ -24,7 +24,7 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.state.EndOfStreamException;
+import org.neo4j.coreedge.messaging.EndOfStreamException;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 public class SegmentHeaderTest

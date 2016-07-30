@@ -23,7 +23,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-import org.neo4j.coreedge.raft.state.CoreSnapshot;
+import org.neo4j.coreedge.core.state.CoreSnapshot;
 
 public class CoreSnapshotResponseHandler extends SimpleChannelInboundHandler<CoreSnapshot>
 {

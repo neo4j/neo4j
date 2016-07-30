@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
-import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.messaging.Message;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
 

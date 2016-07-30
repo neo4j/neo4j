@@ -24,7 +24,7 @@ import java.util.Arrays;
 
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.replication.shipping.RaftLogShipper;
+import org.neo4j.coreedge.raft.shipping.RaftLogShipper;
 
 import static java.lang.String.format;
 

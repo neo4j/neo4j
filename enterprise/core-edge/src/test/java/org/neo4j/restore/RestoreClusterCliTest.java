@@ -32,7 +32,7 @@ import java.util.Optional;
 
 import org.neo4j.coreedge.convert.ClusterSeed;
 import org.neo4j.coreedge.convert.StoreMetadata;
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -48,7 +48,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.logging.NullLog;
 import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.test.rule.TargetDirectory;
 

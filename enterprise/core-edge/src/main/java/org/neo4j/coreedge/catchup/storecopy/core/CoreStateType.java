@@ -19,11 +19,11 @@
  */
 package org.neo4j.coreedge.catchup.storecopy.core;
 
-import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
-import org.neo4j.coreedge.raft.state.StateMarshal;
-import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenState;
+import org.neo4j.coreedge.core.replication.session.GlobalSessionTrackerState;
+import org.neo4j.coreedge.core.state.StateMarshal;
+import org.neo4j.coreedge.core.state.id.IdAllocationState;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.core.state.locks.ReplicatedLockTokenState;
 
 public enum CoreStateType
 {

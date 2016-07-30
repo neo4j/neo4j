@@ -33,8 +33,8 @@ import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.raft.state.RaftState;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.core.state.RaftState;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -47,8 +47,8 @@ import static org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
-import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
-import static org.neo4j.coreedge.server.RaftTestMember.member;
+import static org.neo4j.coreedge.core.state.RaftStateBuilder.raftState;
+import static org.neo4j.coreedge.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 @RunWith(MockitoJUnitRunner.class)

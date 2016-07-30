@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.raft.state.ReadableRaftState;
+import org.neo4j.coreedge.core.state.ReadableRaftState;
 import org.neo4j.logging.Log;
 
 public interface RaftMessageHandler

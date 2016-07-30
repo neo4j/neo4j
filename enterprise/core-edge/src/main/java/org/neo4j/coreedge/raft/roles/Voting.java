@@ -23,8 +23,8 @@ import java.io.IOException;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.core.state.ReadableRaftState;
+import org.neo4j.coreedge.identity.MemberId;
 
 public class Voting
 {

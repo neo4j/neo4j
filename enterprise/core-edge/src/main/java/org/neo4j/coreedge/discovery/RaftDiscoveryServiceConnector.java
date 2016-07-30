@@ -24,7 +24,7 @@ import java.util.Set;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftInstance.BootstrapException;
 import org.neo4j.coreedge.raft.membership.MemberIdSet;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements CoreTopologyService.Listener

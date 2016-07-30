@@ -29,10 +29,10 @@ import com.hazelcast.instance.GroupProperties;
 
 import java.util.List;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.ListenSocketAddress;
+import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;

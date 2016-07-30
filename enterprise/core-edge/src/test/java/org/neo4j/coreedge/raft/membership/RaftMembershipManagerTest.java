@@ -28,9 +28,8 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.RaftLogCommand;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
-import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
-import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
-import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
+import org.neo4j.coreedge.core.state.InMemoryStateStorage;
+import org.neo4j.coreedge.identity.RaftTestMemberSetBuilder;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.FakeClock;
 

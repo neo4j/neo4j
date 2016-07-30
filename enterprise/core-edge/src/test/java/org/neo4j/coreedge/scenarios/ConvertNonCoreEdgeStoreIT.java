@@ -33,7 +33,7 @@ import org.junit.runners.Parameterized;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
+import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -56,7 +56,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.restore.ArgsBuilder.args;

@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.identity.MemberId;
 
 public class TxPullClient
 {
