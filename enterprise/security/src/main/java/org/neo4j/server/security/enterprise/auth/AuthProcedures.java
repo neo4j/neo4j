@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
-
+import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.bolt.HaltableUserSession;
 import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -206,7 +206,7 @@ public class AuthProcedures
 
         return countTransactionByUsername(
                     getActiveTransactions().stream()
-                        .filter( tx -> tx.getReasonIfTerminated() == null )
+                        .filter( tx -> !tx.terminationReason().isPresent() )
                         .map( tx -> tx.mode().name() )
                 );
     }
@@ -253,9 +253,9 @@ public class AuthProcedures
     private Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
     {
         Long killCount = 0L;
-        for ( KernelTransaction tx : getActiveTransactions() )
+        for ( KernelTransactionHandle tx : getActiveTransactions() )
         {
-            if ( tx.mode().name().equals( username ) && tx != this.tx )
+            if ( tx.mode().name().equals( username ) && !tx.isSameTransaction( this.tx) )
             {
                 tx.markForTermination( Status.Transaction.Terminated );
                 killCount += 1;
@@ -279,7 +279,7 @@ public class AuthProcedures
         return Stream.of( new SessionResult( username, killCount ) );
     }
 
-    private Set<KernelTransaction> getActiveTransactions()
+    private Set<KernelTransactionHandle> getActiveTransactions()
     {
         return graph.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
     }

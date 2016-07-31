@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Optional;
+
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AccessMode;
 
 /**
  * A {@link KernelTransactionHandle} that wraps the given {@link KernelTransactionImplementation}.
@@ -35,6 +39,8 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final long lastTransactionTimestampWhenStarted;
     private final long localStartTime;
     private final KernelTransactionImplementation tx;
+    private final AccessMode mode;
+    private final Status terminationReason;
 
     KernelTransactionImplementationHandle( KernelTransactionImplementation tx )
     {
@@ -42,6 +48,8 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.lastTransactionIdWhenStarted = tx.lastTransactionIdWhenStarted();
         this.lastTransactionTimestampWhenStarted = tx.lastTransactionTimestampWhenStarted();
         this.localStartTime = tx.localStartTime();
+        this.mode = tx.mode();
+        this.terminationReason = tx.getReasonIfTerminated();
         this.tx = tx;
     }
 
@@ -73,6 +81,24 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     public void markForTermination( Status reason )
     {
         tx.markForTermination( txReuseCount, reason );
+    }
+
+    @Override
+    public AccessMode mode()
+    {
+        return mode;
+    }
+
+    @Override
+    public Optional<Status> terminationReason()
+    {
+        return Optional.ofNullable( terminationReason );
+    }
+
+    @Override
+    public boolean isSameTransaction( KernelTransaction tx )
+    {
+        return this.tx == tx;
     }
 
     @Override

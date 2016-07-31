@@ -20,10 +20,12 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AccessMode;
 
 /**
  * A test implementation of {@link KernelTransactionHandle} that simply wraps a given {@link KernelTransaction}.
@@ -65,6 +67,24 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     public void markForTermination( Status reason )
     {
         tx.markForTermination( reason );
+    }
+
+    @Override
+    public AccessMode mode()
+    {
+        return tx.mode();
+    }
+
+    @Override
+    public Optional<Status> terminationReason()
+    {
+        return Optional.ofNullable( tx.getReasonIfTerminated() );
+    }
+
+    @Override
+    public boolean isSameTransaction( KernelTransaction tx )
+    {
+        return false;
     }
 
     @Override

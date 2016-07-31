@@ -144,7 +144,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final KernelStatement currentStatement;
     private final StorageStatement storageStatement;
     private final List<CloseListener> closeListeners = new ArrayList<>( 2 );
-    private AccessMode accessMode;
+    private volatile AccessMode accessMode;
     private volatile Locks.Client locks;
     private boolean beforeHookInvoked;
     private volatile boolean closing, closed;

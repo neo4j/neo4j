@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.Optional;
+
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.api.Kernel;
@@ -64,4 +66,21 @@ public interface KernelTransactionHandle
      * @param reason the reason for termination.
      */
     void markForTermination( Status reason );
+
+    /**
+     * Access mode of underlying transaction that transaction has when handle was created.
+     *
+     * @return underlying transaction access mode
+     */
+    AccessMode mode();
+
+    /**
+     * Transaction termination reason that transaction had when handle was created.
+     *
+     * @return transaction termination reason.
+     */
+    Optional<Status> terminationReason();
+
+    // TODO: remove
+    boolean isSameTransaction( KernelTransaction tx );
 }
