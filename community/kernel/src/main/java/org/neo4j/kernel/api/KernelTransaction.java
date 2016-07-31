@@ -169,7 +169,7 @@ public interface KernelTransaction extends AutoCloseable
 
     /**
      * @return start time of this transaction, i.e. basically {@link System#currentTimeMillis()} when user called
-     * {@link Kernel#newTransaction()}.
+     * {@link Kernel#newTransaction(Type, AccessMode)}.
      */
     long localStartTime();
 

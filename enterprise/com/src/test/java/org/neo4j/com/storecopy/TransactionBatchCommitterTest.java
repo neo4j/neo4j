@@ -24,8 +24,10 @@ import org.mockito.InOrder;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.api.TestKernelTransactionHandle;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -131,7 +133,8 @@ public class TransactionBatchCommitterTest
         KernelTransaction txToTerminate = newKernelTransaction( timestampOutsideSafeZone );
         KernelTransaction tx = newKernelTransaction( firstCommitTimestamp - 1 );
 
-        when( kernelTransactions.activeTransactions() ).thenReturn( Iterators.asSet( txToTerminate, tx ) );
+        when( kernelTransactions.activeTransactions() )
+                .thenReturn( Iterators.asSet( newHandle( txToTerminate ), newHandle( tx ) ) );
 
         // when
         committer.apply( chain.first, chain.last );
@@ -141,6 +144,11 @@ public class TransactionBatchCommitterTest
         verify( tx, never() ).markForTermination( any() );
         logProvider.assertContainsLogCallContaining( "Marking transaction for termination" );
         logProvider.assertContainsLogCallContaining( "lastCommittedTxId:" + (BASE_TX_ID + txCount - 1) );
+    }
+
+    private KernelTransactionHandle newHandle( KernelTransaction tx )
+    {
+        return new TestKernelTransactionHandle( tx );
     }
 
     private KernelTransaction newKernelTransaction( long lastTransactionTimestampWhenStarted )

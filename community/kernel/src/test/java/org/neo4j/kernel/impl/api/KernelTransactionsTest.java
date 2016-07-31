@@ -34,11 +34,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.TransactionId;
@@ -89,7 +92,7 @@ public class KernelTransactionsTest
     public void shouldListActiveTransactions() throws Exception
     {
         // Given
-        KernelTransactions registry = newKernelTransactions();
+        KernelTransactions registry = newTestKernelTransactions();
 
         // When
         KernelTransaction first = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
@@ -99,7 +102,7 @@ public class KernelTransactionsTest
         first.close();
 
         // Then
-        assertThat( Iterables.asUniqueSet( registry.activeTransactions() ), equalTo( asSet( second, third ) ) );
+        assertThat( registry.activeTransactions(), equalTo( asSet( newHandle( second ), newHandle( third ) ) ) );
     }
 
     @Test
@@ -252,7 +255,7 @@ public class KernelTransactionsTest
     @Test
     public void transactionCloseRemovesTxFromActiveTransactions() throws Exception
     {
-        KernelTransactions kernelTransactions = newKernelTransactions();
+        KernelTransactions kernelTransactions = newTestKernelTransactions();
 
         KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
         KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit,AccessMode.Static.NONE );
@@ -261,21 +264,7 @@ public class KernelTransactionsTest
         tx1.close();
         tx3.close();
 
-        assertEquals( asSet( tx2 ), kernelTransactions.activeTransactions() );
-    }
-
-    @Test
-    public void transactionRemovesItselfFromActiveTransactions() throws Exception
-    {
-        KernelTransactions kernelTransactions = newKernelTransactions();
-
-        KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
-        KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
-        KernelTransaction tx3 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
-
-        tx2.close();
-
-        assertEquals( asSet( tx1, tx3 ), kernelTransactions.activeTransactions() );
+        assertEquals( asSet( newHandle( tx2 ) ), kernelTransactions.activeTransactions() );
     }
 
     @Test
@@ -394,17 +383,26 @@ public class KernelTransactionsTest
         return newKernelTransactions( mock( TransactionCommitProcess.class ) );
     }
 
+    private static KernelTransactions newTestKernelTransactions() throws Exception
+    {
+        return newKernelTransactions( true, mock( TransactionCommitProcess.class ), mock( StorageStatement.class ) );
+    }
+
     private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess ) throws Exception
     {
-        return newKernelTransactions( commitProcess, mock( StorageStatement.class ) );
+        return newKernelTransactions( false, commitProcess, mock( StorageStatement.class ) );
     }
 
     private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess,
             StorageStatement firstStoreStatements, StorageStatement... otherStorageStatements ) throws Exception
     {
-        LifeSupport life = new LifeSupport();
-        life.start();
+        return newKernelTransactions( false, commitProcess, firstStoreStatements, otherStorageStatements );
+    }
 
+    private static KernelTransactions newKernelTransactions( boolean testKernelTransactions,
+            TransactionCommitProcess commitProcess, StorageStatement firstStoreStatements,
+            StorageStatement... otherStorageStatements ) throws Exception
+    {
         Locks locks = mock( Locks.class );
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
@@ -413,7 +411,8 @@ public class KernelTransactionsTest
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             invocation.getArgumentAt( 0, Collection.class ).add( mock( StorageCommand.class ) );
             return null;
         } ).when( storageEngine ).createCommands(
@@ -423,21 +422,34 @@ public class KernelTransactionsTest
                 any( ResourceLocker.class ),
                 anyLong() );
 
+        return newKernelTransactions( locks, storageEngine, commitProcess, testKernelTransactions );
+    }
+
+    private static KernelTransactions newKernelTransactions( Locks locks, StorageEngine storageEngine,
+            TransactionCommitProcess commitProcess, boolean testKernelTransactions )
+    {
+        LifeSupport life = new LifeSupport();
+        life.start();
+
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 0, 0, 0 ) );
 
-        Tracers tracers =
-                new Tracers( "null", NullLog.getInstance(), mock( Monitors.class ), mock( JobScheduler.class ) );
+        Tracers tracers = new Tracers( "null", NullLog.getInstance(), new Monitors(), mock( JobScheduler.class ) );
+
+        if ( testKernelTransactions )
+        {
+            return new TestKernelTransactions( locks, null, null, null, TransactionHeaderInformationFactory.DEFAULT,
+                    commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
+                    tracers, storageEngine, new Procedures(), transactionIdStore, Clock.SYSTEM_CLOCK );
+        }
         return new KernelTransactions( locks,
                 null, null, null, TransactionHeaderInformationFactory.DEFAULT,
-                commitProcess, null,
-                null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
+                commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
                 tracers, storageEngine, new Procedures(), transactionIdStore, Clock.SYSTEM_CLOCK );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
             throws TransactionFailureException
-
     {
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
 
@@ -493,6 +505,35 @@ public class KernelTransactionsTest
         catch ( Exception e )
         {
             assertThat( e, instanceOf( TimeoutException.class ) );
+        }
+    }
+
+    private static KernelTransactionHandle newHandle( KernelTransaction tx )
+    {
+        return new TestKernelTransactionHandle( tx );
+    }
+
+    private static class TestKernelTransactions extends KernelTransactions
+    {
+        public TestKernelTransactions( Locks locks, ConstraintIndexCreator constraintIndexCreator,
+                StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard,
+                TransactionHeaderInformationFactory txHeaderFactory,
+                TransactionCommitProcess transactionCommitProcess,
+                IndexConfigStore indexConfigStore,
+                LegacyIndexProviderLookup legacyIndexProviderLookup, TransactionHooks hooks,
+                TransactionMonitor transactionMonitor, LifeSupport dataSourceLife,
+                Tracers tracers, StorageEngine storageEngine, Procedures procedures,
+                TransactionIdStore transactionIdStore, Clock clock )
+        {
+            super( locks, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory,
+                    transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor,
+                    dataSourceLife, tracers, storageEngine, procedures, transactionIdStore, clock );
+        }
+
+        @Override
+        KernelTransactionHandle createHandle( KernelTransactionImplementation tx )
+        {
+            return new TestKernelTransactionHandle( tx );
         }
     }
 }
