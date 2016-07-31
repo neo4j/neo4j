@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -90,7 +91,7 @@ public abstract class StatementOperationsTestHelper
                 return txState.hasChanges();
             }
         } );
-        when( state.locks() ).thenReturn( lockHolder );
+        when( state.locks() ).thenReturn( new SimpleStatementLocks( lockHolder ) );
         when( state.readOperations() ).thenReturn( mock( ReadOperations.class ) );
         return state;
     }

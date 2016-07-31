@@ -37,11 +37,11 @@ import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
 
 public class KernelStatement implements TxStateHolder, Statement
 {
-    protected final Locks.Client locks;
+    protected final StatementLocks statementLocks;
     protected final TxStateHolder txStateHolder;
     protected final IndexReaderFactory indexReaderFactory;
     protected final LabelScanStore labelScanStore;
@@ -53,11 +53,11 @@ public class KernelStatement implements TxStateHolder, Statement
     private boolean closed;
 
     public KernelStatement( KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory,
-            LabelScanStore labelScanStore, TxStateHolder txStateHolder, Locks.Client locks,
+            LabelScanStore labelScanStore, TxStateHolder txStateHolder, StatementLocks statementLocks,
             StatementOperationParts operations, StoreStatement storeStatement )
     {
         this.transaction = transaction;
-        this.locks = locks;
+        this.statementLocks = statementLocks;
         this.indexReaderFactory = indexReaderFactory;
         this.txStateHolder = txStateHolder;
         this.labelScanStore = labelScanStore;
@@ -135,9 +135,9 @@ public class KernelStatement implements TxStateHolder, Statement
         }
     }
 
-    public Locks.Client locks()
+    public StatementLocks locks()
     {
-        return locks;
+        return statementLocks;
     }
 
     public IndexReader getIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException

@@ -88,7 +88,7 @@ public abstract class GraphDatabaseFacadeFactory
                 "limiting logical log space on disk to 100Mb," +
                 " or `200k txs` for limiting the number of transactions to keep to 200 000", matches( ANY ) ) );
 
-        // Kept here to have it not be publicly documented.
+        // Kept here to have it not be publicly documented
         public static final Setting<String> lock_manager = setting( "lock_manager", Settings.STRING, "" );
         public static final Setting<String> tracer =
                 setting( "dbms.tracer", Settings.STRING, (String) null ); // 'null' default.

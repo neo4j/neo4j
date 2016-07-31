@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpLocks;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -430,7 +431,7 @@ public class KernelTransactionImplementationTest
     @Test
     public void markForTerminationNotInitializedTransaction()
     {
-        KernelTransactionImplementation transaction = newTransaction( true, new NoOpLocks() );
+        KernelTransactionImplementation transaction = newTransaction( true, locks );
 
         transaction.markForTermination( Status.General.UnknownFailure );
 
@@ -631,10 +632,11 @@ public class KernelTransactionImplementationTest
     {
         when( storeReadLayer.acquireStatement() ).thenReturn( mock( StoreStatement.class ) );
 
-        return new KernelTransactionImplementation( null, null, null, null, null, recordState, null, neoStores, locks,
-                hooks, null, headerInformationFactory, commitProcess, transactionMonitor, storeReadLayer,
-                legacyIndexState, pool, new StandardConstraintSemantics(), clock, TransactionTracer.NULL,
-                new ProcedureCache(), mock( NeoStoreTransactionContext.class ), txTerminationAware );
+        return new KernelTransactionImplementation( null, null, null, null, null, recordState, null, neoStores,
+                hooks, null, headerInformationFactory, commitProcess,
+                transactionMonitor, storeReadLayer, legacyIndexState, pool, new StandardConstraintSemantics(), clock,
+                TransactionTracer.NULL, new ProcedureCache(), new SimpleStatementLocksFactory( locks ),
+                mock( NeoStoreTransactionContext.class ), txTerminationAware );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -57,7 +58,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
     private final long nodeId = 42L;
 
     {
-        when( state.locks() ).thenReturn( locks );
+        when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
     }
 
     @Test

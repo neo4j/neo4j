@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.locking.NoOpLocks;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -390,12 +391,14 @@ public class KernelTransactionTerminationTest
             super( mock( StatementOperationParts.class ),
                     mock( SchemaWriteGuard.class ), mock( LabelScanStore.class ), mock( IndexingService.class ),
                     mock( UpdateableSchemaState.class ), mock( TransactionRecordState.class ),
-                    mock( SchemaIndexProviderMap.class ), mock( NeoStores.class, RETURNS_MOCKS ), new NoOpLocks(),
-                    new TransactionHooks(), mock( ConstraintIndexCreator.class ),
-                    TransactionHeaderInformationFactory.DEFAULT, mock( TransactionCommitProcess.class ), monitor,
+                    mock( SchemaIndexProviderMap.class ), mock( NeoStores.class, RETURNS_MOCKS ),
+                    new TransactionHooks(),
+                    mock( ConstraintIndexCreator.class ), TransactionHeaderInformationFactory.DEFAULT,
+                    mock( TransactionCommitProcess.class ), monitor,
                     mock( StoreReadLayer.class, RETURNS_MOCKS ), mock( LegacyIndexTransactionState.class ),
                     mock( Pool.class ), new StandardConstraintSemantics(), new FakeClock(), TransactionTracer.NULL,
-                    new ProcedureCache(), mock( NeoStoreTransactionContext.class ), true );
+                    new ProcedureCache(), new SimpleStatementLocksFactory( new NoOpLocks() ),
+                    mock( NeoStoreTransactionContext.class ), true );
 
             this.monitor = monitor;
         }

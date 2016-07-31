@@ -70,7 +70,8 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -158,17 +159,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionMonitor transactionMonitor;
     private final StoreReadLayer storeLayer;
     private final ProcedureCache procedureCache;
+    private final StatementLocksFactory statementLocksFactory;
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
-    private final Locks locksManager;
     private final boolean txTerminationAwareLocks;
     private TransactionState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType = TransactionType.ANY;
     private TransactionHooks.TransactionHooksState hooksState;
     private boolean beforeHookInvoked;
-    private Locks.Client locks;
+    private StatementLocks statementLocks;
     private StoreStatement storeStatement;
     private boolean closing, closed;
     private boolean failure, success;
@@ -206,7 +207,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             TransactionRecordState recordState,
                                             SchemaIndexProviderMap providerMap,
                                             NeoStores neoStores,
-                                            Locks locks,
                                             TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
                                             TransactionHeaderInformationFactory headerInformationFactory,
@@ -219,6 +219,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             Clock clock,
                                             TransactionTracer tracer,
                                             ProcedureCache procedureCache,
+                                            StatementLocksFactory statementLocksFactory,
                                             NeoStoreTransactionContext context,
                                             boolean txTerminationAwareLocks )
     {
@@ -229,7 +230,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.recordState = recordState;
         this.providerMap = providerMap;
         this.schemaState = schemaState;
-        this.locksManager = locks;
         this.txTerminationAwareLocks = txTerminationAwareLocks;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -238,6 +238,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMonitor = transactionMonitor;
         this.storeLayer = storeLayer;
         this.procedureCache = procedureCache;
+        this.statementLocksFactory = statementLocksFactory;
         this.context = context;
         this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
         this.pool = pool;
@@ -252,7 +253,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp )
     {
-        this.locks = locksManager.newClient();
+        this.statementLocks = statementLocksFactory.newInstance();
         this.terminationReason = null;
         this.closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
@@ -329,9 +330,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 failure = true;
                 terminationReason = reason;
-                if ( txTerminationAwareLocks && locks != null )
+                if ( txTerminationAwareLocks && statementLocks != null )
                 {
-                    locks.stop();
+                    statementLocks.stop();
                 }
                 transactionMonitor.transactionTerminated();
             }
@@ -355,7 +356,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, locks, operations, storeStatement );
+                    labelScanStore, this, statementLocks, operations, storeStatement );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -569,12 +570,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     protected void dispose()
     {
-        if ( locks != null )
+        if ( statementLocks != null )
         {
-            locks.close();
+            statementLocks.close();
         }
 
-        this.locks = null;
+        this.statementLocks = null;
         this.transactionType = null;
         this.hooksState = null;
         this.txState = null;
@@ -612,8 +613,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     }
                 }
 
-                context.init( locks );
-                prepareRecordChangesFromTransactionState();
+                prepareStateForCommit();
             }
 
             // Convert changes into commands and commit
@@ -646,7 +646,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                 headerInformation.getMasterId(),
                                 headerInformation.getAuthorId(),
                                 startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis(),
-                                locks.getLockSessionId() );
+                                statementLocks.pessimistic().getLockSessionId() );
 
                         // Commit the transaction
                         commitProcess.commit( transactionRepresentation, lockGroup, commitEvent, INTERNAL );
@@ -671,6 +671,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 afterCommit();
             }
         }
+    }
+
+    private void prepareStateForCommit() throws ConstraintValidationKernelException, CreateConstraintFailureException
+    {
+        // grab all optimistic locks now, locks can't be deferred any further
+        statementLocks.prepareForCommit();
+
+        // use pessimistic locks for the rest of the commit process, locks can't be deferred any further
+        context.init( statementLocks.pessimistic() );
+
+        prepareRecordChangesFromTransactionState();
     }
 
     private void rollback() throws TransactionFailureException
@@ -762,8 +773,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         terminationReleaseLock.lock();
         try
         {
-            locks.close();
-            locks = null;
+            statementLocks.close();
+            statementLocks = null;
             terminationReason = null;
             pool.release( this );
             if ( storeStatement != null )
@@ -1246,6 +1257,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public String toString()
     {
-        return "KernelTransaction[" + this.locks.getLockSessionId() + "]";
+        return "KernelTransaction[" + this.statementLocks.pessimistic().getLockSessionId() + "]";
     }
 }

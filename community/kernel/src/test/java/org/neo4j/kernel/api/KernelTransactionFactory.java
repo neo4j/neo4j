@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.NoOpLocks;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -54,8 +55,8 @@ public class KernelTransactionFactory
         return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
                 mock( SchemaWriteGuard.class ), null, null,
                 null, mock( TransactionRecordState.class ),
-                null, mock( NeoStores.class ),  new NoOpLocks(), new TransactionHooks(),
-                mock( ConstraintIndexCreator.class ), headerInformationFactory,
+                null, mock( NeoStores.class ),
+                new TransactionHooks(), mock( ConstraintIndexCreator.class ), headerInformationFactory,
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                 mock( StoreReadLayer.class ),
                 mock( LegacyIndexTransactionState.class ),
@@ -64,6 +65,7 @@ public class KernelTransactionFactory
                 Clock.SYSTEM_CLOCK,
                 TransactionTracer.NULL,
                 new ProcedureCache(),
+                new SimpleStatementLocksFactory( new NoOpLocks() ),
                 mock( NeoStoreTransactionContext.class ),
                 false );
     }

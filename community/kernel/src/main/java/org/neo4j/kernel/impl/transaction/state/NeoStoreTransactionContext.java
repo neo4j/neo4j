@@ -87,16 +87,10 @@ public class NeoStoreTransactionContext
         propertyDeleter.removeProperty( primitiveProxy, propertyKey, getPropertyRecords() );
     }
 
-    public <P extends PrimitiveRecord> void primitiveChangeProperty( RecordProxy<Long, P, Void> primitive,
+    public <P extends PrimitiveRecord> void primitiveSetProperty( RecordProxy<Long, P, Void> primitive,
             int propertyKey, Object value )
     {
-        propertyCreator.primitiveChangeProperty( primitive, propertyKey, value, getPropertyRecords() );
-    }
-
-    public <P extends PrimitiveRecord> void primitiveAddProperty( RecordProxy<Long, P, Void> primitive,
-            int propertyKey, Object value )
-    {
-        propertyCreator.primitiveAddProperty( primitive, propertyKey, value, getPropertyRecords() );
+        propertyCreator.primitiveSetProperty( primitive, propertyKey, value, getPropertyRecords() );
     }
 
     public void createPropertyKeyToken( String name, int id )
