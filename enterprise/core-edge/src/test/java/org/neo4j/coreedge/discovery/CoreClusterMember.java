@@ -28,7 +28,7 @@ import java.util.function.IntFunction;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.log.segmented.FileNames;
 import org.neo4j.coreedge.core.state.CoreState;
-import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.core.CoreGraphDatabase;

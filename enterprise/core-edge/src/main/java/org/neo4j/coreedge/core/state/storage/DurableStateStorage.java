@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.core.state.StateRecoveryManager;
-import org.neo4j.coreedge.messaging.ChannelMarshal;
+import org.neo4j.coreedge.messaging.marsalling.ChannelMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.internal.DatabaseHealth;

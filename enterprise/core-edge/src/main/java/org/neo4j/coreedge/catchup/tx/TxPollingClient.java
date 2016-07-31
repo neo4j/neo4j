@@ -24,7 +24,7 @@ import org.neo4j.coreedge.raft.schedule.RenewableTimeoutService;
 import org.neo4j.coreedge.raft.schedule.RenewableTimeoutService.RenewableTimeout;
 import org.neo4j.coreedge.raft.schedule.RenewableTimeoutService.TimeoutName;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.CoreMemberSelectionStrategy;
+import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

@@ -30,14 +30,14 @@ import java.util.UUID;
 
 import org.neo4j.coreedge.messaging.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.raft.membership.MemberIdSet;
-import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
-import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
+import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
+import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedTokenRequest;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedTokenRequestSerializer;
 import org.neo4j.coreedge.core.state.machines.token.TokenType;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransactionFactory;
-import org.neo4j.coreedge.messaging.ChannelMarshal;
+import org.neo4j.coreedge.messaging.marsalling.ChannelMarshal;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.impl.store.id.IdType;

@@ -28,7 +28,7 @@ import java.io.IOException;
 
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.net.Inbound;
+import org.neo4j.coreedge.messaging.Inbound;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;

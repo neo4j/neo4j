@@ -32,7 +32,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
-import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.ConsensusOutcome;
 import org.neo4j.coreedge.raft.outcome.Outcome;

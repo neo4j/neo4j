@@ -26,9 +26,9 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.net.Inbound;
-import org.neo4j.coreedge.raft.net.LoggingOutbound;
-import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.messaging.Inbound;
+import org.neo4j.coreedge.messaging.LoggingOutbound;
+import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.RaftTestMemberSetBuilder;

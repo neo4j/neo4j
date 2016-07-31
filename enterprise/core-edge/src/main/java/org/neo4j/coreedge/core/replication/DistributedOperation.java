@@ -22,7 +22,7 @@ package org.neo4j.coreedge.core.replication;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
+import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.core.replication.session.GlobalSession;
 import org.neo4j.coreedge.core.replication.session.LocalOperationId;
 import org.neo4j.coreedge.messaging.EndOfStreamException;

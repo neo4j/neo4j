@@ -32,7 +32,7 @@ import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
-import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;

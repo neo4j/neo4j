@@ -33,7 +33,7 @@ import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.coreedge.messaging.AlwaysChooseFirstMember;
+import org.neo4j.coreedge.messaging.routing.AlwaysChooseFirstMember;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;

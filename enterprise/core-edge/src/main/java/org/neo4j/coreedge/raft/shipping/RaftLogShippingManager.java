@@ -31,7 +31,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
-import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;

@@ -27,8 +27,8 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
-import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
+import org.neo4j.coreedge.messaging.NetworkFlushableChannelNetty4;
+import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.messaging.marsalling.StringMarshal;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;

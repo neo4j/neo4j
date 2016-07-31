@@ -21,7 +21,7 @@ package org.neo4j.coreedge.core.state.machines.locks;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.messaging.ChannelMarshal;
+import org.neo4j.coreedge.messaging.marsalling.ChannelMarshal;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
 import org.neo4j.coreedge.core.state.storage.SafeStateMarshal;
 import org.neo4j.coreedge.identity.MemberId;

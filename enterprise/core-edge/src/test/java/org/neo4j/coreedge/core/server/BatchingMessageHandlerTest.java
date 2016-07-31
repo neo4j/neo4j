@@ -30,7 +30,7 @@ import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.coreedge.raft.net.Inbound.MessageHandler;
+import org.neo4j.coreedge.messaging.Inbound.MessageHandler;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Mockito.mock;

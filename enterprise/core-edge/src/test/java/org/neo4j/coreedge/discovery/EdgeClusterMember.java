@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
 
-import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;

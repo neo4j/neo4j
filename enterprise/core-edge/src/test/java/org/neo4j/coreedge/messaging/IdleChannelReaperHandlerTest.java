@@ -26,7 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.net.NonBlockingChannel;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;

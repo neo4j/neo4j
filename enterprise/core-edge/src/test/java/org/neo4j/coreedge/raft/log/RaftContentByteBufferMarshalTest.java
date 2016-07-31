@@ -30,8 +30,8 @@ import java.util.UUID;
 
 import org.neo4j.coreedge.messaging.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.raft.membership.MemberIdSet;
-import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
-import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
+import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
+import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransaction;

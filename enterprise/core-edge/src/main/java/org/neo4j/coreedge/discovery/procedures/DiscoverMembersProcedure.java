@@ -26,7 +26,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
-import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;

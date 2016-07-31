@@ -27,7 +27,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
+import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
 
 import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
 

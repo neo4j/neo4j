@@ -30,7 +30,7 @@ import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
-import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.core.replication.session.GlobalSession;
 import org.neo4j.coreedge.core.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.core.state.machines.tx.ConstantTimeRetryStrategy;

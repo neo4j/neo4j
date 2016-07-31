@@ -25,7 +25,7 @@ import java.util.function.BiConsumer;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.core.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.core.replication.session.OperationContext;
 import org.neo4j.coreedge.core.state.machines.tx.RetryStrategy;

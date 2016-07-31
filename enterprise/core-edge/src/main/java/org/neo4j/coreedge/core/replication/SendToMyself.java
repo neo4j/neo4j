@@ -20,7 +20,7 @@
 package org.neo4j.coreedge.core.replication;
 
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.identity.MemberId;
 
 public class SendToMyself

@@ -22,7 +22,7 @@ package org.neo4j.coreedge.discovery;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.edge.EnterpriseEdgeEditionModule;

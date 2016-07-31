@@ -28,7 +28,7 @@ import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
-import org.neo4j.coreedge.raft.net.Inbound;
+import org.neo4j.coreedge.messaging.Inbound;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.RaftTestMemberSetBuilder;
 import org.neo4j.coreedge.raft.schedule.ControlledRenewableTimeoutService;

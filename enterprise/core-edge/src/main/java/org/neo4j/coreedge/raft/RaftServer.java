@@ -35,11 +35,11 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
-import org.neo4j.coreedge.raft.net.Inbound;
-import org.neo4j.coreedge.raft.net.codecs.RaftMessageDecoder;
+import org.neo4j.coreedge.messaging.Inbound;
+import org.neo4j.coreedge.messaging.marsalling.RaftMessageDecoder;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
-import org.neo4j.coreedge.messaging.ChannelMarshal;
-import org.neo4j.coreedge.messaging.ListenSocketAddress;
+import org.neo4j.coreedge.messaging.marsalling.ChannelMarshal;
+import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
 import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;

@@ -29,8 +29,8 @@ import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftInstanceBuilder;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
-import org.neo4j.coreedge.raft.net.Inbound;
-import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.messaging.Inbound;
+import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.RaftTestMemberSetBuilder;
 

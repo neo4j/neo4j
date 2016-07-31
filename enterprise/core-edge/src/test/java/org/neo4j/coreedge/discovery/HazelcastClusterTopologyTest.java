@@ -35,10 +35,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.core.state.machines.tx.ConstantTimeRetryStrategy;
-import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.CoreMemberSelectionStrategy;
+import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.coreedge.edge.EdgeStartupProcess;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;

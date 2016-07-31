@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.coreedge.raft.ConsensusModule;
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.core.replication.ProgressTrackerImpl;
 import org.neo4j.coreedge.core.replication.RaftReplicator;
 import org.neo4j.coreedge.core.replication.session.GlobalSession;

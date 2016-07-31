@@ -27,7 +27,7 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 import java.util.List;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
+import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;

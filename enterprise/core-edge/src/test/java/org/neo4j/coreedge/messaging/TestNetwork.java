@@ -124,7 +124,7 @@ public class TestNetwork<T>
         }
     }
 
-    public class Outbound implements org.neo4j.coreedge.raft.net.Outbound<T, Message>
+    public class Outbound implements org.neo4j.coreedge.messaging.Outbound<T, Message>
     {
         private NetworkThread networkThread;
         private volatile boolean disconnected = false;
@@ -289,7 +289,7 @@ public class TestNetwork<T>
         }
     }
 
-    public class Inbound implements org.neo4j.coreedge.raft.net.Inbound<Message>
+    public class Inbound implements org.neo4j.coreedge.messaging.Inbound<Message>
     {
         private MessageHandler<Message> handler;
         private final BlockingQueue<Message> Q = new ArrayBlockingQueue<>( 64, true );

@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.core.state.machines.id.IdGenerationException;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.core.state.machines.locks.LeaderOnlyLockManager;

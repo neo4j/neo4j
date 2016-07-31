@@ -48,7 +48,7 @@ import org.neo4j.coreedge.catchup.tx.TxPullRequestHandler;
 import org.neo4j.coreedge.catchup.tx.TxPullResponseEncoder;
 import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseEncoder;
 import org.neo4j.coreedge.core.state.CoreState;
-import org.neo4j.coreedge.messaging.ListenSocketAddress;
+import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
 import org.neo4j.helpers.NamedThreadFactory;

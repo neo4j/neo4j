@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.time.Clock;
 
 import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
-import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
+import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransactionFactory;

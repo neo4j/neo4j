@@ -33,7 +33,7 @@ import org.neo4j.coreedge.identity.MemberId;
 
 public class DirectNetworking
 {
-    private final Map<MemberId, org.neo4j.coreedge.raft.net.Inbound.MessageHandler> handlers = new HashMap<>();
+    private final Map<MemberId, org.neo4j.coreedge.messaging.Inbound.MessageHandler> handlers = new HashMap<>();
     private final Map<MemberId, Queue<Message>> messageQueues = new HashMap<>();
     private final Set<MemberId> disconnectedMembers = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
@@ -77,7 +77,7 @@ public class DirectNetworking
     }
 
     public class Outbound implements
-            org.neo4j.coreedge.raft.net.Outbound<MemberId, RaftMessages.RaftMessage>
+            org.neo4j.coreedge.messaging.Outbound<MemberId, RaftMessages.RaftMessage>
     {
         private final MemberId me;
 
@@ -112,7 +112,7 @@ public class DirectNetworking
         }
     }
 
-    public class Inbound implements org.neo4j.coreedge.raft.net.Inbound
+    public class Inbound implements org.neo4j.coreedge.messaging.Inbound
     {
         private final MemberId id;
 

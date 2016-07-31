@@ -23,8 +23,8 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.function.Function;
 
-import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
-import org.neo4j.coreedge.messaging.ListenSocketAddress;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.kernel.configuration.Internal;

@@ -22,7 +22,7 @@ package org.neo4j.coreedge.messaging;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.coreedge.raft.net.NonBlockingChannel;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 
 public class NonBlockingChannels
 {

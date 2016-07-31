@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.core.state.storage;
 
-import org.neo4j.coreedge.messaging.ChannelMarshal;
+import org.neo4j.coreedge.messaging.marsalling.ChannelMarshal;
 
 public interface StateMarshal<STATE> extends ChannelMarshal<STATE>
 {

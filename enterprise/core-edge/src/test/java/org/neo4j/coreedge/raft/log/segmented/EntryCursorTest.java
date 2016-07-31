@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.coreedge.messaging.ChannelMarshal;
+import org.neo4j.coreedge.messaging.marsalling.ChannelMarshal;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;

@@ -31,7 +31,7 @@ import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Election;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.net.Inbound;
+import org.neo4j.coreedge.messaging.Inbound;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.identity.MemberId;

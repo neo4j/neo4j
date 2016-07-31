@@ -30,8 +30,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.raft.DirectNetworking;
 import org.neo4j.coreedge.raft.RaftTestFixture;
-import org.neo4j.coreedge.raft.net.Inbound;
-import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.messaging.Inbound;
+import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.identity.MemberId;
 
 import static org.junit.Assert.assertEquals;

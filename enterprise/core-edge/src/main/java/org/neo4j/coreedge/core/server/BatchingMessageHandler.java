@@ -26,7 +26,7 @@ import java.util.concurrent.BlockingQueue;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
-import org.neo4j.coreedge.raft.net.Inbound.MessageHandler;
+import org.neo4j.coreedge.messaging.Inbound.MessageHandler;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
