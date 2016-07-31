@@ -35,7 +35,7 @@ import org.neo4j.coreedge.raft.net.codecs.RaftMessageDecoder;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageEncoder;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.messaging.ChannelMarshal;
-import org.neo4j.coreedge.core.state.SafeChannelMarshal;
+import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;

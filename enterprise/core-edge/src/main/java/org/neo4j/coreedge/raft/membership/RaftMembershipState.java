@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.neo4j.coreedge.messaging.EndOfStreamException;
-import org.neo4j.coreedge.core.state.SafeStateMarshal;
+import org.neo4j.coreedge.core.state.storage.SafeStateMarshal;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.ReadableChannel;
@@ -135,7 +135,7 @@ public class RaftMembershipState extends LifecycleAdapter
         return false;
     }
 
-    public boolean uncommittedMemberChangeInLog()
+    boolean uncommittedMemberChangeInLog()
     {
         return appended != null;
     }

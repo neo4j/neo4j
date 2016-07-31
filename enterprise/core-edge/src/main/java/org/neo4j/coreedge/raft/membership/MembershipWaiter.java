@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.coreedge.raft.MismatchedStoreIdService;
-import org.neo4j.coreedge.core.state.ReadableRaftState;
+import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.Log;
@@ -66,7 +66,7 @@ public class MembershipWaiter
         this.log = logProvider.getLog( getClass() );
     }
 
-    public CompletableFuture<Boolean> waitUntilCaughtUpMember( ReadableRaftState raftState )
+    CompletableFuture<Boolean> waitUntilCaughtUpMember( ReadableRaftState raftState )
     {
         CompletableFuture<Boolean> catchUpFuture = new CompletableFuture<>();
 

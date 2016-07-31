@@ -21,10 +21,10 @@ package org.neo4j.coreedge.core.state;
 
 import java.util.function.Consumer;
 
-import org.neo4j.coreedge.core.state.id.ReplicatedIdAllocationRequest;
-import org.neo4j.coreedge.core.state.token.ReplicatedTokenRequest;
-import org.neo4j.coreedge.core.state.tx.ReplicatedTransaction;
-import org.neo4j.coreedge.core.state.locks.ReplicatedLockTokenRequest;
+import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdAllocationRequest;
+import org.neo4j.coreedge.core.state.machines.token.ReplicatedTokenRequest;
+import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransaction;
+import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenRequest;
 
 public interface CommandDispatcher extends AutoCloseable
 {

@@ -38,7 +38,7 @@ import org.neo4j.coreedge.raft.vote.VoteResponseBuilder;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.messaging.ChannelMarshal;
-import org.neo4j.coreedge.core.state.SafeChannelMarshal;
+import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.storageengine.api.ReadableChannel;

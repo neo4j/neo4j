@@ -23,9 +23,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-import org.neo4j.coreedge.catchup.tx.core.TxPullResponseEncoder;
-import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
-import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseDecoder;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;

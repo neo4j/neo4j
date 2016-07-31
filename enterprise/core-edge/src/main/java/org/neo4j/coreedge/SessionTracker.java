@@ -21,12 +21,12 @@ package org.neo4j.coreedge;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
+import org.neo4j.coreedge.core.state.snapshot.CoreStateType;
 import org.neo4j.coreedge.core.replication.session.GlobalSession;
 import org.neo4j.coreedge.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.core.replication.session.LocalOperationId;
-import org.neo4j.coreedge.core.state.CoreSnapshot;
-import org.neo4j.coreedge.core.state.StateStorage;
+import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
+import org.neo4j.coreedge.core.state.storage.StateStorage;
 
 public class SessionTracker implements SnapFlushable
 {

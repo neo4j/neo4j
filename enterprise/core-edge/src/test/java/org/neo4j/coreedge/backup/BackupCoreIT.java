@@ -48,10 +48,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.restore.RestoreClusterCliTest;
-import org.neo4j.restore.RestoreClusterUtils;
-import org.neo4j.restore.RestoreExistingClusterCli;
-import org.neo4j.restore.RestoreNewClusterCli;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
@@ -62,8 +58,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.restore.ArgsBuilder.args;
-import static org.neo4j.restore.ArgsBuilder.toArray;
+import static org.neo4j.coreedge.backup.ArgsBuilder.args;
+import static org.neo4j.coreedge.backup.ArgsBuilder.toArray;
 
 public class BackupCoreIT
 {

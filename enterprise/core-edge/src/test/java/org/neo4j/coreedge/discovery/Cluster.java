@@ -40,12 +40,12 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
-import org.neo4j.coreedge.core.state.id.IdGenerationException;
+import org.neo4j.coreedge.core.state.machines.id.IdGenerationException;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.messaging.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.CoreGraphDatabase;
-import org.neo4j.coreedge.core.state.locks.LeaderOnlyLockManager;
+import org.neo4j.coreedge.core.state.machines.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.edge.EdgeGraphDatabase;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Transaction;
@@ -151,7 +151,7 @@ public class Cluster
         shutdownEdgeMembers();
     }
 
-    public void shutdownCoreMembers() throws InterruptedException, ExecutionException
+    private void shutdownCoreMembers() throws InterruptedException, ExecutionException
     {
         ExecutorService executor = Executors.newCachedThreadPool();
         List<Callable<Object>> memberShutdownSuppliers = new ArrayList<>();
@@ -208,7 +208,7 @@ public class Cluster
         }
     }
 
-    public void removeEdgeMember( EdgeClusterMember memberToRemove )
+    private void removeEdgeMember( EdgeClusterMember memberToRemove )
     {
         memberToRemove.shutdown();
         edgeMembers.values().remove( memberToRemove );

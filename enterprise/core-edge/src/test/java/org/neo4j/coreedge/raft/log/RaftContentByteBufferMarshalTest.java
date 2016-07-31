@@ -28,14 +28,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
-import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
+import org.neo4j.coreedge.messaging.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.raft.membership.MemberIdSet;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
-import org.neo4j.coreedge.core.state.id.ReplicatedIdAllocationRequest;
-import org.neo4j.coreedge.core.state.tx.ReplicatedTransaction;
-import org.neo4j.coreedge.core.state.tx.ReplicatedTransactionFactory;
+import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdAllocationRequest;
+import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransaction;
+import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransactionFactory;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.impl.index.IndexCommand;

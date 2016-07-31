@@ -22,6 +22,7 @@ package org.neo4j.coreedge.core.state;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.coreedge.core.state.storage.StateMarshal;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;

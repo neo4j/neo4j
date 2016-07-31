@@ -21,7 +21,7 @@ package org.neo4j.coreedge.messaging;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.core.state.SafeChannelMarshal;
+import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 

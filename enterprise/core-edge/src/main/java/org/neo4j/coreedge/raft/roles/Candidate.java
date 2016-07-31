@@ -25,7 +25,7 @@ import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.core.state.ReadableRaftState;
+import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.coreedge.raft.MajorityIncludingSelfQuorum.isQuorum;

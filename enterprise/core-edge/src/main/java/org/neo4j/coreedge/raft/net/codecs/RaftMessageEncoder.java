@@ -24,7 +24,7 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
 
-import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
+import org.neo4j.coreedge.messaging.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;

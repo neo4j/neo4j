@@ -33,8 +33,8 @@ import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.core.replication.session.GlobalSession;
 import org.neo4j.coreedge.core.replication.session.LocalSessionPool;
-import org.neo4j.coreedge.core.state.tx.ConstantTimeRetryStrategy;
-import org.neo4j.coreedge.core.state.tx.RetryStrategy;
+import org.neo4j.coreedge.core.state.machines.tx.ConstantTimeRetryStrategy;
+import org.neo4j.coreedge.core.state.machines.tx.RetryStrategy;
 import org.neo4j.coreedge.core.state.Result;
 import org.neo4j.coreedge.identity.MemberId;
 
@@ -96,9 +96,8 @@ public class RaftReplicatorTest
         CapturingOutbound outbound = new CapturingOutbound();
 
         ConstantTimeRetryStrategy retryStrategy = new ConstantTimeRetryStrategy( 100, MILLISECONDS );
-        RaftReplicator replicator =
-                new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress,
-                        retryStrategy );
+        RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
+                sessionPool, capturedProgress, retryStrategy );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -121,9 +120,8 @@ public class RaftReplicatorTest
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound outbound = new CapturingOutbound();
 
-        RaftReplicator replicator =
-                new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress,
-                        retryStrategy );
+        RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
+                sessionPool, capturedProgress, retryStrategy );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, true );

@@ -31,7 +31,7 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.outcome.RaftLogCommand;
 import org.neo4j.coreedge.core.replication.SendToMyself;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.core.state.StateStorage;
+import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.raft.roles.follower.FollowerStates;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;

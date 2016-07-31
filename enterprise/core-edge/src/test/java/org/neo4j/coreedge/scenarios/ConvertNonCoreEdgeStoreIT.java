@@ -45,10 +45,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.restore.RestoreClusterCliTest;
-import org.neo4j.restore.RestoreClusterUtils;
-import org.neo4j.restore.RestoreExistingClusterCli;
-import org.neo4j.restore.RestoreNewClusterCli;
+import org.neo4j.coreedge.backup.RestoreClusterCliTest;
+import org.neo4j.coreedge.backup.RestoreClusterUtils;
+import org.neo4j.coreedge.backup.RestoreExistingClusterCli;
+import org.neo4j.coreedge.backup.RestoreNewClusterCli;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -59,8 +59,8 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.restore.ArgsBuilder.args;
-import static org.neo4j.restore.ArgsBuilder.toArray;
+import static org.neo4j.coreedge.backup.ArgsBuilder.args;
+import static org.neo4j.coreedge.backup.ArgsBuilder.toArray;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith(Parameterized.class)

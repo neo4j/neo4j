@@ -24,7 +24,7 @@ import java.net.InetSocketAddress;
 import java.util.Objects;
 
 import org.neo4j.coreedge.messaging.marsalling.StringMarshal;
-import org.neo4j.coreedge.core.state.SafeChannelMarshal;
+import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 

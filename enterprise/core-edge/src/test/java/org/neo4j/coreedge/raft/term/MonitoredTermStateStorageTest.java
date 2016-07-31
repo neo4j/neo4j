@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft.term;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.log.monitoring.RaftTermMonitor;
-import org.neo4j.coreedge.core.state.InMemoryStateStorage;
+import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.junit.Assert.assertEquals;

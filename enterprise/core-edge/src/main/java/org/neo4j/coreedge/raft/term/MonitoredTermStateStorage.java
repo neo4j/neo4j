@@ -22,12 +22,12 @@ package org.neo4j.coreedge.raft.term;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.log.monitoring.RaftTermMonitor;
-import org.neo4j.coreedge.core.state.StateStorage;
+import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public class MonitoredTermStateStorage implements StateStorage<TermState>
 {
-    String TERM_TAG = "term";
+    private String TERM_TAG = "term";
 
     private final StateStorage<TermState> delegate;
     private final RaftTermMonitor termMonitor;

@@ -28,11 +28,11 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.core.server.CoreServerModule;
-import org.neo4j.coreedge.core.state.CoreStateMachinesModule;
+import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.coreedge.ReplicationModule;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
-import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
+import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.raft.ConsensusModule;
@@ -44,8 +44,8 @@ import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.net.RaftChannelInitializer;
 import org.neo4j.coreedge.raft.net.RaftOutbound;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.core.state.DurableStateStorage;
-import org.neo4j.coreedge.core.state.StateStorage;
+import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
+import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.MemberId.MemberIdMarshal;
 import org.neo4j.coreedge.messaging.NonBlockingChannels;
@@ -128,7 +128,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         }
     }
 
-    public EnterpriseCoreEditionModule( final PlatformModule platformModule, DiscoveryServiceFactory
+    EnterpriseCoreEditionModule( final PlatformModule platformModule, DiscoveryServiceFactory
             discoveryServiceFactory )
     {
         final Dependencies dependencies = platformModule.dependencies;

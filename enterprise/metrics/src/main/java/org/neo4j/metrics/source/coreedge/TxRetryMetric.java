@@ -21,10 +21,10 @@ package org.neo4j.metrics.source.coreedge;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.coreedge.catchup.tx.core.TxRetryMonitor;
+import org.neo4j.coreedge.catchup.tx.TxRetryMonitor;
 
 
-public class TxRetryMetric implements TxRetryMonitor
+class TxRetryMetric implements TxRetryMonitor
 {
     private AtomicLong count = new AtomicLong( 0 );
 

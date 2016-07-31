@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
 
-import org.neo4j.coreedge.core.state.SafeStateMarshal;
+import org.neo4j.coreedge.core.state.storage.SafeStateMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 

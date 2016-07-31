@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.neo4j.coreedge.messaging.EndOfStreamException;
-import org.neo4j.coreedge.core.state.SafeChannelMarshal;
+import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -47,7 +47,7 @@ class SegmentHeader
         this.prevTerm = prevTerm;
     }
 
-    public long prevFileLastIndex()
+    long prevFileLastIndex()
     {
         return prevFileLastIndex;
     }

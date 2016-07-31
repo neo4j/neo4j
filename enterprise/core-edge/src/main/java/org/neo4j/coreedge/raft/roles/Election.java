@@ -24,7 +24,7 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.core.state.ReadableRaftState;
+import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.Log;
 

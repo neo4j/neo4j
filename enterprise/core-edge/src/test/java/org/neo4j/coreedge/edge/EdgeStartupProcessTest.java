@@ -26,8 +26,8 @@ import org.mockito.Matchers;
 import org.mockito.Mockito;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.core.state.tx.ConstantTimeRetryStrategy;
+import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
+import org.neo4j.coreedge.core.state.machines.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.discovery.TopologyService;

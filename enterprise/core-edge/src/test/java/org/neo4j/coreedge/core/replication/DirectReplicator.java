@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.coreedge.core.state.StateMachine;
+import org.neo4j.coreedge.core.state.machines.StateMachine;
 
 public class DirectReplicator<Command extends ReplicatedContent> implements Replicator
 {

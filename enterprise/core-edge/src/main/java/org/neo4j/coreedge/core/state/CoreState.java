@@ -25,6 +25,8 @@ import java.util.List;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
+import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
+import org.neo4j.coreedge.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.coreedge.discovery.CoreMemberSelectionException;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.raft.MismatchedStoreIdService;
@@ -35,7 +37,6 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.CoreMemberSelectionStrategy;
 import org.neo4j.coreedge.raft.net.Inbound.MessageHandler;
 import org.neo4j.coreedge.raft.outcome.ConsensusOutcome;
-import org.neo4j.coreedge.raft.state.CommandApplicationProcess;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -158,7 +159,7 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
         return applicationProcess.snapshot();
     }
 
-    synchronized void installSnapshot( CoreSnapshot coreSnapshot )
+    public synchronized void installSnapshot( CoreSnapshot coreSnapshot )
     {
         applicationProcess.installSnapshot( coreSnapshot );
     }

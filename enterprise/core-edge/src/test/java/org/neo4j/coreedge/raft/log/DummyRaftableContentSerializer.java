@@ -25,14 +25,14 @@ import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
-import org.neo4j.coreedge.core.state.SafeChannelMarshal;
+import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
 public class DummyRaftableContentSerializer extends SafeChannelMarshal<ReplicatedContent>
 {
-    public static final int REPLICATED_INTEGER_TYPE = 0;
-    public static final int REPLICATED_STRING_TYPE = 1;
+    private static final int REPLICATED_INTEGER_TYPE = 0;
+    private static final int REPLICATED_STRING_TYPE = 1;
 
     @Override
     public void marshal( ReplicatedContent content, WritableChannel channel ) throws IOException

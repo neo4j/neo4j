@@ -31,7 +31,7 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.core.state.RaftState;
+import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
@@ -40,7 +40,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.heartbeat;
 import static org.neo4j.coreedge.raft.roles.AppendEntriesRequestTest.ContentGenerator.content;
-import static org.neo4j.coreedge.core.state.RaftStateBuilder.raftState;
+import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
 
 @RunWith(Parameterized.class)

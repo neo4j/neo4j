@@ -28,7 +28,7 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.core.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.core.replication.session.OperationContext;
-import org.neo4j.coreedge.core.state.tx.RetryStrategy;
+import org.neo4j.coreedge.core.state.machines.tx.RetryStrategy;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.impl.util.Listener;
 

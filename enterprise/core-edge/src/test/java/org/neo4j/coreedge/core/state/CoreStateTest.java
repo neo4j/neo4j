@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.state.CommandApplicationProcess;
 import org.neo4j.logging.AssertableLogProvider;
 
 import static org.mockito.Mockito.mock;

@@ -22,11 +22,11 @@ package org.neo4j.coreedge.edge;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
+import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
 import org.neo4j.coreedge.discovery.CoreMemberSelectionException;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.messaging.CoreMemberSelectionStrategy;
-import org.neo4j.coreedge.core.state.tx.RetryStrategy;
+import org.neo4j.coreedge.core.state.machines.tx.RetryStrategy;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;

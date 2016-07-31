@@ -27,8 +27,8 @@ import org.junit.Test;
 import org.neo4j.coreedge.raft.MismatchedStoreIdService;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.core.state.RaftState;
-import org.neo4j.coreedge.core.state.RaftStateBuilder;
+import org.neo4j.coreedge.raft.state.RaftState;
+import org.neo4j.coreedge.raft.state.RaftStateBuilder;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 

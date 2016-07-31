@@ -29,10 +29,10 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.core.state.RaftState;
+import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.identity.MemberId;
 
-import static org.neo4j.coreedge.core.state.RaftStateBuilder.raftState;
+import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 
 public class ClusterState
 {

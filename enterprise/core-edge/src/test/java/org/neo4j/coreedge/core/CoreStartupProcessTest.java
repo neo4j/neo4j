@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.raft.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.RaftServer;
-import org.neo4j.coreedge.core.state.id.ReplicatedIdGeneratorFactory;
+import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.raft.membership.MembershipWaiterLifecycle;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -76,7 +76,7 @@ public class CoreStartupProcessTest
         private final Lifecycle component2;
         private final String reason;
 
-        public LifeSupportMatcher( Lifecycle component1, Lifecycle component2, String reason )
+        LifeSupportMatcher( Lifecycle component1, Lifecycle component2, String reason )
         {
             this.component1 = component1;
             this.component2 = component2;
@@ -105,7 +105,7 @@ public class CoreStartupProcessTest
         private Lifecycle component1;
         private Lifecycle component2;
 
-        public static LifeSupportMatcherBuilder startsComponent( Lifecycle component )
+        static LifeSupportMatcherBuilder startsComponent( Lifecycle component )
         {
             LifeSupportMatcherBuilder builder = new LifeSupportMatcherBuilder();
             builder.component1 = component;

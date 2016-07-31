@@ -23,18 +23,20 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.coreedge.core.replication.session.GlobalSessionTrackerState;
-import org.neo4j.coreedge.core.state.id.IdAllocationState;
+import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
+import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
+import org.neo4j.coreedge.core.state.storage.StateMarshal;
 import org.neo4j.coreedge.raft.membership.RaftMembershipState;
 import org.neo4j.coreedge.raft.term.TermState;
 import org.neo4j.coreedge.raft.vote.VoteState;
 import org.neo4j.coreedge.identity.MemberId.MemberIdMarshal;
-import org.neo4j.coreedge.core.state.locks.ReplicatedLockTokenState;
+import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenState;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.coreedge.core.state.CoreStateMachinesModule.ID_ALLOCATION_NAME;
-import static org.neo4j.coreedge.core.state.CoreStateMachinesModule.LOCK_TOKEN_NAME;
+import static org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule.ID_ALLOCATION_NAME;
+import static org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule.LOCK_TOKEN_NAME;
 import static org.neo4j.coreedge.ReplicationModule.LAST_FLUSHED_NAME;
 import static org.neo4j.coreedge.ReplicationModule.SESSION_TRACKER_NAME;
 import static org.neo4j.coreedge.raft.ConsensusModule.RAFT_MEMBERSHIP_NAME;

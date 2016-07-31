@@ -30,7 +30,7 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.outcome.RaftLogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
-import org.neo4j.coreedge.core.state.ReadableRaftState;
+import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.NullLog;
 

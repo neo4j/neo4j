@@ -21,7 +21,7 @@ package org.neo4j.coreedge.raft.term;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.core.state.SafeStateMarshal;
+import org.neo4j.coreedge.core.state.storage.SafeStateMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 

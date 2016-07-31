@@ -30,7 +30,7 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.outcome.RaftLogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.core.state.ReadableRaftState;
+import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.roles.follower.FollowerStates;
 import org.neo4j.coreedge.identity.MemberId;
 
@@ -39,21 +39,21 @@ import static java.lang.String.format;
 public class ComparableRaftState implements ReadableRaftState
 {
     protected final MemberId myself;
-    protected final Set votingMembers;
-    protected final Set replicationMembers;
+    private final Set votingMembers;
+    private final Set replicationMembers;
     protected long term = 0;
     protected MemberId leader;
     private long leaderCommit = -1;
-    protected MemberId votedFor = null;
-    protected Set votesForMe = new HashSet<>();
-    protected long lastLogIndexBeforeWeBecameLeader = -1;
-    protected FollowerStates followerStates = new FollowerStates<>();
+    private MemberId votedFor = null;
+    private Set votesForMe = new HashSet<>();
+    private long lastLogIndexBeforeWeBecameLeader = -1;
+    private FollowerStates followerStates = new FollowerStates<>();
     protected final RaftLog entryLog;
-    protected final InFlightMap<Long,RaftLogEntry> inFlightMap;
+    private final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private long commitIndex = -1;
 
-    public ComparableRaftState( MemberId myself, Set votingMembers, Set replicationMembers,
-                                RaftLog entryLog, InFlightMap<Long,RaftLogEntry> inFlightMap )
+    ComparableRaftState( MemberId myself, Set votingMembers, Set replicationMembers,
+                         RaftLog entryLog, InFlightMap<Long, RaftLogEntry> inFlightMap )
     {
         this.myself = myself;
         this.votingMembers = votingMembers;
