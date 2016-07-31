@@ -162,6 +162,12 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
         applicationProcess.installSnapshot( coreSnapshot );
     }
 
+    @SuppressWarnings("unused") // used in embedded robustness testing
+    public long lastApplied()
+    {
+        return applicationProcess.lastApplied();
+    }
+
     @Override
     public void prune() throws IOException
     {
