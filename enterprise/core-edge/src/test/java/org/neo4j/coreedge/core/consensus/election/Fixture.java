@@ -30,9 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.RaftMachine.BootstrapException;
-import org.neo4j.coreedge.core.consensus.RaftInstanceBuilder;
-import org.neo4j.coreedge.core.consensus.RaftMessages;
-import org.neo4j.coreedge.core.consensus.RaftStateMachine;
+import org.neo4j.coreedge.core.consensus.RaftMachineBuilder;
 import org.neo4j.coreedge.messaging.TestNetwork;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.membership.RaftTestGroup;
@@ -70,14 +68,14 @@ public class Fixture
             bootstrapWaiters.add( waiter );
 
             RaftMachine raftMachine =
-                    new RaftInstanceBuilder( member, memberIds.size(), RaftTestMemberSetBuilder.INSTANCE )
+                    new RaftMachineBuilder( member, memberIds.size(), RaftTestMemberSetBuilder.INSTANCE )
                             .electionTimeout( electionTimeout )
                             .heartbeatInterval( heartbeatInterval )
                             .inbound( inbound )
                             .outbound( outbound )
                             .timeoutService( timeoutService )
                             .raftLog( new InMemoryRaftLog() )
-                            .stateMachine( waiter )
+                            .commitListener( waiter )
                             .build();
 
             rafts.add( raftMachine );
@@ -131,7 +129,7 @@ public class Fixture
      * If all members of the cluster have committed such an entry, it's possible for any member
      * to perform elections. We need to meet this condition before we start disconnecting members.
      */
-    private static class BootstrapWaiter implements RaftStateMachine
+    private static class BootstrapWaiter implements RaftMachineBuilder.CommitListener
     {
         private AtomicBoolean bootstrapped = new AtomicBoolean( false );
 
@@ -143,22 +141,6 @@ public class Fixture
                 bootstrapped.set( true );
             }
         }
-
-        @Override
-        public void notifyNeedFreshSnapshot()
-        {
-        }
-
-        @Override
-        public void downloadSnapshot( MemberId from )
-        {
-        }
-
-        @Override
-        public void innerHandle( RaftMessages.StoreIdAwareMessage raftMessage )
-        {
-        }
-
     }
 
     private void awaitBootstrapped() throws InterruptedException, TimeoutException

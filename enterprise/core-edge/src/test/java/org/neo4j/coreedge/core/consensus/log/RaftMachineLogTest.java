@@ -26,8 +26,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.coreedge.core.consensus.RaftMachine;
-import org.neo4j.coreedge.core.consensus.RaftInstanceBuilder;
-import org.neo4j.coreedge.core.consensus.RaftStateMachine;
+import org.neo4j.coreedge.core.consensus.RaftMachineBuilder;
 import org.neo4j.coreedge.core.consensus.ReplicatedInteger;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.identity.MemberId;
@@ -43,7 +42,7 @@ import static org.neo4j.coreedge.identity.RaftTestMember.member;
 public class RaftMachineLogTest
 {
     @Mock
-    RaftStateMachine raftStateMachine;
+    RaftMachineBuilder.CommitListener commitListener;
 
     private MemberId myself = member( 0 );
     private ReplicatedContent content = ReplicatedInteger.valueOf( 1 );
@@ -57,9 +56,9 @@ public class RaftMachineLogTest
         // given
         testEntryLog = new InMemoryRaftLog();
 
-        raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .raftLog( testEntryLog )
-                .stateMachine( raftStateMachine )
+                .commitListener( commitListener )
                 .build();
     }
 

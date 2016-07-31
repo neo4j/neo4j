@@ -57,7 +57,7 @@ public class RaftTestFixture
             Outbound<MemberId,RaftMessages.RaftMessage> outbound = new LoggingOutbound<>( net.new Outbound( id ), fixtureMember.member,
                     new NullMessageLogger<>() );
 
-            fixtureMember.raftMachine = new RaftInstanceBuilder( fixtureMember.member, expectedClusterSize,
+            fixtureMember.raftMachine = new RaftMachineBuilder( fixtureMember.member, expectedClusterSize,
                     RaftTestMemberSetBuilder.INSTANCE )
                     .inbound( inbound )
                     .outbound( outbound )

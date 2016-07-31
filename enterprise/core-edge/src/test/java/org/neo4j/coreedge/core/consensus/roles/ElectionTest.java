@@ -26,7 +26,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.coreedge.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.RaftMachine;
-import org.neo4j.coreedge.core.consensus.RaftInstanceBuilder;
+import org.neo4j.coreedge.core.consensus.RaftMachineBuilder;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.membership.RaftTestGroup;
 import org.neo4j.coreedge.messaging.Inbound;
@@ -67,7 +67,7 @@ public class ElectionTest
         // given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        RaftMachine raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
                 .timeoutService( timeouts )
                 .build();
@@ -97,7 +97,7 @@ public class ElectionTest
         // given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        RaftMachine raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
                 .timeoutService( timeouts )
                 .build();
@@ -124,7 +124,7 @@ public class ElectionTest
         // given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        RaftMachine raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
                 .timeoutService( timeouts )
                 .build();

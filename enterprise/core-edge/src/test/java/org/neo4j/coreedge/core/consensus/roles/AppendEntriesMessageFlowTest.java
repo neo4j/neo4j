@@ -27,7 +27,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.coreedge.core.consensus.RaftMachine;
-import org.neo4j.coreedge.core.consensus.RaftInstanceBuilder;
+import org.neo4j.coreedge.core.consensus.RaftMachineBuilder;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.ReplicatedInteger;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
@@ -66,7 +66,7 @@ public class AppendEntriesMessageFlowTest
     public void setup()
     {
         // given
-        raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
                 .build();
     }

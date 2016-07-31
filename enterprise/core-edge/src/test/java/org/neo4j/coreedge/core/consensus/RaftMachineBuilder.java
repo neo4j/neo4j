@@ -46,7 +46,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-public class RaftInstanceBuilder
+public class RaftMachineBuilder
 {
     private final MemberId member;
 
@@ -87,10 +87,10 @@ public class RaftInstanceBuilder
     private StateStorage<RaftMembershipState> raftMembership =
             new InMemoryStateStorage<>( new RaftMembershipState() );
     private Monitors monitors = new Monitors();
-    private RaftStateMachine raftStateMachine = new EmptyStateMachine();
+    private CommitListener commitListener = commitIndex -> {};
     private final InFlightMap<Long, RaftLogEntry> inFlightMap;
 
-    public RaftInstanceBuilder( MemberId member, int expectedClusterSize, RaftGroup.Builder memberSetBuilder )
+    public RaftMachineBuilder( MemberId member, int expectedClusterSize, RaftGroup.Builder memberSetBuilder )
     {
         this.member = member;
         this.expectedClusterSize = expectedClusterSize;
@@ -114,14 +114,7 @@ public class RaftInstanceBuilder
             try
             {
                 ConsensusOutcome outcome = raft.handle( incomingMessage );
-                if ( outcome.needsFreshSnapshot() )
-                {
-                    raftStateMachine.notifyNeedFreshSnapshot();
-                }
-                else
-                {
-                    raftStateMachine.notifyCommitted( outcome.getCommitIndex() );
-                }
+                commitListener.notifyCommitted( outcome.getCommitIndex() );
             }
             catch ( IOException e )
             {
@@ -131,51 +124,59 @@ public class RaftInstanceBuilder
         return raft;
     }
 
-    public RaftInstanceBuilder electionTimeout( long electionTimeout )
+    public RaftMachineBuilder electionTimeout( long electionTimeout )
     {
         this.electionTimeout = electionTimeout;
         return this;
     }
 
-    public RaftInstanceBuilder heartbeatInterval( long heartbeatInterval )
+    public RaftMachineBuilder heartbeatInterval( long heartbeatInterval )
     {
         this.heartbeatInterval = heartbeatInterval;
         return this;
     }
 
-    public RaftInstanceBuilder timeoutService( RenewableTimeoutService renewableTimeoutService )
+    public RaftMachineBuilder timeoutService( RenewableTimeoutService renewableTimeoutService )
     {
         this.renewableTimeoutService = renewableTimeoutService;
         return this;
     }
 
-    public RaftInstanceBuilder outbound( Outbound<MemberId, RaftMessages.RaftMessage> outbound )
+    public RaftMachineBuilder outbound( Outbound<MemberId, RaftMessages.RaftMessage> outbound )
     {
         this.outbound = outbound;
         return this;
     }
 
-    public RaftInstanceBuilder inbound( Inbound<RaftMessages.RaftMessage> inbound )
+    public RaftMachineBuilder inbound( Inbound<RaftMessages.RaftMessage> inbound )
     {
         this.inbound = inbound;
         return this;
     }
 
-    public RaftInstanceBuilder raftLog( RaftLog raftLog )
+    public RaftMachineBuilder raftLog( RaftLog raftLog )
     {
         this.raftLog = raftLog;
         return this;
     }
 
-    public RaftInstanceBuilder stateMachine( RaftStateMachine raftStateMachine )
+    public RaftMachineBuilder commitListener( CommitListener commitListener )
     {
-        this.raftStateMachine = raftStateMachine;
+        this.commitListener = commitListener;
         return this;
     }
 
-    RaftInstanceBuilder monitors( Monitors monitors )
+    RaftMachineBuilder monitors( Monitors monitors )
     {
         this.monitors = monitors;
         return this;
+    }
+
+    public interface CommitListener
+    {
+        /**
+         * Called when the highest committed index increases.
+         */
+        void notifyCommitted( long commitIndex );
     }
 }
