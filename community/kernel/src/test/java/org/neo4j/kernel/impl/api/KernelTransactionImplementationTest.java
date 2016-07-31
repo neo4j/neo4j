@@ -57,6 +57,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -589,5 +590,51 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         tx.markForTermination( Status.Transaction.Terminated );
         tx.close();
         assertNull( tx.getReasonIfTerminated() );
+    }
+
+    @Test
+    public void markForTerminationWithCorrectReuseCount() throws Exception
+    {
+        int reuseCount = 10;
+        Status.Transaction terminationReason = Status.Transaction.Terminated;
+
+        KernelTransactionImplementation tx = newNotInitializedTransaction( true );
+        initializeAndClose( tx, reuseCount );
+
+        Locks.Client locksClient = mock( Locks.Client.class );
+        tx.initialize( 42, 42, locksClient, KernelTransaction.Type.implicit, accessMode() );
+
+        tx.markForTermination( reuseCount, terminationReason );
+
+        assertEquals( terminationReason, tx.getReasonIfTerminated() );
+        verify( locksClient ).stop();
+    }
+
+    @Test
+    public void markForTerminationWithIncorrectReuseCount() throws Exception
+    {
+        int reuseCount = 13;
+        int nextReuseCount = reuseCount + 2;
+        Status.Transaction terminationReason = Status.Transaction.Terminated;
+
+        KernelTransactionImplementation tx = newNotInitializedTransaction( true );
+        initializeAndClose( tx, reuseCount );
+
+        Locks.Client locksClient = mock( Locks.Client.class );
+        tx.initialize( 42, 42, locksClient, KernelTransaction.Type.implicit, accessMode() );
+
+        tx.markForTermination( nextReuseCount, terminationReason );
+
+        assertNull( tx.getReasonIfTerminated() );
+        verify( locksClient, never() ).stop();
+    }
+
+    private void initializeAndClose( KernelTransactionImplementation tx, int times ) throws Exception
+    {
+        for ( int i = 0; i < times; i++ )
+        {
+            tx.initialize( i + 10, i + 10, new NoOpClient(), KernelTransaction.Type.implicit, accessMode() );
+            tx.close();
+        }
     }
 }

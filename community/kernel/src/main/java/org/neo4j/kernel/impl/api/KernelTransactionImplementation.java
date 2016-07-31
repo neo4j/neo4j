@@ -144,14 +144,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StorageStatement storageStatement;
     private CloseListener closeListener;
     private AccessMode accessMode;
-    private Locks.Client locks;
+    private volatile Locks.Client locks;
     private boolean beforeHookInvoked;
-    private boolean closing, closed;
+    private volatile boolean closing, closed;
     private boolean failure, success;
     private volatile Status terminationReason;
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
-    private long lastTransactionTimestampWhenStarted;
+    private volatile long lastTransactionTimestampWhenStarted;
     private TransactionEvent transactionEvent;
     private Type type;
     private volatile int reuseCount;
@@ -254,6 +254,22 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return terminationReason;
     }
 
+    void markForTermination( long expectedReuseCount, Status reason )
+    {
+        terminationReleaseLock.lock();
+        try
+        {
+            if ( expectedReuseCount == reuseCount )
+            {
+                markForTerminationIfPossible( reason );
+            }
+        }
+        finally
+        {
+            terminationReleaseLock.unlock();
+        }
+    }
+
     /**
      * {@inheritDoc}
      * <p>
@@ -263,33 +279,28 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public void markForTermination( Status reason )
     {
-        if ( !canBeTerminated() )
-        {
-            return;
-        }
-
-        int initialReuseCount = reuseCount;
         terminationReleaseLock.lock();
         try
         {
-            // this instance could have been reused, make sure we are trying to terminate the right transaction
-            // without this check there exists a possibility to terminate lock client that has just been returned to
-            // the pool or a transaction that was reused and represents a completely different logical transaction
-            boolean stillSameTransaction = initialReuseCount == reuseCount;
-            if ( stillSameTransaction && canBeTerminated() )
-            {
-                failure = true;
-                terminationReason = reason;
-                if ( txTerminationAwareLocks && locks != null )
-                {
-                    locks.stop();
-                }
-                transactionMonitor.transactionTerminated( hasTxStateWithChanges() );
-            }
+            markForTerminationIfPossible( reason );
         }
         finally
         {
             terminationReleaseLock.unlock();
+        }
+    }
+
+    private void markForTerminationIfPossible( Status reason )
+    {
+        if ( canBeTerminated() )
+        {
+            failure = true;
+            terminationReason = reason;
+            if ( txTerminationAwareLocks && locks != null )
+            {
+                locks.stop();
+            }
+            transactionMonitor.transactionTerminated( hasTxStateWithChanges() );
         }
     }
 
