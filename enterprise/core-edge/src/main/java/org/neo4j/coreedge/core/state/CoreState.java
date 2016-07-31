@@ -29,21 +29,21 @@ import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
 import org.neo4j.coreedge.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionException;
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.coreedge.raft.MismatchedStoreIdService;
-import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.pruning.LogPruner;
+import org.neo4j.coreedge.core.consensus.MismatchedStoreIdService;
+import org.neo4j.coreedge.core.consensus.RaftMachine;
+import org.neo4j.coreedge.core.consensus.RaftMessages;
+import org.neo4j.coreedge.core.consensus.log.pruning.LogPruner;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.coreedge.messaging.Inbound.MessageHandler;
-import org.neo4j.coreedge.raft.outcome.ConsensusOutcome;
+import org.neo4j.coreedge.core.consensus.outcome.ConsensusOutcome;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessage>, LogPruner, MismatchedStoreIdService, Lifecycle
 {
-    private final RaftInstance raftInstance;
+    private final RaftMachine raftMachine;
     private final LocalDatabase localDatabase;
     private final Log log;
     private final CoreMemberSelectionStrategy someoneElse;
@@ -52,14 +52,14 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
     private final CommandApplicationProcess applicationProcess;
 
     public CoreState(
-            RaftInstance raftInstance,
+            RaftMachine raftMachine,
             LocalDatabase localDatabase,
             LogProvider logProvider,
             CoreMemberSelectionStrategy someoneElse,
             CoreStateDownloader downloader,
             CommandApplicationProcess commandApplicationProcess )
     {
-        this.raftInstance = raftInstance;
+        this.raftMachine = raftMachine;
         this.localDatabase = localDatabase;
         this.someoneElse = someoneElse;
         this.downloader = downloader;
@@ -75,7 +75,7 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
         {
             try
             {
-                ConsensusOutcome outcome = raftInstance.handle( storeIdAwareMessage.message() );
+                ConsensusOutcome outcome = raftMachine.handle( storeIdAwareMessage.message() );
                 if ( outcome.needsFreshSnapshot() )
                 {
                     notifyNeedFreshSnapshot();
@@ -87,7 +87,7 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
             }
             catch ( Throwable e )
             {
-                raftInstance.stopTimers();
+                raftMachine.stopTimers();
                 localDatabase.panic( e );
             }
 

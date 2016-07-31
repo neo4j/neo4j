@@ -25,10 +25,10 @@ import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.schedule.DelayedRenewableTimeoutService;
-import org.neo4j.coreedge.raft.RaftServer;
+import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
+import org.neo4j.coreedge.core.consensus.RaftServer;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdGeneratorFactory;
-import org.neo4j.coreedge.raft.membership.MembershipWaiterLifecycle;
+import org.neo4j.coreedge.core.consensus.membership.MembershipWaiterLifecycle;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;

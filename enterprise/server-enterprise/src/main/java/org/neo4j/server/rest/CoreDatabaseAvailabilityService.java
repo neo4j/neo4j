@@ -25,7 +25,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.coreedge.core.CoreGraphDatabase;
-import org.neo4j.coreedge.raft.roles.Role;
+import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.repr.BadInputException;

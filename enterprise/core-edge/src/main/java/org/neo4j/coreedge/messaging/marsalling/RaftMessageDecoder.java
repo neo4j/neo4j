@@ -26,8 +26,8 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.core.consensus.RaftMessages;
+import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
@@ -36,13 +36,13 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.storageengine.api.ReadableChannel;
 
-import static org.neo4j.coreedge.raft.RaftMessages.Type.APPEND_ENTRIES_REQUEST;
-import static org.neo4j.coreedge.raft.RaftMessages.Type.APPEND_ENTRIES_RESPONSE;
-import static org.neo4j.coreedge.raft.RaftMessages.Type.HEARTBEAT;
-import static org.neo4j.coreedge.raft.RaftMessages.Type.LOG_COMPACTION_INFO;
-import static org.neo4j.coreedge.raft.RaftMessages.Type.NEW_ENTRY_REQUEST;
-import static org.neo4j.coreedge.raft.RaftMessages.Type.VOTE_REQUEST;
-import static org.neo4j.coreedge.raft.RaftMessages.Type.VOTE_RESPONSE;
+import static org.neo4j.coreedge.core.consensus.RaftMessages.Type.APPEND_ENTRIES_REQUEST;
+import static org.neo4j.coreedge.core.consensus.RaftMessages.Type.APPEND_ENTRIES_RESPONSE;
+import static org.neo4j.coreedge.core.consensus.RaftMessages.Type.HEARTBEAT;
+import static org.neo4j.coreedge.core.consensus.RaftMessages.Type.LOG_COMPACTION_INFO;
+import static org.neo4j.coreedge.core.consensus.RaftMessages.Type.NEW_ENTRY_REQUEST;
+import static org.neo4j.coreedge.core.consensus.RaftMessages.Type.VOTE_REQUEST;
+import static org.neo4j.coreedge.core.consensus.RaftMessages.Type.VOTE_RESPONSE;
 
 public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
 {

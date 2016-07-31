@@ -21,22 +21,22 @@ package org.neo4j.coreedge.discovery;
 
 import java.util.Set;
 
-import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.coreedge.raft.RaftInstance.BootstrapException;
-import org.neo4j.coreedge.raft.membership.MemberIdSet;
+import org.neo4j.coreedge.core.consensus.RaftMachine;
+import org.neo4j.coreedge.core.consensus.RaftMachine.BootstrapException;
+import org.neo4j.coreedge.core.consensus.membership.MemberIdSet;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements CoreTopologyService.Listener
 {
     private final CoreTopologyService discoveryService;
-    private final RaftInstance raftInstance;
+    private final RaftMachine raftMachine;
 
     public RaftDiscoveryServiceConnector( CoreTopologyService discoveryService,
-                                            RaftInstance raftInstance )
+                                            RaftMachine raftMachine )
     {
         this.discoveryService = discoveryService;
-        this.raftInstance = raftInstance;
+        this.raftMachine = raftMachine;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
 
         if ( clusterTopology.canBeBootstrapped() )
         {
-            raftInstance.bootstrapWithInitialMembers( new MemberIdSet( initialMembers ) );
+            raftMachine.bootstrapWithInitialMembers( new MemberIdSet( initialMembers ) );
         }
 
         onTopologyChange();
@@ -58,6 +58,6 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
     @Override
     public void onTopologyChange()
     {
-        raftInstance.setTargetMembershipSet( discoveryService.currentTopology().coreMembers() );
+        raftMachine.setTargetMembershipSet( discoveryService.currentTopology().coreMembers() );
     }
 }

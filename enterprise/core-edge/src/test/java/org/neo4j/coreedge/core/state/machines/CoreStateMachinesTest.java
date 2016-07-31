@@ -28,7 +28,7 @@ import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.core.state.CommandDispatcher;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.core.state.Result;
-import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
+import org.neo4j.coreedge.core.consensus.log.MonitoredRaftLog;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedTokenRequest;

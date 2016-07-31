@@ -20,9 +20,9 @@
 package org.neo4j.coreedge.catchup.tx;
 
 import org.neo4j.coreedge.catchup.CoreClient;
-import org.neo4j.coreedge.raft.schedule.RenewableTimeoutService;
-import org.neo4j.coreedge.raft.schedule.RenewableTimeoutService.RenewableTimeout;
-import org.neo4j.coreedge.raft.schedule.RenewableTimeoutService.TimeoutName;
+import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService;
+import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
+import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService.TimeoutName;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;

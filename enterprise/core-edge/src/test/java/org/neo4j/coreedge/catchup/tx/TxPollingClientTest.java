@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.CoreClient;
-import org.neo4j.coreedge.raft.schedule.ControlledRenewableTimeoutService;
+import org.neo4j.coreedge.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;

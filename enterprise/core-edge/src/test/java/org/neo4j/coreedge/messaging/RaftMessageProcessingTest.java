@@ -28,9 +28,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.ReplicatedInteger;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.core.consensus.RaftMessages;
+import org.neo4j.coreedge.core.consensus.ReplicatedInteger;
+import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.messaging.marsalling.RaftMessageDecoder;
 import org.neo4j.coreedge.messaging.marsalling.RaftMessageEncoder;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;

@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.messaging.routing;
 
-import org.neo4j.coreedge.raft.outcome.Outcome;
+import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.identity.MemberId;
 
 public class LeaderOnlySelectionStrategy implements CoreMemberSelectionStrategy

@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
+import org.neo4j.coreedge.core.consensus.RaftMessages;
+import org.neo4j.coreedge.core.consensus.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.messaging.Inbound.MessageHandler;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.logging.Log;

@@ -21,7 +21,7 @@ package org.neo4j.coreedge.core.state.machines.locks;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.LeaderLocator;
+import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.replication.DirectReplicator;
 import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
 import org.neo4j.coreedge.identity.MemberId;

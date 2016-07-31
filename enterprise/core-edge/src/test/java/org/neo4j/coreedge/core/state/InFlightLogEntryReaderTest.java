@@ -27,10 +27,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.coreedge.raft.log.RaftLogCursor;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.ReadableRaftLog;
-import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
+import org.neo4j.coreedge.core.consensus.log.RaftLogCursor;
+import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
+import org.neo4j.coreedge.core.consensus.log.ReadableRaftLog;
+import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;

@@ -25,8 +25,8 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 import java.util.List;
 
 import org.neo4j.coreedge.messaging.NetworkFlushableByteBuf;
-import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.core.consensus.RaftMessages;
+import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
 import org.neo4j.coreedge.identity.MemberId;

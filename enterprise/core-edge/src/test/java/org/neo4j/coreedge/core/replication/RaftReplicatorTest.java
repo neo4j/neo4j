@@ -27,9 +27,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.neo4j.coreedge.messaging.Message;
-import org.neo4j.coreedge.raft.LeaderLocator;
-import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.ReplicatedInteger;
+import org.neo4j.coreedge.core.consensus.LeaderLocator;
+import org.neo4j.coreedge.core.consensus.RaftMessages;
+import org.neo4j.coreedge.core.consensus.ReplicatedInteger;
 import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.core.replication.session.GlobalSession;
 import org.neo4j.coreedge.core.replication.session.LocalSessionPool;

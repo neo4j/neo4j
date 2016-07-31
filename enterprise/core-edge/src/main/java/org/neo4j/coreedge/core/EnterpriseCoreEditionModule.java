@@ -35,15 +35,15 @@ import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
-import org.neo4j.coreedge.raft.ConsensusModule;
-import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.core.consensus.ConsensusModule;
+import org.neo4j.coreedge.core.consensus.RaftMachine;
+import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.messaging.LoggingOutbound;
 import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.messaging.RaftChannelInitializer;
 import org.neo4j.coreedge.messaging.RaftOutbound;
-import org.neo4j.coreedge.raft.roles.Role;
+import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
 import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.identity.MemberId;
@@ -328,7 +328,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     {
         super.doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
 
-        if ( dependencyResolver.resolveDependency( RaftInstance.class ).isLeader() )
+        if ( dependencyResolver.resolveDependency( RaftMachine.class ).isLeader() )
         {
             new RemoveOrphanConstraintIndexesOnStartup(
                     dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getKernel(),

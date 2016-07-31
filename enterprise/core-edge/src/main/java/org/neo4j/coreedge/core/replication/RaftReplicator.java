@@ -22,9 +22,9 @@ package org.neo4j.coreedge.core.replication;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 
-import org.neo4j.coreedge.raft.LeaderLocator;
-import org.neo4j.coreedge.raft.NoLeaderFoundException;
-import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.core.consensus.LeaderLocator;
+import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
+import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.core.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.core.replication.session.OperationContext;

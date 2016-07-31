@@ -25,8 +25,8 @@ import java.util.function.Function;
 
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
-import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.coreedge.raft.roles.Role;
+import org.neo4j.coreedge.core.consensus.RaftMachine;
+import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -53,11 +53,11 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
 
     public MemberId id()
     {
-        return (MemberId) getDependencyResolver().resolveDependency( RaftInstance.class ).identity();
+        return (MemberId) getDependencyResolver().resolveDependency( RaftMachine.class ).identity();
     }
 
     public Role getRole()
     {
-        return getDependencyResolver().resolveDependency( RaftInstance.class ).currentRole();
+        return getDependencyResolver().resolveDependency( RaftMachine.class ).currentRole();
     }
 }

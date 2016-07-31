@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.UUID;
 
-import org.neo4j.coreedge.raft.ReplicatedInteger;
+import org.neo4j.coreedge.core.consensus.ReplicatedInteger;
 import org.neo4j.coreedge.core.replication.session.GlobalSession;
 import org.neo4j.coreedge.core.replication.session.LocalOperationId;
 import org.neo4j.coreedge.core.state.Result;

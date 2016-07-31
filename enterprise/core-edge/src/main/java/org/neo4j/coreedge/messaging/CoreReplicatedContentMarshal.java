@@ -22,9 +22,9 @@ package org.neo4j.coreedge.messaging;
 import java.io.IOException;
 
 import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenSerializer;
-import org.neo4j.coreedge.raft.NewLeaderBarrier;
-import org.neo4j.coreedge.raft.membership.MemberIdSet;
-import org.neo4j.coreedge.raft.membership.MemberIdSetSerializer;
+import org.neo4j.coreedge.core.consensus.NewLeaderBarrier;
+import org.neo4j.coreedge.core.consensus.membership.MemberIdSet;
+import org.neo4j.coreedge.core.consensus.membership.MemberIdSetSerializer;
 import org.neo4j.coreedge.core.replication.DistributedOperation;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdAllocationRequest;

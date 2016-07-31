@@ -21,7 +21,7 @@ package org.neo4j.metrics.source.coreedge;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.coreedge.raft.log.monitoring.RaftTermMonitor;
+import org.neo4j.coreedge.core.consensus.log.monitoring.RaftTermMonitor;
 
 public class RaftTermMetric implements RaftTermMonitor
 {

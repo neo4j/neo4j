@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
 import org.neo4j.coreedge.core.state.storage.StateStorage;
-import org.neo4j.coreedge.raft.LeaderLocator;
+import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.replication.RaftReplicator;
 import org.neo4j.coreedge.core.replication.Replicator;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdAllocationStateMachine;

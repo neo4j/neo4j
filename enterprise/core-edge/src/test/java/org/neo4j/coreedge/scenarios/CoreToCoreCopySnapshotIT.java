@@ -27,7 +27,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
-import org.neo4j.coreedge.raft.roles.Role;
+import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;

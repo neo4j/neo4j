@@ -23,8 +23,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.coreedge.raft.LeaderLocator;
-import org.neo4j.coreedge.raft.NoLeaderFoundException;
+import org.neo4j.coreedge.core.consensus.LeaderLocator;
+import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
 import org.neo4j.coreedge.core.replication.Replicator;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.coreedge.identity.MemberId;

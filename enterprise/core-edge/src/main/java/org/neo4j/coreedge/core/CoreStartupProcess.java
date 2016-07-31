@@ -20,7 +20,7 @@
 package org.neo4j.coreedge.core;
 
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdGeneratorFactory;
-import org.neo4j.coreedge.raft.membership.MembershipWaiterLifecycle;
+import org.neo4j.coreedge.core.consensus.membership.MembershipWaiterLifecycle;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;

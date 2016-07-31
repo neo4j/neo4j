@@ -26,9 +26,9 @@ import org.neo4j.coreedge.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
 import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
 import org.neo4j.coreedge.core.state.storage.StateMarshal;
-import org.neo4j.coreedge.raft.membership.RaftMembershipState;
-import org.neo4j.coreedge.raft.term.TermState;
-import org.neo4j.coreedge.raft.vote.VoteState;
+import org.neo4j.coreedge.core.consensus.membership.RaftMembershipState;
+import org.neo4j.coreedge.core.consensus.term.TermState;
+import org.neo4j.coreedge.core.consensus.vote.VoteState;
 import org.neo4j.coreedge.identity.MemberId.MemberIdMarshal;
 import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenState;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -39,9 +39,9 @@ import static org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule.ID_
 import static org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule.LOCK_TOKEN_NAME;
 import static org.neo4j.coreedge.ReplicationModule.LAST_FLUSHED_NAME;
 import static org.neo4j.coreedge.ReplicationModule.SESSION_TRACKER_NAME;
-import static org.neo4j.coreedge.raft.ConsensusModule.RAFT_MEMBERSHIP_NAME;
-import static org.neo4j.coreedge.raft.ConsensusModule.RAFT_TERM_NAME;
-import static org.neo4j.coreedge.raft.ConsensusModule.RAFT_VOTE_NAME;
+import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_MEMBERSHIP_NAME;
+import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_TERM_NAME;
+import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_VOTE_NAME;
 import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CORE_MEMBER_ID_NAME;
 

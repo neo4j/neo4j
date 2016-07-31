@@ -28,8 +28,8 @@ import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.address.UnknownAddressMonitor;
-import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
-import org.neo4j.coreedge.raft.RaftMessages.StoreIdAwareMessage;
+import org.neo4j.coreedge.core.consensus.RaftMessages.RaftMessage;
+import org.neo4j.coreedge.core.consensus.RaftMessages.StoreIdAwareMessage;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.LogProvider;
 

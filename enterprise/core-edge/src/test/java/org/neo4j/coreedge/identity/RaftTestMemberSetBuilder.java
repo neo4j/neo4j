@@ -22,8 +22,8 @@ package org.neo4j.coreedge.identity;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.coreedge.raft.membership.RaftGroup;
-import org.neo4j.coreedge.raft.membership.RaftTestGroup;
+import org.neo4j.coreedge.core.consensus.membership.RaftGroup;
+import org.neo4j.coreedge.core.consensus.membership.RaftTestGroup;
 
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
 

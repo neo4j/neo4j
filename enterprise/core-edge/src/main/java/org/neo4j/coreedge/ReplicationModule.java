@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.raft.ConsensusModule;
-import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.core.consensus.ConsensusModule;
+import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.core.replication.ProgressTrackerImpl;
 import org.neo4j.coreedge.core.replication.RaftReplicator;

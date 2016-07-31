@@ -21,10 +21,10 @@ package org.neo4j.coreedge.core.state;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.raft.log.RaftLogCursor;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.ReadableRaftLog;
-import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
+import org.neo4j.coreedge.core.consensus.log.RaftLogCursor;
+import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
+import org.neo4j.coreedge.core.consensus.log.ReadableRaftLog;
+import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 
 import static java.lang.String.format;
 
