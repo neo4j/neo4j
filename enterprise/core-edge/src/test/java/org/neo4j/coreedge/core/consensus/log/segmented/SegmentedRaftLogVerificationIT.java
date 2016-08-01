@@ -27,6 +27,7 @@ import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogVerificationIT;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.OnDemandJobScheduler;
 
 import static org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
@@ -46,7 +47,7 @@ public class SegmentedRaftLogVerificationIT extends RaftLogVerificationIT
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fsa, directory, rotateAtSizeBytes,
                 new DummyRaftableContentSerializer(), NullLogProvider.getInstance(),
-                raft_log_pruning_strategy.getDefaultValue(), readerPoolSize, Clock.systemUTC() );
+                raft_log_pruning_strategy.getDefaultValue(), readerPoolSize, Clock.systemUTC(), new OnDemandJobScheduler() );
 
         newRaftLog.init();
         newRaftLog.start();

@@ -31,6 +31,7 @@ import org.neo4j.coreedge.core.consensus.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.rule.Resources;
 import org.neo4j.time.FakeClock;
 
@@ -50,7 +51,7 @@ public class SegmentedRaftLogRotationTest
     {
         return new SegmentedRaftLog( resourceManager.fileSystem(), resourceManager.testPath(), rotateAtSize,
                 new DummyRaftableContentSerializer(), NullLogProvider.getInstance(),
-                raft_log_pruning_strategy.getDefaultValue(), 0, new FakeClock() );
+                raft_log_pruning_strategy.getDefaultValue(), 0, new FakeClock(), new OnDemandJobScheduler() );
     }
 
     @Test
