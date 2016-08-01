@@ -25,8 +25,8 @@ import org.junit.Test;
 import java.util.List;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.server.core.AcquireEndpointsProcedure;
-import org.neo4j.coreedge.server.core.DiscoverMembersProcedure;
+import org.neo4j.coreedge.discovery.procedures.AcquireEndpointsProcedure;
+import org.neo4j.coreedge.discovery.procedures.DiscoverMembersProcedure;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;

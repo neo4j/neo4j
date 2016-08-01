@@ -22,9 +22,9 @@ package org.neo4j.metrics.source.coreedge;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
-import org.neo4j.coreedge.catchup.tx.edge.PullRequestMonitor;
+import org.neo4j.coreedge.catchup.tx.PullRequestMonitor;
 
-public class PullRequestMetric implements PullRequestMonitor
+class PullRequestMetric implements PullRequestMonitor
 {
     private AtomicLong lastRequestedTxId = new AtomicLong( 0 );
     private AtomicLong lastReceivedTxId = new AtomicLong( 0 );

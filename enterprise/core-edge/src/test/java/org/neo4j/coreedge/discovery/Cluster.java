@@ -39,14 +39,14 @@ import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
-import org.neo4j.coreedge.raft.NoLeaderFoundException;
-import org.neo4j.coreedge.raft.replication.id.IdGenerationException;
-import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
-import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
-import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
+import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
+import org.neo4j.coreedge.core.state.machines.id.IdGenerationException;
+import org.neo4j.coreedge.core.consensus.roles.Role;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.CoreGraphDatabase;
+import org.neo4j.coreedge.core.state.machines.locks.LeaderOnlyLockManager;
+import org.neo4j.coreedge.edge.EdgeGraphDatabase;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -151,7 +151,7 @@ public class Cluster
         shutdownEdgeMembers();
     }
 
-    public void shutdownCoreMembers() throws InterruptedException, ExecutionException
+    private void shutdownCoreMembers() throws InterruptedException, ExecutionException
     {
         ExecutorService executor = Executors.newCachedThreadPool();
         List<Callable<Object>> memberShutdownSuppliers = new ArrayList<>();
@@ -208,7 +208,7 @@ public class Cluster
         }
     }
 
-    public void removeEdgeMember( EdgeClusterMember memberToRemove )
+    private void removeEdgeMember( EdgeClusterMember memberToRemove )
     {
         memberToRemove.shutdown();
         edgeMembers.values().remove( memberToRemove );

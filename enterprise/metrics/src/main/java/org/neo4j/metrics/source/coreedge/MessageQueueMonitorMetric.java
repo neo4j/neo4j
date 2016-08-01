@@ -25,7 +25,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
-import org.neo4j.coreedge.raft.net.monitoring.MessageQueueMonitor;
+import org.neo4j.coreedge.messaging.monitoring.MessageQueueMonitor;
 
 public class MessageQueueMonitorMetric implements MessageQueueMonitor
 {

@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreFileReceiver;
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 
 import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
@@ -44,7 +43,7 @@ public class FileContentHandler extends SimpleChannelInboundHandler<ByteBuf>
         this.location = location;
     }
 
-    public void setExpectedFile( FileHeader fileHeader )
+    void setExpectedFile( FileHeader fileHeader )
     {
         this.expectedBytes = fileHeader.fileLength();
         this.destination = fileHeader.fileName();

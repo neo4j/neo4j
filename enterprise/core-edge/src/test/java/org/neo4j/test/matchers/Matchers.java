@@ -28,8 +28,8 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.core.consensus.RaftMessages;
+import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 
 public final class Matchers
 {

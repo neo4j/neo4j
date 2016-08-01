@@ -23,10 +23,8 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.server.MemberId;
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;

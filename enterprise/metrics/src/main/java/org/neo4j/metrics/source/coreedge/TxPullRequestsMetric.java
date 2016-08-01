@@ -21,10 +21,9 @@ package org.neo4j.metrics.source.coreedge;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.coreedge.catchup.tx.core.TxPullRequestsMonitor;
+import org.neo4j.coreedge.catchup.tx.TxPullRequestsMonitor;
 
-
-public class TxPullRequestsMetric implements TxPullRequestsMonitor
+class TxPullRequestsMetric implements TxPullRequestsMonitor
 {
     private AtomicLong count = new AtomicLong( 0 );
 

@@ -19,8 +19,8 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.MemberId;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 

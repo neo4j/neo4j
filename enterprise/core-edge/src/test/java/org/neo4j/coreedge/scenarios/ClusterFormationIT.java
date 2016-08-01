@@ -27,8 +27,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
+import org.neo4j.coreedge.core.consensus.roles.Role;
+import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.coreedge.ClusterRule;
 

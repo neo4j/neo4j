@@ -23,7 +23,7 @@ import com.codahale.metrics.MetricRegistry;
 
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.raft.CoreMetaData;
+import org.neo4j.coreedge.core.consensus.CoreMetaData;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;

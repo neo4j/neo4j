@@ -27,9 +27,9 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
-import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
+import org.neo4j.coreedge.core.consensus.roles.Role;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -41,8 +41,8 @@ import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_frequency;
-import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_strategy;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_frequency;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CoreToCoreCopySnapshotIT

@@ -23,9 +23,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
-import org.neo4j.coreedge.catchup.tx.edge.TxPullRequestEncoder;
-import org.neo4j.coreedge.catchup.tx.edge.TxPullRequest;
-import org.neo4j.coreedge.catchup.tx.core.TxPullRequestDecoder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;

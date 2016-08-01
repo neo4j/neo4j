@@ -23,10 +23,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding;
-import org.neo4j.coreedge.raft.state.DurableStateStorageImporter;
-import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
-import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.coreedge.core.state.machines.tx.LogIndexTxHeaderEncoding;
+import org.neo4j.coreedge.core.state.storage.DurableStateStorageImporter;
+import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -123,7 +123,7 @@ public class ConvertClassicStoreToCoreCommand
         }
     }
 
-    public static ClusterSeed changeStoreId( File storeDir, ClusterSeed conversionId ) throws IOException
+    private static ClusterSeed changeStoreId( File storeDir, ClusterSeed conversionId ) throws IOException
     {
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File metadataStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
@@ -143,7 +143,7 @@ public class ConvertClassicStoreToCoreCommand
         }
     }
 
-    public static StoreId readStoreId( File metadataStore, PageCache pageCache ) throws IOException
+    private static StoreId readStoreId( File metadataStore, PageCache pageCache ) throws IOException
     {
         long creationTime = MetaDataStore.getRecord( pageCache, metadataStore, TIME );
         long randomNumber = MetaDataStore.getRecord( pageCache, metadataStore, RANDOM_NUMBER );
