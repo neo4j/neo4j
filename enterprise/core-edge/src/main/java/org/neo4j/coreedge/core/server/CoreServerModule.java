@@ -142,7 +142,6 @@ public class CoreServerModule
                 logProvider,
                 someoneElse, downloader,
                 new CommandApplicationProcess( coreStateMachinesModule.coreStateMachines, consensusModule.raftLog(), config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
-
                         config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ), databaseHealthSupplier, logProvider, replicationModule.getProgressTracker(), lastFlushedStorage, replicationModule.getSessionTracker(), coreStateApplier,
                         inFlightMap, platformModule.monitors ) );
 
