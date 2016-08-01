@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,21 +19,18 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 
-class IndexReference
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+
+abstract class IndexReference
 {
     private final IndexIdentifier identifier;
-    private final IndexWriter writer;
     private final IndexSearcher searcher;
     private final AtomicInteger refCount = new AtomicInteger( 0 );
     private boolean searcherIsClosed;
-    private boolean writerIsClosed;
 
     /**
      * We need this because we only want to close the reader/searcher if
@@ -43,23 +40,23 @@ class IndexReference
      */
     private volatile boolean detached;
 
-    private final AtomicBoolean stale = new AtomicBoolean();
-
-    public IndexReference( IndexIdentifier identifier, IndexSearcher searcher, IndexWriter writer )
+    public IndexReference( IndexIdentifier identifier, IndexSearcher searcher )
     {
         this.identifier = identifier;
         this.searcher = searcher;
-        this.writer = writer;
     }
+
+    abstract IndexWriter getWriter();
+
+    abstract void dispose() throws IOException;
+
+    abstract boolean checkAndClearStale();
+
+    abstract void setStale();
 
     public IndexSearcher getSearcher()
     {
-        return this.searcher;
-    }
-
-    public IndexWriter getWriter()
-    {
-        return writer;
+        return searcher;
     }
 
     public IndexIdentifier getIdentifier()
@@ -72,26 +69,20 @@ class IndexReference
         this.refCount.incrementAndGet();
     }
 
-    public synchronized void dispose( boolean writerAlso ) throws IOException
+    void disposeSearcher() throws IOException
     {
         if ( !searcherIsClosed )
         {
             searcher.getIndexReader().close();
             searcherIsClosed = true;
         }
-
-        if ( writerAlso && !writerIsClosed )
-        {
-            writer.close();
-            writerIsClosed = true;
-        }
     }
 
-    public /*synchronized externally*/ void detachOrClose() throws IOException
+    void detachOrClose() throws IOException
     {
         if ( this.refCount.get() == 0 )
         {
-            dispose( false );
+            disposeSearcher();
         }
         else
         {
@@ -99,7 +90,7 @@ class IndexReference
         }
     }
 
-    synchronized boolean close()
+    public synchronized boolean close()
     {
         try
         {
@@ -111,7 +102,7 @@ class IndexReference
             boolean reallyClosed = false;
             if ( this.refCount.decrementAndGet() <= 0 && this.detached )
             {
-                dispose( false );
+                disposeSearcher();
                 reallyClosed = true;
             }
             return reallyClosed;
@@ -122,18 +113,13 @@ class IndexReference
         }
     }
 
-    /*synchronized externally*/ boolean isClosed()
+    public boolean isClosed()
     {
         return searcherIsClosed;
     }
 
-    /*synchronized externally*/ boolean checkAndClearStale()
+    boolean isDetached()
     {
-        return stale.compareAndSet( true, false );
-    }
-
-    public synchronized void setStale()
-    {
-        stale.set( true );
+        return detached;
     }
 }
