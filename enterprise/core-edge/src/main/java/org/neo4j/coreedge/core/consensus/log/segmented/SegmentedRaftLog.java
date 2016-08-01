@@ -227,6 +227,10 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public long readEntryTerm( long logIndex ) throws IOException
     {
+        if ( logIndex > state.appendIndex )
+        {
+            return -1;
+        }
         long term = state.terms.get( logIndex );
         if ( term == -1 && logIndex >= state.prevIndex )
         {
