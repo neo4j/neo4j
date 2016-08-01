@@ -252,16 +252,19 @@ public class AuthProcedures
 
     private Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
     {
-        Long killCount = 0L;
+        long terminatedCount = 0;
         for ( KernelTransactionHandle tx : getActiveTransactions() )
         {
-            if ( tx.mode().name().equals( username ) && !tx.isSameTransaction( this.tx) )
+            if ( tx.mode().name().equals( username ) && !tx.isUnderlyingTransaction( this.tx ) )
             {
-                tx.markForTermination( Status.Transaction.Terminated );
-                killCount += 1;
+                boolean marked = tx.markForTermination( Status.Transaction.Terminated );
+                if ( marked )
+                {
+                    terminatedCount++;
+                }
             }
         }
-        return Stream.of( new TransactionTerminationResult( username, killCount ) );
+        return Stream.of( new TransactionTerminationResult( username, terminatedCount ) );
     }
 
     private Stream<SessionResult> terminateSessionsForValidUser( String username )

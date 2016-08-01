@@ -51,6 +51,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
@@ -639,7 +640,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         Locks.Client locksClient = mock( Locks.Client.class );
         tx.initialize( 42, 42, locksClient, KernelTransaction.Type.implicit, accessMode() );
 
-        tx.markForTermination( reuseCount, terminationReason );
+        assertTrue( tx.markForTermination( reuseCount, terminationReason ) );
 
         assertEquals( terminationReason, tx.getReasonIfTerminated() );
         verify( locksClient ).stop();
@@ -658,7 +659,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         Locks.Client locksClient = mock( Locks.Client.class );
         tx.initialize( 42, 42, locksClient, KernelTransaction.Type.implicit, accessMode() );
 
-        tx.markForTermination( nextReuseCount, terminationReason );
+        assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
 
         assertNull( tx.getReasonIfTerminated() );
         verify( locksClient, never() ).stop();
