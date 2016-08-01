@@ -24,29 +24,30 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Map;
-
+import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
-import org.neo4j.bolt.v1.messaging.message.Message;
+import org.neo4j.bolt.v1.messaging.message.RequestMessage;
+import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
-import org.neo4j.bolt.v1.runtime.Session;
+import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
+import org.neo4j.bolt.v1.runtime.BoltStateMachine;
+import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1.Writer.NO_OP;
-import static org.neo4j.bolt.v1.messaging.message.Messages.run;
+import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 
 /**
  * This tests network fragmentation of messages. Given a set of messages, it will serialize and chunk the message up
@@ -72,7 +73,7 @@ public class FragmentedMessageDeliveryTest
     private int numFragments = 3;
 
     // Only test one message for now. This can be parameterized later to test lots of different ones
-    private Message[] messages = new Message[]{run( "Mjölnir" )};
+    private RequestMessage[] messages = new RequestMessage[]{RunMessage.run( "Mjölnir" )};
 
     @Test
     public void testFragmentedMessageDelivery() throws Throwable
@@ -91,7 +92,7 @@ public class FragmentedMessageDeliveryTest
         }
     }
 
-    private void testPermutation( byte[] unfragmented, int... sizes ) throws IOException
+    private void testPermutation( byte[] unfragmented, int... sizes ) throws Exception
     {
         int pos = 0;
         ByteBuf[] fragments = new ByteBuf[sizes.length];
@@ -103,11 +104,10 @@ public class FragmentedMessageDeliveryTest
         testPermutation( unfragmented, fragments );
     }
 
-    private void testPermutation( byte[] unfragmented, ByteBuf[] fragments ) throws IOException
+    private void testPermutation( byte[] unfragmented, ByteBuf[] fragments ) throws Exception
     {
         // Given
-        // System.out.println( "Testing fragmentation:" + describeFragments( fragments ) );
-        Session sess = mock( Session.class );
+        BoltStateMachine machine = mock( BoltStateMachine.class );
 
         Channel ch = mock( Channel.class );
         when(ch.alloc()).thenReturn( UnpooledByteBufAllocator.DEFAULT );
@@ -115,7 +115,7 @@ public class FragmentedMessageDeliveryTest
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         when(ctx.channel()).thenReturn( ch );
 
-        BoltProtocolV1 protocol = new BoltProtocolV1( sess, ch, NullLogService.getInstance() );
+        BoltProtocolV1 protocol = new BoltProtocolV1( new SynchronousBoltWorker( machine ), ch, NullLogService.getInstance() );
 
         // When data arrives split up according to the current permutation
         for ( ByteBuf fragment : fragments )
@@ -127,7 +127,7 @@ public class FragmentedMessageDeliveryTest
         // Then the session should've received the specified messages, and the protocol should be in a nice clean state
         try
         {
-            verify( sess ).run( eq( "Mjölnir" ), any( Map.class ), any( Session.Callback.class ) );
+            verify( machine ).run( eq( "Mjölnir" ), anyMapOf( String.class, Object.class ), any( BoltResponseHandler.class ) );
         }
         catch ( AssertionError e )
         {
@@ -155,16 +155,16 @@ public class FragmentedMessageDeliveryTest
         return sb.toString();
     }
 
-    private byte[] serialize( int chunkSize, Message... msgs ) throws IOException
+    private byte[] serialize( int chunkSize, RequestMessage... msgs ) throws IOException
     {
         byte[][] serialized = new byte[msgs.length][];
         for ( int i = 0; i < msgs.length; i++ )
         {
             RecordingByteChannel channel = new RecordingByteChannel();
 
-            PackStreamMessageFormatV1.Writer format = new PackStreamMessageFormatV1.Writer(
-                    new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_OP );
-            format.write( msgs[i] ).flush();
+            BoltRequestMessageWriter writer = new BoltRequestMessageWriter(
+                    new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
+            writer.write( msgs[i] ).flush();
             serialized[i] = channel.getBytes();
         }
         return Chunker.chunk( chunkSize, serialized );

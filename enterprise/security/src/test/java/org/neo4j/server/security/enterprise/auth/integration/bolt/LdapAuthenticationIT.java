@@ -24,7 +24,6 @@ import org.apache.directory.server.annotations.CreateTransport;
 import org.apache.directory.server.annotations.SaslMechanism;
 import org.apache.directory.server.core.annotations.ApplyLdifFiles;
 import org.apache.directory.server.core.annotations.ContextEntry;
-import org.apache.directory.server.core.annotations.CreateAuthenticator;
 import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.annotations.LoadSchema;
@@ -35,15 +34,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.function.Consumer;
-
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -53,13 +47,17 @@ import org.neo4j.server.security.enterprise.auth.SecuritySettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.function.Consumer;
+
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.message.Messages.init;
-import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
-import static org.neo4j.bolt.v1.messaging.message.Messages.run;
+import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
+import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
+import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 @RunWith( FrameworkRunner.class )
@@ -148,11 +146,11 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         };
     }
 
-    public Factory<Connection> cf = (Factory<Connection>) SecureSocketConnection::new;
+    public Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;
 
     public HostnamePort address = new HostnamePort( "localhost:7687" );
 
-    protected Connection client;
+    protected TransportConnection client;
 
     @Test
     @ApplyLdifFiles( "ldap_test_data.ldif" )
@@ -373,7 +371,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
                      "CALL dbms.addUserToRole( 'neo', 'reader' ) RETURN 0" ),
                 pullAll() ) );
 
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertThat( client, eventuallyReceives( msgSuccess() ) );
     }
 
     private void testAuthWithReaderUser() throws Exception
@@ -387,7 +385,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves( msgSuccess(), msgSuccess() ) );
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -395,7 +393,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves(
+        assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.Forbidden,
                         String.format( "Write operations are not allowed for 'neo'." ) ) ) );
     }
@@ -411,7 +409,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves( msgSuccess(), msgSuccess() ) );
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
     private void testAuthWithNoPermissionUser( String username ) throws Exception
@@ -425,7 +423,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves(
+        assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.Forbidden,
                         String.format( "Read operations are not allowed for '%s'.", username ) ) ) );
     }
@@ -438,8 +436,8 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
                         init( "TestClient/1.1", map( "principal", username,
                                 "credentials", password, "scheme", "basic" ) ) ) );
 
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives( msgSuccess() ) );
     }
 
     private void assertAuthFail( String username, String password ) throws Exception
@@ -450,8 +448,8 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
                         init( "TestClient/1.1", map( "principal", username,
                                 "credentials", password, "scheme", "basic" ) ) ) );
 
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Unauthorized, "The client is unauthorized due to authentication failure." ) ) );
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized, "The client is unauthorized due to authentication failure." ) ) );
     }
 
     private Consumer<Map<Setting<?>,String>> ldapOnlyAuthSettings = settings ->

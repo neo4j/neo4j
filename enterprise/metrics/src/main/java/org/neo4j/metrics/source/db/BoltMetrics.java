@@ -24,7 +24,7 @@ import com.codahale.metrics.MetricRegistry;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.bolt.v1.runtime.MonitoredSessions;
+import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -83,7 +83,7 @@ public class BoltMetrics extends LifecycleAdapter
         monitors.removeMonitorListener( boltMonitor );
     }
 
-    private class BoltMetricsMonitor implements MonitoredSessions.SessionMonitor
+    private class BoltMetricsMonitor implements MonitoredWorkerFactory.SessionMonitor
     {
         public final AtomicLong recieved = new AtomicLong();
         public final AtomicLong started = new AtomicLong();

@@ -22,6 +22,9 @@ package org.neo4j.bolt.v1.transport.integration;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.neo4j.bolt.v1.messaging.message.RequestMessage;
+import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,12 +32,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-import org.neo4j.bolt.v1.messaging.message.Message;
-import org.neo4j.bolt.v1.transport.socket.client.Connection;
-
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.message;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.responseMessage;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 
 public class TransportTestUtil
@@ -55,12 +55,27 @@ public class TransportTestUtil
         return out.toByteArray();
     }
 
-    public static byte[] chunk( Message... messages ) throws IOException
+    public static byte[] chunk( RequestMessage... messages ) throws IOException
     {
         return chunk( 32, messages );
     }
 
-    public static byte[] chunk( int chunkSize, Message... messages ) throws IOException
+    public static byte[] chunk( ResponseMessage... messages ) throws IOException
+    {
+        return chunk( 32, messages );
+    }
+
+    public static byte[] chunk( int chunkSize, RequestMessage... messages ) throws IOException
+    {
+        byte[][] serializedMessages = new byte[messages.length][];
+        for ( int i = 0; i < messages.length; i++ )
+        {
+            serializedMessages[i] = serialize( messages[i] );
+        }
+        return chunk( chunkSize, serializedMessages );
+    }
+
+    public static byte[] chunk( int chunkSize, ResponseMessage... messages ) throws IOException
     {
         byte[][] serializedMessages = new byte[messages.length][];
         for ( int i = 0; i < messages.length; i++ )
@@ -108,18 +123,19 @@ public class TransportTestUtil
         return bb.array();
     }
 
-    public static Matcher<Connection> eventuallyRecieves( final Matcher<Message>... messages )
+    public static Matcher<TransportConnection> eventuallyReceives( final Matcher<ResponseMessage>... messages )
     {
-        return new TypeSafeMatcher<Connection>()
+        return new TypeSafeMatcher<TransportConnection>()
         {
             @Override
-            protected boolean matchesSafely( Connection conn )
+            protected boolean matchesSafely( TransportConnection conn )
             {
                 try
                 {
-                    for ( Matcher<Message> matchesMessage : messages )
+                    for ( Matcher<ResponseMessage> matchesMessage : messages )
                     {
-                        assertThat( recvOneMessage( conn ), matchesMessage );
+                        final ResponseMessage message = receiveOneResponseMessage( conn );
+                        assertThat( message, matchesMessage );
                     }
                     return true;
                 }
@@ -137,37 +153,38 @@ public class TransportTestUtil
         };
     }
 
-    public static Message recvOneMessage( Connection conn ) throws Exception
+    public static ResponseMessage receiveOneResponseMessage( TransportConnection conn ) throws IOException,
+            InterruptedException
     {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         while ( true )
         {
-            int size = recvChunkHeader( conn );
+            int size = receiveChunkHeader( conn );
 
             if ( size > 0 )
             {
-                byte[] recv = conn.recv( size );
-                baos.write( recv );
+                byte[] received = conn.recv( size );
+                bytes.write( received );
             }
             else
             {
-                return message( baos.toByteArray() );
+                return responseMessage( bytes.toByteArray() );
             }
         }
     }
 
-    public static int recvChunkHeader( Connection conn ) throws Exception
+    public static int receiveChunkHeader( TransportConnection conn ) throws IOException, InterruptedException
     {
         byte[] raw = conn.recv( 2 );
         return ((raw[0] & 0xff) << 8 | (raw[1] & 0xff)) & 0xffff;
     }
 
-    public static Matcher<Connection> eventuallyRecieves( final byte[] expected )
+    public static Matcher<TransportConnection> eventuallyReceives( final byte[] expected )
     {
-        return new TypeSafeMatcher<Connection>()
+        return new TypeSafeMatcher<TransportConnection>()
         {
             @Override
-            protected boolean matchesSafely( Connection item )
+            protected boolean matchesSafely( TransportConnection item )
             {
                 try
                 {
@@ -183,6 +200,34 @@ public class TransportTestUtil
             public void describeTo( Description description )
             {
                 description.appendValueList( "RawBytes[", ",", "]", expected );
+            }
+        };
+    }
+
+    public static Matcher<TransportConnection> eventuallyDisconnects()
+    {
+        return new TypeSafeMatcher<TransportConnection>()
+        {
+            @Override
+            protected boolean matchesSafely( TransportConnection connection )
+            {
+                try
+                {
+                    connection.send( new byte[]{0,0});
+                    connection.recv( 1 );
+                }
+                catch ( Exception e )
+                {
+                    // take an IOException on send/receive as evidence of disconnection
+                    return e instanceof IOException;
+                }
+                return false;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "?" );
             }
         };
     }

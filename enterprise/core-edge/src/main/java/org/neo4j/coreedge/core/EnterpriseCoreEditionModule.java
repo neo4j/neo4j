@@ -62,7 +62,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.bolt.SessionTracker;
+import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -70,7 +70,7 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
-import org.neo4j.kernel.impl.enterprise.StandardSessionTracker;
+import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -330,8 +330,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
     }
 
     @Override
-    protected SessionTracker createSessionTracker()
+    protected BoltConnectionTracker createSessionTracker()
     {
-        return new StandardSessionTracker();
+        return new StandardBoltConnectionTracker();
     }
 }

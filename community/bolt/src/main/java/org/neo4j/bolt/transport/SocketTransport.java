@@ -24,11 +24,11 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslContext;
-
-import java.util.function.BiFunction;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.logging.LogProvider;
+
+import java.util.Map;
+import java.util.function.BiFunction;
 
 /**
  * Implements a transport for the Neo4j Messaging Protocol that uses good old regular sockets.
@@ -37,14 +37,16 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
 {
     private final HostnamePort address;
     private final SslContext sslCtx;
+    private final boolean encryptionRequired;
     private LogProvider logging;
-    private final PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> protocolVersions;
+    private final Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> protocolVersions;
 
-    public SocketTransport( HostnamePort address, SslContext sslCtx, LogProvider logging,
-            PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> protocolVersions )
+    public SocketTransport( HostnamePort address, SslContext sslCtx, boolean encryptionRequired, LogProvider logging,
+                            Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> protocolVersions )
     {
         this.address = address;
         this.sslCtx = sslCtx;
+        this.encryptionRequired = encryptionRequired;
         this.logging = logging;
         this.protocolVersions = protocolVersions;
     }
@@ -58,7 +60,8 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
             public void initChannel( SocketChannel ch ) throws Exception
             {
                 ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
-                ch.pipeline().addLast( new TransportSelectionHandler( sslCtx, logging, protocolVersions ) );
+                ch.pipeline().addLast(
+                        new TransportSelectionHandler( sslCtx, encryptionRequired, false, logging, protocolVersions ) );
             }
         };
     }

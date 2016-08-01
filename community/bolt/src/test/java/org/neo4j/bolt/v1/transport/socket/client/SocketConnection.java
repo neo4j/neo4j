@@ -29,7 +29,7 @@ import java.net.SocketTimeoutException;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
-public class SocketConnection implements Connection
+public class SocketConnection implements TransportConnection
 {
     private Socket socket;
     private InputStream in;
@@ -51,7 +51,7 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public Connection connect( HostnamePort address ) throws Exception
+    public TransportConnection connect( HostnamePort address ) throws IOException
     {
         socket.setSoTimeout( 30000 * 1000 ); // TOOD
 
@@ -62,14 +62,14 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public Connection send( byte[] rawBytes ) throws IOException
+    public TransportConnection send( byte[] rawBytes ) throws IOException
     {
         out.write( rawBytes );
         return this;
     }
 
     @Override
-    public byte[] recv( int length ) throws IOException, InterruptedException
+    public byte[] recv( int length ) throws IOException
     {
         byte[] bytes = new byte[length];
         int left = length, read;
@@ -90,15 +90,6 @@ public class SocketConnection implements Connection
             throw new IOException( "Failed to read " + length + " bytes, missing " + left + " bytes. Buffer: " + HexPrinter.hex( bytes ) );
         }
         return bytes;
-    }
-
-    @Override
-    public void discard( int length ) throws IOException
-    {
-        for ( int i = 0; i < length; i++ )
-        {
-            in.read();
-        }
     }
 
     @Override

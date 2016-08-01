@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
@@ -44,7 +43,7 @@ public interface NeoInteractionLevel<S>
     String executeQuery( S subject, String call, Map<String,Object> params,
             Consumer<ResourceIterator<Map<String, Object>>> resultConsumer );
 
-    S login( String username, String password ) throws Throwable;
+    S login( String username, String password ) throws Exception;
 
     void logout( S subject ) throws Exception;
 
@@ -65,5 +64,5 @@ public interface NeoInteractionLevel<S>
 
     void assertPasswordChangeRequired( S subject ) throws Exception;
 
-    void assertUnauthenticated( S subject );
+    void assertInitFailed( S subject );
 }

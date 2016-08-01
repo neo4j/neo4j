@@ -33,7 +33,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.bolt.v1.runtime.Sessions;
+import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -240,7 +240,7 @@ public class StartClientTest
                 mock( CtrlCHandler.class ) );
 
         // Then
-        log.assertNone( inLog( startsWith( Sessions.class.getPackage().getName() ) ).any() );
+        log.assertNone( inLog( startsWith( WorkerFactory.class.getPackage().getName() ) ).any() );
     }
 
     private String runAndCaptureOutput( String[] arguments )

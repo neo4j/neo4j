@@ -30,9 +30,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.bolt.v1.messaging.MessageFormat;
+import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
@@ -45,10 +44,11 @@ import org.neo4j.bolt.v1.packstream.PackType;
 import org.neo4j.graphdb.RelationshipType;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1.Writer.NO_OP;
+import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_TWO;
 import static org.neo4j.bolt.v1.runtime.spi.Records.record;
 import static org.neo4j.graphdb.Label.label;
@@ -171,7 +171,7 @@ public class BoltValueDocTest
         }
         else if ( type.equalsIgnoreCase( "node" ) )
         {
-            return new ValueNode( 12, asList( label( "User" ) ), map() );
+            return new ValueNode( 12, singletonList( label( "User" ) ), map() );
         }
         else if ( type.equalsIgnoreCase( "relationship" ) )
         {
@@ -198,11 +198,11 @@ public class BoltValueDocTest
     private byte[] serialize( Object neoValue ) throws IOException
     {
         RecordingByteChannel channel = new RecordingByteChannel();
-        RecordMessage msg = new RecordMessage( record( neoValue ) );
-        MessageFormat.Writer writer = new PackStreamMessageFormatV1.Writer(
-                new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_OP );
+        BoltResponseMessageWriter writer = new BoltResponseMessageWriter(
+                new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
 
-        writer.write( msg ).flush();
+        writer.onRecord( record( neoValue ) );
+        writer.flush();
 
         channel.eof();
         return channel.getBytes();

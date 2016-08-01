@@ -24,7 +24,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.bolt.SessionTracker;
+import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -145,8 +145,8 @@ public abstract class EditionModule
         throw new IllegalArgumentException( "No auth manager found with the name '" + key + "'." );
     }
 
-    protected SessionTracker createSessionTracker()
+    protected BoltConnectionTracker createSessionTracker()
     {
-        return SessionTracker.NOOP;
+        return BoltConnectionTracker.NOOP;
     }
 }

@@ -31,16 +31,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
+import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
-import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.ImmutableRecord;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
+import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 import static org.neo4j.bolt.v1.transport.socket.Chunker.chunk;
 
 /**
@@ -64,10 +66,10 @@ public class DocSerialization
     {
         RecordingByteChannel ch = new RecordingByteChannel();
         Neo4jPack.Packer packer = new Neo4jPack.Packer( new BufferedChannelOutput( ch, 128 ) );
-        PackStreamMessageFormatV1.Writer writer = new PackStreamMessageFormatV1.Writer(
-                packer, PackStreamMessageFormatV1.Writer.NO_OP );
+        BoltRequestMessageWriter requestWriter = new BoltRequestMessageWriter(packer, NO_BOUNDARY_HOOK );
+        BoltResponseMessageWriter responseWriter = new BoltResponseMessageWriter(packer, NO_BOUNDARY_HOOK );
 
-        pack( value, packer, writer );
+        pack( value, packer, requestWriter, responseWriter );
 
         packer.flush();
         return ch.getBytes();
@@ -76,10 +78,14 @@ public class DocSerialization
     /**
      * @param value
      * @param packer
-     * @param writer a message writer that delegates to the packer, for packing protocol messages
+     * @param requestWriter
+     * @param responseWriter a message writer that delegates to the packer, for packing protocol messages
      * @throws IOException
      */
-    public static void pack( String value, Neo4jPack.Packer packer, PackStreamMessageFormatV1.Writer writer )
+    public static void pack( String value,
+                             Neo4jPack.Packer packer,
+                             BoltRequestMessageWriter requestWriter,
+                             BoltResponseMessageWriter responseWriter )
             throws IOException
     {
         ObjectMapper mapper = new ObjectMapper();
@@ -92,18 +98,18 @@ public class DocSerialization
 
             for ( String s : struct )
             {
-                pack( s, packer, writer );
+                pack( s, packer, requestWriter, responseWriter );
             }
         }
         else if ( value.equals( "FAILURE { \"code\": \"Neo.ClientError.Statement.SyntaxError\",                  \"message\": \"Invalid input 'T': expected" +
-                                " <init> (line 1, column 1 (offset: 0))                          \"This will cause a syntax error\"                          " +
-                                " ^\"}" ) )
+                " <init> (line 1, column 1 (offset: 0))                          \"This will cause a syntax error\"                          " +
+                " ^\"}" ) )
         {
             // Hard-coded special case, because we don't handle this message automatically yet
-            writer.handleFailureMessage( Status.Statement.SyntaxError,
+            responseWriter.onFailure( Status.Statement.SyntaxError,
                     "Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))\n" +
-                    "\"This will cause a syntax error\"\n" +
-                    " ^" );
+                            "\"This will cause a syntax error\"\n" +
+                            " ^" );
         }
         else
         {
@@ -139,42 +145,45 @@ public class DocSerialization
 
                 switch ( type )
                 {
-                    case "DISCARD_ALL":
-                        writer.handleDiscardAllMessage();
-                        break;
-                    case "PULL_ALL":
-                        writer.handlePullAllMessage();
-                        break;
-                    case "IGNORED":
-                        writer.handleIgnoredMessage();
-                        break;
-                    case "RUN":
-                        writer.handleRunMessage( (String) args.get( 0 ),
-                                (Map<String, Object>) args.get( 1 ) );
-                        break;
-                    case "RECORD":
-                        writer.handleRecordMessage( new ImmutableRecord( Iterables.asArray(
-                                Object.class, (List<Object>) args.get( 0 ) ) ) );
-                        break;
-                    case "SUCCESS":
-                        writer.handleSuccessMessage( (Map<String, Object>) args.get( 0 ) );
-                        break;
-                    case "FAILURE":
-                        Map<String, Object> meta = (Map<String, Object>) args.get( 0 );
-                        writer.handleFailureMessage( Neo4jError.codeFromString(
-                                (String) meta.get( "code" ) ), (String) meta.get( "message" ) );
-                        break;
-                    case "INIT":
-                        writer.handleInitMessage( (String) args.get( 0 ), (Map<String, Object>) args.get( 1 ) );
-                        break;
-                    case "RESET":
-                        writer.handleResetMessage();
-                        break;
-                    case "ACK_FAILURE":
-                        writer.handleAckFailureMessage();
-                        break;
-                    default:
-                        throw new RuntimeException( "Unknown value: " + type );
+
+                case "INIT":
+                    requestWriter.onInit( (String) args.get( 0 ), (Map<String, Object>) args.get( 1 ) );
+                    break;
+                case "ACK_FAILURE":
+                    requestWriter.onAckFailure();
+                    break;
+                case "RESET":
+                    requestWriter.onReset();
+                    break;
+                case "RUN":
+                    requestWriter.onRun( (String) args.get( 0 ),
+                            (Map<String, Object>) args.get( 1 ) );
+                    break;
+                case "DISCARD_ALL":
+                    requestWriter.onDiscardAll();
+                    break;
+                case "PULL_ALL":
+                    requestWriter.onPullAll();
+                    break;
+
+                case "SUCCESS":
+                    responseWriter.onSuccess( (Map<String, Object>)  args.get( 0 ) );
+                    break;
+                case "RECORD":
+                    responseWriter.onRecord( new ImmutableRecord( Iterables.asArray(
+                            Object.class, (List<Object>) args.get( 0 ) ) ) );
+                    break;
+                case "IGNORED":
+                    responseWriter.onIgnored();
+                    break;
+                case "FAILURE":
+                    Map<String, Object> meta = (Map<String, Object>)  args.get( 0 );
+                    responseWriter.onFailure( Neo4jError.codeFromString(
+                            (String) meta.get( "code" ) ), (String) meta.get( "message" ) );
+                    break;
+
+                default:
+                    throw new RuntimeException( "Unknown value: " + type );
                 }
             }
         }
