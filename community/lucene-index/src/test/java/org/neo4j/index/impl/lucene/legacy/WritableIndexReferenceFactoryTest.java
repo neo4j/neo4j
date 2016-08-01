@@ -51,7 +51,7 @@ public class WritableIndexReferenceFactoryTest
 
     private static final String INDEX_NAME = "testIndex";
 
-    private LuceneDataSource.LuceneFilesystemFacade filesystemFacade = LuceneDataSource.LuceneFilesystemFacade.FS;
+    private LuceneDataSource.LuceneFilesystemFacade filesystemFacade = LuceneDataSource.LuceneFilesystemFacade.MEMORY;
     private IndexIdentifier indexIdentifier = new IndexIdentifier( IndexEntityType.Node, INDEX_NAME );
     private IndexConfigStore indexStore;
 
