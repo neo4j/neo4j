@@ -140,6 +140,12 @@ public class BaseHighLimitRecordFormatTest
         }
 
         @Override
+        protected boolean canUseFixedReferences( MyRecord record )
+        {
+            return false;
+        }
+
+        @Override
         protected int requiredDataLength( MyRecord record )
         {
             return 4;

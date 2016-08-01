@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.format.highlimit;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
@@ -69,13 +70,32 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     {
         // Interpret the header byte
         boolean dense = has( headerByte, DENSE_NODE_BIT );
+        if ( record.isUseFixedReferences() )
+        {
+            byte modifiers = cursor.getByte();
+            long relModifier = (modifiers & 0b0000_0001L) << 32;
+            long propModifier = (modifiers & 0b0000_0110L) << 31;
 
-        // Now read the rest of the data. The adapter will take care of moving the cursor over to the
-        // other unit when we've exhausted the first one.
-        long nextRel = decodeCompressedReference( cursor, headerByte, HAS_RELATIONSHIP_BIT, NULL );
-        long nextProp = decodeCompressedReference( cursor, headerByte, HAS_PROPERTY_BIT, NULL );
-        long labelField = decodeCompressedReference( cursor, headerByte, HAS_LABELS_BIT, NULL_LABELS );
-        record.initialize( inUse, nextProp, dense, nextRel, labelField );
+            long nextRel = cursor.getInt() & 0xFFFFFFFFL;
+            long nextProp = cursor.getInt() & 0xFFFFFFFFL;
+
+            long lsbLabels = cursor.getInt() & 0xFFFFFFFFL;
+            long hsbLabels = cursor.getByte() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
+            long labels = lsbLabels | (hsbLabels << 32);
+
+            record.initialize( inUse,
+                    BaseRecordFormat.longFromIntAndMod( nextProp, propModifier ), dense,
+                    BaseRecordFormat.longFromIntAndMod( nextRel, relModifier ), labels );
+        }
+        else
+        {
+            // Now read the rest of the data. The adapter will take care of moving the cursor over to the
+            // other unit when we've exhausted the first one.
+            long nextRel = decodeCompressedReference( cursor, headerByte, HAS_RELATIONSHIP_BIT, NULL );
+            long nextProp = decodeCompressedReference( cursor, headerByte, HAS_PROPERTY_BIT, NULL );
+            long labelField = decodeCompressedReference( cursor, headerByte, HAS_LABELS_BIT, NULL_LABELS );
+            record.initialize( inUse, nextProp, dense, nextRel, labelField );
+        }
     }
 
     @Override
@@ -98,11 +118,43 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     }
 
     @Override
+    protected boolean canUseFixedReferences( NodeRecord record )
+    {
+        return (((record.getNextProp() == NULL) || ((record.getNextProp() & 0xFFFF_FFFC_0000_0000L) == 0)) &&
+                ((record.getNextRel() == NULL) || ((record.getNextRel() & 0xFFFF_FFFE_0000_0000L) == 0)));
+    }
+
+    @Override
     protected void doWriteInternal( NodeRecord record, PageCursor cursor )
             throws IOException
     {
-        encode( cursor, record.getNextRel(), NULL );
-        encode( cursor, record.getNextProp(), NULL );
-        encode( cursor, record.getLabelField(), NULL_LABELS );
+        if ( record.isUseFixedReferences() )
+        {
+            long nextRel = record.getNextRel();
+            long nextProp = record.getNextProp();
+
+            short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel & 0x1_0000_0000L) >> 32);
+            short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short) ((nextProp & 0x3_0000_0000L) >> 31);
+
+            // [    ,xxxx] higher bits for rel id
+            // [xxxx,    ] higher bits for prop id
+            short modifiers = (short) ( relModifier | propModifier );
+
+            cursor.putByte( (byte) modifiers );
+            cursor.putInt( (int) nextRel );
+            cursor.putInt( (int) nextProp );
+
+            // lsb of labels
+            long labelField = record.getLabelField();
+            cursor.putInt( (int) labelField );
+            // msb of labels
+            cursor.putByte( (byte) ((labelField & 0xFF_0000_0000L) >> 32) );
+        }
+        else
+        {
+            encode( cursor, record.getNextRel(), NULL );
+            encode( cursor, record.getNextProp(), NULL );
+            encode( cursor, record.getLabelField(), NULL_LABELS );
+        }
     }
 }

@@ -78,7 +78,7 @@ public class PropertyRecordFormatTest
         record.setInUse( true );
         record.setId( recordId );
         record.setNextProp( 1L );
-        record.setPrevProp( 3L );
+        record.setPrevProp( (Integer.MAX_VALUE + 1L) << 3 );
         return record;
     }
 }

@@ -23,12 +23,15 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
+import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toAbsolute;
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 
 /**
@@ -68,13 +71,31 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
         int offset = cursor.getOffset();
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse( headerByte );
+        record.setUseFixedReferences( has( headerByte, 0b0000_0100 ));
         if ( mode.shouldLoad( inUse ) )
         {
             int blockCount = headerByte >>> 4;
             long recordId = record.getId();
-            record.initialize( inUse,
-                    toAbsolute( Reference.decode( cursor ), recordId ),
-                    toAbsolute( Reference.decode( cursor ), recordId ) );
+
+            if (record.isUseFixedReferences())
+            {
+                // since fixed reference limits property reference to 34 bits, 6 bytes is ample.
+                long prevMod = (cursor.getShort() & 0xFFFFL);
+                long prevProp = cursor.getInt() & 0xFFFFFFFFL;
+                long nextMod = (cursor.getShort() & 0xFFFFL);
+                long nextProp = cursor.getInt() & 0xFFFFFFFFL;
+                record.initialize( true,
+                        BaseRecordFormat.longFromIntAndMod( prevProp, prevMod << 32 ),
+                        BaseRecordFormat.longFromIntAndMod( nextProp, nextMod << 32 ) );
+                //skip 3 bytes before start reading property blocks
+                cursor.setOffset(cursor.getOffset() + 3);
+            }
+            else
+            {
+                record.initialize( inUse,
+                        toAbsolute( Reference.decode( cursor ), recordId ),
+                        toAbsolute( Reference.decode( cursor ), recordId ) );
+            }
             if ( (blockCount > record.getBlockCapacity()) | (RECORD_SIZE - (cursor.getOffset() - offset) < blockCount * Long.BYTES) )
             {
                 cursor.setCursorException( "PropertyRecord claims to contain more blocks than can fit in a record" );
@@ -93,10 +114,31 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
     {
         if ( record.inUse() )
         {
-            cursor.putByte( (byte) ((record.inUse() ? IN_USE_BIT : 0) | numberOfBlocks( record ) << 4) );
+            byte headerByte = (byte) ((record.inUse() ? IN_USE_BIT : 0) | numberOfBlocks( record ) << 4);
+            boolean canUseFixedReferences = canUseFixedReferences( record );
+            record.setUseFixedReferences( canUseFixedReferences );
+            headerByte = set( headerByte, 0b0000_0100, canUseFixedReferences );
+            cursor.putByte( headerByte );
+
             long recordId = record.getId();
-            Reference.encode( toRelative( record.getPrevProp(), recordId), cursor );
-            Reference.encode( toRelative( record.getNextProp(), recordId), cursor );
+
+            if ( canUseFixedReferences )
+            {
+            // Set up the record header
+                short prevModifier = record.getPrevProp() == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short) ((record.getPrevProp() & 0xFFFF_0000_0000L) >> 32);
+                short nextModifier = record.getNextProp() == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short) ((record.getNextProp() & 0xFFFF_0000_0000L) >> 32);
+                cursor.putShort( prevModifier );
+                cursor.putInt( (int) record.getPrevProp() );
+                cursor.putShort( nextModifier );
+                cursor.putInt( (int) record.getNextProp() );
+                //just stuff 3 bytes
+                cursor.putBytes(new byte[]{0,0,0});
+            }
+            else
+            {
+                Reference.encode( toRelative( record.getPrevProp(), recordId ), cursor );
+                Reference.encode( toRelative( record.getNextProp(), recordId ), cursor );
+            }
             for ( PropertyBlock block : record )
             {
                 for ( long propertyBlock : block.getValueBlocks() )
@@ -125,5 +167,11 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
     public long getNextRecordReference( PropertyRecord record )
     {
         return record.getNextProp();
+    }
+
+    private boolean canUseFixedReferences( PropertyRecord record )
+    {
+        return (((record.getNextProp() == NULL_REFERENCE.intValue()) || ((record.getNextProp() & 0xFFFF_FFFC_0000_0000L) == 0)) &&
+                ((record.getPrevProp() == NULL_REFERENCE.intValue()) || ((record.getPrevProp() & 0xFFFF_FFFE_0000_0000L) == 0)));
     }
 }

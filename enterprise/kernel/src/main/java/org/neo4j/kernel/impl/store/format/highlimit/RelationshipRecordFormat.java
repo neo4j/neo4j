@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.store.format.highlimit;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toAbsolute;
@@ -76,17 +78,64 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     {
         int type = cursor.getShort() & 0xFFFF;
         long recordId = record.getId();
-        record.initialize( inUse,
-                decodeCompressedReference( cursor, headerByte, HAS_PROPERTY_BIT, NULL ),
-                decodeCompressedReference( cursor ),
-                decodeCompressedReference( cursor ),
-                type,
-                decodeAbsoluteOrRelative( cursor, headerByte, FIRST_IN_FIRST_CHAIN_BIT, recordId ),
-                decodeAbsoluteIfPresent( cursor, headerByte, HAS_FIRST_CHAIN_NEXT_BIT, recordId ),
-                decodeAbsoluteOrRelative( cursor, headerByte, FIRST_IN_SECOND_CHAIN_BIT, recordId ),
-                decodeAbsoluteIfPresent( cursor, headerByte, HAS_SECOND_CHAIN_NEXT_BIT, recordId ),
-                has( headerByte, FIRST_IN_FIRST_CHAIN_BIT ),
-                has( headerByte, FIRST_IN_SECOND_CHAIN_BIT ) );
+        if (record.isUseFixedReferences())
+        {
+            // [    ,   x] first node higher order bits
+            // [    ,  x ] second node high order bits
+            // [    , x  ] first prev high order bits
+            // [    ,x   ] first next high order bits
+            // [   x,    ] second prev high order bits
+            // [  x ,    ] second next high order bits
+            // [xx  ,    ] next prop high order bits
+            long modifiers = cursor.getByte();
+
+            long firstNode = cursor.getInt() & 0xFFFFFFFFL;
+            long firstNodeMod = (modifiers & 0b0000_0001L) << 32;
+
+            long secondNode = cursor.getInt() & 0xFFFFFFFFL;
+            long secondNodeMod = (modifiers & 0b0000_0010L) << 31;
+
+            long firstPrevRel = cursor.getInt() & 0xFFFFFFFFL;
+            long firstPrevRelMod = (modifiers & 0b0000_0100L) << 30;
+
+            long firstNextRel = cursor.getInt() & 0xFFFFFFFFL;
+            long firstNextRelMod = (modifiers & 0b0000_1000L) << 29;
+
+            long secondPrevRel = cursor.getInt() & 0xFFFFFFFFL;
+            long secondPrevRelMod = (modifiers & 0b0001_0000L) << 28;
+
+            long secondNextRel = cursor.getInt() & 0xFFFFFFFFL;
+            long secondNextRelMod = (modifiers & 0b0010_0000L) << 27;
+
+            long nextProp = cursor.getInt() & 0xFFFFFFFFL;
+            long nextPropMod = (modifiers & 0b1100_0000L) << 26;
+
+            record.initialize( inUse,
+                    BaseRecordFormat.longFromIntAndMod( nextProp, nextPropMod ),
+                    BaseRecordFormat.longFromIntAndMod( firstNode, firstNodeMod ),
+                    BaseRecordFormat.longFromIntAndMod( secondNode, secondNodeMod ),
+                    type,
+                    BaseRecordFormat.longFromIntAndMod( firstPrevRel, firstPrevRelMod ),
+                    BaseRecordFormat.longFromIntAndMod( firstNextRel, firstNextRelMod ),
+                    BaseRecordFormat.longFromIntAndMod( secondPrevRel, secondPrevRelMod ),
+                    BaseRecordFormat.longFromIntAndMod( secondNextRel, secondNextRelMod ),
+                    has( headerByte, FIRST_IN_FIRST_CHAIN_BIT ),
+                    has( headerByte, FIRST_IN_SECOND_CHAIN_BIT ) );
+        }
+        else
+        {
+            record.initialize( inUse,
+                    decodeCompressedReference( cursor, headerByte, HAS_PROPERTY_BIT, NULL ),
+                    decodeCompressedReference( cursor ),
+                    decodeCompressedReference( cursor ),
+                    type,
+                    decodeAbsoluteOrRelative( cursor, headerByte, FIRST_IN_FIRST_CHAIN_BIT, recordId ),
+                    decodeAbsoluteIfPresent( cursor, headerByte, HAS_FIRST_CHAIN_NEXT_BIT, recordId ),
+                    decodeAbsoluteOrRelative( cursor, headerByte, FIRST_IN_SECOND_CHAIN_BIT, recordId ),
+                    decodeAbsoluteIfPresent( cursor, headerByte, HAS_SECOND_CHAIN_NEXT_BIT, recordId ),
+                    has( headerByte, FIRST_IN_FIRST_CHAIN_BIT ),
+                    has( headerByte, FIRST_IN_SECOND_CHAIN_BIT ) );
+        }
     }
 
     private long decodeAbsoluteOrRelative( PageCursor cursor, long headerByte, int firstInStartBit, long recordId )
@@ -128,20 +177,81 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     {
         cursor.putShort( (short) record.getType() );
         long recordId = record.getId();
-        encode( cursor, record.getNextProp(), NULL );
-        encode( cursor, record.getFirstNode() );
-        encode( cursor, record.getSecondNode() );
+        if (record.isUseFixedReferences())
+        {
+            long firstNode = record.getFirstNode();
+            short firstNodeMod = (short)((firstNode & 0x1_0000_0000L) >> 32);
 
-        encode( cursor, getFirstPrevReference( record, recordId ) );
-        if ( record.getFirstNextRel() != NULL )
-        {
-            encode( cursor, toRelative( record.getFirstNextRel(), recordId ) );
+            long secondNode = record.getSecondNode();
+            long secondNodeMod = (secondNode & 0x1_0000_0000L) >> 31;
+
+            long firstPrevRel = record.getFirstPrevRel();
+            long firstPrevRelMod = firstPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstPrevRel & 0x1_0000_0000L) >> 30;
+
+            long firstNextRel = record.getFirstNextRel();
+            long firstNextRelMod = firstNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstNextRel & 0x1_0000_0000L) >> 29;
+
+            long secondPrevRel = record.getSecondPrevRel();
+            long secondPrevRelMod = secondPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondPrevRel & 0x1_0000_0000L) >> 28;
+
+            long secondNextRel = record.getSecondNextRel();
+            long secondNextRelMod = secondNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondNextRel & 0x1_0000_0000L) >> 27;
+
+            long nextProp = record.getNextProp();
+            long nextPropMod = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (nextProp & 0x3_0000_0000L) >> 26;
+
+            // [    ,   x] first node higher order bits
+            // [    ,  x ] second node high order bits
+            // [    , x  ] first prev high order bits
+            // [    ,x   ] first next high order bits
+            // [   x,    ] second prev high order bits
+            // [  x ,    ] second next high order bits
+            // [xx  ,    ] next prop high order bits
+            short modifiers = (short) (firstNodeMod | secondNodeMod | firstPrevRelMod | firstNextRelMod |
+                                       secondPrevRelMod | secondNextRelMod | nextPropMod);
+
+            cursor.putByte( (byte)modifiers );
+            cursor.putInt( (int) firstNode );
+            cursor.putInt( (int) secondNode );
+            cursor.putInt( (int) firstPrevRel );
+            cursor.putInt( (int) firstNextRel );
+            cursor.putInt( (int) secondPrevRel );
+            cursor.putInt( (int) secondNextRel );
+            cursor.putInt( (int) nextProp );
         }
-        encode( cursor, getSecondPrevReference( record, recordId ) );
-        if ( record.getSecondNextRel() != NULL )
+        else
         {
-            encode( cursor, toRelative( record.getSecondNextRel(), recordId ) );
+            encode( cursor, record.getNextProp(), NULL );
+            encode( cursor, record.getFirstNode() );
+            encode( cursor, record.getSecondNode() );
+
+            encode( cursor, getFirstPrevReference( record, recordId ) );
+            if ( record.getFirstNextRel() != NULL )
+            {
+                encode( cursor, toRelative( record.getFirstNextRel(), recordId ) );
+            }
+            encode( cursor, getSecondPrevReference( record, recordId ) );
+            if ( record.getSecondNextRel() != NULL )
+            {
+                encode( cursor, toRelative( record.getSecondNextRel(), recordId ) );
+            }
         }
+    }
+
+    @Override
+    protected boolean canUseFixedReferences( RelationshipRecord record )
+    {
+           return ((record.getFirstNode() & 0xFFFF_FFFE_0000_0000L) == 0) &&
+                    ((record.getSecondNode() & 0xFFFF_FFFE_0000_0000L) == 0) &&
+                    ((record.getFirstPrevRel() == NULL) ||
+                     ((record.getFirstPrevRel() & 0xFFFF_FFFE_0000_0000L) == 0)) &&
+                    ((record.getFirstNextRel() == NULL) ||
+                     ((record.getFirstNextRel() & 0xFFFF_FFFE_0000_0000L) == 0)) &&
+                    ((record.getSecondPrevRel() == NULL) ||
+                     ((record.getSecondPrevRel() & 0xFFFF_FFFE_0000_0000L) == 0)) &&
+                    ((record.getSecondNextRel() == NULL) ||
+                     ((record.getSecondNextRel() & 0xFFFF_FFFE_0000_0000L) == 0)) &&
+                    ((record.getNextProp() == NULL) || ((record.getNextProp() & 0xFFFF_FFFC_0000_0000L) == 0));
     }
 
     private long getSecondPrevReference( RelationshipRecord record, long recordId )

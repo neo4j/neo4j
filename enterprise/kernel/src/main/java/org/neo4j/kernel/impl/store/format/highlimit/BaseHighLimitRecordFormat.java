@@ -84,6 +84,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     static final long NULL = Record.NULL_REFERENCE.intValue();
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
     static final int HEADER_BIT_FIRST_RECORD_UNIT = 0b0000_0100;
+    private static final int HEADER_BIT_FIXED_REFERENCE = 0b0000_0100;
 
     protected BaseHighLimitRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
     {
@@ -140,6 +141,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         }
         else
         {
+            record.setUseFixedReferences( has( headerByte, HEADER_BIT_FIXED_REFERENCE ) );
             doReadInternal( record, primaryCursor, recordSize, headerByte, inUse );
         }
     }
@@ -164,7 +166,14 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
                     ") collides with format-generic header bits";
             headerByte = set( headerByte, IN_USE_BIT, record.inUse() );
             headerByte = set( headerByte, HEADER_BIT_RECORD_UNIT, record.requiresSecondaryUnit() );
-            headerByte = set( headerByte, HEADER_BIT_FIRST_RECORD_UNIT, true );
+            if ( record.requiresSecondaryUnit() )
+            {
+                headerByte = set( headerByte, HEADER_BIT_FIRST_RECORD_UNIT, true );
+            }
+            else
+            {
+                headerByte = set( headerByte, HEADER_BIT_FIXED_REFERENCE, record.isUseFixedReferences() );
+            }
             primaryCursor.putByte( headerByte );
 
             if ( record.requiresSecondaryUnit() )
@@ -232,17 +241,23 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     {
         if ( record.inUse() )
         {
-            int requiredLength = HEADER_BYTE + requiredDataLength( record );
-            boolean requiresSecondaryUnit = requiredLength > recordSize;
-            record.setRequiresSecondaryUnit( requiresSecondaryUnit );
-            if ( record.requiresSecondaryUnit() && !record.hasSecondaryUnitId() )
+            record.setUseFixedReferences( canUseFixedReferences( record ));
+            if ( !record.isUseFixedReferences() )
             {
-                // Allocate a new id at this point, but this is not the time to free this ID the the case where
-                // this record doesn't need this secondary unit anymore... that needs to be done when applying to store.
-                record.setSecondaryUnitId( idSequence.nextId() );
+                int requiredLength = HEADER_BYTE + requiredDataLength( record );
+                boolean requiresSecondaryUnit = requiredLength > recordSize;
+                record.setRequiresSecondaryUnit( requiresSecondaryUnit );
+                if ( record.requiresSecondaryUnit() && !record.hasSecondaryUnitId() )
+                {
+                    // Allocate a new id at this point, but this is not the time to free this ID the the case where
+                    // this record doesn't need this secondary unit anymore... that needs to be done when applying to store.
+                    record.setSecondaryUnitId( idSequence.nextId() );
+                }
             }
         }
     }
+
+    protected abstract boolean canUseFixedReferences( RECORD record );
 
     /**
      * Required length of the data in the given record (without the header byte).

@@ -41,6 +41,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     private boolean requiresSecondaryUnit;
     private boolean inUse;
     private boolean created;
+    private boolean useFixedReferences;
 
     protected AbstractBaseRecord( long id )
     {
@@ -54,6 +55,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
         this.created = false;
         this.secondaryUnitId = NO_ID;
         this.requiresSecondaryUnit = false;
+        this.useFixedReferences = false;
         return this;
     }
 
@@ -69,6 +71,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
         created = false;
         secondaryUnitId = NO_ID;
         requiresSecondaryUnit = false;
+        this.useFixedReferences = false;
     }
 
     public long getId()
@@ -141,6 +144,16 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     public final boolean isCreated()
     {
         return created;
+    }
+
+    public boolean isUseFixedReferences()
+    {
+        return useFixedReferences;
+    }
+
+    public void setUseFixedReferences( boolean useFixedReferences )
+    {
+        this.useFixedReferences = useFixedReferences;
     }
 
     @Override
