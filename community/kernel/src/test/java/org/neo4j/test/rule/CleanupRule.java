@@ -82,6 +82,7 @@ public class CleanupRule extends ExternalResource
             try
             {
                 Method method = cls.getMethod( methodName );
+                method.setAccessible( true );
                 add( closeable( method, toClose ) );
                 return toClose;
             }
