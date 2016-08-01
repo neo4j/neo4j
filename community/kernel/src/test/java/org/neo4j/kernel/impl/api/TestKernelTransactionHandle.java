@@ -64,9 +64,10 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
-    public void markForTermination( Status reason )
+    public boolean markForTermination( Status reason )
     {
         tx.markForTermination( reason );
+        return true;
     }
 
     @Override
@@ -82,9 +83,9 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
-    public boolean isSameTransaction( KernelTransaction tx )
+    public boolean isUnderlyingTransaction( KernelTransaction tx )
     {
-        return false;
+        return this.tx == tx;
     }
 
     @Override

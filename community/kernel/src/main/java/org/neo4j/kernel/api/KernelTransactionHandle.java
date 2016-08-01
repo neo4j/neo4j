@@ -64,8 +64,10 @@ public interface KernelTransactionHandle
      * Mark the underlying transaction for termination.
      *
      * @param reason the reason for termination.
+     * @return {@code true} if the underlying transaction was marked for termination, {@code false} otherwise
+     * (when this handle represents an old transaction that has been closed).
      */
-    void markForTermination( Status reason );
+    boolean markForTermination( Status reason );
 
     /**
      * Access mode of underlying transaction that transaction has when handle was created.
@@ -81,6 +83,11 @@ public interface KernelTransactionHandle
      */
     Optional<Status> terminationReason();
 
-    // TODO: remove
-    boolean isSameTransaction( KernelTransaction tx );
+    /**
+     * Check if this handle points to the same underlying transaction as the given one.
+     *
+     * @param tx the expected transaction.
+     * @return {@code true} if this handle represents {@code tx}, {@code false} otherwise.
+     */
+    boolean isUnderlyingTransaction( KernelTransaction tx );
 }

@@ -78,9 +78,9 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
-    public void markForTermination( Status reason )
+    public boolean markForTermination( Status reason )
     {
-        tx.markForTermination( txReuseCount, reason );
+        return tx.markForTermination( txReuseCount, reason );
     }
 
     @Override
@@ -96,7 +96,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
-    public boolean isSameTransaction( KernelTransaction tx )
+    public boolean isUnderlyingTransaction( KernelTransaction tx )
     {
         return this.tx == tx;
     }

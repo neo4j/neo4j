@@ -253,15 +253,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return terminationReason;
     }
 
-    void markForTermination( long expectedReuseCount, Status reason )
+    boolean markForTermination( long expectedReuseCount, Status reason )
     {
         terminationReleaseLock.lock();
         try
         {
-            if ( expectedReuseCount == reuseCount )
-            {
-                markForTerminationIfPossible( reason );
-            }
+            return expectedReuseCount == reuseCount && markForTerminationIfPossible( reason );
         }
         finally
         {
@@ -289,7 +286,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void markForTerminationIfPossible( Status reason )
+    private boolean markForTerminationIfPossible( Status reason )
     {
         if ( canBeTerminated() )
         {
@@ -300,7 +297,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 locks.stop();
             }
             transactionMonitor.transactionTerminated( hasTxStateWithChanges() );
+            return true;
         }
+        return false;
     }
 
     @Override
