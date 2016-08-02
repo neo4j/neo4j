@@ -69,6 +69,8 @@ import static org.neo4j.coreedge.core.consensus.shipping.RaftLogShipper.Timeouts
  */
 public class RaftLogShipper
 {
+    private final int TIMER_INACTIVE = 0;
+
     enum Mode
     {
         /**
@@ -275,14 +277,18 @@ public class RaftLogShipper
         lastLeaderContext = leaderContext;
     }
 
+    /**
+     * Callback invoked by the external timer service.
+     */
     private synchronized void onScheduledTimeoutExpiry()
     {
         if ( timedOut() )
         {
             onTimeout();
         }
-        else if ( timeoutAbsoluteMillis != 0 )
+        else if ( timeoutAbsoluteMillis != TIMER_INACTIVE )
         {
+            /* Timer was moved, so we need to reschedule. */
             long timeLeft = timeoutAbsoluteMillis - clock.millis();
             if ( timeLeft > 0 )
             {
@@ -290,6 +296,7 @@ public class RaftLogShipper
             }
             else
             {
+                /* However it managed to expire, so we can just handle it immediately. */
                 onTimeout();
             }
         }
@@ -310,9 +317,16 @@ public class RaftLogShipper
         }
     }
 
+    /**
+     * This function is necessary because the scheduled callback blocks on the monitor before
+     * entry and the expiry time of the timer might have been moved or even cancelled before
+     * the entry is granted.
+     *
+     * @return True if we actually timed out, otherwise false.
+     */
     private boolean timedOut()
     {
-        return timeoutAbsoluteMillis != 0 && (clock.millis() - timeoutAbsoluteMillis) >= 0;
+        return timeoutAbsoluteMillis != TIMER_INACTIVE && (clock.millis() - timeoutAbsoluteMillis) >= 0;
     }
 
     private void scheduleTimeout( long deltaMillis )
@@ -334,7 +348,7 @@ public class RaftLogShipper
         {
             timeout.cancel();
         }
-        timeoutAbsoluteMillis = 0;
+        timeoutAbsoluteMillis = TIMER_INACTIVE;
     }
 
     /**
