@@ -50,6 +50,14 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     private static final int HAS_LOOP_BIT     = 0b0010_0000;
     private static final int HAS_NEXT_BIT     = 0b0100_0000;
 
+    private static final long ONE_BIT_OVERFLOW_BIT_MASK = 0xFFFF_FFFE_0000_0000L;
+    private static final long FIXED_REFERENCE_BIT_MASK = 0x100000000L;
+    private static final int NEXT_RECORD_BIT_MASK = 0b0000_0001;
+    private static final int FIRST_OUT_BIT_MASK = 0b0000_0010;
+    private static final int FIRST_IN_BIT_MASK = 0b0000_0100;
+    private static final int FIRST_LOOP_BIT_MASK = 0b0000_1000;
+    private static final int OWNING_NODE_BIT_MASK = 0b0001_0000;
+
     public RelationshipGroupRecordFormat()
     {
         this( RECORD_SIZE );
@@ -72,34 +80,7 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     {
         if ( record.isUseFixedReferences() )
         {
-
-            // [    ,   x] high next bits
-            // [    ,  x ] high firstOut bits
-            // [    , x  ] high firstIn bits
-            // [    ,x   ] high firstLoop bits
-            // [   x,    ] high owner bits
-            long modifiers = cursor.getByte();
-
-            int type = cursor.getShort() & 0xFFFF;
-
-            long nextLowBits = cursor.getInt() & 0xFFFFFFFFL;
-            long nextOutLowBits = cursor.getInt() & 0xFFFFFFFFL;
-            long nextInLowBits = cursor.getInt() & 0xFFFFFFFFL;
-            long nextLoopLowBits = cursor.getInt() & 0xFFFFFFFFL;
-            long owningNode = cursor.getInt() & 0xFFFFFFFFL;
-
-            long nextMod = (modifiers & 0b0000_0001) << 32;
-            long nextOutMod = (modifiers & 0b0000_0010) << 31;
-            long nextInMod = (modifiers & 0b0000_0100) << 30;
-            long nextLoopMod = (modifiers & 0b0000_1000) << 29;
-            long owningNodeMod = (modifiers & 0b0001_0000) << 28;
-
-            record.initialize( inUse, type,
-                    BaseRecordFormat.longFromIntAndMod( nextOutLowBits, nextOutMod ),
-                    BaseRecordFormat.longFromIntAndMod( nextInLowBits, nextInMod ),
-                    BaseRecordFormat.longFromIntAndMod( nextLoopLowBits, nextLoopMod ),
-                    BaseRecordFormat.longFromIntAndMod( owningNode, owningNodeMod ),
-                    BaseRecordFormat.longFromIntAndMod( nextLowBits, nextMod ) );
+            readFixedReferencesMethod( record, cursor, inUse );
         }
         else
         {
@@ -141,25 +122,7 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     {
         if ( record.isUseFixedReferences() )
         {
-            long nextMod = record.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getNext() & 0x100000000L) >> 32;
-            long nextOutMod = record.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstOut() & 0x100000000L) >> 31;
-            long nextInMod = record.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstIn() & 0x100000000L) >> 30;
-            long nextLoopMod = record.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstLoop() & 0x100000000L) >> 29;
-            long ownerMod = record.getOwningNode() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getOwningNode() & 0x100000000L) >> 28;
-
-            // [    ,   x] high next bits
-            // [    ,  x ] high firstOut bits
-            // [    , x  ] high firstIn bits
-            // [    ,x   ] high firstLoop bits
-            // [   x,    ] high owner bits
-            cursor.putByte( (byte) (nextMod | nextOutMod | nextInMod | nextLoopMod | ownerMod) );
-
-            cursor.putShort( (short) record.getType() );
-            cursor.putInt( (int) record.getNext() );
-            cursor.putInt( (int) record.getFirstOut() );
-            cursor.putInt( (int) record.getFirstIn() );
-            cursor.putInt( (int) record.getFirstLoop() );
-            cursor.putInt( (int) record.getOwningNode() );
+            writeFixedReferencesRecord( record, cursor );
         }
         else
         {
@@ -175,10 +138,64 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     @Override
     protected boolean canUseFixedReferences( RelationshipGroupRecord record )
     {
-        return !((record.getNext() != NULL) && ((record.getNext() & 0xFFFF_FFFE_0000_0000L) != 0) ||
-                 (record.getFirstOut() != NULL) && ((record.getFirstOut() & 0xFFFF_FFFE_0000_0000L) != 0) ||
-                 (record.getFirstIn() != NULL) && ((record.getFirstIn() & 0xFFFF_FFFE_0000_0000L) != 0) ||
-                 (record.getFirstLoop() != NULL) && ((record.getFirstLoop() & 0xFFFF_FFFE_0000_0000L) != 0) ||
-                 (record.getOwningNode() != NULL) && ((record.getOwningNode() & 0xFFFF_FFFE_0000_0000L) != 0));
+        return !((record.getNext() != NULL) && ((record.getNext() & ONE_BIT_OVERFLOW_BIT_MASK) != 0) ||
+                 (record.getFirstOut() != NULL) && ((record.getFirstOut() & ONE_BIT_OVERFLOW_BIT_MASK) != 0) ||
+                 (record.getFirstIn() != NULL) && ((record.getFirstIn() & ONE_BIT_OVERFLOW_BIT_MASK) != 0) ||
+                 (record.getFirstLoop() != NULL) && ((record.getFirstLoop() & ONE_BIT_OVERFLOW_BIT_MASK) != 0) ||
+                 (record.getOwningNode() != NULL) && ((record.getOwningNode() & ONE_BIT_OVERFLOW_BIT_MASK) != 0));
+    }
+
+    private void readFixedReferencesMethod( RelationshipGroupRecord record, PageCursor cursor, boolean inUse )
+    {
+        // [    ,   x] high next bits
+        // [    ,  x ] high firstOut bits
+        // [    , x  ] high firstIn bits
+        // [    ,x   ] high firstLoop bits
+        // [   x,    ] high owner bits
+        long modifiers = cursor.getByte();
+
+        int type = cursor.getShort() & 0xFFFF;
+
+        long nextLowBits = cursor.getInt() & 0xFFFFFFFFL;
+        long firstOutLowBits = cursor.getInt() & 0xFFFFFFFFL;
+        long firstInLowBits = cursor.getInt() & 0xFFFFFFFFL;
+        long firstLoopLowBits = cursor.getInt() & 0xFFFFFFFFL;
+        long owningNodeLowBits = cursor.getInt() & 0xFFFFFFFFL;
+
+        long nextMod = (modifiers & NEXT_RECORD_BIT_MASK) << 32;
+        long firstOutMod = (modifiers & FIRST_OUT_BIT_MASK) << 31;
+        long firstInMod = (modifiers & FIRST_IN_BIT_MASK) << 30;
+        long firstLoopMod = (modifiers & FIRST_LOOP_BIT_MASK) << 29;
+        long owningNodeMod = (modifiers & OWNING_NODE_BIT_MASK) << 28;
+
+        record.initialize( inUse, type,
+                BaseRecordFormat.longFromIntAndMod( firstOutLowBits, firstOutMod ),
+                BaseRecordFormat.longFromIntAndMod( firstInLowBits, firstInMod ),
+                BaseRecordFormat.longFromIntAndMod( firstLoopLowBits, firstLoopMod ),
+                BaseRecordFormat.longFromIntAndMod( owningNodeLowBits, owningNodeMod ),
+                BaseRecordFormat.longFromIntAndMod( nextLowBits, nextMod ) );
+    }
+
+    private void writeFixedReferencesRecord( RelationshipGroupRecord record, PageCursor cursor )
+    {
+        long nextMod = record.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getNext() & FIXED_REFERENCE_BIT_MASK) >> 32;
+        long firstOutMod = record.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstOut() & FIXED_REFERENCE_BIT_MASK) >> 31;
+        long firstInMod = record.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstIn() & FIXED_REFERENCE_BIT_MASK) >> 30;
+        long firstLoopMod = record.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstLoop() & FIXED_REFERENCE_BIT_MASK) >> 29;
+        long owningNodeMod = record.getOwningNode() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getOwningNode() & FIXED_REFERENCE_BIT_MASK) >> 28;
+
+        // [    ,   x] high next bits
+        // [    ,  x ] high firstOut bits
+        // [    , x  ] high firstIn bits
+        // [    ,x   ] high firstLoop bits
+        // [   x,    ] high owner bits
+        cursor.putByte( (byte) (nextMod | firstOutMod | firstInMod | firstLoopMod | owningNodeMod) );
+
+        cursor.putShort( (short) record.getType() );
+        cursor.putInt( (int) record.getNext() );
+        cursor.putInt( (int) record.getFirstOut() );
+        cursor.putInt( (int) record.getFirstIn() );
+        cursor.putInt( (int) record.getFirstLoop() );
+        cursor.putInt( (int) record.getOwningNode() );
     }
 }

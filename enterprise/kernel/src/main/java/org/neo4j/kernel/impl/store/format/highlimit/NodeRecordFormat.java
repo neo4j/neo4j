@@ -48,6 +48,13 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     private static final int HAS_PROPERTY_BIT     = 0b0010_0000;
     private static final int HAS_LABELS_BIT       = 0b0100_0000;
 
+    private static final long RELATIONSHIP_HIGHER_BITS_MASK = 0x1_0000_0000L;
+    private static final long PROPERTY_HIGHER_BITS_MASK = 0x3_0000_0000L;
+    private static final long RELATIONSHIP_LOWER_BITS_MASK = RELATIONSHIP_HIGHER_BITS_MASK >> 32;
+    private static final long PROPERTY_LOWER_BITS_MASK = PROPERTY_HIGHER_BITS_MASK >> 31;
+    private static final long ONE_BIT_OVERFLOW_BIT_MASK = 0xFFFF_FFFE_0000_0000L;
+    private static final long THREE_BITS_OVERFLOW_BIT_MASK = 0xFFFF_FFFC_0000_0000L;
+
     public NodeRecordFormat()
     {
         this( RECORD_SIZE );
@@ -72,20 +79,7 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
         boolean dense = has( headerByte, DENSE_NODE_BIT );
         if ( record.isUseFixedReferences() )
         {
-            byte modifiers = cursor.getByte();
-            long relModifier = (modifiers & 0b0000_0001L) << 32;
-            long propModifier = (modifiers & 0b0000_0110L) << 31;
-
-            long nextRel = cursor.getInt() & 0xFFFFFFFFL;
-            long nextProp = cursor.getInt() & 0xFFFFFFFFL;
-
-            long lsbLabels = cursor.getInt() & 0xFFFFFFFFL;
-            long hsbLabels = cursor.getByte() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
-            long labels = lsbLabels | (hsbLabels << 32);
-
-            record.initialize( inUse,
-                    BaseRecordFormat.longFromIntAndMod( nextProp, propModifier ), dense,
-                    BaseRecordFormat.longFromIntAndMod( nextRel, relModifier ), labels );
+            readFixedReferencesRecord( record, cursor, inUse, dense );
         }
         else
         {
@@ -120,8 +114,8 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     @Override
     protected boolean canUseFixedReferences( NodeRecord record )
     {
-        return (((record.getNextProp() == NULL) || ((record.getNextProp() & 0xFFFF_FFFC_0000_0000L) == 0)) &&
-                ((record.getNextRel() == NULL) || ((record.getNextRel() & 0xFFFF_FFFE_0000_0000L) == 0)));
+        return (((record.getNextProp() == NULL) || ((record.getNextProp() & THREE_BITS_OVERFLOW_BIT_MASK) == 0)) &&
+                ((record.getNextRel() == NULL) || ((record.getNextRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)));
     }
 
     @Override
@@ -130,25 +124,7 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     {
         if ( record.isUseFixedReferences() )
         {
-            long nextRel = record.getNextRel();
-            long nextProp = record.getNextProp();
-
-            short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel & 0x1_0000_0000L) >> 32);
-            short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short) ((nextProp & 0x3_0000_0000L) >> 31);
-
-            // [    ,xxxx] higher bits for rel id
-            // [xxxx,    ] higher bits for prop id
-            short modifiers = (short) ( relModifier | propModifier );
-
-            cursor.putByte( (byte) modifiers );
-            cursor.putInt( (int) nextRel );
-            cursor.putInt( (int) nextProp );
-
-            // lsb of labels
-            long labelField = record.getLabelField();
-            cursor.putInt( (int) labelField );
-            // msb of labels
-            cursor.putByte( (byte) ((labelField & 0xFF_0000_0000L) >> 32) );
+            writeFixedReferencesRecord( record, cursor );
         }
         else
         {
@@ -156,5 +132,46 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
             encode( cursor, record.getNextProp(), NULL );
             encode( cursor, record.getLabelField(), NULL_LABELS );
         }
+    }
+
+    private void readFixedReferencesRecord( NodeRecord record, PageCursor cursor, boolean inUse, boolean dense )
+    {
+        byte modifiers = cursor.getByte();
+        long relModifier = (modifiers & RELATIONSHIP_LOWER_BITS_MASK) << 32;
+        long propModifier = (modifiers & PROPERTY_LOWER_BITS_MASK) << 31;
+
+        long nextRel = cursor.getInt() & 0xFFFFFFFFL;
+        long nextProp = cursor.getInt() & 0xFFFFFFFFL;
+
+        long lsbLabels = cursor.getInt() & 0xFFFFFFFFL;
+        long hsbLabels = cursor.getByte() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
+        long labels = lsbLabels | (hsbLabels << 32);
+
+        record.initialize( inUse,
+                BaseRecordFormat.longFromIntAndMod( nextProp, propModifier ), dense,
+                BaseRecordFormat.longFromIntAndMod( nextRel, relModifier ), labels );
+    }
+
+    private void writeFixedReferencesRecord( NodeRecord record, PageCursor cursor )
+    {
+        long nextRel = record.getNextRel();
+        long nextProp = record.getNextProp();
+
+        short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel & RELATIONSHIP_HIGHER_BITS_MASK) >> 32);
+        short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short) ((nextProp & PROPERTY_HIGHER_BITS_MASK) >> 31);
+
+        // [    ,    x] higher bits for rel id
+        // [    ,  xx ] higher bits for prop id
+        short modifiers = (short) ( relModifier | propModifier );
+
+        cursor.putByte( (byte) modifiers );
+        cursor.putInt( (int) nextRel );
+        cursor.putInt( (int) nextProp );
+
+        // lsb of labels
+        long labelField = record.getLabelField();
+        cursor.putInt( (int) labelField );
+        // msb of labels
+        cursor.putByte( (byte) ((labelField & 0xFF_0000_0000L) >> 32) );
     }
 }
