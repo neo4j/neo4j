@@ -22,9 +22,12 @@ package org.neo4j.coreedge.discovery.procedures;
 import org.junit.Test;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 
 import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class RoleProcedureTest
 {
@@ -38,7 +41,7 @@ public class RoleProcedureTest
         RawIterator<Object[], ProcedureException> result = proc.apply( null, null );
 
         // then
-        assertEquals( RoleProcedure.CoreOrEdge.CORE.name(), result.next()[0]);
+        assertEquals( RoleProcedure.CoreOrEdge.CORE.name(), single( result )[0]);
     }
 
     @Test
@@ -51,7 +54,7 @@ public class RoleProcedureTest
         RawIterator<Object[], ProcedureException> result = proc.apply( null, null );
 
         // then
-        assertEquals( RoleProcedure.CoreOrEdge.EDGE.name(), result.next()[0]);
+        assertEquals( RoleProcedure.CoreOrEdge.EDGE.name(), single( result )[0]);
     }
 
     @Test
@@ -64,6 +67,11 @@ public class RoleProcedureTest
         RawIterator<Object[], ProcedureException> result = proc.apply( null, null );
 
         // then
-        assertEquals( "UNKNOWN", result.next()[0]);
+        assertEquals( "UNKNOWN", single( result )[0]);
+    }
+
+    private Object[] single( RawIterator<Object[], ProcedureException> result ) throws ProcedureException
+    {
+        return Iterators.single( asList( result ).iterator() );
     }
 }

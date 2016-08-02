@@ -42,27 +42,12 @@ public class RoleProcedure extends CallableProcedure.BasicProcedure
     @Override
     public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        return new RawIterator<Object[], ProcedureException>()
-        {
-            @Override
-            public boolean hasNext() throws ProcedureException
-            {
-                return true;
-            }
+        return RawIterator.<Object[], ProcedureException>of( new Object[]{name()} );
+    }
 
-            @Override
-            public Object[] next() throws ProcedureException
-            {
-                try
-                {
-                    return new Object[]{role.name()};
-                }
-                catch ( NullPointerException npe )
-                {
-                    return new Object[]{"UNKNOWN"};
-                }
-            }
-        };
+    private String name()
+    {
+        return role == null ? "UNKNOWN" : role.name();
     }
 
     public enum CoreOrEdge
