@@ -29,8 +29,8 @@ import org.neo4j.kernel.impl.util.JobScheduler;
  */
 public class DefaultConversationSPI implements ConversationSPI
 {
-    private Locks locks;
-    private JobScheduler jobScheduler;
+    private final Locks locks;
+    private final JobScheduler jobScheduler;
 
     public DefaultConversationSPI( Locks locks, JobScheduler jobScheduler )
     {
@@ -49,5 +49,4 @@ public class DefaultConversationSPI implements ConversationSPI
     {
         return jobScheduler.scheduleRecurring( group, job, interval, TimeUnit.MILLISECONDS);
     }
-
 }

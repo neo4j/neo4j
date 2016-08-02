@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -376,7 +376,7 @@ public class TransactionRecordState implements RecordState
     public DefinedProperty relChangeProperty( long relId, int propertyKey, Object value )
     {
         RecordProxy<Long, RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
-        propertyCreator.primitiveChangeProperty( rel, propertyKey, value, recordChangeSet.getPropertyRecords() );
+        propertyCreator.primitiveSetProperty( rel, propertyKey, value, recordChangeSet.getPropertyRecords() );
         return Property.property( propertyKey, value );
     }
 
@@ -392,7 +392,7 @@ public class TransactionRecordState implements RecordState
     public DefinedProperty nodeChangeProperty( long nodeId, int propertyKey, Object value )
     {
         RecordProxy<Long, NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
-        propertyCreator.primitiveChangeProperty( node, propertyKey, value, recordChangeSet.getPropertyRecords() );
+        propertyCreator.primitiveSetProperty( node, propertyKey, value, recordChangeSet.getPropertyRecords() );
         return Property.property( propertyKey, value );
     }
 
@@ -408,7 +408,7 @@ public class TransactionRecordState implements RecordState
     public DefinedProperty relAddProperty( long relId, int propertyKey, Object value )
     {
         RecordProxy<Long, RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
-        propertyCreator.primitiveAddProperty( rel, propertyKey, value, recordChangeSet.getPropertyRecords() );
+        propertyCreator.primitiveSetProperty( rel, propertyKey, value, recordChangeSet.getPropertyRecords() );
         return Property.property( propertyKey, value );
     }
 
@@ -423,7 +423,7 @@ public class TransactionRecordState implements RecordState
     public DefinedProperty nodeAddProperty( long nodeId, int propertyKey, Object value )
     {
         RecordProxy<Long, NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
-        propertyCreator.primitiveAddProperty( node, propertyKey, value, recordChangeSet.getPropertyRecords() );
+        propertyCreator.primitiveSetProperty( node, propertyKey, value, recordChangeSet.getPropertyRecords() );
         return Property.property( propertyKey, value );
     }
 
@@ -559,7 +559,7 @@ public class TransactionRecordState implements RecordState
      */
     public DefinedProperty graphAddProperty( int propertyKey, Object value )
     {
-        propertyCreator.primitiveAddProperty( getOrLoadNeoStoreRecord(), propertyKey, value,
+        propertyCreator.primitiveSetProperty( getOrLoadNeoStoreRecord(), propertyKey, value,
                 recordChangeSet.getPropertyRecords() );
         return Property.property( propertyKey, value );
     }
@@ -574,7 +574,7 @@ public class TransactionRecordState implements RecordState
      */
     public DefinedProperty graphChangeProperty( int propertyKey, Object value )
     {
-        propertyCreator.primitiveChangeProperty( getOrLoadNeoStoreRecord(), propertyKey, value,
+        propertyCreator.primitiveSetProperty( getOrLoadNeoStoreRecord(), propertyKey, value,
                 recordChangeSet.getPropertyRecords() );
         return Property.property( propertyKey, value );
     }

@@ -19,22 +19,24 @@
  */
 package org.neo4j.storageengine.api.lock;
 
+import java.util.Arrays;
+
 public interface ResourceLocker
 {
     /**
      * Can be grabbed when no other client holds locks on the relevant resources. No other clients can hold locks
      * while one client holds an exclusive lock. If the lock cannot be acquired,
      * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
+     *
+     * @param resourceType type or resource(s) to lock.
+     * @param resourceIds id(s) of resources to lock. Multiple ids should be ordered consistently by all callers
+     * of this method.
      */
-    void acquireExclusive( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException;
+    void acquireExclusive( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
 
-    ResourceLocker NONE = new ResourceLocker()
+    ResourceLocker NONE = ( resourceType, resourceIds ) ->
     {
-        @Override
-        public void acquireExclusive( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
-        {
-            throw new UnsupportedOperationException( "Unexpected call to lock a resource " + resourceType +
-                    " " + resourceId );
-        }
+        throw new UnsupportedOperationException(
+                "Unexpected call to lock a resource " + resourceType + " " + Arrays.toString( resourceIds ) );
     };
 }

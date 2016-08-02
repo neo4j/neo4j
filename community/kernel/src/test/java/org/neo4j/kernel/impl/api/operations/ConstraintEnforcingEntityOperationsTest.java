@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -59,7 +60,7 @@ public class ConstraintEnforcingEntityOperationsTest
         this.state = mock( KernelStatement.class );
         when( schemaReadOps.indexGetState( state, indexDescriptor ) ).thenReturn( InternalIndexState.ONLINE );
         this.locks = mock( Locks.Client.class );
-        when( state.locks() ).thenReturn( locks );
+        when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
 
         this.ops = new ConstraintEnforcingEntityOperations( new StandardConstraintSemantics(), null, readOps, schemaWriteOps, schemaReadOps );
     }

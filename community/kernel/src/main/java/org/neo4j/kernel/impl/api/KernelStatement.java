@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
@@ -44,14 +44,14 @@ import org.neo4j.storageengine.api.StorageStatement;
  * <ol>
  * <li>Construct {@link KernelStatement} when {@link KernelTransactionImplementation} is constructed</li>
  * <li>For every transaction...</li>
- * <li>Call {@link #initialize(org.neo4j.kernel.impl.locking.Locks.Client)} which makes this instance
+ * <li>Call {@link #initialize(StatementLocks)} which makes this instance
  * full available and ready to use. Call when the {@link KernelTransactionImplementation} is initialized.</li>
  * <li>Alternate {@link #acquire()} / {@link #close()} when acquiring / closing a statement for the transaction...
  * Temporarily asymmetric number of calls to {@link #acquire()} / {@link #close()} is supported, although in
  * the end an equal number of calls must have been issued.</li>
  * <li>To be safe call {@link #forceClose()} at the end of a transaction to force a close of the statement,
  * even if there are more than one current call to {@link #acquire()}. This instance is now again ready
- * to be {@link #initialize(org.neo4j.kernel.impl.locking.Locks.Client) initialized} and used for the transaction
+ * to be {@link #initialize(StatementLocks)  initialized} and used for the transaction
  * instance again, when it's initialized.</li>
  * </ol>
  */
@@ -61,7 +61,7 @@ public class KernelStatement implements TxStateHolder, Statement
     private final StorageStatement storeStatement;
     private final KernelTransactionImplementation transaction;
     private final OperationsFacade facade;
-    private Locks.Client locks;
+    private StatementLocks statementLocks;
     private int referenceCount;
 
     public KernelStatement( KernelTransactionImplementation transaction,
@@ -160,14 +160,14 @@ public class KernelStatement implements TxStateHolder, Statement
         }
     }
 
-    void initialize( Locks.Client locks )
+    void initialize( StatementLocks statementLocks )
     {
-        this.locks = locks;
+        this.statementLocks = statementLocks;
     }
 
-    public Locks.Client locks()
+    public StatementLocks locks()
     {
-        return locks;
+        return statementLocks;
     }
 
     final void acquire()

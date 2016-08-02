@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -374,8 +375,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         try ( KernelTransactionImplementation transaction = newTransaction( accessMode() ) )
         {
-            transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, mock( Locks.Client.class ),
-                    KernelTransaction.Type.implicit,
+            SimpleStatementLocks statementLocks = new SimpleStatementLocks( mock( Locks.Client.class ) );
+            transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
                     AccessMode.Static.FULL );
             try ( KernelStatement statement = transaction.acquireStatement() )
             {
@@ -435,7 +436,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         // WHEN
         transaction.close();
-        transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, new NoOpClient(), KernelTransaction.Type.implicit,
+        SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
+        transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
                 accessMode() );
 
         // THEN
@@ -602,7 +604,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         initializeAndClose( tx, reuseCount );
 
         Locks.Client locksClient = mock( Locks.Client.class );
-        tx.initialize( 42, 42, locksClient, KernelTransaction.Type.implicit, accessMode() );
+        SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
+        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, accessMode() );
 
         tx.markForTermination( reuseCount, terminationReason );
 
@@ -621,7 +624,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         initializeAndClose( tx, reuseCount );
 
         Locks.Client locksClient = mock( Locks.Client.class );
-        tx.initialize( 42, 42, locksClient, KernelTransaction.Type.implicit, accessMode() );
+        SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
+        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, accessMode() );
 
         tx.markForTermination( nextReuseCount, terminationReason );
 
@@ -633,7 +637,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         for ( int i = 0; i < times; i++ )
         {
-            tx.initialize( i + 10, i + 10, new NoOpClient(), KernelTransaction.Type.implicit, accessMode() );
+            SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
+            tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, accessMode() );
             tx.close();
         }
     }
