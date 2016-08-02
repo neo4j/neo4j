@@ -48,12 +48,10 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     private static final int HAS_PROPERTY_BIT     = 0b0010_0000;
     private static final int HAS_LABELS_BIT       = 0b0100_0000;
 
-    private static final long RELATIONSHIP_HIGHER_BITS_MASK = 0x1_0000_0000L;
-    private static final long PROPERTY_HIGHER_BITS_MASK = 0x3_0000_0000L;
-    private static final long RELATIONSHIP_LOWER_BITS_MASK = RELATIONSHIP_HIGHER_BITS_MASK >> 32;
-    private static final long PROPERTY_LOWER_BITS_MASK = PROPERTY_HIGHER_BITS_MASK >> 31;
-    private static final long ONE_BIT_OVERFLOW_BIT_MASK = 0xFFFF_FFFE_0000_0000L;
-    private static final long THREE_BITS_OVERFLOW_BIT_MASK = 0xFFFF_FFFC_0000_0000L;
+    private static final long HIGH_DWORD_LOWER_NIBBLE_CHECK_MASK = 0xF_0000_0000L;
+    private static final long LOWER_NIBBLE_READ_MASK = 0xFL;
+    private static final long HIGHER_NIBBLE_READ_MASK = 0xF0L;
+    private static final long HIGH_DWORD_LOWER_NIBBLE_MASK = 0xFFFF_FFF0_0000_0000L;
 
     public NodeRecordFormat()
     {
@@ -80,6 +78,7 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
         if ( record.isUseFixedReferences() )
         {
             readFixedReferencesRecord( record, cursor, inUse, dense );
+            record.setUseFixedReferences( true );
         }
         else
         {
@@ -114,8 +113,8 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     @Override
     protected boolean canUseFixedReferences( NodeRecord record )
     {
-        return (((record.getNextProp() == NULL) || ((record.getNextProp() & THREE_BITS_OVERFLOW_BIT_MASK) == 0)) &&
-                ((record.getNextRel() == NULL) || ((record.getNextRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)));
+        return (((record.getNextProp() != NULL) && ((record.getNextProp() & HIGH_DWORD_LOWER_NIBBLE_MASK) == 0)) &&
+                ((record.getNextRel() != NULL) && ((record.getNextRel() & HIGH_DWORD_LOWER_NIBBLE_MASK) == 0)));
     }
 
     @Override
@@ -137,8 +136,8 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     private void readFixedReferencesRecord( NodeRecord record, PageCursor cursor, boolean inUse, boolean dense )
     {
         byte modifiers = cursor.getByte();
-        long relModifier = (modifiers & RELATIONSHIP_LOWER_BITS_MASK) << 32;
-        long propModifier = (modifiers & PROPERTY_LOWER_BITS_MASK) << 31;
+        long relModifier = (modifiers & LOWER_NIBBLE_READ_MASK) << 32;
+        long propModifier = (modifiers & HIGHER_NIBBLE_READ_MASK) << 28;
 
         long nextRel = cursor.getInt() & 0xFFFFFFFFL;
         long nextProp = cursor.getInt() & 0xFFFFFFFFL;
@@ -157,8 +156,8 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
         long nextRel = record.getNextRel();
         long nextProp = record.getNextProp();
 
-        short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel & RELATIONSHIP_HIGHER_BITS_MASK) >> 32);
-        short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short) ((nextProp & PROPERTY_HIGHER_BITS_MASK) >> 31);
+        short relModifier = nextRel == NULL ? 0 : (short)((nextRel & HIGH_DWORD_LOWER_NIBBLE_CHECK_MASK) >> 32);
+        short propModifier = nextProp == NULL ? 0 : (short) ((nextProp & HIGH_DWORD_LOWER_NIBBLE_CHECK_MASK) >> 28);
 
         // [    ,    x] higher bits for rel id
         // [    ,  xx ] higher bits for prop id

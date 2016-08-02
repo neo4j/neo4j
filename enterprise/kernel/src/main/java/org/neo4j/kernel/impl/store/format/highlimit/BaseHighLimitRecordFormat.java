@@ -98,6 +98,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         byte headerByte = primaryCursor.getByte();
         boolean inUse = isInUse( headerByte );
         boolean doubleRecordUnit = has( headerByte, HEADER_BIT_RECORD_UNIT );
+        record.setUseFixedReferences( false );
         if ( doubleRecordUnit )
         {
             boolean firstRecordUnit = has( headerByte, HEADER_BIT_FIRST_RECORD_UNIT );
