@@ -64,6 +64,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -113,7 +114,7 @@ public class ConsensusModule
             messageLogger = new NullMessageLogger<>();
         }
 
-        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider );
+        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider, platformModule.jobScheduler );
 
         raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
 
@@ -187,7 +188,7 @@ public class ConsensusModule
     }
 
     private RaftLog createRaftLog( Config config, LifeSupport life, FileSystemAbstraction fileSystem,
-                                   File clusterStateDirectory, CoreReplicatedContentMarshal marshal, LogProvider logProvider )
+            File clusterStateDirectory, CoreReplicatedContentMarshal marshal, LogProvider logProvider, JobScheduler scheduler )
     {
         EnterpriseCoreEditionModule.RaftLogImplementation raftLogImplementation =
                 EnterpriseCoreEditionModule.RaftLogImplementation.valueOf( config.get( CoreEdgeClusterSettings.raft_log_implementation ) );
@@ -212,7 +213,7 @@ public class ConsensusModule
                         marshal,
                         logProvider,
                         pruningStrategyConfig,
-                        readerPoolSize, systemUTC() ) );
+                        readerPoolSize, systemUTC(), scheduler ) );
             }
             default:
                 throw new IllegalStateException( "Unknown raft log implementation: " + raftLogImplementation );

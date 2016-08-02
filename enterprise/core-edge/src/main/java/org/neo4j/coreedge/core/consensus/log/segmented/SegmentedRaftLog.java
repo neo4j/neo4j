@@ -31,9 +31,13 @@ import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.messaging.marsalling.ChannelMarshal;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
  * The segmented RAFT log is an append only log supporting the operations required to support
@@ -55,12 +59,14 @@ import org.neo4j.logging.LogProvider;
 public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 {
     public static final String SEGMENTED_LOG_DIRECTORY_NAME = "raft-log";
+    private final int READER_POOL_MAX_AGE = 1; // minutes
 
     private final FileSystemAbstraction fileSystem;
     private final File directory;
     private final long rotateAtSize;
     private final ChannelMarshal<ReplicatedContent> contentMarshal;
     private final FileNames fileNames;
+    private final JobScheduler scheduler;
     private final Log log;
 
     private boolean needsRecovery;
@@ -69,16 +75,18 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 
     private State state;
     private final ReaderPool readerPool;
+    private JobScheduler.JobHandle readerPoolPruner;
 
     public SegmentedRaftLog( FileSystemAbstraction fileSystem, File directory, long rotateAtSize,
             ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider,
-            String pruningConfig, int readerPoolSize, Clock clock )
+            String pruningConfig, int readerPoolSize, Clock clock, JobScheduler scheduler )
     {
         this.fileSystem = fileSystem;
         this.directory = directory;
         this.rotateAtSize = rotateAtSize;
         this.contentMarshal = contentMarshal;
         this.logProvider = logProvider;
+        this.scheduler = scheduler;
 
         this.fileNames = new FileNames( directory );
         this.readerPool = new ReaderPool( readerPoolSize, logProvider, fileNames, fileSystem, clock );
@@ -97,11 +105,15 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         RecoveryProtocol recoveryProtocol = new RecoveryProtocol( fileSystem, fileNames, readerPool, contentMarshal, logProvider );
         state = recoveryProtocol.run();
         log.info( "log started with recovered state %s", state );
+
+        readerPoolPruner = scheduler.scheduleRecurring( new JobScheduler.Group( "reader-pool-pruner", POOLED ),
+                () -> readerPool.prune( READER_POOL_MAX_AGE, MINUTES ), READER_POOL_MAX_AGE, READER_POOL_MAX_AGE, MINUTES );
     }
 
     @Override
-    public synchronized void stop() throws DisposedException, IOException
+    public synchronized void stop() throws Throwable
     {
+        readerPoolPruner.cancel( false );
         readerPool.close();
         state.segments.close();
     }

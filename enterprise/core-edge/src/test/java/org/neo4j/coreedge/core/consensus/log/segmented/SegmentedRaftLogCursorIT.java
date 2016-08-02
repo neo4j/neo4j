@@ -33,6 +33,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.OnDemandJobScheduler;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -63,7 +64,7 @@ public class SegmentedRaftLogCursorIT
 
         SegmentedRaftLog newRaftLog =
                 new SegmentedRaftLog( fileSystem, directory, rotateAtSize, new DummyRaftableContentSerializer(),
-                        NullLogProvider.getInstance(), pruneStrategy, 8, Clock.systemUTC() );
+                        NullLogProvider.getInstance(), pruneStrategy, 8, Clock.systemUTC(), new OnDemandJobScheduler() );
 
         life.add( newRaftLog );
         life.init();

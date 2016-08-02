@@ -33,7 +33,6 @@ import org.neo4j.logging.LogProvider;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 
-// TODO: Prune stale readers with a recurring job.
 class ReaderPool
 {
     private ArrayList<Reader> pool;
@@ -99,6 +98,11 @@ class ReaderPool
 
     synchronized void prune( long maxAge, TimeUnit unit )
     {
+        if ( pool == null )
+        {
+            return;
+        }
+
         long endTimeMillis = clock.millis() - unit.toMillis( maxAge );
 
         Iterator<Reader> itr = pool.iterator();

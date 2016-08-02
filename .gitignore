@@ -25,5 +25,6 @@ out
 Thumbs.db
 .cache-main
 .cache-tests
+/cypher-shell.zip
 
 packaging/standalone/src/main/distribution/cypher-shell
