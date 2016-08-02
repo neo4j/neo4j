@@ -45,7 +45,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.test.matchers.Matchers;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -121,7 +121,8 @@ public class RaftLogShipperTest
         startLogShipper();
 
         // then
-        assertThat( outbound.sentTo( follower ), Matchers.hasRaftLogEntries( singletonList( entry1 ) ) );
+        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, 0, entry0.term(), RaftLogEntry.empty, leaderCommit );
+        assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
     @Test
@@ -137,7 +138,8 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 0, new LeaderContext( 0, 0 ) );
 
         // then
-        assertThat( outbound.sentTo( follower ), Matchers.hasRaftLogEntries( singletonList( entry0 ) ) );
+        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, -1, -1, RaftLogEntry.empty, leaderCommit );
+        assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
     @Test
@@ -156,8 +158,8 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 0, new LeaderContext( 0, 0 ) );
 
         // then
-        assertTrue( outbound.hasEntriesTo( follower, entry0 ) );
-        assertThat( outbound.sentTo( follower ), Matchers.hasRaftLogEntries( singletonList( entry0 ) ) );
+        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, -1, -1, RaftLogEntry.empty, leaderCommit );
+        assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
     @Test
@@ -214,7 +216,7 @@ public class RaftLogShipperTest
         logShipper.onNewEntries( 1, 0, new RaftLogEntry[]{entry2}, new LeaderContext( 0, 0 ) );
 
         // then
-        assertEquals( outbound.sentTo( follower ).size(), 0 );
+        assertEquals( 0, outbound.sentTo( follower ).size() );
     }
 
     @Test
@@ -235,7 +237,8 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 1, new LeaderContext( 0, 0 ) );
 
         // then
-        assertThat( outbound.sentTo( follower ), Matchers.hasRaftLogEntries( singletonList( entry2 ) ) );
+        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, 1, entry1.term(), RaftLogEntry.empty, leaderCommit );
+        assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
     @Test
@@ -258,8 +261,8 @@ public class RaftLogShipperTest
         startLogShipper();
 
         // back-tracking stage
-        RaftLogEntry firstEntry = new RaftLogEntry( 0, ReplicatedInteger.valueOf( 0 ) );
-        while ( !outbound.hasEntriesTo( follower, firstEntry ) )
+        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, -1, -1, RaftLogEntry.empty, leaderCommit );
+        while ( !outbound.sentTo( follower ).contains( expected ) )
         {
             logShipper.onMismatch( -1, new LeaderContext( 0, 0 ) );
         }
@@ -297,8 +300,8 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 0, new LeaderContext( 0, 0 ) );
 
         //then
-        assertTrue( outbound.hasAnyEntriesTo( follower ) );
-        assertThat( outbound.sentTo( follower ), Matchers.hasRaftLogEntries( singletonList( entry3 ) ) );
+        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, 2, entry2.term(), RaftLogEntry.empty, leaderCommit );
+        assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
     @Test

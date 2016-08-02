@@ -28,7 +28,7 @@ import org.neo4j.logging.Log;
 
 class Heart
 {
-    static  void beat( ReadableRaftState state, Outcome outcome, RaftMessages.Heartbeat request, Log log ) throws IOException
+    static void beat( ReadableRaftState state, Outcome outcome, RaftMessages.Heartbeat request, Log log ) throws IOException
     {
         if ( request.leaderTerm() < state.term() )
         {
