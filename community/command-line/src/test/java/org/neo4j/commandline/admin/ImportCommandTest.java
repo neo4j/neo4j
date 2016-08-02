@@ -19,22 +19,32 @@
  */
 package org.neo4j.commandline.admin;
 
-import org.junit.Ignore;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
 
+import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.core.IsNot.not;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class ImportCommandTest
 {
     private TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
+    @Rule
+    public final DatabaseRule db = new EmbeddedDatabaseRule();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( testDir );
@@ -131,9 +141,71 @@ public class ImportCommandTest
         }
     }
 
-    @Ignore
-    public void copiesDatabaseFromOldLocationToNewLocation() {}
+    @Test
+    public void copiesDatabaseFromOldLocationToNewLocation() throws Exception
+    {
+        File home = testDir.directory("home");
+        ImportCommand importCommand = new ImportCommand( home.toPath(),
+                testDir.directory("conf").toPath() );
 
-    @Ignore
-    public void removesOldMessagesLog() {}
+        File from = new File( db.getStoreDir() );
+        File destination = new File( new File( new File( home, "data" ), "databases" ), "bar" );
+
+        String[] arguments = { "--mode=database", "--database=bar", "--from=" + from.getAbsolutePath() };
+
+        assertThat( destination, not( isExistingDatabase() ) );
+        importCommand.execute( arguments );
+        assertThat( destination, isExistingDatabase() );
+    }
+
+    @Test
+    public void removesOldMessagesLog() throws Exception
+    {
+        File home = testDir.directory("home");
+        ImportCommand importCommand = new ImportCommand( home.toPath(),
+                testDir.directory("conf").toPath() );
+
+        File from = new File( db.getStoreDir() );
+        File oldMessagesLog = new File( from, "messages.log" );
+        oldMessagesLog.createNewFile();
+
+        File destination = new File( new File( new File( home, "data" ), "databases" ), "bar" );
+
+        String[] arguments = { "--mode=database", "--database=bar", "--from=" + from.getAbsolutePath() };
+
+        File messagesLog = new File( destination, "messages.log" );
+        importCommand.execute( arguments );
+        assertFalse( messagesLog.exists() );
+    }
+
+    private Matcher<File> isExistingDatabase()
+    {
+        return new BaseMatcher<File>()
+        {
+            @Override
+            public boolean matches( final Object item )
+            {
+                final File store = (File) item;
+                try
+                {
+                    Validators.CONTAINS_EXISTING_DATABASE.validate( store );
+                    return true;
+                }
+                catch( Exception e )
+                {
+                    return false;
+                }
+            }
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "an existing database." );
+            }
+            @Override
+            public void describeMismatch( final Object item, final Description description )
+            {
+                description.appendValue( item ).appendText( " is not an existing database." );
+            }
+        };
+    }
 }
