@@ -28,7 +28,6 @@ pass_through() {
   check_java
   build_classpath
   export NEO4J_HOME NEO4J_CONF
-  export NEO4J_EXTRA_HELP="$(extra_help)"
   exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.commandline.admin.AdminTool" "$@"
 }
 
@@ -36,17 +35,11 @@ bad_usage() {
   pass_through bad-usage "$1"
 }
 
-extra_help() {
-  echo ""
-}
-
 main() {
   [[ -z "${1:-}" ]] && bad_usage "you must provide a command"
   declare -r command="$1"
   shift
-  case "${command}" in
-    *)              pass_through "${command}" "$@" ;;
-  esac
+  pass_through "${command}" "$@"
 }
 
 main "$@"

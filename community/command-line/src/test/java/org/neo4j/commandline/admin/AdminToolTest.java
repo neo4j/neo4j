@@ -38,7 +38,7 @@ public class AdminToolTest
     {
         RecordingCommand command = new RecordingCommand();
         AdminCommand.Provider provider = command.provider();
-        AdminTool tool = new AdminTool( new CannedLocator( provider ), new NullOutput(), "", false );
+        AdminTool tool = new AdminTool( new CannedLocator( provider ), new NullOutput(), false );
         tool.execute( null, null, provider.name() );
         assertThat( command.executed, is( true ) );
     }
@@ -47,7 +47,7 @@ public class AdminToolTest
     public void shouldAddTheHelpCommand()
     {
         Output output = mock( Output.class );
-        new AdminTool( new NullCommandLocator(), output, "", false ).execute( null, null, "help" );
+        new AdminTool( new NullCommandLocator(), output, false ).execute( null, null, "help" );
         verify( output ).line( "neo4j-admin help" );
     }
 

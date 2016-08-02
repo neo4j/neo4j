@@ -27,14 +27,12 @@ public class Usage
     private final String scriptName;
     private final Output out;
     private final CommandLocator commands;
-    private final String extraHelp;
 
-    public Usage( String scriptName, Output out, CommandLocator commands, String extraHelp )
+    public Usage( String scriptName, Output out, CommandLocator commands )
     {
         this.scriptName = scriptName;
         this.out = out;
         this.commands = commands;
-        this.extraHelp = extraHelp;
     }
 
     public void print()
@@ -46,9 +44,6 @@ public class Usage
         {
             new CommandUsage( command, out, scriptName ).print();
         }
-
-        out.line( extraHelp );
-        out.line( "" );
     }
 
     public static class CommandUsage

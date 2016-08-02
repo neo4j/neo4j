@@ -33,10 +33,9 @@ public class AdminTool
     {
         Path homeDir = Paths.get( System.getenv( "NEO4J_HOME" ) );
         Path configDir = Paths.get( System.getenv( "NEO4J_CONF" ) );
-        String extraHelp = System.getenv( "NEO4J_EXTRA_HELP" );
         boolean debug = System.getenv( "NEO4J_DEBUG" ) != null;
 
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), System.out::println, extraHelp, debug );
+        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), System.out::println, debug );
         Result result = tool.execute( homeDir, configDir, args );
         result.exit();
     }
@@ -47,12 +46,12 @@ public class AdminTool
     private final boolean debug;
     private final Usage usage;
 
-    public AdminTool( CommandLocator locator, Output out, String extraHelp, boolean debug )
+    public AdminTool( CommandLocator locator, Output out, boolean debug )
     {
         this.locator = CommandLocator.withAdditionalCommand( help(), locator );
         this.out = out;
         this.debug = debug;
-        this.usage = new Usage( scriptName, out, this.locator, extraHelp );
+        this.usage = new Usage( scriptName, out, this.locator );
     }
 
     public Result execute( Path homeDir, Path configDir, String... args )
