@@ -35,11 +35,15 @@ import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -51,6 +55,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
@@ -65,8 +70,9 @@ public class LockingStatementOperationsTest
     private final Locks.Client locks = mock( Locks.Client.class );
     private final InOrder order;
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-    private final KernelStatement state = new KernelStatement( transaction, null, null,
-            mock( StorageStatement.class ), new Procedures() );
+    private final TxState txState = new TxState();
+    private final KernelStatement state = new KernelStatement( transaction, new SimpleTxStateHolder( txState ),
+            null, mock( StorageStatement.class ), new Procedures() );
     private final SchemaStateOperations schemaStateOps;
 
     public LockingStatementOperationsTest()
@@ -85,18 +91,6 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
-    {
-        // when
-        lockingOps.relationshipCreate( state, 1, 2, 3 );
-
-        // then
-        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 2 );
-        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 3 );
-        order.verify( entityWriteOps ).relationshipCreate( state, 1, 2, 3 );
-    }
-
-    @Test
     public void shouldAcquireEntityWriteLockBeforeAddingLabelToNode() throws Exception
     {
         // when
@@ -104,6 +98,18 @@ public class LockingStatementOperationsTest
 
         // then
         order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 123 );
+        order.verify( entityWriteOps ).nodeAddLabel( state, 123, 456 );
+    }
+
+    @Test
+    public void shouldNotAcquireEntityWriteLockBeforeAddingLabelToJustCreatedNode() throws Exception
+    {
+        // when
+        txState.nodeDoCreate( 123 );
+        lockingOps.nodeAddLabel( state, 123, 456 );
+
+        // then
+        order.verify( locks, never() ).acquireExclusive( ResourceTypes.NODE, 123 );
         order.verify( entityWriteOps ).nodeAddLabel( state, 123, 456 );
     }
 
@@ -133,6 +139,21 @@ public class LockingStatementOperationsTest
     }
 
     @Test
+    public void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedNode() throws Exception
+    {
+        // given
+        txState.nodeDoCreate( 123 );
+        DefinedProperty property = Property.property( 8, 9 );
+
+        // when
+        lockingOps.nodeSetProperty( state, 123, property );
+
+        // then
+        order.verify( locks, never() ).acquireExclusive( ResourceTypes.NODE, 123 );
+        order.verify( entityWriteOps ).nodeSetProperty( state, 123, property );
+    }
+
+    @Test
     public void shouldAcquireSchemaReadLockBeforeSettingPropertyOnNode() throws Exception
     {
         // given
@@ -155,6 +176,18 @@ public class LockingStatementOperationsTest
 
         //THEN
         order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 123 );
+        order.verify( entityWriteOps ).nodeDelete( state, 123 );
+    }
+
+    @Test
+    public void shouldNotAcquireEntityWriteLockBeforeDeletingJustCreatedNode() throws Exception
+    {
+        // WHEN
+        txState.nodeDoCreate( 123 );
+        lockingOps.nodeDelete( state, 123 );
+
+        //THEN
+        order.verify( locks, never() ).acquireExclusive( ResourceTypes.NODE, 123 );
         order.verify( entityWriteOps ).nodeDelete( state, 123 );
     }
 
@@ -319,6 +352,18 @@ public class LockingStatementOperationsTest
     }
 
     @Test
+    public void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
+    {
+        // when
+        lockingOps.relationshipCreate( state, 1, 2, 3 );
+
+        // then
+        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 2 );
+        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 3 );
+        order.verify( entityWriteOps ).relationshipCreate( state, 1, 2, 3 );
+    }
+
+    @Test
     public void shouldAcquireNodeLocksWhenCreatingRelationshipInOrderOfAscendingId() throws Exception
     {
         // GIVEN
@@ -399,6 +444,63 @@ public class LockingStatementOperationsTest
             lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
             lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
             lockingOrder.verifyNoMoreInteractions();
+        }
+    }
+
+    @Test
+    public void shouldAcquireEntityWriteLockBeforeSettingPropertyOnRelationship() throws Exception
+    {
+        // given
+        DefinedProperty property = Property.property( 8, 9 );
+
+        // when
+        lockingOps.relationshipSetProperty( state, 123, property );
+
+        // then
+        order.verify( locks ).acquireExclusive( ResourceTypes.RELATIONSHIP, 123 );
+        order.verify( entityWriteOps ).relationshipSetProperty( state, 123, property );
+    }
+
+    @Test
+    public void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedRelationship() throws Exception
+    {
+        // given
+        txState.relationshipDoCreate( 123, 1, 2, 3 );
+        DefinedProperty property = Property.property( 8, 9 );
+
+        // when
+        lockingOps.relationshipSetProperty( state, 123, property );
+
+        // then
+        order.verify( locks, never() ).acquireExclusive( ResourceTypes.RELATIONSHIP, 123 );
+        order.verify( entityWriteOps ).relationshipSetProperty( state, 123, property );
+    }
+
+    private static class SimpleTxStateHolder implements TxStateHolder
+    {
+        private final TxState txState;
+
+        private SimpleTxStateHolder( TxState txState )
+        {
+            this.txState = txState;
+        }
+
+        @Override
+        public TransactionState txState()
+        {
+            return txState;
+        }
+
+        @Override
+        public LegacyIndexTransactionState legacyIndexTxState()
+        {
+            return null;
+        }
+
+        @Override
+        public boolean hasTxStateWithChanges()
+        {
+            return txState.hasChanges();
         }
     }
 }
