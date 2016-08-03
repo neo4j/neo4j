@@ -118,8 +118,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         try
         {
             procedures.register( new DiscoverMembersProcedure( discoveryService, logProvider ) );
-            procedures.register( new AcquireEndpointsProcedure( discoveryService, consensusModule.raftInstance(), logProvider ) );
-            procedures.register( new ClusterOverviewProcedure( discoveryService, consensusModule.raftInstance(), logProvider ) );
+            procedures.register( new AcquireEndpointsProcedure( discoveryService, consensusModule.raftMachine(), logProvider ) );
+            procedures.register( new ClusterOverviewProcedure( discoveryService, consensusModule.raftMachine(), logProvider ) );
             procedures.register( new RoleProcedure( CORE ) );
         }
         catch ( ProcedureException e )
@@ -170,7 +170,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
 
         final SenderService senderService =
-                new SenderService( new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider ), logProvider, platformModule.monitors,
+                new SenderService( new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider ),
+                        logProvider, platformModule.monitors,
                         maxQueueSize, new NonBlockingChannels() );
         life.add( senderService );
 
@@ -202,14 +203,14 @@ public class EnterpriseCoreEditionModule extends EditionModule
         consensusModule =
                 new ConsensusModule( myself, platformModule, raftOutbound, clusterStateDirectory, discoveryService );
 
-        dependencies.satisfyDependency( consensusModule.raftInstance() );
+        dependencies.satisfyDependency( consensusModule.raftMachine() );
 
         ReplicationModule replicationModule = new ReplicationModule( myself, platformModule, config, consensusModule,
                 loggingOutbound, clusterStateDirectory,
                 fileSystem, databaseHealthSupplier, logProvider );
 
         coreStateMachinesModule = new CoreStateMachinesModule( myself, platformModule, clusterStateDirectory,
-                databaseHealthSupplier, config, replicationModule.getReplicator(), consensusModule.raftInstance(),
+                databaseHealthSupplier, config, replicationModule.getReplicator(), consensusModule.raftMachine(),
                 dependencies, localDatabase );
 
         this.idGeneratorFactory = coreStateMachinesModule.idGeneratorFactory;
@@ -221,14 +222,16 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
 
         CoreServerModule coreServerModule = new CoreServerModule( myself, platformModule, consensusModule,
-                coreStateMachinesModule, replicationModule, clusterStateDirectory, discoveryService, localDatabase, messageLogger );
+                coreStateMachinesModule, replicationModule, clusterStateDirectory, discoveryService, localDatabase,
+                messageLogger );
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 
         this.lockManager = dependencies.satisfyDependency( lockManager );
 
         life.add( CoreStartupProcess.createLifeSupport(
-                platformModule.dataSourceManager, coreStateMachinesModule.replicatedIdGeneratorFactory, coreServerModule.startupLifecycle, consensusModule.raftTimeoutService(), coreServerModule.membershipWaiterLifecycle ) );
+                localDatabase, coreStateMachinesModule.replicatedIdGeneratorFactory, coreServerModule.startupLifecycle,
+                consensusModule.raftTimeoutService(), coreServerModule.membershipWaiterLifecycle ) );
     }
 
     private void editionInvariants( PlatformModule platformModule, Dependencies dependencies, Config config,
@@ -262,7 +265,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
     public boolean isLeader()
     {
-        return consensusModule.raftInstance().currentRole() == Role.LEADER;
+        return consensusModule.raftMachine().currentRole() == Role.LEADER;
     }
 
     private File createClusterStateDirectory( File dir, FileSystemAbstraction fileSystem )

@@ -19,22 +19,22 @@
  */
 package org.neo4j.coreedge.core;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.core.consensus.membership.MembershipWaiterLifecycle;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 class CoreStartupProcess
 {
-    static LifeSupport createLifeSupport( DataSourceManager dataSourceManager,
+    static LifeSupport createLifeSupport( LocalDatabase localDatabase,
                                           ReplicatedIdGeneratorFactory idGeneratorFactory,
                                           Lifecycle raftTimeoutService,
                                           Lifecycle coreServerStartupLifecycle,
                                           MembershipWaiterLifecycle membershipWaiterLifecycle )
     {
         LifeSupport services = new LifeSupport();
-        services.add( dataSourceManager );
+        services.add( localDatabase );
         services.add( idGeneratorFactory );
         services.add( coreServerStartupLifecycle );
         services.add( raftTimeoutService );

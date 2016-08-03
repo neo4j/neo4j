@@ -28,12 +28,13 @@ import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class LocalDatabase implements Supplier<StoreId>
+public class LocalDatabase implements Supplier<StoreId>, Lifecycle
 {
     private final File storeDir;
 
@@ -60,15 +61,26 @@ public class LocalDatabase implements Supplier<StoreId>
         log = logProvider.getLog( getClass() );
     }
 
-    public void start() throws IOException
+    public void init() throws Throwable
     {
-        dataSourceManager.getDataSource().start();
+        dataSourceManager.init();
     }
 
-    public void stop()
+    public void start() throws Throwable
+    {
+        dataSourceManager.start();
+    }
+
+    public void stop() throws Throwable
     {
         clearCache();
-        dataSourceManager.getDataSource().stop();
+        dataSourceManager.stop();
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        dataSourceManager.shutdown();
     }
 
     public StoreId storeId()

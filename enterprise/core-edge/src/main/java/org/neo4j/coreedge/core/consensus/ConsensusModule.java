@@ -240,7 +240,7 @@ public class ConsensusModule
         return raftLog;
     }
 
-    public RaftMachine raftInstance()
+    public RaftMachine raftMachine()
     {
         return raftMachine;
     }
