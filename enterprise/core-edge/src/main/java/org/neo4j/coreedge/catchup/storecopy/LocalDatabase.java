@@ -59,6 +59,7 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.databaseHealthSupplier = databaseHealthSupplier;
         log = logProvider.getLog( getClass() );
+        this.storeId = StoreId.DEFAULT;
     }
 
     public void init() throws Throwable
@@ -69,11 +70,16 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
     public void start() throws Throwable
     {
         dataSourceManager.start();
+        org.neo4j.kernel.impl.store.StoreId kernelStoreId = dataSourceManager.getDataSource().getStoreId();
+        storeId = new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
+                kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
+        log.info( "My StoreId is: " + storeId );
     }
 
     public void stop() throws Throwable
     {
-        clearCache();
+        this.storeId = StoreId.DEFAULT;
+        this.databaseHealth = null;
         dataSourceManager.stop();
     }
 
@@ -85,13 +91,6 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
 
     public StoreId storeId()
     {
-        if ( storeId == null )
-        {
-            org.neo4j.kernel.impl.store.StoreId kernelStoreId = dataSourceManager.getDataSource().getStoreId();
-            storeId = new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
-                    kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
-            log.info( "My StoreId is: " + storeId );
-        }
         return storeId;
     }
 
@@ -138,12 +137,6 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
     public boolean isEmpty()
     {
         return transactionIdStoreSupplier.get().getLastCommittedTransactionId() == TransactionIdStore.BASE_TX_ID;
-    }
-
-    private void clearCache()
-    {
-        storeId = null;
-        databaseHealth = null;
     }
 
     @Override

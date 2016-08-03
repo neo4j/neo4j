@@ -25,6 +25,19 @@ import java.util.Objects;
 
 public final class StoreId
 {
+    public static final StoreId DEFAULT = new StoreId(
+            org.neo4j.kernel.impl.store.StoreId.DEFAULT.getCreationTime(),
+            org.neo4j.kernel.impl.store.StoreId.DEFAULT.getRandomId(),
+            org.neo4j.kernel.impl.store.StoreId.DEFAULT.getUpgradeTime(),
+            org.neo4j.kernel.impl.store.StoreId.DEFAULT.getUpgradeId() );
+
+    public static boolean isDefault( StoreId storeId )
+    {
+        return storeId.getCreationTime() == DEFAULT.getCreationTime() &&
+                storeId.getRandomId() == DEFAULT.getRandomId() &&
+                storeId.getUpgradeTime() == DEFAULT.getUpgradeTime() &&
+                storeId.getUpgradeId() == DEFAULT.getUpgradeId();
+    }
 
     private long creationTime;
     private long randomId;
@@ -70,7 +83,15 @@ public final class StoreId
         {
             return false;
         }
+        if ( isDefault( this ) )
+        {
+            return false;
+        }
         StoreId storeId = (StoreId) o;
+        if ( isDefault( storeId ) )
+        {
+            return false;
+        }
         return creationTime == storeId.creationTime &&
                 randomId == storeId.randomId &&
                 upgradeTime == storeId.upgradeTime &&
