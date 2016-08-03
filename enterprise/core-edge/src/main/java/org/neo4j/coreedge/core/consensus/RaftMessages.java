@@ -54,7 +54,6 @@ public interface RaftMessages
         // TODO: method instead?
         NEW_ENTRY_REQUEST,
         NEW_BATCH_REQUEST,
-        NEW_CoreMemberSHIP_TARGET,
     }
 
     interface RaftMessage extends Message
