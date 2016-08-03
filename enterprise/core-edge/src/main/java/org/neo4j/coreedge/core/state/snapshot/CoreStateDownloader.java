@@ -19,9 +19,7 @@
  */
 package org.neo4j.coreedge.core.state.snapshot;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.catchup.CoreClient;
@@ -42,7 +40,8 @@ public class CoreStateDownloader
     private final CoreClient coreClient;
     private final Log log;
 
-    public CoreStateDownloader( LocalDatabase localDatabase, StoreFetcher storeFetcher, CoreClient coreClient, LogProvider logProvider )
+    public CoreStateDownloader( LocalDatabase localDatabase, StoreFetcher storeFetcher, CoreClient coreClient,
+                                LogProvider logProvider )
     {
         this.localDatabase = localDatabase;
         this.storeFetcher = storeFetcher;
@@ -50,12 +49,12 @@ public class CoreStateDownloader
         this.log = logProvider.getLog( getClass() );
     }
 
-    public synchronized void downloadSnapshot( MemberId source, CoreState coreState ) throws InterruptedException, StoreCopyFailedException
+    public synchronized void downloadSnapshot( MemberId source, CoreState coreState )
+            throws InterruptedException, StoreCopyFailedException
     {
-        localDatabase.stop();
-
         try
         {
+            localDatabase.stop();
             log.info( "Downloading snapshot from core server at %s", source );
 
             /* The core snapshot must be copied before the store, because the store has a dependency on
@@ -91,7 +90,7 @@ public class CoreStateDownloader
             localDatabase.start();
             log.info( "Restarted local database", source );
         }
-        catch ( IOException | ExecutionException e )
+        catch ( Throwable e )
         {
             localDatabase.panic( e );
             throw new StoreCopyFailedException( e );

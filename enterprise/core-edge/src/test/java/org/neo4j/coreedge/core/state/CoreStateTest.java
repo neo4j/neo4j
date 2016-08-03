@@ -22,11 +22,17 @@ package org.neo4j.coreedge.core.state;
 import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
@@ -56,5 +62,29 @@ public class CoreStateTest
         // then
         verifyZeroInteractions( applicationProcess );
         logProvider.assertContainsLogCallContaining( "Discarding message" );
+    }
+
+    @Test
+    public void shouldNotActOnIncomingDefaultStoreIdWithEmptyStore() throws Exception
+    {
+        // given
+        StoreId localStoreId = new StoreId( 1, 2, 3, 4 );
+        StoreId otherStoreId = StoreId.DEFAULT;
+        RaftMessages.NewEntry.Request message = new RaftMessages.NewEntry.Request( member( 0 ), null );
+        CoreStateDownloader downloader = mock( CoreStateDownloader.class );
+
+        LocalDatabase localDatabase = mock( LocalDatabase.class );
+        when( localDatabase.isEmpty() ).thenReturn( true );
+        when( localDatabase.storeId() ).thenReturn( localStoreId );
+        CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
+
+        CoreState coreState = new CoreState( null, localDatabase, NullLogProvider.getInstance(), null,
+                downloader, applicationProcess );
+
+        // when
+        coreState.handle( new RaftMessages.StoreIdAwareMessage( otherStoreId, message ) );
+
+        // then
+        verifyZeroInteractions( downloader );
     }
 }

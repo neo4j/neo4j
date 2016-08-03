@@ -95,8 +95,33 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
         else
         {
             RaftMessages.RaftMessage message = storeIdAwareMessage.message();
-            if ( localDatabase.isEmpty() )
+            if ( localDatabase.isEmpty() && !StoreId.isDefault( storeId ) )
             {
+                /*
+                 * Checking for the actual value of StoreId is not a very pretty thing to do, but it is currently
+                 * necessary, "currently" here meaning as long as raft message sending is not dependent on LocalDatabase
+                 * start/stop state.
+                 * The problem lies in how storeid is retrieved. LocalDatabase is the sole manager of the neo store
+                 * lifecycle (technically the DataSourceManager) but the fact is that the storeid of the underlying
+                 * store can be asked from it even if it is in the stopped state. That means that sender threads can
+                 * ask for the storeid of a store that is not actually open. This is obviously a lifecycle management
+                 * issue which needs to be solved properly, but until then...
+                 * ...until then we accept the fact that storeid will be asked by raft message sending threads and they
+                 * need to be provided with a value. This is quite simple, that value is StoreId.DEFAULT. However,
+                 * members receiving that message will go through this handle() method and they need to make a call
+                 * on it. That storeId by construction mismatches everything, so the message will not be processed.
+                 * However, a StoreIdAwareMessage with a DEFAULT storeId should not be considered a legitimate
+                 * bearer of storeId information, even if the local database is empty. This can manifest in a simple
+                 * race, if for example a follower has just copied an empty store from the leader, the leader is
+                 * shutting down but a leader thread sends a message after its LocalDatabase stops() but before the
+                 * SenderService is stopped. This will result in the follower receiving a message with a DEFAULT
+                 * storeId. The resulting mismatch will make the message be skipped but if we don't explicitly
+                 * ignore DEFAULT storeId it will result in an attempt to copy a store from a member that is no longer
+                 * there.
+                 * Obviously the correct thing to do is not allow the leader to send that message (explicitly checking
+                 * for the DEFAULT storeid in receivers may still be a correct thing to do, defensively, but it should
+                 * not be the only way to guard against this).
+                 */
                 log.info( "StoreId mismatch but store was empty so downloading new store from %s. Expected: " +
                         "%s, Encountered: %s. ", message.from(), storeId, localDatabase.storeId() );
                 downloadSnapshot( message.from() );

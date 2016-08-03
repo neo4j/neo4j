@@ -78,8 +78,10 @@ public class CoreServerModule
     public final LifeSupport startupLifecycle;
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
 
-    public CoreServerModule( MemberId myself, final PlatformModule platformModule, ConsensusModule consensusModule, CoreStateMachinesModule coreStateMachinesModule, ReplicationModule replicationModule, File clusterStateDirectory, CoreTopologyService
-            discoveryService, LocalDatabase localDatabase, MessageLogger<MemberId> messageLogger )
+    public CoreServerModule( MemberId myself, final PlatformModule platformModule, ConsensusModule consensusModule,
+                             CoreStateMachinesModule coreStateMachinesModule, ReplicationModule replicationModule,
+                             File clusterStateDirectory, CoreTopologyService discoveryService,
+                             LocalDatabase localDatabase, MessageLogger<MemberId> messageLogger )
     {
         final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
@@ -138,11 +140,14 @@ public class CoreServerModule
         NotMyselfSelectionStrategy someoneElse = new NotMyselfSelectionStrategy( discoveryService, myself );
 
         CoreState coreState = new CoreState(
-                consensusModule.raftInstance(), localDatabase,
+                consensusModule.raftMachine(), localDatabase,
                 logProvider,
                 someoneElse, downloader,
-                new CommandApplicationProcess( coreStateMachinesModule.coreStateMachines, consensusModule.raftLog(), config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
-                        config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ), databaseHealthSupplier, logProvider, replicationModule.getProgressTracker(), lastFlushedStorage, replicationModule.getSessionTracker(), coreStateApplier,
+                new CommandApplicationProcess( coreStateMachinesModule.coreStateMachines, consensusModule.raftLog(),
+                        config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
+                        config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
+                        databaseHealthSupplier, logProvider, replicationModule.getProgressTracker(),
+                        lastFlushedStorage, replicationModule.getSessionTracker(), coreStateApplier,
                         inFlightMap, platformModule.monitors ) );
 
         dependencies.satisfyDependency( coreState );
@@ -162,7 +167,7 @@ public class CoreServerModule
                 new MembershipWaiter( myself, platformModule.jobScheduler, electionTimeout * 4, coreState, logProvider );
         long joinCatchupTimeout = config.get( CoreEdgeClusterSettings.join_catch_up_timeout );
         membershipWaiterLifecycle = new MembershipWaiterLifecycle( membershipWaiter,
-                joinCatchupTimeout, consensusModule.raftInstance(), logProvider );
+                joinCatchupTimeout, consensusModule.raftMachine(), logProvider );
 
         life.add( new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
                 batchingMessageHandler ) );

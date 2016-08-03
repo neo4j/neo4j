@@ -36,6 +36,7 @@ import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.function.Suppliers.singleton;
@@ -49,7 +50,8 @@ public class LocalDatabaseTest
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
 
         // when
-        LocalDatabase localDatabase = createLocalDatabase( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 )  );
+        LocalDatabase localDatabase = createLocalDatabase( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
+        localDatabase.start();
 
         // then
         assertEquals( storeId, localDatabase.storeId() );
@@ -66,6 +68,7 @@ public class LocalDatabaseTest
 
         // when
         LocalDatabase localDatabase = createLocalDatabase( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
+        localDatabase.start();
 
         localDatabase.ensureSameStoreId( memberId, storeFetcher );
 
@@ -87,13 +90,99 @@ public class LocalDatabaseTest
         try
         {
             localDatabase.ensureSameStoreId( memberId, storeFetcher );
-            fail( "should have thrown ");
+            fail( "should have thrown " );
         }
         catch ( IllegalStateException ex )
         {
             assertThat( ex.getMessage(), containsString( "This edge machine cannot join the cluster. " +
                     "The local database is not empty and has a mismatching storeId:" ) );
         }
+    }
+
+    @Test
+    public void storeCopyShouldResetStoreId() throws Throwable
+    {
+        // given
+        NeoStoreDataSource mockDatasource = mock( NeoStoreDataSource.class );
+        when( mockDatasource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 3, 4, 5 ) );
+        StoreId copied = new StoreId( 5, 6, 7, 8 );
+        LocalDatabase localDatabase = createLocalDatabase( mockDatasource );
+        MemberId memberId = mock( MemberId.class );
+        StoreFetcher storeFetcher = mock( StoreFetcher.class );
+        when( storeFetcher.storeId( memberId ) ).thenReturn( copied );
+
+        // when
+        // a local database is created with the initial store id
+        localDatabase.start();
+
+        // and stopped, the store copied, and restarted
+        localDatabase.stop();
+        localDatabase.copyStoreFrom( memberId, storeFetcher );
+        when( mockDatasource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 5, 6, 3, 7, 8 ) );
+        localDatabase.start();
+
+        // then
+        // the returned storeId should be the one of the copied store
+        assertEquals( copied, localDatabase.storeId() );
+    }
+
+    @Test
+    public void beingStoppedShouldReturnNonMatchingStoreId() throws Throwable
+    {
+        // given
+        LocalDatabase localDatabase = createLocalDatabase( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 3, 4, 5 ) );
+
+        // when
+        // a local database is created with the initial store id
+        localDatabase.start();
+
+        // and stopped
+        localDatabase.stop();
+
+        // then
+        // the storeId returned in this state should be the default store id
+        assertEquals( StoreId.DEFAULT, localDatabase.storeId() );
+    }
+
+    /*
+     * This test is effectively a combination of storeCopyShouldResetStoreId() and
+     * beingStoppedShouldReturnNonMatchingStoreId(). It reproduces a problem where if the LocalDatabase was asked for
+     * the storeId while copying a store (actually, any time after stop() and before copy completed) the old id would
+     * kept being returned.
+     * While it is technically a race, we don't need multiple threads to trigger it. Simply stopping the LocalDatabase
+     * asking for the storeId and then copying/starting is enough to cover this behaviour. The reason is that
+     * overlapping storeId() calls with copyStore() calls doesn't matter until the store is moved to its final
+     * position, overwriting the old one. This operation can be considered atomic since it actually
+     * takes effect once the datasource is started as part of start()ing the LocalDatabase.
+     */
+    @Test
+    public void askingForStoreIdWhileStoreCopyingShouldStillLeaveNewStoreIdAfterCopyCompletes() throws Throwable
+    {
+        // given
+        NeoStoreDataSource mockDatasource = mock( NeoStoreDataSource.class );
+        when( mockDatasource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
+        StoreId copied = new StoreId( 5, 6, 7, 8 );
+        LocalDatabase localDatabase = createLocalDatabase( mockDatasource );
+        MemberId memberId = mock( MemberId.class );
+        StoreFetcher storeFetcher = mock( StoreFetcher.class );
+        when( storeFetcher.storeId( memberId ) ).thenReturn( copied );
+
+        // when
+        // a local database is created with the initial store id
+        localDatabase.start();
+
+        // and stopped, the store copied, and restarted
+        localDatabase.stop();
+        // and the storeId is asked for
+        localDatabase.storeId();
+        // and the store copy happens
+        localDatabase.copyStoreFrom( memberId, storeFetcher );
+        when( mockDatasource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 5, 6, 12, 7, 8 ) );
+        localDatabase.start();
+
+        // then
+        // the returned storeId should be the one of the copied store
+        assertEquals( copied, localDatabase.storeId() );
     }
 
     private LocalDatabase createLocalDatabase( org.neo4j.kernel.impl.store.StoreId storeId )
@@ -104,6 +193,17 @@ public class LocalDatabaseTest
         when( neoStoreDataSource.getStoreId() ).thenReturn( storeId );
         return new LocalDatabase( new File( "directory" ), mock( CopiedStoreRecovery.class ),
                 new StoreFiles( mock( FileSystemAbstraction.class ) ), dataSourceManager,
-                singleton( mock( TransactionIdStore.class ) ), () -> mock( DatabaseHealth.class ), NullLogProvider.getInstance() );
+                singleton( mock( TransactionIdStore.class ) ), () -> mock( DatabaseHealth.class ), NullLogProvider
+                .getInstance() );
+    }
+
+    private LocalDatabase createLocalDatabase( NeoStoreDataSource neoStoreDataSource )
+    {
+        DataSourceManager dataSourceManager = mock( DataSourceManager.class );
+        when( dataSourceManager.getDataSource() ).thenReturn( neoStoreDataSource );
+        return new LocalDatabase( new File( "directory" ), mock( CopiedStoreRecovery.class ),
+                new StoreFiles( mock( FileSystemAbstraction.class, RETURNS_MOCKS ) ), dataSourceManager,
+                singleton( mock( TransactionIdStore.class ) ), () -> mock( DatabaseHealth.class ), NullLogProvider
+                .getInstance() );
     }
 }

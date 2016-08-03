@@ -28,12 +28,13 @@ import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class LocalDatabase implements Supplier<StoreId>
+public class LocalDatabase implements Supplier<StoreId>, Lifecycle
 {
     private final File storeDir;
 
@@ -58,28 +59,38 @@ public class LocalDatabase implements Supplier<StoreId>
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.databaseHealthSupplier = databaseHealthSupplier;
         log = logProvider.getLog( getClass() );
+        this.storeId = StoreId.DEFAULT;
     }
 
-    public void start() throws IOException
+    public void init() throws Throwable
     {
-        dataSourceManager.getDataSource().start();
+        dataSourceManager.init();
     }
 
-    public void stop()
+    public void start() throws Throwable
     {
-        clearCache();
-        dataSourceManager.getDataSource().stop();
+        dataSourceManager.start();
+        org.neo4j.kernel.impl.store.StoreId kernelStoreId = dataSourceManager.getDataSource().getStoreId();
+        storeId = new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
+                kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
+        log.info( "My StoreId is: " + storeId );
+    }
+
+    public void stop() throws Throwable
+    {
+        this.storeId = StoreId.DEFAULT;
+        this.databaseHealth = null;
+        dataSourceManager.stop();
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        dataSourceManager.shutdown();
     }
 
     public StoreId storeId()
     {
-        if ( storeId == null )
-        {
-            org.neo4j.kernel.impl.store.StoreId kernelStoreId = dataSourceManager.getDataSource().getStoreId();
-            storeId = new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
-                    kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
-            log.info( "My StoreId is: " + storeId );
-        }
         return storeId;
     }
 
@@ -126,12 +137,6 @@ public class LocalDatabase implements Supplier<StoreId>
     public boolean isEmpty()
     {
         return transactionIdStoreSupplier.get().getLastCommittedTransactionId() == TransactionIdStore.BASE_TX_ID;
-    }
-
-    private void clearCache()
-    {
-        storeId = null;
-        databaseHealth = null;
     }
 
     @Override

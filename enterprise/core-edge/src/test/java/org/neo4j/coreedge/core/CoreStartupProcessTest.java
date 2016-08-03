@@ -19,12 +19,17 @@
  */
 package org.neo4j.coreedge.core;
 
+import java.io.File;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
+import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.RaftServer;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdGeneratorFactory;
@@ -33,6 +38,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.LogProvider;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -45,13 +51,16 @@ public class CoreStartupProcessTest
     public void raftTimeOutServiceTriggersMessagesSentToAnotherServer() throws Exception
     {
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
+        LocalDatabase localDatabase = new LocalDatabase( new File(""), mock( CopiedStoreRecovery.class ),
+                mock( StoreFiles.class ), dataSourceManager, mock( Supplier.class ), mock( Supplier.class ),
+                mock( LogProvider.class ) );
         ReplicatedIdGeneratorFactory idGeneratorFactory = mock( ReplicatedIdGeneratorFactory.class );
         RaftServer raftServer = mock( RaftServer.class );
         LifeSupport coreServer = mock( LifeSupport.class );
         DelayedRenewableTimeoutService raftTimeoutService = mock( DelayedRenewableTimeoutService.class );
         MembershipWaiterLifecycle membershipWaiter = mock( MembershipWaiterLifecycle.class );
 
-        LifeSupport lifeSupport = CoreStartupProcess.createLifeSupport( dataSourceManager,
+        LifeSupport lifeSupport = CoreStartupProcess.createLifeSupport( localDatabase,
                 idGeneratorFactory, raftTimeoutService, coreServer, membershipWaiter );
 
         assertThat( lifeSupport, startsComponent( raftTimeoutService ).after( raftServer )
