@@ -46,7 +46,7 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 
-public class UniqueLuceneIndexPopulatingUpdaterTest
+public class UniqueDatabaseIndexPopulatingUpdaterTest
 {
     private static final int PROPERTY_KEY = 42;
 

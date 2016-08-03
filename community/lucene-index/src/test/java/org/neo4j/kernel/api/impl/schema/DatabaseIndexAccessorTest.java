@@ -58,7 +58,7 @@ import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.test.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
-public class LuceneIndexAccessorTest
+public class DatabaseIndexAccessorTest
 {
     @Rule
     public final ThreadingRule threading = new ThreadingRule();

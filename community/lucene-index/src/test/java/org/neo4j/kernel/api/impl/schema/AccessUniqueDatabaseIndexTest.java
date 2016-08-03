@@ -39,7 +39,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
 
-public class AccessUniqueLuceneIndexTest
+public class AccessUniqueDatabaseIndexTest
 {
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final File indexDirectory = new File( "index1" );

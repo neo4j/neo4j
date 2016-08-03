@@ -38,7 +38,7 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 
-public class NonUniqueLuceneIndexPopulatingUpdaterTest
+public class NonUniqueDatabaseIndexPopulatingUpdaterTest
 {
     private static final int PROPERTY_KEY = 42;
     private static final int SAMPLING_BUFFER_SIZE_LIMIT = 100;

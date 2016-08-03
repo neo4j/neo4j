@@ -23,9 +23,8 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.index.WritableAbstractLuceneIndex;
-import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
-import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
+import org.neo4j.kernel.api.impl.index.ReadOnlyAbstractDatabaseIndex;
+import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -34,35 +33,26 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 /**
- * Writable schema index
+ * Read only schema index
  */
-public class WritableLuceneSchemaIndex extends WritableAbstractLuceneIndex<LuceneSchemaIndex> implements SchemaIndex
+public class ReadOnlyDatabaseSchemaIndex extends ReadOnlyAbstractDatabaseIndex<LuceneSchemaIndex> implements SchemaIndex
 {
-
-    public WritableLuceneSchemaIndex( PartitionedIndexStorage indexStorage, IndexConfiguration indexConfig,
-            IndexSamplingConfig samplingConfig, WritableIndexPartitionFactory writableIndexPartitionFactory )
+    public ReadOnlyDatabaseSchemaIndex( PartitionedIndexStorage indexStorage, IndexConfiguration indexConfig,
+            IndexSamplingConfig samplingConfig, ReadOnlyIndexPartitionFactory readOnlyIndexPartitionFactory )
     {
-        super( new LuceneSchemaIndex( indexStorage, indexConfig, samplingConfig, writableIndexPartitionFactory ) );
+        super( new LuceneSchemaIndex( indexStorage, indexConfig, samplingConfig, readOnlyIndexPartitionFactory ) );
     }
 
     @Override
     public LuceneIndexWriter getIndexWriter() throws IOException
     {
-        return luceneIndex.getIndexWriter( this );
+        throw new UnsupportedOperationException( "Can't get index writer for read only lucene index." );
     }
 
     @Override
     public IndexReader getIndexReader() throws IOException
     {
-        partitionsLock.lock();
-        try
-        {
-            return luceneIndex.getIndexReader();
-        }
-        finally
-        {
-            partitionsLock.unlock();
-        }
+        return luceneIndex.getIndexReader();
     }
 
     /**
@@ -95,20 +85,12 @@ public class WritableLuceneSchemaIndex extends WritableAbstractLuceneIndex<Lucen
     }
 
     /**
-     * {@inheritDoc}
+     * Unsupported operation in read only index.
      */
     @Override
     public void markAsOnline() throws IOException
     {
-        commitCloseLock.lock();
-        try
-        {
-            luceneIndex.markAsOnline();
-        }
-        finally
-        {
-            commitCloseLock.unlock();
-        }
+        throw new UnsupportedOperationException( "Can't mark read only index." );
     }
 
     /**
@@ -118,15 +100,5 @@ public class WritableLuceneSchemaIndex extends WritableAbstractLuceneIndex<Lucen
     public void markAsFailed( String failure ) throws IOException
     {
         luceneIndex.markAsFailed( failure );
-    }
-
-    public boolean hasSinglePartition( List<AbstractIndexPartition> partitions )
-    {
-        return luceneIndex.hasSinglePartition( partitions );
-    }
-
-    public AbstractIndexPartition getFirstPartition( List<AbstractIndexPartition> partitions )
-    {
-        return luceneIndex.getFirstPartition( partitions );
     }
 }

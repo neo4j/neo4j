@@ -111,7 +111,7 @@ public class LuceneLabelScanStoreWriterTest
         int nodeId2 = 65;
         StubIndexPartition partition = newStubIndexPartition();
 
-        WritableLuceneLabelScanIndex index = prepareIndex( singletonList( partition ) );
+        WritableDatabaseLabelScanIndex index = prepareIndex( singletonList( partition ) );
 
         long node1Range = format.bitmapFormat().rangeOf( nodeId1 );
         long node2Range = format.bitmapFormat().rangeOf( nodeId2 );
@@ -140,7 +140,7 @@ public class LuceneLabelScanStoreWriterTest
         int label2 = 202;
         StubIndexPartition partition = newStubIndexPartition();
 
-        WritableLuceneLabelScanIndex index = buildLabelScanIndex( partition );
+        WritableDatabaseLabelScanIndex index = buildLabelScanIndex( partition );
 
         // when
         PartitionedLuceneLabelScanWriter writer = createWriter( index );
@@ -169,7 +169,7 @@ public class LuceneLabelScanStoreWriterTest
         long range = format.bitmapFormat().rangeOf( nodeId1 );
         assertEquals( range, format.bitmapFormat().rangeOf( nodeId2 ) );
 
-        WritableLuceneLabelScanIndex index = buildLabelScanIndex( partition );
+        WritableDatabaseLabelScanIndex index = buildLabelScanIndex( partition );
 
         // when
         PartitionedLuceneLabelScanWriter writer = createWriter( index );
@@ -199,7 +199,7 @@ public class LuceneLabelScanStoreWriterTest
         long node2Range = format.bitmapFormat().rangeOf( nodeId2 );
         assertNotEquals( node1Range, node2Range );
 
-        WritableLuceneLabelScanIndex index = buildLabelScanIndex( partition );
+        WritableDatabaseLabelScanIndex index = buildLabelScanIndex( partition );
 
         // when
         PartitionedLuceneLabelScanWriter writer = createWriter( index );
@@ -229,7 +229,7 @@ public class LuceneLabelScanStoreWriterTest
         long range = format.bitmapFormat().rangeOf( nodeId1 );
         assertEquals( range, format.bitmapFormat().rangeOf( nodeId2 ) );
 
-        WritableLuceneLabelScanIndex index = buildLabelScanIndex( partition );
+        WritableDatabaseLabelScanIndex index = buildLabelScanIndex( partition );
 
         // node already indexed
         PartitionedLuceneLabelScanWriter writer = createWriter( index );
@@ -258,7 +258,7 @@ public class LuceneLabelScanStoreWriterTest
         System.setProperty( "labelScanStore.maxPartitionSize", "2" );
 
         StubIndexPartition partition = newStubIndexPartition();
-        WritableLuceneLabelScanIndex index = buildLabelScanIndex( partition );
+        WritableDatabaseLabelScanIndex index = buildLabelScanIndex( partition );
         PartitionedLuceneLabelScanWriter writer = createWriter( index );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeForPartition1, new long[]{}, new long[]{labelNode1} ) );
@@ -268,7 +268,7 @@ public class LuceneLabelScanStoreWriterTest
         assertEquals("We should have 2 index partitions", 2, index.getPartitions().size());
     }
 
-    private PartitionedLuceneLabelScanWriter createWriter( WritableLuceneLabelScanIndex index )
+    private PartitionedLuceneLabelScanWriter createWriter( WritableDatabaseLabelScanIndex index )
     {
         return new PartitionedLuceneLabelScanWriter( index, format );
     }
@@ -460,11 +460,11 @@ public class LuceneLabelScanStoreWriterTest
         }
     }
 
-    private WritableLuceneLabelScanIndex buildLabelScanIndex( StubIndexPartition partition ) throws IOException
+    private WritableDatabaseLabelScanIndex buildLabelScanIndex( StubIndexPartition partition ) throws IOException
     {
         List<AbstractIndexPartition> partitions = new ArrayList<>();
         partitions.add( partition );
-        WritableLuceneLabelScanIndex index = prepareIndex( partitions );
+        WritableDatabaseLabelScanIndex index = prepareIndex( partitions );
 
         when( index.addNewPartition() ).then( invocation -> {
             StubIndexPartition newPartition =
@@ -475,9 +475,9 @@ public class LuceneLabelScanStoreWriterTest
         return index;
     }
 
-    private WritableLuceneLabelScanIndex prepareIndex( List<AbstractIndexPartition> partitions )
+    private WritableDatabaseLabelScanIndex prepareIndex( List<AbstractIndexPartition> partitions )
     {
-        WritableLuceneLabelScanIndex index = mock( WritableLuceneLabelScanIndex.class );
+        WritableDatabaseLabelScanIndex index = mock( WritableDatabaseLabelScanIndex.class );
         when( index.getPartitions() ).thenReturn( partitions );
         return index;
     }

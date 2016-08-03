@@ -44,7 +44,7 @@ public class ReadOnlyLuceneSchemaIndexTest
     public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private ReadOnlyLuceneSchemaIndex luceneSchemaIndex;
+    private ReadOnlyDatabaseSchemaIndex luceneSchemaIndex;
 
     @Before
     public void setUp()
@@ -53,7 +53,7 @@ public class ReadOnlyLuceneSchemaIndexTest
                 new DefaultFileSystemAbstraction(), testDirectory.directory(), "1" );
         Config config = Config.empty();
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
-        luceneSchemaIndex = new ReadOnlyLuceneSchemaIndex( indexStorage, IndexConfiguration.NON_UNIQUE,
+        luceneSchemaIndex = new ReadOnlyDatabaseSchemaIndex( indexStorage, IndexConfiguration.NON_UNIQUE,
                 samplingConfig, new ReadOnlyIndexPartitionFactory() );
     }
 

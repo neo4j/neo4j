@@ -31,11 +31,11 @@ import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
  * allow read only operations only on top of it.
  * @param <T> - particular index implementation
  */
-public abstract class ReadOnlyAbstractLuceneIndex<T extends AbstractLuceneIndex> implements LuceneIndex
+public abstract class ReadOnlyAbstractDatabaseIndex<T extends AbstractLuceneIndex> implements DatabaseIndex
 {
     protected T luceneIndex;
 
-    public ReadOnlyAbstractLuceneIndex(T luceneIndex )
+    public ReadOnlyAbstractDatabaseIndex(T luceneIndex )
     {
         this.luceneIndex = luceneIndex;
     }

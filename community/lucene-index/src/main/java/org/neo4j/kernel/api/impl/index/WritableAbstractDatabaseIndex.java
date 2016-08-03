@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
  * allow read only operations only on top of it.
  * @param <T> - particular index implementation
  */
-public class WritableAbstractLuceneIndex<T extends AbstractLuceneIndex> implements LuceneIndex
+public class WritableAbstractDatabaseIndex<T extends AbstractLuceneIndex> implements DatabaseIndex
 {
     // lock used to guard commits and close of lucene indexes from separate threads
     protected final ReentrantLock commitCloseLock = new ReentrantLock();
@@ -41,7 +41,7 @@ public class WritableAbstractLuceneIndex<T extends AbstractLuceneIndex> implemen
 
     protected T luceneIndex;
 
-    public WritableAbstractLuceneIndex( T luceneIndex )
+    public WritableAbstractDatabaseIndex( T luceneIndex )
     {
         this.luceneIndex = luceneIndex;
     }

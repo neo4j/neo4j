@@ -63,7 +63,7 @@ import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.api.properties.Property.longProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
-public class UniqueLuceneIndexPopulatorTest
+public class UniqueDatabaseIndexPopulatorTest
 {
     @Rule
     public final CleanupRule cleanup = new CleanupRule();

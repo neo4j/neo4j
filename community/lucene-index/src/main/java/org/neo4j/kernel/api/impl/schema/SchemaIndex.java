@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.index.LuceneIndex;
+import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -32,7 +32,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 /**
  * Partitioned lucene schema index.
  */
-public interface SchemaIndex extends LuceneIndex
+public interface SchemaIndex extends DatabaseIndex
 {
     LuceneIndexWriter getIndexWriter() throws IOException;
 

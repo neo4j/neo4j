@@ -35,7 +35,7 @@ import java.util.Map;
 import org.neo4j.kernel.api.impl.index.collector.FirstHitCollector;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-import org.neo4j.kernel.api.impl.labelscan.WritableLuceneLabelScanIndex;
+import org.neo4j.kernel.api.impl.labelscan.WritableDatabaseLabelScanIndex;
 import org.neo4j.kernel.api.impl.labelscan.bitmaps.Bitmap;
 import org.neo4j.kernel.api.impl.labelscan.storestrategy.BitmapDocumentFormat;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -61,9 +61,9 @@ public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
 
     private final List<NodeLabelUpdate> updates;
     private long currentRange;
-    private WritableLuceneLabelScanIndex index;
+    private WritableDatabaseLabelScanIndex index;
 
-    public PartitionedLuceneLabelScanWriter( WritableLuceneLabelScanIndex index, BitmapDocumentFormat format)
+    public PartitionedLuceneLabelScanWriter( WritableDatabaseLabelScanIndex index, BitmapDocumentFormat format)
     {
         this.index = index;
         this.format = format;

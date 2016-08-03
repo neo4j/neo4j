@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.kernel.api.index.SchemaIndexProviderApprovalTest;
+import org.neo4j.kernel.api.index.SchemaConstraintProviderApprovalTest;
 
-public class LuceneIndexIndexProviderApprovalTest extends SchemaIndexProviderApprovalTest
+public class DatabaseIndexConstraintProviderApprovalTest extends SchemaConstraintProviderApprovalTest
 {
-    public LuceneIndexIndexProviderApprovalTest( TestValue value )
+    public DatabaseIndexConstraintProviderApprovalTest( TestValue value )
     {
         super( value );
     }

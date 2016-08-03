@@ -42,14 +42,14 @@ public class ReadOnlyLuceneLabelScanIndexTest
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    private ReadOnlyLuceneLabelScanIndex luceneLabelScanIndex;
+    private ReadOnlyDatabaseLabelScanIndex luceneLabelScanIndex;
 
     @Before
     public void setUp()
     {
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT,
                 new DefaultFileSystemAbstraction(), testDirectory.directory(), "1" );
-        luceneLabelScanIndex = new ReadOnlyLuceneLabelScanIndex( BitmapDocumentFormat._32, indexStorage );
+        luceneLabelScanIndex = new ReadOnlyDatabaseLabelScanIndex( BitmapDocumentFormat._32, indexStorage );
     }
 
     @After

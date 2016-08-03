@@ -74,7 +74,7 @@ class LuceneLabelScanIndex extends AbstractLuceneIndex
 
     }
 
-    public LabelScanWriter getLabelScanWriter( WritableLuceneLabelScanIndex labelScanIndex )
+    public LabelScanWriter getLabelScanWriter( WritableDatabaseLabelScanIndex labelScanIndex )
     {
         ensureOpen();
         return new PartitionedLuceneLabelScanWriter( labelScanIndex, format );
@@ -85,7 +85,7 @@ class LuceneLabelScanIndex extends AbstractLuceneIndex
      * <p>
      * <b>NOTE:</b>
      * There are no guarantees that reader returned from this method will see consistent documents with respect to
-     * {@link #getLabelScanReader() regular reader} and {@link #getLabelScanWriter(WritableLuceneLabelScanIndex) regular writer}.
+     * {@link #getLabelScanReader() regular reader} and {@link #getLabelScanWriter(WritableDatabaseLabelScanIndex) regular writer}.
      *
      * @return the {@link AllEntriesLabelScanReader reader}.
      */

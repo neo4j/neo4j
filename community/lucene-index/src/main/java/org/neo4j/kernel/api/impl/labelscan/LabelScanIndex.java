@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.labelscan;
 
-import org.neo4j.kernel.api.impl.index.LuceneIndex;
+import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
@@ -28,7 +28,7 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 /**
  * Partitioned lucene labels Label scan index.
  */
-public interface LabelScanIndex extends LuceneIndex
+public interface LabelScanIndex extends DatabaseIndex
 {
     LabelScanReader getLabelScanReader();
 

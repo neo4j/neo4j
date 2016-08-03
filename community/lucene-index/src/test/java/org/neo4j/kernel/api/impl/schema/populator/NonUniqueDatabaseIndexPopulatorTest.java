@@ -46,7 +46,7 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class NonUniqueLuceneIndexPopulatorTest
+public class NonUniqueDatabaseIndexPopulatorTest
 {
     @Rule
     public final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );

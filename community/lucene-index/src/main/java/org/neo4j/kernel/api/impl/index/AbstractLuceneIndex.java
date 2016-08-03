@@ -51,8 +51,8 @@ import static java.util.stream.Collectors.toList;
  * {@link AbstractIndexPartition partitions}.
  * Class and it's subclasses should not be directly used, instead please use corresponding writable or read only
  * wrapper.
- * @see WritableAbstractLuceneIndex
- * @see ReadOnlyAbstractLuceneIndex
+ * @see WritableAbstractDatabaseIndex
+ * @see ReadOnlyAbstractDatabaseIndex
  */
 public abstract class AbstractLuceneIndex
 {

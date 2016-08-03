@@ -44,7 +44,7 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.impl.index.collector.FirstHitCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartition;
-import org.neo4j.kernel.api.impl.labelscan.WritableLuceneLabelScanIndex;
+import org.neo4j.kernel.api.impl.labelscan.WritableDatabaseLabelScanIndex;
 import org.neo4j.kernel.api.impl.labelscan.bitmaps.Bitmap;
 import org.neo4j.kernel.api.impl.labelscan.writer.PartitionedLuceneLabelScanWriter;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -88,7 +88,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
     {
         // given
         WritableIndexPartition partition = mock( WritableIndexPartition.class );
-        WritableLuceneLabelScanIndex index = buildLuceneIndex( partition );
+        WritableDatabaseLabelScanIndex index = buildLuceneIndex( partition );
 
         PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
         when( partition.acquireSearcher() ).thenReturn( partitionSearcher );
@@ -141,7 +141,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         format.addRangeValuesField( givenDoc, 0 );
         format.addLabelFields( givenDoc, "7", 0x70L );
 
-        WritableLuceneLabelScanIndex index = mock( WritableLuceneLabelScanIndex.class );
+        WritableDatabaseLabelScanIndex index = mock( WritableDatabaseLabelScanIndex.class );
         IndexWriter indexWriter = mock( IndexWriter.class );
         WritableIndexPartition partition = newIndexPartitionMock( indexWriter, givenDoc );
         when( index.getPartitions() ).thenReturn( Collections.singletonList( partition ) );
@@ -168,7 +168,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         Document doc = document( format.rangeField( 0 ), format.labelField( 7, 0x1 ), format.labelField( 8, 0x1 ) );
         WritableIndexPartition partition = newIndexPartitionMock( indexWriter, doc );
 
-        WritableLuceneLabelScanIndex index = buildLuceneIndex( partition );
+        WritableDatabaseLabelScanIndex index = buildLuceneIndex( partition );
 
         LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
 
@@ -191,7 +191,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         Document doc = document( format.rangeField( 0 ), format.labelField( 7, 0x1 ) );
         WritableIndexPartition partition = newIndexPartitionMock( indexWriter, doc );
 
-        WritableLuceneLabelScanIndex index = buildLuceneIndex( partition );
+        WritableDatabaseLabelScanIndex index = buildLuceneIndex( partition );
 
         LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
 
@@ -211,7 +211,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         Document doc = document( format.rangeField( 0 ), format.labelField( 6, 0x1 ), format.labelField( 7, 0x1 ) );
         WritableIndexPartition partition = newIndexPartitionMock( indexWriter, doc );
 
-        WritableLuceneLabelScanIndex index = buildLuceneIndex( partition );
+        WritableDatabaseLabelScanIndex index = buildLuceneIndex( partition );
 
         LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
 
@@ -238,7 +238,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
             IndexWriter indexWriter = mock( IndexWriter.class );
             WritableIndexPartition partition = newIndexPartitionMock( indexWriter );
 
-            WritableLuceneLabelScanIndex index = buildLuceneIndex( partition );
+            WritableDatabaseLabelScanIndex index = buildLuceneIndex( partition );
 
             LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
 
@@ -361,9 +361,9 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         } );
     }
 
-    private WritableLuceneLabelScanIndex buildLuceneIndex( WritableIndexPartition partition )
+    private WritableDatabaseLabelScanIndex buildLuceneIndex( WritableIndexPartition partition )
     {
-        WritableLuceneLabelScanIndex index = mock( WritableLuceneLabelScanIndex.class );
+        WritableDatabaseLabelScanIndex index = mock( WritableDatabaseLabelScanIndex.class );
         when( index.getPartitions() ).thenReturn( singletonList( partition ) );
         return index;
     }

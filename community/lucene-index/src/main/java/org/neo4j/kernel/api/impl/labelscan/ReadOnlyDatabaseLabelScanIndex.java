@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.labelscan;
 
-import org.neo4j.kernel.api.impl.index.ReadOnlyAbstractLuceneIndex;
+import org.neo4j.kernel.api.impl.index.ReadOnlyAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.labelscan.storestrategy.BitmapDocumentFormat;
@@ -30,11 +30,11 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 /**
  * Read only label scan store index
  */
-public class ReadOnlyLuceneLabelScanIndex extends ReadOnlyAbstractLuceneIndex<LuceneLabelScanIndex> implements
+public class ReadOnlyDatabaseLabelScanIndex extends ReadOnlyAbstractDatabaseIndex<LuceneLabelScanIndex> implements
         LabelScanIndex
 {
 
-    public ReadOnlyLuceneLabelScanIndex( BitmapDocumentFormat format, PartitionedIndexStorage indexStorage )
+    public ReadOnlyDatabaseLabelScanIndex( BitmapDocumentFormat format, PartitionedIndexStorage indexStorage )
     {
         super( new LuceneLabelScanIndex( indexStorage, new ReadOnlyIndexPartitionFactory(), format ) );
     }

@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
  * Lucene index that may consist of one or multiple separate lucene indexes that are represented as independent
  * {@link AbstractIndexPartition partitions}.
  */
-public interface LuceneIndex extends Closeable
+public interface DatabaseIndex extends Closeable
 {
     /**
      * Creates new index.

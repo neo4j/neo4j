@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.impl.labelscan;
 
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
-import org.neo4j.kernel.api.impl.index.WritableAbstractLuceneIndex;
+import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.labelscan.storestrategy.BitmapDocumentFormat;
@@ -31,11 +31,11 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 /**
  * Writable implementation of Lucene label scan store index.
  */
-public class WritableLuceneLabelScanIndex extends WritableAbstractLuceneIndex<LuceneLabelScanIndex>
+public class WritableDatabaseLabelScanIndex extends WritableAbstractDatabaseIndex<LuceneLabelScanIndex>
         implements LabelScanIndex
 {
 
-    public WritableLuceneLabelScanIndex( BitmapDocumentFormat format, PartitionedIndexStorage indexStorage )
+    public WritableDatabaseLabelScanIndex( BitmapDocumentFormat format, PartitionedIndexStorage indexStorage )
     {
         super( new LuceneLabelScanIndex( indexStorage,
                 new WritableIndexPartitionFactory( IndexWriterConfigs::standard ), format ) );

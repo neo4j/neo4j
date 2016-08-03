@@ -59,7 +59,7 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class AbstractLuceneIndexIntegrationTest
+public class DatabaseIndexIntegrationTest
 {
     private static final int THREAD_NUMBER = 5;
     @Rule
@@ -70,7 +70,7 @@ public class AbstractLuceneIndexIntegrationTest
     private final CountDownLatch closeRaceSignal = new CountDownLatch( 1 );
 
     private SyncNotifierDirectoryFactory directoryFactory;
-    private WritableTestLuceneIndex luceneIndex;
+    private WritableTestDatabaseIndex luceneIndex;
     private ExecutorService workers;
 
     @Before
@@ -103,11 +103,11 @@ public class AbstractLuceneIndexIntegrationTest
         assertFalse( luceneIndex.isOpen() );
     }
 
-    private static WritableTestLuceneIndex createTestLuceneIndex( DirectoryFactory dirFactory, File folder ) throws IOException
+    private static WritableTestDatabaseIndex createTestLuceneIndex( DirectoryFactory dirFactory, File folder ) throws IOException
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fs, folder, "test" );
-        WritableTestLuceneIndex index = new WritableTestLuceneIndex( indexStorage );
+        WritableTestDatabaseIndex index = new WritableTestDatabaseIndex( indexStorage );
         index.create();
         index.open();
         return index;
@@ -179,9 +179,9 @@ public class AbstractLuceneIndexIntegrationTest
         return partition.getIndexWriter();
     }
 
-    private static class WritableTestLuceneIndex extends WritableAbstractLuceneIndex
+    private static class WritableTestDatabaseIndex extends WritableAbstractDatabaseIndex
     {
-        WritableTestLuceneIndex( PartitionedIndexStorage indexStorage )
+        WritableTestDatabaseIndex( PartitionedIndexStorage indexStorage )
         {
             super( new TestLuceneIndex( indexStorage,
                     new WritableIndexPartitionFactory( IndexWriterConfigs::standard ) ) );
