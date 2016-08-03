@@ -26,12 +26,12 @@ import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
+import static org.neo4j.kernel.impl.store.format.highlimit.BaseHighLimitRecordFormat.HEADER_BIT_FIXED_REFERENCE;
+import static org.neo4j.kernel.impl.store.format.highlimit.BaseHighLimitRecordFormat.NULL;
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toAbsolute;
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
-import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 
 /**
@@ -51,11 +51,9 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
  */
 class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 {
-    private static final int RECORD_SIZE = 48;
-    private static final int FIXED_REFERENCES_BIT = 0b0000_0100;
-    private static final long UNSIGNED_SHORT_MASK = 0xFFFF_0000_0000L;
-    private static final long ONE_BIT_OVERFLOW_BIT_MASK = 0xFFFF_FFFE_0000_0000L;
-    private static final long THREE_BITS_OVERFLOW_BIT_MASK = 0xFFFF_FFFC_0000_0000L;
+    static final int RECORD_SIZE = 48;
+    private static final long HIGH_DWORD_LOWER_WORD_MASK = 0xFFFF_0000_0000L;
+    private static final long HIGH_DWORD_LOWER_WORD_CHECK_MASK = 0xFFFF_0000_0000_0000L;
 
     protected PropertyRecordFormat()
     {
@@ -75,13 +73,13 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
         int offset = cursor.getOffset();
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse( headerByte );
-        record.setUseFixedReferences( has( headerByte, FIXED_REFERENCES_BIT ));
+        boolean useFixedReferences = has( headerByte, HEADER_BIT_FIXED_REFERENCE );
         if ( mode.shouldLoad( inUse ) )
         {
             int blockCount = headerByte >>> 4;
             long recordId = record.getId();
 
-            if (record.isUseFixedReferences())
+            if ( useFixedReferences )
             {
                 readFixedReferencesRecord( record, cursor );
             }
@@ -91,6 +89,7 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
                         toAbsolute( Reference.decode( cursor ), recordId ),
                         toAbsolute( Reference.decode( cursor ), recordId ) );
             }
+            record.setUseFixedReferences( useFixedReferences );
             if ( (blockCount > record.getBlockCapacity()) | (RECORD_SIZE - (cursor.getOffset() - offset) < blockCount * Long.BYTES) )
             {
                 cursor.setCursorException( "PropertyRecord claims to contain more blocks than can fit in a record" );
@@ -112,7 +111,7 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
             byte headerByte = (byte) ((record.inUse() ? IN_USE_BIT : 0) | numberOfBlocks( record ) << 4);
             boolean canUseFixedReferences = canUseFixedReferences( record );
             record.setUseFixedReferences( canUseFixedReferences );
-            headerByte = set( headerByte, FIXED_REFERENCES_BIT, canUseFixedReferences );
+            headerByte = set( headerByte, HEADER_BIT_FIXED_REFERENCE, canUseFixedReferences );
             cursor.putByte( headerByte );
 
             long recordId = record.getId();
@@ -158,9 +157,8 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 
     private boolean canUseFixedReferences( PropertyRecord record )
     {
-        //TODO: wrong masks? should be unsigned short that potentially should be allowed?
-        return (((record.getNextProp() == NULL_REFERENCE.intValue()) || ((record.getNextProp() & THREE_BITS_OVERFLOW_BIT_MASK) == 0)) &&
-                ((record.getPrevProp() == NULL_REFERENCE.intValue()) || ((record.getPrevProp() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)));
+        return (((record.getNextProp() != NULL) && ((record.getNextProp() & HIGH_DWORD_LOWER_WORD_CHECK_MASK) == 0)) &&
+                ((record.getPrevProp() != NULL) && ((record.getPrevProp() & HIGH_DWORD_LOWER_WORD_CHECK_MASK) == 0)));
     }
 
     private void readFixedReferencesRecord( PropertyRecord record, PageCursor cursor )
@@ -180,8 +178,8 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
     private void writeFixedReferencesRecord( PropertyRecord record, PageCursor cursor )
     {
         // Set up the record header
-        short prevModifier = record.getPrevProp() == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short) ((record.getPrevProp() & UNSIGNED_SHORT_MASK) >> 32);
-        short nextModifier = record.getNextProp() == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short) ((record.getNextProp() & UNSIGNED_SHORT_MASK) >> 32);
+        short prevModifier = record.getPrevProp() == NULL ? 0 : (short) ((record.getPrevProp() & HIGH_DWORD_LOWER_WORD_MASK) >> 32);
+        short nextModifier = record.getNextProp() == NULL ? 0 : (short) ((record.getNextProp() & HIGH_DWORD_LOWER_WORD_MASK) >> 32);
         cursor.putShort( prevModifier );
         cursor.putInt( (int) record.getPrevProp() );
         cursor.putShort( nextModifier );

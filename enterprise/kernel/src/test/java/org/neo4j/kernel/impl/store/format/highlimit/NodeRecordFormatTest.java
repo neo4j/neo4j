@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
 
@@ -10,7 +29,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.StubPageCursor;
-import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -24,14 +42,14 @@ public class NodeRecordFormatTest
 
     private NodeRecordFormat recordFormat;
     private StubPageCursor pageCursor;
-    private TestIdSequence idSequence;
+    private ConstantIdSequence idSequence;
 
     @Before
     public void setUp()
     {
         recordFormat = new NodeRecordFormat();
         pageCursor = new StubPageCursor( 0, (int) ByteUnit.kibiBytes( 8 ) );
-        idSequence = new TestIdSequence();
+        idSequence = new ConstantIdSequence();
     }
 
     @After
@@ -50,7 +68,7 @@ public class NodeRecordFormatTest
         writeReadRecord( source, target );
 
         assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
-        assertEquals("Records should be equal.", source, target);
+        verifySameReferences( source, target);
     }
 
     @Test
@@ -63,7 +81,7 @@ public class NodeRecordFormatTest
         writeReadRecord( source, target );
 
         assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
-        assertEquals("Records should be equal.", source, target);
+        verifySameReferences( source, target);
     }
 
     @Test
@@ -76,7 +94,7 @@ public class NodeRecordFormatTest
         writeReadRecord( source, target );
 
         assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
-        assertEquals("Records should be equal.", source, target);
+        verifySameReferences( source, target);
     }
 
     @Test
@@ -89,7 +107,7 @@ public class NodeRecordFormatTest
         writeReadRecord( source, target );
 
         assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
-        assertEquals("Records should be equal.", source, target);
+        verifySameReferences( source, target);
     }
 
     @Test
@@ -102,7 +120,14 @@ public class NodeRecordFormatTest
         writeReadRecord( source, target );
 
         assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
-        assertEquals("Records should be equal.", source, target);
+        verifySameReferences( source, target);
+    }
+
+    private void verifySameReferences( NodeRecord recordA, NodeRecord recordB )
+    {
+        assertEquals( recordA.getNextProp(), recordB.getNextProp() );
+        assertEquals( recordA.getNextRel(), recordB.getNextRel() );
+        assertEquals( recordA.getLabelField(), recordB.getLabelField() );
     }
 
     private void writeReadRecord( NodeRecord source, NodeRecord target ) throws java.io.IOException
@@ -124,12 +149,4 @@ public class NodeRecordFormatTest
         return ThreadLocalRandom.current().nextLong( maxValue );
     }
 
-    private static class TestIdSequence implements IdSequence
-    {
-        @Override
-        public long nextId()
-        {
-            return -1;
-        }
-    }
 }

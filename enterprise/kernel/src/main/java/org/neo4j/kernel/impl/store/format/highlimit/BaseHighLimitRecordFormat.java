@@ -84,7 +84,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     static final long NULL = Record.NULL_REFERENCE.intValue();
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
     static final int HEADER_BIT_FIRST_RECORD_UNIT = 0b0000_0100;
-    private static final int HEADER_BIT_FIXED_REFERENCE = 0b0000_0100;
+    static final int HEADER_BIT_FIXED_REFERENCE = 0b0000_0100;
 
     protected BaseHighLimitRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
     {

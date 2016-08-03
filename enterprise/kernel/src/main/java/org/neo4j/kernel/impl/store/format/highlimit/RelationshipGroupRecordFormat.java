@@ -23,7 +23,6 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 /**
@@ -50,13 +49,14 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     private static final int HAS_LOOP_BIT     = 0b0010_0000;
     private static final int HAS_NEXT_BIT     = 0b0100_0000;
 
+    private static final int NEXT_RECORD_BIT = 0b0000_0001;
+    private static final int FIRST_OUT_BIT = 0b0000_0010;
+    private static final int FIRST_IN_BIT = 0b0000_0100;
+    private static final int FIRST_LOOP_BIT = 0b0000_1000;
+    private static final int OWNING_NODE_BIT = 0b0001_0000;
+
     private static final long ONE_BIT_OVERFLOW_BIT_MASK = 0xFFFF_FFFE_0000_0000L;
-    private static final long FIXED_REFERENCE_BIT_MASK = 0x100000000L;
-    private static final int NEXT_RECORD_BIT_MASK = 0b0000_0001;
-    private static final int FIRST_OUT_BIT_MASK = 0b0000_0010;
-    private static final int FIRST_IN_BIT_MASK = 0b0000_0100;
-    private static final int FIRST_LOOP_BIT_MASK = 0b0000_1000;
-    private static final int OWNING_NODE_BIT_MASK = 0b0001_0000;
+    private static final long HIGH_DWORD_LAST_BIT_MASK = 0x100000000L;
 
     public RelationshipGroupRecordFormat()
     {
@@ -81,6 +81,7 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
         if ( record.isUseFixedReferences() )
         {
             readFixedReferencesMethod( record, cursor, inUse );
+            record.setUseFixedReferences( true );
         }
         else
         {
@@ -138,11 +139,11 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     @Override
     protected boolean canUseFixedReferences( RelationshipGroupRecord record )
     {
-        return !((record.getNext() != NULL) && ((record.getNext() & ONE_BIT_OVERFLOW_BIT_MASK) != 0) ||
-                 (record.getFirstOut() != NULL) && ((record.getFirstOut() & ONE_BIT_OVERFLOW_BIT_MASK) != 0) ||
-                 (record.getFirstIn() != NULL) && ((record.getFirstIn() & ONE_BIT_OVERFLOW_BIT_MASK) != 0) ||
-                 (record.getFirstLoop() != NULL) && ((record.getFirstLoop() & ONE_BIT_OVERFLOW_BIT_MASK) != 0) ||
-                 (record.getOwningNode() != NULL) && ((record.getOwningNode() & ONE_BIT_OVERFLOW_BIT_MASK) != 0));
+        return ((record.getNext() != NULL) && ((record.getNext() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
+                (record.getFirstOut() != NULL) && ((record.getFirstOut() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
+                (record.getFirstIn() != NULL) && ((record.getFirstIn() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
+                (record.getFirstLoop() != NULL) && ((record.getFirstLoop() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
+                (record.getOwningNode() != NULL) && ((record.getOwningNode() & ONE_BIT_OVERFLOW_BIT_MASK) == 0));
     }
 
     private void readFixedReferencesMethod( RelationshipGroupRecord record, PageCursor cursor, boolean inUse )
@@ -162,11 +163,11 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
         long firstLoopLowBits = cursor.getInt() & 0xFFFFFFFFL;
         long owningNodeLowBits = cursor.getInt() & 0xFFFFFFFFL;
 
-        long nextMod = (modifiers & NEXT_RECORD_BIT_MASK) << 32;
-        long firstOutMod = (modifiers & FIRST_OUT_BIT_MASK) << 31;
-        long firstInMod = (modifiers & FIRST_IN_BIT_MASK) << 30;
-        long firstLoopMod = (modifiers & FIRST_LOOP_BIT_MASK) << 29;
-        long owningNodeMod = (modifiers & OWNING_NODE_BIT_MASK) << 28;
+        long nextMod = (modifiers & NEXT_RECORD_BIT) << 32;
+        long firstOutMod = (modifiers & FIRST_OUT_BIT) << 31;
+        long firstInMod = (modifiers & FIRST_IN_BIT) << 30;
+        long firstLoopMod = (modifiers & FIRST_LOOP_BIT) << 29;
+        long owningNodeMod = (modifiers & OWNING_NODE_BIT) << 28;
 
         record.initialize( inUse, type,
                 BaseRecordFormat.longFromIntAndMod( firstOutLowBits, firstOutMod ),
@@ -178,11 +179,11 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
 
     private void writeFixedReferencesRecord( RelationshipGroupRecord record, PageCursor cursor )
     {
-        long nextMod = record.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getNext() & FIXED_REFERENCE_BIT_MASK) >> 32;
-        long firstOutMod = record.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstOut() & FIXED_REFERENCE_BIT_MASK) >> 31;
-        long firstInMod = record.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstIn() & FIXED_REFERENCE_BIT_MASK) >> 30;
-        long firstLoopMod = record.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstLoop() & FIXED_REFERENCE_BIT_MASK) >> 29;
-        long owningNodeMod = record.getOwningNode() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getOwningNode() & FIXED_REFERENCE_BIT_MASK) >> 28;
+        long nextMod = record.getNext() == NULL ? 0 : (record.getNext() & HIGH_DWORD_LAST_BIT_MASK) >> 32;
+        long firstOutMod = record.getFirstOut() == NULL ? 0 : (record.getFirstOut() & HIGH_DWORD_LAST_BIT_MASK) >> 31;
+        long firstInMod = record.getFirstIn() == NULL ? 0 : (record.getFirstIn() & HIGH_DWORD_LAST_BIT_MASK) >> 30;
+        long firstLoopMod = record.getFirstLoop() == NULL ? 0 : (record.getFirstLoop() & HIGH_DWORD_LAST_BIT_MASK) >> 29;
+        long owningNodeMod = record.getOwningNode() == NULL ? 0 : (record.getOwningNode() & HIGH_DWORD_LAST_BIT_MASK) >> 28;
 
         // [    ,   x] high next bits
         // [    ,  x ] high firstOut bits
