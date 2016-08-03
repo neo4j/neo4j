@@ -58,6 +58,10 @@ public class AdminTool
     {
         try
         {
+            if ( args.length == 0 )
+            {
+                return badUsage( "you must provide a command" );
+            }
             String name = args[0];
             String[] commandArgs = Arrays.copyOfRange( args, 1, args.length );
 
@@ -68,7 +72,7 @@ public class AdminTool
             }
             catch ( NoSuchElementException e )
             {
-                return badUsage( name, commandArgs );
+                return badUsage( format( "unrecognized command: %s", name ) );
             }
 
             AdminCommand command = provider.create( homeDir, configDir );
@@ -103,10 +107,9 @@ public class AdminTool
         return failure( e.getMessage() );
     }
 
-    private Result badUsage( String name, String[] commandArgs )
+    private Result badUsage( String message )
     {
         usage.print();
-        String message = commandArgs.length == 0 ? format( "unrecognized command: %s", name ) : commandArgs[0];
         return failure( message );
     }
 

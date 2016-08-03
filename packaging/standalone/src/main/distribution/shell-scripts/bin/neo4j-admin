@@ -23,23 +23,12 @@ set -o errexit -o nounset -o pipefail
 readonly NEO4J_BIN
 . "${NEO4J_BIN}/neo4j-shared.sh"
 
-pass_through() {
+main() {
   setup_environment
   check_java
   build_classpath
   export NEO4J_HOME NEO4J_CONF
   exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.commandline.admin.AdminTool" "$@"
-}
-
-bad_usage() {
-  pass_through bad-usage "$1"
-}
-
-main() {
-  [[ -z "${1:-}" ]] && bad_usage "you must provide a command"
-  declare -r command="$1"
-  shift
-  pass_through "${command}" "$@"
 }
 
 main "$@"

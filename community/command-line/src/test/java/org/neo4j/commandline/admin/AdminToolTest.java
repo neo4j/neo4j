@@ -51,6 +51,15 @@ public class AdminToolTest
         verify( output ).line( "neo4j-admin help" );
     }
 
+    @Test
+    public void shouldProvideErrorMessageWhenNoCommandIsProvided()
+    {
+        Output output = mock( Output.class );
+        new AdminTool( new NullCommandLocator(), output, false ).execute( null, null, new String[]{} );
+
+        verify( output ).line( "Usage:" );
+    }
+
     private static class RecordingCommand implements AdminCommand
     {
         public boolean executed;
