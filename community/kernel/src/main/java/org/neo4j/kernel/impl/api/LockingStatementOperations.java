@@ -533,8 +533,7 @@ public class LockingStatementOperations implements
 
     private void acquireExclusiveNodeLock( KernelStatement state, long nodeId )
     {
-        boolean txStateWithChanges = state.hasTxStateWithChanges();
-        if ( !txStateWithChanges || (txStateWithChanges && !state.txState().nodeIsAddedInThisTx( nodeId )) )
+        if ( !state.hasTxStateWithChanges() || !state.txState().nodeIsAddedInThisTx( nodeId ) )
         {
             state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
         }
@@ -542,8 +541,7 @@ public class LockingStatementOperations implements
 
     private void acquireExclusiveRelationshipLock( KernelStatement state, long relationshipId )
     {
-        boolean txStateWithChanges = state.hasTxStateWithChanges();
-        if ( !txStateWithChanges || (txStateWithChanges && !state.txState().relationshipIsAddedInThisTx( relationshipId )) )
+        if ( !state.hasTxStateWithChanges() || !state.txState().relationshipIsAddedInThisTx( relationshipId ) )
         {
             state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         }
