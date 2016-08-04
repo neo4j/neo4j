@@ -329,6 +329,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         }
 
         // If we find the node - hold a shared lock. If we don't find a node - hold an exclusive lock.
+        // If locks are deferred than both shared and exclusive locks will be taken only at commit time.
         Locks.Client locks = state.locks().optimistic();
         long indexEntryId = indexEntryResourceId( labelId, propertyKeyId, stringVal );
 

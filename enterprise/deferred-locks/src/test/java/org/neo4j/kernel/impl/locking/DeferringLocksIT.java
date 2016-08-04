@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -57,7 +56,7 @@ public class DeferringLocksIT
 {
     private static final long TEST_TIMEOUT = 30_000;
 
-    private static final Label LABEL = DynamicLabel.label( "label" );
+    private static final Label LABEL = Label.label( "label" );
     private static final String PROPERTY_KEY = "key";
     private static final String VALUE_1 = "value1";
     private static final String VALUE_2 = "value2";
@@ -375,74 +374,58 @@ public class DeferringLocksIT
     private WorkerCommand<Void,Void> createNode( final Label label, final String propertyKey,
             final Object propertyValue )
     {
-        return new WorkerCommand<Void,Void>()
+        return state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    Node node = db.createNode( label );
-                    node.setProperty( propertyKey, propertyValue );
-                    tx.success();
-                }
-                return null;
+                Node node = db.createNode( label );
+                node.setProperty( propertyKey, propertyValue );
+                tx.success();
             }
+            return null;
         };
     }
 
     private WorkerCommand<Void,Void> createIndexOn( final Label label, final String propertyKey )
     {
-        return new WorkerCommand<Void,Void>()
+        return state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    db.schema().indexFor( label ).on( propertyKey ).create();
-                    tx.success();
-                }
-                return null;
+                db.schema().indexFor( label ).on( propertyKey ).create();
+                tx.success();
             }
+            return null;
         };
     }
 
     private WorkerCommand<Void,Void> createUniquenessConstraintOn( final Label label, final String propertyKey )
     {
-        return new WorkerCommand<Void,Void>()
+        return state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
-                    tx.success();
-                }
-                return null;
+                db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+                tx.success();
             }
+            return null;
         };
     }
 
     private WorkerCommand<Void,Void> createAndAwaitIndex( final Label label, final String key )
     {
-        return new WorkerCommand<Void,Void>()
+        return state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    db.schema().indexFor( label ).on( key ).create();
-                    tx.success();
-                }
-                try ( Transaction tx = db.beginTx() )
-                {
-                    db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-                }
-                return null;
+                db.schema().indexFor( label ).on( key ).create();
+                tx.success();
             }
+            try ( Transaction ignore = db.beginTx() )
+            {
+                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            }
+            return null;
         };
     }
 
