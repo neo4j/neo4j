@@ -134,6 +134,7 @@ import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -516,6 +517,8 @@ public class HighlyAvailableEditionModule
         lockManager = dependencies.satisfyDependency( createLockManager( highAvailabilityModeSwitcher,
                 modeSwitchersLife, config, masterDelegateInvocationHandler, requestContextFactory,
                 platformModule.availabilityGuard, logging ) );
+
+        statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
 
         propertyKeyTokenHolder = dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
                 createPropertyKeyCreator( config, modeSwitchersLife, highAvailabilityModeSwitcher,

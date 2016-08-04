@@ -37,11 +37,11 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.factory.EnterpriseDatabaseRule;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
 
@@ -63,7 +63,7 @@ public class DeferringLocksIT
     private static final String VALUE_2 = "value2";
 
     @Rule
-    public final DatabaseRule dbRule = new ImpermanentDatabaseRule().startLazily();
+    public final DatabaseRule dbRule = new EnterpriseDatabaseRule().startLazily();
     @Rule
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
     @Rule
