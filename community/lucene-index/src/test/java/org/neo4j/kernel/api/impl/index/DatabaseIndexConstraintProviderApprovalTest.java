@@ -17,19 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index.backup;
+package org.neo4j.kernel.api.impl.index;
 
-/**
- * Exception that is throw by {@link WritableIndexSnapshotFileIterator} in case if there is an attempt to create a
- * snapshot on a index with index policy that does not support snapshots.
- *
- * @see WritableIndexSnapshotFileIterator
- * @see org.apache.lucene.index.SnapshotDeletionPolicy
- */
-class UnsupportedIndexDeletionPolicy extends RuntimeException
+import org.neo4j.kernel.api.index.SchemaConstraintProviderApprovalTest;
+
+public class DatabaseIndexConstraintProviderApprovalTest extends SchemaConstraintProviderApprovalTest
 {
-    UnsupportedIndexDeletionPolicy( String message )
+    public DatabaseIndexConstraintProviderApprovalTest( TestValue value )
     {
-        super( message );
+        super( value );
     }
 }

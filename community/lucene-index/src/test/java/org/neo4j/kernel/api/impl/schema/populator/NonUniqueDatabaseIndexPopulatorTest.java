@@ -34,8 +34,8 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
+import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -46,14 +46,14 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class NonUniqueLuceneIndexPopulatorTest
+public class NonUniqueDatabaseIndexPopulatorTest
 {
     @Rule
     public final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
 
-    private LuceneSchemaIndex index;
+    private SchemaIndex index;
     private NonUniqueLuceneIndexPopulator populator;
 
     @Before

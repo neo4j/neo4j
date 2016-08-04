@@ -42,8 +42,10 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 
@@ -51,13 +53,17 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
     private final Map<Long,String> failures = new HashMap<>();
     private final IndexStorageFactory indexStorageFactory;
+    private Config config;
+    private OperationalMode operationalMode;
 
     public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
-            File storeDir )
+            File storeDir, Config config, OperationalMode operationalMode )
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         File schemaIndexStoreFolder = getSchemaIndexStoreDirectory( storeDir );
         this.indexStorageFactory = new IndexStorageFactory( directoryFactory, fileSystem, schemaIndexStoreFolder );
+        this.config = config;
+        this.operationalMode = operationalMode;
     }
 
     /**
@@ -71,15 +77,21 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 
     @Override
     public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
-            IndexConfiguration config, IndexSamplingConfig samplingConfig )
+            IndexConfiguration indexConfiguration, IndexSamplingConfig samplingConfig )
     {
-        LuceneSchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
-                                        .withIndexConfig( config )
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
+                                        .withIndexConfig( indexConfiguration )
+                                        .withConfig( config )
+                                        .withOperationalMode( operationalMode )
                                         .withSamplingConfig( samplingConfig )
                                         .withIndexStorage( getIndexStorage( indexId ) )
                                         .withWriterConfig( IndexWriterConfigs::population )
                                         .build();
-        if ( config.isUnique() )
+        if ( luceneIndex.isReadOnly() )
+        {
+            throw new UnsupportedOperationException( "Can't create populator for read only index" );
+        }
+        if ( indexConfiguration.isUnique() )
         {
             return new UniqueLuceneIndexPopulator( luceneIndex, descriptor );
         }
@@ -90,11 +102,13 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config,
+    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration indexConfiguration,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        LuceneSchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
-                                            .withIndexConfig( config )
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
+                                            .withIndexConfig( indexConfiguration )
+                                            .withConfig( config )
+                                            .withOperationalMode( operationalMode )
                                             .withSamplingConfig( samplingConfig )
                                             .withIndexStorage( getIndexStorage( indexId ) )
                                             .build();
@@ -171,7 +185,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 
     private boolean indexIsOnline( PartitionedIndexStorage indexStorage ) throws IOException
     {
-        try ( LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create().withIndexStorage( indexStorage ).build() )
+        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create().withIndexStorage( indexStorage ).build() )
         {
             if ( index.exists() )
             {

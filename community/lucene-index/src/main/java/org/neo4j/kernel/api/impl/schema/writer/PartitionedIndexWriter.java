@@ -28,8 +28,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
+import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
+import org.neo4j.kernel.api.impl.schema.WritableDatabaseSchemaIndex;
 
 /**
  * Schema Lucene index writer implementation that supports writing into multiple partitions and creates partitions
@@ -41,12 +41,12 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
  */
 public class PartitionedIndexWriter implements LuceneIndexWriter
 {
-    private LuceneSchemaIndex index;
+    private WritableDatabaseSchemaIndex index;
 
     private final Integer MAXIMUM_PARTITION_SIZE = Integer.getInteger( "luceneSchemaIndex.maxPartitionSize",
             Integer.MAX_VALUE - (Integer.MAX_VALUE / 10) );
 
-    public PartitionedIndexWriter( LuceneSchemaIndex index ) throws IOException
+    public PartitionedIndexWriter( WritableDatabaseSchemaIndex index ) throws IOException
     {
         this.index = index;
     }
@@ -66,7 +66,7 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
     @Override
     public void updateDocument( Term term, Document doc ) throws IOException
     {
-        List<IndexPartition> partitions = index.getPartitions();
+        List<AbstractIndexPartition> partitions = index.getPartitions();
         if ( index.hasSinglePartition( partitions ) )
         {
             index.getFirstPartition( partitions ).getIndexWriter().updateDocument( term, doc );
@@ -81,8 +81,8 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
     @Override
     public void deleteDocuments( Query query ) throws IOException
     {
-        List<IndexPartition> partitions = index.getPartitions();
-        for ( IndexPartition partition : partitions )
+        List<AbstractIndexPartition> partitions = index.getPartitions();
+        for ( AbstractIndexPartition partition : partitions )
         {
             partition.getIndexWriter().deleteDocuments( query );
         }
@@ -91,8 +91,8 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
     @Override
     public void deleteDocuments( Term term ) throws IOException
     {
-        List<IndexPartition> partitions = index.getPartitions();
-        for ( IndexPartition partition : partitions )
+        List<AbstractIndexPartition> partitions = index.getPartitions();
+        for ( AbstractIndexPartition partition : partitions )
         {
             partition.getIndexWriter().deleteDocuments( term );
         }
@@ -100,8 +100,8 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
 
     private synchronized IndexWriter getIndexWriter() throws IOException
     {
-        List<IndexPartition> indexPartitions = index.getPartitions();
-        Optional<IndexPartition> writablePartition = indexPartitions.stream()
+        List<AbstractIndexPartition> indexPartitions = index.getPartitions();
+        Optional<AbstractIndexPartition> writablePartition = indexPartitions.stream()
                 .filter( this::writablePartition )
                 .findFirst();
         if ( writablePartition.isPresent() )
@@ -110,12 +110,12 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
         }
         else
         {
-            IndexPartition indexPartition = index.addNewPartition();
+            AbstractIndexPartition indexPartition = index.addNewPartition();
             return indexPartition.getIndexWriter();
         }
     }
 
-    private boolean writablePartition( IndexPartition partition )
+    private boolean writablePartition( AbstractIndexPartition partition )
     {
         return partition.getIndexWriter().numDocs() < MAXIMUM_PARTITION_SIZE;
     }

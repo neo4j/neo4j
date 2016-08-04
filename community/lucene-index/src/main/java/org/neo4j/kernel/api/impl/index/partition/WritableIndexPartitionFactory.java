@@ -19,36 +19,29 @@
  */
 package org.neo4j.kernel.api.impl.index.partition;
 
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ReferenceManager;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.Directory;
 
-import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.function.Factory;
+
 /**
- * Container for {@link IndexSearcher} of the particular {@link AbstractIndexPartition partition}.
- * Manages lifecycle of the underlying {@link IndexSearcher searcher}.
+ * Factory to create writable partitions for partitioned index.
  */
-public class PartitionSearcher implements Closeable
+public class WritableIndexPartitionFactory implements IndexPartitionFactory
 {
-    private IndexSearcher indexSearcher;
-    private ReferenceManager<IndexSearcher> referenceManager;
+    private Factory<IndexWriterConfig> writerConfigFactory;
 
-    public PartitionSearcher( ReferenceManager<IndexSearcher> referenceManager ) throws IOException
+    public WritableIndexPartitionFactory( Factory<IndexWriterConfig> writerConfigFactory )
     {
-        this.referenceManager = referenceManager;
-        this.indexSearcher = referenceManager.acquire();
-        this.indexSearcher.setQueryCache( null );
-    }
-
-    public IndexSearcher getIndexSearcher()
-    {
-        return indexSearcher;
+        this.writerConfigFactory = writerConfigFactory;
     }
 
     @Override
-    public void close() throws IOException
+    public AbstractIndexPartition createPartition( File partitionFolder, Directory directory ) throws IOException
     {
-        referenceManager.release( indexSearcher );
+        return new WritableIndexPartition( partitionFolder, directory, writerConfigFactory.newInstance() );
     }
 }

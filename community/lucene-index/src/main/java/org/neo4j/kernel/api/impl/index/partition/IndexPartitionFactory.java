@@ -17,14 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.impl.index.partition;
 
-import org.neo4j.kernel.api.index.SchemaIndexProviderApprovalTest;
 
-public class LuceneIndexIndexProviderApprovalTest extends SchemaIndexProviderApprovalTest
+import org.apache.lucene.store.Directory;
+
+import java.io.File;
+import java.io.IOException;
+
+/**
+ * Factory to create particular partition of partitioned index in specified folder and represented by {@link Directory}
+ */
+public interface IndexPartitionFactory
 {
-    public LuceneIndexIndexProviderApprovalTest( TestValue value )
-    {
-        super( value );
-    }
+    AbstractIndexPartition createPartition( File partitionFolder, Directory directory ) throws IOException;
 }

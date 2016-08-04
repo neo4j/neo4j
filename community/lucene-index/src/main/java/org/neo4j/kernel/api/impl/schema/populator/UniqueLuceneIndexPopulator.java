@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.schema.populator;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
+import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -34,14 +34,14 @@ import org.neo4j.storageengine.api.schema.IndexSample;
  * A {@link LuceneIndexPopulator} used for unique Lucene schema indexes.
  * Performs sampling using {@link UniqueIndexSampler}.
  * Verifies uniqueness of added and changed values using
- * {@link LuceneSchemaIndex#verifyUniqueness(PropertyAccessor, int)} method.
+ * {@link SchemaIndex#verifyUniqueness(PropertyAccessor, int)} method.
  */
 public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     private final int propertyKeyId;
     private final UniqueIndexSampler sampler;
 
-    public UniqueLuceneIndexPopulator( LuceneSchemaIndex index, IndexDescriptor descriptor )
+    public UniqueLuceneIndexPopulator( SchemaIndex index, IndexDescriptor descriptor )
     {
         super( index );
         this.propertyKeyId = descriptor.getPropertyKeyId();

@@ -48,7 +48,9 @@ import java.util.concurrent.Future;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
+import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
+import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
+import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.test.RepeatRule;
@@ -57,7 +59,7 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class AbstractLuceneIndexIntegrationTest
+public class DatabaseIndexIntegrationTest
 {
     private static final int THREAD_NUMBER = 5;
     @Rule
@@ -68,7 +70,7 @@ public class AbstractLuceneIndexIntegrationTest
     private final CountDownLatch closeRaceSignal = new CountDownLatch( 1 );
 
     private SyncNotifierDirectoryFactory directoryFactory;
-    private TestLuceneIndex luceneIndex;
+    private WritableTestDatabaseIndex luceneIndex;
     private ExecutorService workers;
 
     @Before
@@ -101,11 +103,11 @@ public class AbstractLuceneIndexIntegrationTest
         assertFalse( luceneIndex.isOpen() );
     }
 
-    private static TestLuceneIndex createTestLuceneIndex( DirectoryFactory dirFactory, File folder ) throws IOException
+    private static WritableTestDatabaseIndex createTestLuceneIndex( DirectoryFactory dirFactory, File folder ) throws IOException
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fs, folder, "test" );
-        TestLuceneIndex index = new TestLuceneIndex( indexStorage );
+        WritableTestDatabaseIndex index = new WritableTestDatabaseIndex( indexStorage );
         index.create();
         index.open();
         return index;
@@ -171,17 +173,28 @@ public class AbstractLuceneIndexIntegrationTest
 
     private IndexWriter firstPartitionWriter()
     {
-        List<IndexPartition> partitions = luceneIndex.getPartitions();
+        List<AbstractIndexPartition> partitions = luceneIndex.getPartitions();
         assertEquals( 1, partitions.size() );
-        IndexPartition partition = partitions.get( 0 );
+        AbstractIndexPartition partition = partitions.get( 0 );
         return partition.getIndexWriter();
+    }
+
+    private static class WritableTestDatabaseIndex extends WritableAbstractDatabaseIndex
+    {
+        WritableTestDatabaseIndex( PartitionedIndexStorage indexStorage )
+        {
+            super( new TestLuceneIndex( indexStorage,
+                    new WritableIndexPartitionFactory( IndexWriterConfigs::standard ) ) );
+        }
     }
 
     private static class TestLuceneIndex extends AbstractLuceneIndex
     {
-        TestLuceneIndex( PartitionedIndexStorage indexStorage )
+
+        public TestLuceneIndex( PartitionedIndexStorage indexStorage,
+                IndexPartitionFactory partitionFactory )
         {
-            super( indexStorage, IndexWriterConfigs::standard );
+            super( indexStorage, partitionFactory );
         }
     }
 

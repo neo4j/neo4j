@@ -20,8 +20,6 @@
 package org.neo4j.kernel.api.impl.index.partition;
 
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 
@@ -30,39 +28,37 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshotFileIterator;
 
 /**
  * Represents a single partition of a partitioned lucene index. Each partition is a separate Lucene index.
  * Contains and manages lifecycle of the corresponding {@link Directory}, {@link IndexWriter writer} and
  * {@link SearcherManager}.
  */
-public class IndexPartition implements Closeable
+public abstract class AbstractIndexPartition implements Closeable
 {
-    private final IndexWriter indexWriter;
-    private final Directory directory;
-    private final SearcherManager searcherManager;
-    private final File indexFolder;
+    protected final Directory directory;
+    protected final File partitionFolder;
 
-    public IndexPartition( File partitionFolder, Directory directory, IndexWriterConfig writerConfig )
-            throws IOException
+    public AbstractIndexPartition( File partitionFolder, Directory directory )
     {
-        this.indexFolder = partitionFolder;
+        this.partitionFolder = partitionFolder;
         this.directory = directory;
-        this.indexWriter = new IndexWriter( directory, writerConfig );
-        this.searcherManager = new SearcherManager( indexWriter, new SearcherFactory() );
     }
 
-    public IndexWriter getIndexWriter()
-    {
-        return indexWriter;
-    }
-
+    /**
+     * Retrieve index partition directory
+     * @return partition directory
+     */
     public Directory getDirectory()
     {
         return directory;
     }
+
+    /**
+     * Retrieve index partition writer
+     * @return partition writer
+     */
+    public abstract IndexWriter getIndexWriter();
 
     /**
      * Return searcher for requested partition.
@@ -72,26 +68,14 @@ public class IndexPartition implements Closeable
      * @return partition searcher
      * @throws IOException if exception happened during searcher acquisition
      */
-    public PartitionSearcher acquireSearcher() throws IOException
-    {
-        return new PartitionSearcher( searcherManager );
-    }
+    public abstract PartitionSearcher acquireSearcher() throws IOException;
 
     /**
      * Refresh partition to make newly inserted data visible for readers.
      *
      * @throws IOException if refreshing fails.
      */
-    public void maybeRefreshBlocking() throws IOException
-    {
-        searcherManager.maybeRefreshBlocking();
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        IOUtils.closeAll( searcherManager, indexWriter, directory );
-    }
+    public abstract void maybeRefreshBlocking() throws IOException;
 
     /**
      * Retrieve list of consistent Lucene index files for this partition.
@@ -99,8 +83,6 @@ public class IndexPartition implements Closeable
      * @return the iterator over index files.
      * @throws IOException if any IO operation fails.
      */
-    public ResourceIterator<File> snapshot() throws IOException
-    {
-        return LuceneIndexSnapshotFileIterator.forIndex( indexFolder, indexWriter );
-    }
+    public abstract ResourceIterator<File> snapshot() throws IOException;
+
 }

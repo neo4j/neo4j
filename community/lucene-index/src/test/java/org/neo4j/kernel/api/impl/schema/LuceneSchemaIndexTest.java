@@ -44,7 +44,7 @@ public class LuceneSchemaIndexTest
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private LuceneSchemaIndex index;
+    private SchemaIndex index;
 
     @After
     public void closeIndex() throws Exception
@@ -116,22 +116,22 @@ public class LuceneSchemaIndexTest
         assertTrue( "Should have had online status set", index.isOnline() );
     }
 
-    private LuceneSchemaIndex createIndex() throws IOException
+    private SchemaIndex createIndex() throws IOException
     {
-        LuceneSchemaIndex schemaIndex = newSchemaIndex( false );
+        SchemaIndex schemaIndex = newSchemaIndex( false );
         schemaIndex.create();
         schemaIndex.open();
         return schemaIndex;
     }
 
-    private LuceneSchemaIndex openIndex() throws IOException
+    private SchemaIndex openIndex() throws IOException
     {
-        LuceneSchemaIndex schemaIndex = newSchemaIndex( false );
+        SchemaIndex schemaIndex = newSchemaIndex( false );
         schemaIndex.open();
         return schemaIndex;
     }
 
-    private LuceneSchemaIndex newSchemaIndex( boolean unique )
+    private SchemaIndex newSchemaIndex( boolean unique )
     {
         LuceneSchemaIndexBuilder builder = LuceneSchemaIndexBuilder.create();
         if ( unique )

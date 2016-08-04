@@ -50,6 +50,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -145,13 +146,14 @@ public class ConsistencyCheckService
             try
             {
                 IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
+                OperationalMode operationalMode = OperationalMode.single;
                 labelScanStore = new LuceneLabelScanStoreBuilder(
                         storeDir, fullStoreLabelUpdateStream( () -> indexStoreView ),
-                        fileSystem, logProvider ).build();
+                        fileSystem, consistencyCheckerConfig, operationalMode, logProvider ).build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         fileSystem,
                         DirectoryFactory.PERSISTENT,
-                        storeDir );
+                        storeDir, consistencyCheckerConfig, operationalMode );
 
                 int numberOfThreads = defaultConsistencyCheckThreadsNumber();
                 Statistics statistics;
