@@ -27,31 +27,30 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
-public class RoleProcedure extends CallableProcedure.BasicProcedure
+abstract class RoleProcedure extends CallableProcedure.BasicProcedure
 {
-    public static final String NAME = "role";
-    private final CoreOrEdge role;
+    private static final String PROCEDURE_NAME = "role";
+    private static final String[] PROCEDURE_NAMESPACE = {"dbms", "cluster"};
+    private static final String OUTPUT_NAME = "role";
 
-    public RoleProcedure( CoreOrEdge role )
+    RoleProcedure()
     {
-        super( procedureSignature( new ProcedureSignature.ProcedureName( new String[]{"dbms", "cluster"}, NAME ) )
-                .out( "role", Neo4jTypes.NTString ).build() );
-        this.role = role;
+        super( procedureSignature( new ProcedureSignature.ProcedureName( PROCEDURE_NAMESPACE, PROCEDURE_NAME ) )
+                .out( OUTPUT_NAME, Neo4jTypes.NTString ).build() );
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        return RawIterator.<Object[], ProcedureException>of( new Object[]{name()} );
+        return RawIterator.<Object[],ProcedureException>of( new Object[]{role().name()} );
     }
 
-    private String name()
-    {
-        return role == null ? "UNKNOWN" : role.name();
-    }
+    abstract Role role();
 
-    public enum CoreOrEdge
+    public enum Role
     {
-        CORE, EDGE
+        LEADER,
+        FOLLOWER,
+        READ_REPLICA
     }
 }

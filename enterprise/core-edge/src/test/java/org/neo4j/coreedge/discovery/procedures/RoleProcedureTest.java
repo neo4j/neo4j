@@ -22,52 +22,59 @@ package org.neo4j.coreedge.discovery.procedures;
 import org.junit.Test;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 
 import static org.junit.Assert.assertEquals;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class RoleProcedureTest
 {
     @Test
-    public void shouldReturnCore() throws Exception
+    public void shouldReturnLeader() throws Exception
     {
         // given
-        RoleProcedure proc = new RoleProcedure( RoleProcedure.CoreOrEdge.CORE );
+        RaftMachine raft = mock( RaftMachine.class );
+        when( raft.isLeader() ).thenReturn( true );
+        RoleProcedure proc = new CoreRoleProcedure( raft );
 
         // when
         RawIterator<Object[], ProcedureException> result = proc.apply( null, null );
 
         // then
-        assertEquals( RoleProcedure.CoreOrEdge.CORE.name(), single( result )[0]);
+        assertEquals( RoleProcedure.Role.LEADER.name(), single( result )[0]);
     }
 
     @Test
-    public void shouldReturnEdge() throws Exception
+    public void shouldReturnFollower() throws Exception
     {
         // given
-        RoleProcedure proc = new RoleProcedure( RoleProcedure.CoreOrEdge.EDGE );
+        RaftMachine raft = mock( RaftMachine.class );
+        when( raft.isLeader() ).thenReturn( false );
+        RoleProcedure proc = new CoreRoleProcedure( raft );
 
         // when
         RawIterator<Object[], ProcedureException> result = proc.apply( null, null );
 
         // then
-        assertEquals( RoleProcedure.CoreOrEdge.EDGE.name(), single( result )[0]);
+        assertEquals( RoleProcedure.Role.FOLLOWER.name(), single( result )[0]);
     }
 
     @Test
-    public void shouldReturnUnknown() throws Exception
+    public void shouldReturnReadReplica() throws Exception
     {
         // given
-        RoleProcedure proc = new RoleProcedure( null );
+        RoleProcedure proc = new EdgeRoleProcedure();
 
         // when
         RawIterator<Object[], ProcedureException> result = proc.apply( null, null );
 
         // then
-        assertEquals( "UNKNOWN", single( result )[0]);
+        assertEquals( RoleProcedure.Role.READ_REPLICA.name(), single( result )[0]);
     }
 
     private Object[] single( RawIterator<Object[], ProcedureException> result ) throws ProcedureException

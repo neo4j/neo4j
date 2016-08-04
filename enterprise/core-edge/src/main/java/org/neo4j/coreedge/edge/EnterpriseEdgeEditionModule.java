@@ -37,6 +37,7 @@ import org.neo4j.coreedge.catchup.tx.TxPollingClient;
 import org.neo4j.coreedge.catchup.tx.TxPullClient;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
+import org.neo4j.coreedge.discovery.procedures.EdgeRoleProcedure;
 import org.neo4j.coreedge.messaging.routing.ConnectToRandomCoreMember;
 import org.neo4j.coreedge.core.consensus.ContinuousJob;
 import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
@@ -44,7 +45,6 @@ import org.neo4j.coreedge.core.state.machines.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.messaging.NonBlockingChannels;
-import org.neo4j.coreedge.discovery.procedures.RoleProcedure;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -92,7 +92,6 @@ import org.neo4j.udc.UsageData;
 
 import static java.util.Collections.singletonMap;
 
-import static org.neo4j.coreedge.discovery.procedures.RoleProcedure.CoreOrEdge.EDGE;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
@@ -107,7 +106,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
     {
         try
         {
-            procedures.register( new RoleProcedure( EDGE ) );
+            procedures.register( new EdgeRoleProcedure() );
         }
         catch ( ProcedureException e )
         {

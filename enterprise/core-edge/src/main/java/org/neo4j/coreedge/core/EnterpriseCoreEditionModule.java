@@ -38,6 +38,7 @@ import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.core.consensus.ConsensusModule;
 import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
+import org.neo4j.coreedge.discovery.procedures.CoreRoleProcedure;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.messaging.LoggingOutbound;
 import org.neo4j.coreedge.messaging.Outbound;
@@ -53,7 +54,6 @@ import org.neo4j.coreedge.messaging.SenderService;
 import org.neo4j.coreedge.discovery.procedures.AcquireEndpointsProcedure;
 import org.neo4j.coreedge.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.coreedge.discovery.procedures.DiscoverMembersProcedure;
-import org.neo4j.coreedge.discovery.procedures.RoleProcedure;
 import org.neo4j.coreedge.logging.BetterMessageLogger;
 import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.logging.NullMessageLogger;
@@ -91,8 +91,6 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 
-import static org.neo4j.coreedge.discovery.procedures.RoleProcedure.CoreOrEdge.CORE;
-
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
  * that are specific to the Enterprise Core edition that provides a core cluster.
@@ -120,7 +118,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
             procedures.register( new DiscoverMembersProcedure( discoveryService, logProvider ) );
             procedures.register( new AcquireEndpointsProcedure( discoveryService, consensusModule.raftMachine(), logProvider ) );
             procedures.register( new ClusterOverviewProcedure( discoveryService, consensusModule.raftMachine(), logProvider ) );
-            procedures.register( new RoleProcedure( CORE ) );
+            procedures.register( new CoreRoleProcedure( consensusModule.raftMachine()) );
         }
         catch ( ProcedureException e )
         {
