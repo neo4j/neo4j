@@ -50,7 +50,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
  * Base cursor for nodes.
@@ -224,21 +224,17 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
                 @Override
                 public boolean next()
                 {
-                    if ( groupId == Record.NO_NEXT_RELATIONSHIP.intValue() )
+                    while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
                     {
-                        return false;
-                    }
-
-                    cursors.relationshipGroup().next( groupId, group, NORMAL );
-                    try
-                    {
-                        value.setValue( group.getType() );
-                        return true;
-                    }
-                    finally
-                    {
+                        boolean groupRecordInUse = cursors.relationshipGroup().next( groupId, group, FORCE );
                         groupId = group.getNext();
+                        if ( groupRecordInUse )
+                        {
+                            value.setValue( group.getType() );
+                            return true;
+                        }
                     }
+                    return false;
                 }
 
                 @Override
@@ -302,8 +298,11 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             RelationshipRecord relationship = relationshipStore.newRecord();
             while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                cursors.relationshipGroup().next( groupId, group, NORMAL );
-                count += nodeDegreeByDirection( group, direction, relationship );
+                boolean groupRecordInUse = cursors.relationshipGroup().next( groupId, group, FORCE );
+                if ( groupRecordInUse )
+                {
+                    count += nodeDegreeByDirection( group, direction, relationship );
+                }
                 groupId = group.getNext();
             }
             return (int) count;
@@ -332,8 +331,8 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             RelationshipRecord relationship = relationshipStore.newRecord();
             while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                cursors.relationshipGroup().next( groupId, group, NORMAL );
-                if ( group.getType() == relType )
+                boolean groupRecordInUse = cursors.relationshipGroup().next( groupId, group, FORCE );
+                if ( groupRecordInUse && group.getType() == relType )
                 {
                     return (int) nodeDegreeByDirection( group, direction, relationship );
                 }
@@ -418,7 +417,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         {
             return 0;
         }
-        cursors.relationship().next( relationshipId, record, NORMAL );
+        cursors.relationship().next( relationshipId, record, FORCE );
         if ( record.getFirstNode() == nodeRecord.getId() )
         {
             return record.getFirstPrevRel();
@@ -529,16 +528,19 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         @Override
         public boolean next()
         {
-            if ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+            while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                cursors.relationshipGroup().next( groupId, group, NORMAL );
-                this.type = group.getType();
-                long loop = countByFirstPrevPointer( group.getFirstLoop(), relationship );
-                outgoing = countByFirstPrevPointer( group.getFirstOut(), relationship ) + loop;
-                incoming = countByFirstPrevPointer( group.getFirstIn(), relationship ) + loop;
+                boolean groupRecordInUse = cursors.relationshipGroup().next( groupId, group, FORCE );
                 groupId = group.getNext();
+                if ( groupRecordInUse )
+                {
+                    this.type = group.getType();
 
-                return true;
+                    long loop = countByFirstPrevPointer( group.getFirstLoop(), relationship );
+                    this.outgoing = countByFirstPrevPointer( group.getFirstOut(), relationship ) + loop;
+                    this.incoming = countByFirstPrevPointer( group.getFirstIn(), relationship ) + loop;
+                    return true;
+                }
             }
             return false;
         }

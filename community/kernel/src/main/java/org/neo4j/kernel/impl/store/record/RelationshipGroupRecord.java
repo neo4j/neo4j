@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
 
-import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 public class RelationshipGroupRecord extends AbstractBaseRecord
 {
@@ -46,7 +46,7 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
     public RelationshipGroupRecord( long id, int type, long firstOut, long firstIn, long firstLoop, long owningNode,
             boolean inUse )
     {
-        this( id, type, firstOut, firstIn, firstLoop, owningNode, Record.NO_NEXT_RELATIONSHIP.intValue(), inUse );
+        this( id, type, firstOut, firstIn, firstLoop, owningNode, NULL_REFERENCE.intValue(), inUse );
     }
 
     @Deprecated
@@ -78,16 +78,16 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
         this.firstLoop = firstLoop;
         this.owningNode = owningNode;
         this.next = next;
-        this.prev = NO_NEXT_RELATIONSHIP.intValue();
+        this.prev = NULL_REFERENCE.intValue();
         return this;
     }
 
     @Override
     public void clear()
     {
-        initialize( false, -1, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue(),
-                NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue() );
-        prev = NO_NEXT_RELATIONSHIP.intValue();
+        initialize( false, NULL_REFERENCE.intValue(), NULL_REFERENCE.intValue(), NULL_REFERENCE.intValue(),
+                NULL_REFERENCE.intValue(), NULL_REFERENCE.intValue(), NULL_REFERENCE.intValue() );
+        prev = NULL_REFERENCE.intValue();
     }
 
     public int getType()
