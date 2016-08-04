@@ -79,7 +79,7 @@ import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdFor
 abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         extends BaseOneByteHeaderRecordFormat<RECORD>
 {
-    private static final int HEADER_BYTE = Byte.BYTES;
+    static final int HEADER_BYTE = Byte.BYTES;
 
     static final long NULL = Record.NULL_REFERENCE.intValue();
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
@@ -242,7 +242,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     {
         if ( record.inUse() )
         {
-            record.setUseFixedReferences( canUseFixedReferences( record ));
+            record.setUseFixedReferences( canUseFixedReferences( record, recordSize ));
             if ( !record.isUseFixedReferences() )
             {
                 int requiredLength = HEADER_BYTE + requiredDataLength( record );
@@ -258,7 +258,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         }
     }
 
-    protected abstract boolean canUseFixedReferences( RECORD record );
+    protected abstract boolean canUseFixedReferences( RECORD record, int recordSize );
 
     /**
      * Required length of the data in the given record (without the header byte).

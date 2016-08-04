@@ -43,6 +43,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<RelationshipGroupRecord>
 {
     static final int RECORD_SIZE = 32;
+    private static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +
+                                                        Byte.BYTES /* modifiers */ +
+                                                        Short.BYTES /* type */ +
+                                                        Integer.BYTES /* next */ +
+                                                        Integer.BYTES /* first out */ +
+                                                        Integer.BYTES /* first in */ +
+                                                        Integer.BYTES /* first loop */ +
+                                                        Integer.BYTES /* owning node */;
 
     private static final int HAS_OUTGOING_BIT = 0b0000_1000;
     private static final int HAS_INCOMING_BIT = 0b0001_0000;
@@ -137,13 +145,19 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     }
 
     @Override
-    protected boolean canUseFixedReferences( RelationshipGroupRecord record )
+    protected boolean canUseFixedReferences( RelationshipGroupRecord record, int recordSize )
     {
-        return ((record.getNext() != NULL) && ((record.getNext() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
+        return (isRecordBigEnoughForFixedReferences( recordSize ) &&
+                (record.getNext() != NULL) && ((record.getNext() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
                 (record.getFirstOut() != NULL) && ((record.getFirstOut() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
                 (record.getFirstIn() != NULL) && ((record.getFirstIn() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
                 (record.getFirstLoop() != NULL) && ((record.getFirstLoop() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
                 (record.getOwningNode() != NULL) && ((record.getOwningNode() & ONE_BIT_OVERFLOW_BIT_MASK) == 0));
+    }
+
+    private boolean isRecordBigEnoughForFixedReferences( int recordSize )
+    {
+        return FIXED_FORMAT_RECORD_SIZE <= recordSize;
     }
 
     private void readFixedReferencesMethod( RelationshipGroupRecord record, PageCursor cursor, boolean inUse )

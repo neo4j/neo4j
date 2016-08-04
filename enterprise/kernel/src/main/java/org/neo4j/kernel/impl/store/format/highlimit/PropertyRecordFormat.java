@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.neo4j.kernel.impl.store.format.highlimit.BaseHighLimitRecordFormat.HEADER_BIT_FIXED_REFERENCE;
+import static org.neo4j.kernel.impl.store.format.highlimit.BaseHighLimitRecordFormat.HEADER_BYTE;
 import static org.neo4j.kernel.impl.store.format.highlimit.BaseHighLimitRecordFormat.NULL;
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toAbsolute;
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
@@ -52,6 +53,12 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
 class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 {
     static final int RECORD_SIZE = 48;
+    private static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +
+                                                        Short.BYTES   /* prev prop modifiers */ +
+                                                        Integer.BYTES /* prev prop */ +
+                                                        Short.BYTES /* next prop modifiers */ +
+                                                        Integer.BYTES /* next prop */ +
+                                                        3 /* prototype mystery */;
     private static final long HIGH_DWORD_LOWER_WORD_MASK = 0xFFFF_0000_0000L;
     private static final long HIGH_DWORD_LOWER_WORD_CHECK_MASK = 0xFFFF_0000_0000_0000L;
 
@@ -109,7 +116,7 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
         if ( record.inUse() )
         {
             byte headerByte = (byte) ((record.inUse() ? IN_USE_BIT : 0) | numberOfBlocks( record ) << 4);
-            boolean canUseFixedReferences = canUseFixedReferences( record );
+            boolean canUseFixedReferences = canUseFixedReferences( record, recordSize );
             record.setUseFixedReferences( canUseFixedReferences );
             headerByte = set( headerByte, HEADER_BIT_FIXED_REFERENCE, canUseFixedReferences );
             cursor.putByte( headerByte );
@@ -155,10 +162,16 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
         return record.getNextProp();
     }
 
-    private boolean canUseFixedReferences( PropertyRecord record )
+    private boolean canUseFixedReferences( PropertyRecord record, int recordSize )
     {
-        return (((record.getNextProp() != NULL) && ((record.getNextProp() & HIGH_DWORD_LOWER_WORD_CHECK_MASK) == 0)) &&
+        return ( isRecordBigEnoughForFixedReferences( recordSize ) &&
+                ((record.getNextProp() != NULL) && ((record.getNextProp() & HIGH_DWORD_LOWER_WORD_CHECK_MASK) == 0)) &&
                 ((record.getPrevProp() != NULL) && ((record.getPrevProp() & HIGH_DWORD_LOWER_WORD_CHECK_MASK) == 0)));
+    }
+
+    private boolean isRecordBigEnoughForFixedReferences( int recordSize )
+    {
+        return FIXED_FORMAT_RECORD_SIZE <= recordSize;
     }
 
     private void readFixedReferencesRecord( PropertyRecord record, PageCursor cursor )

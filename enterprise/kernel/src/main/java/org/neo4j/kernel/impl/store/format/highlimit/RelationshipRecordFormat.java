@@ -48,6 +48,15 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
 class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRecord>
 {
     static final int RECORD_SIZE = 32;
+    private static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +
+                                                        Byte.BYTES /* modifiers */ +
+                                                        Integer.BYTES /* first node */ +
+                                                        Integer.BYTES /* second node */ +
+                                                        Integer.BYTES /* first prev rel */ +
+                                                        Integer.BYTES /* first next rel */ +
+                                                        Integer.BYTES /* second prev rel */ +
+                                                        Integer.BYTES /* second next rel */ +
+                                                        Integer.BYTES /* next property */;
 
     private static final int FIRST_IN_FIRST_CHAIN_BIT = 0b0000_1000;
     private static final int FIRST_IN_SECOND_CHAIN_BIT = 0b0001_0000;
@@ -168,15 +177,21 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     }
 
     @Override
-    protected boolean canUseFixedReferences( RelationshipRecord record )
+    protected boolean canUseFixedReferences( RelationshipRecord record, int recordSize )
     {
-           return ((record.getFirstNode() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
+           return (isRecordBigEnoughForFixedReferences( recordSize ) &&
+                  (record.getFirstNode() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
                   ((record.getSecondNode() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
                   ((record.getFirstPrevRel() != NULL) && ((record.getFirstPrevRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
                   ((record.getFirstNextRel() != NULL) && ((record.getFirstNextRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
                   ((record.getSecondPrevRel() != NULL) && ((record.getSecondPrevRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
                   ((record.getSecondNextRel() != NULL) && ((record.getSecondNextRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
                   ((record.getNextProp() != NULL) && ((record.getNextProp() & THREE_BITS_OVERFLOW_BIT_MASK) == 0));
+    }
+
+    private boolean isRecordBigEnoughForFixedReferences( int recordSize )
+    {
+        return FIXED_FORMAT_RECORD_SIZE <= recordSize;
     }
 
     private long decodeAbsoluteOrRelative( PageCursor cursor, long headerByte, int firstInStartBit, long recordId )
