@@ -33,8 +33,8 @@ import java.util.List;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
+import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -81,7 +81,7 @@ public class LuceneSchemaIndexPopulationIT
     @Test
     public void partitionedIndexPopulation() throws Exception
     {
-        try ( LuceneSchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create().uniqueIndex()
+        try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create().uniqueIndex()
                 .withIndexRootFolder( testDir.directory( "partitionIndex" + affectedNodes ) )
                 .withIndexIdentifier( "uniqueIndex" + affectedNodes )
                 .build() )

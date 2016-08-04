@@ -72,7 +72,7 @@ public class LuceneLabelScanIndexIT
     @Test
     public void readFromPartitionedIndex() throws IOException
     {
-        try ( LuceneLabelScanIndex labelScanIndex = LuceneLabelScanIndexBuilder.create()
+        try ( LabelScanIndex labelScanIndex = LuceneLabelScanIndexBuilder.create()
                 .withIndexIdentifier( "partitionedIndex" + affectedNodes )
                 .withIndexRootFolder( testDir.directory( "partitionedIndexFolder" + affectedNodes ) )
                 .build() )
@@ -107,7 +107,7 @@ public class LuceneLabelScanIndexIT
         }
     }
 
-    private void generateLabelChanges( LuceneLabelScanIndex labelScanIndex, int numberOfUpdates ) throws IOException
+    private void generateLabelChanges( LabelScanIndex labelScanIndex, int numberOfUpdates ) throws IOException
     {
         try ( LabelScanWriter scanWriter = labelScanIndex.getLabelScanWriter() )
         {

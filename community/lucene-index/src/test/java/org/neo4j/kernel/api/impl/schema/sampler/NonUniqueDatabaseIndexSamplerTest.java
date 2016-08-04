@@ -42,8 +42,8 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.IndexReaderStub;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
-import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
+import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartition;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -53,7 +53,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class NonUniqueLuceneIndexSamplerTest
+public class NonUniqueDatabaseIndexSamplerTest
 {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -96,7 +96,7 @@ public class NonUniqueLuceneIndexSamplerTest
     public void samplingOfLargeNumericValues() throws Exception
     {
         try ( RAMDirectory dir = new RAMDirectory();
-              IndexPartition indexPartition = new IndexPartition( new File( "testPartition" ), dir,
+              WritableIndexPartition indexPartition = new WritableIndexPartition( new File( "testPartition" ), dir,
                       IndexWriterConfigs.standard() ) )
         {
             insertDocument( indexPartition, 1, Long.MAX_VALUE );
@@ -129,7 +129,7 @@ public class NonUniqueLuceneIndexSamplerTest
         return terms;
     }
 
-    private static void insertDocument( IndexPartition partition, long nodeId, Object propertyValue ) throws IOException
+    private static void insertDocument( WritableIndexPartition partition, long nodeId, Object propertyValue ) throws IOException
     {
         Document doc = LuceneDocumentStructure.documentRepresentingProperty( nodeId, propertyValue );
         partition.getIndexWriter().addDocument( doc );

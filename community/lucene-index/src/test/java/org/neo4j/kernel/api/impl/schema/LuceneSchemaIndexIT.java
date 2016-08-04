@@ -117,7 +117,7 @@ public class LuceneSchemaIndexIT
     @Test
     public void updateMultiplePartitionedIndex() throws IOException, IndexEntryConflictException
     {
-        try ( LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
+        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create()
                 .withIndexRootFolder( testDir.directory() )
                 .withIndexIdentifier( "partitionedIndexForUpdates" )
                 .build() )
@@ -139,7 +139,7 @@ public class LuceneSchemaIndexIT
     public void createPopulateDropIndex() throws Exception
     {
         File crudOperation = testDir.directory( "indexCRUDOperation" );
-        try ( LuceneSchemaIndex crudIndex = LuceneSchemaIndexBuilder.create()
+        try ( SchemaIndex crudIndex = LuceneSchemaIndexBuilder.create()
                 .withIndexRootFolder( crudOperation )
                 .withIndexIdentifier( "crudIndex" )
                 .build() )
@@ -162,7 +162,7 @@ public class LuceneSchemaIndexIT
     @Test
     public void createFailPartitionedIndex() throws Exception
     {
-        try ( LuceneSchemaIndex failedIndex = LuceneSchemaIndexBuilder.create()
+        try ( SchemaIndex failedIndex = LuceneSchemaIndexBuilder.create()
                 .withIndexRootFolder( testDir.directory( "failedIndexFolder" ) )
                 .withIndexIdentifier( "failedIndex" )
                 .build() )
@@ -183,7 +183,7 @@ public class LuceneSchemaIndexIT
     @Test
     public void openClosePartitionedIndex() throws IOException
     {
-        LuceneSchemaIndex reopenIndex = null;
+        SchemaIndex reopenIndex = null;
         try
         {
             reopenIndex = LuceneSchemaIndexBuilder.create()
@@ -228,7 +228,7 @@ public class LuceneSchemaIndexIT
         }
     }
 
-    private void addDocumentToIndex( LuceneSchemaIndex index, int documents ) throws IOException
+    private void addDocumentToIndex( SchemaIndex index, int documents ) throws IOException
     {
         for ( int i = 0; i < documents; i++ )
         {
@@ -238,7 +238,7 @@ public class LuceneSchemaIndexIT
 
     private LuceneIndexAccessor createDefaultIndexAccessor() throws IOException
     {
-        LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
+        SchemaIndex index = LuceneSchemaIndexBuilder.create()
                 .withIndexRootFolder( testDir.directory() )
                 .withIndexIdentifier( "testIndex" )
                 .build();

@@ -20,10 +20,10 @@
 package org.neo4j.kernel.api.impl.index.backup;
 
 /**
- * Exception that is thrown by {@link LuceneIndexSnapshotFileIterator} in case if exception
+ * Exception that is thrown by {@link WritableIndexSnapshotFileIterator} in case if exception
  * occurred during index snapshot release
  *
- * @see LuceneIndexSnapshotFileIterator
+ * @see WritableIndexSnapshotFileIterator
  * @see org.apache.lucene.index.SnapshotDeletionPolicy
  * @see org.apache.lucene.index.IndexCommit
  */

@@ -554,14 +554,16 @@ public class SchemaIndexHaIT
             {
                 ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider(
                         new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
-                                DirectoryFactory.PERSISTENT, context.storeDir() ) );
+                                DirectoryFactory.PERSISTENT, context.storeDir(), deps.config(),
+                                context.databaseInfo().operationalMode ) );
                 perDbIndexProvider.put( deps.db(), provider );
                 return provider;
             }
             else
             {
                 return new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
-                        DirectoryFactory.PERSISTENT, context.storeDir() );
+                        DirectoryFactory.PERSISTENT, context.storeDir(), deps.config(),
+                        context.databaseInfo().operationalMode );
             }
         }
     }

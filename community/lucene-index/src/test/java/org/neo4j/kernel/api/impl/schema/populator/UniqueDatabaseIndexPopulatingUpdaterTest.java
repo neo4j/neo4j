@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
+import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
@@ -46,7 +46,7 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 
-public class UniqueLuceneIndexPopulatingUpdaterTest
+public class UniqueDatabaseIndexPopulatingUpdaterTest
 {
     private static final int PROPERTY_KEY = 42;
 
@@ -69,7 +69,7 @@ public class UniqueLuceneIndexPopulatingUpdaterTest
     @Test
     public void closeVerifiesUniquenessOfAddedValues() throws Exception
     {
-        LuceneSchemaIndex index = mock( LuceneSchemaIndex.class );
+        SchemaIndex index = mock( SchemaIndex.class );
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( index );
 
         updater.process( add( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
@@ -85,7 +85,7 @@ public class UniqueLuceneIndexPopulatingUpdaterTest
     @Test
     public void closeVerifiesUniquenessOfChangedValues() throws Exception
     {
-        LuceneSchemaIndex index = mock( LuceneSchemaIndex.class );
+        SchemaIndex index = mock( SchemaIndex.class );
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( index );
 
         updater.process( change( 1, PROPERTY_KEY, "foo1", new long[]{1, 2}, "foo2", new long[]{1} ) );
@@ -101,7 +101,7 @@ public class UniqueLuceneIndexPopulatingUpdaterTest
     @Test
     public void closeVerifiesUniquenessOfAddedAndChangedValues() throws Exception
     {
-        LuceneSchemaIndex index = mock( LuceneSchemaIndex.class );
+        SchemaIndex index = mock( SchemaIndex.class );
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( index );
 
         updater.process( add( 1, PROPERTY_KEY, "added1", new long[]{1} ) );
@@ -231,22 +231,22 @@ public class UniqueLuceneIndexPopulatingUpdaterTest
         return newUpdater( new UniqueIndexSampler() );
     }
 
-    private static UniqueLuceneIndexPopulatingUpdater newUpdater( LuceneSchemaIndex index )
+    private static UniqueLuceneIndexPopulatingUpdater newUpdater( SchemaIndex index )
     {
         return newUpdater( index, mock( LuceneIndexWriter.class ), new UniqueIndexSampler() );
     }
 
     private static UniqueLuceneIndexPopulatingUpdater newUpdater( LuceneIndexWriter writer )
     {
-        return newUpdater( mock( LuceneSchemaIndex.class ), writer, new UniqueIndexSampler() );
+        return newUpdater( mock( SchemaIndex.class ), writer, new UniqueIndexSampler() );
     }
 
     private static UniqueLuceneIndexPopulatingUpdater newUpdater( UniqueIndexSampler sampler )
     {
-        return newUpdater( mock( LuceneSchemaIndex.class ), mock( LuceneIndexWriter.class ), sampler );
+        return newUpdater( mock( SchemaIndex.class ), mock( LuceneIndexWriter.class ), sampler );
     }
 
-    private static UniqueLuceneIndexPopulatingUpdater newUpdater( LuceneSchemaIndex index, LuceneIndexWriter writer,
+    private static UniqueLuceneIndexPopulatingUpdater newUpdater( SchemaIndex index, LuceneIndexWriter writer,
             UniqueIndexSampler sampler )
     {
         return new UniqueLuceneIndexPopulatingUpdater( writer, PROPERTY_KEY, index, mock( PropertyAccessor.class ),

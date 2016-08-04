@@ -37,8 +37,8 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
+import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -63,7 +63,7 @@ import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.api.properties.Property.longProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
-public class UniqueLuceneIndexPopulatorTest
+public class UniqueDatabaseIndexPopulatorTest
 {
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
@@ -80,7 +80,7 @@ public class UniqueLuceneIndexPopulatorTest
     private final PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
     private PartitionedIndexStorage indexStorage;
-    private LuceneSchemaIndex index;
+    private SchemaIndex index;
     private UniqueLuceneIndexPopulator populator;
 
     @Before

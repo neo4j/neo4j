@@ -35,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class UniqueLuceneIndexSamplerTest
+public class UniqueDatabaseIndexSamplerTest
 {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

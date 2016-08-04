@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index.backup;
+package org.neo4j.kernel.api.impl.index.partition;
+
+import org.apache.lucene.store.Directory;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
- * Exception that is throw by {@link WritableIndexSnapshotFileIterator} in case if there is an attempt to create a
- * snapshot on a index with index policy that does not support snapshots.
- *
- * @see WritableIndexSnapshotFileIterator
- * @see org.apache.lucene.index.SnapshotDeletionPolicy
+ * Factory to create read only partitions in partitioned index.
  */
-class UnsupportedIndexDeletionPolicy extends RuntimeException
+public class ReadOnlyIndexPartitionFactory implements IndexPartitionFactory
 {
-    UnsupportedIndexDeletionPolicy( String message )
+    @Override
+    public AbstractIndexPartition createPartition( File partitionFolder, Directory directory ) throws IOException
     {
-        super( message );
+        return new ReadOnlyIndexPartition( partitionFolder, directory );
     }
 }

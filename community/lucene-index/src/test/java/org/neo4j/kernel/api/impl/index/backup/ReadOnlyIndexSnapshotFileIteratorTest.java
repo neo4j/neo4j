@@ -24,7 +24,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,49 +35,47 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 
-public class LuceneIndexSnapshotFileIteratorTest
+public class ReadOnlyIndexSnapshotFileIteratorTest
 {
     @Rule
     public final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
-    private File indexDir;
-    private Directory dir;
-    private IndexWriter writer;
+    protected File indexDir;
+    protected Directory dir;
 
     @Before
-    public void initializeLuceneResources() throws IOException
+    public void setUp() throws IOException
     {
         indexDir = testDir.directory();
-        dir = new RAMDirectory();
-        writer = new IndexWriter( dir, IndexWriterConfigs.standard() );
+        dir = DirectoryFactory.PERSISTENT.open( indexDir );
     }
 
     @After
-    public void closeLuceneResources() throws IOException
+    public void tearDown() throws IOException
     {
-        IOUtils.closeAll( writer, dir );
+        IOUtils.closeAll( dir );
     }
 
     @Test
     public void shouldReturnRealSnapshotIfIndexAllowsIt() throws IOException
     {
-        insertRandomDocuments( writer );
+        prepareIndex();
 
         Set<String> files = listDir( dir );
         assertFalse( files.isEmpty() );
 
-        try ( ResourceIterator<File> snapshot = LuceneIndexSnapshotFileIterator.forIndex( indexDir, writer ) )
+        try ( ResourceIterator<File> snapshot = makeSnapshot() )
         {
-            Set<String> snapshotFiles = Iterators.asList( snapshot ).stream().map( File::getName ).collect( toSet() );
+            Set<String> snapshotFiles = snapshot.stream().map( File::getName ).collect( toSet() );
             assertEquals( files, snapshotFiles );
         }
     }
@@ -86,10 +83,23 @@ public class LuceneIndexSnapshotFileIteratorTest
     @Test
     public void shouldReturnEmptyIteratorWhenNoCommitsHaveBeenMade() throws IOException
     {
-        try ( ResourceIterator<File> snapshot = LuceneIndexSnapshotFileIterator.forIndex( indexDir, writer ) )
+        try ( ResourceIterator<File> snapshot = makeSnapshot() )
         {
             assertFalse( snapshot.hasNext() );
         }
+    }
+
+    private void prepareIndex() throws IOException
+    {
+        try ( IndexWriter writer = new IndexWriter( dir, IndexWriterConfigs.standard() ) )
+        {
+            insertRandomDocuments( writer );
+        }
+    }
+
+    protected ResourceIterator<File> makeSnapshot() throws IOException
+    {
+        return LuceneIndexSnapshots.forIndex( indexDir, dir );
     }
 
     private static void insertRandomDocuments( IndexWriter writer ) throws IOException
@@ -104,6 +114,9 @@ public class LuceneIndexSnapshotFileIteratorTest
     private static Set<String> listDir( Directory dir ) throws IOException
     {
         String[] files = dir.listAll();
-        return Stream.of( files ).collect( toSet() );
+        return Stream.of( files )
+                .filter( file -> !IndexWriter.WRITE_LOCK_NAME.equals( file ) )
+                .collect( toSet() );
     }
+
 }

@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -68,6 +69,7 @@ import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationPa
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.rule.TargetDirectory.TestDirectory;
@@ -162,6 +164,8 @@ public class StoreUpgraderTest
         // We leave logical logs in place since the new version can read the old
 
         assertFalse( containsAnyStoreFiles( fileSystem, isolatedMigrationDirectoryOf( dbDirectory ) ) );
+        // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
+        startStopDatabase();
         assertConsistentStore( dbDirectory );
     }
 
@@ -478,5 +482,11 @@ public class StoreUpgraderTest
     protected String getRecordFormatsName()
     {
         return StandardV3_0.NAME;
+    }
+
+    private void startStopDatabase()
+    {
+        GraphDatabaseService databaseService = new TestGraphDatabaseFactory().newEmbeddedDatabase( dbDirectory );
+        databaseService.shutdown();
     }
 }

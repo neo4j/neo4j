@@ -49,6 +49,7 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -112,7 +113,8 @@ public class StoreMigratorFrom20IT
     {
         pageCache = pageCacheRule.getPageCache( fs );
 
-        schemaIndexProvider = new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, storeDir.directory() );
+        schemaIndexProvider = new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, storeDir.directory(),
+                Config.empty(), OperationalMode.single );
         labelScanStoreProvider = new LabelScanStoreProvider( new InMemoryLabelScanStore(), 1 );
 
         upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),

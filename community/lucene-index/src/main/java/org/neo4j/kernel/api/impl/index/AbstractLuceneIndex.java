@@ -21,10 +21,8 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -33,15 +31,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
+import org.neo4j.kernel.api.impl.index.backup.WritableIndexSnapshotFileIterator;
+import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
+import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 
@@ -50,24 +48,24 @@ import static java.util.stream.Collectors.toList;
 /**
  * Abstract implementation of a partitioned index.
  * Such index may consist of one or multiple separate Lucene indexes that are represented as independent
- * {@link IndexPartition partitions}.
+ * {@link AbstractIndexPartition partitions}.
+ * Class and it's subclasses should not be directly used, instead please use corresponding writable or read only
+ * wrapper.
+ * @see WritableAbstractDatabaseIndex
+ * @see ReadOnlyAbstractDatabaseIndex
  */
-public abstract class AbstractLuceneIndex implements Closeable
+public abstract class AbstractLuceneIndex
 {
-    // lock used to guard commits and close of lucene indexes from separate threads
-    protected final ReentrantLock commitCloseLock = new ReentrantLock();
-    // lock guard concurrent creation of new partitions
-    protected final ReentrantLock partitionsLock = new ReentrantLock();
 
     protected final PartitionedIndexStorage indexStorage;
-    private final Factory<IndexWriterConfig> writerConfigFactory;
-    private List<IndexPartition> partitions = new CopyOnWriteArrayList<>();
+    private final IndexPartitionFactory partitionFactory;
+    private List<AbstractIndexPartition> partitions = new CopyOnWriteArrayList<>();
     private volatile boolean open;
 
-    public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, Factory<IndexWriterConfig> writerConfigFactory )
+    public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory )
     {
         this.indexStorage = indexStorage;
-        this.writerConfigFactory = writerConfigFactory;
+        this.partitionFactory = partitionFactory;
     }
 
     /**
@@ -97,8 +95,7 @@ public abstract class AbstractLuceneIndex implements Closeable
         Map<File,Directory> indexDirectories = indexStorage.openIndexDirectories();
         for ( Map.Entry<File,Directory> indexDirectory : indexDirectories.entrySet() )
         {
-            partitions.add( new IndexPartition( indexDirectory.getKey(), indexDirectory.getValue(),
-                    writerConfigFactory.newInstance() ) );
+            partitions.add( partitionFactory.createPartition( indexDirectory.getKey(), indexDirectory.getValue() ) );
         }
         open = true;
     }
@@ -194,35 +191,18 @@ public abstract class AbstractLuceneIndex implements Closeable
      */
     public void flush() throws IOException
     {
-        commitCloseLock.lock();
-        try
+        List<AbstractIndexPartition> partitions = getPartitions();
+        for ( AbstractIndexPartition partition : partitions )
         {
-            List<IndexPartition> partitions = getPartitions();
-            for ( IndexPartition partition : partitions )
-            {
-                partition.getIndexWriter().commit();
-            }
-        }
-        finally
-        {
-            commitCloseLock.unlock();
+            partition.getIndexWriter().commit();
         }
     }
 
-    @Override
     public void close() throws IOException
     {
-        commitCloseLock.lock();
-        try
-        {
-            IOUtils.closeAll( partitions );
-            partitions.clear();
-            open = false;
-        }
-        finally
-        {
-            commitCloseLock.unlock();
-        }
+        IOUtils.closeAll( partitions );
+        partitions.clear();
+        open = false;
     }
 
     /**
@@ -233,32 +213,24 @@ public abstract class AbstractLuceneIndex implements Closeable
     public LuceneAllDocumentsReader allDocumentsReader()
     {
         ensureOpen();
-        partitionsLock.lock();
+        List<PartitionSearcher> searchers = new ArrayList<>( partitions.size() );
         try
         {
-            List<PartitionSearcher> searchers = new ArrayList<>( partitions.size() );
-            try
+            for ( AbstractIndexPartition partition : partitions )
             {
-                for ( IndexPartition partition : partitions )
-                {
-                    searchers.add( partition.acquireSearcher() );
-                }
-
-                List<LucenePartitionAllDocumentsReader> partitionReaders = searchers.stream()
-                        .map( LucenePartitionAllDocumentsReader::new )
-                        .collect( toList() );
-
-                return new LuceneAllDocumentsReader( partitionReaders );
+                searchers.add( partition.acquireSearcher() );
             }
-            catch ( IOException e )
-            {
-                IOUtils.closeAllSilently( searchers );
-                throw new UncheckedIOException( e );
-            }
+
+            List<LucenePartitionAllDocumentsReader> partitionReaders = searchers.stream()
+                    .map( LucenePartitionAllDocumentsReader::new )
+                    .collect( toList() );
+
+            return new LuceneAllDocumentsReader( partitionReaders );
         }
-        finally
+        catch ( IOException e )
         {
-            partitionsLock.unlock();
+            IOUtils.closeAllSilently( searchers );
+            throw new UncheckedIOException( e );
         }
     }
 
@@ -267,18 +239,17 @@ public abstract class AbstractLuceneIndex implements Closeable
      *
      * @return iterator over all index files.
      * @throws IOException
-     * @see org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshotFileIterator
+     * @see WritableIndexSnapshotFileIterator
      */
     public ResourceIterator<File> snapshot() throws IOException
     {
         ensureOpen();
-        commitCloseLock.lock();
         List<ResourceIterator<File>> snapshotIterators = null;
         try
         {
-            List<IndexPartition> partitions = getPartitions();
+            List<AbstractIndexPartition> partitions = getPartitions();
             snapshotIterators = new ArrayList<>( partitions.size() );
-            for ( IndexPartition partition : partitions )
+            for ( AbstractIndexPartition partition : partitions )
             {
                 snapshotIterators.add( partition.snapshot() );
             }
@@ -299,10 +270,6 @@ public abstract class AbstractLuceneIndex implements Closeable
             }
             throw e;
         }
-        finally
-        {
-            commitCloseLock.unlock();
-        }
     }
 
     /**
@@ -312,7 +279,6 @@ public abstract class AbstractLuceneIndex implements Closeable
      */
     public void maybeRefreshBlocking() throws IOException
     {
-        partitionsLock.lock();
         try
         {
             getPartitions().parallelStream().forEach( this::maybeRefreshPartition );
@@ -321,13 +287,9 @@ public abstract class AbstractLuceneIndex implements Closeable
         {
             throw e.getCause();
         }
-        finally
-        {
-            partitionsLock.unlock();
-        }
     }
 
-    private void maybeRefreshPartition( IndexPartition partition )
+    private void maybeRefreshPartition( AbstractIndexPartition partition )
     {
         try
         {
@@ -339,18 +301,18 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
     }
 
-    public List<IndexPartition> getPartitions()
+    public List<AbstractIndexPartition> getPartitions()
     {
         ensureOpen();
         return partitions;
     }
 
-    public boolean hasSinglePartition( List<IndexPartition> partitions )
+    public boolean hasSinglePartition( List<AbstractIndexPartition> partitions )
     {
         return partitions.size() == 1;
     }
 
-    public IndexPartition getFirstPartition( List<IndexPartition> partitions )
+    public AbstractIndexPartition getFirstPartition( List<AbstractIndexPartition> partitions )
     {
         return partitions.get( 0 );
     }
@@ -361,23 +323,14 @@ public abstract class AbstractLuceneIndex implements Closeable
      * @return newly created partition
      * @throws IOException
      */
-    public IndexPartition addNewPartition() throws IOException
+    AbstractIndexPartition addNewPartition() throws IOException
     {
         ensureOpen();
-        partitionsLock.lock();
-        try
-        {
-            File partitionFolder = createNewPartitionFolder();
-            Directory directory = indexStorage.openDirectory( partitionFolder );
-            IndexPartition indexPartition = new IndexPartition( partitionFolder, directory,
-                    writerConfigFactory.newInstance() );
-            partitions.add( indexPartition );
-            return indexPartition;
-        }
-        finally
-        {
-            partitionsLock.unlock();
-        }
+        File partitionFolder = createNewPartitionFolder();
+        Directory directory = indexStorage.openDirectory( partitionFolder );
+        AbstractIndexPartition indexPartition = partitionFactory.createPartition( partitionFolder, directory );
+        partitions.add( indexPartition );
+        return indexPartition;
     }
 
     protected void ensureOpen()
@@ -397,12 +350,12 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
     }
 
-    protected static List<PartitionSearcher> acquireSearchers( List<IndexPartition> partitions ) throws IOException
+    protected static List<PartitionSearcher> acquireSearchers( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = new ArrayList<>( partitions.size() );
         try
         {
-            for ( IndexPartition partition : partitions )
+            for ( AbstractIndexPartition partition : partitions )
             {
                 searchers.add( partition.acquireSearcher() );
             }

@@ -36,7 +36,7 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class LuceneLabelScanStore implements LabelScanStore
 {
-    private final LuceneLabelScanIndex luceneIndex;
+    private final LabelScanIndex luceneIndex;
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
     private final FullStoreChangeStream fullStoreStream;
     private final Log log;
@@ -91,7 +91,7 @@ public class LuceneLabelScanStore implements LabelScanStore
         void rebuilt( long roughNodeCount );
     }
 
-    public LuceneLabelScanStore( LuceneLabelScanIndex luceneIndex, FullStoreChangeStream fullStoreStream,
+    public LuceneLabelScanStore( LabelScanIndex luceneIndex, FullStoreChangeStream fullStoreStream,
             LogProvider logProvider, Monitor monitor )
     {
         this.luceneIndex = luceneIndex;

@@ -39,7 +39,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
 
-public class AccessUniqueLuceneIndexTest
+public class AccessUniqueDatabaseIndexTest
 {
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final File indexDirectory = new File( "index1" );
@@ -127,7 +127,7 @@ public class AccessUniqueLuceneIndexTest
 
     private LuceneIndexAccessor createAccessor( PartitionedIndexStorage indexStorage ) throws IOException
     {
-        LuceneSchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
                 .withIndexStorage( indexStorage )
                 .uniqueIndex()
                 .build();

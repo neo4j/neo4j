@@ -17,14 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.impl.index.backup;
 
-import org.neo4j.kernel.api.index.SchemaConstraintProviderApprovalTest;
+import org.apache.lucene.index.IndexWriter;
 
-public class LuceneIndexConstraintProviderApprovalTest extends SchemaConstraintProviderApprovalTest
+import java.io.File;
+import java.io.IOException;
+
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+
+public class WritableIndexSnapshotFileIteratorTest extends ReadOnlyIndexSnapshotFileIteratorTest
 {
-    public LuceneIndexConstraintProviderApprovalTest( TestValue value )
+
+    @Override
+    protected ResourceIterator<File> makeSnapshot() throws IOException
     {
-        super( value );
+        return LuceneIndexSnapshots.forIndex( indexDir, new IndexWriter( dir, IndexWriterConfigs.standard() ) );
     }
 }

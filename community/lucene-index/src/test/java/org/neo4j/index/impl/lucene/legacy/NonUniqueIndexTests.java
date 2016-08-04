@@ -19,14 +19,14 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -54,10 +55,8 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -153,7 +152,7 @@ public class NonUniqueIndexTests
     {
         Config config = Config.empty();
         SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
-                DirectoryFactory.PERSISTENT, directory.graphDbDir() );
+                DirectoryFactory.PERSISTENT, directory.graphDbDir(), Config.empty(), OperationalMode.single );
         IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, indexConfig, samplingConfig );
