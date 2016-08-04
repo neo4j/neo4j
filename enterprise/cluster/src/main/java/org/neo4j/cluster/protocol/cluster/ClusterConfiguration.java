@@ -45,8 +45,8 @@ public class ClusterConfiguration
     private final String name;
     private final Log log;
     private final List<URI> candidateMembers;
-    private Map<InstanceId, URI> members;
-    private Map<String, InstanceId> roles = new HashMap<String, InstanceId>();
+    private volatile Map<InstanceId, URI> members;
+    private volatile Map<String, InstanceId> roles = new HashMap<>();
 
     public ClusterConfiguration( String name, LogProvider logProvider, String... members )
     {
@@ -96,15 +96,17 @@ public class ClusterConfiguration
             return; // Already know that this node is in - ignore
         }
 
-        this.members = new HashMap<InstanceId, URI>( members );
-        members.put( joinedInstanceId, instanceUri );
+        Map<InstanceId,URI> newMembers = new HashMap<>( members );
+        newMembers.put( joinedInstanceId, instanceUri );
+        members = newMembers;
     }
 
     public void left( InstanceId leftInstanceId )
     {
         log.info( "Instance " + leftInstanceId + " is leaving the cluster" );
-        this.members = new HashMap<InstanceId, URI>( members );
-        members.remove( leftInstanceId );
+        Map<InstanceId,URI> newMembers = new HashMap<>( members );
+        newMembers.remove( leftInstanceId );
+        members = newMembers;
 
         // Remove any roles that this node had
         Iterator<Map.Entry<String, InstanceId>> entries = roles.entrySet().iterator();
@@ -123,15 +125,17 @@ public class ClusterConfiguration
     public void elected( String name, InstanceId electedInstanceId )
     {
         assert members.containsKey( electedInstanceId );
-        roles = new HashMap<String, InstanceId>( roles );
-        roles.put( name, electedInstanceId );
+        Map<String,InstanceId> newRoles = new HashMap<>( roles );
+        newRoles.put( name, electedInstanceId );
+        roles = newRoles;
     }
 
     public void unelected( String roleName )
     {
         assert roles.containsKey( roleName );
-        roles = new HashMap<String, InstanceId>( roles );
-        roles.remove( roleName );
+        Map<String,InstanceId> newRoles = new HashMap<>( roles );
+        newRoles.remove( roleName );
+        roles = newRoles;
     }
 
     public void setMembers( Map<InstanceId, URI> members )
@@ -182,8 +186,9 @@ public class ClusterConfiguration
 
     public void removeElected( String roleName )
     {
-        roles = new HashMap<String, InstanceId>( roles );
-        InstanceId removed = roles.remove( roleName );
+        Map<String,InstanceId> newRoles = new HashMap<>( roles );
+        InstanceId removed = newRoles.remove( roleName );
+        roles = newRoles;
         log.info( "Removed role " + roleName + " from instance " + removed );
     }
 
