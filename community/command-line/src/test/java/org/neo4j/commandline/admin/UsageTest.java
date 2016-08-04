@@ -42,8 +42,7 @@ public class UsageTest
                                 "Restores a database backed up using the neo4j-backup tool." ),
                         new StubProvider( "bam", Optional.empty(), "Some description" )
                 };
-        String extraHelp = "some extra help or other\nmaybe over multiple lines\n";
-        new Usage( "neo4j-admin", out, new CannedLocator( commands ), extraHelp ).print();
+        new Usage( "neo4j-admin", out, new CannedLocator( commands ) ).print();
 
         InOrder ordered = inOrder( out );
         ordered.verify( out ).line( "Usage:" );
@@ -56,8 +55,6 @@ public class UsageTest
         ordered.verify( out ).line( "neo4j-admin bam" );
         ordered.verify( out ).line( "" );
         ordered.verify( out ).line( "    Some description" );
-        ordered.verify( out ).line( "" );
-        ordered.verify( out ).line( extraHelp );
         ordered.verify( out ).line( "" );
         ordered.verifyNoMoreInteractions();
     }

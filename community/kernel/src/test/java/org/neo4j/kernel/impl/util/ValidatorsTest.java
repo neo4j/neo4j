@@ -27,6 +27,9 @@ import java.io.IOException;
 import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.rule.TargetDirectory.TestDirectory;
 
+import static junit.framework.TestCase.assertTrue;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class ValidatorsTest
@@ -48,6 +51,29 @@ public class ValidatorsTest
         assertValid( ".*bc" );
         assertNotValid( "abcd" );
         assertNotValid( ".*de.*" );
+    }
+
+    @Test
+    public void shouldValidateInList() throws Exception
+    {
+        try
+        {
+            Validators.inList(new String[] { "foo", "bar", "baz" }).validate( "qux" );
+            fail( "Should have failed to find item in list." );
+        }
+        catch( IllegalArgumentException e )
+        {
+            assertThat( e.getMessage(), containsString( "'qux' found but must be one of: [foo, bar, baz]." ) );
+        }
+
+        try
+        {
+            Validators.inList(new String[] { "foo", "bar", "baz" }).validate( "bar" );
+        }
+        catch( IllegalArgumentException e )
+        {
+            fail( "Should have found item in list." );
+        }
     }
 
     private void assertNotValid( String string )

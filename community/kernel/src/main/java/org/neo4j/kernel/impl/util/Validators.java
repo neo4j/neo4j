@@ -94,13 +94,41 @@ public class Validators
         @Override
         public void validate( File value )
         {
-            if ( new DefaultFileSystemAbstraction()
-                    .fileExists( new File( value, StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) ) ) )
+            if ( isExistingDatabase( value ) )
             {
                 throw new IllegalArgumentException( "Directory '" + value + "' already contains a database" );
             }
         }
     };
+
+    public static final Validator<File> CONTAINS_EXISTING_DATABASE = new Validator<File>()
+    {
+        @Override
+        public void validate( File value )
+        {
+            if ( !isExistingDatabase( value ) )
+            {
+                throw new IllegalArgumentException( "Directory '" + value + "' does not contain a database" );
+            }
+        }
+    };
+
+    private static boolean isExistingDatabase( File value )
+    {
+        return new DefaultFileSystemAbstraction()
+                .fileExists( new File( value, StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) ) );
+    }
+
+    public static final Validator<String> inList( String[] validStrings )
+    {
+        return value -> {
+            if ( !Arrays.stream( validStrings ).anyMatch( s -> s.equals( value ) ) )
+            {
+                throw new IllegalArgumentException( "'" + value + "' found but must be one of: " +
+                    Arrays.toString( validStrings ) + "." );
+            }
+        };
+    }
 
     public static <T> Validator<T[]> atLeast( final String key, final int length )
     {
