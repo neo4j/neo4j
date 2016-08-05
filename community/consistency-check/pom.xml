@@ -111,5 +111,20 @@ the relevant Commercial Agreement.
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-command-line</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-dbms</artifactId>
+      <version>${neo4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
+      <version>${neo4j.version}</version>
+    </dependency>
   </dependencies>
 </project>
