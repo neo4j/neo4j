@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, PatternRelationship, ShortestPathPattern}
 
@@ -83,7 +84,7 @@ object PatternConverters {
 
         case (acc, sps@ShortestPaths(element, single)) =>
           val destructedElement = element.destructed
-          val newShortest = ShortestPathPattern(None, destructedElement.rels.head, single)(sps)
+          val newShortest = ShortestPathPattern(Some(IdName(FreshIdNameGenerator.name(sps.position))), destructedElement.rels.head, single)(sps)
           acc.
             addNodeId(destructedElement.nodeIds:_*).
             addShortestPaths(newShortest)

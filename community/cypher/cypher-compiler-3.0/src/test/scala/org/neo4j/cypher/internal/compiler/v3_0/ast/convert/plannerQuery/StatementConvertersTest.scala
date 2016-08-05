@@ -749,7 +749,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.queryGraph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.queryGraph.shortestPathPatterns should equal(Set(
-      ShortestPathPattern(None, PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength), single = true)(null)
+      ShortestPathPattern(Some("  FRESHID6"), PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength), single = true)(null)
     ))
     query.tail should be(empty)
   }
@@ -759,7 +759,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.queryGraph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.queryGraph.shortestPathPatterns should equal(Set(
-      ShortestPathPattern(None, PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength), single = false)(null)
+      ShortestPathPattern(Some("  FRESHID6"), PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength), single = false)(null)
     ))
     query.tail should be(empty)
   }
