@@ -105,12 +105,9 @@ class Appending
                 state, request.prevLogIndex() + request.entries().length, request.leaderCommit(), outcome );
 
         long endMatchIndex = request.prevLogIndex() + request.entries().length; // this is the index of the last incoming entry
-        if ( endMatchIndex >= 0 )
-        {
-            RaftMessages.AppendEntries.Response appendResponse = new RaftMessages.AppendEntries.Response(
-                    state.myself(), request.leaderTerm(), true, endMatchIndex, endMatchIndex );
-            outcome.addOutgoingMessage( new RaftMessages.Directed( request.from(), appendResponse ) );
-        }
+        RaftMessages.AppendEntries.Response appendResponse = new RaftMessages.AppendEntries.Response(
+                state.myself(), request.leaderTerm(), true, endMatchIndex, endMatchIndex );
+        outcome.addOutgoingMessage( new RaftMessages.Directed( request.from(), appendResponse ) );
     }
 
     static  void appendNewEntry( ReadableRaftState ctx, Outcome outcome, ReplicatedContent content ) throws IOException

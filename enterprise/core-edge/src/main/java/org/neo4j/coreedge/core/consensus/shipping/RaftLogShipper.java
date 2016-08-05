@@ -148,7 +148,7 @@ public class RaftLogShipper
         timeoutService = new DelayedRenewableTimeoutService( clock, logProvider );
         timeoutService.init();
         timeoutService.start();
-        sendSingle( raftLog.appendIndex(), lastLeaderContext );
+        sendEmpty( raftLog.appendIndex(), lastLeaderContext );
    }
 
     public synchronized void stop()
@@ -173,14 +173,14 @@ public class RaftLogShipper
         {
             case MISMATCH:
                 long logIndex = max( min( lastSentIndex - 1, lastRemoteAppendIndex ), 0 );
-                sendSingle( logIndex, leaderContext );
+                sendEmpty( logIndex, leaderContext );
                 break;
             case PIPELINE:
             case CATCHUP:
                 log.info( "%s: mismatch in mode %s from follower %s, moving to MISMATCH mode",
                         statusAsString(), mode, follower );
                 mode = Mode.MISMATCH;
-                sendSingle( lastSentIndex, leaderContext );
+                sendEmpty( lastSentIndex, leaderContext );
                 break;
 
             default:
@@ -313,7 +313,7 @@ public class RaftLogShipper
 
         if ( lastLeaderContext != null )
         {
-            sendSingle( lastSentIndex, lastLeaderContext );
+            sendEmpty( lastSentIndex, lastLeaderContext );
         }
     }
 
@@ -386,15 +386,6 @@ public class RaftLogShipper
         outbound.send( follower, appendRequest );
     }
 
-    private void sendSingle( long logIndex, LeaderContext leaderContext )
-    {
-        logIndex = max( raftLog.prevIndex() + 1, logIndex );
-
-        scheduleTimeout( retryTimeMillis );
-
-        sendRange( logIndex, logIndex, leaderContext );
-    }
-
     private void sendNewEntries( long prevLogIndex, long prevLogTerm, RaftLogEntry[] newEntries,
                                  LeaderContext leaderContext )
     {
@@ -407,6 +398,42 @@ public class RaftLogShipper
         );
 
         outbound.send( follower, appendRequest );
+    }
+
+    private void sendEmpty( long logIndex, LeaderContext leaderContext )
+    {
+        scheduleTimeout( retryTimeMillis );
+
+        logIndex = max( raftLog.prevIndex() + 1, logIndex );
+        lastSentIndex = logIndex;
+
+        try
+        {
+            long prevLogIndex = logIndex - 1;
+            long prevLogTerm = raftLog.readEntryTerm( prevLogIndex );
+
+            if ( prevLogTerm > leaderContext.term )
+            {
+                log.warn( "%s aborting send. Not leader anymore? %s, prevLogTerm=%d",
+                        statusAsString(), leaderContext, prevLogTerm );
+                return;
+            }
+
+            if ( doesNotExistInLog( prevLogIndex, prevLogTerm ) )
+            {
+                log.warn( "Entry was pruned when sending empty (prevLogIndex=%d, prevLogTerm=%d)", prevLogIndex, prevLogTerm );
+                return;
+            }
+
+            RaftMessages.AppendEntries.Request appendRequest = new RaftMessages.AppendEntries.Request(
+                    leader, leaderContext.term, prevLogIndex, prevLogTerm, RaftLogEntry.empty, leaderContext.commitIndex );
+
+            outbound.send( follower, appendRequest );
+        }
+        catch ( IOException e )
+        {
+            log.warn( statusAsString() + " exception during empty send", e );
+        }
     }
 
     private void sendRange( long startIndex, long endIndex, LeaderContext leaderContext )
