@@ -25,6 +25,9 @@ import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.MemberAttributeEvent;
+import com.hazelcast.core.MembershipEvent;
+import com.hazelcast.core.MembershipListener;
 import com.hazelcast.instance.GroupProperties;
 
 import java.util.List;
@@ -38,28 +41,50 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyService
+class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService, MembershipListener
 {
     private final Config config;
     private final MemberId myself;
     private final Log log;
-    private final MembershipListenerAdapter membershipListener;
+    private final CoreTopologyListenerService listenerService;
+    private String membershipRegistrationId;
 
     private HazelcastInstance hazelcastInstance;
 
-    HazelcastServerLifecycle( Config config, MemberId myself, LogProvider logProvider )
+    HazelcastCoreTopologyService( Config config, MemberId myself, LogProvider logProvider )
     {
         this.config = config;
         this.myself = myself;
-        this.membershipListener = new MembershipListenerAdapter( logProvider );
+        this.listenerService = new CoreTopologyListenerService();
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
-    public void addMembershipListener( Listener listener )
+    public void addCoreTopologyListener( Listener listener )
     {
-        membershipListener.addMembershipListener( listener );
-        listener.onTopologyChange();
+        listenerService.addCoreTopologyListener( listener );
+        listener.onCoreTopologyChange();
+    }
+
+    @Override
+    public void memberAdded( MembershipEvent membershipEvent )
+    {
+        log.info( "Core member added %s", membershipEvent );
+        log.info( "Current topology is %s", currentTopology() );
+        listenerService.notifyListeners();
+    }
+
+    @Override
+    public void memberRemoved( MembershipEvent membershipEvent )
+    {
+        log.info( "Core member removed %s", membershipEvent );
+        log.info( "Current topology is %s", currentTopology() );
+        listenerService.notifyListeners();
+    }
+
+    @Override
+    public void memberAttributeChanged( MemberAttributeEvent memberAttributeEvent )
+    {
     }
 
     @Override
@@ -67,8 +92,8 @@ class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyS
     {
         hazelcastInstance = createHazelcastInstance();
         log.info( "Cluster discovery service started" );
-
-        membershipListener.attach( hazelcastInstance );
+        membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( this );
+        listenerService.notifyListeners();
     }
 
     @Override
@@ -76,7 +101,7 @@ class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyS
     {
         try
         {
-            membershipListener.detach();
+            hazelcastInstance.getCluster().removeMembershipListener( membershipRegistrationId );
             hazelcastInstance.shutdown();
         }
         catch ( Throwable e )
@@ -130,6 +155,6 @@ class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyS
     @Override
     public ClusterTopology currentTopology()
     {
-        return membershipListener.currentTopology();
+        return HazelcastClusterTopology.fromHazelcastInstance( hazelcastInstance, log );
     }
 }

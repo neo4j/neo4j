@@ -31,6 +31,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
@@ -49,13 +50,13 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     @Override
     public CoreTopologyService coreDiscoveryService( Config config, MemberId myself, LogProvider logProvider )
     {
-        return new SharedDiscoveryCoreClient( config, myself, this, logProvider );
+        return new SharedDiscoveryCoreClient( this, myself, logProvider, config );
     }
 
     @Override
-    public EdgeTopologyService edgeDiscoveryService( Config config, LogProvider logProvider )
+    public TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress, LogProvider logProvider )
     {
-        return new SharedDiscoveryEdgeClient( this, logProvider );
+        return new SharedDiscoveryEdgeClient( this, boltAddress, logProvider );
     }
 
     void waitForClusterFormation() throws InterruptedException
@@ -134,4 +135,18 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
             lock.unlock();
         }
     }
+
+    void unRegisterEdgeMember( EdgeAddresses edgeAddresses )
+    {
+        lock.lock();
+        try
+        {
+            this.edgeAddresses.remove( edgeAddresses );
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
 }

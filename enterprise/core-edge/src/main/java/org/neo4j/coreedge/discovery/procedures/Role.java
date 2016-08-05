@@ -19,16 +19,9 @@
  */
 package org.neo4j.coreedge.discovery.procedures;
 
-public class EdgeRoleProcedure extends RoleProcedure
+public enum Role
 {
-    public EdgeRoleProcedure()
-    {
-        super();
-    }
-
-    @Override
-    Role role()
-    {
-        return Role.READ_REPLICA;
-    }
+    LEADER,
+    FOLLOWER,
+    READ_REPLICA
 }

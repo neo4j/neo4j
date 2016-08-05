@@ -21,6 +21,7 @@ package org.neo4j.coreedge.discovery;
 
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
@@ -30,14 +31,14 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
     public CoreTopologyService coreDiscoveryService( Config config, MemberId myself, LogProvider logProvider )
     {
         makeHazelcastSilent( config );
-        return new HazelcastServerLifecycle( config, myself, logProvider );
+        return new HazelcastCoreTopologyService( config, myself, logProvider );
     }
 
     @Override
-    public EdgeTopologyService edgeDiscoveryService( Config config, LogProvider logProvider )
+    public TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress, LogProvider logProvider )
     {
         makeHazelcastSilent( config );
-        return new HazelcastClient( new HazelcastClientConnector( config ), logProvider );
+        return new HazelcastClient( new HazelcastClientConnector( config ), logProvider, boltAddress );
     }
 
     private static void makeHazelcastSilent( Config config )

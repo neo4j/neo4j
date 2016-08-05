@@ -24,22 +24,30 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-class SharedDiscoveryEdgeClient extends LifecycleAdapter implements EdgeTopologyService
+class SharedDiscoveryEdgeClient extends LifecycleAdapter implements TopologyService
 {
     private final SharedDiscoveryService sharedDiscoveryService;
+    private final EdgeAddresses addresses;
     private final Log log;
 
-    SharedDiscoveryEdgeClient( SharedDiscoveryService sharedDiscoveryService, LogProvider logProvider )
+    SharedDiscoveryEdgeClient( SharedDiscoveryService sharedDiscoveryService, AdvertisedSocketAddress boltAddress, LogProvider logProvider )
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
+        this.addresses = new EdgeAddresses ( boltAddress );
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
-    public void registerEdgeServer( AdvertisedSocketAddress boltAddress )
+    public void start() throws Throwable
     {
-        sharedDiscoveryService.registerEdgeMember( new EdgeAddresses( boltAddress ) );
-        log.info( "Registered edge server at %s", boltAddress );
+        sharedDiscoveryService.registerEdgeMember( addresses );
+        log.info( "Registered edge server at %s", addresses );
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        sharedDiscoveryService.unRegisterEdgeMember( addresses );
     }
 
     @Override

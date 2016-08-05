@@ -32,18 +32,20 @@ import org.neo4j.logging.LogProvider;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 
-import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.EDGE_SERVERS;
+import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.EDGE_SERVER_BOLT_ADDRESS_MAP_NAME;
 
-class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
+class HazelcastClient extends LifecycleAdapter implements TopologyService
 {
     private final Log log;
+    private final AdvertisedSocketAddress boltAddress;
     private final HazelcastConnector connector;
     private HazelcastInstance hazelcastInstance;
 
-    HazelcastClient( HazelcastConnector connector, LogProvider logProvider )
+    HazelcastClient( HazelcastConnector connector, LogProvider logProvider, AdvertisedSocketAddress boltAddress )
     {
         this.connector = connector;
         this.log = logProvider.getLog( getClass() );
+        this.boltAddress = boltAddress;
     }
 
     @Override
@@ -63,6 +65,13 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
     }
 
     @Override
+    public void start() throws Throwable
+    {
+        retry( ( hazelcastInstance ) -> hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
+                .put( hazelcastInstance.getLocalEndpoint().getUuid(), boltAddress.toString() ) );
+    }
+
+    @Override
     public synchronized void stop() throws Throwable
     {
         if ( hazelcastInstance != null )
@@ -71,13 +80,7 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
         }
     }
 
-    @Override
-    public void registerEdgeServer( AdvertisedSocketAddress address )
-    {
-        retry( ( hazelcastInstance ) -> hazelcastInstance.getSet( EDGE_SERVERS ).add( address.toString() ) );
-    }
-
-    private synchronized <T> T retry( Function<HazelcastInstance, T> hazelcastAccessor )
+    private synchronized <T> T retry( Function<HazelcastInstance, T> hazelcastOperation )
     {
         boolean attemptedConnection = false;
         HazelcastInstanceNotActiveException exception = null;
@@ -92,7 +95,7 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
 
             try
             {
-                return hazelcastAccessor.apply( hazelcastInstance );
+                return hazelcastOperation.apply( hazelcastInstance );
             }
             catch ( HazelcastInstanceNotActiveException e )
             {

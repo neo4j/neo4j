@@ -25,26 +25,26 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.EdgeToCoreClient;
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyClient;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
+import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.catchup.tx.BatchingTxApplier;
 import org.neo4j.coreedge.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.TxPollingClient;
 import org.neo4j.coreedge.catchup.tx.TxPullClient;
-import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
-import org.neo4j.coreedge.discovery.EdgeTopologyService;
-import org.neo4j.coreedge.discovery.procedures.EdgeRoleProcedure;
-import org.neo4j.coreedge.messaging.routing.ConnectToRandomCoreMember;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.consensus.ContinuousJob;
 import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.core.state.machines.tx.ExponentialBackoffStrategy;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.TopologyService;
+import org.neo4j.coreedge.discovery.procedures.EdgeRoleProcedure;
 import org.neo4j.coreedge.messaging.NonBlockingChannels;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.routing.ConnectToRandomCoreMember;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -116,7 +116,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
     }
 
     EnterpriseEdgeEditionModule( final PlatformModule platformModule,
-                                 DiscoveryServiceFactory discoveryServiceFactory )
+            final DiscoveryServiceFactory discoveryServiceFactory )
     {
         LogService logging = platformModule.logging;
         Log userLog = logging.getUserLog( EnterpriseEdgeEditionModule.class );
@@ -175,8 +175,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
 
-        EdgeTopologyService discoveryService = discoveryServiceFactory.edgeDiscoveryService( config, logProvider );
-        life.add(dependencies.satisfyDependency( discoveryService ));
+        TopologyService discoveryService = discoveryServiceFactory.edgeDiscoveryService( config, extractBoltAddress( config ), logProvider );
+        life.add( dependencies.satisfyDependency( discoveryService ) );
 
         NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
         EdgeToCoreClient.ChannelInitializer channelInitializer = new EdgeToCoreClient.ChannelInitializer( logProvider, nonBlockingChannels );
@@ -226,7 +226,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         life.add( new EdgeStartupProcess( storeFetcher,
                 localDatabase,
                 txPulling, new ConnectToRandomCoreMember( discoveryService ),
-                new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, discoveryService, config ) );
+                new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider) );
 
         dependencies.satisfyDependency( createSessionTracker() );
     }

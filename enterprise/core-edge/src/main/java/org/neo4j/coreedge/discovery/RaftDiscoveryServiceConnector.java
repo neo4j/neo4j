@@ -42,7 +42,7 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
     @Override
     public void start() throws BootstrapException
     {
-        discoveryService.addMembershipListener( this );
+        discoveryService.addCoreTopologyListener( this );
 
         ClusterTopology clusterTopology = discoveryService.currentTopology();
         Set<MemberId> initialMembers = clusterTopology.coreMembers();
@@ -52,11 +52,11 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
             raftMachine.bootstrapWithInitialMembers( new MemberIdSet( initialMembers ) );
         }
 
-        onTopologyChange();
+        onCoreTopologyChange();
     }
 
     @Override
-    public void onTopologyChange()
+    public void onCoreTopologyChange()
     {
         raftMachine.setTargetMembershipSet( discoveryService.currentTopology().coreMembers() );
     }

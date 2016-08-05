@@ -26,82 +26,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import com.hazelcast.client.impl.MemberImpl;
 import com.hazelcast.core.Member;
 import com.hazelcast.nio.Address;
 import org.junit.Test;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.core.state.machines.tx.ConstantTimeRetryStrategy;
-import org.neo4j.coreedge.edge.EdgeStartupProcess;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
-import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLog;
-import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.buildMemberAttributes;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.extractMemberAttributes;
 
 public class HazelcastClusterTopologyTest
 {
-    @Test
-    public void edgeServersShouldRegisterThemselvesWithTheTopologyWhenTheyStart() throws Throwable
-    {
-        // given
-        MemberId memberId = new MemberId( UUID.randomUUID() );
-        final Map<String, String> params = new HashMap<>();
-
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "127.0.0.1:" + 8001 );
-
-        Config config = new Config( params );
-
-        final EdgeTopologyService topology = mock( EdgeTopologyService.class );
-
-        // when
-
-        final CoreMemberSelectionStrategy connectionStrategy = mock( CoreMemberSelectionStrategy.class );
-        when( connectionStrategy.coreMember() ).thenReturn( memberId );
-
-        LocalDatabase localDatabase = mock( LocalDatabase.class );
-        when( localDatabase.isEmpty() ).thenReturn( true );
-
-        StoreFetcher storeFetcher = mock( StoreFetcher.class );
-        when( storeFetcher.storeId( memberId ) ).thenReturn( new StoreId( 1, 2, 3, 4 ) );
-
-        final EdgeStartupProcess startupProcess = new EdgeStartupProcess( storeFetcher,
-                localDatabase,
-                mock( Lifecycle.class ),
-                connectionStrategy,
-                new ConstantTimeRetryStrategy( 1, TimeUnit.MILLISECONDS ),
-                NullLogProvider.getInstance(), topology, config );
-
-        startupProcess.start();
-
-        // then
-        verify( topology ).registerEdgeServer( anyObject() );
-    }
-
     @Test
     public void shouldStoreMemberIdentityAndAddressesAsMemberAttributes() throws Exception
     {
@@ -144,7 +92,7 @@ public class HazelcastClusterTopologyTest
             config.augment( settings );
             Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
             hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null,
-                    attributes, false )  );
+                    attributes, false ) );
         }
 
         // when

@@ -57,12 +57,14 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class HazelcastClientTest
 {
+    private AdvertisedSocketAddress address = new AdvertisedSocketAddress( "localhost:7000" );;
+
     @Test
     public void shouldReturnTopologyUsingHazelcastMembers() throws Exception
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance() );
+        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), address );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -87,7 +89,7 @@ public class HazelcastClientTest
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance() );
+        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), address );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -127,7 +129,7 @@ public class HazelcastClientTest
 
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
 
-        HazelcastClient client = new HazelcastClient( connector, logProvider );
+        HazelcastClient client = new HazelcastClient( connector, logProvider, address );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -148,7 +150,7 @@ public class HazelcastClientTest
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance() );
+        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), address );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -169,7 +171,7 @@ public class HazelcastClientTest
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance() );
+        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), address );
 
         HazelcastInstance hazelcastInstance1 = mock( HazelcastInstance.class );
         HazelcastInstance hazelcastInstance2 = mock( HazelcastInstance.class );
@@ -206,7 +208,7 @@ public class HazelcastClientTest
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance() );
+        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), address );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -223,7 +225,6 @@ public class HazelcastClientTest
 
         // when
         client.currentTopology();
-        client.registerEdgeServer( new AdvertisedSocketAddress( "localhost:7000" ) );
 
         // then
         assertEquals( 1, client.currentTopology().edgeMemberAddresses().size() );

@@ -26,14 +26,14 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.coreedge.core.consensus.LeaderLocator;
+import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
-import org.neo4j.coreedge.core.consensus.LeaderLocator;
-import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
@@ -47,15 +47,16 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
 {
-    public static final String NAME = "overview";
+    private static final String[] PROCEDURE_NAMESPACE = {"dbms", "cluster"};
+    public static final String PROCEDURE_NAME = "overview";
     private final CoreTopologyService discoveryService;
     private final LeaderLocator leaderLocator;
     private final Log log;
 
     public ClusterOverviewProcedure( CoreTopologyService discoveryService,
-                                     LeaderLocator leaderLocator, LogProvider logProvider )
+            LeaderLocator leaderLocator, LogProvider logProvider )
     {
-        super( procedureSignature( new ProcedureSignature.ProcedureName( new String[]{"dbms", "cluster"}, NAME ) )
+        super( procedureSignature( new ProcedureSignature.ProcedureName( PROCEDURE_NAMESPACE, PROCEDURE_NAME ) )
                 .out( "id", Neo4jTypes.NTString ).out( "address", Neo4jTypes.NTString )
                 .out( "role", Neo4jTypes.NTString ).build() );
         this.discoveryService = discoveryService;
@@ -90,54 +91,53 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             {
                 log.debug( "Address found for " );
             }
-            Type type = memberId.equals( leader ) ? Type.LEADER : Type.FOLLOWER;
-            endpoints.add( new ReadWriteEndPoint( boltServerAddress, type, memberId.getUuid() ) );
+            Role role = memberId.equals( leader ) ? Role.LEADER : Role.FOLLOWER;
+            endpoints.add( new ReadWriteEndPoint( boltServerAddress, role, memberId.getUuid() ) );
         }
         for ( EdgeAddresses edgeAddresses : clusterTopology.edgeMemberAddresses() )
         {
-            endpoints.add( new ReadWriteEndPoint( edgeAddresses.getBoltAddress(), Type.READ_REPLICA, null ) );
+            endpoints.add( new ReadWriteEndPoint( edgeAddresses.getBoltAddress(), Role.READ_REPLICA ) );
         }
 
-        Collections.sort( endpoints, ( o1, o2 ) -> o1.address().compareTo( o2.address() ) );
+        Collections.sort( endpoints, ( o1, o2 ) -> o1.address().toString().compareTo( o2.address().toString() ) );
 
-        return map( ( l ) -> new Object[]{l.identifier(), l.address(), l.type()},
+        return map( ( l ) -> new Object[]{l.identifier().toString(), l.address().toString(), l.role().name()},
                 asRawIterator( endpoints.iterator() ) );
-    }
-
-    public enum Type
-    {
-        LEADER,
-        FOLLOWER,
-        READ_REPLICA
     }
 
     private static class ReadWriteEndPoint
     {
+        private static final UUID ZERO_ID = new UUID( 0, 0 );
+
         private final AdvertisedSocketAddress address;
-        private final Type type;
+        private final Role role;
         private final UUID identifier;
 
-        public String address()
+        public AdvertisedSocketAddress address()
         {
-            return address == null ? null : address.toString();
+            return address;
         }
 
-        public String type()
+        public Role role()
         {
-            return type.toString().toLowerCase();
+            return role;
         }
 
-        String identifier()
+        UUID identifier()
         {
-            return identifier == null ? null : identifier.toString();
+            return identifier == null ? ZERO_ID : identifier;
         }
 
-        public ReadWriteEndPoint( AdvertisedSocketAddress address, Type type, UUID identifier )
+        ReadWriteEndPoint( AdvertisedSocketAddress address, Role role )
+        {
+            this( address, role, null );
+        }
+
+        ReadWriteEndPoint( AdvertisedSocketAddress address, Role role, UUID identifier )
         {
             this.address = address;
-            this.type = type;
+            this.role = role;
             this.identifier = identifier;
         }
-
     }
 }

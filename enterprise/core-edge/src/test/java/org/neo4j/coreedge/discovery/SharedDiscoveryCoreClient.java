@@ -39,8 +39,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     private final Set<Listener> listeners = new LinkedHashSet<>();
     private final Log log;
 
-    SharedDiscoveryCoreClient( Config config, MemberId member,
-            SharedDiscoveryService sharedDiscoveryService, LogProvider logProvider )
+    SharedDiscoveryCoreClient( SharedDiscoveryService sharedDiscoveryService, MemberId member, LogProvider logProvider, Config config )
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
         this.member = member;
@@ -49,7 +48,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public synchronized void addMembershipListener( Listener listener )
+    public synchronized void addCoreTopologyListener( Listener listener )
     {
         listeners.add( listener );
     }
@@ -81,7 +80,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     synchronized void onTopologyChange()
     {
         log.info( "Notified of topology change" );
-        listeners.forEach( Listener::onTopologyChange );
+        listeners.forEach( Listener::onCoreTopologyChange );
     }
 
     private static CoreAddresses extractAddresses( Config config )

@@ -46,11 +46,4 @@ abstract class RoleProcedure extends CallableProcedure.BasicProcedure
     }
 
     abstract Role role();
-
-    public enum Role
-    {
-        LEADER,
-        FOLLOWER,
-        READ_REPLICA
-    }
 }

@@ -117,7 +117,7 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
         READ, WRITE
     }
 
-    static class ReadWriteEndPoint
+    private static class ReadWriteEndPoint
     {
         private final AdvertisedSocketAddress address;
         private final Type type;
@@ -132,7 +132,7 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
             return type.toString().toLowerCase();
         }
 
-        public ReadWriteEndPoint( AdvertisedSocketAddress address, Type type )
+        ReadWriteEndPoint( AdvertisedSocketAddress address, Type type )
         {
             this.address = address;
             this.type = type;
