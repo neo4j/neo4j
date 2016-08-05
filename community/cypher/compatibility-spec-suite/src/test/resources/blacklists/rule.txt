@@ -1,9 +1,9 @@
-Fail when comparing nodes to parameters
-Fail when comparing parameters to nodes
-Comparing nodes to properties
-Fail when comparing nodes to relationships
-Fail when comparing relationships to nodes
-Fail when adding new label predicate on a node that is already bound
+// misc bugs
+Fail when adding new label predicate on a node that is already bound 5
 Matching relationships into a list and matching variable length using the list
 Null-setting one property with ON CREATE
 Fail when imposing new predicates on a variable that is already bound
+
+// bugged in spec, awaiting update
+SKIP with an expression that depends on variables should fail
+LIMIT with an expression that depends on variables should fail

@@ -1,9 +1,25 @@
-Fail at runtime when trying to index something which is not a map or collection
-`toInt()` handling Any type
-`toFloat()` handling Any type
-`type()` handling Any type
-`type()` failing on invalid arguments
-`toInt()` failing on invalid arguments
-`toFloat()` failing on invalid arguments
-Handling property access on the Any type
-Failing when performing property access on a non-map 1
+// missing toInteger()
+Number-typed integer comparison
+Number-typed float comparison
+Any-typed string comparison
+Use collection lookup based on parameters when there is rhs type information
+SKIP with an expression that does not depend on variables
+LIMIT with an expression that does not depend on variables
+`toInteger()`
+`toInteger()` on float
+`toInteger()` returning null on non-numerical string
+`toInteger()` handling mixed number types
+`toInteger()` handling Any type
+`toInteger()` on a list of strings
+`toInteger()` failing on invalid arguments
+
+// missing toBoolean()
+`toBoolean()` on valid literal string
+`toBoolean()` on booleans
+`toBoolean()` on variables with valid string values
+`toBoolean()` on invalid strings
+`toBoolean()` on invalid types
+
+// bugged in spec, awaiting update
+SKIP with an expression that depends on variables should fail
+LIMIT with an expression that depends on variables should fail
