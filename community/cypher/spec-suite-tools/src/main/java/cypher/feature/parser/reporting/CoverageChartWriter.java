@@ -48,6 +48,8 @@ public class CoverageChartWriter
     private final File outDirectory;
     private final String filename;
 
+    private static final int HORIZONTAL_LINE_VALUE = 100;
+
     public CoverageChartWriter( File outDirectory, String filename )
     {
         this.outDirectory = outDirectory;
@@ -114,7 +116,7 @@ public class CoverageChartWriter
         plot.setDomainGridlinePaint( Color.white );
         plot.setDomainGridlinesVisible( true );
         plot.setRangeGridlinePaint( Color.white );
-        plot.addRangeMarker( new ValueMarker( 20, Color.BLACK, new BasicStroke( 2 ) ) );
+        plot.addRangeMarker( new ValueMarker( HORIZONTAL_LINE_VALUE, Color.BLACK, new BasicStroke( 2 ) ) );
 
         BarRenderer renderer = (BarRenderer) plot.getRenderer();
         renderer.setSeriesPaint( 0, ChartColor.DARK_RED );
