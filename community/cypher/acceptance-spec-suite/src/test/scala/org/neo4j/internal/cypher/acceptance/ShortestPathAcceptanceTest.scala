@@ -21,14 +21,14 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.PathImpl
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.{Node, Path}
 
 class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
-  var nodeA: Node = null
-  var nodeB: Node = null
-  var nodeC: Node = null
-  var nodeD: Node = null
+  var nodeA: Node = _
+  var nodeB: Node = _
+  var nodeC: Node = _
+  var nodeD: Node = _
 
   override protected def initTest(): Unit = {
     super.initTest()
@@ -152,7 +152,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     /* a-x-d */
     val nodeX = createLabeledNode("X")
     val r1 = relate(nodeA, nodeX)
-    var r2 = relate(nodeX, nodeD)
+    val r2 = relate(nodeX, nodeD)
 
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (src:A), (dst:D) RETURN shortestPath((src:A)-[*]->(dst:D)) as path")
 
@@ -597,6 +597,38 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     // Four shortest path with the same weight
     result.toList should equal(List(Map("weight" -> 2.0), Map("weight" -> 2.0), Map("weight" -> 2.0), Map("weight" -> 2.0)))
+  }
+
+  test("should return shortest paths if using a ridiculously unhip cypher") {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    relate(a, b)
+    relate(b, c)
+
+    val query = s"""MATCH (a), (c)
+                  |WHERE id(a) = ${a.getId} AND id(c) = ${c.getId}
+                  |RETURN shortestPath((a)-[*]->(c)) AS p
+                  """.stripMargin
+
+    val result = executeWithAllPlannersAndCompatibilityMode(query).columnAs[Path]("p").toList.head
+
+    result.endNode() should equal(c)
+    result.startNode() should equal(a)
+    result.length() should equal(2)
+  }
+
+  test("should return shortest path") {
+    val a = createLabeledNode("Start")
+    val b = createNode()
+    val c = createLabeledNode("End")
+    relate(a, b)
+    relate(b, c)
+
+    val result = executeWithAllPlannersAndCompatibilityMode("match (a:Start), (c:End) return shortestPath((a)-[*]->(c))").columnAs[Path]("shortestPath((a)-[*]->(c))").toList.head
+    result.endNode() should equal(c)
+    result.startNode() should equal(a)
+    result.length() should equal(2)
   }
 
   private def createLdbc14Model(): Unit = {
