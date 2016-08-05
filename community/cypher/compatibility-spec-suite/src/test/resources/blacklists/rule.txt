@@ -4,6 +4,10 @@ Matching relationships into a list and matching variable length using the list
 Null-setting one property with ON CREATE
 Fail when imposing new predicates on a variable that is already bound
 
+// pattern comprehension
+Introducing new node variable in pattern comprehension
+Introducing new relationship variable in pattern comprehension
+
 // bugged in spec, awaiting update
 SKIP with an expression that depends on variables should fail
 LIMIT with an expression that depends on variables should fail
