@@ -19,37 +19,38 @@
  */
 package org.neo4j.tools.txlog.checktypes;
 
+import org.junit.Test;
+
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
 
-public class NeoStoreCheckType extends CheckType<Command.NeoStoreCommand,NeoStoreRecord>
+import static org.junit.Assert.assertTrue;
+
+public class NeoStoreCheckTypeTest
 {
-    NeoStoreCheckType()
+    @Test
+    public void inUseRecordEquality()
     {
-        super( Command.NeoStoreCommand.class );
+        NeoStoreRecord record1 = new NeoStoreRecord();
+        record1.initialize( true, 1 );
+
+        NeoStoreRecord record2 = record1.clone();
+
+        NeoStoreCheckType check = new NeoStoreCheckType();
+
+        assertTrue( check.equal( record1, record2 ) );
     }
 
-    @Override
-    public NeoStoreRecord before( Command.NeoStoreCommand command )
+    @Test
+    public void notInUseRecordEquality()
     {
-        return command.getBefore();
-    }
+        NeoStoreRecord record1 = new NeoStoreRecord();
+        record1.initialize( false, 1 );
 
-    @Override
-    public NeoStoreRecord after( Command.NeoStoreCommand command )
-    {
-        return command.getAfter();
-    }
+        NeoStoreRecord record2 = new NeoStoreRecord();
+        record2.initialize( false, 11 );
 
-    @Override
-    protected boolean inUseRecordsEqual( NeoStoreRecord record1, NeoStoreRecord record2 )
-    {
-        return record1.getNextProp() == record2.getNextProp();
-    }
+        NeoStoreCheckType check = new NeoStoreCheckType();
 
-    @Override
-    public String name()
-    {
-        return "neo_store";
+        assertTrue( check.equal( record1, record2 ) );
     }
 }
