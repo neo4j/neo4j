@@ -28,7 +28,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -47,10 +46,8 @@ import org.neo4j.test.OtherThreadRule;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterables.count;
 
 public class DeferringLocksIT
@@ -276,75 +273,6 @@ public class DeferringLocksIT
         }
 
         assertInTxNodeWith( LABEL, PROPERTY_KEY, VALUE_1 );
-    }
-
-    @Test( timeout = TEST_TIMEOUT )
-    public void racingMultipleUniquenessConstraintCreation() throws Exception
-    {
-        final Future<Void> t2ConstraintCreator = t2.execute( createUniquenessConstraintOn( LABEL, PROPERTY_KEY ) );
-        final Future<Void> t3ConstraintCreator = t3.execute( createUniquenessConstraintOn( LABEL, PROPERTY_KEY ) );
-
-        assertOnlyOneSucceeds( t2ConstraintCreator, t3ConstraintCreator, ConstraintViolationException.class );
-    }
-
-    @Test( timeout = TEST_TIMEOUT )
-    public void racingMultipleIndexCreation() throws Exception
-    {
-        final Future<Void> t2IndexCreator = t2.execute( createIndexOn( LABEL, PROPERTY_KEY ) );
-        final Future<Void> t3IndexCreator = t3.execute( createIndexOn( LABEL, PROPERTY_KEY ) );
-
-        assertOnlyOneSucceeds( t2IndexCreator, t3IndexCreator, ConstraintViolationException.class );
-    }
-
-    @Test( timeout = TEST_TIMEOUT )
-    public void racingCreationOfNodesWithDuplicatedProperties() throws Exception
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
-            tx.success();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
-        }
-
-        final Future<Void> t2NodeCreator = t2.execute( createNode( LABEL, PROPERTY_KEY, VALUE_1 ) );
-        final Future<Void> t3NodeCreator = t3.execute( createNode( LABEL, PROPERTY_KEY, VALUE_1 ) );
-
-        assertOnlyOneSucceeds( t2NodeCreator, t3NodeCreator, ConstraintViolationException.class );
-    }
-
-    private void assertOnlyOneSucceeds( Future<Void> action1, Future<Void> action2,
-            Class<? extends Exception> expectedFailure ) throws Exception
-    {
-        try
-        {
-            if ( get( action1 ) == null )
-            {
-                try
-                {
-                    get( action2 );
-                    fail( "Second action should fail if first one succeeds" );
-                }
-                catch ( ExecutionException e )
-                {
-                    // Good
-                    assertThat( e.getCause(), instanceOf( expectedFailure ) );
-                }
-            }
-            else
-            {
-                fail( "First action should either return null or throw" );
-            }
-        }
-        catch ( ExecutionException e )
-        {
-            // Good
-            assertThat( e.getCause(), instanceOf( expectedFailure ) );
-            assertNull( get( action2 ) );
-        }
     }
 
     private void assertInTxNodeWith( Label label, String key, Object value )
