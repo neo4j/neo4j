@@ -47,8 +47,9 @@ class PrintingInconsistenciesHandler implements InconsistenciesHandler
     @Override
     public void reportInconsistentCommand( RecordInfo<?> committed, RecordInfo<?> current )
     {
-        out.println( "+" + committed );
-        out.println( "-" + current );
+        out.println( "Inconsistent after and before states:" );
+        out.println( "\t+" + committed );
+        out.println( "\t-" + current );
         seenInconsistencies++;
         if ( seenInconsistencies >= inconsistenciesToPrint )
         {

@@ -19,6 +19,8 @@
  */
 package org.neo4j.tools.txlog.checktypes;
 
+import java.util.Objects;
+
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -51,7 +53,30 @@ public abstract class CheckType<C extends Command, R extends AbstractBaseRecord>
 
     public abstract R after( C command );
 
-    public abstract boolean equal( R record1, R record2 );
+    public final boolean equal( R record1, R record2 )
+    {
+        Objects.requireNonNull( record1 );
+        Objects.requireNonNull( record2 );
+
+        if ( record1.getId() != record2.getId() )
+        {
+            return false;
+        }
+        else if ( record1.inUse() != record2.inUse() )
+        {
+            return false;
+        }
+        else if ( !record1.inUse() )
+        {
+            return true;
+        }
+        else
+        {
+            return inUseRecordsEqual( record1, record2 );
+        }
+    }
+
+    protected abstract boolean inUseRecordsEqual( R record1, R record2 );
 
     public abstract String name();
 }

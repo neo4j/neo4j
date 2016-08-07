@@ -22,7 +22,6 @@ package org.neo4j.tools.txlog.checktypes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -48,23 +47,8 @@ class PropertyCheckType extends CheckType<Command.PropertyCommand,PropertyRecord
     }
 
     @Override
-    public boolean equal( PropertyRecord record1, PropertyRecord record2 )
+    protected boolean inUseRecordsEqual( PropertyRecord record1, PropertyRecord record2 )
     {
-        Objects.requireNonNull( record1 );
-        Objects.requireNonNull( record2 );
-
-        if ( record1.getId() != record2.getId() )
-        {
-            return false;
-        }
-        if ( record1.inUse() != record2.inUse() )
-        {
-            return false;
-        }
-        if ( !record1.inUse() )
-        {
-            return true;
-        }
         return record1.isNodeSet() == record2.isNodeSet() &&
                record1.isRelSet() == record2.isRelSet() &&
                record1.getNodeId() == record2.getNodeId() &&

@@ -19,40 +19,41 @@
  */
 package org.neo4j.tools.txlog.checktypes;
 
+import org.junit.Test;
+
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
 
-class NodeCheckType extends CheckType<Command.NodeCommand,NodeRecord>
+import static org.junit.Assert.assertTrue;
+
+public class NodeCheckTypeTest
 {
-    NodeCheckType()
+    @Test
+    public void inUseRecordEquality()
     {
-        super( Command.NodeCommand.class );
+        NodeRecord record1 = new NodeRecord( 1 );
+        record1.initialize( true, 1, false, 2, 3 );
+        record1.setSecondaryUnitId( 42 );
+
+        NodeRecord record2 = record1.clone();
+
+        NodeCheckType check = new NodeCheckType();
+
+        assertTrue( check.equal( record1, record2 ) );
     }
 
-    @Override
-    public NodeRecord before( Command.NodeCommand command )
+    @Test
+    public void notInUseRecordEquality()
     {
-        return command.getBefore();
-    }
+        NodeRecord record1 = new NodeRecord( 1 );
+        record1.initialize( false, 1, true, 2, 3 );
+        record1.setSecondaryUnitId( 42 );
 
-    @Override
-    public NodeRecord after( Command.NodeCommand command )
-    {
-        return command.getAfter();
-    }
+        NodeRecord record2 = new NodeRecord( 1 );
+        record2.initialize( false, 11, true, 22, 33 );
+        record2.setSecondaryUnitId( 24 );
 
-    @Override
-    protected boolean inUseRecordsEqual( NodeRecord record1, NodeRecord record2 )
-    {
-        return record1.getNextProp() == record2.getNextProp() &&
-               record1.getNextRel() == record2.getNextRel() &&
-               record1.isDense() == record2.isDense() &&
-               record1.getLabelField() == record2.getLabelField();
-    }
+        NodeCheckType check = new NodeCheckType();
 
-    @Override
-    public String name()
-    {
-        return "node";
+        assertTrue( check.equal( record1, record2 ) );
     }
 }

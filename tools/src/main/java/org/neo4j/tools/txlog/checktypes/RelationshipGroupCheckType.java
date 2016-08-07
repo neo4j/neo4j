@@ -19,8 +19,6 @@
  */
 package org.neo4j.tools.txlog.checktypes;
 
-import java.util.Objects;
-
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 
@@ -44,14 +42,9 @@ public class RelationshipGroupCheckType extends CheckType<Command.RelationshipGr
     }
 
     @Override
-    public boolean equal( RelationshipGroupRecord record1, RelationshipGroupRecord record2 )
+    protected boolean inUseRecordsEqual( RelationshipGroupRecord record1, RelationshipGroupRecord record2 )
     {
-        Objects.requireNonNull( record1 );
-        Objects.requireNonNull( record2 );
-
-        return record1.getId() == record2.getId() &&
-               record1.inUse() == record2.inUse() &&
-               record1.getFirstIn() == record2.getFirstIn() &&
+        return record1.getFirstIn() == record2.getFirstIn() &&
                record1.getFirstLoop() == record2.getFirstLoop() &&
                record1.getFirstOut() == record2.getFirstOut() &&
                record1.getNext() == record2.getNext() &&

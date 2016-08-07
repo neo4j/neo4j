@@ -19,8 +19,6 @@
  */
 package org.neo4j.tools.txlog.checktypes;
 
-import java.util.Objects;
-
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 
@@ -44,14 +42,9 @@ public class RelationshipCheckType extends CheckType<Command.RelationshipCommand
     }
 
     @Override
-    public boolean equal( RelationshipRecord record1, RelationshipRecord record2 )
+    protected boolean inUseRecordsEqual( RelationshipRecord record1, RelationshipRecord record2 )
     {
-        Objects.requireNonNull( record1 );
-        Objects.requireNonNull( record2 );
-
-        return record1.getId() == record2.getId() &&
-               record1.inUse() == record2.inUse() &&
-               record1.getNextProp() == record2.getNextProp() &&
+        return record1.getNextProp() == record2.getNextProp() &&
                record1.isFirstInFirstChain() == record2.isFirstInFirstChain() &&
                record1.isFirstInSecondChain() == record2.isFirstInSecondChain() &&
                record1.getFirstNextRel() == record2.getFirstNextRel() &&
@@ -62,7 +55,6 @@ public class RelationshipCheckType extends CheckType<Command.RelationshipCommand
                record1.getSecondPrevRel() == record2.getSecondPrevRel() &&
                record1.getType() == record2.getType();
     }
-
 
     @Override
     public String name()
