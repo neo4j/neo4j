@@ -19,13 +19,8 @@
  */
 package org.neo4j.tools.txlog.checktypes;
 
-import java.util.Objects;
-
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_2;
-import org.neo4j.storageengine.api.ReadableChannel;
-import org.neo4j.storageengine.api.WritableChannel;
 
 public class RelationshipCheckType extends CheckType<Command.RelationshipCommand,RelationshipRecord>
 {
@@ -46,36 +41,10 @@ public class RelationshipCheckType extends CheckType<Command.RelationshipCommand
         return command.getAfter();
     }
 
-    /**
-     * Checks that two given {@link RelationshipRecord}s are equal. {@link RelationshipRecord#inUse() Used}
-     * records are compared by all present fields/pointers. Unused records are compared only by id. This is so
-     * because for removed relationships we write not only inUse flag but also
-     * {@link RelationshipRecord#getType() relationship type} in
-     * {@link Command.RelationshipCommand#serialize(WritableChannel)} and read it in
-     * {@link PhysicalLogCommandReaderV3_0_2#readRelationshipRecord(long, ReadableChannel)}.
-     *
-     * @param record1 first record to check.
-     * @param record2 second record to check.
-     * @return {@code true} when records are equal, otherwise {@code false}.
-     */
     @Override
-    public boolean equal( RelationshipRecord record1, RelationshipRecord record2 )
+    protected boolean inUseRecordsEqual( RelationshipRecord record1, RelationshipRecord record2 )
     {
-        Objects.requireNonNull( record1 );
-        Objects.requireNonNull( record2 );
-
-        if ( record1.getId() != record2.getId() )
-        {
-            return false;
-        }
-
-        if ( record1.inUse() == record2.inUse() && !record1.inUse() )
-        {
-            return true;
-        }
-
-        return record1.inUse() == record2.inUse() &&
-               record1.getNextProp() == record2.getNextProp() &&
+        return record1.getNextProp() == record2.getNextProp() &&
                record1.isFirstInFirstChain() == record2.isFirstInFirstChain() &&
                record1.isFirstInSecondChain() == record2.isFirstInSecondChain() &&
                record1.getFirstNextRel() == record2.getFirstNextRel() &&
@@ -86,7 +55,6 @@ public class RelationshipCheckType extends CheckType<Command.RelationshipCommand
                record1.getSecondPrevRel() == record2.getSecondPrevRel() &&
                record1.getType() == record2.getType();
     }
-
 
     @Override
     public String name()
