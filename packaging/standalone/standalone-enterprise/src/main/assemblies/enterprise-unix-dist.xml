@@ -87,19 +87,20 @@
     </fileSet>
     <!-- filter and chmod 755 cypher-shell -->
     <fileSet>
-      <directory>${project.parent.basedir}/src/main/distribution/cypher-shell/bin</directory>
+      <directory>${project.parent.basedir}/src/main/distribution/cypher-shell</directory>
       <outputDirectory>bin</outputDirectory>
-      <lineEnding>unix</lineEnding>
+      <lineEnding>keep</lineEnding>
       <fileMode>0755</fileMode>
       <excludes>
-        <exclude>*.bat</exclude>
+        <exclude>**/*.bat</exclude>
+        <exclude>**/*.jar</exclude>
       </excludes>
     </fileSet>
     <fileSet>
-      <directory>${project.parent.basedir}/src/main/distribution/cypher-shell/lib</directory>
-      <outputDirectory>lib</outputDirectory>
+      <directory>${project.parent.basedir}/src/main/distribution/cypher-shell</directory>
+      <outputDirectory>bin/tools</outputDirectory>
       <includes>
-        <include>*.jar</include>
+        <include>**/*.jar</include>
       </includes>
     </fileSet>
   </fileSets>
