@@ -30,9 +30,22 @@ import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 public class WritableIndexSnapshotFileIteratorTest extends ReadOnlyIndexSnapshotFileIteratorTest
 {
 
+    private IndexWriter indexWriter;
+
+    @Override
+    public void tearDown() throws IOException
+    {
+        if ( indexWriter != null )
+        {
+            indexWriter.close();
+        }
+        super.tearDown();
+    }
+
     @Override
     protected ResourceIterator<File> makeSnapshot() throws IOException
     {
-        return LuceneIndexSnapshots.forIndex( indexDir, new IndexWriter( dir, IndexWriterConfigs.standard() ) );
+        indexWriter = new IndexWriter( dir, IndexWriterConfigs.standard() );
+        return LuceneIndexSnapshots.forIndex( indexDir, indexWriter );
     }
 }
