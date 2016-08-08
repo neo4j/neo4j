@@ -44,6 +44,8 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -95,8 +97,12 @@ public class NeoStoreDataSourceRule extends ExternalResource
         }
         final Config config = new Config( stringMap( additionalConfig ), GraphDatabaseSettings.class );
 
-        Locks locks = mock( Locks.class );
-        when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
+        StatementLocksFactory locksFactory = mock( StatementLocksFactory.class );
+        StatementLocks statementLocks = mock( StatementLocks.class );
+        Locks.Client locks = mock( Locks.Client.class );
+        when( statementLocks.optimistic() ).thenReturn( locks );
+        when( statementLocks.pessimistic() ).thenReturn( locks );
+        when( locksFactory.newInstance() ).thenReturn( statementLocks );
 
         JobScheduler jobScheduler = mock( JobScheduler.class, RETURNS_MOCKS );
         Monitors monitors = new Monitors();
@@ -104,7 +110,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 idConfigurationProvider,
                 logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
-                mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locks,
+                mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locksFactory,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
                 fs, mock( TransactionMonitor.class ), databaseHealth,
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,

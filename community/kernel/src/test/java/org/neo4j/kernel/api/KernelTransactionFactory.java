@@ -32,6 +32,8 @@ import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -86,7 +88,9 @@ public class KernelTransactionFactory
                 TransactionTracer.NULL,
                 storageEngine );
 
-        transaction.initialize( 0, 0, new NoOpClient(), KernelTransaction.Type.implicit, accessMode );
+        StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
+
+        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, accessMode );
 
         return new Instances( transaction, storageEngine, storeReadLayer, storageStatement );
     }

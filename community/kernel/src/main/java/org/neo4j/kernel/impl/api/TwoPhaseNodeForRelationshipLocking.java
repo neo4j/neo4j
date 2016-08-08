@@ -101,7 +101,7 @@ class TwoPhaseNodeForRelationshipLocking
                 PrimitiveLongIterator iterator = nodeIds.iterator();
                 while ( iterator.hasNext() )
                 {
-                    state.locks().acquireExclusive( ResourceTypes.NODE, iterator.next() );
+                    state.locks().optimistic().acquireExclusive( ResourceTypes.NODE, iterator.next() );
                 }
             }
 
@@ -117,7 +117,7 @@ class TwoPhaseNodeForRelationshipLocking
                         PrimitiveLongIterator iterator = nodeIds.iterator();
                         while ( iterator.hasNext() )
                         {
-                            state.locks().releaseExclusive( ResourceTypes.NODE, iterator.next() );
+                            state.locks().optimistic().releaseExclusive( ResourceTypes.NODE, iterator.next() );
                         }
                         nodeIds.clear();
                         break;

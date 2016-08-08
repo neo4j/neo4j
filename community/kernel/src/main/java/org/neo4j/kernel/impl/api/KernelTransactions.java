@@ -37,7 +37,8 @@ import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -64,7 +65,7 @@ public class KernelTransactions extends LifecycleAdapter
 {
     // Transaction dependencies
 
-    private final Locks locks;
+    private final StatementLocksFactory statementLocksFactory;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StatementOperationParts statementOperations;
     private final SchemaWriteGuard schemaWriteGuard;
@@ -96,7 +97,7 @@ public class KernelTransactions extends LifecycleAdapter
      */
     private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap( new ConcurrentHashMap<>() );
 
-    public KernelTransactions( Locks locks,
+    public KernelTransactions( StatementLocksFactory statementLocksFactory,
                                ConstraintIndexCreator constraintIndexCreator,
                                StatementOperationParts statementOperations,
                                SchemaWriteGuard schemaWriteGuard,
@@ -113,7 +114,7 @@ public class KernelTransactions extends LifecycleAdapter
                                TransactionIdStore transactionIdStore,
                                Clock clock )
     {
-        this.locks = locks;
+        this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -159,8 +160,9 @@ public class KernelTransactions extends LifecycleAdapter
             assertDatabaseIsRunning();
             TransactionId lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
             KernelTransactionImplementation tx = localTxPool.acquire();
+            StatementLocks statementLocks = statementLocksFactory.newInstance();
             tx.initialize( lastCommittedTransaction.transactionId(),
-                    lastCommittedTransaction.commitTimestamp(), locks.newClient(), type, accessMode );
+                    lastCommittedTransaction.commitTimestamp(), statementLocks, type, accessMode );
             return tx;
         }
         finally

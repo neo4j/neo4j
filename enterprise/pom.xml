@@ -42,6 +42,7 @@
     <module>neo4j-harness-enterprise</module>
     <module>management</module>
     <module>security</module>
+    <module>deferred-locks</module>
   </modules>
 
   <licenses>

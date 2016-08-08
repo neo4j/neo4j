@@ -43,6 +43,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -435,14 +437,16 @@ public class KernelTransactionsTest
         when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 0, 0, 0 ) );
 
         Tracers tracers = new Tracers( "null", NullLog.getInstance(), new Monitors(), mock( JobScheduler.class ) );
+        StatementLocksFactory statementLocksFactory = new SimpleStatementLocksFactory( locks );
 
         if ( testKernelTransactions )
         {
-            return new TestKernelTransactions( locks, null, null, null, TransactionHeaderInformationFactory.DEFAULT,
+            return new TestKernelTransactions( statementLocksFactory, null, null, null,
+                    TransactionHeaderInformationFactory.DEFAULT,
                     commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
                     tracers, storageEngine, new Procedures(), transactionIdStore, Clock.SYSTEM_CLOCK );
         }
-        return new KernelTransactions( locks,
+        return new KernelTransactions( statementLocksFactory,
                 null, null, null, TransactionHeaderInformationFactory.DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
                 tracers, storageEngine, new Procedures(), transactionIdStore, Clock.SYSTEM_CLOCK );
@@ -515,7 +519,8 @@ public class KernelTransactionsTest
 
     private static class TestKernelTransactions extends KernelTransactions
     {
-        public TestKernelTransactions( Locks locks, ConstraintIndexCreator constraintIndexCreator,
+        public TestKernelTransactions( StatementLocksFactory statementLocksFactory,
+                ConstraintIndexCreator constraintIndexCreator,
                 StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard,
                 TransactionHeaderInformationFactory txHeaderFactory,
                 TransactionCommitProcess transactionCommitProcess,
@@ -525,7 +530,7 @@ public class KernelTransactionsTest
                 Tracers tracers, StorageEngine storageEngine, Procedures procedures,
                 TransactionIdStore transactionIdStore, Clock clock )
         {
-            super( locks, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory,
+            super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory,
                     transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor,
                     dataSourceLife, tracers, storageEngine, procedures, transactionIdStore, clock );
         }
