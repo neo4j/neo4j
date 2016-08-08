@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.function.Supplier;
@@ -32,8 +31,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -66,9 +63,6 @@ import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
-import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -82,7 +76,6 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.execution_guard_enabled;
 
@@ -115,15 +108,12 @@ public class DataSourceModule
 
     public final Supplier<StoreId> storeId;
 
-    private final Log log;
-
     public DataSourceModule( final GraphDatabaseFacadeFactory.Dependencies dependencies,
             final PlatformModule platformModule, EditionModule editionModule )
     {
         final org.neo4j.kernel.impl.util.Dependencies deps = platformModule.dependencies;
         Config config = platformModule.config;
         LogService logging = platformModule.logging;
-        this.log = logging.getInternalLog( DataSourceModule.class );
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         DataSourceManager dataSourceManager = platformModule.dataSourceManager;
         LifeSupport life = platformModule.life;
@@ -200,14 +190,12 @@ public class DataSourceModule
         KernelHealth kernelHealth = deps.satisfyDependency( new KernelHealth( kernelPanicEventGenerator,
                 logging.getInternalLog( KernelHealth.class ) ) );
 
-        StatementLocksFactory locksFactory = createStatementLocksFactory( editionModule.lockManager, config, log );
-
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource( storeDir, config,
                 storeFactory, logging.getInternalLogProvider(), platformModule.jobScheduler,
                 new NonTransactionalTokenNameLookup( editionModule.labelTokenHolder,
                         editionModule.relationshipTypeTokenHolder, editionModule.propertyKeyTokenHolder ),
                 deps, editionModule.propertyKeyTokenHolder, editionModule.labelTokenHolder, relationshipTypeTokenHolder,
-                locksFactory, schemaWriteGuard, transactionEventHandlers,
+                editionModule.statementLocksFactory, schemaWriteGuard, transactionEventHandlers,
                 platformModule.monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
                 storeMigrationProcess, platformModule.transactionMonitor, kernelHealth,
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
@@ -387,37 +375,6 @@ public class DataSourceModule
                 return nodeManager.newRelationshipProxy( id, startNodeId, typeId, endNodeId );
             }
         };
-    }
-
-    private static StatementLocksFactory createStatementLocksFactory( Locks locks, Config config, Log log )
-    {
-        StatementLocksFactory statementLocksFactory;
-
-        String serviceName = StatementLocksFactory.class.getSimpleName();
-        List<StatementLocksFactory> factories = Iterables.toList( Service.load( StatementLocksFactory.class ) );
-        if ( factories.isEmpty() )
-        {
-            statementLocksFactory = new SimpleStatementLocksFactory();
-
-            log.info( "No services implementing " + serviceName + " found. " +
-                      "Using " + SimpleStatementLocksFactory.class.getSimpleName() );
-        }
-        else if ( factories.size() == 1 )
-        {
-            statementLocksFactory = factories.get( 0 );
-
-            log.info( "Found single implementation of " + serviceName +
-                      ". Namely " + statementLocksFactory.getClass().getSimpleName() );
-        }
-        else
-        {
-            throw new IllegalStateException(
-                    "Found more than one implementation of " + serviceName + ": " + factories );
-        }
-
-        statementLocksFactory.initialize( locks, config );
-
-        return statementLocksFactory;
     }
 
     /**

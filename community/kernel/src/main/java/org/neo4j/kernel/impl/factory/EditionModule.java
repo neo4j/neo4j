@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -50,6 +51,8 @@ public abstract class EditionModule
     public PropertyKeyTokenHolder propertyKeyTokenHolder;
 
     public Locks lockManager;
+
+    public StatementLocksFactory statementLocksFactory;
 
     public CommitProcessFactory commitProcessFactory;
 
