@@ -30,7 +30,6 @@
 
   <modules>
     <module>standalone</module>
-    <module>neo4j-desktop</module>
   </modules>
 
   <licenses>
@@ -54,6 +53,18 @@ terms of the relevant Commercial Agreement.
   </licenses>
 
   <profiles>
+    <!-- Only include desktop installer in full build -->
+    <profile>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>fullBuild</name>
+        </property>
+      </activation>
+      <modules>
+        <module>neo4j-desktop</module>
+      </modules>
+    </profile>
     <profile>
       <id>freeze</id>
       <activation>
@@ -147,4 +158,3 @@ terms of the relevant Commercial Agreement.
   </profiles>
 
 </project>
-
