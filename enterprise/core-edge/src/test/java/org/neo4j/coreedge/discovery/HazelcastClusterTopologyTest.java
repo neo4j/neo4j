@@ -85,7 +85,6 @@ public class HazelcastClusterTopologyTest
         final EdgeStartupProcess startupProcess = new EdgeStartupProcess( null,
                 localDatabase,
                 mock( Lifecycle.class ),
-                mock( DataSourceManager.class ),
                 connectionStrategy,
                 new ConstantTimeRetryStrategy( 1, TimeUnit.MILLISECONDS ),
                 NullLogProvider.getInstance(), topology, config );

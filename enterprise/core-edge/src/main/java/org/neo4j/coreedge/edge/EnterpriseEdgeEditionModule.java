@@ -218,7 +218,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                         platformModule.dataSourceManager,
                         dependencies.provideDependency( TransactionIdStore.class ),
                         databaseHealthSupplier, logProvider ),
-                txPulling, platformModule.dataSourceManager, new ConnectToRandomCoreMember( discoveryService ),
+                txPulling, new ConnectToRandomCoreMember( discoveryService ),
                 new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, discoveryService, config ) );
 
         dependencies.satisfyDependency( createSessionTracker() );

@@ -19,12 +19,18 @@
  */
 package org.neo4j.coreedge.edge;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+
 import java.util.UUID;
 
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
-
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
 import org.neo4j.coreedge.core.state.machines.tx.ConstantTimeRetryStrategy;
@@ -39,49 +45,41 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
-import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.collection.Iterators.asSet;
-
 public class EdgeStartupProcessTest
 {
     @Test
     public void startShouldReplaceTheEmptyLocalStoreWithStoreFromCoreMemberAndStartPolling() throws Throwable
     {
         // given
-        StoreFetcher storeFetcher = Mockito.mock( StoreFetcher.class );
-        LocalDatabase localDatabase = Mockito.mock( LocalDatabase.class );
+        StoreFetcher storeFetcher = mock( StoreFetcher.class );
+        LocalDatabase localDatabase = mock( LocalDatabase.class );
 
         MemberId memberId = new MemberId( UUID.randomUUID() );
-        TopologyService hazelcastTopology = Mockito.mock( TopologyService.class );
+        TopologyService hazelcastTopology = mock( TopologyService.class );
 
-        ClusterTopology clusterTopology = Mockito.mock( ClusterTopology.class );
-        Mockito.when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
+        ClusterTopology clusterTopology = mock( ClusterTopology.class );
+        when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
 
-        Mockito.when( clusterTopology.coreMembers() ).thenReturn( asSet( memberId ) );
-        Mockito.when( localDatabase.isEmpty() ).thenReturn( true );
+        when( clusterTopology.coreMembers() ).thenReturn( asSet( memberId ) );
+        when( localDatabase.isEmpty() ).thenReturn( true );
 
-        DataSourceManager dataSourceManager = Mockito.mock( DataSourceManager.class );
-        Lifecycle txPulling = Mockito.mock( Lifecycle.class );
+        Lifecycle txPulling = mock( Lifecycle.class );
 
         EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
-                txPulling, dataSourceManager, new AlwaysChooseFirstMember( hazelcastTopology ),
+                txPulling, new AlwaysChooseFirstMember( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
-                Mockito.mock( EdgeTopologyService.class ), Config.empty() );
+                mock( EdgeTopologyService.class ), Config.empty() );
 
         // when
         edgeStartupProcess.start();
 
         // then
-        Mockito.verify( dataSourceManager ).start();
         Mockito.verify( localDatabase ).isEmpty();
         Mockito.verify( localDatabase ).stop();
         Mockito.verify( localDatabase ).copyStoreFrom( memberId, storeFetcher );
-        Mockito.verify( localDatabase ).start();
+        Mockito.verify( localDatabase, times( 2 ) ).start(); // once for initial start, once for after store copy
         Mockito.verify( txPulling ).start();
-        Mockito.verifyNoMoreInteractions( localDatabase, dataSourceManager, txPulling );
+        Mockito.verifyNoMoreInteractions( localDatabase, txPulling );
     }
 
     @Test
@@ -105,7 +103,7 @@ public class EdgeStartupProcessTest
         Lifecycle txPulling = Mockito.mock( Lifecycle.class );
 
         EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
-                txPulling, dataSourceManager, new AlwaysChooseFirstMember( hazelcastTopology ),
+                txPulling, new AlwaysChooseFirstMember( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
                 Mockito.mock( EdgeTopologyService.class ), Config.empty() );
 
@@ -121,7 +119,7 @@ public class EdgeStartupProcessTest
         }
 
         // then
-        Mockito.verify( dataSourceManager ).start();
+        Mockito.verify( localDatabase ).start();
         Mockito.verify( localDatabase ).isEmpty();
         Mockito.verify( localDatabase ).ensureSameStoreId( memberId, storeFetcher );
         Mockito.verifyNoMoreInteractions( localDatabase, dataSourceManager );
@@ -147,11 +145,10 @@ public class EdgeStartupProcessTest
         Mockito.when( clusterTopology.coreMembers() ).thenReturn( asSet( memberId ) );
         Mockito.when( localDatabase.isEmpty() ).thenReturn( false );
 
-        DataSourceManager dataSourceManager = Mockito.mock( DataSourceManager.class );
         Lifecycle txPulling = Mockito.mock( Lifecycle.class );
 
         EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
-                txPulling, dataSourceManager, new AlwaysChooseFirstMember( hazelcastTopology ),
+                txPulling, new AlwaysChooseFirstMember( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
                 Mockito.mock( EdgeTopologyService.class ), Config.empty() );
 
@@ -161,9 +158,9 @@ public class EdgeStartupProcessTest
         // then
         Mockito.verify( localDatabase ).isEmpty();
         Mockito.verify( localDatabase ).ensureSameStoreId( memberId, storeFetcher );
-        Mockito.verify( dataSourceManager ).start();
+        Mockito.verify( localDatabase ).start();
         Mockito.verify( txPulling ).start();
-        Mockito.verifyNoMoreInteractions( localDatabase, dataSourceManager, txPulling );
+        Mockito.verifyNoMoreInteractions( localDatabase, txPulling );
     }
 
     @Test
@@ -181,10 +178,9 @@ public class EdgeStartupProcessTest
         Mockito.when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
         Mockito.when( localDatabase.isEmpty() ).thenReturn( true );
 
-        DataSourceManager dataSourceManager = Mockito.mock( DataSourceManager.class );
         Lifecycle txPulling = Mockito.mock( Lifecycle.class );
         EdgeStartupProcess edgeStartupProcess = new EdgeStartupProcess( storeFetcher, localDatabase,
-                txPulling, dataSourceManager, new AlwaysChooseFirstMember( hazelcastTopology ),
+                txPulling, new AlwaysChooseFirstMember( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
                 Mockito.mock( EdgeTopologyService.class ), null );
 
@@ -193,7 +189,7 @@ public class EdgeStartupProcessTest
 
         // then
         Mockito.verify( txPulling ).stop();
-        Mockito.verify( dataSourceManager ).stop();
-        Mockito.verifyNoMoreInteractions( txPulling, dataSourceManager );
+        Mockito.verify( localDatabase ).stop();
+        Mockito.verifyNoMoreInteractions( txPulling );
     }
 }
