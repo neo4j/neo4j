@@ -78,8 +78,8 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -268,7 +268,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokens;
     private final RelationshipTypeTokenHolder relationshipTypeTokens;
-    private final Locks locks;
+    private final StatementLocksFactory statementLocksFactory;
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionEventHandlers transactionEventHandlers;
     private final IdGeneratorFactory idGeneratorFactory;
@@ -323,7 +323,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             PropertyKeyTokenHolder propertyKeyTokens,
             LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
-            Locks lockManager,
+            StatementLocksFactory statementLocksFactory,
             SchemaWriteGuard schemaWriteGuard,
             TransactionEventHandlers transactionEventHandlers,
             IndexingService.Monitor indexingServiceMonitor,
@@ -357,7 +357,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.propertyKeyTokenHolder = propertyKeyTokens;
         this.labelTokens = labelTokens;
         this.relationshipTypeTokens = relationshipTypeTokens;
-        this.locks = lockManager;
+        this.statementLocksFactory = statementLocksFactory;
         this.schemaWriteGuard = schemaWriteGuard;
         this.transactionEventHandlers = transactionEventHandlers;
         this.indexingServiceMonitor = indexingServiceMonitor;
@@ -793,10 +793,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 legacyIndexStore ) );
 
         TransactionHooks hooks = new TransactionHooks();
-        KernelTransactions kernelTransactions = life.add( new KernelTransactions( locks, constraintIndexCreator,
-                statementOperations, schemaWriteGuard, transactionHeaderInformationFactory, transactionCommitProcess,
-                indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor, life, tracers, storageEngine,
-                procedures, transactionIdStore, config, Clock.SYSTEM_CLOCK ) );
+        KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
+                constraintIndexCreator, statementOperations, schemaWriteGuard, transactionHeaderInformationFactory,
+                transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor,
+                life, tracers, storageEngine, procedures, transactionIdStore, config, Clock.SYSTEM_CLOCK ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures );
 

@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -144,7 +145,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StorageStatement storageStatement;
     private CloseListener closeListener;
     private AccessMode accessMode;
-    private volatile Locks.Client locks;
+    private volatile StatementLocks statementLocks;
     private boolean beforeHookInvoked;
     private volatile boolean closing, closed;
     private boolean failure, success;
@@ -202,10 +203,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
     public KernelTransactionImplementation initialize(
-            long lastCommittedTx, long lastTimeStamp, Locks.Client locks, Type type, AccessMode accessMode )
+            long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type, AccessMode accessMode )
     {
         this.type = type;
-        this.locks = locks;
+        this.statementLocks = statementLocks;
         this.terminationReason = null;
         this.closing = closed = failure = success = beforeHookInvoked = false;
         this.writeState = TransactionWriteState.NONE;
@@ -215,7 +216,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionEvent = tracer.beginTransaction();
         assert transactionEvent != null : "transactionEvent was null!";
         this.accessMode = accessMode;
-        this.currentStatement.initialize( locks );
+        this.currentStatement.initialize( statementLocks );
         return this;
     }
 
@@ -296,9 +297,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             failure = true;
             terminationReason = reason;
-            if ( txTerminationAwareLocks && locks != null )
+            if ( txTerminationAwareLocks && statementLocks != null )
             {
-                locks.stop();
+                statementLocks.stop();
             }
             transactionMonitor.transactionTerminated( hasTxStateWithChanges() );
         }
@@ -522,13 +523,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             // Convert changes into commands and commit
             if ( hasChanges() )
             {
+                // grab all optimistic locks now, locks can't be deferred any further
+                statementLocks.prepareForCommit();
+                // use pessimistic locks for the rest of the commit process, locks can't be deferred any further
+                Locks.Client commitLocks = statementLocks.pessimistic();
+
                 // Gather up commands from the various sources
                 Collection<StorageCommand> extractedCommands = new ArrayList<>();
                 storageEngine.createCommands(
                         extractedCommands,
                         txState,
                         storageStatement,
-                        locks,
+                        commitLocks,
                         lastTransactionIdWhenStarted );
                 if ( hasLegacyIndexChanges() )
                 {
@@ -554,7 +560,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                             headerInformation.getMasterId(),
                             headerInformation.getAuthorId(),
                             startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis(),
-                            locks.getLockSessionId() );
+                            commitLocks.getLockSessionId() );
 
                     // Commit the transaction
                     commitProcess.commit( new TransactionToApply( transactionRepresentation ), commitEvent, INTERNAL );
@@ -669,8 +675,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         terminationReleaseLock.lock();
         try
         {
-            locks.close();
-            locks = null;
+            statementLocks.close();
+            statementLocks = null;
             terminationReason = null;
             type = null;
             accessMode = null;
@@ -732,7 +738,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public String toString()
     {
-        String lockSessionId = locks == null ? "locks == null" : String.valueOf( locks.getLockSessionId() );
+        String lockSessionId = statementLocks == null
+                               ? "statementLocks == null"
+                               : String.valueOf( statementLocks.pessimistic().getLockSessionId() );
+
         return "KernelTransaction[" + lockSessionId + "]";
     }
 

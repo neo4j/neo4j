@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
@@ -86,7 +87,7 @@ public class LockingStatementOperationsTest
         lockingOps = new LockingStatementOperations(
                 entityReadOps, entityWriteOps, schemaReadOps, schemaWriteOps, schemaStateOps
         );
-        state.initialize( locks );
+        state.initialize( new SimpleStatementLocks( locks ) );
         state.acquire();
     }
 
