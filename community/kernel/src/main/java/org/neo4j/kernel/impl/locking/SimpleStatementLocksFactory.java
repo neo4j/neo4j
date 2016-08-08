@@ -36,7 +36,6 @@ public class SimpleStatementLocksFactory implements StatementLocksFactory
 
     /**
      * Creates a new factory initialized with given {@code locks}.
-     * <b>Note:</b> should be used for tests only.
      *
      * @param locks the locks to use.
      */

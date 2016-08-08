@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
@@ -66,6 +67,8 @@ public abstract class EditionModule
     public PropertyKeyTokenHolder propertyKeyTokenHolder;
 
     public Locks lockManager;
+
+    public StatementLocksFactory statementLocksFactory;
 
     public CommitProcessFactory commitProcessFactory;
 

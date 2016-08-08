@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -32,8 +31,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -62,9 +59,6 @@ import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
-import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -116,15 +110,12 @@ public class DataSourceModule
 
     public final AutoIndexing autoIndexing;
 
-    private final Log log;
-
     public DataSourceModule( final GraphDatabaseFacadeFactory.Dependencies dependencies,
             final PlatformModule platformModule, EditionModule editionModule )
     {
         final org.neo4j.kernel.impl.util.Dependencies deps = platformModule.dependencies;
         Config config = platformModule.config;
         LogService logging = platformModule.logging;
-        this.log = logging.getInternalLog( DataSourceModule.class );
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         DataSourceManager dataSourceManager = platformModule.dataSourceManager;
         LifeSupport life = platformModule.life;
@@ -184,8 +175,6 @@ public class DataSourceModule
                 editionModule.relationshipTypeTokenHolder,
                 editionModule.propertyKeyTokenHolder );
 
-        StatementLocksFactory locksFactory = createStatementLocksFactory( editionModule.lockManager, config, log );
-
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource(
                 storeDir,
                 config,
@@ -199,7 +188,7 @@ public class DataSourceModule
                 editionModule.propertyKeyTokenHolder,
                 editionModule.labelTokenHolder,
                 relationshipTypeTokenHolder,
-                locksFactory,
+                editionModule.statementLocksFactory,
                 schemaWriteGuard,
                 transactionEventHandlers,
                 platformModule.monitors.newMonitor( IndexingService.Monitor.class ),
@@ -390,37 +379,6 @@ public class DataSourceModule
         procedures.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> platform.graphDatabaseFacade );
 
         return procedures;
-    }
-
-    private static StatementLocksFactory createStatementLocksFactory( Locks locks, Config config, Log log )
-    {
-        StatementLocksFactory statementLocksFactory;
-
-        String serviceName = StatementLocksFactory.class.getSimpleName();
-        List<StatementLocksFactory> factories = Iterables.asList( Service.load( StatementLocksFactory.class ) );
-        if ( factories.isEmpty() )
-        {
-            statementLocksFactory = new SimpleStatementLocksFactory();
-
-            log.info( "No services implementing " + serviceName + " found. " +
-                      "Using " + SimpleStatementLocksFactory.class.getSimpleName() );
-        }
-        else if ( factories.size() == 1 )
-        {
-            statementLocksFactory = factories.get( 0 );
-
-            log.info( "Found single implementation of " + serviceName +
-                      ". Namely " + statementLocksFactory.getClass().getSimpleName() );
-        }
-        else
-        {
-            throw new IllegalStateException(
-                    "Found more than one implementation of " + serviceName + ": " + factories );
-        }
-
-        statementLocksFactory.initialize( locks, config );
-
-        return statementLocksFactory;
     }
 
     /**
