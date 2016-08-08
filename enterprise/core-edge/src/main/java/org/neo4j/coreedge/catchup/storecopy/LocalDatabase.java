@@ -62,11 +62,13 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         this.storeId = StoreId.DEFAULT;
     }
 
+    @Override
     public void init() throws Throwable
     {
         dataSourceManager.init();
     }
 
+    @Override
     public void start() throws Throwable
     {
         dataSourceManager.start();
@@ -76,6 +78,7 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         log.info( "My StoreId is: " + storeId );
     }
 
+    @Override
     public void stop() throws Throwable
     {
         this.storeId = StoreId.DEFAULT;
@@ -92,11 +95,6 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
     public StoreId storeId()
     {
         return storeId;
-    }
-
-    public void deleteStore() throws IOException
-    {
-        storeFiles.delete( storeDir );
     }
 
     public void panic( Throwable cause )
