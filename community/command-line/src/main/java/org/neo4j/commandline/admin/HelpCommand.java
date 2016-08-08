@@ -21,17 +21,20 @@ package org.neo4j.commandline.admin;
 
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public class HelpCommand implements AdminCommand
 {
     public static class Provider extends AdminCommand.Provider
     {
         private final Usage usage;
+        private final Consumer<String> output;
 
-        public Provider( Usage usage )
+        public Provider( Usage usage, Consumer<String> output )
         {
             super( "help" );
             this.usage = usage;
+            this.output = output;
         }
 
         @Override
@@ -49,20 +52,22 @@ public class HelpCommand implements AdminCommand
         @Override
         public AdminCommand create( Path homeDir, Path configDir )
         {
-            return new HelpCommand( usage );
+            return new HelpCommand( usage, output );
         }
     }
 
     private final Usage usage;
+    private final Consumer<String> output;
 
-    public HelpCommand( Usage usage )
+    public HelpCommand( Usage usage, Consumer<String> output )
     {
         this.usage = usage;
+        this.output = output;
     }
 
     @Override
     public void execute( String... args )
     {
-        usage.print();
+        usage.print( output );
     }
 }

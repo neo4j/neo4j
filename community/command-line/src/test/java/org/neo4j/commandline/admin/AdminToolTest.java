@@ -66,7 +66,7 @@ public class AdminToolTest
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null );
-        verify( outsideWorld ).stdOutLine( "Usage:" );
+        verify( outsideWorld ).stdErrLine( "Usage:" );
     }
 
     @Test
@@ -74,7 +74,7 @@ public class AdminToolTest
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null );
-        verify( outsideWorld ).stdOutLine( "you must provide a command" );
+        verify( outsideWorld ).stdErrLine( "you must provide a command" );
     }
 
     @Test
@@ -160,6 +160,11 @@ public class AdminToolTest
     {
         @Override
         public void stdOutLine( String text )
+        {
+        }
+
+        @Override
+        public void stdErrLine( String text )
         {
         }
 

@@ -23,6 +23,8 @@ public interface OutsideWorld
 {
     void stdOutLine( String text );
 
+    void stdErrLine( String text );
+
     void exit( int status );
 
     void printStacktrace( Exception exception );

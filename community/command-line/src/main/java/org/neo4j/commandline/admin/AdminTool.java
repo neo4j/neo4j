@@ -50,7 +50,7 @@ public class AdminTool
         this.locator = CommandLocator.withAdditionalCommand( help(), locator );
         this.outsideWorld = outsideWorld;
         this.debug = debug;
-        this.usage = new Usage( scriptName, outsideWorld, this.locator );
+        this.usage = new Usage( scriptName, this.locator );
     }
 
     public void execute( Path homeDir, Path configDir, String... args )
@@ -99,18 +99,19 @@ public class AdminTool
 
     private Supplier<AdminCommand.Provider> help()
     {
-        return () -> new HelpCommand.Provider( usage );
+        return () -> new HelpCommand.Provider( usage, outsideWorld::stdOutLine );
     }
 
     private void badUsage( AdminCommand.Provider command, IncorrectUsage e )
     {
-        new Usage.CommandUsage( command, outsideWorld, scriptName ).print();
+        final Usage.CommandUsage commandUsage = new Usage.CommandUsage( command, scriptName );
+        commandUsage.print( outsideWorld::stdErrLine );
         failure( e.getMessage() );
     }
 
     private void badUsage( String message )
     {
-        usage.print();
+        usage.print( outsideWorld::stdErrLine );
         failure( message );
     }
 
@@ -144,7 +145,7 @@ public class AdminTool
 
     private void failure( String message )
     {
-        outsideWorld.stdOutLine( message );
+        outsideWorld.stdErrLine( message );
         outsideWorld.exit( 1 );
     }
 

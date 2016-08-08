@@ -28,6 +28,12 @@ class RealOutsideWorld implements OutsideWorld
     }
 
     @Override
+    public void stdErrLine( String text )
+    {
+        System.err.println( text );
+    }
+
+    @Override
     public void exit( int status )
     {
         System.exit( status );

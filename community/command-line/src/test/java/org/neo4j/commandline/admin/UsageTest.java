@@ -19,22 +19,31 @@
  */
 package org.neo4j.commandline.admin;
 
-import org.junit.Test;
-import org.mockito.InOrder;
-
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.Consumer;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.InOrder;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 
 public class UsageTest
 {
+    @Mock
+    private Consumer<String> out;
+
+    @Before
+    public void setUp() {
+        MockitoAnnotations.initMocks(this);
+    }
+
     @Test
     public void shouldPrintUsageForAllCommands()
     {
-        OutsideWorld out = mock( OutsideWorld.class );
-
         AdminCommand.Provider[] commands = new AdminCommand.Provider[]
                 {
                         new StubProvider( "restore",
@@ -42,20 +51,21 @@ public class UsageTest
                                 "Restores a database backed up using the neo4j-backup tool." ),
                         new StubProvider( "bam", Optional.empty(), "Some description" )
                 };
-        new Usage( "neo4j-admin", out, new CannedLocator( commands ) ).print();
+        final Usage usage = new Usage( "neo4j-admin", new CannedLocator( commands ) );
+        usage.print( out );
 
         InOrder ordered = inOrder( out );
-        ordered.verify( out ).stdOutLine( "Usage:" );
-        ordered.verify( out ).stdOutLine( "" );
+        ordered.verify( out ).accept( "Usage:" );
+        ordered.verify( out ).accept( "" );
         ordered.verify( out )
-                .stdOutLine( "neo4j-admin restore ---from <backup-directory> --database=<database-name> [--force]" );
-        ordered.verify( out ).stdOutLine( "" );
-        ordered.verify( out ).stdOutLine( "    Restores a database backed up using the neo4j-backup tool." );
-        ordered.verify( out ).stdOutLine( "" );
-        ordered.verify( out ).stdOutLine( "neo4j-admin bam" );
-        ordered.verify( out ).stdOutLine( "" );
-        ordered.verify( out ).stdOutLine( "    Some description" );
-        ordered.verify( out ).stdOutLine( "" );
+                .accept( "neo4j-admin restore ---from <backup-directory> --database=<database-name> [--force]" );
+        ordered.verify( out ).accept( "" );
+        ordered.verify( out ).accept( "    Restores a database backed up using the neo4j-backup tool." );
+        ordered.verify( out ).accept( "" );
+        ordered.verify( out ).accept( "neo4j-admin bam" );
+        ordered.verify( out ).accept( "" );
+        ordered.verify( out ).accept( "    Some description" );
+        ordered.verify( out ).accept( "" );
         ordered.verifyNoMoreInteractions();
     }
 
