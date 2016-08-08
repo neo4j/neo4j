@@ -59,7 +59,7 @@ public class BackupEdgeIT
     @Test
     public void makeSureBackupCannotBePerformed() throws Throwable
     {
-        String[] args = backupArguments( "localhost:8000", backupPath.getPath() );
+        String[] args = backupArguments( "localhost:8000", backupPath.getPath(), false );
         assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( args ) );
     }
 }

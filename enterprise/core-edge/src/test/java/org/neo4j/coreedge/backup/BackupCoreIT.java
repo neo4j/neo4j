@@ -37,11 +37,11 @@ import java.util.stream.Stream;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.coreedge.TestStoreId;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -49,6 +49,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.restore.RestoreDatabaseCli;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
@@ -56,11 +57,12 @@ import org.neo4j.test.rule.SuppressOutput;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.fail;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
-import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.coreedge.backup.ArgsBuilder.args;
 import static org.neo4j.coreedge.backup.ArgsBuilder.toArray;
+import static org.neo4j.graphdb.Label.label;
 
 public class BackupCoreIT
 {
@@ -90,7 +92,7 @@ public class BackupCoreIT
         // Run backup
         CoreGraphDatabase db = createSomeData(cluster);
         DbRepresentation beforeChange = DbRepresentation.of( db );
-        String[] args = backupArguments(backupAddress(db), backupPath.getPath() );
+        String[] args = backupArguments(backupAddress(db), backupPath.getPath(), false );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
 
         // Add some new data
@@ -110,7 +112,7 @@ public class BackupCoreIT
             // Run backup
             DbRepresentation beforeChange = DbRepresentation.of(createSomeData( cluster ));
             File backupPathPerCoreMachine = new File( backupPath, "" + db.id().hashCode() );
-            String[] args = backupArguments(backupAddress(db.database()), backupPathPerCoreMachine.getPath() );
+            String[] args = backupArguments(backupAddress(db.database()), backupPathPerCoreMachine.getPath(), false );
             assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
 
             // Add some new data
@@ -129,7 +131,7 @@ public class BackupCoreIT
         // given
         CoreGraphDatabase db = createSomeData( cluster );
         DbRepresentation beforeBackup = DbRepresentation.of( db );
-        String[] args = backupArguments(backupAddress(db), backupPath.getPath() );
+        String[] args = backupArguments(backupAddress(db), backupPath.getPath(), false );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
 
         // when we shutdown the cluster we lose the number of core servers so we won't go through the for loop unless
@@ -174,6 +176,45 @@ public class BackupCoreIT
         assertNotEquals( storeId, afterRestoreStoreId );
     }
 
+    @Test
+    public void shouldNotStartFromUnconvertedBackup() throws Throwable
+    {
+        // given: a backup with some data
+        int size = cluster.coreMembers().size();
+        CoreGraphDatabase db = createSomeData( cluster );
+        String[] args = backupArguments( backupAddress( db ), backupPath.getPath(), true );
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
+
+        // save the homeDirs before we shutdown
+        List<File> homeDirs = cluster.coreMembers().stream().map( CoreClusterMember::homeDir ).collect( toList() );
+
+        // shutdown every member
+        for ( int i = 0; i < size; i++ )
+        {
+            cluster.removeCoreMemberWithMemberId( i );
+        }
+
+        // when: restoring backup without conversion
+        for ( File homeDir : homeDirs )
+        {
+            new RestoreDatabaseCli( homeDir.toPath(), homeDir.toPath() ).execute( toArray( args().from( backupPath ).database( "graph.db" ).force().build() ) );
+        }
+
+        // then: should fail to startup
+        for ( int i = 0; i < size; i++ )
+        {
+            try
+            {
+                cluster.addCoreMemberWithId( i, 3 );
+                fail( "Starting member should have failed" );
+            }
+            catch ( Exception ignored )
+            {
+                // expected
+            }
+        }
+    }
+
     static CoreGraphDatabase createSomeData( Cluster cluster ) throws TimeoutException, InterruptedException
     {
         return cluster.coreTx( ( db, tx ) -> {
@@ -190,13 +231,19 @@ public class BackupCoreIT
         return inetSocketAddress.getHostName() + ":" + (inetSocketAddress.getPort() + 2000);
     }
 
-    static String[] backupArguments( String from, String to )
+    static String[] backupArguments( String from, String to, boolean includeLogs )
     {
         List<String> args = new ArrayList<>();
         args.add( "-from" );
         args.add( from );
         args.add( "-to" );
         args.add( to );
+
+        if ( includeLogs )
+        {
+            args.add( "-gather-forensics" );
+        }
+
         return args.toArray( new String[args.size()] );
     }
 
