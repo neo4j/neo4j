@@ -19,29 +19,27 @@
  */
 package org.neo4j.coreedge.edge;
 
+import static org.neo4j.coreedge.edge.EnterpriseEdgeEditionModule.extractBoltAddress;
+
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
-import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionException;
-import org.neo4j.coreedge.discovery.EdgeTopologyService;
-import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.coreedge.core.state.machines.tx.RetryStrategy;
+import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionException;
+import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-
-import static org.neo4j.coreedge.edge.EnterpriseEdgeEditionModule.extractBoltAddress;
 
 public class EdgeStartupProcess implements Lifecycle
 {
     private final StoreFetcher storeFetcher;
     private final LocalDatabase localDatabase;
     private final Lifecycle txPulling;
-    private final DataSourceManager dataSourceManager;
     private final CoreMemberSelectionStrategy connectionStrategy;
     private final Log log;
     private final EdgeTopologyService discoveryService;
@@ -52,7 +50,6 @@ public class EdgeStartupProcess implements Lifecycle
             StoreFetcher storeFetcher,
             LocalDatabase localDatabase,
             Lifecycle txPulling,
-            DataSourceManager dataSourceManager,
             CoreMemberSelectionStrategy connectionStrategy,
             RetryStrategy retryStrategy,
             LogProvider logProvider, EdgeTopologyService discoveryService, Config config )
@@ -60,7 +57,6 @@ public class EdgeStartupProcess implements Lifecycle
         this.storeFetcher = storeFetcher;
         this.localDatabase = localDatabase;
         this.txPulling = txPulling;
-        this.dataSourceManager = dataSourceManager;
         this.connectionStrategy = connectionStrategy;
         this.timeout = retryStrategy.newTimeout();
         this.log = logProvider.getLog( getClass() );
@@ -71,14 +67,14 @@ public class EdgeStartupProcess implements Lifecycle
     @Override
     public void init() throws Throwable
     {
-        dataSourceManager.init();
+        localDatabase.init();
         txPulling.init();
     }
 
     @Override
     public void start() throws Throwable
     {
-        dataSourceManager.start();
+        localDatabase.start();
 
         MemberId memberId = findCoreMemberToCopyFrom();
         if ( localDatabase.isEmpty() )
@@ -120,13 +116,13 @@ public class EdgeStartupProcess implements Lifecycle
     public void stop() throws Throwable
     {
         txPulling.stop();
-        dataSourceManager.stop();
+        localDatabase.stop();
     }
 
     @Override
     public void shutdown() throws Throwable
     {
         txPulling.shutdown();
-        dataSourceManager.shutdown();
+        localDatabase.shutdown();
     }
 }
