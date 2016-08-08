@@ -30,10 +30,11 @@ class SharedDiscoveryEdgeClient extends LifecycleAdapter implements TopologyServ
     private final EdgeAddresses addresses;
     private final Log log;
 
-    SharedDiscoveryEdgeClient( SharedDiscoveryService sharedDiscoveryService, AdvertisedSocketAddress boltAddress, LogProvider logProvider )
+    SharedDiscoveryEdgeClient( SharedDiscoveryService sharedDiscoveryService, AdvertisedSocketAddress boltAddress,
+                               LogProvider logProvider )
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
-        this.addresses = new EdgeAddresses ( boltAddress );
+        this.addresses = new EdgeAddresses( boltAddress );
         this.log = logProvider.getLog( getClass() );
     }
 
