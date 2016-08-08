@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -138,6 +139,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
         lockManager = dependencies.satisfyDependency( createLockManager( config, logging ) );
+
+        statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
         idGeneratorFactory = dependencies.satisfyDependency( new DefaultIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
