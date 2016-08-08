@@ -129,7 +129,7 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
 
         public String type()
         {
-            return type.toString().toLowerCase();
+            return type.toString().toUpperCase();
         }
 
         ReadWriteEndPoint( AdvertisedSocketAddress address, Type type )
