@@ -27,6 +27,10 @@ import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableI
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 
@@ -60,5 +64,11 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     protected SessionTracker createSessionTracker()
     {
         return new StandardSessionTracker();
+    }
+
+    @Override
+    protected StatementLocksFactory createStatementLocksFactory( Locks locks, Config config, LogService logService )
+    {
+        return new StatementLocksFactorySelector( locks, config, logService ).select();
     }
 }

@@ -45,6 +45,8 @@ import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -82,6 +84,7 @@ public class CommunityEditionModule extends EditionModule
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
         lockManager = dependencies.satisfyDependency( createLockManager( config, logging ) );
+        statementLocksFactory = createStatementLocksFactory( lockManager, config, logging );
 
         idTypeConfigurationProvider = createIdTypeConfigurationProvider( config );
         idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
@@ -129,6 +132,11 @@ public class CommunityEditionModule extends EditionModule
     protected ConstraintSemantics createSchemaRuleVerifier()
     {
         return new StandardConstraintSemantics();
+    }
+
+    protected StatementLocksFactory createStatementLocksFactory( Locks locks, Config config, LogService logService )
+    {
+        return new SimpleStatementLocksFactory( locks );
     }
 
     protected SchemaWriteGuard createSchemaWriteGuard()
