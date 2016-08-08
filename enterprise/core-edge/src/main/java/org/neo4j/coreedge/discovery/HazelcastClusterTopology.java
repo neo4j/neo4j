@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
@@ -73,6 +74,7 @@ class HazelcastClusterTopology
     {
         private transient HazelcastInstance instance;
 
+        @Override
         public Collection<String> call() throws Exception
         {
             final ClientService clientService = instance.getClientService();
@@ -80,6 +82,7 @@ class HazelcastClusterTopology
             return connectedClients.stream().map( Client::getUuid ).collect( Collectors.toCollection( HashSet::new ) );
         }
 
+        @Override
         public void setHazelcastInstance( HazelcastInstance hazelcastInstance )
         {
             instance = hazelcastInstance;
@@ -98,7 +101,10 @@ class HazelcastClusterTopology
         final IExecutorService executorService = hazelcastInstance.getExecutorService( "default" );
         try
         {
-            connectedUUIDs = executorService.submit( new GetConnectedClients() ).get();
+            GetConnectedClients getConnectedClients = new GetConnectedClients();
+            getConnectedClients.setHazelcastInstance( hazelcastInstance );
+            Future<Collection<String>> collectionFuture = executorService.submit( getConnectedClients );
+            connectedUUIDs = collectionFuture.get();
         }
         catch ( InterruptedException | ExecutionException e )
         {

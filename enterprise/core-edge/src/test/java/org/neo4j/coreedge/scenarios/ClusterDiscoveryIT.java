@@ -83,8 +83,8 @@ public class ClusterDiscoveryIT
         {
             currentMembers = endPoints( cluster.getCoreMemberById( i ).database() );
 
-            assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "write" ) ).count());
-            assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "read" ) ).count());
+            assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "WRITE" ) ).count());
+            assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "READ" ) ).count());
         }
     }
 
