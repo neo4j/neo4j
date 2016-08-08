@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableI
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -225,7 +226,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 
-        this.lockManager = dependencies.satisfyDependency( lockManager );
+        dependencies.satisfyDependency( lockManager );
 
         life.add( CoreStartupProcess.createLifeSupport(
                 localDatabase, coreStateMachinesModule.replicatedIdGeneratorFactory, coreServerModule.startupLifecycle,
@@ -235,6 +236,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private void editionInvariants( PlatformModule platformModule, Dependencies dependencies, Config config,
             LogService logging, LifeSupport life )
     {
+        statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
+
         dependencies.satisfyDependency(
                 createKernelData( platformModule.fileSystem, platformModule.pageCache, platformModule.storeDir,
                         config, platformModule.graphDatabaseFacade, life ) );
