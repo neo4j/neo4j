@@ -24,28 +24,28 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
-import org.neo4j.coreedge.core.state.storage.StateStorage;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.replication.RaftReplicator;
 import org.neo4j.coreedge.core.replication.Replicator;
+import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdRangeAcquirer;
+import org.neo4j.coreedge.core.state.machines.locks.LeaderOnlyLockManager;
+import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenState;
+import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedLabelTokenHolder;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedPropertyKeyTokenHolder;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedRelationshipTypeTokenHolder;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedTokenStateMachine;
 import org.neo4j.coreedge.core.state.machines.token.TokenRegistry;
+import org.neo4j.coreedge.core.state.machines.tx.RecoverTransactionLogState;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransactionCommitProcess;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransactionStateMachine;
-import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
+import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.core.state.machines.tx.RecoverTransactionLogState;
-import org.neo4j.coreedge.core.state.machines.locks.LeaderOnlyLockManager;
-import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenState;
-import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -57,7 +57,9 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
@@ -79,8 +81,9 @@ public class CoreStateMachinesModule
     public final PropertyKeyTokenHolder propertyKeyTokenHolder;
     public final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     public final Locks lockManager;
-    public final CommitProcessFactory commitProcessFactory;
+    public final StatementLocksFactory statementLocksFactory;
 
+    public final CommitProcessFactory commitProcessFactory;
     public final ReplicatedIdGeneratorFactory replicatedIdGeneratorFactory;
     public final CoreStateMachines coreStateMachines;
 
@@ -171,6 +174,8 @@ public class CoreStateMachinesModule
         long leaderLockTokenTimeout = config.get( CoreEdgeClusterSettings.leader_lock_token_timeout );
         lockManager = createLockManager( config, logging, replicator, myself, leaderLocator, leaderLockTokenTimeout,
                 replicatedLockTokenStateMachine );
+
+        statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
 
         coreStateMachines = new CoreStateMachines( replicatedTxStateMachine, labelTokenStateMachine,
                 relationshipTypeTokenStateMachine, propertyKeyTokenStateMachine, replicatedLockTokenStateMachine,
