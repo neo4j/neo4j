@@ -35,32 +35,32 @@ public class AdminTool
         Path configDir = Paths.get( System.getenv( "NEO4J_CONF" ) );
         boolean debug = System.getenv( "NEO4J_DEBUG" ) != null;
 
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), System.out::println, debug );
-        Result result = tool.execute( homeDir, configDir, args );
-        result.exit();
+        new AdminTool( CommandLocator.fromServiceLocator(), new RealOutsideWorld(), debug )
+                .execute( homeDir, configDir, args );
     }
 
     private final String scriptName = "neo4j-admin";
     private final CommandLocator locator;
-    private final Output out;
+    private final OutsideWorld outsideWorld;
     private final boolean debug;
     private final Usage usage;
 
-    public AdminTool( CommandLocator locator, Output out, boolean debug )
+    public AdminTool( CommandLocator locator, OutsideWorld outsideWorld, boolean debug )
     {
         this.locator = CommandLocator.withAdditionalCommand( help(), locator );
-        this.out = out;
+        this.outsideWorld = outsideWorld;
         this.debug = debug;
-        this.usage = new Usage( scriptName, out, this.locator );
+        this.usage = new Usage( scriptName, outsideWorld, this.locator );
     }
 
-    public Result execute( Path homeDir, Path configDir, String... args )
+    public void execute( Path homeDir, Path configDir, String... args )
     {
         try
         {
             if ( args.length == 0 )
             {
-                return badUsage( "you must provide a command" );
+                badUsage( "you must provide a command" );
+                return;
             }
             String name = args[0];
             String[] commandArgs = Arrays.copyOfRange( args, 1, args.length );
@@ -72,27 +72,28 @@ public class AdminTool
             }
             catch ( NoSuchElementException e )
             {
-                return badUsage( format( "unrecognized command: %s", name ) );
+                badUsage( format( "unrecognized command: %s", name ) );
+                return;
             }
 
             AdminCommand command = provider.create( homeDir, configDir );
             try
             {
                 command.execute( commandArgs );
-                return success();
+                success();
             }
             catch ( IncorrectUsage e )
             {
-                return badUsage( provider, e );
+                badUsage( provider, e );
             }
             catch ( CommandFailed e )
             {
-                return failure( e );
+                commandFailed( e );
             }
         }
         catch ( RuntimeException e )
         {
-            return unexpected( e );
+            unexpected( e );
         }
     }
 
@@ -101,53 +102,54 @@ public class AdminTool
         return () -> new HelpCommand.Provider( usage );
     }
 
-    private Result badUsage( AdminCommand.Provider command, IncorrectUsage e )
+    private void badUsage( AdminCommand.Provider command, IncorrectUsage e )
     {
-        new Usage.CommandUsage( command, out, scriptName ).print();
-        return failure( e.getMessage() );
+        new Usage.CommandUsage( command, outsideWorld, scriptName ).print();
+        failure( e.getMessage() );
     }
 
-    private Result badUsage( String message )
+    private void badUsage( String message )
     {
         usage.print();
-        return failure( message );
+        failure( message );
     }
 
-    private Result unexpected( RuntimeException e )
+    private void unexpected( RuntimeException e )
     {
-        return failure( e, "unexpected error: " + e.getMessage() );
+        failure( "unexpected error", e );
     }
 
-    private Result failure( Throwable e )
+    private void commandFailed( CommandFailed e )
+    {
+        failure( "command failed", e );
+    }
+
+    private void failure( String message, Exception e )
     {
         if ( debug )
         {
-            return failure( e, e.getMessage() );
+            failure( e, format( "%s: %s", message, e.getMessage() ) );
         }
         else
         {
-            return failure( e.getMessage() );
+            failure( e.getMessage() );
         }
     }
 
-    private Result failure( Throwable e, String message )
+    private void failure( Exception e, String message )
     {
-        return () -> {
-            e.printStackTrace();
-            failure( message ).exit();
-        };
+        outsideWorld.printStacktrace( e );
+        failure( message );
     }
 
-    private static Result failure( String message )
+    private void failure( String message )
     {
-        return () -> {
-            System.err.println( message );
-            System.exit( 1 );
-        };
+        outsideWorld.stdOutLine( message );
+        outsideWorld.exit( 1 );
     }
 
-    private static Result success()
+    private void success()
     {
-        return () -> System.exit( 0 );
+        outsideWorld.exit( 0 );
     }
 }

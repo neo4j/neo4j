@@ -25,10 +25,10 @@ import static org.neo4j.helpers.Args.splitLongLine;
 public class Usage
 {
     private final String scriptName;
-    private final Output out;
+    private final OutsideWorld out;
     private final CommandLocator commands;
 
-    public Usage( String scriptName, Output out, CommandLocator commands )
+    public Usage( String scriptName, OutsideWorld out, CommandLocator commands )
     {
         this.scriptName = scriptName;
         this.out = out;
@@ -37,8 +37,8 @@ public class Usage
 
     public void print()
     {
-        out.line( "Usage:" );
-        out.line( "" );
+        out.stdOutLine( "Usage:" );
+        out.stdOutLine( "" );
 
         for ( AdminCommand.Provider command : commands.getAllProviders() )
         {
@@ -49,10 +49,10 @@ public class Usage
     public static class CommandUsage
     {
         private final AdminCommand.Provider command;
-        private final Output out;
+        private final OutsideWorld out;
         private final String scriptName;
 
-        public CommandUsage( AdminCommand.Provider command, Output out, String scriptName )
+        public CommandUsage( AdminCommand.Provider command, OutsideWorld out, String scriptName )
         {
             this.command = command;
             this.out = out;
@@ -62,13 +62,13 @@ public class Usage
         public void print()
         {
             String arguments = command.arguments().map( ( s ) -> " " + s ).orElse( "" );
-            out.line( format( "%s %s%s", scriptName, command.name(), arguments ) );
-            out.line( "" );
+            out.stdOutLine( format( "%s %s%s", scriptName, command.name(), arguments ) );
+            out.stdOutLine( "" );
             for ( String line : splitLongLine( command.description(), 80 ) )
             {
-                out.line( "    " + line );
+                out.stdOutLine( "    " + line );
             }
-            out.line( "" );
+            out.stdOutLine( "" );
         }
     }
 }

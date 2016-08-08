@@ -33,7 +33,7 @@ public class UsageTest
     @Test
     public void shouldPrintUsageForAllCommands()
     {
-        Output out = mock( Output.class );
+        OutsideWorld out = mock( OutsideWorld.class );
 
         AdminCommand.Provider[] commands = new AdminCommand.Provider[]
                 {
@@ -45,17 +45,17 @@ public class UsageTest
         new Usage( "neo4j-admin", out, new CannedLocator( commands ) ).print();
 
         InOrder ordered = inOrder( out );
-        ordered.verify( out ).line( "Usage:" );
-        ordered.verify( out ).line( "" );
+        ordered.verify( out ).stdOutLine( "Usage:" );
+        ordered.verify( out ).stdOutLine( "" );
         ordered.verify( out )
-                .line( "neo4j-admin restore ---from <backup-directory> --database=<database-name> [--force]" );
-        ordered.verify( out ).line( "" );
-        ordered.verify( out ).line( "    Restores a database backed up using the neo4j-backup tool." );
-        ordered.verify( out ).line( "" );
-        ordered.verify( out ).line( "neo4j-admin bam" );
-        ordered.verify( out ).line( "" );
-        ordered.verify( out ).line( "    Some description" );
-        ordered.verify( out ).line( "" );
+                .stdOutLine( "neo4j-admin restore ---from <backup-directory> --database=<database-name> [--force]" );
+        ordered.verify( out ).stdOutLine( "" );
+        ordered.verify( out ).stdOutLine( "    Restores a database backed up using the neo4j-backup tool." );
+        ordered.verify( out ).stdOutLine( "" );
+        ordered.verify( out ).stdOutLine( "neo4j-admin bam" );
+        ordered.verify( out ).stdOutLine( "" );
+        ordered.verify( out ).stdOutLine( "    Some description" );
+        ordered.verify( out ).stdOutLine( "" );
         ordered.verifyNoMoreInteractions();
     }
 
