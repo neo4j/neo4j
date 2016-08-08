@@ -141,6 +141,17 @@ public class EnterpriseCoreEditionModule extends EditionModule
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
+        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
+                platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
+
+        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, copiedStoreRecovery,
+                new StoreFiles( new DefaultFileSystemAbstraction() ),
+                platformModule.dataSourceManager,
+                platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier,
+                logProvider );
+
+        life.add( localDatabase );
+
         MemberId myself;
 
         try
@@ -185,15 +196,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
             messageLogger = new NullMessageLogger<>();
         }
 
-        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
-                platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
-
-        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, copiedStoreRecovery,
-                new StoreFiles( new DefaultFileSystemAbstraction() ),
-                platformModule.dataSourceManager,
-                platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier,
-                logProvider);
-
         RaftOutbound raftOutbound =
                 new RaftOutbound( discoveryService, senderService, localDatabase, logProvider, logThresholdMillis );
         Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>(
@@ -228,9 +230,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         dependencies.satisfyDependency( lockManager );
 
-        life.add( CoreStartupProcess.createLifeSupport(
-                localDatabase, coreStateMachinesModule.replicatedIdGeneratorFactory, coreServerModule.startupLifecycle,
-                consensusModule.raftTimeoutService(), coreServerModule.membershipWaiterLifecycle ) );
+        life.add( coreStateMachinesModule.replicatedIdGeneratorFactory );
+        life.add( coreServerModule.startupLifecycle );
+        life.add( consensusModule.raftTimeoutService() );
+        life.add( coreServerModule.membershipWaiterLifecycle );
     }
 
     private void editionInvariants( PlatformModule platformModule, Dependencies dependencies, Config config,
