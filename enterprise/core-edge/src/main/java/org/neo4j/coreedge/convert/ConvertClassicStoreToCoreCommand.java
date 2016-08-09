@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
+import org.neo4j.coreedge.core.state.machines.CoreStateMachines;
+import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.coreedge.core.state.machines.tx.LogIndexTxHeaderEncoding;
 import org.neo4j.coreedge.core.state.storage.DurableStateStorageImporter;
 import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
@@ -51,6 +53,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
+import static org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule.ID_ALLOCATION_NAME;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
@@ -199,7 +202,7 @@ public class ConvertClassicStoreToCoreCommand
         IdAllocationState state = new IdAllocationState( highIds, -1 );
 
         DurableStateStorageImporter<IdAllocationState> storage = new DurableStateStorageImporter<>(
-                fileSystem, new File( clusterStateDirectory, "id-allocation-state" ), "id-allocation",
+                fileSystem, clusterStateDirectory, ID_ALLOCATION_NAME,
                 new IdAllocationState.Marshal(),
                 1000, () -> new DatabaseHealth(
                 new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),

@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -31,24 +32,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import org.neo4j.coreedge.backup.RestoreClusterCliTest;
+import org.neo4j.coreedge.backup.RestoreExistingClusterCli;
+import org.neo4j.coreedge.backup.RestoreNewClusterCli;
+import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
-import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.coreedge.backup.RestoreClusterCliTest;
-import org.neo4j.coreedge.backup.RestoreClusterUtils;
-import org.neo4j.coreedge.backup.RestoreExistingClusterCli;
-import org.neo4j.coreedge.backup.RestoreNewClusterCli;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -56,11 +51,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 
+import static org.neo4j.coreedge.backup.ArgsBuilder.args;
+import static org.neo4j.coreedge.backup.ArgsBuilder.toArray;
+import static org.neo4j.coreedge.backup.RestoreClusterUtils.createClassicNeo4jStore;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.coreedge.backup.ArgsBuilder.args;
-import static org.neo4j.coreedge.backup.ArgsBuilder.toArray;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith(Parameterized.class)
@@ -88,16 +84,17 @@ public class ConvertNonCoreEdgeStoreIT
     {
         // given
         File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db" );
-        File classicNeo4jStore = createClassicNeo4jStore( dbDir, 10, recordFormat );
+        int classicNodeCount = 1024;
+        File classicNeo4jStore = createClassicNeo4jStore( dbDir, classicNodeCount, recordFormat );
 
         Cluster cluster = this.clusterRule.withRecordFormat( recordFormat ).createCluster();
 
         Path homeDir = Paths.get(cluster.getCoreMemberById( 0 ).homeDir().getPath());
 
-        StringBuilder output = new StringBuilder();
-        PrintStream sysout = new PrintStream( new RestoreClusterUtils.MyOutputStream( output ) );
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        PrintStream sysOut = new PrintStream( output );
 
-        new RestoreNewClusterCli( homeDir, homeDir, sysout ).execute(
+        new RestoreNewClusterCli( homeDir, homeDir, sysOut ).execute(
                 toArray( args().from( classicNeo4jStore ).database( "graph.db" ).force().build() )  );
 
         String seed = RestoreClusterCliTest.extractSeed( output.toString() );
@@ -113,14 +110,11 @@ public class ConvertNonCoreEdgeStoreIT
         cluster.start();
 
         // when
-        CoreGraphDatabase coreDB = cluster.awaitLeader( 5000 ).database();
-
-        try ( Transaction tx = coreDB.beginTx() )
-        {
+        cluster.coreTx( (coreDB, tx) -> {
             Node node = coreDB.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
-        }
+        } );
 
         cluster.addEdgeMemberWithIdAndRecordFormat( 4, recordFormat ).start();
 
@@ -136,36 +130,12 @@ public class ConvertNonCoreEdgeStoreIT
                 Config config = db.getDependencyResolver().resolveDependency( Config.class );
 
                 assertEventually( "node to appear on core server " + config.get( raft_advertised_address ), nodeCount,
-                        greaterThan( 0L ), 15, SECONDS );
+                        greaterThan( (long) classicNodeCount ), 15, SECONDS );
 
-                assertEquals( 11, count( db.getAllNodes() ) );
+                assertEquals( classicNodeCount + 1, count( db.getAllNodes() ) );
 
                 tx.success();
             }
         }
-    }
-
-    private File createClassicNeo4jStore( File base, int nodesToCreate, String recordFormat )
-    {
-        File existingDbDir = new File( base, "existing" );
-        GraphDatabaseService db = new GraphDatabaseFactory()
-                            .newEmbeddedDatabaseBuilder( existingDbDir )
-                            .setConfig( GraphDatabaseSettings.record_format, recordFormat )
-                            .newGraphDatabase();
-
-        for ( int i = 0; i < (nodesToCreate / 2); i++ )
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node node1 = db.createNode( Label.label( "Label-" + i ) );
-                Node node2 = db.createNode( Label.label( "Label-" + i ) );
-                node1.createRelationshipTo( node2, RelationshipType.withName( "REL-" + i ) );
-                tx.success();
-            }
-        }
-
-        db.shutdown();
-
-        return existingDbDir;
     }
 }

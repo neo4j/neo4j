@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
@@ -142,11 +143,11 @@ public class BackupCoreIT
 
         // when
 
-        StringBuilder output = new StringBuilder();
-        PrintStream sysout = new PrintStream( new RestoreClusterUtils.MyOutputStream( output ) );
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        PrintStream sysOut = new PrintStream( output );
 
         Path homeDir = Paths.get(cluster.getCoreMemberById( 0 ).homeDir().getPath());
-        new RestoreNewClusterCli( homeDir, homeDir, sysout ).execute(toArray( args().from( backupPath )
+        new RestoreNewClusterCli( homeDir, homeDir, sysOut ).execute(toArray( args().from( backupPath )
                 .database( "graph.db" ).force().build() ));
 
         String seed = RestoreClusterCliTest.extractSeed( output.toString() );
