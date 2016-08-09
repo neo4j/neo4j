@@ -34,6 +34,9 @@ case "$1" in
         chown -R $NEO_USER:adm /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j /var/run/neo4j
         chmod u+rwx /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j /var/run/neo4j
 
+        # conf directory symlink, needed because config-migrator depends on config living in conf subdir
+        ln -s /etc/neo4j /var/lib/neo4j/conf
+
         update-rc.d neo4j defaults
 
         if [ -f /tmp/neo4j-upgraded-from-2.x ]; then
