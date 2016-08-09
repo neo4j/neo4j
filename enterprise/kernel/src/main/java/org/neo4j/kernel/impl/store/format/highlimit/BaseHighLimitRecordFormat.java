@@ -84,7 +84,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     static final long NULL = Record.NULL_REFERENCE.intValue();
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
     static final int HEADER_BIT_FIRST_RECORD_UNIT = 0b0000_0100;
-    static final int HEADER_BIT_FIXED_REFERENCE = 0b0000_0100;
+    static final int HEADER_BIT_INVERTED_FIXED_REFERENCE = 0b0000_0100;
 
     protected BaseHighLimitRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
     {
@@ -142,9 +142,14 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         }
         else
         {
-            record.setUseFixedReferences( has( headerByte, HEADER_BIT_FIXED_REFERENCE ) );
+            record.setUseFixedReferences( isUseFixedReferences( headerByte ) );
             doReadInternal( record, primaryCursor, recordSize, headerByte, inUse );
         }
+    }
+
+    private boolean isUseFixedReferences( byte headerByte )
+    {
+        return !has( headerByte, HEADER_BIT_INVERTED_FIXED_REFERENCE );
     }
 
     private String illegalSecondaryReferenceMessage( long secondaryId )
@@ -173,7 +178,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
             }
             else
             {
-                headerByte = set( headerByte, HEADER_BIT_FIXED_REFERENCE, record.isUseFixedReferences() );
+                headerByte = set( headerByte, HEADER_BIT_INVERTED_FIXED_REFERENCE, !record.isUseFixedReferences() );
             }
             primaryCursor.putByte( headerByte );
 

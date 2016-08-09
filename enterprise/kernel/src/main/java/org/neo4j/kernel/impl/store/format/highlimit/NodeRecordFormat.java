@@ -41,12 +41,12 @@ import org.neo4j.kernel.impl.store.record.Record;
 class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
 {
     static final int RECORD_SIZE = 16;
-    private static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +
-                                                        Byte.BYTES /* modifiers */ +
-                                                        Integer.BYTES /* next relationship */ +
-                                                        Integer.BYTES /* next property */ +
-                                                        Integer.BYTES /* labels */ +
-                                                        Byte.BYTES /* labels */;
+    static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +
+                                                Byte.BYTES /* modifiers */ +
+                                                Integer.BYTES /* next relationship */ +
+                                                Integer.BYTES /* next property */ +
+                                                Integer.BYTES /* labels */ +
+                                                Byte.BYTES /* labels */;
 
     private static final long NULL_LABELS = Record.NO_LABELS_FIELD.intValue();
     private static final int DENSE_NODE_BIT       = 0b0000_1000;

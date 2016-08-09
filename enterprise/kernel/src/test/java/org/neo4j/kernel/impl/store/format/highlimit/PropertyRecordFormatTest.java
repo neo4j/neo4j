@@ -154,6 +154,32 @@ public class PropertyRecordFormatTest
         verifySameReferences( source, target );
     }
 
+    @Test
+    public void useVariableLengthFormatWhenRecordSizeIsTooSmall() throws IOException
+    {
+        PropertyRecord source = new PropertyRecord( 1 );
+        PropertyRecord target = new PropertyRecord( 1 );
+        source.initialize( true, randomFixedReference(), randomFixedReference() );
+
+        writeReadRecord( source, target, PropertyRecordFormat.FIXED_FORMAT_RECORD_SIZE - 1 );
+
+        assertFalse( "Record should use variable length reference if format record is too small.", target.isUseFixedReferences() );
+        verifySameReferences( source, target);
+    }
+
+    @Test
+    public void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord() throws IOException
+    {
+        PropertyRecord source = new PropertyRecord( 1 );
+        PropertyRecord target = new PropertyRecord( 1 );
+        source.initialize( true, randomFixedReference(), randomFixedReference() );
+
+        writeReadRecord( source, target, PropertyRecordFormat.FIXED_FORMAT_RECORD_SIZE );
+
+        assertTrue( "Record should use fixed reference if can fit in format record.", target.isUseFixedReferences() );
+        verifySameReferences( source, target);
+    }
+
     private void verifySameReferences( PropertyRecord recordA, PropertyRecord recordB )
     {
         assertEquals( recordA.getNextProp(), recordB.getNextProp() );
@@ -168,7 +194,12 @@ public class PropertyRecordFormatTest
 
     private void writeReadRecord( PropertyRecord source, PropertyRecord target ) throws java.io.IOException
     {
-        int recordSize = PropertyRecordFormat.RECORD_SIZE;
+        writeReadRecord( source, target, PropertyRecordFormat.RECORD_SIZE );
+    }
+
+    private void writeReadRecord( PropertyRecord source, PropertyRecord target, int recordSize )
+            throws java.io.IOException
+    {
         recordFormat.prepare( source, recordSize, idSequence );
         recordFormat.write( source, pageCursor, recordSize );
         pageCursor.setOffset( 0 );

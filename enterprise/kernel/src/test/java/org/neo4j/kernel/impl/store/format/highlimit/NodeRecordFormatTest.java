@@ -123,6 +123,32 @@ public class NodeRecordFormatTest
         verifySameReferences( source, target);
     }
 
+    @Test
+    public void useVariableLengthFormatWhenRecordSizeIsTooSmall() throws IOException
+    {
+        NodeRecord source = new NodeRecord( 1 );
+        NodeRecord target = new NodeRecord( 1 );
+        source.initialize( true, randomFixedReference(), true, randomFixedReference(), 0L );
+
+        writeReadRecord( source, target, NodeRecordFormat.FIXED_FORMAT_RECORD_SIZE - 1 );
+
+        assertFalse( "Record should use variable length reference if format record is too small.", target.isUseFixedReferences() );
+        verifySameReferences( source, target);
+    }
+
+    @Test
+    public void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord() throws IOException
+    {
+        NodeRecord source = new NodeRecord( 1 );
+        NodeRecord target = new NodeRecord( 1 );
+        source.initialize( true, randomFixedReference(), true, randomFixedReference(), 0L );
+
+        writeReadRecord( source, target, NodeRecordFormat.FIXED_FORMAT_RECORD_SIZE );
+
+        assertTrue( "Record should use fixed reference if can fit in format record.", target.isUseFixedReferences() );
+        verifySameReferences( source, target);
+    }
+
     private void verifySameReferences( NodeRecord recordA, NodeRecord recordB )
     {
         assertEquals( recordA.getNextProp(), recordB.getNextProp() );
@@ -132,7 +158,11 @@ public class NodeRecordFormatTest
 
     private void writeReadRecord( NodeRecord source, NodeRecord target ) throws java.io.IOException
     {
-        int recordSize = NodeRecordFormat.RECORD_SIZE;
+        writeReadRecord( source, target, NodeRecordFormat.RECORD_SIZE );
+    }
+
+    private void writeReadRecord( NodeRecord source, NodeRecord target, int recordSize ) throws java.io.IOException
+    {
         recordFormat.prepare( source, recordSize, idSequence );
         recordFormat.write( source, pageCursor, recordSize );
         pageCursor.setOffset( 0 );
@@ -148,5 +178,4 @@ public class NodeRecordFormatTest
     {
         return ThreadLocalRandom.current().nextLong( maxValue );
     }
-
 }

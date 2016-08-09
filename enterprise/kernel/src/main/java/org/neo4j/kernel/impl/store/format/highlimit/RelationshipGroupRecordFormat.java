@@ -43,14 +43,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<RelationshipGroupRecord>
 {
     static final int RECORD_SIZE = 32;
-    private static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +
-                                                        Byte.BYTES /* modifiers */ +
-                                                        Short.BYTES /* type */ +
-                                                        Integer.BYTES /* next */ +
-                                                        Integer.BYTES /* first out */ +
-                                                        Integer.BYTES /* first in */ +
-                                                        Integer.BYTES /* first loop */ +
-                                                        Integer.BYTES /* owning node */;
+    static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +
+                                                Byte.BYTES /* modifiers */ +
+                                                Short.BYTES /* type */ +
+                                                Integer.BYTES /* next */ +
+                                                Integer.BYTES /* first out */ +
+                                                Integer.BYTES /* first in */ +
+                                                Integer.BYTES /* first loop */ +
+                                                Integer.BYTES /* owning node */;
 
     private static final int HAS_OUTGOING_BIT = 0b0000_1000;
     private static final int HAS_INCOMING_BIT = 0b0001_0000;

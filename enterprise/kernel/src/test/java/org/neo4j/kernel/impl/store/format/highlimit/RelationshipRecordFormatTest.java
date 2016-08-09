@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -51,7 +50,7 @@ public class RelationshipRecordFormatTest
     private final RelationshipRecordFormat format = new RelationshipRecordFormat();
     private final int recordSize = format.getRecordSize( NO_STORE_HEADER );
     private ConstantIdSequence idSequence = new ConstantIdSequence();
-    private final StubPageCursor cursor = new StubPageCursor( 0, (int) ByteUnit.kibiBytes( 4 ) )
+    private final FixedLinkedStubPageCursor cursor = new FixedLinkedStubPageCursor( 0, (int) ByteUnit.kibiBytes( 4 ) )
     {
         @Override
         public boolean next( long pageId ) throws IOException
@@ -62,20 +61,6 @@ public class RelationshipRecordFormatTest
             // which are part of the format code.
             assertEquals( 0, pageId );
             return true;
-        }
-
-        // Since we always assume here that test data will be small enough for one page it's safe
-        // to assume that all cursors will be be positioned into that one page.
-        // And since stub cursors use byte buffers to store data we want to prevent data loss and keep already
-        // created linked cursors
-        @Override
-        public PageCursor openLinkedCursor( long pageId )
-        {
-            if (linkedCursor == null)
-            {
-                return super.openLinkedCursor( pageId );
-            }
-            return linkedCursor;
         }
     };
 
@@ -159,6 +144,36 @@ public class RelationshipRecordFormatTest
         verifyRecordsWithPoisonedReference( source, target, 1L << Integer.SIZE + 5 );
     }
 
+    @Test
+    public void useVariableLengthFormatWhenRecordSizeIsTooSmall() throws IOException
+    {
+        RelationshipRecord source = new RelationshipRecord( 1 );
+        RelationshipRecord target = new RelationshipRecord( 1 );
+        source.initialize( true, randomFixedReference(), randomFixedReference(), randomFixedReference(), 0,
+                randomFixedReference(), randomFixedReference(), randomFixedReference(), randomFixedReference(),
+                true, true );
+
+        writeReadRecord( source, target, RelationshipRecordFormat.FIXED_FORMAT_RECORD_SIZE - 1 );
+
+        assertFalse( "Record should use variable length reference if format record is too small.", target.isUseFixedReferences() );
+        verifySameReferences( source, target);
+    }
+
+    @Test
+    public void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord() throws IOException
+    {
+        RelationshipRecord source = new RelationshipRecord( 1 );
+        RelationshipRecord target = new RelationshipRecord( 1 );
+        source.initialize( true, randomFixedReference(), randomFixedReference(), randomFixedReference(), 0,
+                randomFixedReference(), randomFixedReference(), randomFixedReference(), randomFixedReference(),
+                true, true );
+
+        writeReadRecord( source, target, RelationshipRecordFormat.FIXED_FORMAT_RECORD_SIZE );
+
+        assertTrue( "Record should use fixed reference if can fit in format record.", target.isUseFixedReferences() );
+        verifySameReferences( source, target);
+    }
+
     private void verifyRecordsWithPoisonedReference( RelationshipRecord source, RelationshipRecord target,
             long poisonedReference ) throws IOException
     {
@@ -195,6 +210,11 @@ public class RelationshipRecordFormatTest
     }
 
     private void writeReadRecord( RelationshipRecord source, RelationshipRecord target ) throws java.io.IOException
+    {
+        writeReadRecord( source, target, recordSize );
+    }
+
+    private void writeReadRecord( RelationshipRecord source, RelationshipRecord target, int recordSize ) throws java.io.IOException
     {
         format.prepare( source, recordSize, idSequence );
         format.write( source, cursor, recordSize );

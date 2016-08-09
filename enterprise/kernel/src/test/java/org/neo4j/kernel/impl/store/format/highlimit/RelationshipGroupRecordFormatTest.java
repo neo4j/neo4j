@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
@@ -44,14 +43,14 @@ public class RelationshipGroupRecordFormatTest
 {
 
     private RelationshipGroupRecordFormat recordFormat;
-    private StubPageCursor pageCursor;
+    private FixedLinkedStubPageCursor pageCursor;
     private ConstantIdSequence idSequence;
 
     @Before
     public void setUp()
     {
         recordFormat = new RelationshipGroupRecordFormat();
-        pageCursor = new StubPageCursor( 0, (int) ByteUnit.kibiBytes( 8 ) );
+        pageCursor = new FixedLinkedStubPageCursor( 0, (int) ByteUnit.kibiBytes( 8 ) );
         idSequence = new ConstantIdSequence();
     }
 
@@ -91,6 +90,34 @@ public class RelationshipGroupRecordFormatTest
         RelationshipGroupRecord target = new RelationshipGroupRecord( 1 );
 
         verifyRecordsWithPoisonedReference( source, target, 1L << (Integer.SIZE + 2) );
+    }
+
+    @Test
+    public void useVariableLengthFormatWhenRecordSizeIsTooSmall() throws IOException
+    {
+        RelationshipGroupRecord source = new RelationshipGroupRecord( 1 );
+        RelationshipGroupRecord target = new RelationshipGroupRecord( 1 );
+        source.initialize( true, 0, randomFixedReference(), randomFixedReference(),
+                randomFixedReference(), randomFixedReference(), randomFixedReference());
+
+        writeReadRecord( source, target, RelationshipGroupRecordFormat.FIXED_FORMAT_RECORD_SIZE - 1 );
+
+        assertFalse( "Record should use variable length reference if format record is too small.", target.isUseFixedReferences() );
+        verifySameReferences( source, target);
+    }
+
+    @Test
+    public void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord() throws IOException
+    {
+        RelationshipGroupRecord source = new RelationshipGroupRecord( 1 );
+        RelationshipGroupRecord target = new RelationshipGroupRecord( 1 );
+        source.initialize( true, 0, randomFixedReference(), randomFixedReference(),
+                randomFixedReference(), randomFixedReference(), randomFixedReference());
+
+        writeReadRecord( source, target, RelationshipGroupRecordFormat.FIXED_FORMAT_RECORD_SIZE );
+
+        assertTrue( "Record should use fixed reference if can fit in format record.", target.isUseFixedReferences() );
+        verifySameReferences( source, target);
     }
 
     private void verifyRecordsWithPoisonedReference( RelationshipGroupRecord source, RelationshipGroupRecord target,
@@ -137,7 +164,12 @@ public class RelationshipGroupRecordFormatTest
 
     private void writeReadRecord( RelationshipGroupRecord source, RelationshipGroupRecord target ) throws java.io.IOException
     {
-        int recordSize = RelationshipGroupRecordFormat.RECORD_SIZE;
+        writeReadRecord( source, target, RelationshipGroupRecordFormat.RECORD_SIZE );
+    }
+
+    private void writeReadRecord( RelationshipGroupRecord source, RelationshipGroupRecord target, int recordSize )
+            throws IOException
+    {
         recordFormat.prepare( source, recordSize, idSequence );
         recordFormat.write( source, pageCursor, recordSize );
         pageCursor.setOffset( 0 );

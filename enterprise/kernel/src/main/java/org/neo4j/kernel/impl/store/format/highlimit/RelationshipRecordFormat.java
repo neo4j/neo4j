@@ -48,15 +48,15 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
 class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRecord>
 {
     static final int RECORD_SIZE = 32;
-    private static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +
-                                                        Byte.BYTES /* modifiers */ +
-                                                        Integer.BYTES /* first node */ +
-                                                        Integer.BYTES /* second node */ +
-                                                        Integer.BYTES /* first prev rel */ +
-                                                        Integer.BYTES /* first next rel */ +
-                                                        Integer.BYTES /* second prev rel */ +
-                                                        Integer.BYTES /* second next rel */ +
-                                                        Integer.BYTES /* next property */;
+    static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +
+                                                Byte.BYTES /* modifiers */ +
+                                                Integer.BYTES /* first node */ +
+                                                Integer.BYTES /* second node */ +
+                                                Integer.BYTES /* first prev rel */ +
+                                                Integer.BYTES /* first next rel */ +
+                                                Integer.BYTES /* second prev rel */ +
+                                                Integer.BYTES /* second next rel */ +
+                                                Integer.BYTES /* next property */;
 
     private static final int FIRST_IN_FIRST_CHAIN_BIT = 0b0000_1000;
     private static final int FIRST_IN_SECOND_CHAIN_BIT = 0b0001_0000;
