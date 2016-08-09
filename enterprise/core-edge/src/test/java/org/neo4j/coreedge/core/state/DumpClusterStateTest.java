@@ -19,6 +19,10 @@
  */
 package org.neo4j.coreedge.core.state;
 
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -33,15 +37,13 @@ import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
 import org.neo4j.coreedge.core.state.storage.MemberIdStorage;
 import org.neo4j.coreedge.core.state.storage.StateMarshal;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.identity.MemberId.MemberIdMarshal;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.ReplicationModule.LAST_FLUSHED_NAME;
 import static org.neo4j.coreedge.ReplicationModule.SESSION_TRACKER_NAME;
-import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CORE_MEMBER_ID_NAME;
 import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_MEMBERSHIP_NAME;
 import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_TERM_NAME;
@@ -49,63 +51,52 @@ import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_VOTE_NAME;
 import static org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule.ID_ALLOCATION_NAME;
 import static org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule.LOCK_TOKEN_NAME;
 
-public class DumpClusterState
+public class DumpClusterStateTest
 {
-    private final FileSystemAbstraction fs;
-    private final File clusterStateDirectory;
-    private final PrintStream out;
+    @Rule
+    public EphemeralFileSystemRule fsa = new EphemeralFileSystemRule();
+    private File clusterStateDirectory = new File( "cluster-state" );
 
-    /**
-     * @param args [0] = graph database folder
-     * @throws IOException When IO exception occurs.
-     */
-    public static void main( String[] args ) throws IOException
+    @Test
+    public void shouldDumpClusterState() throws Exception
     {
-        if ( args.length != 1 )
-        {
-            System.out.println( "usage: DumpClusterState <graph.db>" );
-        }
+        // given
+        createStates();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        DumpClusterState dumpTool = new DumpClusterState( fsa.get(), clusterStateDirectory, new PrintStream( out ) );
 
-        DumpClusterState dumpTool = new DumpClusterState(
-                new DefaultFileSystemAbstraction(),
-                new File( args[0], CLUSTER_STATE_DIRECTORY_NAME ),
-                System.out );
-
+        // when
         dumpTool.dump();
+
+        // then
+        int lineCount = out.toString().split( System.lineSeparator() ).length;
+        assertEquals( 8, lineCount );
     }
 
-    DumpClusterState( FileSystemAbstraction fs, File clusterStateDirectory, PrintStream out )
+    private void createStates() throws IOException
     {
-        this.fs = fs;
-        this.clusterStateDirectory = clusterStateDirectory;
-        this.out = out;
-    }
+        MemberIdStorage memberIdStorage = new MemberIdStorage( fsa.get(), clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberId.MemberIdMarshal(), NullLogProvider.getInstance() );
+        memberIdStorage.readState();
 
-    void dump() throws IOException
-    {
-        MemberIdStorage memberIdStorage = new MemberIdStorage( fs, clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberIdMarshal(), NullLogProvider.getInstance() );
-        MemberId memberId = memberIdStorage.readState();
-        out.println( CORE_MEMBER_ID_NAME + ": " + memberId );
-
-        dumpState( LAST_FLUSHED_NAME, new LongIndexMarshal() );
-        dumpState( LOCK_TOKEN_NAME, new ReplicatedLockTokenState.Marshal( new MemberIdMarshal() ) );
-        dumpState( ID_ALLOCATION_NAME, new IdAllocationState.Marshal() );
-        dumpState( SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new MemberIdMarshal() ) );
+        createDurableState( LAST_FLUSHED_NAME, new LongIndexMarshal() );
+        createDurableState( LOCK_TOKEN_NAME, new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() ) );
+        createDurableState( ID_ALLOCATION_NAME, new IdAllocationState.Marshal() );
+        createDurableState( SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new MemberId.MemberIdMarshal() ) );
 
         /* raft state */
-        dumpState( RAFT_MEMBERSHIP_NAME, new RaftMembershipState.Marshal() );
-        dumpState( RAFT_TERM_NAME, new TermState.Marshal() );
-        dumpState( RAFT_VOTE_NAME, new VoteState.Marshal( new MemberIdMarshal() ) );
+        createDurableState( RAFT_MEMBERSHIP_NAME, new RaftMembershipState.Marshal() );
+        createDurableState( RAFT_TERM_NAME, new TermState.Marshal() );
+        createDurableState( RAFT_VOTE_NAME, new VoteState.Marshal( new MemberId.MemberIdMarshal() ) );
     }
 
-    private void dumpState( String name, StateMarshal<?> marshal ) throws IOException
+    private <T> void createDurableState( String name, StateMarshal<T> marshal ) throws IOException
     {
-        DurableStateStorage<?> storage = new DurableStateStorage<>(
-                fs, clusterStateDirectory, name, marshal, 1024, null, NullLogProvider.getInstance() );
+        DurableStateStorage<T> storage = new DurableStateStorage<>(
+                fsa.get(), clusterStateDirectory, name, marshal, 1024, null, NullLogProvider.getInstance() );
 
+        //noinspection EmptyTryBlock: Will create initial state.
         try ( Lifespan ignored = new Lifespan( storage ) )
         {
-            out.println( name + ": " + storage.getInitialState() );
         }
     }
 }

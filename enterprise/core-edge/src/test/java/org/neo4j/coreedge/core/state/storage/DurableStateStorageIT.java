@@ -38,6 +38,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.KernelEventHandlers;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.ReadableChannel;
@@ -63,10 +64,8 @@ public class DurableStateStorageIT
                         StoreChannel.class.getMethod( "writeAll", ByteBuffer.class ) ),
                 delegate );
 
-        LongState persistedState = new LongState( fsa, testDir.directory(), 14 );
         long lastValue = 0;
-
-        try
+        try ( LongState persistedState = new LongState( fsa, testDir.directory(), 14 ) )
         {
             while ( true ) // it will break from the Exception that AFS will throw
             {
@@ -80,8 +79,10 @@ public class DurableStateStorageIT
             ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "writeAll" );
         }
 
-        LongState restoredState = new LongState( delegate, testDir.directory(), 4 );
-        assertEquals( lastValue, restoredState.getTheState() );
+        try( LongState restoredState = new LongState( delegate, testDir.directory(), 4 ) )
+        {
+            assertEquals( lastValue, restoredState.getTheState() );
+        }
     }
 
     @Test
@@ -101,10 +102,8 @@ public class DurableStateStorageIT
         SelectiveFileSystemAbstraction combinedFSA = new SelectiveFileSystemAbstraction(
                 new File( new File( testDir.directory(), "long-state" ), "long.a" ), breakingFSA, normalFSA );
 
-        LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 );
         long lastValue = 0;
-
-        try
+        try ( LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 ) )
         {
             while ( true ) // it will break from the Exception that AFS will throw
             {
@@ -119,8 +118,10 @@ public class DurableStateStorageIT
             ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "truncate" );
         }
 
-        LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 );
-        assertEquals( lastValue, restoredState.getTheState() );
+        try( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
+        {
+            assertEquals( lastValue, restoredState.getTheState() );
+        }
     }
 
     @Test
@@ -143,10 +144,9 @@ public class DurableStateStorageIT
         SelectiveFileSystemAbstraction combinedFSA = new SelectiveFileSystemAbstraction(
                 new File( new File( testDir.directory(), "long-state" ), "long.a" ), breakingFSA, normalFSA );
 
-        LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 );
         long lastValue = 0;
 
-        try
+        try ( LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 ) )
         {
             while ( true ) // it will break from the Exception that AFS will throw
             {
@@ -161,23 +161,27 @@ public class DurableStateStorageIT
             ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "force" );
         }
 
-        LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 );
-        assertThat( restoredState.getTheState(), greaterThanOrEqualTo( lastValue ) );
+        try( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
+        {
+            assertThat( restoredState.getTheState(), greaterThanOrEqualTo( lastValue ) );
+        }
     }
 
     @Test
     public void shouldProperlyRecoveryAfterCrashingDuringRecovery() throws Exception
     {
         EphemeralFileSystemAbstraction normalFSA = new EphemeralFileSystemAbstraction();
-        LongState persistedState = new LongState( normalFSA, testDir.directory(), 14 );
 
         long lastValue = 0;
 
-        for ( int i = 0; i < 100; i++ )
+        try ( LongState persistedState = new LongState( normalFSA, testDir.directory(), 14 ) )
         {
-            long tempValue = lastValue + 1;
-            persistedState.setTheState( tempValue );
-            lastValue = tempValue;
+            for ( int i = 0; i < 100; i++ )
+            {
+                long tempValue = lastValue + 1;
+                persistedState.setTheState( tempValue );
+                lastValue = tempValue;
+            }
         }
 
         try
@@ -193,12 +197,14 @@ public class DurableStateStorageIT
         catch ( Exception expected )
         {
             // this stack trace should contain open()
-            ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "open" );
+            ensureStackTraceContainsExpectedMethod( expected.getCause().getStackTrace(), "open" );
         }
 
         // Recovery over the normal filesystem after a failed recovery should proceed correctly
-        LongState recoveredState = new LongState( normalFSA, testDir.directory(), 14 );
-        assertThat( recoveredState.getTheState(), greaterThanOrEqualTo( lastValue ) );
+        try ( LongState recoveredState = new LongState( normalFSA, testDir.directory(), 14 ) )
+        {
+            assertThat( recoveredState.getTheState(), greaterThanOrEqualTo( lastValue ) );
+        }
     }
 
     @Test
@@ -213,10 +219,8 @@ public class DurableStateStorageIT
         SelectiveFileSystemAbstraction combinedFSA = new SelectiveFileSystemAbstraction(
                 new File( new File( testDir.directory(), "long-state" ), "long.a" ), breakingFSA, normalFSA );
 
-        LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 );
         long lastValue = 0;
-
-        try
+        try ( LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 ) )
         {
             while ( true ) // it will break from the Exception that AFS will throw
             {
@@ -231,8 +235,10 @@ public class DurableStateStorageIT
             ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "close" );
         }
 
-        LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 );
-        assertThat( restoredState.getTheState(), greaterThanOrEqualTo( lastValue ) );
+        try( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
+        {
+            assertThat( restoredState.getTheState(), greaterThanOrEqualTo( lastValue ) );
+        }
     }
 
     private void ensureStackTraceContainsExpectedMethod( StackTraceElement[] stackTrace, String expectedMethodName )
@@ -247,15 +253,18 @@ public class DurableStateStorageIT
         fail( "Method " + expectedMethodName + " was not part of the failure stack trace." );
     }
 
-    private static class LongState
+    private static class LongState implements AutoCloseable
     {
         private static final String FILENAME = "long";
         private final DurableStateStorage<Long> stateStorage;
         private long theState = -1;
+        private LifeSupport lifeSupport = new LifeSupport();
 
         LongState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
                    int numberOfEntriesBeforeRotation ) throws IOException
         {
+            lifeSupport.start();
+
             StateMarshal<Long> byteBufferMarshal = new SafeStateMarshal<Long>()
             {
                 @Override
@@ -286,12 +295,12 @@ public class DurableStateStorageIT
             Supplier<DatabaseHealth> databaseHealthSupplier = () -> new DatabaseHealth( new
                     DatabasePanicEventGenerator( new KernelEventHandlers( NullLog
                     .getInstance() ) ), NullLog.getInstance() );
-            this.stateStorage = new DurableStateStorage<>( fileSystemAbstraction, stateDir, FILENAME,
+            this.stateStorage = lifeSupport.add( new DurableStateStorage<>( fileSystemAbstraction, stateDir, FILENAME,
                     byteBufferMarshal,
                     numberOfEntriesBeforeRotation,
                     databaseHealthSupplier,
                     NullLogProvider.getInstance()
-            );
+            ) );
 
             this.theState = this.stateStorage.getInitialState();
         }
@@ -305,6 +314,12 @@ public class DurableStateStorageIT
         {
             stateStorage.persistStoreData( newState );
             this.theState = newState;
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            lifeSupport.shutdown();
         }
     }
 }

@@ -24,6 +24,7 @@ import java.time.Clock;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.LongSupplier;
 
 import org.neo4j.coreedge.core.consensus.log.RaftLogCursor;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
@@ -57,10 +58,10 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
     private final RaftGroup.Builder<MemberId> memberSetBuilder;
     private final ReadableRaftLog raftLog;
     private final Log log;
-    private long recoverFromIndex = -1;
-
     private final StateStorage<RaftMembershipState> storage;
-    private final RaftMembershipState state;
+
+    private LongSupplier recoverFromIndexSupplier;
+    private RaftMembershipState state;
 
     private final int expectedClusterSize;
 
@@ -80,21 +81,22 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
         this.raftLog = raftLog;
         this.expectedClusterSize = expectedClusterSize;
         this.storage = membershipStorage;
-        this.state = membershipStorage.getInitialState();
 
         this.log = logProvider.getLog( getClass() );
         this.membershipChanger = new RaftMembershipChanger( raftLog, clock,
                 electionTimeout, logProvider, catchupTimeout, this );
-    }
+            }
 
-    public void setRecoverFromIndex( long recoverFromIndex )
+    public void setRecoverFromIndexSupplier( LongSupplier recoverFromIndexSupplier )
     {
-        this.recoverFromIndex = recoverFromIndex;
+        this.recoverFromIndexSupplier = recoverFromIndexSupplier;
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws IOException
     {
+        this.state = storage.getInitialState();
+        long recoverFromIndex = recoverFromIndexSupplier.getAsLong();
         log.info( "Membership state before recovery: " + state );
         log.info( "Recovering from: " + recoverFromIndex + " to: " + raftLog.appendIndex() );
 

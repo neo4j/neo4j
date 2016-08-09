@@ -105,7 +105,7 @@ public class CoreServerModule
         {
             throw new RuntimeException( e );
         }
-        consensusModule.raftMembershipManager().setRecoverFromIndex( lastFlushedStorage.getInitialState() );
+        consensusModule.raftMembershipManager().setRecoverFromIndexSupplier( lastFlushedStorage::getInitialState );
 
         ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );
 

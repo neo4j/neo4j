@@ -70,9 +70,6 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
         this.recoveryManager = new StateRecoveryManager<>( fsa, marshal );
         this.fileA = new File( stateDir( baseDir, name ), name + ".a" );
         this.fileB = new File( stateDir( baseDir, name ), name + ".b" );
-
-        create();
-        recover();
     }
 
     private void create() throws IOException
@@ -107,7 +104,15 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
     @Override
     public STATE getInitialState()
     {
+        assert initialState != null;
         return initialState;
+    }
+
+    @Override
+    public void init() throws IOException
+    {
+        create();
+        recover();
     }
 
     @Override

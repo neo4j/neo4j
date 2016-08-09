@@ -44,17 +44,19 @@ public class RaftState implements ReadableRaftState
     private final StateStorage<TermState> termStorage;
     private final StateStorage<VoteState> voteStorage;
     private final RaftMembership membership;
-    private final TermState termState;
     private final Log log;
-    private MemberId leader;
-    private long leaderCommit = -1;
-    private final VoteState voteState;
-    private Set<MemberId> votesForMe = new HashSet<>();
-    private long lastLogIndexBeforeWeBecameLeader = -1;
-    private FollowerStates<MemberId> followerStates = new FollowerStates<>();
     private final RaftLog entryLog;
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
+
+    private TermState termState;
+    private VoteState voteState;
+
+    private MemberId leader;
+    private Set<MemberId> votesForMe = new HashSet<>();
+    private FollowerStates<MemberId> followerStates = new FollowerStates<>();
+    private long leaderCommit = -1;
     private long commitIndex = -1;
+    private long lastLogIndexBeforeWeBecameLeader = -1;
 
     public RaftState( MemberId myself,
                       StateStorage<TermState> termStorage,
@@ -66,8 +68,6 @@ public class RaftState implements ReadableRaftState
         this.myself = myself;
         this.termStorage = termStorage;
         this.voteStorage = voteStorage;
-        this.termState = termStorage.getInitialState();
-        this.voteState = voteStorage.getInitialState();
         this.membership = membership;
         this.entryLog = entryLog;
         this.inFlightMap = inFlightMap;
@@ -95,7 +95,16 @@ public class RaftState implements ReadableRaftState
     @Override
     public long term()
     {
-        return termState.currentTerm();
+        return termState().currentTerm();
+    }
+
+    private TermState termState()
+    {
+        if ( termState == null )
+        {
+            termState = termStorage.getInitialState();
+        }
+        return termState;
     }
 
     @Override
@@ -113,7 +122,16 @@ public class RaftState implements ReadableRaftState
     @Override
     public MemberId votedFor()
     {
-        return voteState.votedFor();
+        return voteState().votedFor();
+    }
+
+    private VoteState voteState()
+    {
+        if ( voteState == null )
+        {
+            voteState = voteStorage.getInitialState();
+        }
+        return voteState;
     }
 
     @Override
@@ -148,13 +166,13 @@ public class RaftState implements ReadableRaftState
 
     public void update( Outcome outcome ) throws IOException
     {
-        if ( termState.update( outcome.getTerm() ) )
+        if ( termState().update( outcome.getTerm() ) )
         {
-            termStorage.persistStoreData( termState );
+            termStorage.persistStoreData( termState() );
         }
-        if ( voteState.update( outcome.getVotedFor(), outcome.getTerm() ) )
+        if ( voteState().update( outcome.getVotedFor(), outcome.getTerm() ) )
         {
-            voteStorage.persistStoreData( voteState );
+            voteStorage.persistStoreData( voteState() );
         }
 
         logIfLeaderChanged( outcome.getLeader() );

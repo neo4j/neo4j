@@ -38,26 +38,25 @@ public class ReplicatedIdAllocationStateMachine implements StateMachine<Replicat
     public ReplicatedIdAllocationStateMachine( StateStorage<IdAllocationState> storage )
     {
         this.storage = storage;
-        this.state = storage.getInitialState();
     }
 
     @Override
     public synchronized void applyCommand( ReplicatedIdAllocationRequest request, long commandIndex,
             Consumer<Result> callback )
     {
-        if ( commandIndex <= state.logIndex() )
+        if ( commandIndex <= state().logIndex() )
         {
             return;
         }
 
-        state.logIndex( commandIndex );
+        state().logIndex( commandIndex );
 
         IdType idType = request.idType();
 
         boolean requestAccepted = request.idRangeStart() == firstUnallocated( idType );
         if ( requestAccepted )
         {
-            state.firstUnallocated( idType, request.idRangeStart() + request.idRangeLength() );
+            state().firstUnallocated( idType, request.idRangeStart() + request.idRangeLength() );
         }
 
         callback.accept( Result.of( requestAccepted ) );
@@ -65,24 +64,33 @@ public class ReplicatedIdAllocationStateMachine implements StateMachine<Replicat
 
     synchronized long firstUnallocated( IdType idType )
     {
-        return state.firstUnallocated( idType );
+        return state().firstUnallocated( idType );
     }
 
     @Override
     public void flush() throws IOException
     {
-        storage.persistStoreData( state );
+        storage.persistStoreData( state() );
     }
 
     @Override
     public long lastAppliedIndex()
     {
-        return storage.getInitialState().logIndex();
+        return state().logIndex();
+    }
+
+    private IdAllocationState state()
+    {
+        if ( state == null )
+        {
+            state = storage.getInitialState();
+        }
+        return state;
     }
 
     public synchronized IdAllocationState snapshot()
     {
-        return state.newInstance();
+        return state().newInstance();
     }
 
     public synchronized void installSnapshot( IdAllocationState snapshot )

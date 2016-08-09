@@ -32,20 +32,19 @@ import org.neo4j.coreedge.core.state.storage.StateStorage;
  */
 public class ReplicatedLockTokenStateMachine implements StateMachine<ReplicatedLockTokenRequest>
 {
-    private ReplicatedLockTokenState state;
     private final StateStorage<ReplicatedLockTokenState> storage;
+    private ReplicatedLockTokenState state;
 
     public ReplicatedLockTokenStateMachine( StateStorage<ReplicatedLockTokenState> storage )
     {
         this.storage = storage;
-        this.state = storage.getInitialState();
     }
 
     @Override
     public synchronized void applyCommand( ReplicatedLockTokenRequest tokenRequest, long commandIndex,
             Consumer<Result> callback )
     {
-        if ( commandIndex <= state.ordinal() )
+        if ( commandIndex <= state().ordinal() )
         {
             return;
         }
@@ -53,7 +52,7 @@ public class ReplicatedLockTokenStateMachine implements StateMachine<ReplicatedL
         boolean requestAccepted = tokenRequest.id() == LockToken.nextCandidateId( currentToken().id() );
         if ( requestAccepted )
         {
-            state.set( tokenRequest, commandIndex );
+            state().set( tokenRequest, commandIndex );
         }
 
         callback.accept( Result.of( requestAccepted ) );
@@ -62,18 +61,27 @@ public class ReplicatedLockTokenStateMachine implements StateMachine<ReplicatedL
     @Override
     public synchronized void flush() throws IOException
     {
-        storage.persistStoreData( state );
+        storage.persistStoreData( state() );
     }
 
     @Override
     public long lastAppliedIndex()
     {
-        return storage.getInitialState().ordinal();
+        return state().ordinal();
+    }
+
+    private ReplicatedLockTokenState state()
+    {
+        if ( state == null)
+        {
+            state = storage.getInitialState();
+        }
+        return state;
     }
 
     public synchronized ReplicatedLockTokenState snapshot()
     {
-        return state.newInstance();
+        return state().newInstance();
     }
 
     public synchronized void installSnapshot( ReplicatedLockTokenState snapshot )
@@ -86,6 +94,6 @@ public class ReplicatedLockTokenStateMachine implements StateMachine<ReplicatedL
      */
     public synchronized ReplicatedLockTokenRequest currentToken()
     {
-        return state.get();
+        return state().get();
     }
 }
