@@ -117,9 +117,15 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    public String getIndexFailure( long indexId ) throws IllegalStateException
     {
         throw new IllegalStateException();
+    }
+
+    @Override
+    public void storeIndexFailure( long indexId, String failure ) throws IOException
+    {
+        throw new UnsupportedOperationException( "should never have to record failure" );
     }
 
     @Override

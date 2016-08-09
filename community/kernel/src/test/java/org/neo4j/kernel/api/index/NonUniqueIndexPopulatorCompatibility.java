@@ -82,7 +82,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         populator.markAsFailed( failure );
 
         // THEN
-        assertEquals( failure, indexProvider.getPopulationFailure( 17 ) );
+        assertEquals( failure, indexProvider.getIndexFailure( 17 ) );
     }
 
     @Test

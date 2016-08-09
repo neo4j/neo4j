@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.index.util;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -122,6 +123,18 @@ public class FailureStorage
 
             channel.force( true );
             channel.close();
+        }
+        catch ( FileNotFoundException fnf )
+        {
+            fs.mkdirs( failureFile.getParentFile() );
+            try ( StoreChannel channel = fs.open( failureFile, "rw" ) )
+            {
+                byte[] data = failure.getBytes( "utf-8" );
+                channel.write( ByteBuffer.wrap( data, 0, Math.min( data.length, MAX_FAILURE_SIZE ) ) );
+
+                channel.force( true );
+                channel.close();
+            }
         }
     }
 

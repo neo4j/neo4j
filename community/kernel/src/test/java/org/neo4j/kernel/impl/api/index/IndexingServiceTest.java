@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -72,6 +74,7 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.DoubleLatch;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -103,6 +106,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.BATCHED;
@@ -367,7 +371,7 @@ public class IndexingServiceTest
         indexingService.start();
 
         // then
-        verify( provider ).getPopulationFailure( 3 );
+        verify( provider ).getIndexFailure( 3 );
         logProvider.assertAtLeastOnce(
                 logMatch.info( "IndexingService.start: index 1 on :LabelOne(propertyOne) is ONLINE" ),
                 logMatch.info( "IndexingService.start: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
@@ -799,6 +803,94 @@ public class IndexingServiceTest
         // THEN afterwards the index should be ONLINE
         assertEquals( 2, indexId.get() );
         assertEquals( ONLINE, indexing.getIndexProxy( indexId.get() ).getState() );
+    }
+
+    @Test
+    public void shouldStoreIndexFailureWhenFailingToAccessOnlineIndexOnStartup() throws Exception
+    {
+        // given
+        long indexId = 1;
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(),
+                indexRule( indexId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+
+        IOException exception = new IOException( "Expected failure" );
+        when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
+        when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
+
+        when( indexProvider.getInitialState( indexId ) ).thenReturn( ONLINE );
+        when( indexProvider.getOnlineAccessor( eq( indexId ), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
+                .thenThrow( exception );
+
+        // when
+        life.init();
+
+        // then
+        assertEquals( FAILED, indexing.getIndexProxy( 1 ).getState() );
+        assertThat( storedFailure( indexId ), startsWith( "java.io.IOException: Expected failure\n\tat " ) );
+        logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( FailedIndexProxy.class )
+                .error( equalTo( "Index failed :TheLabel(propertyKey)" ), sameInstance( exception ) ) );
+    }
+
+    @Test
+    public void shouldStoreIndexFailureWhenFailingToCreateOnlineAccessorAfterPopulating() throws Exception
+    {
+        // given
+        long indexId = 1;
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
+
+        IOException exception = new IOException( "Expected failure" );
+        when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
+        when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
+
+        when( indexProvider.getOnlineAccessor( eq( indexId ), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
+                .thenThrow( exception );
+
+        life.start();
+
+        // when
+        indexing.createIndex( indexRule( indexId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+        verify( populator, timeout( 1000 ) ).close( true );
+
+        // then
+        assertEquals( FAILED, indexing.getIndexProxy( 1 ).getState() );
+        assertThat( storedFailure( indexId ), startsWith( "java.io.IOException: Expected failure\n\tat " ) );
+        logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( FailedIndexProxy.class )
+                .error( equalTo( "Index failed :TheLabel(propertyKey)" ), sameInstance( exception ) ) );
+    }
+
+    @Test
+    public void shouldStoreIndexFailureWhenFailingToCreateOnlineAccessorAfterRecoveringPopulatingIndex() throws Exception
+    {
+        // given
+        long indexId = 1;
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(),
+                indexRule( indexId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+
+        IOException exception = new IOException( "Expected failure" );
+        when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
+        when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
+
+        when( indexProvider.getInitialState( indexId ) ).thenReturn( POPULATING );
+        when( indexProvider.getOnlineAccessor( eq( indexId ), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
+                .thenThrow( exception );
+
+        life.start();
+
+        // when
+        verify( populator, timeout( 1000 ) ).close( true );
+
+        // then
+        assertEquals( FAILED, indexing.getIndexProxy( 1 ).getState() );
+        assertThat( storedFailure( indexId ), startsWith( "java.io.IOException: Expected failure\n\tat " ) );
+        logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( FailedIndexProxy.class )
+                .error( equalTo( "Index failed :TheLabel(propertyKey)" ), sameInstance( exception ) ) );
+    }
+
+    private String storedFailure( long indexId ) throws IOException
+    {
+        ArgumentCaptor<String> reason = ArgumentCaptor.forClass( String.class );
+        verify( indexProvider ).storeIndexFailure( eq( indexId ), reason.capture() );
+        return reason.getValue();
     }
 
     private static class ControlledIndexPopulator extends IndexPopulator.Adapter

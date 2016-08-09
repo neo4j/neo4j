@@ -26,8 +26,6 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -47,6 +45,8 @@ import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
+import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
     private final DirectoryFactory directoryFactory;
@@ -54,7 +54,6 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     private final FailureStorage failureStorage;
     private final FolderLayout folderLayout;
     private final boolean readOnly;
-    private final Map<Long, String> failures = new HashMap<>();
 
     public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
             File storeDir, Config config, OperationalMode operationalMode )
@@ -119,7 +118,6 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
             String failure = failureStorage.loadIndexFailure( indexId );
             if ( failure != null )
             {
-                failures.put( indexId, failure );
                 return InternalIndexState.FAILED;
             }
 
@@ -129,22 +127,14 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
                 return status ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
             }
         }
-        catch( CorruptIndexException e )
+        catch( CorruptIndexException | FileNotFoundException | EOFException e )
         {
-            return InternalIndexState.FAILED;
-        }
-        catch( FileNotFoundException e )
-        {
-            failures.put( indexId, "File not found: " + e.getMessage() );
-            return InternalIndexState.FAILED;
-        }
-        catch( EOFException e )
-        {
-            failures.put( indexId, "EOF encountered: " + e.getMessage() );
+            recordFailure( indexId, e );
             return InternalIndexState.FAILED;
         }
         catch ( IOException e )
         {
+            recordFailure( indexId, e );
             throw new RuntimeException( e );
         }
     }
@@ -156,18 +146,34 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    public String getIndexFailure( long indexId ) throws IllegalStateException
     {
         String failure = failureStorage.loadIndexFailure( indexId );
-        if ( failure == null )
-        {
-            failure = failures.get( indexId );
-        }
         if ( failure == null )
         {
             throw new IllegalStateException( "Index " + indexId + " isn't failed" );
         }
         return failure;
+    }
+
+    @Override
+    public void storeIndexFailure( long indexId, String failure ) throws IOException
+    {
+        failureStorage.storeIndexFailure( indexId, failure );
+    }
+
+    private void recordFailure( long indexId, Exception e )
+    {
+        try
+        {
+            failureStorage.storeIndexFailure( indexId, failure( e ).asString() );
+        }
+        catch ( Exception ignored )
+        {
+            RuntimeException abort = new RuntimeException( "Failed to record index failure.", ignored );
+            abort.addSuppressed( e );
+            throw abort;
+        }
     }
 
     private static boolean isReadOnly( Config config, OperationalMode operationalMode )
