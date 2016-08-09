@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.pagecache.StubPageCursor;
+import org.neo4j.kernel.impl.store.format.highlimit.v30.NodeRecordFormatV3_0;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -41,14 +41,14 @@ public class NodeRecordFormatTest
 {
 
     private NodeRecordFormat recordFormat;
-    private StubPageCursor pageCursor;
+    private FixedLinkedStubPageCursor pageCursor;
     private ConstantIdSequence idSequence;
 
     @Before
     public void setUp()
     {
         recordFormat = new NodeRecordFormat();
-        pageCursor = new StubPageCursor( 0, (int) ByteUnit.kibiBytes( 8 ) );
+        pageCursor = new FixedLinkedStubPageCursor( 0, (int) ByteUnit.kibiBytes( 8 ) );
         idSequence = new ConstantIdSequence();
     }
 
@@ -68,7 +68,7 @@ public class NodeRecordFormatTest
         writeReadRecord( source, target );
 
         assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
-        verifySameReferences( source, target);
+        verifySameReferences( source, target );
     }
 
     @Test
@@ -81,7 +81,7 @@ public class NodeRecordFormatTest
         writeReadRecord( source, target );
 
         assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
-        verifySameReferences( source, target);
+        verifySameReferences( source, target );
     }
 
     @Test
@@ -94,7 +94,7 @@ public class NodeRecordFormatTest
         writeReadRecord( source, target );
 
         assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
-        verifySameReferences( source, target);
+        verifySameReferences( source, target );
     }
 
     @Test
@@ -107,7 +107,7 @@ public class NodeRecordFormatTest
         writeReadRecord( source, target );
 
         assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
-        verifySameReferences( source, target);
+        verifySameReferences( source, target );
     }
 
     @Test
@@ -120,7 +120,7 @@ public class NodeRecordFormatTest
         writeReadRecord( source, target );
 
         assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
-        verifySameReferences( source, target);
+        verifySameReferences( source, target );
     }
 
     @Test
@@ -132,8 +132,9 @@ public class NodeRecordFormatTest
 
         writeReadRecord( source, target, NodeRecordFormat.FIXED_FORMAT_RECORD_SIZE - 1 );
 
-        assertFalse( "Record should use variable length reference if format record is too small.", target.isUseFixedReferences() );
-        verifySameReferences( source, target);
+        assertFalse( "Record should use variable length reference if format record is too small.",
+                target.isUseFixedReferences() );
+        verifySameReferences( source, target );
     }
 
     @Test
@@ -146,14 +147,55 @@ public class NodeRecordFormatTest
         writeReadRecord( source, target, NodeRecordFormat.FIXED_FORMAT_RECORD_SIZE );
 
         assertTrue( "Record should use fixed reference if can fit in format record.", target.isUseFixedReferences() );
-        verifySameReferences( source, target);
+        verifySameReferences( source, target );
+    }
+
+    @Test
+    public void readSingleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
+    {
+        NodeRecord oldFormatRecord = new NodeRecord( 1 );
+        NodeRecord newFormatRecord = new NodeRecord( 1 );
+        oldFormatRecord.initialize( true, randomFixedReference(), true, randomFixedReference(), 1L );
+
+        writeRecordWithOldFormat( oldFormatRecord );
+
+        assertFalse( "This should be single unit record.", oldFormatRecord.hasSecondaryUnitId() );
+        assertFalse( "Old format is not aware about fixed references.", oldFormatRecord.isUseFixedReferences() );
+
+        recordFormat.read( newFormatRecord, pageCursor, RecordLoad.NORMAL, NodeRecordFormat.RECORD_SIZE );
+        verifySameReferences( oldFormatRecord, newFormatRecord );
+    }
+
+    @Test
+    public void readDoubleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
+    {
+        NodeRecord oldFormatRecord = new NodeRecord( 1 );
+        NodeRecord newFormatRecord = new NodeRecord( 1 );
+        oldFormatRecord.initialize( true, bigReference(), true, bigReference(), 1L );
+
+        writeRecordWithOldFormat( oldFormatRecord );
+
+        assertTrue( "This should be double unit record.", oldFormatRecord.hasSecondaryUnitId() );
+        assertFalse( "Old format is not aware about fixed references.", oldFormatRecord.isUseFixedReferences() );
+
+        recordFormat.read( newFormatRecord, pageCursor, RecordLoad.NORMAL, NodeRecordFormat.RECORD_SIZE );
+        verifySameReferences( oldFormatRecord, newFormatRecord );
+    }
+
+    private void writeRecordWithOldFormat( NodeRecord oldFormatRecord ) throws IOException
+    {
+        int oldRecordSize = NodeRecordFormatV3_0.RECORD_SIZE;
+        NodeRecordFormatV3_0 recordFormatV30 = new NodeRecordFormatV3_0();
+        recordFormatV30.prepare( oldFormatRecord, oldRecordSize, idSequence );
+        recordFormatV30.write( oldFormatRecord, pageCursor, oldRecordSize );
+        pageCursor.setOffset( 0 );
     }
 
     private void verifySameReferences( NodeRecord recordA, NodeRecord recordB )
     {
-        assertEquals( recordA.getNextProp(), recordB.getNextProp() );
-        assertEquals( recordA.getNextRel(), recordB.getNextRel() );
-        assertEquals( recordA.getLabelField(), recordB.getLabelField() );
+        assertEquals( "Next property field should be the same", recordA.getNextProp(), recordB.getNextProp() );
+        assertEquals( "Next relationship field should be the same.", recordA.getNextRel(), recordB.getNextRel() );
+        assertEquals( "Label field should be the same", recordA.getLabelField(), recordB.getLabelField() );
     }
 
     private void writeReadRecord( NodeRecord source, NodeRecord target ) throws java.io.IOException
@@ -177,5 +219,10 @@ public class NodeRecordFormatTest
     private long randomReference( long maxValue )
     {
         return ThreadLocalRandom.current().nextLong( maxValue );
+    }
+
+    private long bigReference()
+    {
+        return 1L << 57;
     }
 }

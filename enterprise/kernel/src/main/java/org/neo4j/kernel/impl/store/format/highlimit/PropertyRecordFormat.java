@@ -82,7 +82,7 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
         int offset = cursor.getOffset();
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse( headerByte );
-        boolean useFixedReferences = !has( headerByte, HEADER_BIT_INVERTED_FIXED_REFERENCE );
+        boolean useFixedReferences = has( headerByte, HEADER_BIT_INVERTED_FIXED_REFERENCE );
         if ( mode.shouldLoad( inUse ) )
         {
             int blockCount = headerByte >>> 4;
@@ -120,7 +120,7 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
             byte headerByte = (byte) ((record.inUse() ? IN_USE_BIT : 0) | numberOfBlocks( record ) << 4);
             boolean canUseFixedReferences = canUseFixedReferences( record, recordSize );
             record.setUseFixedReferences( canUseFixedReferences );
-            headerByte = set( headerByte, HEADER_BIT_INVERTED_FIXED_REFERENCE, !canUseFixedReferences );
+            headerByte = set( headerByte, HEADER_BIT_INVERTED_FIXED_REFERENCE, canUseFixedReferences );
             cursor.putByte( headerByte );
 
             long recordId = record.getId();

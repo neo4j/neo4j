@@ -29,6 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
+import org.neo4j.kernel.impl.store.format.highlimit.v30.PropertyRecordFormatV3_0;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -178,6 +179,31 @@ public class PropertyRecordFormatTest
 
         assertTrue( "Record should use fixed reference if can fit in format record.", target.isUseFixedReferences() );
         verifySameReferences( source, target);
+    }
+
+    @Test
+    public void readSingleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
+    {
+        PropertyRecord oldFormatRecord = new PropertyRecord( 1 );
+        PropertyRecord newFormatRecord = new PropertyRecord( 1 );
+        oldFormatRecord.initialize( true, randomFixedReference(), randomFixedReference() );
+
+        writeRecordWithOldFormat( oldFormatRecord );
+
+        assertFalse( "This should be single unit record.", oldFormatRecord.hasSecondaryUnitId() );
+        assertFalse( "Old format is not aware about fixed references.", oldFormatRecord.isUseFixedReferences() );
+
+        recordFormat.read( newFormatRecord, pageCursor, RecordLoad.NORMAL, PropertyRecordFormat.RECORD_SIZE );
+        verifySameReferences( oldFormatRecord, newFormatRecord );
+    }
+
+    private void writeRecordWithOldFormat( PropertyRecord oldFormatRecord ) throws IOException
+    {
+        int oldRecordSize = PropertyRecordFormatV3_0.RECORD_SIZE;
+        PropertyRecordFormatV3_0 recordFormatV30 = new PropertyRecordFormatV3_0();
+        recordFormatV30.prepare( oldFormatRecord, oldRecordSize, idSequence );
+        recordFormatV30.write( oldFormatRecord, pageCursor, oldRecordSize );
+        pageCursor.setOffset( 0 );
     }
 
     private void verifySameReferences( PropertyRecord recordA, PropertyRecord recordB )

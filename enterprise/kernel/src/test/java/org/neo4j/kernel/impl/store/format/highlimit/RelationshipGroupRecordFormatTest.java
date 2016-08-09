@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.impl.store.format.highlimit.v30.RelationshipGroupRecordFormatV3_0;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
@@ -120,6 +121,49 @@ public class RelationshipGroupRecordFormatTest
         verifySameReferences( source, target);
     }
 
+    @Test
+    public void readSingleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
+    {
+        RelationshipGroupRecord oldFormatRecord = new RelationshipGroupRecord( 1 );
+        RelationshipGroupRecord newFormatRecord = new RelationshipGroupRecord( 1 );
+        oldFormatRecord.initialize( true, 0, randomFixedReference(), randomFixedReference(),
+                randomFixedReference(), randomFixedReference(), randomFixedReference());
+
+        writeRecordWithOldFormat( oldFormatRecord );
+
+        assertFalse( "This should be single unit record.", oldFormatRecord.hasSecondaryUnitId() );
+        assertFalse( "Old format is not aware about fixed references.", oldFormatRecord.isUseFixedReferences() );
+
+        recordFormat.read( newFormatRecord, pageCursor, RecordLoad.NORMAL, RelationshipGroupRecordFormat.RECORD_SIZE );
+        verifySameReferences( oldFormatRecord, newFormatRecord );
+    }
+
+    @Test
+    public void readDoubleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
+    {
+        RelationshipGroupRecord oldFormatRecord = new RelationshipGroupRecord( 0 );
+        RelationshipGroupRecord newFormatRecord = new RelationshipGroupRecord( 0 );
+        oldFormatRecord.initialize( true, 0, bigReference(), bigReference(),
+                bigReference(), bigReference(), bigReference());
+
+        writeRecordWithOldFormat( oldFormatRecord );
+
+        assertTrue( "This should be double unit record.", oldFormatRecord.hasSecondaryUnitId() );
+        assertFalse( "Old format is not aware about fixed references.", oldFormatRecord.isUseFixedReferences() );
+
+        recordFormat.read( newFormatRecord, pageCursor, RecordLoad.NORMAL, RelationshipGroupRecordFormat.RECORD_SIZE );
+        verifySameReferences( oldFormatRecord, newFormatRecord );
+    }
+
+    private void writeRecordWithOldFormat( RelationshipGroupRecord oldFormatRecord ) throws IOException
+    {
+        int oldRecordSize = RelationshipGroupRecordFormatV3_0.RECORD_SIZE;
+        RelationshipGroupRecordFormatV3_0 recordFormatV30 = new RelationshipGroupRecordFormatV3_0();
+        recordFormatV30.prepare( oldFormatRecord, oldRecordSize, idSequence );
+        recordFormatV30.write( oldFormatRecord, pageCursor, oldRecordSize );
+        pageCursor.setOffset( 0 );
+    }
+
     private void verifyRecordsWithPoisonedReference( RelationshipGroupRecord source, RelationshipGroupRecord target,
             long poisonedReference ) throws IOException
     {
@@ -179,6 +223,11 @@ public class RelationshipGroupRecordFormatTest
     private long randomFixedReference()
     {
         return randomReference( 1L << (Integer.SIZE + 1) );
+    }
+
+    private long bigReference()
+    {
+        return 1L << 57;
     }
 
     private long randomReference( long maxValue )

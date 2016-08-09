@@ -43,13 +43,13 @@ import static org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat.re
  *
  * => 12B + data size
  */
-class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
+public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
 {
     private static final int RECORD_HEADER_SIZE = 1/*header byte*/ + 3/*# of bytes*/ + 8/*max size of next reference*/;
                                             // = 12
     private static final int START_RECORD_BIT = 0x8;
 
-    protected DynamicRecordFormat()
+    public DynamicRecordFormat()
     {
         super( INT_STORE_HEADER_READER, RECORD_HEADER_SIZE, IN_USE_BIT, HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
     }
