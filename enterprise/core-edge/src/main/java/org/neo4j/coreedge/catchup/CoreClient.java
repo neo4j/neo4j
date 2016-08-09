@@ -19,14 +19,12 @@
  */
 package org.neo4j.coreedge.catchup;
 
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotListener;
-import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequest;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
+
 import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreRequest;
 import org.neo4j.coreedge.catchup.storecopy.StoreFileReceiver;
@@ -38,15 +36,17 @@ import org.neo4j.coreedge.catchup.tx.TxPullRequest;
 import org.neo4j.coreedge.catchup.tx.TxPullResponse;
 import org.neo4j.coreedge.catchup.tx.TxPullResponseListener;
 import org.neo4j.coreedge.catchup.tx.TxStreamCompleteListener;
-import org.neo4j.coreedge.discovery.TopologyService;
-import org.neo4j.coreedge.messaging.Message;
-import org.neo4j.coreedge.messaging.CoreOutbound;
-import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
+import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotListener;
+import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequest;
+import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.NonBlockingChannels;
-import org.neo4j.coreedge.messaging.SenderService;
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.CoreOutbound;
+import org.neo4j.coreedge.messaging.Message;
+import org.neo4j.coreedge.messaging.NonBlockingChannels;
+import org.neo4j.coreedge.messaging.Outbound;
+import org.neo4j.coreedge.messaging.SenderService;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -55,9 +55,9 @@ import org.neo4j.logging.LogProvider;
 import static java.util.Arrays.asList;
 
 public abstract class CoreClient extends LifecycleAdapter implements StoreFileReceiver, StoreIdReceiver,
-                                                                     StoreFileStreamingCompleteListener,
-                                                                     TxStreamCompleteListener, TxPullResponseListener,
-                                                                     CoreSnapshotListener
+        StoreFileStreamingCompleteListener,
+        TxStreamCompleteListener, TxPullResponseListener,
+        CoreSnapshotListener
 {
     private final PullRequestMonitor pullRequestMonitor;
     private final SenderService senderService;
@@ -71,8 +71,8 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     private Outbound<MemberId, Message> outbound;
 
     public CoreClient( LogProvider logProvider, ChannelInitializer<SocketChannel> channelInitializer, Monitors monitors,
-            int maxQueueSize, NonBlockingChannels nonBlockingChannels, TopologyService discoveryService,
-            long logThresholdMillis )
+                       int maxQueueSize, NonBlockingChannels nonBlockingChannels, TopologyService discoveryService,
+                       long logThresholdMillis )
     {
         senderService =
                 new SenderService( channelInitializer, logProvider, monitors, maxQueueSize, nonBlockingChannels );
@@ -109,7 +109,7 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
 
     private void send( MemberId to, RequestMessageType messageType, Message contentMessage )
     {
-        outbound.send( to,  asList( messageType, contentMessage ) );
+        outbound.send( to, asList( messageType, contentMessage ) );
     }
 
     @Override

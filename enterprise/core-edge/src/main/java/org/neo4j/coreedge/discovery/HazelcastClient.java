@@ -54,7 +54,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
         try
         {
             return retry( ( hazelcastInstance ) ->
-                    HazelcastClusterTopology.fromHazelcastInstance( hazelcastInstance, log ) );
+                    HazelcastClusterTopology.getClusterTopology( hazelcastInstance, log ) );
         }
         catch ( Exception e )
         {
@@ -76,6 +76,9 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     {
         if ( hazelcastInstance != null )
         {
+            hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
+                    .remove( hazelcastInstance.getLocalEndpoint().getUuid() );
+
             hazelcastInstance.shutdown();
         }
     }

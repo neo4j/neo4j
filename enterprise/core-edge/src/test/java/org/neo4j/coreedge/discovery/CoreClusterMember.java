@@ -25,13 +25,13 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.function.IntFunction;
 
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.log.segmented.FileNames;
 import org.neo4j.coreedge.core.state.CoreState;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.core.CoreGraphDatabase;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -40,8 +40,8 @@ import org.neo4j.logging.Level;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 
-import static org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
+import static org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CoreClusterMember
@@ -49,7 +49,7 @@ public class CoreClusterMember
     private final File neo4jHome;
     private final DiscoveryServiceFactory discoveryServiceFactory;
     private final File storeDir;
-    private final Map<String, String> config;
+    private final Map<String, String> config = stringMap();
     private final int serverId;
     private CoreGraphDatabase database;
 
@@ -61,16 +61,17 @@ public class CoreClusterMember
                               String recordFormat,
                               File parentDir,
                               Map<String, String> extraParams,
-                              Map<String, IntFunction<String>> instanceExtraParams)
+                              Map<String, IntFunction<String>> instanceExtraParams )
     {
-        this.serverId =  serverId;
-        int clusterPort = 5000 + serverId;
+        this.serverId = serverId;
+        int hazelcastPort = 5000 + serverId;
         int txPort = 6000 + serverId;
         int raftPort = 7000 + serverId;
         int boltPort = 8000 + serverId;
 
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
+<<<<<<< 363cd98ccbc5fadc1f612d25d07aa044436b4374
         Map<String, String> params = stringMap();
         params.put( "dbms.mode", "CORE" );
         params.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
@@ -90,17 +91,35 @@ public class CoreClusterMember
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         params.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
         params.putAll( extraParams );
+=======
+        config.put( "dbms.mode", "CORE" );
+        config.put( CoreEdgeClusterSettings.cluster_name.name(), CLUSTER_NAME );
+        config.put( CoreEdgeClusterSettings.initial_hazelcast_members.name(), initialMembers );
+        config.put( CoreEdgeClusterSettings.hazelcast_listen_address.name(), "127.0.0.1:" + hazelcastPort );
+        config.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "localhost:" + txPort );
+        config.put( CoreEdgeClusterSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
+        config.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "localhost:" + raftPort );
+        config.put( CoreEdgeClusterSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
+        config.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
+        config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
+        config.put( GraphDatabaseSettings.record_format.name(), recordFormat );
+        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
+        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
+        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + boltPort );
+        config.put( GraphDatabaseSettings.bolt_advertised_address.name(), "127.0.0.1:" + boltPort );
+        config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        config.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
+        config.putAll( extraParams );
+>>>>>>> Graceful Shutdown of Edge Servers
 
         for ( Map.Entry<String, IntFunction<String>> entry : instanceExtraParams.entrySet() )
         {
-            params.put( entry.getKey(), entry.getValue().apply( serverId ) );
+            config.put( entry.getKey(), entry.getValue().apply( serverId ) );
         }
 
         this.neo4jHome = new File( parentDir, "server-core-" + serverId );
+        config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
 
-        params.put( GraphDatabaseSettings.logs_directory.name(), new File(neo4jHome, "logs").getAbsolutePath() );
-
-        this.config = params;
         this.discoveryServiceFactory = discoveryServiceFactory;
         storeDir = new File( new File( new File( neo4jHome, "data" ), "databases" ), "graph.db" );
         storeDir.mkdirs();
@@ -141,7 +160,7 @@ public class CoreClusterMember
         return database.getDependencyResolver().resolveDependency( RaftMachine.class ).identity();
     }
 
-    public SortedMap<Long,File> getLogFileNames(  )
+    public SortedMap<Long, File> getLogFileNames()
     {
         File clusterStateDir = new File( storeDir, CLUSTER_STATE_DIRECTORY_NAME );
         File logFilesDir = new File( clusterStateDir, SEGMENTED_LOG_DIRECTORY_NAME );

@@ -120,7 +120,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         tcpIpConfig.setEnabled( true );
 
         List<AdvertisedSocketAddress> initialMembers =
-                config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
+                config.get( CoreEdgeClusterSettings.initial_hazelcast_members );
         for ( AdvertisedSocketAddress address : initialMembers )
         {
             tcpIpConfig.addMember( address.toString() );
@@ -155,6 +155,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     @Override
     public ClusterTopology currentTopology()
     {
-        return HazelcastClusterTopology.fromHazelcastInstance( hazelcastInstance, log );
+        return HazelcastClusterTopology.getClusterTopology( hazelcastInstance, log );
     }
 }

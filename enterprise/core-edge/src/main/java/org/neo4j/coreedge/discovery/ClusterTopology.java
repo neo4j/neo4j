@@ -51,7 +51,7 @@ public class ClusterTopology
         return coreMembers.values();
     }
 
-    public Set<EdgeAddresses> edgeMemberAddresses()
+    public Collection<EdgeAddresses> edgeMemberAddresses()
     {
         return edgeAddresses;
     }

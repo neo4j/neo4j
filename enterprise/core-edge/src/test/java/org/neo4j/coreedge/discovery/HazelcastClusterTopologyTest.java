@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.hazelcast.client.impl.MemberImpl;
+import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.Member;
 import com.hazelcast.nio.Address;
 import org.junit.Test;
@@ -44,6 +45,7 @@ import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.buildMemberAttributes;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.extractMemberAttributes;
@@ -133,5 +135,19 @@ public class HazelcastClusterTopologyTest
         // then
         assertThat( map.keySet(), hasItems( coreMembers.get( 0 ), coreMembers.get( 1 ), coreMembers.get( 3 ) ) );
         assertThat( map.keySet(), not( hasItems( coreMembers.get( 2 ) ) ) );
+    }
+
+    @Test
+    public void executorCommandMustConformToHazelcastInterfaceEvenIfOurCodeDoesNotCallItDirectly() throws Exception
+    {
+        // given
+        HazelcastClusterTopology.GetConnectedClients getConnectedClients =
+                new HazelcastClusterTopology.GetConnectedClients( null );
+
+        // when
+        boolean conformsToHazelcaastInterface = getConnectedClients instanceof HazelcastInstanceAware;
+
+        // then
+        assertTrue( conformsToHazelcaastInterface );
     }
 }

@@ -142,8 +142,8 @@ public class CoreEdgeClusterSettings
             setting( "core_edge.discovery_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5000" );
 
     @Description("A comma-separated list of other members of the cluster to join.")
-    public static final Setting<List<AdvertisedSocketAddress>> initial_core_cluster_members =
-            setting( "core_edge.initial_core_cluster_members", list( ",", ADVERTISED_SOCKET_ADDRESS ), MANDATORY );
+    public static final Setting<List<AdvertisedSocketAddress>> initial_hazelcast_members =
+            setting( "core_edge.initial_hazelcast_members", list( ",", ADVERTISED_SOCKET_ADDRESS ), MANDATORY );
 
     @Description("Prevents the network middleware from dumping its own logs. Defaults to true.")
     public static final Setting<Boolean> disable_middleware_logging =

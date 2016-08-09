@@ -53,7 +53,7 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
 
     public MemberId id()
     {
-        return (MemberId) getDependencyResolver().resolveDependency( RaftMachine.class ).identity();
+        return getDependencyResolver().resolveDependency( RaftMachine.class ).identity();
     }
 
     public Role getRole()
