@@ -53,12 +53,14 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
 class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 {
     static final int RECORD_SIZE = 48;
+    private static final int PROPERTY_BLOCKS_PADDING = 3;
     private static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +
                                                         Short.BYTES   /* prev prop modifiers */ +
                                                         Integer.BYTES /* prev prop */ +
                                                         Short.BYTES /* next prop modifiers */ +
                                                         Integer.BYTES /* next prop */ +
-                                                        3 /* prototype mystery */;
+                                                        PROPERTY_BLOCKS_PADDING /* padding */;
+
     private static final long HIGH_DWORD_LOWER_WORD_MASK = 0xFFFF_0000_0000L;
     private static final long HIGH_DWORD_LOWER_WORD_CHECK_MASK = 0xFFFF_0000_0000_0000L;
 
@@ -184,8 +186,8 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
         record.initialize( true,
                 BaseRecordFormat.longFromIntAndMod( prevProp, prevMod << 32 ),
                 BaseRecordFormat.longFromIntAndMod( nextProp, nextMod << 32 ) );
-        //skip 3 bytes before start reading property blocks
-        cursor.setOffset(cursor.getOffset() + 3);
+        // skip padding bytes
+        cursor.setOffset( cursor.getOffset() + PROPERTY_BLOCKS_PADDING );
     }
 
     private void writeFixedReferencesRecord( PropertyRecord record, PageCursor cursor )
@@ -197,7 +199,8 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
         cursor.putInt( (int) record.getPrevProp() );
         cursor.putShort( nextModifier );
         cursor.putInt( (int) record.getNextProp() );
-        //just stuff 3 bytes
-        cursor.putBytes( new byte[]{0, 0, 0} );
+        // skip bytes before start reading property blocks to have
+        // aligned access and fixed position of property blocks
+        cursor.setOffset( cursor.getOffset() + PROPERTY_BLOCKS_PADDING );
     }
 }
