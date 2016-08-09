@@ -100,9 +100,9 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
         return coreSnapshotFuture;
     }
 
-    public void pollForTransactions( MemberId serverAddress, long lastTransactionId )
+    public void pollForTransactions( MemberId serverAddress, StoreId storeId, long lastTransactionId )
     {
-        TxPullRequest txPullRequest = new TxPullRequest( lastTransactionId );
+        TxPullRequest txPullRequest = new TxPullRequest( lastTransactionId, storeId );
         send( serverAddress, RequestMessageType.TX_PULL_REQUEST, txPullRequest );
         pullRequestMonitor.txPullRequest( lastTransactionId );
     }
@@ -168,9 +168,9 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     }
 
     @Override
-    public void onTxStreamingComplete( long lastTransactionId )
+    public void onTxStreamingComplete( long lastTransactionId, boolean success )
     {
-        txStreamCompleteListeners.notify( listener -> listener.onTxStreamingComplete( lastTransactionId ) );
+        txStreamCompleteListeners.notify( listener -> listener.onTxStreamingComplete( lastTransactionId, success ) );
     }
 
     @Override

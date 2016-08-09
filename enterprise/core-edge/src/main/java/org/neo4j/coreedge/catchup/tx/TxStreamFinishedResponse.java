@@ -22,10 +22,17 @@ package org.neo4j.coreedge.catchup.tx;
 class TxStreamFinishedResponse
 {
     private final long lastTransactionIdSent;
+    private final boolean success;
 
-    TxStreamFinishedResponse( long lastTransactionIdSent )
+    TxStreamFinishedResponse( long lastTransactionIdSent, boolean success )
     {
         this.lastTransactionIdSent = lastTransactionIdSent;
+        this.success = success;
+    }
+
+    boolean isSuccess()
+    {
+        return success;
     }
 
     long lastTransactionIdSent()
@@ -47,7 +54,7 @@ class TxStreamFinishedResponse
 
         TxStreamFinishedResponse that = (TxStreamFinishedResponse) o;
 
-        return lastTransactionIdSent == that.lastTransactionIdSent;
+        return lastTransactionIdSent == that.lastTransactionIdSent && success == that.success;
     }
 
     @Override

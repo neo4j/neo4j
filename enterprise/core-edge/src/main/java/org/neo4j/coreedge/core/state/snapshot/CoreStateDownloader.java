@@ -28,6 +28,7 @@ import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -49,7 +50,7 @@ public class CoreStateDownloader
         this.log = logProvider.getLog( getClass() );
     }
 
-    public synchronized void downloadSnapshot( MemberId source, CoreState coreState )
+    public synchronized void downloadSnapshot( MemberId source, StoreId storeId, CoreState coreState )
             throws InterruptedException, StoreCopyFailedException
     {
         try
@@ -76,7 +77,7 @@ public class CoreStateDownloader
                 throw new StoreCopyFailedException( e );
             }
 
-            localDatabase.copyStoreFrom( source, storeFetcher ); // this deletes the current store
+            localDatabase.bringUpToDateOrReplaceStoreFrom( source, storeId, storeFetcher ); // this deletes the current store
             log.info( "Replaced store with one downloaded from %s", source );
 
             /* We install the snapshot after the store has been downloaded,

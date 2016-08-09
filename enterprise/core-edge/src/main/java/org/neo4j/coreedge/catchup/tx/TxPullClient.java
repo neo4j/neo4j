@@ -25,6 +25,8 @@ import java.util.concurrent.ExecutionException;
 import org.neo4j.coreedge.catchup.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 
 public class TxPullClient
 {
@@ -35,19 +37,28 @@ public class TxPullClient
         this.coreClient = coreClient;
     }
 
-    public long pullTransactions( MemberId from, long startTxId, TxPullResponseListener txPullResponseListener )
+    public long pullTransactions( MemberId from, StoreId storeId, long startTxId, TxPullResponseListener txPullResponseListener )
             throws StoreCopyFailedException
     {
         coreClient.addTxPullResponseListener( txPullResponseListener );
 
         CompletableFuture<Long> txId = new CompletableFuture<>();
 
-        TxStreamCompleteListener streamCompleteListener = txId::complete;
+        TxStreamCompleteListener streamCompleteListener = ( value, success ) -> {
+            if ( success )
+            {
+                txId.complete( value );
+            }
+            else
+            {
+                txId.completeExceptionally( new NoSuchTransactionException( startTxId ) );
+            }
+        };
         coreClient.addTxStreamCompleteListener( streamCompleteListener );
 
         try
         {
-            coreClient.pollForTransactions( from, startTxId );
+            coreClient.pollForTransactions( from, storeId, startTxId );
             return txId.get();
         }
         catch ( InterruptedException | ExecutionException e )

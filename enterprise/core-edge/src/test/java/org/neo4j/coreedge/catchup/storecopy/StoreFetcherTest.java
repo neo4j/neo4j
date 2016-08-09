@@ -19,17 +19,18 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
+
+import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.coreedge.catchup.tx.TxPullClient;
 import org.neo4j.coreedge.catchup.tx.TxPullResponseListener;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.LogProvider;
@@ -49,6 +50,7 @@ public class StoreFetcherTest
     public void shouldCopyStoreFilesAndPullTransactions() throws Exception
     {
         // given
+        StoreId storeId = new StoreId( 1, 2, 3, 4 );
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         TxPullClient txPullClient = mock( TxPullClient.class );
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
@@ -59,11 +61,11 @@ public class StoreFetcherTest
 
         // when
         MemberId localhost = new MemberId( UUID.randomUUID() );
-        fetcher.copyStore( localhost, new File( "destination" ) );
+        fetcher.copyStore( localhost, storeId, new File( "destination" ) );
 
         // then
         verify( storeCopyClient ).copyStoreFiles( eq( localhost ), any( StoreFileStreams.class ) );
-        verify( txPullClient ).pullTransactions( eq( localhost ), anyLong(), any( TxPullResponseListener.class ) );
+        verify( txPullClient ).pullTransactions( eq( localhost ), eq( storeId ), anyLong(), any( TxPullResponseListener.class ) );
     }
 
     @Test
@@ -72,7 +74,7 @@ public class StoreFetcherTest
         // given
         long lastFlushedTxId = 12;
         long lastPulledTxId = 34;
-
+        StoreId storeId = new StoreId( 1, 2, 3, 4 );
         MemberId localhost = new MemberId( UUID.randomUUID() );
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
@@ -80,7 +82,7 @@ public class StoreFetcherTest
                 .thenReturn( lastFlushedTxId );
 
         TxPullClient txPullClient = mock( TxPullClient.class );
-        when( txPullClient.pullTransactions( eq( localhost ), anyLong(), any( TxPullResponseListener.class ) ) )
+        when( txPullClient.pullTransactions( eq( localhost ), eq( storeId ), anyLong(), any( TxPullResponseListener.class ) ) )
                 .thenReturn( lastPulledTxId );
 
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
@@ -90,16 +92,17 @@ public class StoreFetcherTest
                 storeCopyClient, txPullClient, factory( writer ) );
 
         // when
-        fetcher.copyStore( localhost, new File( "destination" ) );
+        fetcher.copyStore( localhost, storeId, new File( "destination" ) );
 
         // then
-        verify( txPullClient ).pullTransactions( eq( localhost ), eq( lastFlushedTxId - 1 ), any( TxPullResponseListener.class ) );
+        verify( txPullClient ).pullTransactions( eq( localhost ), eq( storeId ), eq( lastFlushedTxId - 1 ), any( TxPullResponseListener.class ) );
     }
 
     @Test
     public void shouldCloseDownTxLogWriterIfTxStreamingFails() throws Exception
     {
         // given
+        StoreId storeId = new StoreId( 1, 2, 3, 4 );
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         TxPullClient txPullClient = mock( TxPullClient.class );
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
@@ -109,12 +112,12 @@ public class StoreFetcherTest
                 storeCopyClient, txPullClient, factory( writer ) );
 
         doThrow( StoreCopyFailedException.class ).when( txPullClient )
-                .pullTransactions( any( MemberId.class ), anyLong(), any( TransactionLogCatchUpWriter.class ) );
+                .pullTransactions( any( MemberId.class ), eq( storeId ), anyLong(), any( TransactionLogCatchUpWriter.class ) );
 
         // when
         try
         {
-            fetcher.copyStore( null, null );
+            fetcher.copyStore( null, storeId, null );
         }
         catch ( StoreCopyFailedException e )
         {

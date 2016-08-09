@@ -29,6 +29,7 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -56,7 +57,28 @@ public class StoreFetcher
         log = logProvider.getLog( getClass() );
     }
 
-    void copyStore( MemberId from, File storeDir ) throws StoreCopyFailedException
+    boolean tryCatchingUp( MemberId from, StoreId storeId, File storeDir ) throws StoreCopyFailedException, IOException
+    {
+        ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
+        long lastCommittedTransactionId = transactionIdStore.getLastCommittedTransactionId();
+
+        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider ) )
+        {
+            log.info( "Pulling transactions from: %d", lastCommittedTransactionId );
+            try
+            {
+                long lastPulledTxId = txPullClient.pullTransactions( from, storeId, lastCommittedTransactionId, writer );
+                log.info( "Txs streamed up to %d", lastPulledTxId );
+                return true;
+            }
+            catch ( StoreCopyFailedException e )
+            {
+                return false;
+            }
+        }
+    }
+
+    void copyStore( MemberId from, StoreId storeId, File storeDir ) throws StoreCopyFailedException
     {
         try
         {
@@ -67,7 +89,7 @@ public class StoreFetcher
             try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider ) )
             {
                 log.info( "Pulling transactions from: %d", lastFlushedTxId - 1 );
-                long lastPulledTxId = txPullClient.pullTransactions( from, lastFlushedTxId - 1, writer );
+                long lastPulledTxId = txPullClient.pullTransactions( from, storeId, lastFlushedTxId - 1, writer );
                 log.info( "Txs streamed up to %d", lastPulledTxId );
             }
         }

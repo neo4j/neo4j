@@ -23,6 +23,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
+import org.neo4j.coreedge.identity.StoreId;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
@@ -42,7 +43,7 @@ public class TxPullRequestEncodeDecodeTest
 
         // given
         final long arbitraryId = 23;
-        TxPullRequest sent = new TxPullRequest( arbitraryId );
+        TxPullRequest sent = new TxPullRequest( arbitraryId, new StoreId( 1, 2, 3, 4 ) );
 
         // when
         channel.writeOutbound( sent );

@@ -19,11 +19,6 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import com.hazelcast.client.impl.MemberImpl;
-import com.hazelcast.core.Member;
-import com.hazelcast.nio.Address;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,17 +28,23 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.hazelcast.client.impl.MemberImpl;
+import com.hazelcast.core.Member;
+import com.hazelcast.nio.Address;
+import org.junit.Test;
+
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.core.state.machines.tx.ConstantTimeRetryStrategy;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
+import org.neo4j.coreedge.core.state.machines.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.edge.EdgeStartupProcess;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -56,6 +57,7 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.buildMemberAttributes;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.extractMemberAttributes;
 
@@ -65,6 +67,7 @@ public class HazelcastClusterTopologyTest
     public void edgeServersShouldRegisterThemselvesWithTheTopologyWhenTheyStart() throws Throwable
     {
         // given
+        MemberId memberId = new MemberId( UUID.randomUUID() );
         final Map<String, String> params = new HashMap<>();
 
         params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
@@ -78,11 +81,15 @@ public class HazelcastClusterTopologyTest
         // when
 
         final CoreMemberSelectionStrategy connectionStrategy = mock( CoreMemberSelectionStrategy.class );
-        when( connectionStrategy.coreMember() ).thenReturn( new MemberId( UUID.randomUUID() ) );
+        when( connectionStrategy.coreMember() ).thenReturn( memberId );
 
         LocalDatabase localDatabase = mock( LocalDatabase.class );
         when( localDatabase.isEmpty() ).thenReturn( true );
-        final EdgeStartupProcess startupProcess = new EdgeStartupProcess( null,
+
+        StoreFetcher storeFetcher = mock( StoreFetcher.class );
+        when( storeFetcher.storeId( memberId ) ).thenReturn( new StoreId( 1, 2, 3, 4 ) );
+
+        final EdgeStartupProcess startupProcess = new EdgeStartupProcess( storeFetcher,
                 localDatabase,
                 mock( Lifecycle.class ),
                 connectionStrategy,
@@ -131,9 +138,9 @@ public class HazelcastClusterTopologyTest
             coreMembers.add( memberId );
             Config config = Config.defaults();
             HashMap<String, String> settings = new HashMap<>();
-            settings.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "tx:" + (i + 1 ));
-            settings.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "raft:" + (i + 1 ));
-            settings.put( GraphDatabaseSettings.bolt_advertised_address.name(), "bolt:" + (i + 1));
+            settings.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "tx:" + (i + 1) );
+            settings.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "raft:" + (i + 1) );
+            settings.put( GraphDatabaseSettings.bolt_advertised_address.name(), "bolt:" + (i + 1) );
             config.augment( settings );
             hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null,
                     buildMemberAttributes( memberId, config ).getAttributes() ) );
@@ -147,9 +154,9 @@ public class HazelcastClusterTopologyTest
         for ( int i = 0; i < 5; i++ )
         {
             CoreAddresses coreAddresses = coreMemberMap.get( coreMembers.get( i ) );
-            assertEquals( new AdvertisedSocketAddress( "tx:" + (i  + 1 )), coreAddresses.getCatchupServer() );
-            assertEquals( new AdvertisedSocketAddress( "raft:" + (i  + 1 )), coreAddresses.getRaftServer() );
-            assertEquals( new AdvertisedSocketAddress( "bolt:" + (i  + 1 )), coreAddresses.getBoltServer() );
+            assertEquals( new AdvertisedSocketAddress( "tx:" + (i + 1) ), coreAddresses.getCatchupServer() );
+            assertEquals( new AdvertisedSocketAddress( "raft:" + (i + 1) ), coreAddresses.getRaftServer() );
+            assertEquals( new AdvertisedSocketAddress( "bolt:" + (i + 1) ), coreAddresses.getBoltServer() );
         }
     }
 

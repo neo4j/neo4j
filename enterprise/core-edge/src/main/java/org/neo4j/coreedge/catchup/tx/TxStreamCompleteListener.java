@@ -21,5 +21,5 @@ package org.neo4j.coreedge.catchup.tx;
 
 public interface TxStreamCompleteListener
 {
-    void onTxStreamingComplete( long lastTransactionId );
+    void onTxStreamingComplete( long lastTransactionId, boolean success );
 }

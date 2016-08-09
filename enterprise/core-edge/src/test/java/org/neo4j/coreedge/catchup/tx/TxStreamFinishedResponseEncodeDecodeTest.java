@@ -42,7 +42,7 @@ public class TxStreamFinishedResponseEncodeDecodeTest
 
         // given
         final long arbitraryId = 23;
-        TxStreamFinishedResponse sent = new TxStreamFinishedResponse( arbitraryId );
+        TxStreamFinishedResponse sent = new TxStreamFinishedResponse( arbitraryId, true );
 
         // when
         channel.writeOutbound( sent );

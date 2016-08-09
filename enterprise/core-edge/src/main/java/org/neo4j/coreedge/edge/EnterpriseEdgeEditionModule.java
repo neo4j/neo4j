@@ -200,7 +200,16 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         ContinuousJob txApplyJob = new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "tx-applier", NEW_THREAD ), batchingTxApplier );
 
         DelayedRenewableTimeoutService txPullerTimeoutService = new DelayedRenewableTimeoutService( Clock.systemUTC(), logProvider );
-        TxPollingClient txPuller = new TxPollingClient( logProvider,
+
+        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
+                new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule
+                        .pageCache ),
+                new StoreFiles( new DefaultFileSystemAbstraction() ),
+                platformModule.dataSourceManager,
+                dependencies.provideDependency( TransactionIdStore.class ),
+                databaseHealthSupplier, logProvider );
+
+        TxPollingClient txPuller = new TxPollingClient( logProvider, localDatabase,
                 edgeToCoreClient, new ConnectToRandomCoreMember( discoveryService ),
                 txPullerTimeoutService, config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier );
 
@@ -215,12 +224,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 new TransactionLogCatchUpFactory() );
 
         life.add( new EdgeStartupProcess( storeFetcher,
-                new LocalDatabase( platformModule.storeDir,
-                        new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache ),
-                        new StoreFiles( new DefaultFileSystemAbstraction() ),
-                        platformModule.dataSourceManager,
-                        dependencies.provideDependency( TransactionIdStore.class ),
-                        databaseHealthSupplier, logProvider ),
+                localDatabase,
                 txPulling, new ConnectToRandomCoreMember( discoveryService ),
                 new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, discoveryService, config ) );
 

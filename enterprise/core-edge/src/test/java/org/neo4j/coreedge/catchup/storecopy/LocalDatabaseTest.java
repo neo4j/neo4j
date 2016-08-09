@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
-import org.junit.Test;
-
 import java.io.File;
+
+import org.junit.Test;
 
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
@@ -36,9 +36,14 @@ import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.function.Suppliers.singleton;
 
 public class LocalDatabaseTest
@@ -100,9 +105,66 @@ public class LocalDatabaseTest
     }
 
     @Test
+    public void shouldCatchUpStoreIfPossible() throws Throwable
+    {
+        // given
+        File storeDir = new File( "directory" );
+        StoreFiles storeFiles = mock( StoreFiles.class );
+        StoreId storeId = new StoreId( 1, 2, 4, 5 );
+
+        DataSourceManager dataSourceManager = mock( DataSourceManager.class );
+        NeoStoreDataSource neoStoreDataSource = mock( NeoStoreDataSource.class );
+        when( dataSourceManager.getDataSource() ).thenReturn( neoStoreDataSource );
+        when( neoStoreDataSource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 3, 4, 5 ) );
+
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 12L );
+
+        LocalDatabase localDatabase = new LocalDatabase( storeDir, mock( CopiedStoreRecovery.class ),
+                storeFiles, dataSourceManager, () -> transactionIdStore, () -> mock( DatabaseHealth.class ),
+                NullLogProvider.getInstance() );
+
+        MemberId memberId = mock( MemberId.class );
+        StoreFetcher storeFetcher = mock( StoreFetcher.class );
+        when( storeFetcher.tryCatchingUp( memberId, storeId, storeDir ) ).thenReturn( true );
+
+        // when
+        localDatabase.start();
+        localDatabase.bringUpToDateOrReplaceStoreFrom( memberId, storeId, storeFetcher );
+
+        verify( storeFiles, never() ).delete( storeDir );
+        verify( storeFetcher, never() ).copyStore( any( MemberId.class ), eq( storeId ), any( File.class ) );
+    }
+
+    @Test
+    public void shouldCopyStoreIfCatchupFails() throws Exception
+    {
+        // given
+        StoreFiles storeFiles = mock( StoreFiles.class );
+        StoreId storeId = new StoreId( 6, 7, 8, 9 );
+
+        File storeDir = new File( "directory" );
+        LocalDatabase localDatabase = new LocalDatabase( storeDir, mock( CopiedStoreRecovery.class ),
+                storeFiles, null, singleton( mock( TransactionIdStore.class ) ), () -> mock( DatabaseHealth.class ),
+                NullLogProvider.getInstance() );
+
+        MemberId memberId = mock( MemberId.class );
+        StoreFetcher storeFetcher = mock( StoreFetcher.class );
+        when( storeFetcher.tryCatchingUp( memberId, storeId, storeDir ) ).thenReturn( false );
+
+        // when
+        localDatabase.bringUpToDateOrReplaceStoreFrom( memberId, storeId, storeFetcher );
+
+        // then
+        verify( storeFiles ).delete( any( File.class ) );
+        verify( storeFetcher ).copyStore( any( MemberId.class ), eq( storeId ), any( File.class ) );
+    }
+
+    @Test
     public void storeCopyShouldResetStoreId() throws Throwable
     {
         // given
+        StoreId storeId = new StoreId( 6, 7, 8, 9 );
         NeoStoreDataSource mockDatasource = mock( NeoStoreDataSource.class );
         when( mockDatasource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 3, 4, 5 ) );
         StoreId copied = new StoreId( 5, 6, 7, 8 );
@@ -117,7 +179,7 @@ public class LocalDatabaseTest
 
         // and stopped, the store copied, and restarted
         localDatabase.stop();
-        localDatabase.copyStoreFrom( memberId, storeFetcher );
+        localDatabase.bringUpToDateOrReplaceStoreFrom( memberId, storeId, storeFetcher );
         when( mockDatasource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 5, 6, 3, 7, 8 ) );
         localDatabase.start();
 
@@ -159,6 +221,7 @@ public class LocalDatabaseTest
     public void askingForStoreIdWhileStoreCopyingShouldStillLeaveNewStoreIdAfterCopyCompletes() throws Throwable
     {
         // given
+        StoreId storeId = new StoreId( 6, 7, 8, 9 );
         NeoStoreDataSource mockDatasource = mock( NeoStoreDataSource.class );
         when( mockDatasource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
         StoreId copied = new StoreId( 5, 6, 7, 8 );
@@ -176,7 +239,7 @@ public class LocalDatabaseTest
         // and the storeId is asked for
         localDatabase.storeId();
         // and the store copy happens
-        localDatabase.copyStoreFrom( memberId, storeFetcher );
+        localDatabase.bringUpToDateOrReplaceStoreFrom( memberId, storeId, storeFetcher );
         when( mockDatasource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 5, 6, 12, 7, 8 ) );
         localDatabase.start();
 

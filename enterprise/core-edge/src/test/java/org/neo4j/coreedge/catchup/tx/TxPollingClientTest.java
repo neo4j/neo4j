@@ -53,8 +53,10 @@ public class TxPollingClientTest
     private final ControlledRenewableTimeoutService timeoutService = new ControlledRenewableTimeoutService();
 
     private final long txPullTimeoutMillis = 100;
+    private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
 
-    private final TxPollingClient txPuller = new TxPollingClient( NullLogProvider.getInstance(), coreClient, serverSelection,
+    private final TxPollingClient txPuller = new TxPollingClient( NullLogProvider.getInstance(), () -> storeId,
+            coreClient, serverSelection,
             timeoutService, txPullTimeoutMillis, txApplier );
 
     @Before
@@ -76,7 +78,7 @@ public class TxPollingClientTest
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( coreClient ).pollForTransactions( any( MemberId.class ), eq( lastAppliedTxId ) );
+        verify( coreClient ).pollForTransactions( any( MemberId.class ), eq( storeId ), eq( lastAppliedTxId ) );
     }
 
     @Test
@@ -89,7 +91,7 @@ public class TxPollingClientTest
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( coreClient, never() ).pollForTransactions( any( MemberId.class ), anyLong() );
+        verify( coreClient, never() ).pollForTransactions( any( MemberId.class ), eq( storeId ), anyLong() );
     }
 
     @Test

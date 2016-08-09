@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.ToIntFunction;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.Resource;
 
 public class Cursors
@@ -139,6 +141,29 @@ public class Cursors
         };
     }
 
+    public static <T> IOCursor<T> io( Cursor<T> cursor )
+    {
+        return new IOCursor<T>()
+        {
+            @Override
+            public boolean next() throws IOException
+            {
+                return cursor.next();
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                cursor.close();
+            }
+
+            @Override
+            public T get()
+            {
+                return cursor.get();
+            }
+        };
+    }
     public static <T> PrimitiveIntIterator intIterator( final Cursor<T> resourceCursor, final ToIntFunction<T> map )
     {
         return new CursorPrimitiveIntIterator<>( resourceCursor, map );

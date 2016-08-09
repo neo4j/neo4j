@@ -19,26 +19,33 @@
  */
 package org.neo4j.coreedge.catchup.tx;
 
-import org.neo4j.coreedge.messaging.Message;
+import java.util.Objects;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
-
-import static java.lang.String.format;
+import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.Message;
 
 public class TxPullRequest implements Message
 {
     public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.TX_PULL_REQUEST;
 
     private long txId;
+    private final StoreId storeId;
 
-    public TxPullRequest( long txId )
+    public TxPullRequest( long txId, StoreId storeId )
     {
         this.txId = txId;
+        this.storeId = storeId;
     }
 
     public long txId()
     {
         return txId;
+    }
+
+    public StoreId storeId()
+    {
+        return storeId;
     }
 
     @Override
@@ -52,23 +59,19 @@ public class TxPullRequest implements Message
         {
             return false;
         }
-
         TxPullRequest that = (TxPullRequest) o;
-
-        return txId == that.txId;
+        return txId == that.txId && Objects.equals( storeId, that.storeId );
     }
 
     @Override
     public int hashCode()
     {
-        int result = (int) (txId ^ (txId >>> 32));
-        result = 31 * result;
-        return result;
+        return Objects.hash( txId, storeId );
     }
 
     @Override
     public String toString()
     {
-        return format( "TxPullRequest{txId=%d}", txId );
+        return String.format( "TxPullRequest{txId=%d, storeId=%s}", txId, storeId );
     }
 }
