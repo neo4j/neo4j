@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.core.state.StateRecoveryManager;
-import org.neo4j.coreedge.messaging.marsalling.ChannelMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -34,11 +34,14 @@ import org.neo4j.logging.LogProvider;
 
 public class DurableStateStorage<STATE> extends LifecycleAdapter implements StateStorage<STATE>
 {
+    private final StateRecoveryManager<STATE> recoveryManager;
+    private final Log log;
     private STATE initialState;
     private final File fileA;
     private final File fileB;
-    private final FileSystemAbstraction fileSystemAbstraction;
-    private final ChannelMarshal<STATE> marshal;
+    private final FileSystemAbstraction fsa;
+    private final String name;
+    private final StateMarshal<STATE> marshal;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final int numberOfEntriesBeforeRotation;
 
@@ -47,36 +50,57 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
 
     private PhysicalFlushableChannel currentStoreChannel;
 
-    private File stateDir( File baseDir, String name )
+    static File stateDir( File baseDir, String name )
     {
         return new File( baseDir, name + "-state" );
     }
 
-    public DurableStateStorage( FileSystemAbstraction fileSystemAbstraction, File baseDir, String name,
-                                StateMarshal<STATE> marshal, int numberOfEntriesBeforeRotation,
-                                Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
+    public DurableStateStorage( FileSystemAbstraction fsa, File baseDir, String name,
+            StateMarshal<STATE> marshal, int numberOfEntriesBeforeRotation,
+            Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
             throws IOException
             // TODO Move file opening to start-time so that constructor doesn't need to throw exceptions
     {
-        this.fileSystemAbstraction = fileSystemAbstraction;
+        this.fsa = fsa;
+        this.name = name;
         this.marshal = marshal;
         this.numberOfEntriesBeforeRotation = numberOfEntriesBeforeRotation;
         this.databaseHealthSupplier = databaseHealthSupplier;
+        this.log = logProvider.getLog( getClass() );
+        this.recoveryManager = new StateRecoveryManager<>( fsa, marshal );
+        this.fileA = new File( stateDir( baseDir, name ), name + ".a" );
+        this.fileB = new File( stateDir( baseDir, name ), name + ".b" );
 
-        fileA = new File( stateDir( baseDir, name ), name + ".a" );
-        fileB = new File( stateDir( baseDir, name ), name + ".b" );
+        create();
+        recover();
+    }
 
-        StateRecoveryManager<STATE> recoveryManager =
-                new StateRecoveryManager<>( fileSystemAbstraction, marshal );
+    private void create() throws IOException
+    {
+        ensureExists( fileA );
+        ensureExists( fileB );
+    }
 
+    private void ensureExists( File file ) throws IOException
+    {
+        if ( !fsa.fileExists( file ) )
+        {
+            fsa.mkdirs( file.getParentFile() );
+            try ( FlushableChannel channel = new PhysicalFlushableChannel( fsa.create( file ) ) )
+            {
+                marshal.marshal( marshal.startState(), channel );
+            }
+        }
+    }
+
+    private void recover() throws IOException
+    {
         final StateRecoveryManager.RecoveryStatus<STATE> recoveryStatus = recoveryManager.recover( fileA, fileB );
 
         this.currentStoreFile = recoveryStatus.activeFile();
-        this.currentStoreChannel = initialiseStoreFile( currentStoreFile );
-
+        this.currentStoreChannel = resetStoreFile( currentStoreFile );
         this.initialState = recoveryStatus.recoveredState();
 
-        Log log = logProvider.getLog( getClass() );
         log.info( "%s state restored, up to ordinal %d", name, marshal.ordinal( initialState ) );
     }
 
@@ -120,28 +144,21 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
     {
         currentStoreChannel.close();
 
-        if ( currentStoreFile.getName().toLowerCase().endsWith( "a" ) )
+        if ( currentStoreFile.equals( fileA ) )
         {
-            currentStoreChannel = initialiseStoreFile( fileB );
+            currentStoreChannel = resetStoreFile( fileB );
             currentStoreFile = fileB;
         }
-        else if ( currentStoreFile.getName().toLowerCase().endsWith( "b" ) )
+        else
         {
-            currentStoreChannel = initialiseStoreFile( fileA );
+            currentStoreChannel = resetStoreFile( fileA );
             currentStoreFile = fileA;
         }
     }
 
-    private PhysicalFlushableChannel initialiseStoreFile( File nextStore ) throws IOException
+    private PhysicalFlushableChannel resetStoreFile( File nextStore ) throws IOException
     {
-        if ( fileSystemAbstraction.fileExists( nextStore ) )
-        {
-            fileSystemAbstraction.truncate( nextStore, 0 );
-            return new PhysicalFlushableChannel( fileSystemAbstraction.open( nextStore, "rw" ) );
-        }
-        else
-        {
-            return new PhysicalFlushableChannel( fileSystemAbstraction.create( nextStore ) );
-        }
+        fsa.truncate( nextStore, 0 );
+        return new PhysicalFlushableChannel( fsa.open( nextStore, "rw" ) );
     }
 }

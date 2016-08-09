@@ -36,6 +36,7 @@ import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class StateRecoveryManagerTest
 {
@@ -52,7 +53,7 @@ public class StateRecoveryManagerTest
     }
 
     @Test
-    public void shouldReturnFileAWhenNoStatePreviouslyStored() throws Exception
+    public void shouldFailIfBothFilesAreEmpty() throws Exception
     {
         // given
         EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
@@ -66,11 +67,17 @@ public class StateRecoveryManagerTest
 
         StateRecoveryManager<Long> manager = new StateRecoveryManager<>( fsa, new LongMarshal() );
 
-        // when
-        final StateRecoveryManager.RecoveryStatus recoveryStatus = manager.recover( fileA, fileB );
-
-        // then
-        assertEquals( fileA, recoveryStatus.activeFile() );
+        try
+        {
+            // when
+            StateRecoveryManager.RecoveryStatus recoveryStatus = manager.recover( fileA, fileB );
+            fail();
+        }
+        catch ( IllegalStateException ex )
+        {
+            // then
+            // expected
+        }
     }
 
     @Test
