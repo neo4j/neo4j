@@ -118,8 +118,6 @@ public class StateRecoveryManager<STATE>
                 // ignore; just use previous complete entry
             }
 
-            fileSystem.open( file, "r" ).close();
-
             return result;
         }
     }
