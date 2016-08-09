@@ -19,28 +19,28 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.CoreClusterMember;
-import org.neo4j.coreedge.core.consensus.roles.Role;
+import org.junit.Rule;
+import org.junit.Test;
+import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.CoreGraphDatabase;
+import org.neo4j.coreedge.core.consensus.roles.Role;
+import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_frequency;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -55,43 +55,6 @@ public class CoreToCoreCopySnapshotIT
             .withNumberOfEdgeMembers( 0 );
 
     @Test
-    public void shouldBeAbleToDownloadFreshEmptySnapshot() throws Exception
-    {
-        // given
-        Cluster cluster = clusterRule.startCluster();
-
-        CoreClusterMember leader = cluster.awaitLeader( TIMEOUT_MS );
-
-        // when
-        CoreClusterMember follower = cluster.awaitCoreMemberWithRole( TIMEOUT_MS, Role.FOLLOWER );
-        follower.coreState().downloadSnapshot( leader.id() );
-
-        // then
-        assertEquals( DbRepresentation.of( leader.database() ), DbRepresentation.of( follower.database() ) );
-    }
-
-    @Test
-    public void shouldBeAbleToDownloadSmallFreshSnapshot() throws Exception
-    {
-        // given
-        Cluster cluster = clusterRule.startCluster();
-
-        CoreClusterMember source = cluster.coreTx( ( db, tx ) -> {
-            Node node = db.createNode();
-            node.setProperty( "hej", "svej" );
-            tx.success();
-        } );
-
-        // when
-        CoreClusterMember follower = cluster.awaitCoreMemberWithRole( TIMEOUT_MS, Role.FOLLOWER );
-
-        follower.coreState().downloadSnapshot( source.id() );
-
-        // then
-        assertEquals( DbRepresentation.of( source.database() ), DbRepresentation.of( follower.database() ) );
-    }
-
-    @Test
     public void shouldBeAbleToDownloadLargerFreshSnapshot() throws Exception
     {
         // given
@@ -104,7 +67,11 @@ public class CoreToCoreCopySnapshotIT
 
         // when
         CoreClusterMember follower = cluster.awaitCoreMemberWithRole( TIMEOUT_MS, Role.FOLLOWER );
-        follower.coreState().downloadSnapshot( source.id() );
+
+        // shutdown the follower, remove the store, restart
+        follower.shutdown();
+        new StoreFiles( new DefaultFileSystemAbstraction() ).delete( follower.storeDir() );
+        follower.start();
 
         // then
         assertEquals( DbRepresentation.of( source.database() ), DbRepresentation.of( follower.database() ) );
@@ -165,7 +132,7 @@ public class CoreToCoreCopySnapshotIT
         CoreClusterMember follower = cluster.awaitCoreMemberWithRole( TIMEOUT_MS, Role.FOLLOWER );
         follower.shutdown();
 
-        /**
+        /*
          * After a follower is shutdown, wait until we accumulate some logs such that the oldest log is older than
          * the most recent log when the follower was removed. We can then be sure that the follower won't be able
          * to catch up to the leader without a snapshot.

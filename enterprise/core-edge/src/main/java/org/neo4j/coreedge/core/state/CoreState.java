@@ -90,7 +90,6 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
                 raftMachine.stopTimers();
                 localDatabase.panic( e );
             }
-
         }
         else
         {
@@ -141,7 +140,7 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
 
     public void addMismatchedStoreListener( MismatchedStoreListener listener )
     {
-        listeners.add(listener);
+        listeners.add( listener );
     }
 
     private synchronized void notifyCommitted( long commitIndex )
@@ -166,7 +165,7 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
      *
      * @param source The source address to attempt a download of a snapshot from.
      */
-    public synchronized void downloadSnapshot( MemberId source )
+    private void downloadSnapshot( MemberId source )
     {
         try
         {
