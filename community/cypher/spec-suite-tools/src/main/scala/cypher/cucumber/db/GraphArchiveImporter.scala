@@ -59,9 +59,8 @@ abstract class GraphArchiveImporter {
     archive.scripts.foreach { script =>
       val executor = new CypherExecutor(db)
       try {
-        val iterator = Source
-          .fromFile(script.file.jfile, "UTF-8")
-          .getLines()
+        val input = Source.fromFile(script.file.jfile, "UTF-8").mkString
+        val iterator = input.split(";").filter(_.trim.nonEmpty).iterator
 
         while (iterator.hasNext) {
           val statement = iterator.next()

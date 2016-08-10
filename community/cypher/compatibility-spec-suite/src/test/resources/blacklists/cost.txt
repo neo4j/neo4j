@@ -1,5 +1,3 @@
-Fail when comparing nodes to parameters
-Fail when comparing parameters to nodes
-Comparing nodes to properties
-Fail when comparing nodes to relationships
-Fail when comparing relationships to nodes
+// bugged in spec, awaiting update
+SKIP with an expression that depends on variables should fail
+LIMIT with an expression that depends on variables should fail
