@@ -68,7 +68,7 @@ public interface AdminCommand
          */
         public abstract String description();
 
-        public abstract AdminCommand create( Path homeDir, Path configDir );
+        public abstract AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld );
     }
 
     void execute( String[] args ) throws IncorrectUsage, CommandFailed;

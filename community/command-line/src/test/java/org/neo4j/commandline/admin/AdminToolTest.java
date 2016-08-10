@@ -148,7 +148,7 @@ public class AdminToolTest
                 }
 
                 @Override
-                public AdminCommand create( Path homeDir, Path configDir )
+                public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
                 {
                     return RecordingCommand.this;
                 }
@@ -214,7 +214,7 @@ public class AdminToolTest
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return args ->
             {
@@ -250,7 +250,7 @@ public class AdminToolTest
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return args ->
             {

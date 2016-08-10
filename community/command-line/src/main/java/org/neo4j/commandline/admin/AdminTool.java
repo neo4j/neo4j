@@ -76,7 +76,7 @@ public class AdminTool
                 return;
             }
 
-            AdminCommand command = provider.create( homeDir, configDir );
+            AdminCommand command = provider.create( homeDir, configDir, outsideWorld );
             try
             {
                 command.execute( commandArgs );
@@ -99,7 +99,7 @@ public class AdminTool
 
     private Supplier<AdminCommand.Provider> help()
     {
-        return () -> new HelpCommand.Provider( usage, outsideWorld::stdOutLine );
+        return () -> new HelpCommand.Provider( usage );
     }
 
     private void badUsage( AdminCommand.Provider command, IncorrectUsage e )

@@ -28,13 +28,11 @@ public class HelpCommand implements AdminCommand
     public static class Provider extends AdminCommand.Provider
     {
         private final Usage usage;
-        private final Consumer<String> output;
 
-        public Provider( Usage usage, Consumer<String> output )
+        public Provider( Usage usage )
         {
             super( "help" );
             this.usage = usage;
-            this.output = output;
         }
 
         @Override
@@ -50,9 +48,9 @@ public class HelpCommand implements AdminCommand
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
-            return new HelpCommand( usage, output );
+            return new HelpCommand( usage, outsideWorld::stdOutLine );
         }
     }
 

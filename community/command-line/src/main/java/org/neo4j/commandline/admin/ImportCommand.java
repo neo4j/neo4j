@@ -61,7 +61,7 @@ public class ImportCommand implements AdminCommand
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return new ImportCommand( homeDir, configDir );
         }
