@@ -72,19 +72,18 @@
     </fileSet>
     <!-- cypher-shell -->
     <fileSet>
-      <directory>${project.parent.basedir}/src/main/distribution/cypher-shell/bin</directory>
+      <directory>${project.parent.basedir}/src/main/distribution/cypher-shell</directory>
       <outputDirectory>bin</outputDirectory>
       <lineEnding>dos</lineEnding>
       <includes>
-        <include>*.exe</include>
         <include>*.bat</include>
       </includes>
     </fileSet>
     <fileSet>
-      <directory>${project.parent.basedir}/src/main/distribution/cypher-shell/lib</directory>
-      <outputDirectory>lib</outputDirectory>
+      <directory>${project.parent.basedir}/src/main/distribution/cypher-shell</directory>
+      <outputDirectory>bin/tools</outputDirectory>
       <includes>
-        <include>*.jar</include>
+        <include>**/*.jar</include>
       </includes>
     </fileSet>
   </fileSets>
