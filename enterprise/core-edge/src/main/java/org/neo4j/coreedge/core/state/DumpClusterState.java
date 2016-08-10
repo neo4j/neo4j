@@ -86,8 +86,11 @@ public class DumpClusterState
     {
         MemberIdStorage memberIdStorage = new MemberIdStorage( fs, clusterStateDirectory, CORE_MEMBER_ID_NAME,
                 new MemberIdMarshal(), NullLogProvider.getInstance() );
-        MemberId memberId = memberIdStorage.readState();
-        out.println( CORE_MEMBER_ID_NAME + ": " + memberId );
+        if ( memberIdStorage.exists() )
+        {
+            MemberId memberId = memberIdStorage.readState();
+            out.println( CORE_MEMBER_ID_NAME + ": " + memberId );
+        }
 
         dumpState( LAST_FLUSHED_NAME, new LongIndexMarshal() );
         dumpState( LOCK_TOKEN_NAME, new ReplicatedLockTokenState.Marshal( new MemberIdMarshal() ) );
@@ -105,9 +108,12 @@ public class DumpClusterState
         DurableStateStorage<?> storage = new DurableStateStorage<>(
                 fs, clusterStateDirectory, name, marshal, 1024, NullLogProvider.getInstance() );
 
-        try ( Lifespan ignored = new Lifespan( storage ) )
+        if ( storage.exists() )
         {
-            out.println( name + ": " + storage.getInitialState() );
+            try ( Lifespan ignored = new Lifespan( storage ) )
+            {
+                out.println( name + ": " + storage.getInitialState() );
+            }
         }
     }
 }

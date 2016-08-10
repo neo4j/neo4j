@@ -63,6 +63,11 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
         this.fileB = new File( parent, name + ".b" );
     }
 
+    public boolean exists()
+    {
+        return fsa.fileExists( fileA ) && fsa.fileExists( fileB );
+    }
+
     private void create() throws IOException
     {
         ensureExists( fileA );
