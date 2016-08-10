@@ -19,25 +19,29 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.impl.factory.ProceduresProvider;
+import org.neo4j.kernel.impl.proc.Procedures;
 
-import static org.neo4j.helpers.collection.Iterators.asRawIterator;
-import static org.neo4j.helpers.collection.Iterators.emptyIterator;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
-
-public class AwaitIndexProcedure extends CallableProcedure.BasicProcedure
+@Service.Implementation( ProceduresProvider.class )
+public class BuiltInProceduresProvider extends Service implements ProceduresProvider
 {
-    public AwaitIndexProcedure( ProcedureSignature.ProcedureName name )
+    public BuiltInProceduresProvider()
     {
-        super( procedureSignature( name ).build() );
+        super( "built-in-procedures-provider" );
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public void registerProcedures( Procedures procedures )
     {
-        return asRawIterator( emptyIterator() );
+        try
+        {
+            procedures.register( BuiltInProcedures.class );
+        }
+        catch ( KernelException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

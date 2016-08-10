@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.stubbing.Answer;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import org.hamcrest.Matcher;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -48,6 +48,7 @@ import org.neo4j.storageengine.api.Token;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -56,6 +57,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.api.proc.CallableProcedure.Context.KERNEL_TRANSACTION;
 
 public class BuiltInProceduresTest
@@ -141,7 +143,7 @@ public class BuiltInProceduresTest
     {
         // When/Then
         assertThat( call( "dbms.procedures" ), contains(
-            record( "db.awaitIndex", "db.awaitIndex() :: ()" ),
+            record( "db.awaitIndex", "db.awaitIndex() :: VOID" ),
             record( "db.constraints", "db.constraints() :: (description :: STRING?)" ),
             record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?)" ),
             record( "db.labels", "db.labels() :: (label :: STRING?)" ),
@@ -230,7 +232,9 @@ public class BuiltInProceduresTest
     @Before
     public void setup() throws Exception
     {
-        new BuiltInProcedures("1.3.37", Edition.enterprise.toString() ).accept( procs );
+        procs.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ) );
+        new SpecialBuiltInProcedures("1.3.37", Edition.enterprise.toString() ).accept( procs );
+        new BuiltInProceduresProvider().registerProcedures( procs );
 
         when(tx.acquireStatement()).thenReturn( statement );
         when(statement.readOperations()).thenReturn( read );

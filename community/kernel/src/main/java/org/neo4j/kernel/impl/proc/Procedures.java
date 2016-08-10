@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
+import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -50,7 +50,7 @@ public class Procedures extends LifecycleAdapter
 
     public Procedures()
     {
-        this( new BuiltInProcedures( "N/A", "N/A" ), null, NullLog.getInstance() );
+        this( new SpecialBuiltInProcedures( "N/A", "N/A" ), null, NullLog.getInstance() );
     }
 
     public Procedures( ThrowingConsumer<Procedures, ProcedureException> builtin, File pluginDir, Log log )
