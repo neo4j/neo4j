@@ -108,6 +108,6 @@ public final class StoreId
     public String toString()
     {
         return format( "Store{creationTime:%d, randomId:%s, upgradeTime:%d, upgradeId:%d}",
-                creationTime, Long.toString( randomId, Character.MAX_RADIX ), upgradeTime, upgradeId );
+                creationTime, randomId, upgradeTime, upgradeId );
     }
 }

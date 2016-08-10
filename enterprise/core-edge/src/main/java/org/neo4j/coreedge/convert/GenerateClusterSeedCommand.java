@@ -21,6 +21,7 @@ package org.neo4j.coreedge.convert;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Clock;
 
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -38,21 +39,28 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 
 public class GenerateClusterSeedCommand
 {
-    public ClusterSeed generate( File databaseDir ) throws IOException
+    private final Clock clock;
+
+    public GenerateClusterSeedCommand()
     {
-        return metadata( databaseDir );
+        this( Clock.systemUTC() );
     }
 
-    private ClusterSeed metadata( File storeDir ) throws IOException
+    GenerateClusterSeedCommand( Clock clock )
+    {
+        this.clock = clock;
+    }
+
+    public ClusterSeed generate( File databaseDir ) throws IOException
     {
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        File metadataStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        File metadataStore = new File( databaseDir, MetaDataStore.DEFAULT_NAME );
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
             long lastTxId = getRecord( pageCache, metadataStore, LAST_TRANSACTION_ID );
             StoreId before = storeId( metadataStore, pageCache, getRecord( pageCache, metadataStore, UPGRADE_TIME ),
                     getRecord( pageCache, metadataStore, UPGRADE_TRANSACTION_ID ) );
-            StoreId after = storeId( metadataStore, pageCache, System.currentTimeMillis(), lastTxId );
+            StoreId after = storeId( metadataStore, pageCache, clock.millis(), lastTxId );
 
             return new ClusterSeed( before, after, lastTxId );
         }
@@ -64,5 +72,4 @@ public class GenerateClusterSeedCommand
         long randomNumber = getRecord( pageCache, metadataStore, RANDOM_NUMBER );
         return new StoreId( creationTime, randomNumber, upgradeTime, upgradeId );
     }
-
 }
