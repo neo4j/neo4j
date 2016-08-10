@@ -50,6 +50,7 @@ public class BuiltInProcedures implements ThrowingConsumer<Procedures, Procedure
         procs.register( new ListPropertyKeysProcedure( procedureName( "db", "propertyKeys" ) ) );
         procs.register( new ListRelationshipTypesProcedure( procedureName( "db", "relationshipTypes" ) ) );
         procs.register( new ListIndexesProcedure( procedureName( "db", "indexes" ) ) );
+        procs.register( new AwaitIndexProcedure( procedureName( "db", "awaitIndex" ) ) );
         procs.register( new ListConstraintsProcedure( procedureName( "db", "constraints" ) ) );
 
         // These are 'sys'-namespaced procedures, they deal with DBMS-level
