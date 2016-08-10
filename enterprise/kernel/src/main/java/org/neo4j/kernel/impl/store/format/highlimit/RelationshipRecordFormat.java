@@ -42,16 +42,28 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
  * VB   start node chain next relationship
  * VB   end node chain previous relationship
  * VB   end node chain next relationship
- *
  * => 24B-59B
+ *
+ * Fixed reference format:
+ * 1B   header
+ * 2B   relationship type
+ * 1B   modifiers
+ * 4B   start node
+ * 4B   end node
+ * 4B   start node chain previous relationship
+ * 4B   start node chain next relationship
+ * 4B   end node chain previous relationship
+ * 4B   end node chain next relationship
+ * => 28B
  */
 class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRecord>
 {
     static final int RECORD_SIZE = 32;
     static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +
+                                                Short.BYTES /* type */ +
                                                 Byte.BYTES /* modifiers */ +
-                                                Integer.BYTES /* first node */ +
-                                                Integer.BYTES /* second node */ +
+                                                Integer.BYTES /* start node */ +
+                                                Integer.BYTES /* end node */ +
                                                 Integer.BYTES /* first prev rel */ +
                                                 Integer.BYTES /* first next rel */ +
                                                 Integer.BYTES /* second prev rel */ +
@@ -76,7 +88,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     private static final long THREE_BITS_OVERFLOW_BIT_MASK = 0xFFFF_FFFC_0000_0000L;
     private static final long HIGH_DWORD_LAST_BIT_MASK = 0x100000000L;
 
-    private static final long THREE_BIT_FIXED_REFERENCE_BIT_MASK = 0x300000000L;
+    private static final long TWO_BIT_FIXED_REFERENCE_BIT_MASK = 0x300000000L;
 
     public RelationshipRecordFormat()
     {
@@ -101,6 +113,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
         int type = cursor.getShort() & 0xFFFF;
         if (record.isUseFixedReferences())
         {
+            // read record in fixed reference format
             readFixedReferencesRecord( record, cursor, headerByte, inUse, type );
             record.setUseFixedReferences( true );
         }
@@ -154,6 +167,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
         cursor.putShort( (short) record.getType() );
         if (record.isUseFixedReferences())
         {
+            // write record in fixed reference format
             writeFixedReferencesRecord( record, cursor );
         }
         else
@@ -290,7 +304,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
         long secondNextRelMod = secondNextRel == NULL ? 0 : (secondNextRel & HIGH_DWORD_LAST_BIT_MASK) >> 27;
 
         long nextProp = record.getNextProp();
-        long nextPropMod = nextProp == NULL ? 0 : (nextProp & THREE_BIT_FIXED_REFERENCE_BIT_MASK) >> 26;
+        long nextPropMod = nextProp == NULL ? 0 : (nextProp & TWO_BIT_FIXED_REFERENCE_BIT_MASK) >> 26;
 
         // [    ,   x] first node higher order bits
         // [    ,  x ] second node high order bits

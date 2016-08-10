@@ -37,8 +37,18 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
  * VB   first loop relationships
  * VB   owning node
  * VB   next relationship group record
- *
  * => 18B-43B
+ *
+ * Fixed reference format:
+ * 1B   header
+ * 1B   modifiers
+ * 2B   relationship type
+ * 4B   next relationship
+ * 4B   first outgoing relationship
+ * 4B   first incoming relationship
+ * 4B   first loop
+ * 4B   owning node
+ * => 24B
  */
 class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<RelationshipGroupRecord>
 {
@@ -88,6 +98,7 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     {
         if ( record.isUseFixedReferences() )
         {
+            // read record in fixed references format
             readFixedReferencesMethod( record, cursor, inUse );
             record.setUseFixedReferences( true );
         }
@@ -131,6 +142,7 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     {
         if ( record.isUseFixedReferences() )
         {
+            // write record in fixed references format
             writeFixedReferencesRecord( record, cursor );
         }
         else

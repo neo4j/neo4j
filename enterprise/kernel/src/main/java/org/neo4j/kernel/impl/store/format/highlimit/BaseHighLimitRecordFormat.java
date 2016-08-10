@@ -44,12 +44,23 @@ import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdFor
  * hence the format name. The IDs take up between 3-8B depending on the size of the ID where relative ID
  * references are used as often as possible. See {@link Reference}.
  *
+ * In case when record is small enough to fit into one record unit and references are not that big yet
+ * record can be stored in a fixed reference format. Representing record in this format allow
+ * to save some time on reference encoding/decoding since they will be saved in fixed format instead of
+ * variable length encoding.
+ * Fixed reference encoding can be applied only to single record unit records.
+ * And since record will always contain only one single unit we can reuse bit number 4 as a marker for fixed
+ * reference.
+ * To be able to read previously stored records and distinguish them from fixed reference records marker bit is
+ * inverted: 0 - fixed reference format use, 1 - variable length encoding used.
+ *
  * For consistency, all formats have a one-byte header specifying:
  *
  * <ol>
  * <li>0x1: inUse [0=unused, 1=used]</li>
  * <li>0x2: record unit [0=single record, 1=multiple records]</li>
- * <li>0x4: record unit type [1=first, 0=consecutive]
+ * <li>0x4: record unit type [1=first, 0=consecutive]; fixed reference mark [0=fixed reference; 1=variable length
+ * encoding]
  * <li>0x8 - 0x80 other flags for this record specific to each type</li>
  * </ol>
  *
@@ -84,7 +95,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     static final long NULL = Record.NULL_REFERENCE.intValue();
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
     static final int HEADER_BIT_FIRST_RECORD_UNIT = 0b0000_0100;
-    static final int HEADER_BIT_INVERTED_FIXED_REFERENCE = 0b0000_0100;
+    static final int HEADER_BIT_FIXED_REFERENCE = 0b0000_0100;
 
     protected BaseHighLimitRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
     {
@@ -149,7 +160,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
 
     private boolean isUseFixedReferences( byte headerByte )
     {
-        return !has( headerByte, HEADER_BIT_INVERTED_FIXED_REFERENCE );
+        return !has( headerByte, HEADER_BIT_FIXED_REFERENCE );
     }
 
     private String illegalSecondaryReferenceMessage( long secondaryId )
@@ -178,7 +189,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
             }
             else
             {
-                headerByte = set( headerByte, HEADER_BIT_INVERTED_FIXED_REFERENCE, !record.isUseFixedReferences() );
+                headerByte = set( headerByte, HEADER_BIT_FIXED_REFERENCE, !record.isUseFixedReferences() );
             }
             primaryCursor.putByte( headerByte );
 

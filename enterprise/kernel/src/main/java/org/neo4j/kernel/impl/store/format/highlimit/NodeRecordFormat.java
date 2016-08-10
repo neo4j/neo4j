@@ -35,16 +35,24 @@ import org.neo4j.kernel.impl.store.record.Record;
  * VB   first relationship
  * VB   first property
  * 5B   labels
- *
  * => 12B-22B
+ *
+ * Fixed reference record format:
+ * 1B   header
+ * 1B   modifiers
+ * 4B   first relationship
+ * 4B   first property
+ * 5B   labels
+ * => 15B
  */
 class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
 {
     static final int RECORD_SIZE = 16;
+    // size of the record in fixed references format;
     static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +
                                                 Byte.BYTES /* modifiers */ +
-                                                Integer.BYTES /* next relationship */ +
-                                                Integer.BYTES /* next property */ +
+                                                Integer.BYTES /* first relationship */ +
+                                                Integer.BYTES /* first property */ +
                                                 Integer.BYTES /* labels */ +
                                                 Byte.BYTES /* labels */;
 
@@ -55,9 +63,9 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     private static final int HAS_LABELS_BIT       = 0b0100_0000;
 
     private static final long HIGH_DWORD_LOWER_NIBBLE_CHECK_MASK = 0xF_0000_0000L;
+    private static final long HIGH_DWORD_LOWER_NIBBLE_MASK = 0xFFFF_FFF0_0000_0000L;
     private static final long LOWER_NIBBLE_READ_MASK = 0xFL;
     private static final long HIGHER_NIBBLE_READ_MASK = 0xF0L;
-    private static final long HIGH_DWORD_LOWER_NIBBLE_MASK = 0xFFFF_FFF0_0000_0000L;
 
     public NodeRecordFormat()
     {
@@ -83,6 +91,7 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
         boolean dense = has( headerByte, DENSE_NODE_BIT );
         if ( record.isUseFixedReferences() )
         {
+            // read record in a fixed reference format
             readFixedReferencesRecord( record, cursor, inUse, dense );
             record.setUseFixedReferences( true );
         }
@@ -135,6 +144,7 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     {
         if ( record.isUseFixedReferences() )
         {
+            // write record in fixed reference format
             writeFixedReferencesRecord( record, cursor );
         }
         else
@@ -171,8 +181,8 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
         short relModifier = nextRel == NULL ? 0 : (short)((nextRel & HIGH_DWORD_LOWER_NIBBLE_CHECK_MASK) >> 32);
         short propModifier = nextProp == NULL ? 0 : (short) ((nextProp & HIGH_DWORD_LOWER_NIBBLE_CHECK_MASK) >> 28);
 
-        // [    ,    x] higher bits for rel id
-        // [    ,  xx ] higher bits for prop id
+        // [    ,xxxx] higher bits for rel id
+        // [xxxx,    ] higher bits for prop id
         short modifiers = (short) ( relModifier | propModifier );
 
         cursor.putByte( (byte) modifiers );

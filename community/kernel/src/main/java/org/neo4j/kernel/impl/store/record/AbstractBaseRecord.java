@@ -41,6 +41,9 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     private boolean requiresSecondaryUnit;
     private boolean inUse;
     private boolean created;
+    // Flag that indicates usage of fixed references format.
+    // Fixed references format allows to avoid encoding/decoding of references in variable length format and as result
+    // speed up records read/write operations.
     private boolean useFixedReferences;
 
     protected AbstractBaseRecord( long id )
