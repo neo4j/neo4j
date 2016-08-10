@@ -93,7 +93,9 @@ public class SetPasswordCommand implements AdminCommand
 
         String username = parsedArgs.orphans().get( 0 );
         String password = parsedArgs.orphans().get( 1 );
-        boolean shouldCreate = parsedArgs.asMap().containsKey( "create" );
+        boolean shouldCreate = parsedArgs.asMap().containsKey( "create" ) && (
+                parsedArgs.asMap().get( "create" ) == null ||   // support trailing --create
+                parsedArgs.asMap().get( "create" ).toLowerCase().equals( "true" )); // support --create=true
         try
         {
             Config config = loadNeo4jConfig( homeDir, configDir );
