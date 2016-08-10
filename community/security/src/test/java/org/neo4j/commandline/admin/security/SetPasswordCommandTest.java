@@ -179,7 +179,7 @@ public class SetPasswordCommandTest
 
         // Then we get error output and user still requires password change
         verify( out, times( 0 ) ).stdOutLine( anyString() );
-        verify( out ).stdErrLine( "neo4j-admin set-password --create <username> <password>" );
+        verify( out ).stdErrLine( "neo4j-admin set-password --create=<true|false> <username> <password>" );
         verify( out ).stdErrLine( "    Sets the password for the specified user and removes the password change " );
         verify( out ).stdErrLine( "    requirement" );
         verify( out ).stdErrLine( "Missing arguments: expected username and password" );
