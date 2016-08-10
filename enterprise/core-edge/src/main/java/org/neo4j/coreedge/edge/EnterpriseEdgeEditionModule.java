@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.edge;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -79,6 +80,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -214,12 +216,23 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 new StoreCopyClient( edgeToCoreClient ), new TxPullClient( edgeToCoreClient ),
                 new TransactionLogCatchUpFactory() );
 
+        TransactionIdStore offlineTxIdStore;
+        try
+        {
+            offlineTxIdStore = new ReadOnlyTransactionIdStore( platformModule.pageCache, storeDir );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+
         life.add( new EdgeStartupProcess( storeFetcher,
                 new LocalDatabase( platformModule.storeDir,
                         new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache ),
                         new StoreFiles( new DefaultFileSystemAbstraction() ),
                         platformModule.dataSourceManager,
                         dependencies.provideDependency( TransactionIdStore.class ),
+                        () -> offlineTxIdStore,
                         databaseHealthSupplier, logProvider ),
                 txPulling, new ConnectToRandomCoreMember( discoveryService ),
                 new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, discoveryService, config ) );

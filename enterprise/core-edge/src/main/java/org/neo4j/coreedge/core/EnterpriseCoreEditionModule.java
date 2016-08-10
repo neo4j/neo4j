@@ -26,35 +26,35 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.core.server.CoreServerModule;
-import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.coreedge.ReplicationModule;
+import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
-import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
-import org.neo4j.coreedge.core.state.storage.MemberIdStorage;
-import org.neo4j.coreedge.discovery.CoreTopologyService;
-import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.core.consensus.ConsensusModule;
 import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
-import org.neo4j.coreedge.discovery.procedures.CoreRoleProcedure;
-import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
-import org.neo4j.coreedge.messaging.LoggingOutbound;
-import org.neo4j.coreedge.messaging.Outbound;
-import org.neo4j.coreedge.messaging.RaftChannelInitializer;
-import org.neo4j.coreedge.messaging.RaftOutbound;
 import org.neo4j.coreedge.core.consensus.roles.Role;
-import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.identity.MemberId.MemberIdMarshal;
-import org.neo4j.coreedge.messaging.NonBlockingChannels;
-import org.neo4j.coreedge.messaging.SenderService;
+import org.neo4j.coreedge.core.server.CoreServerModule;
+import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
+import org.neo4j.coreedge.core.state.storage.MemberIdStorage;
+import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.procedures.AcquireEndpointsProcedure;
 import org.neo4j.coreedge.discovery.procedures.ClusterOverviewProcedure;
+import org.neo4j.coreedge.discovery.procedures.CoreRoleProcedure;
 import org.neo4j.coreedge.discovery.procedures.DiscoverMembersProcedure;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.MemberId.MemberIdMarshal;
 import org.neo4j.coreedge.logging.BetterMessageLogger;
 import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.logging.NullMessageLogger;
+import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
+import org.neo4j.coreedge.messaging.LoggingOutbound;
+import org.neo4j.coreedge.messaging.NonBlockingChannels;
+import org.neo4j.coreedge.messaging.Outbound;
+import org.neo4j.coreedge.messaging.RaftChannelInitializer;
+import org.neo4j.coreedge.messaging.RaftOutbound;
+import org.neo4j.coreedge.messaging.SenderService;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -79,6 +79,7 @@ import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -125,8 +126,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         }
     }
 
-    EnterpriseCoreEditionModule( final PlatformModule platformModule, DiscoveryServiceFactory
-            discoveryServiceFactory )
+    EnterpriseCoreEditionModule( final PlatformModule platformModule,
+            final DiscoveryServiceFactory discoveryServiceFactory )
     {
         final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
@@ -142,10 +143,20 @@ public class EnterpriseCoreEditionModule extends EditionModule
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
 
+        TransactionIdStore offlineTxIdStore;
+        try
+        {
+            offlineTxIdStore = new ReadOnlyTransactionIdStore( platformModule.pageCache, storeDir );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, copiedStoreRecovery,
-                new StoreFiles( new DefaultFileSystemAbstraction() ),
-                platformModule.dataSourceManager,
-                platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier,
+                new StoreFiles( new DefaultFileSystemAbstraction() ), platformModule.dataSourceManager,
+                platformModule.dependencies.provideDependency( TransactionIdStore.class ), () -> offlineTxIdStore,
+                databaseHealthSupplier,
                 logProvider );
 
         life.add( localDatabase );
@@ -190,8 +201,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>(
                 raftOutbound, myself, messageLogger );
 
-        consensusModule =
-                new ConsensusModule( myself, platformModule, raftOutbound, clusterStateDirectory, discoveryService );
+        consensusModule = new ConsensusModule( myself, platformModule, raftOutbound, clusterStateDirectory, discoveryService );
 
         dependencies.satisfyDependency( consensusModule.raftMachine() );
 

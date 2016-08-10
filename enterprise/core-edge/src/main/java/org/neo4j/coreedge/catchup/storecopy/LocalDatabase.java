@@ -41,53 +41,60 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
     private final CopiedStoreRecovery copiedStoreRecovery;
     private final StoreFiles storeFiles;
     private final DataSourceManager dataSourceManager;
-    private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
+    private final Supplier<TransactionIdStore> onlineTxIdStoreSupplier;
+    private final Supplier<TransactionIdStore> offlineTxIdStoreSupplier;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
+    private final Log log;
 
     private volatile StoreId storeId;
     private volatile DatabaseHealth databaseHealth;
-    private final Log log;
+    private boolean started;
 
     public LocalDatabase( File storeDir, CopiedStoreRecovery copiedStoreRecovery, StoreFiles storeFiles,
-                          DataSourceManager dataSourceManager, Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                          Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
+            DataSourceManager dataSourceManager, Supplier<TransactionIdStore> onlineTxIdStoreSupplier,
+            Supplier<TransactionIdStore> offlineTxIdStoreSupplier, Supplier<DatabaseHealth> databaseHealthSupplier,
+            LogProvider logProvider )
     {
         this.storeDir = storeDir;
         this.copiedStoreRecovery = copiedStoreRecovery;
         this.storeFiles = storeFiles;
         this.dataSourceManager = dataSourceManager;
-        this.transactionIdStoreSupplier = transactionIdStoreSupplier;
+        this.onlineTxIdStoreSupplier = onlineTxIdStoreSupplier;
+        this.offlineTxIdStoreSupplier = offlineTxIdStoreSupplier;
         this.databaseHealthSupplier = databaseHealthSupplier;
-        log = logProvider.getLog( getClass() );
+
         this.storeId = StoreId.DEFAULT;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
-    public void init() throws Throwable
+    public synchronized void init() throws Throwable
     {
         dataSourceManager.init();
     }
 
     @Override
-    public void start() throws Throwable
+    public synchronized void start() throws Throwable
     {
         dataSourceManager.start();
         org.neo4j.kernel.impl.store.StoreId kernelStoreId = dataSourceManager.getDataSource().getStoreId();
         storeId = new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
                 kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
         log.info( "My StoreId is: " + storeId );
+        started = true;
     }
 
     @Override
-    public void stop() throws Throwable
+    public synchronized void stop() throws Throwable
     {
-        this.storeId = StoreId.DEFAULT;
-        this.databaseHealth = null;
+        storeId = StoreId.DEFAULT;
+        databaseHealth = null;
         dataSourceManager.stop();
+        started = false;
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public synchronized void shutdown() throws Throwable
     {
         dataSourceManager.shutdown();
     }
@@ -116,7 +123,7 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         return databaseHealth;
     }
 
-    public void copyStoreFrom( MemberId from, StoreFetcher storeFetcher ) throws StoreCopyFailedException
+    public synchronized void copyStoreFrom( MemberId from, StoreFetcher storeFetcher ) throws StoreCopyFailedException
     {
         try
         {
@@ -132,9 +139,10 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         }
     }
 
-    public boolean isEmpty()
+    public synchronized boolean isEmpty()
     {
-        return transactionIdStoreSupplier.get().getLastCommittedTransactionId() == TransactionIdStore.BASE_TX_ID;
+        TransactionIdStore txIdStore = started ? onlineTxIdStoreSupplier.get() : offlineTxIdStoreSupplier.get();
+        return txIdStore.getLastCommittedTransactionId() <= TransactionIdStore.BASE_TX_ID;
     }
 
     @Override

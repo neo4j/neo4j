@@ -106,9 +106,8 @@ public class CoreStateMachinesModule
 
             idAllocationState = life.add(
                     new DurableStateStorage<>( fileSystem, clusterStateDirectory, ID_ALLOCATION_NAME,
-                            new IdAllocationState.Marshal(),
-                            config.get( CoreEdgeClusterSettings.id_alloc_state_size ), databaseHealthSupplier,
-                            logProvider ) );
+                            new IdAllocationState.Marshal(), config.get( CoreEdgeClusterSettings.id_alloc_state_size ),
+                            databaseHealthSupplier, logProvider ) );
         }
         catch ( IOException e )
         {
