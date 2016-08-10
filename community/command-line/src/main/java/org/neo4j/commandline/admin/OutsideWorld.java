@@ -19,7 +19,13 @@
  */
 package org.neo4j.commandline.admin;
 
-public interface Output
+public interface OutsideWorld
 {
-    void line( String text );
+    void stdOutLine( String text );
+
+    void stdErrLine( String text );
+
+    void exit( int status );
+
+    void printStacktrace( Exception exception );
 }

@@ -30,6 +30,7 @@ import java.util.Optional;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.coreedge.convert.ConversionVerifier;
 import org.neo4j.coreedge.convert.ConvertClassicStoreToCoreCommand;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -71,7 +72,7 @@ public class RestoreExistingClusterCli implements AdminCommand
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir )
+        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return new RestoreExistingClusterCli( homeDir, configDir );
         }

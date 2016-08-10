@@ -19,10 +19,29 @@
  */
 package org.neo4j.commandline.admin;
 
-/**
- * The result of an admin command execution, with a delayed program termination action.
- */
-public interface Result
+class RealOutsideWorld implements OutsideWorld
 {
-    void exit();
+    @Override
+    public void stdOutLine( String text )
+    {
+        System.out.println( text );
+    }
+
+    @Override
+    public void stdErrLine( String text )
+    {
+        System.err.println( text );
+    }
+
+    @Override
+    public void exit( int status )
+    {
+        System.exit( status );
+    }
+
+    @Override
+    public void printStacktrace( Exception exception )
+    {
+        exception.printStackTrace();
+    }
 }

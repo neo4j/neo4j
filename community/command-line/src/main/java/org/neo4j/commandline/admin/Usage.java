@@ -19,56 +19,55 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.util.function.Consumer;
+
 import static java.lang.String.format;
 import static org.neo4j.helpers.Args.splitLongLine;
 
 public class Usage
 {
     private final String scriptName;
-    private final Output out;
     private final CommandLocator commands;
 
-    public Usage( String scriptName, Output out, CommandLocator commands )
+    public Usage( String scriptName, CommandLocator commands )
     {
         this.scriptName = scriptName;
-        this.out = out;
         this.commands = commands;
     }
 
-    public void print()
+    public void print( Consumer<String> output )
     {
-        out.line( "Usage:" );
-        out.line( "" );
+        output.accept( "Usage:" );
+        output.accept( "" );
 
         for ( AdminCommand.Provider command : commands.getAllProviders() )
         {
-            new CommandUsage( command, out, scriptName ).print();
+            final CommandUsage commandUsage = new CommandUsage( command, scriptName );
+            commandUsage.print( output );
         }
     }
 
     public static class CommandUsage
     {
         private final AdminCommand.Provider command;
-        private final Output out;
         private final String scriptName;
 
-        public CommandUsage( AdminCommand.Provider command, Output out, String scriptName )
+        public CommandUsage( AdminCommand.Provider command, String scriptName )
         {
             this.command = command;
-            this.out = out;
             this.scriptName = scriptName;
         }
 
-        public void print()
+        public void print( Consumer<String> output )
         {
             String arguments = command.arguments().map( ( s ) -> " " + s ).orElse( "" );
-            out.line( format( "%s %s%s", scriptName, command.name(), arguments ) );
-            out.line( "" );
+            output.accept( format( "%s %s%s", scriptName, command.name(), arguments ) );
+            output.accept( "" );
             for ( String line : splitLongLine( command.description(), 80 ) )
             {
-                out.line( "    " + line );
+                output.accept( "    " + line );
             }
-            out.line( "" );
+            output.accept( "" );
         }
     }
 }
