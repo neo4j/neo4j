@@ -31,6 +31,8 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Args;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
@@ -55,7 +57,7 @@ public class SetPasswordCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "<username> <password>" );
+            return Optional.of( "--create <username> <password>" );
         }
 
         @Override
@@ -83,12 +85,15 @@ public class SetPasswordCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        if ( args.length < 2 )
+        Args parsedArgs = Args.parse( args );
+        if ( parsedArgs.orphans().size() < 2 )
         {
             throw new IncorrectUsage( "Missing arguments: expected username and password" );
         }
-        String username = args[0];
-        String password = args[1];
+
+        String username = parsedArgs.orphans().get( 0 );
+        String password = parsedArgs.orphans().get( 1 );
+        boolean shouldCreate = parsedArgs.asMap().containsKey( "create" );
         try
         {
             Config config = loadNeo4jConfig( homeDir, configDir );
@@ -98,7 +103,19 @@ public class SetPasswordCommand implements AdminCommand
             userRepository.start();
             PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
             BasicAuthManager authManager = new BasicAuthManager( userRepository, passwordPolicy, systemUTC() );
-            authManager.setUserPassword( username, password );
+            try
+            {
+                authManager.setUserPassword( username, password );
+            }
+            catch ( InvalidArgumentsException e )
+            {
+                if ( shouldCreate )
+                {
+                    authManager.getUserManager().newUser( username, password, false );
+                } else {
+                    throw e;
+                }
+            }
         }
         catch ( Exception e )
         {
@@ -106,7 +123,8 @@ public class SetPasswordCommand implements AdminCommand
         }
         catch ( Throwable t )
         {
-            throw new CommandFailed( "Failed to set password for '" + username + "': " + t.getMessage(), new RuntimeException(t.getMessage()) );
+            throw new CommandFailed( "Failed to set password for '" + username + "': " + t.getMessage(),
+                    new RuntimeException( t.getMessage() ) );
         }
     }
 
