@@ -42,7 +42,6 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
     private final FileSystemAbstraction fsa;
     private final String name;
     private final StateMarshal<STATE> marshal;
-    private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final int numberOfEntriesBeforeRotation;
 
     private int numberOfEntriesWrittenInActiveFile;
@@ -50,26 +49,18 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
 
     private PhysicalFlushableChannel currentStoreChannel;
 
-    static File stateDir( File baseDir, String name )
-    {
-        return new File( baseDir, name + "-state" );
-    }
-
-    public DurableStateStorage( FileSystemAbstraction fsa, File baseDir, String name,
-            StateMarshal<STATE> marshal, int numberOfEntriesBeforeRotation,
-            Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
-            throws IOException
-            // TODO Move file opening to start-time so that constructor doesn't need to throw exceptions
+    public DurableStateStorage( FileSystemAbstraction fsa, File baseDir, String name, StateMarshal<STATE> marshal,
+            int numberOfEntriesBeforeRotation, LogProvider logProvider ) throws IOException
     {
         this.fsa = fsa;
         this.name = name;
         this.marshal = marshal;
         this.numberOfEntriesBeforeRotation = numberOfEntriesBeforeRotation;
-        this.databaseHealthSupplier = databaseHealthSupplier;
         this.log = logProvider.getLog( getClass() );
         this.recoveryManager = new StateRecoveryManager<>( fsa, marshal );
-        this.fileA = new File( stateDir( baseDir, name ), name + ".a" );
-        this.fileB = new File( stateDir( baseDir, name ), name + ".b" );
+        File parent = stateDir( baseDir, name );
+        this.fileA = new File( parent, name + ".a" );
+        this.fileB = new File( parent, name + ".b" );
     }
 
     private void create() throws IOException
@@ -140,7 +131,6 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
         }
         catch ( IOException e )
         {
-            databaseHealthSupplier.get().panic( e );
             throw e;
         }
     }
@@ -165,5 +155,10 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
     {
         fsa.truncate( nextStore, 0 );
         return new PhysicalFlushableChannel( fsa.open( nextStore, "rw" ) );
+    }
+
+    static File stateDir( File baseDir, String name )
+    {
+        return new File( baseDir, name + "-state" );
     }
 }

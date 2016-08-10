@@ -22,15 +22,12 @@ package org.neo4j.coreedge.core.state.machines.locks;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.function.Supplier;
-
 import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
 import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
 import org.neo4j.coreedge.core.state.storage.StateMarshal;
 import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TargetDirectory;
@@ -195,7 +192,7 @@ public class ReplicatedLockTokenStateMachineTest
         int candidateId;
 
         DurableStateStorage<ReplicatedLockTokenState> storage = new DurableStateStorage<>( fsa, testDir.directory(),
-                "state", marshal, 100, health(), NullLogProvider.getInstance() );
+                "state", marshal, 100, NullLogProvider.getInstance() );
         try ( Lifespan lifespan = new Lifespan( storage ) )
         {
             ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine( storage );
@@ -212,8 +209,7 @@ public class ReplicatedLockTokenStateMachineTest
 
         // then
         DurableStateStorage<ReplicatedLockTokenState> storage2 = new DurableStateStorage<>(
-                fsa, testDir.directory(), "state", marshal, 100,
-                health(), NullLogProvider.getInstance() );
+                fsa, testDir.directory(), "state", marshal, 100, NullLogProvider.getInstance() );
         try ( Lifespan lifespan = new Lifespan( storage2 ) )
         {
             ReplicatedLockTokenState initialState = storage2.getInitialState();
@@ -234,7 +230,7 @@ public class ReplicatedLockTokenStateMachineTest
                 new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() );
 
         DurableStateStorage<ReplicatedLockTokenState> storage = new DurableStateStorage<>( fsa, testDir.directory(),
-                "state", marshal, 100, health(), NullLogProvider.getInstance() );
+                "state", marshal, 100, NullLogProvider.getInstance() );
 
         try ( Lifespan lifespan = new Lifespan( storage ) )
         {
@@ -274,12 +270,5 @@ public class ReplicatedLockTokenStateMachineTest
         LockToken initialToken = stateMachine.currentToken();
         assertEquals( initialState.get().owner(), initialToken.owner() );
         assertEquals( initialState.get().id(), initialToken.id() );
-    }
-
-    private Supplier<DatabaseHealth> health()
-    {
-        @SuppressWarnings( "unchecked" )
-        Supplier<DatabaseHealth> mock = mock( Supplier.class );
-        return mock;
     }
 }

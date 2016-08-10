@@ -197,10 +197,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         ReplicationModule replicationModule = new ReplicationModule( myself, platformModule, config, consensusModule,
                 loggingOutbound, clusterStateDirectory,
-                fileSystem, databaseHealthSupplier, logProvider );
+                fileSystem, logProvider );
 
-        coreStateMachinesModule = new CoreStateMachinesModule( myself, platformModule, clusterStateDirectory,
-                databaseHealthSupplier, config, replicationModule.getReplicator(), consensusModule.raftMachine(),
+        coreStateMachinesModule = new CoreStateMachinesModule( myself, platformModule, clusterStateDirectory, config, replicationModule.getReplicator(), consensusModule.raftMachine(),
                 dependencies, localDatabase );
 
         this.idGeneratorFactory = coreStateMachinesModule.idGeneratorFactory;

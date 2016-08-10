@@ -21,31 +21,30 @@ package org.neo4j.coreedge.core.state.machines;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
-import org.neo4j.coreedge.core.state.storage.StateStorage;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.replication.RaftReplicator;
 import org.neo4j.coreedge.core.replication.Replicator;
+import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.core.state.machines.id.ReplicatedIdRangeAcquirer;
+import org.neo4j.coreedge.core.state.machines.locks.LeaderOnlyLockManager;
+import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenState;
+import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedLabelTokenHolder;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedPropertyKeyTokenHolder;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedRelationshipTypeTokenHolder;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedTokenStateMachine;
 import org.neo4j.coreedge.core.state.machines.token.TokenRegistry;
+import org.neo4j.coreedge.core.state.machines.tx.RecoverTransactionLogState;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransactionCommitProcess;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransactionStateMachine;
-import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
+import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.core.state.machines.tx.RecoverTransactionLogState;
-import org.neo4j.coreedge.core.state.machines.locks.LeaderOnlyLockManager;
-import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenState;
-import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -63,7 +62,6 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.Token;
@@ -85,9 +83,8 @@ public class CoreStateMachinesModule
     public final CoreStateMachines coreStateMachines;
 
     public CoreStateMachinesModule( MemberId myself, PlatformModule platformModule, File clusterStateDirectory,
-                                    Supplier<DatabaseHealth> databaseHealthSupplier, Config config,
-                                    RaftReplicator replicator, LeaderLocator leaderLocator,
-                                    Dependencies dependencies, LocalDatabase localDatabase )
+            Config config, RaftReplicator replicator, LeaderLocator leaderLocator, Dependencies dependencies,
+            LocalDatabase localDatabase )
     {
         StateStorage<IdAllocationState> idAllocationState;
         StateStorage<ReplicatedLockTokenState> lockTokenState;
@@ -101,14 +98,12 @@ public class CoreStateMachinesModule
             lockTokenState = life.add(
                     new DurableStateStorage<>( fileSystem, clusterStateDirectory, LOCK_TOKEN_NAME,
                             new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() ),
-                            config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ),
-                            databaseHealthSupplier, logProvider ) );
+                            config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ), logProvider ) );
 
             idAllocationState = life.add(
                     new DurableStateStorage<>( fileSystem, clusterStateDirectory, ID_ALLOCATION_NAME,
                             new IdAllocationState.Marshal(),
-                            config.get( CoreEdgeClusterSettings.id_alloc_state_size ), databaseHealthSupplier,
-                            logProvider ) );
+                            config.get( CoreEdgeClusterSettings.id_alloc_state_size ), logProvider ) );
         }
         catch ( IOException e )
         {
