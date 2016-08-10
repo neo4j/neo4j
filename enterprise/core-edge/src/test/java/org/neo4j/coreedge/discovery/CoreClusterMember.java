@@ -53,7 +53,7 @@ public class CoreClusterMember
     private final int serverId;
     private CoreGraphDatabase database;
 
-    public static final String CLUSTER_NAME = "core-neo4j";
+    static final String CLUSTER_NAME = "core-neo4j";
 
     public CoreClusterMember( int serverId, int clusterSize,
                               List<AdvertisedSocketAddress> addresses,
@@ -77,7 +77,7 @@ public class CoreClusterMember
         params.put( CoreEdgeClusterSettings.cluster_name.name(), CLUSTER_NAME );
         params.put( CoreEdgeClusterSettings.initial_core_cluster_members.name(), initialMembers );
         params.put( GraphDatabaseSettings.record_format.name(), recordFormat );
-        params.put( CoreEdgeClusterSettings.cluster_listen_address.name(), "localhost:" + clusterPort );
+        params.put( CoreEdgeClusterSettings.hazelcast_listen_address.name(), "localhost:" + clusterPort );
         params.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "localhost:" + txPort );
         params.put( CoreEdgeClusterSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
         params.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "localhost:" + raftPort );

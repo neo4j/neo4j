@@ -46,7 +46,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description("Settings for Core-Edge Clusters")
 public class CoreEdgeClusterSettings
 {
-    public static final Function<String, ListenSocketAddress> LISTEN_SOCKET_ADDRESS = new Function<String,
+    private static final Function<String, ListenSocketAddress> LISTEN_SOCKET_ADDRESS = new Function<String,
             ListenSocketAddress>()
     {
         @Override
@@ -63,7 +63,7 @@ public class CoreEdgeClusterSettings
         }
     };
 
-    public static final Function<String, AdvertisedSocketAddress> ADVERTISED_SOCKET_ADDRESS = new Function<String,
+    private static final Function<String, AdvertisedSocketAddress> ADVERTISED_SOCKET_ADDRESS = new Function<String,
             AdvertisedSocketAddress>()
     {
         @Override
@@ -121,25 +121,25 @@ public class CoreEdgeClusterSettings
     public static final Setting<Long> lock_read_timeout =
             setting( "core_edge.lock_read_timeout", DURATION, "20s" );
 
-    @Description("Network interface and port for the RAFT server to listen on.")
+    @Description("Network interface and port for the transaction shipping server to listen on.")
     public static final Setting<ListenSocketAddress> transaction_listen_address =
-            setting( "core_edge.transaction_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:6001" );
+            setting( "core_edge.transaction_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:6000" );
 
-    @Description("Hostname/IP address and port that other RAFT servers can use to communicate with us.")
+    @Description("Hostname/IP address and port for the transaction shipping server to listen on.")
     public static final Setting<AdvertisedSocketAddress> transaction_advertised_address =
-            setting( "core_edge.transaction_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:6001" );
+            setting( "core_edge.transaction_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:6000" );
 
     @Description("Network interface and port for the RAFT server to listen on.")
     public static final Setting<ListenSocketAddress> raft_listen_address =
-            setting( "core_edge.raft_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:7400" );
+            setting( "core_edge.raft_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:7000" );
 
-    @Description("Hostname/IP address and port that other RAFT servers can use to communicate with us.")
+    @Description("Hostname/IP address and port for the RAFT server to listen on.")
     public static final Setting<AdvertisedSocketAddress> raft_advertised_address =
-            setting( "core_edge.raft_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7400" );
+            setting( "core_edge.raft_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7000" );
 
     @Description("Host and port to bind the cluster management communication.")
-    public static final Setting<ListenSocketAddress> cluster_listen_address =
-            setting( "core_edge.cluster_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5001" );
+    public static final Setting<ListenSocketAddress> hazelcast_listen_address =
+            setting( "core_edge.hazelcast_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5000" );
 
     @Description("A comma-separated list of other members of the cluster to join.")
     public static final Setting<List<AdvertisedSocketAddress>> initial_core_cluster_members =
