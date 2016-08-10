@@ -32,10 +32,12 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
@@ -91,8 +93,37 @@ public class BuiltInProcedures
     }
 
     @Procedure(name = "db.awaitIndex", mode = READ)
-    public void awaitIndex()
+    public Stream<IndexResult> awaitIndex( @Name("label") String labelName, @Name("property") String propertyKeyName )
+            throws ProcedureException
+
     {
+        ReadOperations operations = tx.acquireStatement().readOperations();
+        TokenNameLookup tokens = new StatementTokenNameLookup( operations );
+
+        int labelId = operations.labelGetForName( labelName );
+        if ( labelId == ReadOperations.NO_SUCH_LABEL )
+        {
+            throw new ProcedureException( Status.Schema.LabelAccessFailed, "No such label %s", labelName );
+        }
+
+        int propertyKeyId = operations.propertyKeyGetForName( propertyKeyName );
+        if ( propertyKeyId == ReadOperations.NO_SUCH_PROPERTY_KEY )
+        {
+            throw new ProcedureException( Status.Schema.PropertyKeyAccessFailed, "No such property key %s",
+                    propertyKeyName );
+        }
+
+        try
+        {
+            IndexDescriptor index = operations.indexGetForLabelAndPropertyKey( labelId, propertyKeyId );
+            return Stream.of( new IndexResult( "INDEX ON " + index.userDescription( tokens ),
+                    operations.indexGetState( index ).toString() ) );
+        }
+        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No index on :%s(%s)", labelName,
+                    propertyKeyName );
+        }
     }
 
     @Procedure(name = "db.constraints", mode = READ)

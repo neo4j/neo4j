@@ -143,7 +143,7 @@ public class BuiltInProceduresTest
     {
         // When/Then
         assertThat( call( "dbms.procedures" ), contains(
-            record( "db.awaitIndex", "db.awaitIndex() :: VOID" ),
+            record( "db.awaitIndex", "db.awaitIndex(label :: STRING?, property :: STRING?) :: (description :: STRING?, state :: STRING?)" ),
             record( "db.constraints", "db.constraints() :: (description :: STRING?)" ),
             record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?)" ),
             record( "db.labels", "db.labels() :: (label :: STRING?)" ),
