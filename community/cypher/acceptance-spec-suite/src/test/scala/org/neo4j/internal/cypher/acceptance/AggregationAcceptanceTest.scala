@@ -21,9 +21,9 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
-// TODO: Move to openCypher
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
+  // Non-deterministic query -- needs TCK design
   test("should aggregate using as grouping key expressions using variables in scope and nothing else") {
     val userId = createLabeledNode(Map("userId" -> 11), "User")
     relate(userId, createNode(), "FRIEND", Map("propFive" -> 1))
@@ -32,20 +32,21 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     relate(createNode(), userId, "FRIEND", Map("propFive" -> 4))
 
     val query1 = """MATCH (user:User {userId: 11})-[friendship:FRIEND]-()
-                   |WITH user, collect(friendship)[toInt(rand() * count(friendship))] AS selectedFriendship
+                   |WITH user, collect(friendship)[toInt({param} * count(friendship))] AS selectedFriendship
                    |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin
     val query2 = """MATCH (user:User {userId: 11})-[friendship:FRIEND]-()
                    |WITH user, collect(friendship) AS friendships
-                   |WITH user, friendships[toInt(rand() * size(friendships))] AS selectedFriendship
+                   |WITH user, friendships[toInt({param} * size(friendships))] AS selectedFriendship
                    |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin
+    val params = "param" -> 3
 
-    // TODO: this can be executed with the compatibility mode when we'll depend on the 2.3.4 cypher-compiler
-    val result1 = executeWithCostPlannerOnly(query1).toList
-    val result2 = executeWithCostPlannerOnly(query2).toList
+    val result1 = executeWithAllPlannersAndCompatibilityMode(query1, params).toList
+    val result2 = executeWithAllPlannersAndCompatibilityMode(query2, params).toList
 
     result1.size should equal(result2.size)
   }
 
+  // TCK'd
   test("max() should aggregate strings") {
     val query = "UNWIND ['a', 'b', 'B', null, 'abc', 'abc1'] AS i RETURN max(i)"
 
@@ -54,6 +55,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     result.toList should equal(List(Map("max(i)" -> "b")))
   }
 
+  // TCK'd
   test("min() should aggregate strings") {
     val query = "UNWIND ['a', 'b', 'B', null, 'abc', 'abc1'] AS i RETURN min(i)"
 

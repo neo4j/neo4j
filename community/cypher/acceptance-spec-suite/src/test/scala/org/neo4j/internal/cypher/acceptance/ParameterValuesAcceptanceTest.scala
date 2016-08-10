@@ -19,9 +19,32 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
-class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
+  // Not TCK material below; sending graph types or characters as parameters is not supported
+
+  test("should be able to send in node via parameter") {
+    // given
+    val node = createLabeledNode("Person")
+
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (b) WHERE b = {param} RETURN b", "param" -> node)
+    result.toList should equal(List(Map("b" -> node)))
+  }
+
+  test("should be able to send in relationship via parameter") {
+    // given
+    val rel = relate(createLabeledNode("Person"), createLabeledNode("Person"))
+
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (:Person)-[r]->(:Person) WHERE r = {param} RETURN r", "param" -> rel)
+    result.toList should equal(List(Map("r" -> rel)))
+  }
+
+  test("should treat chars as strings in equality") {
+    executeScalar[Boolean]("RETURN 'a' = {param}", "param" -> 'a') shouldBe true
+    executeScalar[Boolean]("RETURN {param} = 'a'", "param" -> 'a') shouldBe true
+  }
 
   test("removing property when not sure if it is a node or relationship should still work - NODE") {
     val n = createNode("name" -> "Anders")

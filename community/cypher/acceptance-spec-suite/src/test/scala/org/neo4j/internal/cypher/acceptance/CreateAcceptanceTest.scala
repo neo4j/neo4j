@@ -25,9 +25,9 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QuerySt
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport
   with CreateTempFileTestSupport {
 
-  //Not TCK material
+  // TCK'd
   test("create relationship with multiple hops and changing directions 2") {
-    val result = updateWithBothPlannersAndCompatibilityMode("CYPHER planner=rule CREATE (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C)")
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2, labelsAdded = 3)
 
