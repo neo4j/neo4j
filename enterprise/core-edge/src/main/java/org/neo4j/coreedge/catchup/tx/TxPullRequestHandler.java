@@ -19,10 +19,10 @@
  */
 package org.neo4j.coreedge.catchup.tx;
 
-import java.util.function.Supplier;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+
+import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
@@ -67,7 +67,15 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
         long endTxId = startTxId;
         boolean success = true;
 
-        if ( transactionIdStore.getLastCommittedTransactionId() > startTxId )
+        if ( !this.storeId.equals( msg.storeId() ) )
+        {
+            success = false;
+            log.info( "Failed to serve TxPullRequest for tx %d and storeId %s because that storeId is different " +
+                            "from this machine with %s",
+                    endTxId, msg.storeId(), this.storeId );
+        }
+
+        else if ( transactionIdStore.getLastCommittedTransactionId() > startTxId )
         {
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
                           logicalTransactionStore.getTransactions( startTxId + 1 ) )
