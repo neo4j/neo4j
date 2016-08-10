@@ -40,7 +40,8 @@ public class MemberIdStorage
     private final File file;
     private Log log;
 
-    public MemberIdStorage( FileSystemAbstraction fileSystem, File directory, String name, MemberId.MemberIdMarshal marshal, LogProvider logProvider )
+    public MemberIdStorage( FileSystemAbstraction fileSystem, File directory, String name,
+            MemberId.MemberIdMarshal marshal, LogProvider logProvider )
     {
         this.fileSystem = fileSystem;
         this.log = logProvider.getLog( getClass() );
@@ -48,9 +49,14 @@ public class MemberIdStorage
         this.marshal = marshal;
     }
 
+    public boolean exists()
+    {
+        return fileSystem.fileExists( file );
+    }
+
     public MemberId readState() throws IOException
     {
-        if ( fileSystem.fileExists( file ) )
+        if ( exists() )
         {
             try ( ReadableClosableChannel channel = new ReadAheadChannel<>( fileSystem.open( file, "r" ) ) )
             {

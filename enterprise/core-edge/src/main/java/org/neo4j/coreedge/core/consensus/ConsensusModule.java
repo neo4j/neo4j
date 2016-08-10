@@ -24,10 +24,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.function.Supplier;
 
-import org.neo4j.coreedge.discovery.CoreTopologyService;
-import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.EnterpriseCoreEditionModule;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.MonitoredRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
@@ -36,36 +35,34 @@ import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog;
 import org.neo4j.coreedge.core.consensus.membership.MemberIdSetBuilder;
 import org.neo4j.coreedge.core.consensus.membership.RaftMembershipManager;
-import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
-import org.neo4j.coreedge.messaging.LoggingOutbound;
-import org.neo4j.coreedge.messaging.Outbound;
-import org.neo4j.coreedge.messaging.RaftChannelInitializer;
-import org.neo4j.coreedge.messaging.RaftOutbound;
-import org.neo4j.coreedge.core.replication.SendToMyself;
+import org.neo4j.coreedge.core.consensus.membership.RaftMembershipState;
 import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.shipping.RaftLogShippingManager;
-import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
-import org.neo4j.coreedge.core.state.storage.StateStorage;
-import org.neo4j.coreedge.core.consensus.membership.RaftMembershipState;
 import org.neo4j.coreedge.core.consensus.term.MonitoredTermStateStorage;
 import org.neo4j.coreedge.core.consensus.term.TermState;
 import org.neo4j.coreedge.core.consensus.vote.VoteState;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.replication.SendToMyself;
+import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
+import org.neo4j.coreedge.core.state.storage.StateStorage;
+import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.NonBlockingChannels;
-import org.neo4j.coreedge.messaging.SenderService;
-import org.neo4j.coreedge.core.EnterpriseCoreEditionModule;
 import org.neo4j.coreedge.logging.BetterMessageLogger;
 import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.logging.NullMessageLogger;
+import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
+import org.neo4j.coreedge.messaging.LoggingOutbound;
+import org.neo4j.coreedge.messaging.NonBlockingChannels;
+import org.neo4j.coreedge.messaging.Outbound;
+import org.neo4j.coreedge.messaging.RaftChannelInitializer;
+import org.neo4j.coreedge.messaging.RaftOutbound;
+import org.neo4j.coreedge.messaging.SenderService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
@@ -83,18 +80,15 @@ public class ConsensusModule
     private final DelayedRenewableTimeoutService raftTimeoutService;
     private final RaftMembershipManager raftMembershipManager;
 
-    public ConsensusModule( MemberId myself, final PlatformModule platformModule,
-                            RaftOutbound raftOutbound, File clusterStateDirectory,
-                            CoreTopologyService discoveryService )
+    public ConsensusModule( MemberId myself, final PlatformModule platformModule, RaftOutbound raftOutbound,
+            File clusterStateDirectory, CoreTopologyService discoveryService )
     {
-        final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
         final LogService logging = platformModule.logging;
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
         final LifeSupport life = platformModule.life;
 
         LogProvider logProvider = logging.getInternalLogProvider();
-        final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
         final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
@@ -131,21 +125,19 @@ public class ConsensusModule
         {
             StateStorage<TermState> durableTermState = life.add(
                     new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_TERM_NAME,
-                            new TermState.Marshal(), config.get( CoreEdgeClusterSettings.term_state_size ),
-                            databaseHealthSupplier, logProvider ) );
+                            new TermState.Marshal(), config.get( CoreEdgeClusterSettings.term_state_size ), logProvider ) );
 
             termState = new MonitoredTermStateStorage( durableTermState, platformModule.monitors );
 
             voteState = life.add(
                     new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_VOTE_NAME,
                             new VoteState.Marshal( new MemberId.MemberIdMarshal() ),
-                            config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
-                            logProvider ) );
+                            config.get( CoreEdgeClusterSettings.vote_state_size ), logProvider ) );
 
             raftMembershipStorage = life.add(
                     new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_MEMBERSHIP_NAME,
                             new RaftMembershipState.Marshal(), config.get( CoreEdgeClusterSettings.raft_membership_state_size ),
-                            databaseHealthSupplier, logProvider ) );
+                            logProvider ) );
         }
         catch ( IOException e )
         {

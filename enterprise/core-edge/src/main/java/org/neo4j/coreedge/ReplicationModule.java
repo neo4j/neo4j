@@ -22,11 +22,10 @@ package org.neo4j.coreedge;
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
-import java.util.function.Supplier;
 
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.consensus.ConsensusModule;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
-import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.core.replication.ProgressTrackerImpl;
 import org.neo4j.coreedge.core.replication.RaftReplicator;
 import org.neo4j.coreedge.core.replication.session.GlobalSession;
@@ -34,12 +33,11 @@ import org.neo4j.coreedge.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.core.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.core.state.machines.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 
@@ -54,9 +52,9 @@ public class ReplicationModule
     private final ProgressTrackerImpl progressTracker;
     private final SessionTracker sessionTracker;
 
-    public ReplicationModule( MemberId myself, PlatformModule platformModule, Config config, ConsensusModule consensusModule,
-                              Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound, File clusterStateDirectory,
-                              FileSystemAbstraction fileSystem, Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
+    public ReplicationModule( MemberId myself, PlatformModule platformModule, Config config,
+            ConsensusModule consensusModule, Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound,
+            File clusterStateDirectory, FileSystemAbstraction fileSystem, LogProvider logProvider )
     {
         LifeSupport life = platformModule.life;
 
@@ -65,8 +63,7 @@ public class ReplicationModule
         {
             sessionTrackerStorage = life.add( new DurableStateStorage<>( fileSystem, clusterStateDirectory,
                     SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new MemberId.MemberIdMarshal() ),
-                    config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ), databaseHealthSupplier,
-                    logProvider ) );
+                    config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ), logProvider ) );
         }
         catch ( IOException e )
         {

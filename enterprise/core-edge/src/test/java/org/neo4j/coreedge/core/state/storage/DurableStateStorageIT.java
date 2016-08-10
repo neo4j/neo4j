@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.function.Supplier;
 
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.MethodGuardedAdversary;
@@ -35,11 +34,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -292,14 +287,9 @@ public class DurableStateStorageIT
                 }
             };
 
-            Supplier<DatabaseHealth> databaseHealthSupplier = () -> new DatabaseHealth( new
-                    DatabasePanicEventGenerator( new KernelEventHandlers( NullLog
-                    .getInstance() ) ), NullLog.getInstance() );
             this.stateStorage = lifeSupport.add( new DurableStateStorage<>( fileSystemAbstraction, stateDir, FILENAME,
                     byteBufferMarshal,
-                    numberOfEntriesBeforeRotation,
-                    databaseHealthSupplier,
-                    NullLogProvider.getInstance()
+                    numberOfEntriesBeforeRotation, NullLogProvider.getInstance()
             ) );
 
             this.theState = this.stateStorage.getInitialState();

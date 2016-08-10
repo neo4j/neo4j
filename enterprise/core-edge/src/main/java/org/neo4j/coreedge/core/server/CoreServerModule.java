@@ -23,18 +23,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.coreedge.ReplicationModule;
 import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
+import org.neo4j.coreedge.catchup.CoreToCoreClient;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.CoreToCoreClient;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyClient;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
 import org.neo4j.coreedge.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.TxPullClient;
-import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.consensus.ConsensusModule;
 import org.neo4j.coreedge.core.consensus.ContinuousJob;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
@@ -43,22 +42,23 @@ import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.pruning.PruningScheduler;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.consensus.membership.MembershipWaiter;
-import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
-import org.neo4j.coreedge.messaging.LoggingInbound;
+import org.neo4j.coreedge.core.consensus.membership.MembershipWaiterLifecycle;
+import org.neo4j.coreedge.core.state.CommandApplicationProcess;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.core.state.CoreStateApplier;
+import org.neo4j.coreedge.core.state.LongIndexMarshal;
+import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.coreedge.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
-import org.neo4j.coreedge.core.state.LongIndexMarshal;
 import org.neo4j.coreedge.core.state.storage.StateStorage;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
+import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.NonBlockingChannels;
-import org.neo4j.coreedge.core.consensus.membership.MembershipWaiterLifecycle;
-import org.neo4j.coreedge.messaging.routing.NotMyselfSelectionStrategy;
 import org.neo4j.coreedge.logging.MessageLogger;
-import org.neo4j.coreedge.core.state.CommandApplicationProcess;
+import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
+import org.neo4j.coreedge.messaging.LoggingInbound;
+import org.neo4j.coreedge.messaging.NonBlockingChannels;
+import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
+import org.neo4j.coreedge.messaging.routing.NotMyselfSelectionStrategy;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -99,7 +99,7 @@ public class CoreServerModule
             lastFlushedStorage = life.add(
                     new DurableStateStorage<>( fileSystem, clusterStateDirectory, ReplicationModule.LAST_FLUSHED_NAME,
                             new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
-                            databaseHealthSupplier, logProvider ) );
+                            logProvider ) );
         }
         catch ( IOException e )
         {
