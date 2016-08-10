@@ -64,6 +64,7 @@ public class DumpClusterState
         if ( args.length != 1 )
         {
             System.out.println( "usage: DumpClusterState <graph.db>" );
+            System.exit( 1 );
         }
 
         DumpClusterState dumpTool = new DumpClusterState(
