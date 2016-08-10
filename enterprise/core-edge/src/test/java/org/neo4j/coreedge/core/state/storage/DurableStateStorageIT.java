@@ -79,7 +79,7 @@ public class DurableStateStorageIT
             ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "writeAll" );
         }
 
-        try( LongState restoredState = new LongState( delegate, testDir.directory(), 4 ) )
+        try ( LongState restoredState = new LongState( delegate, testDir.directory(), 4 ) )
         {
             assertEquals( lastValue, restoredState.getTheState() );
         }
@@ -118,7 +118,7 @@ public class DurableStateStorageIT
             ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "truncate" );
         }
 
-        try( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
+        try ( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
         {
             assertEquals( lastValue, restoredState.getTheState() );
         }
@@ -161,7 +161,7 @@ public class DurableStateStorageIT
             ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "force" );
         }
 
-        try( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
+        try ( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
         {
             assertThat( restoredState.getTheState(), greaterThanOrEqualTo( lastValue ) );
         }
@@ -208,6 +208,23 @@ public class DurableStateStorageIT
     }
 
     @Test
+    public void shouldThrowExceptionIfExpectedFileDoesNotExist() throws Exception
+    {
+        // given
+        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+
+        //noinspection EmptyTryBlock
+        try ( LongState ignored = new LongState( fsa, testDir.directory(), 14, true ) )
+        {
+            fail();
+        }
+        catch ( Exception ignored )
+        {
+            // expected
+        }
+    }
+
+    @Test
     public void shouldProperlyRecoveryAfterCloseOnActiveFileDuringRotation() throws Exception
     {
         EphemeralFileSystemAbstraction normalFSA = new EphemeralFileSystemAbstraction();
@@ -235,7 +252,7 @@ public class DurableStateStorageIT
             ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "close" );
         }
 
-        try( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
+        try ( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
         {
             assertThat( restoredState.getTheState(), greaterThanOrEqualTo( lastValue ) );
         }
@@ -261,7 +278,13 @@ public class DurableStateStorageIT
         private LifeSupport lifeSupport = new LifeSupport();
 
         LongState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
-                   int numberOfEntriesBeforeRotation ) throws IOException
+                int numberOfEntriesBeforeRotation ) throws IOException
+        {
+            this( fileSystemAbstraction, stateDir, numberOfEntriesBeforeRotation, false );
+        }
+
+        LongState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
+                int numberOfEntriesBeforeRotation, boolean mustExist ) throws IOException
         {
             lifeSupport.start();
 
@@ -299,8 +322,8 @@ public class DurableStateStorageIT
                     byteBufferMarshal,
                     numberOfEntriesBeforeRotation,
                     databaseHealthSupplier,
-                    NullLogProvider.getInstance()
-            ) );
+                    NullLogProvider.getInstance(),
+                    mustExist ) );
 
             this.theState = this.stateStorage.getInitialState();
         }

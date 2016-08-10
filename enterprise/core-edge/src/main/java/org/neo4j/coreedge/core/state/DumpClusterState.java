@@ -101,7 +101,7 @@ public class DumpClusterState
     private void dumpState( String name, StateMarshal<?> marshal ) throws IOException
     {
         DurableStateStorage<?> storage = new DurableStateStorage<>(
-                fs, clusterStateDirectory, name, marshal, 1024, null, NullLogProvider.getInstance() );
+                fs, clusterStateDirectory, name, marshal, 1024, null, NullLogProvider.getInstance(), true );
 
         try ( Lifespan ignored = new Lifespan( storage ) )
         {
