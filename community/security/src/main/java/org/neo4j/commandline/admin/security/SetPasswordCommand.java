@@ -44,10 +44,10 @@ import static org.neo4j.dbms.DatabaseManagementSystemSettings.auth_store_directo
 
 public class SetPasswordCommand implements AdminCommand
 {
-    public class Provider extends AdminCommand.Provider
+    public static class Provider extends AdminCommand.Provider
     {
 
-        protected Provider()
+        public Provider()
         {
             super( "set-password" );
         }
