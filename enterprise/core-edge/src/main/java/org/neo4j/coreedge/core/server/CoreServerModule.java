@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.core.server;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
@@ -94,17 +93,10 @@ public class CoreServerModule
 
         StateStorage<Long> lastFlushedStorage;
 
-        try
-        {
-            lastFlushedStorage = life.add(
-                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, ReplicationModule.LAST_FLUSHED_NAME,
-                            new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
-                            databaseHealthSupplier, logProvider ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        lastFlushedStorage = life.add(
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, ReplicationModule.LAST_FLUSHED_NAME,
+                        new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
+                        databaseHealthSupplier, logProvider, false ) );
         consensusModule.raftMembershipManager().setRecoverFromIndexSupplier( lastFlushedStorage::getInitialState );
 
         ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );

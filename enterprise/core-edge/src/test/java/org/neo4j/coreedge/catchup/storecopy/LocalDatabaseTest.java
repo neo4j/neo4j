@@ -38,11 +38,18 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.function.Suppliers.singleton;
 
 public class LocalDatabaseTest
 {
+    private TransactionIdStore offlineTxIdStore = mock( TransactionIdStore.class );
+    private TransactionIdStore onlineTxIdStore = mock( TransactionIdStore.class );
+
     @Test
     public void shouldRetrieveStoreId() throws Throwable
     {
@@ -95,7 +102,7 @@ public class LocalDatabaseTest
         catch ( IllegalStateException ex )
         {
             assertThat( ex.getMessage(), containsString( "This edge machine cannot join the cluster. " +
-                    "The local database is not empty and has a mismatching storeId:" ) );
+                                                         "The local database is not empty and has a mismatching storeId:" ) );
         }
     }
 
@@ -185,6 +192,29 @@ public class LocalDatabaseTest
         assertEquals( copied, localDatabase.storeId() );
     }
 
+    @Test
+    public void shouldUseDifferentTxIdStoreSuppliersWhenStoppedAndStarted() throws Throwable
+    {
+        // given
+        LocalDatabase localDatabase = createLocalDatabase( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
+
+        // when
+        localDatabase.isEmpty();
+
+        // then
+        verify( offlineTxIdStore, times( 1 ) ).getLastCommittedTransactionId();
+        verify( onlineTxIdStore, never() ).getLastCommittedTransactionId();
+
+        // when
+        reset( offlineTxIdStore, onlineTxIdStore );
+        localDatabase.start();
+        localDatabase.isEmpty();
+
+        // then
+        verify( onlineTxIdStore, times( 1 ) ).getLastCommittedTransactionId();
+        verify( offlineTxIdStore, never() ).getLastCommittedTransactionId();
+    }
+
     private LocalDatabase createLocalDatabase( org.neo4j.kernel.impl.store.StoreId storeId )
     {
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
@@ -193,8 +223,8 @@ public class LocalDatabaseTest
         when( neoStoreDataSource.getStoreId() ).thenReturn( storeId );
         return new LocalDatabase( new File( "directory" ), mock( CopiedStoreRecovery.class ),
                 new StoreFiles( mock( FileSystemAbstraction.class ) ), dataSourceManager,
-                singleton( mock( TransactionIdStore.class ) ), () -> mock( DatabaseHealth.class ), NullLogProvider
-                .getInstance() );
+                singleton( onlineTxIdStore ), singleton( offlineTxIdStore ),
+                () -> mock( DatabaseHealth.class ), NullLogProvider.getInstance() );
     }
 
     private LocalDatabase createLocalDatabase( NeoStoreDataSource neoStoreDataSource )
@@ -203,7 +233,7 @@ public class LocalDatabaseTest
         when( dataSourceManager.getDataSource() ).thenReturn( neoStoreDataSource );
         return new LocalDatabase( new File( "directory" ), mock( CopiedStoreRecovery.class ),
                 new StoreFiles( mock( FileSystemAbstraction.class, RETURNS_MOCKS ) ), dataSourceManager,
-                singleton( mock( TransactionIdStore.class ) ), () -> mock( DatabaseHealth.class ), NullLogProvider
-                .getInstance() );
+                singleton( onlineTxIdStore ), singleton( offlineTxIdStore ),
+                () -> mock( DatabaseHealth.class ), NullLogProvider.getInstance() );
     }
 }

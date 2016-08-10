@@ -35,7 +35,7 @@ public class DurableStateStorageImporter<STATE> extends DurableStateStorage<STAT
             throws IOException
     {
         super( fileSystemAbstraction, stateDir, name, marshal, numberOfEntriesBeforeRotation, databaseHealthSupplier,
-                logProvider );
+                logProvider, false );
     }
 
     public void persist( STATE state ) throws IOException

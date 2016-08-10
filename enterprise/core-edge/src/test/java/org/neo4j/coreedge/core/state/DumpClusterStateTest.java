@@ -92,7 +92,7 @@ public class DumpClusterStateTest
     private <T> void createDurableState( String name, StateMarshal<T> marshal ) throws IOException
     {
         DurableStateStorage<T> storage = new DurableStateStorage<>(
-                fsa.get(), clusterStateDirectory, name, marshal, 1024, null, NullLogProvider.getInstance() );
+                fsa.get(), clusterStateDirectory, name, marshal, 1024, null, NullLogProvider.getInstance(), false );
 
         //noinspection EmptyTryBlock: Will create initial state.
         try ( Lifespan ignored = new Lifespan( storage ) )

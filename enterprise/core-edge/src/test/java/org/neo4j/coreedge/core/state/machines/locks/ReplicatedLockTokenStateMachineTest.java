@@ -195,7 +195,7 @@ public class ReplicatedLockTokenStateMachineTest
         int candidateId;
 
         DurableStateStorage<ReplicatedLockTokenState> storage = new DurableStateStorage<>( fsa, testDir.directory(),
-                "state", marshal, 100, health(), NullLogProvider.getInstance() );
+                "state", marshal, 100, health(), NullLogProvider.getInstance(), false );
         try ( Lifespan lifespan = new Lifespan( storage ) )
         {
             ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine( storage );
@@ -213,7 +213,7 @@ public class ReplicatedLockTokenStateMachineTest
         // then
         DurableStateStorage<ReplicatedLockTokenState> storage2 = new DurableStateStorage<>(
                 fsa, testDir.directory(), "state", marshal, 100,
-                health(), NullLogProvider.getInstance() );
+                health(), NullLogProvider.getInstance(), false );
         try ( Lifespan lifespan = new Lifespan( storage2 ) )
         {
             ReplicatedLockTokenState initialState = storage2.getInitialState();
@@ -234,7 +234,7 @@ public class ReplicatedLockTokenStateMachineTest
                 new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() );
 
         DurableStateStorage<ReplicatedLockTokenState> storage = new DurableStateStorage<>( fsa, testDir.directory(),
-                "state", marshal, 100, health(), NullLogProvider.getInstance() );
+                "state", marshal, 100, health(), NullLogProvider.getInstance(), false );
 
         try ( Lifespan lifespan = new Lifespan( storage ) )
         {

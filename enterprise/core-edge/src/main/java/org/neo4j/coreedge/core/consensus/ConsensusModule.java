@@ -22,7 +22,6 @@ package org.neo4j.coreedge.core.consensus;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.function.Supplier;
 
@@ -127,30 +126,23 @@ public class ConsensusModule
         StateStorage<VoteState> voteState;
         StateStorage<RaftMembershipState> raftMembershipStorage;
 
-        try
-        {
-            StateStorage<TermState> durableTermState = life.add(
-                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_TERM_NAME,
-                            new TermState.Marshal(), config.get( CoreEdgeClusterSettings.term_state_size ),
-                            databaseHealthSupplier, logProvider ) );
+        StateStorage<TermState> durableTermState = life.add(
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_TERM_NAME,
+                        new TermState.Marshal(), config.get( CoreEdgeClusterSettings.term_state_size ),
+                        databaseHealthSupplier, logProvider, false ) );
 
-            termState = new MonitoredTermStateStorage( durableTermState, platformModule.monitors );
+        termState = new MonitoredTermStateStorage( durableTermState, platformModule.monitors );
 
-            voteState = life.add(
-                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_VOTE_NAME,
-                            new VoteState.Marshal( new MemberId.MemberIdMarshal() ),
-                            config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
-                            logProvider ) );
+        voteState = life.add(
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_VOTE_NAME,
+                        new VoteState.Marshal( new MemberId.MemberIdMarshal() ),
+                        config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
+                        logProvider, false ) );
 
-            raftMembershipStorage = life.add(
-                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_MEMBERSHIP_NAME,
-                            new RaftMembershipState.Marshal(), config.get( CoreEdgeClusterSettings.raft_membership_state_size ),
-                            databaseHealthSupplier, logProvider ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        raftMembershipStorage = life.add(
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_MEMBERSHIP_NAME,
+                        new RaftMembershipState.Marshal(), config.get( CoreEdgeClusterSettings.raft_membership_state_size ),
+                        databaseHealthSupplier, logProvider, false ) );
 
         long electionTimeout1 = config.get( CoreEdgeClusterSettings.leader_election_timeout );
         long heartbeatInterval = electionTimeout1 / 3;

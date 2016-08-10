@@ -36,6 +36,7 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
 {
     private final StateRecoveryManager<STATE> recoveryManager;
     private final Log log;
+    private final boolean mustExist;
     private STATE initialState;
     private final File fileA;
     private final File fileB;
@@ -57,9 +58,7 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
 
     public DurableStateStorage( FileSystemAbstraction fsa, File baseDir, String name,
             StateMarshal<STATE> marshal, int numberOfEntriesBeforeRotation,
-            Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
-            throws IOException
-            // TODO Move file opening to start-time so that constructor doesn't need to throw exceptions
+            Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider, boolean mustExist )
     {
         this.fsa = fsa;
         this.name = name;
@@ -67,6 +66,7 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
         this.numberOfEntriesBeforeRotation = numberOfEntriesBeforeRotation;
         this.databaseHealthSupplier = databaseHealthSupplier;
         this.log = logProvider.getLog( getClass() );
+        this.mustExist = mustExist;
         this.recoveryManager = new StateRecoveryManager<>( fsa, marshal );
         this.fileA = new File( stateDir( baseDir, name ), name + ".a" );
         this.fileB = new File( stateDir( baseDir, name ), name + ".b" );
@@ -82,6 +82,11 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
     {
         if ( !fsa.fileExists( file ) )
         {
+            if ( mustExist )
+            {
+                throw new IllegalStateException( "File was expected to exist" );
+            }
+
             fsa.mkdirs( file.getParentFile() );
             try ( FlushableChannel channel = new PhysicalFlushableChannel( fsa.create( file ) ) )
             {
