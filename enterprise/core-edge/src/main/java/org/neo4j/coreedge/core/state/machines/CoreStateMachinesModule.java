@@ -101,10 +101,14 @@ public class CoreStateMachinesModule
                         config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ),
                         databaseHealthSupplier, logProvider, false ) );
 
+        // if the database isn't empty, then a proper core-edge store must
+        // have an id-allocation state as created during conversion
+        boolean idAllocationStateMustExist = !localDatabase.isEmpty();
+
         idAllocationState = life.add(
                 new DurableStateStorage<>( fileSystem, clusterStateDirectory, ID_ALLOCATION_NAME,
                         new IdAllocationState.Marshal(), config.get( CoreEdgeClusterSettings.id_alloc_state_size ),
-                        databaseHealthSupplier, logProvider, false ) );
+                        databaseHealthSupplier, logProvider, idAllocationStateMustExist ) );
 
         ReplicatedIdAllocationStateMachine idAllocationStateMachine =
                 new ReplicatedIdAllocationStateMachine( idAllocationState );
