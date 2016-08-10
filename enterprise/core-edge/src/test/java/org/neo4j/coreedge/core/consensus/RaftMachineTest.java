@@ -414,10 +414,10 @@ public class RaftMachineTest
     {
         // given
         ExplodingRaftLog explodingLog = new ExplodingRaftLog();
-        explodingLog.startExploding();
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .raftLog( explodingLog )
                 .build();
+        explodingLog.startExploding();
         try
         {
             // when

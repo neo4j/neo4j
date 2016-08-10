@@ -26,7 +26,9 @@ import org.neo4j.coreedge.core.state.storage.StateMarshal;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.Page;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.storageengine.api.ReadableChannel;
 
 public class StateRecoveryManager<STATE>
@@ -72,13 +74,23 @@ public class StateRecoveryManager<STATE>
     {
         assert fileA != null && fileB != null;
 
-        ensureExists( fileA );
-        ensureExists( fileB );
-
         STATE a = readLastEntryFrom( fileA );
         STATE b = readLastEntryFrom( fileB );
 
-        if ( marshal.ordinal( a ) > marshal.ordinal( b ) )
+        if ( a == null && b == null)
+        {
+            throw new IllegalStateException( "no recoverable state" );
+        }
+
+        if ( a == null )
+        {
+            return new RecoveryStatus<>( fileA, b );
+        }
+        else if ( b == null )
+        {
+            return new RecoveryStatus<>( fileB, a );
+        }
+        else if ( marshal.ordinal( a ) > marshal.ordinal( b ) )
         {
             return new RecoveryStatus<>( fileB, a );
         }
@@ -88,22 +100,11 @@ public class StateRecoveryManager<STATE>
         }
     }
 
-    private void ensureExists( File file ) throws IOException
-    {
-        if ( !fileSystem.fileExists( file ) )
-        {
-            fileSystem.mkdirs( file.getParentFile() );
-            fileSystem.create( file ).close();
-        }
-    }
-
     private STATE readLastEntryFrom( File file ) throws IOException
     {
-        try ( StoreChannel storeChannel = fileSystem.open( file, "r" ) )
+        try ( ReadableClosableChannel channel = new ReadAheadChannel<>( fileSystem.open( file, "r" ) ) )
         {
-            final ReadableChannel channel = new ReadAheadChannel<>( storeChannel );
-
-            STATE result = marshal.startState();
+            STATE result = null;
             STATE lastRead;
 
             try

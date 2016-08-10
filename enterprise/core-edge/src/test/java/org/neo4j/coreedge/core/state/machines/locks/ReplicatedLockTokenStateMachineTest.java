@@ -31,6 +31,7 @@ import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TargetDirectory;
 
@@ -189,34 +190,37 @@ public class ReplicatedLockTokenStateMachineTest
         StateMarshal<ReplicatedLockTokenState> marshal =
                 new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() );
 
-        DurableStateStorage<ReplicatedLockTokenState> storage = new DurableStateStorage<>( fsa, testDir.directory(),
-                "state", marshal, 100, health(), NullLogProvider.getInstance() );
-
-        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine( storage );
-
         MemberId memberA = member( 0 );
         MemberId memberB = member( 1 );
-
-        // when
         int candidateId;
 
-        candidateId = 0;
-        stateMachine.applyCommand( new ReplicatedLockTokenRequest( memberA, candidateId ), 0, r -> {} );
-        candidateId = 1;
-        stateMachine.applyCommand( new ReplicatedLockTokenRequest( memberB, candidateId ), 1, r -> {} );
+        DurableStateStorage<ReplicatedLockTokenState> storage = new DurableStateStorage<>( fsa, testDir.directory(),
+                "state", marshal, 100, health(), NullLogProvider.getInstance() );
+        try ( Lifespan lifespan = new Lifespan( storage ) )
+        {
+            ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine( storage );
 
-        stateMachine.flush();
-        fsa.crash();
+            // when
+            candidateId = 0;
+            stateMachine.applyCommand( new ReplicatedLockTokenRequest( memberA, candidateId ), 0, r -> {} );
+            candidateId = 1;
+            stateMachine.applyCommand( new ReplicatedLockTokenRequest( memberB, candidateId ), 1, r -> {} );
+
+            stateMachine.flush();
+            fsa.crash();
+        }
 
         // then
         DurableStateStorage<ReplicatedLockTokenState> storage2 = new DurableStateStorage<>(
                 fsa, testDir.directory(), "state", marshal, 100,
                 health(), NullLogProvider.getInstance() );
+        try ( Lifespan lifespan = new Lifespan( storage2 ) )
+        {
+            ReplicatedLockTokenState initialState = storage2.getInitialState();
 
-        ReplicatedLockTokenState initialState = storage2.getInitialState();
-
-        assertEquals( memberB, initialState.get().owner() );
-        assertEquals( candidateId, initialState.get().id() );
+            assertEquals( memberB, initialState.get().owner() );
+            assertEquals( candidateId, initialState.get().id() );
+        }
     }
 
     @Test
@@ -232,18 +236,25 @@ public class ReplicatedLockTokenStateMachineTest
         DurableStateStorage<ReplicatedLockTokenState> storage = new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", marshal, 100, health(), NullLogProvider.getInstance() );
 
-        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine( storage );
+        try ( Lifespan lifespan = new Lifespan( storage ) )
+        {
+            ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine( storage );
 
-        MemberId memberA = member( 0 );
-        MemberId memberB = member( 1 );
+            MemberId memberA = member( 0 );
+            MemberId memberB = member( 1 );
 
-        stateMachine.applyCommand( new ReplicatedLockTokenRequest( memberA, 0 ), 3, r -> {} );
+            stateMachine.applyCommand( new ReplicatedLockTokenRequest( memberA, 0 ), 3, r ->
+            {
+            } );
 
-        // when
-        stateMachine.applyCommand( new ReplicatedLockTokenRequest( memberB, 1 ), 2, r -> {} );
+            // when
+            stateMachine.applyCommand( new ReplicatedLockTokenRequest( memberB, 1 ), 2, r ->
+            {
+            } );
 
-        // then
-        assertEquals( memberA, stateMachine.currentToken().owner() );
+            // then
+            assertEquals( memberA, stateMachine.currentToken().owner() );
+        }
     }
 
     @Test

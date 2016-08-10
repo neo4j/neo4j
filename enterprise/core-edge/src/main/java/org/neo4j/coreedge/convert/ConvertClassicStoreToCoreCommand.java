@@ -23,11 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.neo4j.coreedge.core.state.machines.CoreStateMachines;
-import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
+import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
 import org.neo4j.coreedge.core.state.machines.tx.LogIndexTxHeaderEncoding;
 import org.neo4j.coreedge.core.state.storage.DurableStateStorageImporter;
-import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -49,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelEventHandlers;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -182,6 +181,19 @@ public class ConvertClassicStoreToCoreCommand
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         DefaultIdGeneratorFactory factory = new DefaultIdGeneratorFactory( fileSystem );
 
+        DurableStateStorageImporter<IdAllocationState> storage = new DurableStateStorageImporter<>(
+                fileSystem, clusterStateDirectory, ID_ALLOCATION_NAME, new IdAllocationState.Marshal(),
+                1000, () -> new DatabaseHealth( new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
+                NullLog.getInstance() ), NullLogProvider.getInstance() );
+
+        try ( Lifespan lifespan = new Lifespan( storage ) )
+        {
+            storage.persist( state( dbDir, factory ) );
+        }
+    }
+
+    private IdAllocationState state( File dbDir, DefaultIdGeneratorFactory factory )
+    {
         long[] highIds = new long[]{
                 getHighId( dbDir, factory, NODE, NODE_STORE_NAME ),
                 getHighId( dbDir, factory, RELATIONSHIP, RELATIONSHIP_STORE_NAME ),
@@ -199,24 +211,12 @@ public class ConvertClassicStoreToCoreCommand
                 getHighId( dbDir, factory, NODE_LABELS, NODE_LABELS_STORE_NAME ),
                 getHighId( dbDir, factory, RELATIONSHIP_GROUP, RELATIONSHIP_GROUP_STORE_NAME )};
 
-        IdAllocationState state = new IdAllocationState( highIds, -1 );
-
-        DurableStateStorageImporter<IdAllocationState> storage = new DurableStateStorageImporter<>(
-                fileSystem, clusterStateDirectory, ID_ALLOCATION_NAME,
-                new IdAllocationState.Marshal(),
-                1000, () -> new DatabaseHealth(
-                new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
-                NullLog.getInstance() ), NullLogProvider.getInstance() );
-
-        storage.persist( state );
-
-        storage.shutdown();
+        return new IdAllocationState( highIds, -1 );
     }
 
     private long getHighId( File coreDir, DefaultIdGeneratorFactory factory, IdType idType, String store )
     {
-        IdGenerator idGenerator = factory.open( new File( coreDir, idFile( store ) ), idType,
-                -1, Long.MAX_VALUE );
+        IdGenerator idGenerator = factory.open( new File( coreDir, idFile( store ) ), idType, -1, Long.MAX_VALUE );
         long highId = idGenerator.getHighId();
         idGenerator.close();
         return highId;

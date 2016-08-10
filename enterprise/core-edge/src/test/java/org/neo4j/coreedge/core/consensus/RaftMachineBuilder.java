@@ -104,6 +104,7 @@ public class RaftMachineBuilder
         RaftMembershipManager membershipManager = new RaftMembershipManager( leaderOnlyReplicator,
                 memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, clock, catchupTimeout,
                 raftMembership );
+        membershipManager.setRecoverFromIndexSupplier( () -> 0 );
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( outbound, logProvider, raftLog, clock, member, membershipManager,
                         retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightMap );
@@ -118,9 +119,19 @@ public class RaftMachineBuilder
             }
             catch ( IOException e )
             {
-                e.printStackTrace();
+                throw new RuntimeException( e );
             }
         } );
+
+        try
+        {
+            membershipManager.start();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+
         return raft;
     }
 

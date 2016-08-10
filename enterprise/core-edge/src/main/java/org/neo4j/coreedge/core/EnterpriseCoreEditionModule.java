@@ -24,7 +24,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.UUID;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.core.server.CoreServerModule;
@@ -33,6 +32,7 @@ import org.neo4j.coreedge.ReplicationModule;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
+import org.neo4j.coreedge.core.state.storage.MemberIdStorage;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.core.consensus.ConsensusModule;
@@ -45,8 +45,6 @@ import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.messaging.RaftChannelInitializer;
 import org.neo4j.coreedge.messaging.RaftOutbound;
 import org.neo4j.coreedge.core.consensus.roles.Role;
-import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
-import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.MemberId.MemberIdMarshal;
 import org.neo4j.coreedge.messaging.NonBlockingChannels;
@@ -141,20 +139,22 @@ public class EnterpriseCoreEditionModule extends EditionModule
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        MemberId myself;
+        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
+                platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
 
+        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, copiedStoreRecovery,
+                new StoreFiles( new DefaultFileSystemAbstraction() ),
+                platformModule.dataSourceManager,
+                platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier,
+                logProvider );
+
+        life.add( localDatabase );
+
+        MemberIdStorage memberIdStorage = new MemberIdStorage( fileSystem, clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberIdMarshal(), logProvider );
+        MemberId myself;
         try
         {
-            StateStorage<MemberId> idStorage = life.add( new DurableStateStorage<>(
-                    fileSystem, clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberIdMarshal(), 1,
-                    databaseHealthSupplier, logProvider ) );
-            MemberId member = idStorage.getInitialState();
-            if ( member == null )
-            {
-                member = new MemberId( UUID.randomUUID() );
-                idStorage.persistStoreData( member );
-            }
-            myself = member;
+            myself = memberIdStorage.readState();
         }
         catch ( IOException e )
         {
@@ -184,15 +184,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         {
             messageLogger = new NullMessageLogger<>();
         }
-
-        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
-                platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
-
-        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, copiedStoreRecovery,
-                new StoreFiles( new DefaultFileSystemAbstraction() ),
-                platformModule.dataSourceManager,
-                platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier,
-                logProvider);
 
         RaftOutbound raftOutbound =
                 new RaftOutbound( discoveryService, senderService, localDatabase, logProvider, logThresholdMillis );
@@ -228,9 +219,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         dependencies.satisfyDependency( lockManager );
 
-        life.add( CoreStartupProcess.createLifeSupport(
-                localDatabase, coreStateMachinesModule.replicatedIdGeneratorFactory, coreServerModule.startupLifecycle,
-                consensusModule.raftTimeoutService(), coreServerModule.membershipWaiterLifecycle ) );
+        life.add( coreStateMachinesModule.replicatedIdGeneratorFactory );
+        life.add( coreServerModule.startupLifecycle );
+        life.add( consensusModule.raftTimeoutService() );
+        life.add( coreServerModule.membershipWaiterLifecycle );
     }
 
     private void editionInvariants( PlatformModule platformModule, Dependencies dependencies, Config config,

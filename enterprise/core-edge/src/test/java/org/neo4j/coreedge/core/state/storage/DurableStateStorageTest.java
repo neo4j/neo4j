@@ -32,6 +32,8 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.lifecycle.LifeRule;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -45,6 +47,8 @@ public class DurableStateStorageTest
 {
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public LifeRule lifeRule = new LifeRule( true );
 
     @Test
     public void shouldMaintainStateGivenAnEmptyInitialStore() throws Exception
@@ -53,8 +57,8 @@ public class DurableStateStorageTest
         EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
         fsa.mkdir( testDir.directory() );
 
-        DurableStateStorage<AtomicInteger> storage = new DurableStateStorage<>( fsa, testDir.directory(),
-                "state", new AtomicIntegerMarshal(), 100, health(), NullLogProvider.getInstance() );
+        DurableStateStorage<AtomicInteger> storage = lifeRule.add( new DurableStateStorage<>( fsa, testDir.directory(),
+                "state", new AtomicIntegerMarshal(), 100, health(), NullLogProvider.getInstance() ) );
 
         // when
         storage.persistStoreData( new AtomicInteger( 99 ) );
@@ -71,9 +75,9 @@ public class DurableStateStorageTest
         fsa.mkdir( testDir.directory() );
 
         final int numberOfEntriesBeforeRotation = 100;
-        DurableStateStorage<AtomicInteger> storage = new DurableStateStorage<>( fsa, testDir.directory(),
+        DurableStateStorage<AtomicInteger> storage = lifeRule.add( new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", new AtomicIntegerMarshal(), numberOfEntriesBeforeRotation,
-                health(), NullLogProvider.getInstance() );
+                health(), NullLogProvider.getInstance() ) );
 
         // when
         for ( int i = 0; i < numberOfEntriesBeforeRotation; i++ )
@@ -97,9 +101,9 @@ public class DurableStateStorageTest
         fsa.mkdir( testDir.directory() );
 
         final int numberOfEntriesBeforeRotation = 100;
-        DurableStateStorage<AtomicInteger> storage = new DurableStateStorage<>( fsa, testDir.directory(),
+        DurableStateStorage<AtomicInteger> storage = lifeRule.add( new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", new AtomicIntegerMarshal(), numberOfEntriesBeforeRotation,
-                health(), NullLogProvider.getInstance() );
+                health(), NullLogProvider.getInstance() ) );
 
         // when
         for ( int i = 0; i < numberOfEntriesBeforeRotation * 2; i++ )
@@ -123,21 +127,23 @@ public class DurableStateStorageTest
         fsa.mkdir( testDir.directory() );
 
         int rotationCount = 10;
+
         DurableStateStorage<AtomicInteger> storage = new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", new AtomicIntegerMarshal(), rotationCount,
                 health(), NullLogProvider.getInstance() );
-
         int largestValueWritten = 0;
-        for (; largestValueWritten < rotationCount * 2; largestValueWritten++ )
+        try ( Lifespan lifespan = new Lifespan( storage ) )
         {
-            storage.persistStoreData( new AtomicInteger( largestValueWritten ) );
+            for ( ; largestValueWritten < rotationCount * 2; largestValueWritten++ )
+            {
+                storage.persistStoreData( new AtomicInteger( largestValueWritten ) );
+            }
         }
-        storage.shutdown();
 
         // now both files are full. We reopen, then write some more.
-        storage = new DurableStateStorage<>( fsa, testDir.directory(),
+        storage = lifeRule.add( new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", new AtomicIntegerMarshal(), rotationCount,
-                health(), NullLogProvider.getInstance() );
+                health(), NullLogProvider.getInstance() ) );
 
         storage.persistStoreData( new AtomicInteger( largestValueWritten++ ) );
         storage.persistStoreData( new AtomicInteger( largestValueWritten++ ) );
@@ -147,7 +153,6 @@ public class DurableStateStorageTest
          * We have written stuff in fileA but not gotten to the end (resulting in rotation). The largestValueWritten
          * should nevertheless be correct
          */
-        storage.shutdown();
         ByteBuffer forReadingBackIn = ByteBuffer.allocate( 10_000 );
         StoreChannel lastWrittenTo = fsa.open( stateFileA(), "r" );
         lastWrittenTo.read( forReadingBackIn );

@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.core.consensus.membership;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
@@ -30,6 +31,7 @@ import org.neo4j.coreedge.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.coreedge.core.consensus.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
 import org.neo4j.coreedge.identity.RaftTestMemberSetBuilder;
+import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.FakeClock;
 
@@ -39,6 +41,9 @@ import static org.junit.Assert.assertFalse;
 
 public class RaftMembershipManagerTest
 {
+    @Rule
+    public LifeRule lifeRule = new LifeRule( true );
+
     @Test
     public void membershipManagerShouldUseLatestAppendedMembershipSetEntries()
             throws Exception
@@ -46,11 +51,7 @@ public class RaftMembershipManagerTest
         // given
         final InMemoryRaftLog log = new InMemoryRaftLog();
 
-        RaftMembershipManager membershipManager = new RaftMembershipManager(
-                null, RaftTestMemberSetBuilder.INSTANCE, log,
-                NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ) );
-
+        RaftMembershipManager membershipManager = lifeRule.add( raftMembershipManager( log ) );
         // when
         membershipManager.processLog( 0, asList(
                 new AppendLogEntry( 0, new RaftLogEntry( 0, new RaftTestGroup( 1, 2, 3, 4 ) ) ),
@@ -68,10 +69,7 @@ public class RaftMembershipManagerTest
         // given
         final InMemoryRaftLog log = new InMemoryRaftLog();
 
-        RaftMembershipManager membershipManager = new RaftMembershipManager(
-                null,
-                RaftTestMemberSetBuilder.INSTANCE, log, NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ) );
+        RaftMembershipManager membershipManager = lifeRule.add( raftMembershipManager( log ) );
 
         // when
         List<RaftLogCommand> logCommands = asList(
@@ -98,10 +96,7 @@ public class RaftMembershipManagerTest
         // given
         final InMemoryRaftLog log = new InMemoryRaftLog();
 
-        RaftMembershipManager membershipManager = new RaftMembershipManager(
-                null,
-                RaftTestMemberSetBuilder.INSTANCE, log, NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ) );
+        RaftMembershipManager membershipManager = lifeRule.add( raftMembershipManager( log ) );
 
         // when
         List<RaftLogCommand> logCommands = asList(
@@ -118,5 +113,16 @@ public class RaftMembershipManagerTest
 
         // then
         assertEquals( new RaftTestGroup( 1, 2, 3, 5 ).getMembers(), membershipManager.votingMembers() );
+    }
+
+    private RaftMembershipManager raftMembershipManager( InMemoryRaftLog log )
+    {
+        RaftMembershipManager raftMembershipManager = new RaftMembershipManager(
+                null, RaftTestMemberSetBuilder.INSTANCE, log,
+                NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
+                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ) );
+
+        raftMembershipManager.setRecoverFromIndexSupplier( () -> 0 );
+        return raftMembershipManager;
     }
 }
