@@ -138,8 +138,8 @@ public class CoreEdgeClusterSettings
             setting( "core_edge.raft_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7000" );
 
     @Description("Host and port to bind the cluster management communication.")
-    public static final Setting<ListenSocketAddress> hazelcast_listen_address =
-            setting( "core_edge.hazelcast_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5000" );
+    public static final Setting<ListenSocketAddress> discovery_listen_address =
+            setting( "core_edge.discovery_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5000" );
 
     @Description("A comma-separated list of other members of the cluster to join.")
     public static final Setting<List<AdvertisedSocketAddress>> initial_core_cluster_members =

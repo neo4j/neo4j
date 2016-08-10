@@ -103,7 +103,7 @@ class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyS
         log.info( "Discovering cluster with initial members: " + initialMembers );
 
         NetworkConfig networkConfig = new NetworkConfig();
-        ListenSocketAddress hazelcastAddress = config.get( CoreEdgeClusterSettings.hazelcast_listen_address );
+        ListenSocketAddress hazelcastAddress = config.get( CoreEdgeClusterSettings.discovery_listen_address );
         networkConfig.setPort( hazelcastAddress.socketAddress().getPort() );
         networkConfig.setJoin( joinConfig );
 

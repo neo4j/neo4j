@@ -77,7 +77,7 @@ public class CoreClusterMember
         params.put( CoreEdgeClusterSettings.cluster_name.name(), CLUSTER_NAME );
         params.put( CoreEdgeClusterSettings.initial_core_cluster_members.name(), initialMembers );
         params.put( GraphDatabaseSettings.record_format.name(), recordFormat );
-        params.put( CoreEdgeClusterSettings.hazelcast_listen_address.name(), "localhost:" + clusterPort );
+        params.put( CoreEdgeClusterSettings.discovery_listen_address.name(), "localhost:" + clusterPort );
         params.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "localhost:" + txPort );
         params.put( CoreEdgeClusterSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
         params.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "localhost:" + raftPort );
