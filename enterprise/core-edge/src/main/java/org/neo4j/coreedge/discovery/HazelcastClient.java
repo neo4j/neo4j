@@ -21,6 +21,7 @@ package org.neo4j.coreedge.discovery;
 
 import java.util.function.Function;
 
+import com.hazelcast.client.HazelcastClientNotActiveException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 

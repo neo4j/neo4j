@@ -357,6 +357,7 @@ public class HazelcastClientTest
         @Override
         public Object get( Object key )
         {
+
             return delegate.get( key );
         }
 

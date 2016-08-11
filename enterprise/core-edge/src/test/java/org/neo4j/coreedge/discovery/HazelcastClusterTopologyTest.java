@@ -66,7 +66,8 @@ public class HazelcastClusterTopologyTest
 
         // when
         Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
-        Pair<MemberId, CoreAddresses> extracted = extractMemberAttributes( new MemberImpl( null, null, attributes, false ) );
+        Pair<MemberId, CoreAddresses> extracted = extractMemberAttributes( new MemberImpl( null, null, attributes,
+                false ) );
 
         // then
         assertEquals( memberId, extracted.first() );
@@ -93,8 +94,8 @@ public class HazelcastClusterTopologyTest
             settings.put( GraphDatabaseSettings.bolt_advertised_address.name(), "bolt:" + (i + 1) );
             config.augment( settings );
             Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
-            hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null,
-                    attributes, false ) );
+            hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null, attributes, false ) );
+
         }
 
         // when
