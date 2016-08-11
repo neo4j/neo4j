@@ -77,10 +77,16 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     {
         if ( hazelcastInstance != null )
         {
-            hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
-                    .remove( hazelcastInstance.getLocalEndpoint().getUuid() );
-
-            hazelcastInstance.shutdown();
+            try
+            {
+                String uuid = hazelcastInstance.getLocalEndpoint().getUuid();
+                hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME ).remove( uuid );
+                hazelcastInstance.shutdown();
+            }
+            catch ( HazelcastClientNotActiveException e )
+            {
+                log.info( "Unable to shutdown Hazelcast", e );
+            }
         }
     }
 
