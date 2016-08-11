@@ -19,52 +19,39 @@
  */
 package org.neo4j.coreedge.core.consensus.log.segmented;
 
-import org.junit.After;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 
 import org.neo4j.coreedge.core.consensus.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogContractTest;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.time.FakeClock;
 
-import static org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
+import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 
 public class SegmentedRaftLogContractTest extends RaftLogContractTest
 {
-    private LifeSupport life = new LifeSupport();
-    private FileSystemAbstraction fileSystem;
+    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final LifeRule life = new LifeRule( true );
 
-    @After
-    public void tearDown() throws Throwable
-    {
-        life.stop();
-        life.shutdown();
-    }
+    @Rule
+    public RuleChain chain = RuleChain.outerRule( fsRule ).around( life );
 
     @Override
     public RaftLog createRaftLog()
     {
-        if ( fileSystem == null )
-        {
-            fileSystem = new EphemeralFileSystemAbstraction();
-        }
-
-        File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
+        File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
+        FileSystemAbstraction fileSystem = fsRule.get();
         fileSystem.mkdir( directory );
 
-        SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, 1024,
-                new DummyRaftableContentSerializer(),
-                NullLogProvider.getInstance(), "1 entries", 8, new FakeClock(), new OnDemandJobScheduler() );
-
-        life.add( newRaftLog );
-        life.init();
-        life.start();
-        return newRaftLog;
+        return life.add( new SegmentedRaftLog( fileSystem, directory, 1024, new DummyRaftableContentSerializer(),
+                NullLogProvider.getInstance(), "1 entries", 8, new FakeClock(), new OnDemandJobScheduler() ) );
     }
 }
