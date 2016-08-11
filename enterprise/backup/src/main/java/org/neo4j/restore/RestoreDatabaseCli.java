@@ -35,7 +35,6 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Converters;
@@ -94,15 +93,21 @@ public class RestoreDatabaseCli implements AdminCommand
     @Override
     public void execute( String[] incomingArguments ) throws IncorrectUsage, CommandFailed
     {
-        Args args = Args.parse( incomingArguments );
-        if ( ArrayUtil.isEmpty( incomingArguments ) )
-        {
-            throw new IncorrectUsage( "mandatory arguments missing" );
-        }
+        String databaseName;
+        String fromPath;
+        boolean forceOverwrite;
 
-        String databaseName = args.interpretOption( "database", Converters.<String>mandatory(), s -> s );
-        String fromPath = args.interpretOption( "from", Converters.<String>mandatory(), s -> s );
-        boolean forceOverwrite = args.getBoolean( "force", Boolean.FALSE, true );
+        Args args = Args.parse( incomingArguments );
+        try
+        {
+            databaseName = args.interpretOption( "database", Converters.mandatory(), s -> s );
+            fromPath = args.interpretOption( "from", Converters.mandatory(), s -> s );
+            forceOverwrite = args.getBoolean( "force", Boolean.FALSE, true );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new IncorrectUsage( e.getMessage() );
+        }
 
         Config config = loadNeo4jConfig( homeDir, configDir, databaseName );
 

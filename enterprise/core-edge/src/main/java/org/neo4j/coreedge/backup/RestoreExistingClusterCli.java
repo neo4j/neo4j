@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -36,7 +35,6 @@ import org.neo4j.coreedge.convert.ConvertClassicStoreToCoreCommand;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
@@ -90,17 +88,22 @@ public class RestoreExistingClusterCli implements AdminCommand
     @Override
     public void execute( String[] incomingArguments ) throws IncorrectUsage, CommandFailed
     {
+        String databaseName;
+        String fromPath;
+        String clusterSeed;
+        boolean forceOverwrite;
         Args args = Args.parse( incomingArguments );
-        if ( ArrayUtil.isEmpty( incomingArguments ) )
+        try
         {
-            throw new IncorrectUsage( "mandatory arguments missing" );
+            databaseName = args.interpretOption( "database", Converters.mandatory(), s -> s );
+            fromPath = args.interpretOption( "from", Converters.mandatory(), s -> s );
+            clusterSeed = args.interpretOption( "cluster-seed", Converters.mandatory(), s -> s );
+            forceOverwrite = args.getBoolean( "force", Boolean.FALSE, true );
         }
-
-        String databaseName = args.interpretOption( "database", Converters.mandatory(), s -> s );
-        String fromPath = args.interpretOption( "from", Converters.mandatory(), s -> s );
-        String clusterSeed = args.interpretOption( "cluster-seed", Converters.mandatory(), s -> s );
-        boolean forceOverwrite = args.getBoolean( "force", Boolean.FALSE, true );
-
+        catch ( IllegalArgumentException e )
+        {
+            throw new IncorrectUsage( e.getMessage() );
+        }
         try
         {
             Config config = loadNeo4jConfig( homeDir, configDir, databaseName );
@@ -116,9 +119,8 @@ public class RestoreExistingClusterCli implements AdminCommand
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
     {
         ConfigLoader configLoader = new ConfigLoader( settings() );
-        Config config = configLoader.loadConfig(
-                Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ));
+        Config config = configLoader.loadConfig( Optional.of( homeDir.toFile() ),
+                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
 
         return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
     }
@@ -132,8 +134,8 @@ public class RestoreExistingClusterCli implements AdminCommand
     private static void restoreDatabase( String databaseName, String fromPath, boolean forceOverwrite, Config config )
             throws IOException
     {
-        new RestoreDatabaseCommand( new DefaultFileSystemAbstraction(),
-                new File( fromPath ), config, databaseName, forceOverwrite ).execute();
+        new RestoreDatabaseCommand( new DefaultFileSystemAbstraction(), new File( fromPath ), config, databaseName,
+                forceOverwrite ).execute();
     }
 
     public static List<Class<?>> settings()
