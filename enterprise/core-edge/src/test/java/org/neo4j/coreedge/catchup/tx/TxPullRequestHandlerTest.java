@@ -38,10 +38,10 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
 import static org.neo4j.kernel.impl.util.Cursors.cursor;
 import static org.neo4j.kernel.impl.util.Cursors.io;
@@ -105,10 +105,39 @@ public class TxPullRequestHandlerTest
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 12, storeId ) );
 
         // then
+        verify( context, never() ).write( ResponseMessageType.TX );
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
         verify( context ).write( new TxStreamFinishedResponse( 12, false ) );
         logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
                 .info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", 12L ) );
+    }
+
+    @Test
+    public void shouldNotStreamTxEntriesIfStoreIdMismatches() throws Exception
+    {
+        // given
+        StoreId serverStoreId = new StoreId( 1, 2, 3, 4 );
+        StoreId clientStoreId = new StoreId( 5, 6, 7, 8 );
+
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
+
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        TxPullRequestHandler txPullRequestHandler = new TxPullRequestHandler( new CatchupServerProtocol(),
+                () -> serverStoreId, () -> transactionIdStore, () -> logicalTransactionStore,
+                new Monitors(), logProvider );
+        ChannelHandlerContext context = mock( ChannelHandlerContext.class );
+
+        // when
+        txPullRequestHandler.channelRead0( context, new TxPullRequest( 1, clientStoreId ) );
+
+        // then
+        verify( context, never() ).write( ResponseMessageType.TX );
+        verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
+        verify( context ).write( new TxStreamFinishedResponse( 1, false ) );
+        logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
+                .info( "Failed to serve TxPullRequest for tx %d and storeId %s because that storeId is different " +
+                        "from this machine with %s", 1L, clientStoreId, serverStoreId ) );
     }
 
     private static CommittedTransactionRepresentation tx( int id )
