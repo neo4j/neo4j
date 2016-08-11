@@ -38,9 +38,7 @@ import org.neo4j.coreedge.core.consensus.ConsensusModule;
 import org.neo4j.coreedge.core.consensus.ContinuousJob;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.RaftServer;
-import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.pruning.PruningScheduler;
-import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.consensus.membership.MembershipWaiter;
 import org.neo4j.coreedge.core.consensus.membership.MembershipWaiterLifecycle;
 import org.neo4j.coreedge.core.state.CommandApplicationProcess;
@@ -135,8 +133,6 @@ public class CoreServerModule
         CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher,
                 coreToCoreClient, logProvider );
 
-        InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
-
         NotMyselfSelectionStrategy someoneElse = new NotMyselfSelectionStrategy( discoveryService, myself );
 
         CoreState coreState = new CoreState(
@@ -148,7 +144,7 @@ public class CoreServerModule
                         config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
                         databaseHealthSupplier, logProvider, replicationModule.getProgressTracker(),
                         lastFlushedStorage, replicationModule.getSessionTracker(), coreStateApplier,
-                        inFlightMap, platformModule.monitors ) );
+                        consensusModule.inFlightMap(), platformModule.monitors ) );
 
         dependencies.satisfyDependency( coreState );
 

@@ -79,6 +79,7 @@ public class ConsensusModule
     private final RaftMachine raftMachine;
     private final DelayedRenewableTimeoutService raftTimeoutService;
     private final RaftMembershipManager raftMembershipManager;
+    private final InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
 
     public ConsensusModule( MemberId myself, final PlatformModule platformModule, RaftOutbound raftOutbound,
             File clusterStateDirectory, CoreTopologyService discoveryService )
@@ -114,8 +115,6 @@ public class ConsensusModule
 
         Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>(
                 raftOutbound, myself, messageLogger );
-
-        InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
 
         StateStorage<TermState> termState;
         StateStorage<VoteState> voteState;
@@ -245,5 +244,10 @@ public class ConsensusModule
     public RaftMembershipManager raftMembershipManager()
     {
         return raftMembershipManager;
+    }
+
+    public InFlightMap<Long,RaftLogEntry> inFlightMap()
+    {
+        return inFlightMap;
     }
 }
