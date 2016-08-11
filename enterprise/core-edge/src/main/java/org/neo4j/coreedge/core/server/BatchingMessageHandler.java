@@ -110,7 +110,7 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
 
     private void collateAndHandleBatch( List<RaftMessages.StoreIdAwareMessage> batch )
     {
-        RaftMessages.NewEntry.Batch batchRequest = null;
+        RaftMessages.NewEntry.BatchRequest batchRequest = null;
         StoreId storeId = batch.get( 0 ).storeId();
 
         for ( RaftMessages.StoreIdAwareMessage storeIdAwareMessage : batch )
@@ -128,7 +128,7 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
 
                 if ( batchRequest == null )
                 {
-                    batchRequest = new RaftMessages.NewEntry.Batch( batch.size() );
+                    batchRequest = new RaftMessages.NewEntry.BatchRequest( batch.size() );
                 }
                 batchRequest.add( newEntryRequest.content() );
             }

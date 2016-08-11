@@ -584,11 +584,11 @@ public interface RaftMessages
             }
         }
 
-        class Batch extends BaseRaftMessage
+        class BatchRequest extends BaseRaftMessage
         {
             private List<ReplicatedContent> list;
 
-            public Batch( int batchSize )
+            public BatchRequest( int batchSize )
             {
                 super( null, Type.NEW_BATCH_REQUEST );
                 list = new ArrayList<>( batchSize );
@@ -608,8 +608,8 @@ public interface RaftMessages
                 { return false; }
                 if ( !super.equals( o ) )
                 { return false; }
-                Batch batch = (Batch) o;
-                return Objects.equals( list, batch.list );
+                BatchRequest batchRequest = (BatchRequest) o;
+                return Objects.equals( list, batchRequest.list );
             }
 
             @Override
@@ -621,7 +621,7 @@ public interface RaftMessages
             @Override
             public String toString()
             {
-                return "Batch{" +
+                return "BatchRequest{" +
                        "list=" + list +
                        '}';
             }
@@ -689,7 +689,7 @@ public interface RaftMessages
         protected MemberId from;
         private Type type;
 
-        public BaseRaftMessage( MemberId from, Type type )
+        BaseRaftMessage( MemberId from, Type type )
         {
             this.from = from;
             this.type = type;
