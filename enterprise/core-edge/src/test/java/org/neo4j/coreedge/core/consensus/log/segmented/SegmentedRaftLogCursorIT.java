@@ -37,8 +37,8 @@ import org.neo4j.test.OnDemandJobScheduler;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
+import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 
 public class SegmentedRaftLogCursorIT
 {
@@ -59,7 +59,7 @@ public class SegmentedRaftLogCursorIT
             fileSystem = new EphemeralFileSystemAbstraction();
         }
 
-        File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
+        File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
         SegmentedRaftLog newRaftLog =

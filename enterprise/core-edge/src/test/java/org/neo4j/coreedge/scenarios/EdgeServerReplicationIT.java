@@ -76,8 +76,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
-import static org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
+import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 import static org.neo4j.function.Predicates.awaitEx;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -335,7 +335,7 @@ public class EdgeServerReplicationIT
 
     private long versionBy( File storeDir, BinaryOperator<Long> operator )
     {
-        File raftLogDir = new File( new File( storeDir, CLUSTER_STATE_DIRECTORY_NAME ), SEGMENTED_LOG_DIRECTORY_NAME );
+        File raftLogDir = new File( new File( storeDir, CLUSTER_STATE_DIRECTORY_NAME ), PHYSICAL_LOG_DIRECTORY_NAME );
         SortedMap<Long,File> logs =
                 new FileNames( raftLogDir ).getAllFiles( new DefaultFileSystemAbstraction(), mock( Log.class ) );
         return logs.keySet().stream().reduce( operator ).orElseThrow( IllegalStateException::new );

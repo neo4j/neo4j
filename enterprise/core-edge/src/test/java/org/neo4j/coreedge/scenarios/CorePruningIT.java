@@ -32,7 +32,7 @@ import org.neo4j.coreedge.core.EnterpriseCoreEditionModule;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
+import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.scenarios.SampleData.createData;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -95,7 +95,7 @@ public class CorePruningIT
     private int numberOfFiles( File storeDir ) throws RuntimeException
     {
         File clusterDir = new File( storeDir, EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME );
-        File raftLogDir = new File( clusterDir, SEGMENTED_LOG_DIRECTORY_NAME );
+        File raftLogDir = new File( clusterDir, PHYSICAL_LOG_DIRECTORY_NAME );
         return raftLogDir.list().length;
     }
 }

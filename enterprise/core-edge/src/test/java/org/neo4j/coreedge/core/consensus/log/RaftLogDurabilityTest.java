@@ -45,9 +45,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.coreedge.core.consensus.ReplicatedInteger.valueOf;
+import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.core.consensus.log.RaftLogHelper.hasNoContent;
 import static org.neo4j.coreedge.core.consensus.log.RaftLogHelper.readLogEntry;
-import static org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.RaftLogImplementation.SEGMENTED;
 
 @RunWith(Parameterized.class)
@@ -67,7 +67,7 @@ public class RaftLogDurabilityTest
     public static Collection<Object[]> data()
     {
         RaftLogFactory segmented = ( fileSystem ) -> {
-            File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
+            File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
             fileSystem.mkdir( directory );
 
             long rotateAtSizeBytes = 128;
