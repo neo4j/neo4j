@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -50,16 +49,10 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 
-public class AwaitIndexTest
+public class AwaitIndexProcedureTest
 {
-    private final BuiltInProcedures procedures = new BuiltInProcedures();
     private final ReadOperations operations = mock( ReadOperations.class );
-
-    @Before
-    public void setup()
-    {
-        procedures.tx = new StubKernelTransaction( operations );
-    }
+    private final AwaitIndexProcedure procedure = new AwaitIndexProcedure( new StubKernelTransaction( operations ) );
 
     @Test
     public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException
@@ -68,7 +61,7 @@ public class AwaitIndexTest
 
         try
         {
-            procedures.awaitIndex( "non-existent-label", null );
+            procedure.execute( "non-existent-label", null );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -84,7 +77,7 @@ public class AwaitIndexTest
 
         try
         {
-            procedures.awaitIndex( null, "non-existent-property-key" );
+            procedure.execute( null, "non-existent-property-key" );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -103,7 +96,7 @@ public class AwaitIndexTest
                 .thenReturn( new IndexDescriptor( -1, -1 ) );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
 
-        procedures.awaitIndex( null, null );
+        procedure.execute( null, null );
 
         verify( operations ).indexGetForLabelAndPropertyKey( 123, 456 );
     }
@@ -121,7 +114,7 @@ public class AwaitIndexTest
 
         try
         {
-            procedures.awaitIndex( null, null );
+            procedure.execute( null, null );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
