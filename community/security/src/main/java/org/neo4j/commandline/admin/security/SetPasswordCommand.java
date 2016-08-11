@@ -69,17 +69,19 @@ public class SetPasswordCommand implements AdminCommand
         @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
-            return new SetPasswordCommand( homeDir, configDir );
+            return new SetPasswordCommand( homeDir, configDir, outsideWorld );
         }
     }
 
     private final Path homeDir;
     private final Path configDir;
+    private OutsideWorld outsideWorld;
 
-    public SetPasswordCommand( Path homeDir, Path configDir )
+    public SetPasswordCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
+        this.outsideWorld = outsideWorld;
     }
 
     @Override
@@ -108,12 +110,14 @@ public class SetPasswordCommand implements AdminCommand
             try
             {
                 authManager.setUserPassword( username, password );
+                outsideWorld.stdOutLine( "Changed password for user '" + username + "'" );
             }
             catch ( InvalidArgumentsException e )
             {
                 if ( shouldCreate )
                 {
                     authManager.getUserManager().newUser( username, password, false );
+                    outsideWorld.stdOutLine( "Created new user '" + username + "'" );
                 } else {
                     throw e;
                 }
