@@ -30,7 +30,6 @@ import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
 import org.neo4j.logging.Log;
 
 import static java.lang.Long.min;
-import static org.neo4j.cluster.protocol.election.ElectionMessage.electionTimeout;
 import static org.neo4j.coreedge.core.consensus.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.core.consensus.roles.Role.FOLLOWER;
 
@@ -115,7 +114,7 @@ class Follower implements RaftMessageHandler
 
             case ELECTION_TIMEOUT:
             {
-                log.info( "Election timeout triggered, base timeout value is %d", electionTimeout );
+                log.info( "Election timeout triggered" );
                 if ( Election.start( ctx, outcome, log ) )
                 {
                     outcome.setNextRole( CANDIDATE );
