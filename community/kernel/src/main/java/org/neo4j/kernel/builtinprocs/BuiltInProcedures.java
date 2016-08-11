@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.procedure.Context;
@@ -41,6 +42,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.procedure.Procedure.Mode.READ;
 
 public class BuiltInProcedures
@@ -93,12 +95,11 @@ public class BuiltInProcedures
     }
 
     @Procedure(name = "db.awaitIndex", mode = READ)
-    public Stream<IndexResult> awaitIndex( @Name("label") String labelName, @Name("property") String propertyKeyName )
+    public void awaitIndex( @Name("label") String labelName, @Name("property") String propertyKeyName )
             throws ProcedureException
 
     {
         ReadOperations operations = tx.acquireStatement().readOperations();
-        TokenNameLookup tokens = new StatementTokenNameLookup( operations );
 
         int labelId = operations.labelGetForName( labelName );
         if ( labelId == ReadOperations.NO_SUCH_LABEL )
@@ -113,16 +114,21 @@ public class BuiltInProcedures
                     propertyKeyName );
         }
 
+        InternalIndexState state;
         try
         {
             IndexDescriptor index = operations.indexGetForLabelAndPropertyKey( labelId, propertyKeyId );
-            return Stream.of( new IndexResult( "INDEX ON " + index.userDescription( tokens ),
-                    operations.indexGetState( index ).toString() ) );
+            state = operations.indexGetState( index );
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {
             throw new ProcedureException( Status.Schema.IndexNotFound, e, "No index on :%s(%s)", labelName,
                     propertyKeyName );
+        }
+
+        if ( state != ONLINE )
+        {
+            throw new ProcedureException( Status.General.UnknownError, "Index not online" );
         }
     }
 

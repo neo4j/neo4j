@@ -48,6 +48,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
+import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 
 public class AwaitIndexTest
 {
@@ -105,6 +106,28 @@ public class AwaitIndexTest
         procedures.awaitIndex( null, null );
 
         verify( operations ).indexGetForLabelAndPropertyKey( 123, 456 );
+    }
+
+    @Test
+    public void shouldThrowAnExceptionIfTheIndexIsNotOnline()
+            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+
+    {
+        when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
+        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 456 );
+        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
+                .thenReturn( new IndexDescriptor( -1, -1 ) );
+        when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( POPULATING );
+
+        try
+        {
+            procedures.awaitIndex( null, null );
+            fail( "Expected an exception" );
+        }
+        catch ( ProcedureException e )
+        {
+            assertThat( e.getMessage(), containsString( "not online" ) );
+        }
     }
 
     private class StubKernelTransaction implements KernelTransaction
