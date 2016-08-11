@@ -26,25 +26,25 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
-import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.consensus.membership.RaftGroup;
 import org.neo4j.coreedge.core.consensus.membership.RaftMembershipManager;
-import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.core.consensus.outcome.AppendLogEntry;
 import org.neo4j.coreedge.core.consensus.outcome.ConsensusOutcome;
 import org.neo4j.coreedge.core.consensus.outcome.Outcome;
+import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.shipping.RaftLogShippingManager;
-import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.consensus.state.RaftState;
 import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
-import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.core.consensus.term.TermState;
 import org.neo4j.coreedge.core.consensus.vote.VoteState;
+import org.neo4j.coreedge.core.state.storage.StateStorage;
+import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -122,7 +122,6 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     {
         electionTimer = renewableTimeoutService.create( Timeouts.ELECTION, electionTimeout, randomTimeoutRange(),
                 timeout -> {
-                    log.info( "Election timeout triggered, base timeout value is %d", electionTimeout );
                     try
                     {
                         handle( new RaftMessages.Timeout.Election( myself ) );
