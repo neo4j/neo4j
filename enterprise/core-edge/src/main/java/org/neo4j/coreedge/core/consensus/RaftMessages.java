@@ -92,7 +92,7 @@ public interface RaftMessages
 
     interface Vote
     {
-        class Request extends BaseMessage
+        class Request extends BaseRaftMessage
         {
             private long term;
             private MemberId candidate;
@@ -164,7 +164,7 @@ public interface RaftMessages
             }
         }
 
-        class Response extends BaseMessage
+        class Response extends BaseRaftMessage
         {
             private long term;
             private boolean voteGranted;
@@ -222,7 +222,7 @@ public interface RaftMessages
 
     interface AppendEntries
     {
-        class Request extends BaseMessage
+        class Request extends BaseRaftMessage
         {
             private long leaderTerm;
             private long prevLogIndex;
@@ -303,7 +303,7 @@ public interface RaftMessages
             }
         }
 
-        class Response extends BaseMessage
+        class Response extends BaseRaftMessage
         {
             private long term;
             private boolean success;
@@ -376,7 +376,7 @@ public interface RaftMessages
         }
     }
 
-    class Heartbeat extends BaseMessage
+    class Heartbeat extends BaseRaftMessage
     {
         private long leaderTerm;
         private long commitIndex;
@@ -446,7 +446,7 @@ public interface RaftMessages
         }
     }
 
-    class LogCompactionInfo extends BaseMessage
+    class LogCompactionInfo extends BaseRaftMessage
     {
         private long leaderTerm;
         private long prevIndex;
@@ -508,7 +508,7 @@ public interface RaftMessages
 
     interface Timeout
     {
-        class Election extends BaseMessage
+        class Election extends BaseRaftMessage
         {
             public Election( MemberId from )
             {
@@ -522,7 +522,7 @@ public interface RaftMessages
             }
         }
 
-        class Heartbeat extends BaseMessage
+        class Heartbeat extends BaseRaftMessage
         {
             public Heartbeat( MemberId from )
             {
@@ -539,7 +539,7 @@ public interface RaftMessages
 
     interface NewEntry
     {
-        class Request extends BaseMessage
+        class Request extends BaseRaftMessage
         {
             private ReplicatedContent content;
 
@@ -584,7 +584,7 @@ public interface RaftMessages
             }
         }
 
-        class Batch extends BaseMessage
+        class Batch extends BaseRaftMessage
         {
             private List<ReplicatedContent> list;
 
@@ -684,12 +684,12 @@ public interface RaftMessages
 
     }
 
-    abstract class BaseMessage implements RaftMessage
+    abstract class BaseRaftMessage implements RaftMessage
     {
         protected MemberId from;
         private Type type;
 
-        public BaseMessage( MemberId from, Type type )
+        public BaseRaftMessage( MemberId from, Type type )
         {
             this.from = from;
             this.type = type;
@@ -718,7 +718,7 @@ public interface RaftMessages
             {
                 return false;
             }
-            BaseMessage that = (BaseMessage) o;
+            BaseRaftMessage that = (BaseRaftMessage) o;
             return Objects.equals( from, that.from ) && type == that.type;
         }
 

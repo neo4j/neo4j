@@ -37,7 +37,7 @@ public final class Matchers
     {
     }
 
-    public static Matcher<? super List<RaftMessages.RaftMessage>> hasMessage( RaftMessages.BaseMessage message )
+    public static Matcher<? super List<RaftMessages.RaftMessage>> hasMessage( RaftMessages.BaseRaftMessage message )
     {
         return new TypeSafeMatcher<List<RaftMessages.RaftMessage>>()
         {
