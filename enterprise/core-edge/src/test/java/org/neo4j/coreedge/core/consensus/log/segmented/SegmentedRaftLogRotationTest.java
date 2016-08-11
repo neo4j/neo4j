@@ -29,46 +29,44 @@ import org.neo4j.coreedge.core.consensus.ReplicatedInteger;
 import org.neo4j.coreedge.core.consensus.ReplicatedString;
 import org.neo4j.coreedge.core.consensus.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.rule.Resources;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
-import static org.neo4j.test.rule.Resources.TestPath.EXISTING_DIRECTORY;
 
 public class SegmentedRaftLogRotationTest
 {
     private static final int ROTATE_AT_SIZE_IN_BYTES = 100;
 
     @Rule
-    public final Resources resourceManager = new Resources( EXISTING_DIRECTORY );
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final LifeRule life = new LifeRule( true );
 
-    private SegmentedRaftLog createRaftLog( long rotateAtSize ) throws IOException
-    {
-        return new SegmentedRaftLog( resourceManager.fileSystem(), resourceManager.testPath(), rotateAtSize,
-                new DummyRaftableContentSerializer(), NullLogProvider.getInstance(),
-                raft_log_pruning_strategy.getDefaultValue(), 0, new FakeClock(), new OnDemandJobScheduler() );
-    }
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
     @Test
-    @Resources.Life( STARTED )
     public void shouldRotateOnAppendWhenRotateSizeIsReached() throws Exception
     {
         // When
-        SegmentedRaftLog log = resourceManager.managed( createRaftLog( ROTATE_AT_SIZE_IN_BYTES ) );
+        SegmentedRaftLog log = life.add( createRaftLog( ROTATE_AT_SIZE_IN_BYTES ) );
         log.append( new RaftLogEntry( 0, replicatedStringOfBytes( ROTATE_AT_SIZE_IN_BYTES ) ) );
 
         // Then
-        File[] files = resourceManager.fileSystem().listFiles( resourceManager.testPath() );
+        File[] files = fileSystem.listFiles( testDirectory.directory() );
         assertEquals( 2, files.length );
     }
 
     @Test
-    @Resources.Life( STARTED )
     public void shouldBeAbleToRecoverToLatestStateAfterRotation() throws Throwable
     {
         // Given
@@ -82,7 +80,7 @@ public class SegmentedRaftLogRotationTest
         }
 
         // When
-        SegmentedRaftLog log = resourceManager.managed( createRaftLog( ROTATE_AT_SIZE_IN_BYTES ) );
+        SegmentedRaftLog log = life.add( createRaftLog( ROTATE_AT_SIZE_IN_BYTES ) );
 
         // Then
         assertEquals( indexToRestoreTo, log.appendIndex() );
@@ -97,5 +95,12 @@ public class SegmentedRaftLogRotationTest
             builder.append( "i" );
         }
         return new ReplicatedString( builder.toString() );
+    }
+
+    private SegmentedRaftLog createRaftLog( long rotateAtSize ) throws IOException
+    {
+        return new SegmentedRaftLog( fileSystem, testDirectory.directory(), rotateAtSize,
+                new DummyRaftableContentSerializer(), NullLogProvider.getInstance(),
+                raft_log_pruning_strategy.getDefaultValue(), 0, new FakeClock(), new OnDemandJobScheduler() );
     }
 }

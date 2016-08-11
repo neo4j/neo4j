@@ -83,11 +83,6 @@ public final class Resources implements TestRule
     private final ResourceRule<File> testPath;
     private final LifeRule life = new LifeRule();
 
-    public Resources()
-    {
-        this( null );
-    }
-
     public Resources( TestPath path )
     {
         if ( path != null )
