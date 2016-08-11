@@ -78,7 +78,7 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
                 ConsensusOutcome outcome = raftMachine.handle( storeIdAwareMessage.message() );
                 if ( outcome.needsFreshSnapshot() )
                 {
-                    notifyNeedFreshSnapshot();
+                    notifyNeedFreshSnapshot( storeId );
                 }
                 else
                 {
@@ -123,7 +123,7 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
                  */
                 log.info( "StoreId mismatch but store was empty so downloading new store from %s. Expected: " +
                         "%s, Encountered: %s. ", message.from(), storeId, localDatabase.storeId() );
-                downloadSnapshot( message.from() );
+                downloadSnapshot( message.from(), storeId );
             }
             else
             {
@@ -148,11 +148,11 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
         applicationProcess.notifyCommitted( commitIndex );
     }
 
-    private synchronized void notifyNeedFreshSnapshot()
+    private synchronized void notifyNeedFreshSnapshot( StoreId storeId )
     {
         try
         {
-            downloadSnapshot( someoneElse.coreMember() );
+            downloadSnapshot( someoneElse.coreMember(), storeId );
         }
         catch ( CoreMemberSelectionException e )
         {
@@ -164,16 +164,18 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
      * Attempts to download a fresh snapshot from another core instance.
      *
      * @param source The source address to attempt a download of a snapshot from.
+     * @param storeId
      */
-    private void downloadSnapshot( MemberId source )
+    private void downloadSnapshot( MemberId source, StoreId storeId )
     {
         try
         {
             applicationProcess.sync();
-            downloader.downloadSnapshot( source, this );
+            downloader.downloadSnapshot( source, storeId, this );
         }
         catch ( InterruptedException | StoreCopyFailedException e )
         {
+            e.printStackTrace();
             log.error( "Failed to download snapshot", e );
         }
     }

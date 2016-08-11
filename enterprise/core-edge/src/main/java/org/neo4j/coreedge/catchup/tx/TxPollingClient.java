@@ -19,11 +19,15 @@
  */
 package org.neo4j.coreedge.catchup.tx;
 
+import java.util.function.Supplier;
+
 import org.neo4j.coreedge.catchup.CoreClient;
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService.TimeoutName;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -48,6 +52,8 @@ import static org.neo4j.coreedge.catchup.tx.TxPollingClient.Timeouts.TX_PULLER_T
  */
 public class TxPollingClient extends LifecycleAdapter implements TxPullListener
 {
+    private final Supplier<StoreId> localDatabase;
+
     enum Timeouts implements TimeoutName
     {
         TX_PULLER_TIMEOUT
@@ -89,9 +95,12 @@ public class TxPollingClient extends LifecycleAdapter implements TxPullListener
     private long unexpectedCount;
     private boolean streamingCompleted;
 
-    public TxPollingClient( LogProvider logProvider, CoreClient coreClient, CoreMemberSelectionStrategy connectionStrategy,
-            RenewableTimeoutService timeoutService, long txPullIntervalMillis, BatchingTxApplier applier )
+    public TxPollingClient( LogProvider logProvider, Supplier<StoreId> localDatabase,
+                            CoreClient coreClient, CoreMemberSelectionStrategy connectionStrategy,
+                            RenewableTimeoutService timeoutService, long txPullIntervalMillis,
+                            BatchingTxApplier applier )
     {
+        this.localDatabase = localDatabase;
         this.log = logProvider.getLog( getClass() );
         this.coreClient = coreClient;
         this.connectionStrategy = connectionStrategy;
@@ -135,7 +144,7 @@ public class TxPollingClient extends LifecycleAdapter implements TxPullListener
      * End of tx responses received off the network.
      */
     @Override
-    public synchronized void onTxStreamingComplete( long ignored )
+    public synchronized void onTxStreamingComplete( long ignored, boolean success )
     {
         state.handler.onTxStreamingComplete( this );
     }
@@ -179,7 +188,8 @@ public class TxPollingClient extends LifecycleAdapter implements TxPullListener
             try
             {
                 transactionServer = ctx.connectionStrategy.coreMember();
-                ctx.coreClient.pollForTransactions( transactionServer, ctx.applier.lastAppliedTxId() );
+                ctx.coreClient.pollForTransactions( transactionServer, ctx.localDatabase.get(),
+                        ctx.applier.lastAppliedTxId() );
             }
             catch ( Exception e )
             {

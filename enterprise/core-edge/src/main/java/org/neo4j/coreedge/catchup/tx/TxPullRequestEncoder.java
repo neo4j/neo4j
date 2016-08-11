@@ -25,6 +25,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
+import org.neo4j.coreedge.messaging.NetworkFlushableChannelNetty4;
+import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
+
 public class TxPullRequestEncoder extends MessageToMessageEncoder<TxPullRequest>
 {
     @Override
@@ -32,6 +35,7 @@ public class TxPullRequestEncoder extends MessageToMessageEncoder<TxPullRequest>
     {
         ByteBuf encoded = ctx.alloc().buffer();
         encoded.writeLong( request.txId() );
+        StoreIdMarshal.marshal( request.storeId(), new NetworkFlushableChannelNetty4( encoded ) );
         out.add( encoded );
     }
 }

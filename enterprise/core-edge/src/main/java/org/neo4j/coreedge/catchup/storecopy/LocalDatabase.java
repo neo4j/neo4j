@@ -43,14 +43,16 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
     private final DataSourceManager dataSourceManager;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
+    private final Log log;
 
     private volatile StoreId storeId;
     private volatile DatabaseHealth databaseHealth;
-    private final Log log;
 
     public LocalDatabase( File storeDir, CopiedStoreRecovery copiedStoreRecovery, StoreFiles storeFiles,
-                          DataSourceManager dataSourceManager, Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                          Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
+                          DataSourceManager dataSourceManager,
+                          Supplier<TransactionIdStore> transactionIdStoreSupplier,
+                          Supplier<DatabaseHealth> databaseHealthSupplier,
+                          LogProvider logProvider )
     {
         this.storeDir = storeDir;
         this.copiedStoreRecovery = copiedStoreRecovery;
@@ -58,7 +60,7 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         this.dataSourceManager = dataSourceManager;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.databaseHealthSupplier = databaseHealthSupplier;
-        log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
         this.storeId = StoreId.DEFAULT;
     }
 
@@ -116,20 +118,39 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         return databaseHealth;
     }
 
-    public void copyStoreFrom( MemberId from, StoreFetcher storeFetcher ) throws StoreCopyFailedException
+    public void bringUpToDateOrReplaceStoreFrom( MemberId source, StoreId wantedStoreId, StoreFetcher storeFetcher ) throws StoreCopyFailedException
     {
         try
         {
-            storeFiles.delete( storeDir );
-            TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( storeDir );
-            storeFetcher.copyStore( from, tempStore.storeDir() );
-            copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
-            storeFiles.moveTo( tempStore.storeDir(), storeDir );
+            boolean successfullyCaughtUp = false;
+            if ( wantedStoreId.equals( storeId ) )
+            {
+                successfullyCaughtUp = tryToCatchUp( source, storeFetcher );
+            }
+
+            if ( !successfullyCaughtUp )
+            {
+                storeFiles.delete( storeDir );
+                copyWholeStoreFrom( source, wantedStoreId, storeFetcher );
+            }
         }
         catch ( IOException e )
         {
             throw new StoreCopyFailedException( e );
         }
+    }
+
+    private boolean tryToCatchUp( MemberId source, StoreFetcher storeFetcher ) throws IOException, StoreCopyFailedException
+    {
+        return storeFetcher.tryCatchingUp( source, storeId, storeDir );
+    }
+
+    private void copyWholeStoreFrom( MemberId source, StoreId wantedStoreId, StoreFetcher storeFetcher ) throws IOException, StoreCopyFailedException
+    {
+        TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( storeDir );
+        storeFetcher.copyStore( source, wantedStoreId, tempStore.storeDir() );
+        copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
+        storeFiles.moveTo( tempStore.storeDir(), storeDir );
     }
 
     public boolean isEmpty()

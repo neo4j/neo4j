@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.discovery.Cluster;
@@ -162,7 +161,7 @@ public class ClusterIdentityIT
 
         cluster.removeCoreMemberWithMemberId( 0 );
 
-        createSomeData( 100, cluster );
+        SampleData.createSomeData( 100, cluster );
 
         for ( CoreClusterMember db : cluster.coreMembers() )
         {
@@ -197,7 +196,7 @@ public class ClusterIdentityIT
         cluster.removeCoreMemberWithMemberId( 0 );
         changeStoreId( storeDir );
 
-        createSomeData( 100, cluster );
+        SampleData.createSomeData( 100, cluster );
 
         for ( CoreClusterMember db : cluster.coreMembers() )
         {
@@ -227,7 +226,7 @@ public class ClusterIdentityIT
             tx.success();
         } );
 
-        createSomeData( 100, cluster );
+        SampleData.createSomeData( 100, cluster );
 
         for ( CoreClusterMember db : cluster.coreMembers() )
         {
@@ -250,19 +249,6 @@ public class ClusterIdentityIT
     private List<File> storeDirs( Collection<CoreClusterMember> dbs )
     {
         return dbs.stream().map( CoreClusterMember::storeDir ).collect( Collectors.toList() );
-    }
-
-    private void createSomeData( int items, Cluster cluster ) throws TimeoutException, InterruptedException
-    {
-        for ( int i = 0; i < items; i++ )
-        {
-            cluster.coreTx( ( db, tx ) ->
-            {
-                Node node = db.createNode( label( "boo" ) );
-                node.setProperty( "foobar", "baz_bat" );
-                tx.success();
-            } );
-        }
     }
 
     private void changeStoreId( File storeDir ) throws IOException

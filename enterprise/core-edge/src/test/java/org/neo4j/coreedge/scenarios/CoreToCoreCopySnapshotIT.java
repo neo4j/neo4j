@@ -24,25 +24,25 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_frequency;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
+import static org.neo4j.coreedge.scenarios.SampleData.createData;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CoreToCoreCopySnapshotIT
@@ -150,21 +150,6 @@ public class CoreToCoreCopySnapshotIT
         assertThat( leadersOldestLog, greaterThan( followersLastLog ) );
         //The cluster member should join. Otherwise this line will hang forever.
         follower.start();
-    }
-
-    static void createData( GraphDatabaseService db, int size )
-    {
-        for ( int i = 0; i < size; i++ )
-        {
-            Node node1 = db.createNode();
-            Node node2 = db.createNode();
-
-            node1.setProperty( "hej", "svej" );
-            node2.setProperty( "tjabba", "tjena" );
-
-            Relationship rel = node1.createRelationshipTo( node2, RelationshipType.withName( "halla" ) );
-            rel.setProperty( "this", "that" );
-        }
     }
 
     private int getOldestLogIdOn( CoreClusterMember clusterMember ) throws TimeoutException

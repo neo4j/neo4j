@@ -27,6 +27,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
+import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
 
 import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage.TX_PULL;
 
@@ -45,7 +48,8 @@ public class TxPullRequestDecoder extends MessageToMessageDecoder<ByteBuf>
         if ( protocol.isExpecting( TX_PULL ) )
         {
             long txId = msg.readLong();
-            out.add( new TxPullRequest( txId ) );
+            StoreId storeId = StoreIdMarshal.unmarshal( new NetworkReadableClosableChannelNetty4( msg ) );
+            out.add( new TxPullRequest( txId, storeId ) );
         }
         else
         {

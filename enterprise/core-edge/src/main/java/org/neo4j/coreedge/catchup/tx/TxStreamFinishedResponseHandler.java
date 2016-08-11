@@ -41,7 +41,7 @@ public class TxStreamFinishedResponseHandler extends SimpleChannelInboundHandler
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, TxStreamFinishedResponse msg ) throws Exception
     {
-        listener.onTxStreamingComplete( msg.lastTransactionIdSent() );
+        listener.onTxStreamingComplete( msg.lastTransactionIdSent(), msg.isSuccess() );
         protocol.expect( NextMessage.MESSAGE_TYPE );
     }
 }

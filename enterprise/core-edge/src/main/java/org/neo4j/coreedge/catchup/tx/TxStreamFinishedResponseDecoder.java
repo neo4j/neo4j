@@ -45,7 +45,8 @@ public class TxStreamFinishedResponseDecoder extends MessageToMessageDecoder<Byt
         if ( protocol.isExpecting( NextMessage.TX_STREAM_FINISHED ) )
         {
             long lastTransactionIdSent = msg.readLong();
-            out.add( new TxStreamFinishedResponse( lastTransactionIdSent ) );
+            boolean success = msg.readBoolean();
+            out.add( new TxStreamFinishedResponse( lastTransactionIdSent, success ) );
         }
         else
         {

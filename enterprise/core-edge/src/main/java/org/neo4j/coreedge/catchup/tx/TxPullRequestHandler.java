@@ -19,10 +19,10 @@
  */
 package org.neo4j.coreedge.catchup.tx;
 
+import java.util.function.Supplier;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-
-import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
@@ -31,8 +31,11 @@ import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequest>
 {
@@ -41,18 +44,20 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
     private final TxPullRequestsMonitor monitor;
+    private final Log log;
 
     public TxPullRequestHandler( CatchupServerProtocol protocol,
                                  Supplier<StoreId> storeIdSupplier,
                                  Supplier<TransactionIdStore> transactionIdStoreSupplier,
                                  Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
-                                 Monitors monitors )
+                                 Monitors monitors, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.storeId = storeIdSupplier.get();
         this.transactionIdStore = transactionIdStoreSupplier.get();
         this.logicalTransactionStore = logicalTransactionStoreSupplier.get();
         this.monitor = monitors.newMonitor( TxPullRequestsMonitor.class );
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -60,11 +65,12 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     {
         long startTxId = Math.max( msg.txId(), TransactionIdStore.BASE_TX_ID );
         long endTxId = startTxId;
+        boolean success = true;
 
         if ( transactionIdStore.getLastCommittedTransactionId() > startTxId )
         {
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
-                    logicalTransactionStore.getTransactions( startTxId + 1 ) )
+                          logicalTransactionStore.getTransactions( startTxId + 1 ) )
             {
                 while ( cursor.next() )
                 {
@@ -75,10 +81,14 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
                 }
                 ctx.flush();
             }
+            catch ( NoSuchTransactionException e )
+            {
+                success = false;
+                log.info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", endTxId );
+            }
         }
-
         ctx.write( ResponseMessageType.TX_STREAM_FINISHED );
-        ctx.write( new TxStreamFinishedResponse( endTxId ) );
+        ctx.write( new TxStreamFinishedResponse( endTxId, success ) );
         ctx.flush();
 
         monitor.increment();

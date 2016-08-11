@@ -28,6 +28,7 @@ import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
 import org.neo4j.coreedge.core.state.machines.tx.RetryStrategy;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionException;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.kernel.configuration.Config;
@@ -80,7 +81,8 @@ public class EdgeStartupProcess implements Lifecycle
         if ( localDatabase.isEmpty() )
         {
             localDatabase.stop();
-            localDatabase.copyStoreFrom( memberId, storeFetcher );
+            StoreId storeId = storeFetcher.storeId( memberId );
+            localDatabase.bringUpToDateOrReplaceStoreFrom( memberId, storeId, storeFetcher );
             localDatabase.start();
         }
         else

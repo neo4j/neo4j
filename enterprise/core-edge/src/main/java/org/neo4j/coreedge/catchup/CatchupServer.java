@@ -139,7 +139,7 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new TxPullRequestDecoder( protocol ) );
                         pipeline.addLast( new TxPullRequestHandler( protocol, storeIdSupplier,
                                 transactionIdStoreSupplier, logicalTransactionStoreSupplier,
-                                monitors) );
+                                monitors, logProvider ) );
 
                         pipeline.addLast( new ChunkedWriteHandler() );
                         pipeline.addLast( new GetStoreRequestDecoder( protocol ) );
