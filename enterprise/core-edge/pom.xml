@@ -78,7 +78,7 @@
         <dependency>
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast-all</artifactId>
-            <version>3.5.1</version>
+            <version>3.6.4</version>
             <exclusions>
                 <exclusion>
                     <groupId>net.sourceforge.findbugs</groupId>

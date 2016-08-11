@@ -116,7 +116,7 @@ public class HazelcastClusterTopologyTest
 
         // when
         Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
-        Pair<MemberId, CoreAddresses> extracted = extractMemberAttributes( new MemberImpl( null, null, attributes ) );
+        Pair<MemberId, CoreAddresses> extracted = extractMemberAttributes( new MemberImpl( null, null, attributes, false ) );
 
         // then
         assertEquals( memberId, extracted.first() );
@@ -142,8 +142,9 @@ public class HazelcastClusterTopologyTest
             settings.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "raft:" + (i + 1) );
             settings.put( GraphDatabaseSettings.bolt_advertised_address.name(), "bolt:" + (i + 1) );
             config.augment( settings );
+            Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
             hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null,
-                    buildMemberAttributes( memberId, config ).getAttributes() ) );
+                    attributes, false )  );
         }
 
         // when
@@ -175,7 +176,7 @@ public class HazelcastClusterTopologyTest
             {
                 attributes.remove( HazelcastClusterTopology.RAFT_SERVER );
             }
-            hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null, attributes ) );
+            hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null, attributes, false ) );
         }
         // when
         Map<MemberId, CoreAddresses> map =

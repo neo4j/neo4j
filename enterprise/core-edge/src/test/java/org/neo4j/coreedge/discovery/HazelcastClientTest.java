@@ -249,12 +249,6 @@ public class HazelcastClientTest
         }
 
         @Override
-        public Object getId()
-        {
-            throw new IllegalStateException();
-        }
-
-        @Override
         public String getPartitionKey()
         {
             throw new IllegalStateException();
