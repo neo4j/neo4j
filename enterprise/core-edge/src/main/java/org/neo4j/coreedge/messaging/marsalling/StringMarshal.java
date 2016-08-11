@@ -19,11 +19,11 @@
  */
 package org.neo4j.coreedge.messaging.marsalling;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-
-import io.netty.buffer.ByteBuf;
 
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -86,9 +86,10 @@ public class StringMarshal
             {
                 return null;
             }
-            ByteBuf stringBytes = buffer.readBytes( len );
 
-            return new String( stringBytes.array(), DEFAULT_CHARSET );
+            byte[] bytes = new byte[len];
+            buffer.readBytes( bytes );
+            return new String( bytes, DEFAULT_CHARSET );
         }
         catch ( UnsupportedEncodingException e )
         {
