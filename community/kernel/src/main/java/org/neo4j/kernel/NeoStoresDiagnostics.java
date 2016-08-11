@@ -45,9 +45,9 @@ public enum NeoStoresDiagnostics implements DiagnosticsExtractor<NeoStores>
     NEO_STORE_RECORDS( "Neostore records:" )
     {
         @Override
-        void dump( NeoStores source, Logger log )
+        void dump( NeoStores source, Logger logger )
         {
-            source.getMetaDataStore().logRecords( log );
+            source.getMetaDataStore().logRecords( logger );
         }
     };
 

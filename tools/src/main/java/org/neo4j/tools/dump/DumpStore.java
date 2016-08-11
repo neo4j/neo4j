@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.PrintStreamLogger;
 import org.neo4j.storageengine.api.Token;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
@@ -114,6 +115,9 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         {
             switch ( storeType )
             {
+            case META_DATA:
+                dumpMetaDataStore( neoStores );
+                break;
             case NODE:
                 dumpNodeStore( neoStores, ids );
                 break;
@@ -142,6 +146,11 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
                 throw new IllegalArgumentException( "Unsupported store type: " + storeType );
             }
         }
+    }
+
+    private static void dumpMetaDataStore( NeoStores neoStores )
+    {
+        neoStores.getMetaDataStore().logRecords( new PrintStreamLogger( System.out ) );
     }
 
     private static LogProvider logProvider()

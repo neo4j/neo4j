@@ -230,7 +230,8 @@ public enum StoreType
         StoreType[] values = StoreType.values();
         for ( StoreType value : values )
         {
-            if ( storeFileName.equals( MetaDataStore.DEFAULT_NAME + value.getStoreName() ) )
+            if ( value.getStoreName().equals( storeFileName ) ||
+                    storeFileName.equals( MetaDataStore.DEFAULT_NAME + value.getStoreName() ) )
             {
                 return value;
             }
