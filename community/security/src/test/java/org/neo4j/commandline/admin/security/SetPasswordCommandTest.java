@@ -46,6 +46,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -285,6 +286,36 @@ public class SetPasswordCommandTest
         verify( out, times( 0 ) ).stdErrLine( anyString() );
         verify( out ).exit( 0 );
         assertUserDoesNotRequirePasswordChange( "neo4j" );
+    }
+
+    @Test
+    public void shouldRunAdminToolWithSetPasswordCommandAndExistingUserAndCreateTrueAndSamePassword() throws Throwable
+    {
+        // Given a user that requires password change
+        createTestUser("neo4j", "neo4j");
+        assertUserRequiresPasswordChange( "neo4j" );
+
+        // When running the neo4j-admin tool with correct parameters
+        Path homeDir = testDir.graphDbDir().toPath();
+        Path configDir = testDir.directory( "conf" ).toPath();
+        OutsideWorld out = mock( OutsideWorld.class );
+        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
+        tool.execute( homeDir, configDir, "set-password", "--create=true", "neo4j", "abc" );
+
+        // Then we get no error output and the user no longer requires password change
+        verify( out ).stdOutLine( "Changed password for user 'neo4j'" );
+        verify( out, times( 0 ) ).stdErrLine( anyString() );
+        verify( out ).exit( 0 );
+        assertUserDoesNotRequirePasswordChange( "neo4j" );
+
+        // Then when running another password set to same password
+        reset(out);
+        tool.execute( homeDir, configDir, "set-password", "--create=true", "neo4j", "abc" );
+
+        // Then we should get a 'password cannot be the same' error
+        verify( out, times( 0 ) ).stdOutLine( anyString() );
+        verify( out ).stdErrLine( "command failed: Failed to set password for 'neo4j': Old password and new password cannot be the same." );
+        verify( out ).exit( 1 );
     }
 
     private File authFile()

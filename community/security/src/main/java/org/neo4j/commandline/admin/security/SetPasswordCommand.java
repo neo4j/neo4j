@@ -114,7 +114,7 @@ public class SetPasswordCommand implements AdminCommand
             }
             catch ( InvalidArgumentsException e )
             {
-                if ( shouldCreate )
+                if ( shouldCreate  && e.getMessage().contains( "does not exist" ))
                 {
                     authManager.getUserManager().newUser( username, password, false );
                     outsideWorld.stdOutLine( "Created new user '" + username + "'" );
