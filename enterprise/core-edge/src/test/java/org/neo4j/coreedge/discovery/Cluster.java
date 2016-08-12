@@ -135,7 +135,7 @@ public class Cluster
         Config config = coreClusterMember.database().getDependencyResolver().resolveDependency( Config.class );
 
         List<AdvertisedSocketAddress> hazelcastAddresses =
-                config.get( CoreEdgeClusterSettings.initial_hazelcast_members );
+                config.get( CoreEdgeClusterSettings.initial_discovery_members );
         EdgeClusterMember member = new EdgeClusterMember( parentDir, memberId, discoveryServiceFactory,
                 hazelcastAddresses, stringMap(), emptyMap(), recordFormat );
         edgeMembers.put( memberId, member );
@@ -298,7 +298,7 @@ public class Cluster
         Config config = firstOrNull( coreMembers.values() ).database().getDependencyResolver().resolveDependency(
                 Config.class );
         List<AdvertisedSocketAddress> advertisedAddress = config.get( CoreEdgeClusterSettings
-                .initial_hazelcast_members );
+                .initial_discovery_members );
 
         CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, intendedClusterSize, advertisedAddress,
                 discoveryServiceFactory, recordFormat, parentDir,

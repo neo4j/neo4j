@@ -91,6 +91,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.udc.UsageData;
 
+import static java.time.Clock.systemUTC;
 import static java.util.Collections.singletonMap;
 
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
@@ -116,15 +117,16 @@ public class EnterpriseEdgeEditionModule extends EditionModule
     }
 
     EnterpriseEdgeEditionModule( final PlatformModule platformModule,
-            final DiscoveryServiceFactory discoveryServiceFactory )
+                                 final DiscoveryServiceFactory discoveryServiceFactory )
     {
         LogService logging = platformModule.logging;
         Log userLog = logging.getUserLog( EnterpriseEdgeEditionModule.class );
         if ( platformModule.config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
             userLog.warn( "Backup is not supported on edge servers. Ignoring the configuration setting: "
-                          + OnlineBackupSettings.online_backup_enabled );
-            platformModule.config.augment( singletonMap( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE ) );
+                    + OnlineBackupSettings.online_backup_enabled );
+            platformModule.config.augment( singletonMap( OnlineBackupSettings.online_backup_enabled.name(), Settings
+                    .FALSE ) );
         }
 
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
@@ -143,7 +145,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
-        idGeneratorFactory = dependencies.satisfyDependency( new DefaultIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
+        idGeneratorFactory = dependencies.satisfyDependency( new DefaultIdGeneratorFactory( fileSystem,
+                idTypeConfigurationProvider ) );
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
         propertyKeyTokenHolder = life.add( dependencies.satisfyDependency(
@@ -160,13 +163,15 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 
-        schemaWriteGuard = () -> {};
+        schemaWriteGuard = () -> {
+        };
 
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
-        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
+        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard,
+                transactionStartTimeout );
 
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 
@@ -175,11 +180,18 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
 
-        TopologyService discoveryService = discoveryServiceFactory.edgeDiscoveryService( config, extractBoltAddress( config ), logProvider );
+        DelayedRenewableTimeoutService refreshEdgeTimeoutService = life.add( new DelayedRenewableTimeoutService(
+                systemUTC(), logProvider ) );
+
+        long edgeTimeToLiveTimeout = config.get( CoreEdgeClusterSettings.edge_time_to_live );
+
+        TopologyService discoveryService = discoveryServiceFactory.edgeDiscoveryService( config,
+                extractBoltAddress( config ), logProvider, refreshEdgeTimeoutService, edgeTimeToLiveTimeout );
         life.add( dependencies.satisfyDependency( discoveryService ) );
 
         NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
-        EdgeToCoreClient.ChannelInitializer channelInitializer = new EdgeToCoreClient.ChannelInitializer( logProvider, nonBlockingChannels );
+        EdgeToCoreClient.ChannelInitializer channelInitializer = new EdgeToCoreClient.ChannelInitializer(
+                logProvider, nonBlockingChannels );
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
         long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );
         EdgeToCoreClient edgeToCoreClient = life.add( new EdgeToCoreClient( logProvider,
@@ -195,22 +207,25 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         LifeSupport txPulling = new LifeSupport();
         int maxBatchSize = config.get( CoreEdgeClusterSettings.edge_transaction_applier_batch_size );
-        BatchingTxApplier batchingTxApplier = new BatchingTxApplier( maxBatchSize, dependencies.provideDependency( TransactionIdStore.class ),
+        BatchingTxApplier batchingTxApplier = new BatchingTxApplier( maxBatchSize, dependencies.provideDependency(
+                TransactionIdStore.class ),
                 writableCommitProcess, databaseHealthSupplier, platformModule.monitors, logProvider );
-        ContinuousJob txApplyJob = new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "tx-applier", NEW_THREAD ), batchingTxApplier );
+        ContinuousJob txApplyJob = new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group(
+                "tx-applier", NEW_THREAD ), batchingTxApplier );
 
-        DelayedRenewableTimeoutService txPullerTimeoutService = new DelayedRenewableTimeoutService( Clock.systemUTC(), logProvider );
+        DelayedRenewableTimeoutService txPullerTimeoutService = new DelayedRenewableTimeoutService( Clock.systemUTC()
+                , logProvider );
 
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
-                new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule
-                        .pageCache ),
+                new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(),
+                        platformModule.pageCache ),
                 new StoreFiles( new DefaultFileSystemAbstraction() ),
                 platformModule.dataSourceManager,
                 dependencies.provideDependency( TransactionIdStore.class ),
                 databaseHealthSupplier, logProvider );
 
-        TxPollingClient txPuller = new TxPollingClient( logProvider, localDatabase,
-                edgeToCoreClient, new ConnectToRandomCoreMember( discoveryService ),
+        TxPollingClient txPuller = new TxPollingClient( logProvider,
+                localDatabase, edgeToCoreClient, new ConnectToRandomCoreMember( discoveryService ),
                 txPullerTimeoutService, config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier );
 
         txPulling.add( batchingTxApplier );
@@ -226,7 +241,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         life.add( new EdgeStartupProcess( storeFetcher,
                 localDatabase,
                 txPulling, new ConnectToRandomCoreMember( discoveryService ),
-                new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider) );
+                new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider ) );
 
         dependencies.satisfyDependency( createSessionTracker() );
     }

@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.discovery;
 
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
@@ -35,10 +36,11 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
     }
 
     @Override
-    public TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress, LogProvider logProvider )
+    public TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress,
+                                                 LogProvider logProvider, DelayedRenewableTimeoutService timeoutService, long edgeTimeToLiveTimeout )
     {
         makeHazelcastSilent( config );
-        return new HazelcastClient( new HazelcastClientConnector( config ), logProvider, boltAddress );
+        return new HazelcastClient( new HazelcastClientConnector( config ), logProvider, boltAddress, timeoutService, edgeTimeToLiveTimeout );
     }
 
     private static void makeHazelcastSilent( Config config )

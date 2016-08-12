@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import com.hazelcast.config.MemberAttributeConfig;
@@ -38,6 +37,7 @@ import com.hazelcast.core.ClientService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IExecutorService;
+import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
@@ -68,7 +68,7 @@ class HazelcastClusterTopology
             coreMembers = hazelcastInstance.getCluster().getMembers();
         }
         return new ClusterTopology( canBeBootstrapped( coreMembers ), toCoreMemberMap( coreMembers, log ),
-                edgeMembers( hazelcastInstance ) );
+                edgeMembers( hazelcastInstance, log ) );
     }
 
     static class GetConnectedClients implements Callable<Collection<String>>, Serializable, HazelcastInstanceAware
@@ -97,11 +97,11 @@ class HazelcastClusterTopology
         }
     }
 
-    private static Set<EdgeAddresses> edgeMembers( HazelcastInstance hazelcastInstance )
+    private static Set<EdgeAddresses> edgeMembers( HazelcastInstance hazelcastInstance, Log log )
     {
         if ( hazelcastInstance == null )
         {
-            // todo log a warning
+            log.info( "Cannot currently bind to distributed discovery service." );
             return emptySet();
         }
 
@@ -110,10 +110,12 @@ class HazelcastClusterTopology
         try
         {
             connectedUUIDs = executorService.submit( new GetConnectedClients( hazelcastInstance ) ).get();
+            removeDisconnectedEdgeServers( hazelcastInstance, connectedUUIDs );
+
         }
         catch ( InterruptedException | ExecutionException e )
         {
-            // todo log a warning
+            log.info( "Unable to complete operation with distributed discovery service.", e );
             return emptySet();
         }
 
@@ -122,6 +124,20 @@ class HazelcastClusterTopology
                         filter( entry -> connectedUUIDs.contains( entry.getKey() ) )
                 .map( entry -> new EdgeAddresses( new AdvertisedSocketAddress( entry.getValue() /*boltAddress*/ ) ) )
                 .collect( toSet() );
+    }
+
+    private static void removeDisconnectedEdgeServers( HazelcastInstance hazelcastInstance,
+                                                       Collection<String> connectedUUIDs )
+    {
+        IMap<String, String> edgeServers =
+                hazelcastInstance.<String, String>getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME );
+
+        Set<String> toRemove = edgeServers.keySet()
+                .stream()
+                .filter( key -> !connectedUUIDs.contains( key ) )
+                .collect( Collectors.toSet() );
+
+        toRemove.forEach( edgeServers::remove );
     }
 
     private static boolean canBeBootstrapped( Set<Member> coreMembers )

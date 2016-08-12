@@ -69,6 +69,8 @@ import com.hazelcast.query.Predicate;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.Test;
 
+import org.neo4j.coreedge.core.consensus.schedule.ControlledRenewableTimeoutService;
+import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -100,7 +102,8 @@ public class HazelcastClientTest
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS );
+        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
+                ControlledRenewableTimeoutService(), 60_000 );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -126,7 +129,8 @@ public class HazelcastClientTest
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS );
+        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
+                ControlledRenewableTimeoutService(), 60_000 );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -167,7 +171,8 @@ public class HazelcastClientTest
 
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
 
-        HazelcastClient client = new HazelcastClient( connector, logProvider, ADDRESS );
+        HazelcastClient client = new HazelcastClient( connector, logProvider, ADDRESS, new
+                ControlledRenewableTimeoutService(), 60_000 );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -188,7 +193,8 @@ public class HazelcastClientTest
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS );
+        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
+                ControlledRenewableTimeoutService(), 60_000 );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -209,7 +215,8 @@ public class HazelcastClientTest
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS );
+        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
+                ControlledRenewableTimeoutService(), 60_000 );
 
         HazelcastInstance hazelcastInstance1 = mock( HazelcastInstance.class );
         HazelcastInstance hazelcastInstance2 = mock( HazelcastInstance.class );
@@ -274,7 +281,8 @@ public class HazelcastClientTest
         HazelcastConnector connector = mock( HazelcastConnector.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS );
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
+                ControlledRenewableTimeoutService(), 60_000 );
 
         hazelcastClient.start();
 
@@ -315,7 +323,8 @@ public class HazelcastClientTest
         HazelcastConnector connector = mock( HazelcastConnector.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS );
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS,
+                new ControlledRenewableTimeoutService(), 60_000 );
 
         hazelcastClient.start();
 
@@ -340,7 +349,7 @@ public class HazelcastClientTest
 
     private class HazelcastMap implements IMap<Object, Object>
     {
-        private HashMap<Object, Object> delegate = new HashMap();
+        private HashMap delegate = new HashMap();
 
         @Override
         public int size()
@@ -430,7 +439,7 @@ public class HazelcastClientTest
         @Override
         public Object put( Object key, Object value, long ttl, TimeUnit timeunit )
         {
-            return null;
+            return delegate.put( key, value );
         }
 
         @Override

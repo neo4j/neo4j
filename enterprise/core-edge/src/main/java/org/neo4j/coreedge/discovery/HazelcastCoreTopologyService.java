@@ -120,7 +120,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         tcpIpConfig.setEnabled( true );
 
         List<AdvertisedSocketAddress> initialMembers =
-                config.get( CoreEdgeClusterSettings.initial_hazelcast_members );
+                config.get( CoreEdgeClusterSettings.initial_discovery_members );
         for ( AdvertisedSocketAddress address : initialMembers )
         {
             tcpIpConfig.addMember( address.toString() );

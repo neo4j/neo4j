@@ -53,7 +53,7 @@ public class EdgeClusterMember
 
         config.put( "dbms.mode", "EDGE" );
         config.put( CoreEdgeClusterSettings.cluster_name.name(), CoreClusterMember.CLUSTER_NAME );
-        config.put( CoreEdgeClusterSettings.initial_hazelcast_members.name(), initialHosts );
+        config.put( CoreEdgeClusterSettings.initial_discovery_members.name(), initialHosts );
         config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
         config.put( GraphDatabaseSettings.record_format.name(), recordFormat );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );

@@ -71,31 +71,10 @@ public class CoreClusterMember
 
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
-<<<<<<< 363cd98ccbc5fadc1f612d25d07aa044436b4374
-        Map<String, String> params = stringMap();
-        params.put( "dbms.mode", "CORE" );
-        params.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
-        params.put( CoreEdgeClusterSettings.cluster_name.name(), CLUSTER_NAME );
-        params.put( CoreEdgeClusterSettings.initial_core_cluster_members.name(), initialMembers );
-        params.put( GraphDatabaseSettings.record_format.name(), recordFormat );
-        params.put( CoreEdgeClusterSettings.discovery_listen_address.name(), "localhost:" + clusterPort );
-        params.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "localhost:" + txPort );
-        params.put( CoreEdgeClusterSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
-        params.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "localhost:" + raftPort );
-        params.put( CoreEdgeClusterSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + boltPort );
-        params.put( GraphDatabaseSettings.bolt_advertised_address.name(), "127.0.0.1:" + boltPort );
-        params.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
-        params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-        params.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
-        params.putAll( extraParams );
-=======
         config.put( "dbms.mode", "CORE" );
         config.put( CoreEdgeClusterSettings.cluster_name.name(), CLUSTER_NAME );
-        config.put( CoreEdgeClusterSettings.initial_hazelcast_members.name(), initialMembers );
-        config.put( CoreEdgeClusterSettings.hazelcast_listen_address.name(), "127.0.0.1:" + hazelcastPort );
+        config.put( CoreEdgeClusterSettings.initial_discovery_members.name(), initialMembers );
+        config.put( CoreEdgeClusterSettings.discovery_listen_address.name(), "127.0.0.1:" + hazelcastPort );
         config.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "localhost:" + txPort );
         config.put( CoreEdgeClusterSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
         config.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "localhost:" + raftPort );
@@ -110,7 +89,6 @@ public class CoreClusterMember
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         config.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
         config.putAll( extraParams );
->>>>>>> Graceful Shutdown of Edge Servers
 
         for ( Map.Entry<String, IntFunction<String>> entry : instanceExtraParams.entrySet() )
         {

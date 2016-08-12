@@ -39,6 +39,7 @@ import org.neo4j.coreedge.core.consensus.log.segmented.FileNames;
 import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.CoreGraphDatabase;
+import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.coreedge.edge.EdgeGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -88,7 +89,10 @@ public class EdgeServerReplicationIT
 {
     @Rule
     public final ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfEdgeMembers( 1 );
+            new ClusterRule( getClass() )
+                    .withNumberOfCoreMembers( 3 )
+                    .withNumberOfEdgeMembers( 1 )
+                    .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
 
     @Test
     public void shouldNotBeAbleToWriteToEdge() throws Exception
@@ -128,6 +132,8 @@ public class EdgeServerReplicationIT
             ThrowingSupplier<Boolean,Exception> availability = () -> edgeClusterMember.database().isAvailable( 0 );
             assertEventually( "edge server becomes available", availability, is( true ), 10, SECONDS );
         }
+
+        Thread.sleep( 20_000 );
     }
 
     @Test

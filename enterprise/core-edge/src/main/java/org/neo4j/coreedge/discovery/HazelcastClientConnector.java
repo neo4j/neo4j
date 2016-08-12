@@ -21,7 +21,6 @@ package org.neo4j.coreedge.discovery;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.core.HazelcastInstance;
 
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
@@ -44,7 +43,7 @@ public class HazelcastClientConnector implements HazelcastConnector
 
         clientConfig.getGroupConfig().setName( config.get( CoreEdgeClusterSettings.cluster_name ) );
 
-        for ( AdvertisedSocketAddress address : config.get( CoreEdgeClusterSettings.initial_hazelcast_members ) )
+        for ( AdvertisedSocketAddress address : config.get( CoreEdgeClusterSettings.initial_discovery_members ) )
         {
             clientConfig.getNetworkConfig().addAddress( address.toString() );
         }

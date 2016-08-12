@@ -30,6 +30,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
@@ -54,7 +55,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     }
 
     @Override
-    public TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress, LogProvider logProvider )
+    public TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress, LogProvider logProvider, DelayedRenewableTimeoutService timeoutService, long edgeTimeToLiveTimeout )
     {
         return new SharedDiscoveryEdgeClient( this, boltAddress, logProvider );
     }

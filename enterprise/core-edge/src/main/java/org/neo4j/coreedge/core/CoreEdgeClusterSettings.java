@@ -142,8 +142,8 @@ public class CoreEdgeClusterSettings
             setting( "core_edge.discovery_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5000" );
 
     @Description("A comma-separated list of other members of the cluster to join.")
-    public static final Setting<List<AdvertisedSocketAddress>> initial_hazelcast_members =
-            setting( "core_edge.initial_hazelcast_members", list( ",", ADVERTISED_SOCKET_ADDRESS ), MANDATORY );
+    public static final Setting<List<AdvertisedSocketAddress>> initial_discovery_members =
+            setting( "core_edge.initial_discovery_members", list( ",", ADVERTISED_SOCKET_ADDRESS ), MANDATORY );
 
     @Description("Prevents the network middleware from dumping its own logs. Defaults to true.")
     public static final Setting<Boolean> disable_middleware_logging =
@@ -225,5 +225,10 @@ public class CoreEdgeClusterSettings
 
     @Description( "Maximum transaction batch size for edge servers when applying transactions pulled from core servers." )
     @Internal
-    public static Setting<Integer> edge_transaction_applier_batch_size = setting( "core_edge.edge_transaction_applier_batch_size", INTEGER, "16" );
+    public static Setting<Integer> edge_transaction_applier_batch_size =
+            setting( "core_edge.edge_transaction_applier_batch_size", INTEGER, "16" );
+
+    @Description( "Time To Live before edge server is considered unavailable" )
+    public static final Setting<Long> edge_time_to_live =
+            setting( "core_edge.edge_time_to_live", DURATION, "1m", min(60_000L) );
 }
