@@ -73,7 +73,6 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THR
 
 public class CoreServerModule
 {
-    public final LifeSupport startupLifecycle;
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
 
     public CoreServerModule( MemberId myself, final PlatformModule platformModule, ConsensusModule consensusModule,
@@ -176,9 +175,8 @@ public class CoreServerModule
                 new DataSourceSupplier( platformModule ), new CheckpointerSupplier( platformModule.dependencies ),
                 coreState, config.get( CoreEdgeClusterSettings.transaction_listen_address ), platformModule.monitors );
 
-        startupLifecycle = new LifeSupport();
-        startupLifecycle.add( coreState );
-        startupLifecycle.add( raftServer );
-        startupLifecycle.add( catchupServer );
+        life.add( coreState );
+        life.add( raftServer );
+        life.add( catchupServer );
     }
 }

@@ -218,8 +218,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         dependencies.satisfyDependency( lockManager );
 
-        life.add( coreStateMachinesModule.replicatedIdGeneratorFactory );
-        life.add( coreServerModule.startupLifecycle );
         life.add( consensusModule.raftTimeoutService() );
         life.add( coreServerModule.membershipWaiterLifecycle );
     }

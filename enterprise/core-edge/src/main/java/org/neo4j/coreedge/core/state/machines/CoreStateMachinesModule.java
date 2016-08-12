@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -71,7 +70,7 @@ public class CoreStateMachinesModule
     public static final String ID_ALLOCATION_NAME = "id-allocation";
     public static final String LOCK_TOKEN_NAME = "lock-token";
 
-    public final IdGeneratorFactory idGeneratorFactory;
+    public final ReplicatedIdGeneratorFactory idGeneratorFactory;
     public final IdTypeConfigurationProvider idTypeConfigurationProvider;
     public final LabelTokenHolder labelTokenHolder;
     public final PropertyKeyTokenHolder propertyKeyTokenHolder;
@@ -79,7 +78,6 @@ public class CoreStateMachinesModule
     public final Locks lockManager;
     public final CommitProcessFactory commitProcessFactory;
 
-    public final ReplicatedIdGeneratorFactory replicatedIdGeneratorFactory;
     public final CoreStateMachines coreStateMachines;
 
     public CoreStateMachinesModule( MemberId myself, PlatformModule platformModule, File clusterStateDirectory,
@@ -119,10 +117,13 @@ public class CoreStateMachinesModule
                         logProvider );
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
-        replicatedIdGeneratorFactory = createIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider,
-                idTypeConfigurationProvider );
 
-        this.idGeneratorFactory = dependencies.satisfyDependency( replicatedIdGeneratorFactory );
+        this.idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem,
+                idRangeAcquirer, logProvider,
+                idTypeConfigurationProvider ) );
+
+        life.add( this.idGeneratorFactory );
+
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
         Long tokenCreationTimeout = config.get( CoreEdgeClusterSettings.token_creation_timeout );
