@@ -30,24 +30,9 @@ import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 
 public class CoreSnapshotRequestDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private final CatchupServerProtocol protocol;
-
-    public CoreSnapshotRequestDecoder( CatchupServerProtocol protocol )
-    {
-        this.protocol = protocol;
-    }
-
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        if ( protocol.isExpecting( CatchupServerProtocol.NextMessage.GET_RAFT_STATE ) )
-        {
-            out.add( new CoreSnapshotRequest() );
-        }
-        else
-        {
-            out.add( Unpooled.copiedBuffer( msg ) );
-        }
-
+        out.add( new CoreSnapshotRequest() );
     }
 }

@@ -30,23 +30,9 @@ import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 
 public class GetStoreIdRequestDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private final CatchupServerProtocol protocol;
-
-    public GetStoreIdRequestDecoder( CatchupServerProtocol protocol )
-    {
-        this.protocol = protocol;
-    }
-
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        if ( protocol.isExpecting( CatchupServerProtocol.NextMessage.GET_STORE_ID ) )
-        {
-            out.add( new GetStoreIdRequest() );
-        }
-        else
-        {
-            out.add( Unpooled.copiedBuffer( msg ) );
-        }
+        out.add( new GetStoreIdRequest() );
     }
 }

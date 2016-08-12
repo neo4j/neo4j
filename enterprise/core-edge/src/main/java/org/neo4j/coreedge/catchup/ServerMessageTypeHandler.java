@@ -29,12 +29,12 @@ import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 
-public class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
+class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
 {
     private final Log log;
     private final CatchupServerProtocol protocol;
 
-    public ServerMessageTypeHandler( CatchupServerProtocol protocol, LogProvider logProvider )
+    ServerMessageTypeHandler( CatchupServerProtocol protocol, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.log = logProvider.getLog( getClass() );
@@ -43,7 +43,7 @@ public class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
-        if ( protocol.isExpecting( NextMessage.MESSAGE_TYPE ) )
+        if ( protocol.expecting().equals( NextMessage.MESSAGE_TYPE ) )
         {
             RequestMessageType requestMessageType = RequestMessageType.from( ((ByteBuf) msg).readByte() );
 

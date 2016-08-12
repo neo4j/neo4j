@@ -20,7 +20,9 @@
 package org.neo4j.coreedge.catchup;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
@@ -29,11 +31,13 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderEncoder;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequestDecoder;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequestHandler;
@@ -104,11 +108,6 @@ public class CatchupServer extends LifecycleAdapter
     @Override
     public synchronized void start() throws Throwable
     {
-        startNettyServer();
-    }
-
-    private void startNettyServer()
-    {
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
         ServerBootstrap bootstrap = new ServerBootstrap()
@@ -136,10 +135,7 @@ public class CatchupServer extends LifecycleAdapter
 
                         pipeline.addLast( new ServerMessageTypeHandler( protocol, logProvider ) );
 
-                        pipeline.addLast( new TxPullRequestDecoder( protocol ) );
-                        pipeline.addLast( new GetStoreRequestDecoder( protocol ) );
-                        pipeline.addLast( new GetStoreIdRequestDecoder( protocol ) );
-                        pipeline.addLast( new CoreSnapshotRequestDecoder( protocol ) );
+                        pipeline.addLast( decoders( protocol ) );
 
                         pipeline.addLast( new TxPullRequestHandler( protocol, storeIdSupplier,
                                 transactionIdStoreSupplier, logicalTransactionStoreSupplier,
@@ -154,6 +150,16 @@ public class CatchupServer extends LifecycleAdapter
                 } );
 
         channel = bootstrap.bind().syncUninterruptibly().channel();
+    }
+
+    private ChannelInboundHandler decoders( CatchupServerProtocol protocol )
+    {
+        RequestDecoderDispatcher decoderDispatcher = new RequestDecoderDispatcher( protocol, logProvider );
+        decoderDispatcher.register( NextMessage.TX_PULL, new TxPullRequestDecoder() );
+        decoderDispatcher.register( NextMessage.GET_STORE, new GetStoreRequestDecoder() );
+        decoderDispatcher.register( NextMessage.GET_STORE_ID, new GetStoreIdRequestDecoder() );
+        decoderDispatcher.register( NextMessage.GET_RAFT_STATE, new CoreSnapshotRequestDecoder() );
+        return decoderDispatcher;
     }
 
     @Override

@@ -28,9 +28,9 @@ public class CatchupServerProtocol
         this.nextMessage = nextMessage;
     }
 
-    public boolean isExpecting( NextMessage message )
+    NextMessage expecting()
     {
-        return this.nextMessage == message;
+        return nextMessage;
     }
 
     public enum NextMessage

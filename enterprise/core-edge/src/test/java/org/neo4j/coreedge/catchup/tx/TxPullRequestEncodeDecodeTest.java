@@ -35,13 +35,8 @@ public class TxPullRequestEncodeDecodeTest
     @Test
     public void shouldEncodeAndDecodePullRequestMessage()
     {
-        CatchupServerProtocol protocol = new CatchupServerProtocol();
-        protocol.expect( NextMessage.TX_PULL );
-
-        EmbeddedChannel channel = new EmbeddedChannel( new TxPullRequestEncoder(),
-                new TxPullRequestDecoder( protocol ) );
-
         // given
+        EmbeddedChannel channel = new EmbeddedChannel( new TxPullRequestEncoder(), new TxPullRequestDecoder() );
         final long arbitraryId = 23;
         TxPullRequest sent = new TxPullRequest( arbitraryId, new StoreId( 1, 2, 3, 4 ) );
 
