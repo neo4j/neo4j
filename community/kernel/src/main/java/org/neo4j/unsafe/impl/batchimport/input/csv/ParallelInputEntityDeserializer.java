@@ -138,7 +138,53 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     private static <ENTITY extends InputEntity> Supplier<ENTITY[]> rebaseBatches(
             TicketedProcessing<CharSeeker,Header,ENTITY[]> processing )
     {
-        return () -> processing.next();
+        return new Supplier<ENTITY[]>()
+        {
+            private String currentSourceDescription;
+            private long baseLineNumber;
+            private long basePosition;
+
+            @Override
+            public ENTITY[] get()
+            {
+                ENTITY[] batch = processing.next();
+                if ( batch != null && batch.length > 0 )
+                {
+                    // OK so we got the next batch from an arbitrary processor (other thread).
+                    // It creates the entities with batch-local line number and position because that's all it knows.
+                    // We, however, know about all the batches and the order of them so we convert the local
+                    // source traceability numbers to global. This will change some fields in the entities
+                    // and for thread-visibility it's OK since this thread which executes right here is the one
+                    // which gets the batches from this deserializer in the end.
+
+                    // Reset the base numbers if we're venturing into a new source. We rely on the fact that
+                    // the ProcessingSource spawning the chunks which have been processed into entities
+                    // don't mix entities from different sources in the same batch.
+                    ENTITY lastEntity = batch[batch.length-1];
+                    if ( currentSourceDescription == null ||
+                            !currentSourceDescription.equals( lastEntity.sourceDescription() ) )
+                    {
+                        currentSourceDescription = lastEntity.sourceDescription();
+                        baseLineNumber = basePosition = 0;
+                        currentSourceDescription = lastEntity.sourceDescription();
+                    }
+
+                    // Now we rebase the entities on top of the previous batch we've seen
+                    for ( ENTITY entity : batch )
+                    {
+                        entity.rebase( baseLineNumber, basePosition );
+                    }
+
+                    // Remember the new numbers to rebase forthcoming batches on
+                    if ( lastEntity.sourceDescription().equals( currentSourceDescription ) )
+                    {
+                        baseLineNumber = lastEntity.lineNumber();
+                        basePosition = lastEntity.position();
+                    }
+                }
+                return batch;
+            }
+        };
     }
 
     private static Iterator<CharSeeker> seekers( CharSeeker firstSeeker, ProcessingSource source, Configuration config )

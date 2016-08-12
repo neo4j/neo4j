@@ -84,6 +84,8 @@ public class ParallelInputEntityDeserializerTest
             deserializer.processors( threads );
 
             // WHEN/THEN
+            long previousLineNumber = -1;
+            long previousPosition = -1;
             for ( long i = 0; i < entities; i++ )
             {
                 assertTrue( deserializer.hasNext() );
@@ -91,6 +93,12 @@ public class ParallelInputEntityDeserializerTest
                 assertEquals( i, ((Long) entity.id()).longValue() );
                 assertEquals( "name", entity.properties()[0] );
                 assertTrue( entity.properties()[1].toString().startsWith( i + "-" ) );
+
+                assertTrue( entity.lineNumber() > previousLineNumber );
+                previousLineNumber = entity.lineNumber();
+
+                assertTrue( entity.position() > previousPosition );
+                previousPosition = entity.position();
             }
             assertFalse( deserializer.hasNext() );
             assertEquals( threads, observedProcessingThreads.size() );
