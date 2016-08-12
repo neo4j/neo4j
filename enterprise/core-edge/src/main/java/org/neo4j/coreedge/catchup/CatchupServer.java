@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.catchup;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInitializer;
@@ -31,7 +30,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
 import java.util.concurrent.TimeUnit;
@@ -39,9 +37,9 @@ import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderEncoder;
-import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequestDecoder;
+import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequestHandler;
-import org.neo4j.coreedge.catchup.storecopy.GetStoreRequestDecoder;
+import org.neo4j.coreedge.catchup.storecopy.GetStoreRequest;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreRequestHandler;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponseEncoder;
 import org.neo4j.coreedge.catchup.tx.TxPullRequestDecoder;
@@ -50,7 +48,7 @@ import org.neo4j.coreedge.catchup.tx.TxPullResponseEncoder;
 import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseEncoder;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotEncoder;
-import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestDecoder;
+import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequest;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestHandler;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
@@ -156,9 +154,9 @@ public class CatchupServer extends LifecycleAdapter
     {
         RequestDecoderDispatcher decoderDispatcher = new RequestDecoderDispatcher( protocol, logProvider );
         decoderDispatcher.register( NextMessage.TX_PULL, new TxPullRequestDecoder() );
-        decoderDispatcher.register( NextMessage.GET_STORE, new GetStoreRequestDecoder() );
-        decoderDispatcher.register( NextMessage.GET_STORE_ID, new GetStoreIdRequestDecoder() );
-        decoderDispatcher.register( NextMessage.GET_RAFT_STATE, new CoreSnapshotRequestDecoder() );
+        decoderDispatcher.register( NextMessage.GET_STORE, new SimpleRequestDecoder( GetStoreRequest::new ) );
+        decoderDispatcher.register( NextMessage.GET_STORE_ID, new SimpleRequestDecoder( GetStoreIdRequest::new ) );
+        decoderDispatcher.register( NextMessage.GET_RAFT_STATE, new SimpleRequestDecoder( CoreSnapshotRequest::new) );
         return decoderDispatcher;
     }
 

@@ -17,22 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.core.state.snapshot;
-
-import java.util.List;
+package org.neo4j.coreedge.catchup;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
-import org.neo4j.coreedge.catchup.CatchupServerProtocol;
+import java.util.List;
 
-public class CoreSnapshotRequestDecoder extends MessageToMessageDecoder<ByteBuf>
+import org.neo4j.coreedge.messaging.Message;
+import org.neo4j.function.Factory;
+
+class SimpleRequestDecoder extends MessageToMessageDecoder<ByteBuf>
 {
+    private Factory<? extends Message> factory;
+
+    SimpleRequestDecoder( Factory<? extends Message> factory )
+    {
+        this.factory = factory;
+    }
+
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        out.add( new CoreSnapshotRequest() );
+        out.add( factory.newInstance() );
     }
 }
