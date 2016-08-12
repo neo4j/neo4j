@@ -58,7 +58,6 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
  */
 public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 {
-    public static final String SEGMENTED_LOG_DIRECTORY_NAME = "raft-log";
     private final int READER_POOL_MAX_AGE = 1; // minutes
 
     private final FileSystemAbstraction fileSystem;

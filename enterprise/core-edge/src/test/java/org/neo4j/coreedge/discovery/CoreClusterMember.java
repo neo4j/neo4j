@@ -40,8 +40,8 @@ import org.neo4j.logging.Level;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 
-import static org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
+import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CoreClusterMember
@@ -144,7 +144,7 @@ public class CoreClusterMember
     public SortedMap<Long,File> getLogFileNames(  )
     {
         File clusterStateDir = new File( storeDir, CLUSTER_STATE_DIRECTORY_NAME );
-        File logFilesDir = new File( clusterStateDir, SEGMENTED_LOG_DIRECTORY_NAME );
+        File logFilesDir = new File( clusterStateDir, PHYSICAL_LOG_DIRECTORY_NAME );
         return new FileNames( logFilesDir ).getAllFiles( new DefaultFileSystemAbstraction(), null );
     }
 

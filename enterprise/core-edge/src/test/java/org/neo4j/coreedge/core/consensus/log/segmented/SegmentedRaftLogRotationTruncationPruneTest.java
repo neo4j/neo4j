@@ -34,7 +34,7 @@ import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.core.consensus.ReplicatedInteger.valueOf;
-import static org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
+import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 
 public class SegmentedRaftLogRotationTruncationPruneTest
 {
@@ -118,7 +118,7 @@ public class SegmentedRaftLogRotationTruncationPruneTest
     {
         FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
 
-        File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
+        File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, 1,
