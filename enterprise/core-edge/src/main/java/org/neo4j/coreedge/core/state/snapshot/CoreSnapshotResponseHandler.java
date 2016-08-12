@@ -38,7 +38,7 @@ public class CoreSnapshotResponseHandler extends SimpleChannelInboundHandler<Cor
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, final CoreSnapshot coreSnapshot ) throws Exception
     {
-        if ( protocol.isExpecting( CatchupClientProtocol.NextMessage.CORE_SNAPSHOT ) )
+        if ( CatchupClientProtocol.NextMessage.CORE_SNAPSHOT.equals( protocol.expecting() ) )
         {
             listener.onSnapshotReceived( coreSnapshot );
             protocol.expect( CatchupClientProtocol.NextMessage.MESSAGE_TYPE );

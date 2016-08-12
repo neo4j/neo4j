@@ -19,33 +19,17 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.MessageToMessageDecoder;
 
-import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import java.util.List;
 
-class GetStoreIdResponseHandler extends SimpleChannelInboundHandler<GetStoreIdResponse>
+public class FileContentDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private final StoreIdReceiver storeIdReceiver;
-    private final CatchupClientProtocol protocol;
-
-    GetStoreIdResponseHandler( CatchupClientProtocol protocol, StoreIdReceiver storeIdReceiver )
-    {
-        this.protocol = protocol;
-        this.storeIdReceiver = storeIdReceiver;
-    }
-
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, final GetStoreIdResponse msg ) throws Exception
+    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        if ( CatchupClientProtocol.NextMessage.STORE_ID.equals( protocol.expecting() ) )
-        {
-            storeIdReceiver.onStoreIdReceived( msg.storeId() );
-            protocol.expect( CatchupClientProtocol.NextMessage.MESSAGE_TYPE );
-        }
-        else
-        {
-            ctx.fireChannelRead( msg );
-        }
+        out.add( new FileContent( msg ) );
     }
 }

@@ -27,7 +27,6 @@ import io.netty.util.ReferenceCountUtil;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 
 class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
 {
@@ -43,25 +42,25 @@ class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
-        if ( protocol.expecting().equals( NextMessage.MESSAGE_TYPE ) )
+        if ( CatchupServerProtocol.NextMessage.MESSAGE_TYPE.equals( protocol.expecting() ) )
         {
             RequestMessageType requestMessageType = RequestMessageType.from( ((ByteBuf) msg).readByte() );
 
             if ( requestMessageType.equals( RequestMessageType.TX_PULL_REQUEST ) )
             {
-                protocol.expect( NextMessage.TX_PULL );
+                protocol.expect( CatchupServerProtocol.NextMessage.TX_PULL );
             }
             else if ( requestMessageType.equals( RequestMessageType.STORE ) )
             {
-                protocol.expect( NextMessage.GET_STORE );
+                protocol.expect( CatchupServerProtocol.NextMessage.GET_STORE );
             }
             else if ( requestMessageType.equals( RequestMessageType.STORE_ID ) )
             {
-                protocol.expect( NextMessage.GET_STORE_ID );
+                protocol.expect( CatchupServerProtocol.NextMessage.GET_STORE_ID );
             }
             else if ( requestMessageType.equals( RequestMessageType.RAFT_STATE ) )
             {
-                protocol.expect( NextMessage.GET_RAFT_STATE );
+                protocol.expect( CatchupServerProtocol.NextMessage.GET_RAFT_STATE );
             }
             else
             {

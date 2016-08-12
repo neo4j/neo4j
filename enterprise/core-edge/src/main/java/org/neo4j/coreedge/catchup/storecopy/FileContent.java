@@ -20,16 +20,30 @@
 package org.neo4j.coreedge.catchup.storecopy;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
 
-import java.util.List;
+import java.io.IOException;
+import java.io.OutputStream;
 
-public class StoreCopyFinishedResponseDecoder extends MessageToMessageDecoder<ByteBuf>
+class FileContent implements AutoCloseable
 {
-    @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
+    private final ByteBuf msg;
+
+    FileContent( ByteBuf msg )
     {
-        out.add( new StoreCopyFinishedResponse( msg.readLong() ) );
+        msg.retain();
+        this.msg = msg;
+    }
+
+    int writeTo( OutputStream stream ) throws IOException
+    {
+        int bytes = msg.readableBytes();
+        msg.readBytes( stream, bytes );
+        return bytes;
+    }
+
+    @Override
+    public void close()
+    {
+        msg.release();
     }
 }

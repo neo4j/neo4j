@@ -28,22 +28,41 @@ import org.neo4j.logging.AssertableLogProvider;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage.TX_PULL;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class RequestDecoderDispatcherTest
 {
-    private final CatchupServerProtocol protocol = new CatchupServerProtocol();
+    private final Protocol<Type> protocol = new Protocol<Type>()
+    {
+        private Type next;
+
+        @Override
+        public void expect( Type next )
+        {
+            this.next = next;
+        }
+
+        @Override
+        public Type expecting()
+        {
+            return next;
+        }
+    };
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
+
+    private enum Type
+    {
+        type
+    }
 
     @Test
     public void shouldDispatchToRegisteredDecoder() throws Exception
     {
         // given
-        RequestDecoderDispatcher dispatcher = new RequestDecoderDispatcher( protocol, logProvider );
-        protocol.expect( TX_PULL );
+        RequestDecoderDispatcher<Type> dispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
+        protocol.expect( Type.type );
         ChannelInboundHandler delegate = mock( ChannelInboundHandler.class );
-        dispatcher.register( TX_PULL, delegate );
+        dispatcher.register( Type.type, delegate );
 
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         Object msg = new Object();
@@ -60,15 +79,15 @@ public class RequestDecoderDispatcherTest
     public void shouldLogAWarningIfThereIsNoDecoderForTheMessageType() throws Exception
     {
         // given
-        RequestDecoderDispatcher dispatcher = new RequestDecoderDispatcher( protocol, logProvider );
-        protocol.expect( TX_PULL );
+        RequestDecoderDispatcher<Type> dispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
+        protocol.expect( Type.type );
 
         // when
         dispatcher.channelRead( mock( ChannelHandlerContext.class ), new Object() );
 
         // then
         AssertableLogProvider.LogMatcher matcher =
-                inLog( RequestDecoderDispatcher.class ).warn( "Unknown message %s", TX_PULL );
+                inLog( RequestDecoderDispatcher.class ).warn( "Unknown message %s", Type.type );
 
         logProvider.assertExactly( matcher );
     }

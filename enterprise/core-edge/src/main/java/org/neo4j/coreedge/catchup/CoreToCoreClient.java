@@ -28,23 +28,18 @@ import io.netty.handler.timeout.IdleStateHandler;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
-import org.neo4j.coreedge.catchup.storecopy.FileHeaderDecoder;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreRequestEncoder;
-import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponseHandler;
 import org.neo4j.coreedge.catchup.tx.TxPullRequestEncoder;
-import org.neo4j.coreedge.catchup.tx.TxPullResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.TxPullResponseHandler;
-import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseHandler;
-import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotDecoder;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestEncoder;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotResponseHandler;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
 import org.neo4j.coreedge.messaging.IdleChannelReaperHandler;
 import org.neo4j.coreedge.messaging.NonBlockingChannels;
-import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
@@ -92,18 +87,12 @@ public class CoreToCoreClient extends CoreClient
 
             pipeline.addLast( new ClientMessageTypeHandler( protocol, logProvider ) );
 
-            pipeline.addLast( new TxPullResponseDecoder( protocol ) );
-            pipeline.addLast( new CoreSnapshotDecoder( protocol ) );
-            pipeline.addLast( new StoreCopyFinishedResponseDecoder( protocol ) );
-            pipeline.addLast( new TxStreamFinishedResponseDecoder( protocol ) );
-            pipeline.addLast( new FileHeaderDecoder( protocol ) );
+            pipeline.addLast( owner.decoders( protocol ) );
 
             pipeline.addLast( new TxPullResponseHandler( protocol, owner ) );
             pipeline.addLast( new CoreSnapshotResponseHandler( protocol, owner ) );
             pipeline.addLast( new StoreCopyFinishedResponseHandler( protocol, owner ) );
             pipeline.addLast( new TxStreamFinishedResponseHandler( protocol, owner ) );
-
-            // keep these after type-specific handlers since they process ByteBufs
             pipeline.addLast( new FileHeaderHandler( protocol, logProvider ) );
             pipeline.addLast( new FileContentHandler( protocol, owner ) );
 

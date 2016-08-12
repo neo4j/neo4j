@@ -19,37 +19,19 @@
  */
 package org.neo4j.coreedge.core.state.snapshot;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
-import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
+import java.util.List;
 
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
+import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
 
 public class CoreSnapshotDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private final CatchupClientProtocol protocol;
-
-    public CoreSnapshotDecoder( CatchupClientProtocol protocol )
-    {
-        this.protocol = protocol;
-    }
-
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        if ( protocol.isExpecting( NextMessage.CORE_SNAPSHOT ) )
-        {
-            out.add( new CoreSnapshot.Marshal().unmarshal( new NetworkReadableClosableChannelNetty4( msg ) ) );
-        }
-        else
-        {
-            out.add( Unpooled.copiedBuffer( msg ) );
-        }
+        out.add( new CoreSnapshot.Marshal().unmarshal( new NetworkReadableClosableChannelNetty4( msg ) ) );
     }
 }

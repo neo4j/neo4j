@@ -152,7 +152,8 @@ public class CatchupServer extends LifecycleAdapter
 
     private ChannelInboundHandler decoders( CatchupServerProtocol protocol )
     {
-        RequestDecoderDispatcher decoderDispatcher = new RequestDecoderDispatcher( protocol, logProvider );
+        RequestDecoderDispatcher<CatchupServerProtocol.NextMessage> decoderDispatcher =
+                new RequestDecoderDispatcher<>( protocol, logProvider );
         decoderDispatcher.register( NextMessage.TX_PULL, new TxPullRequestDecoder() );
         decoderDispatcher.register( NextMessage.GET_STORE, new SimpleRequestDecoder( GetStoreRequest::new ) );
         decoderDispatcher.register( NextMessage.GET_STORE_ID, new SimpleRequestDecoder( GetStoreIdRequest::new ) );

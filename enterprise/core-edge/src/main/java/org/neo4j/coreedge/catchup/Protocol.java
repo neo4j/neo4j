@@ -17,19 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.storecopy;
+package org.neo4j.coreedge.catchup;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
-
-import java.util.List;
-
-public class StoreCopyFinishedResponseDecoder extends MessageToMessageDecoder<ByteBuf>
+public interface Protocol<E extends Enum<E>>
 {
-    @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
-    {
-        out.add( new StoreCopyFinishedResponse( msg.readLong() ) );
-    }
+    void expect( E next );
+
+    E expecting();
 }

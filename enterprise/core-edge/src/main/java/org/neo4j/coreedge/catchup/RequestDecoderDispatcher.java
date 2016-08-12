@@ -26,17 +26,16 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class RequestDecoderDispatcher extends ChannelInboundHandlerAdapter
+class RequestDecoderDispatcher<E extends Enum<E>> extends ChannelInboundHandlerAdapter
 {
-    private final Map<NextMessage, ChannelInboundHandler> decoders = new HashMap<>();
-    private final CatchupServerProtocol protocol;
+    private final Map<E, ChannelInboundHandler> decoders = new HashMap<>();
+    private final Protocol<E> protocol;
     private final Log log;
 
-    public RequestDecoderDispatcher( CatchupServerProtocol protocol, LogProvider logProvider )
+    RequestDecoderDispatcher( Protocol<E> protocol, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.log = logProvider.getLog( getClass() );
@@ -45,18 +44,17 @@ public class RequestDecoderDispatcher extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
-        NextMessage expecting = protocol.expecting();
+        E expecting = protocol.expecting();
         ChannelInboundHandler delegate = decoders.get( expecting );
         if ( delegate == null )
         {
             log.warn( "Unknown message %s", expecting );
             return;
         }
-
         delegate.channelRead( ctx, msg );
     }
 
-    public void register( NextMessage type, ChannelInboundHandler decoder )
+    public void register( E type, ChannelInboundHandler decoder )
     {
         assert !decoders.containsKey( type ) : "registering twice a decoder for the same type?";
         decoders.put( type, decoder );

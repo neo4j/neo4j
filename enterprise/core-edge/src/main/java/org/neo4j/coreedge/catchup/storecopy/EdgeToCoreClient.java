@@ -29,18 +29,16 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 import org.neo4j.coreedge.catchup.ClientMessageTypeHandler;
+import org.neo4j.coreedge.catchup.CoreClient;
 import org.neo4j.coreedge.catchup.RequestMessageTypeEncoder;
 import org.neo4j.coreedge.catchup.ResponseMessageTypeEncoder;
-import org.neo4j.coreedge.catchup.CoreClient;
 import org.neo4j.coreedge.catchup.tx.TxPullRequestEncoder;
-import org.neo4j.coreedge.catchup.tx.TxPullResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.TxPullResponseHandler;
-import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseHandler;
 import org.neo4j.coreedge.discovery.TopologyService;
+import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
 import org.neo4j.coreedge.messaging.IdleChannelReaperHandler;
 import org.neo4j.coreedge.messaging.NonBlockingChannels;
-import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
@@ -88,18 +86,12 @@ public class EdgeToCoreClient extends CoreClient
 
             pipeline.addLast( new ClientMessageTypeHandler( protocol, logProvider ) );
 
-            pipeline.addLast( new GetStoreIdResponseDecoder( protocol ) );
-            pipeline.addLast( new TxPullResponseDecoder( protocol ) );
-            pipeline.addLast( new StoreCopyFinishedResponseDecoder( protocol ) );
-            pipeline.addLast( new TxStreamFinishedResponseDecoder( protocol ) );
-            pipeline.addLast( new FileHeaderDecoder( protocol ) );
+            pipeline.addLast( owner.decoders( protocol ) );
 
             pipeline.addLast( new GetStoreIdResponseHandler( protocol, owner ) );
             pipeline.addLast( new TxPullResponseHandler( protocol, owner ) );
             pipeline.addLast( new StoreCopyFinishedResponseHandler( protocol, owner ) );
             pipeline.addLast( new TxStreamFinishedResponseHandler( protocol, owner ) );
-
-            // keep these after type-specific handlers since they process ByteBufs
             pipeline.addLast( new FileHeaderHandler( protocol, logProvider ) );
             pipeline.addLast( new FileContentHandler( protocol, owner ) );
 

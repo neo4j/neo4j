@@ -22,25 +22,17 @@ package org.neo4j.coreedge.catchup.tx;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
-import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
 
 public class TxStreamFinishedResponseEncodeDecodeTest
 {
     @Test
     public void shouldEncodeAndDecodePullRequestMessage()
     {
-        CatchupClientProtocol protocol = new CatchupClientProtocol();
-        protocol.expect( NextMessage.TX_STREAM_FINISHED );
-
-        EmbeddedChannel channel = new EmbeddedChannel( new TxStreamFinishedResponseEncoder(),
-                new TxStreamFinishedResponseDecoder( protocol ) );
-
         // given
+        EmbeddedChannel channel =
+                new EmbeddedChannel( new TxStreamFinishedResponseEncoder(), new TxStreamFinishedResponseDecoder() );
         final long arbitraryId = 23;
         TxStreamFinishedResponse sent = new TxStreamFinishedResponse( arbitraryId, true );
 

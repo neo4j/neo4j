@@ -19,38 +19,19 @@
  */
 package org.neo4j.coreedge.catchup.tx;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
-import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
+import java.util.List;
 
 public class TxStreamFinishedResponseDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private final CatchupClientProtocol protocol;
-
-    public TxStreamFinishedResponseDecoder( CatchupClientProtocol protocol )
-    {
-        this.protocol = protocol;
-    }
-
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        if ( protocol.isExpecting( NextMessage.TX_STREAM_FINISHED ) )
-        {
-            long lastTransactionIdSent = msg.readLong();
-            boolean success = msg.readBoolean();
-            out.add( new TxStreamFinishedResponse( lastTransactionIdSent, success ) );
-        }
-        else
-        {
-            out.add( Unpooled.copiedBuffer( msg ) );
-        }
+        long lastTransactionIdSent = msg.readLong();
+        boolean success = msg.readBoolean();
+        out.add( new TxStreamFinishedResponse( lastTransactionIdSent, success ) );
     }
 }
