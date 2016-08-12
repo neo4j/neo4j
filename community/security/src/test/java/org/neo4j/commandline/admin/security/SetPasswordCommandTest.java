@@ -183,9 +183,10 @@ public class SetPasswordCommandTest
 
         // Then we get error output and user still requires password change
         verify( out, times( 0 ) ).stdOutLine( anyString() );
-        verify( out ).stdErrLine( "neo4j-admin set-password --create=<true|false> <username> <password>" );
+        verify( out ).stdErrLine( "neo4j-admin set-password [--create=<true|false>] <username> <password>" );
         verify( out ).stdErrLine( "    Sets the password for the specified user and removes the password change " );
-        verify( out ).stdErrLine( "    requirement" );
+        verify( out ).stdErrLine( "    requirement. If the user does not exist an error message will be shown, unless " );
+        verify( out ).stdErrLine( "    you specify the option --create=true." );
         verify( out ).stdErrLine( "Missing arguments: expected username and password" );
         verify( out ).exit( 1 );
         assertUserRequiresPasswordChange( "neo4j" );

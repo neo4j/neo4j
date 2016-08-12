@@ -57,13 +57,14 @@ public class SetPasswordCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "--create=<true|false> <username> <password>" );
+            return Optional.of( "[--create=<true|false>] <username> <password>" );
         }
 
         @Override
         public String description()
         {
-            return "Sets the password for the specified user and removes the password change requirement";
+            return "Sets the password for the specified user and removes the password change requirement. If the user " +
+                   "does not exist an error message will be shown, unless you specify the option --create=true.";
         }
 
         @Override
