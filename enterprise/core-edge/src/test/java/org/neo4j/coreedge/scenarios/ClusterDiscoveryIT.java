@@ -26,7 +26,7 @@ import java.util.List;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.procedures.AcquireEndpointsProcedure;
-import org.neo4j.coreedge.discovery.procedures.DiscoverCoreServersProcedure;
+import org.neo4j.coreedge.discovery.procedures.DiscoverEndpointAcquisitionServersProcedure;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
@@ -116,7 +116,7 @@ public class ClusterDiscoveryIT
 
         // when
         return asList( statement.readOperations().procedureCallRead(
-                procedureName( "dbms", "cluster", DiscoverCoreServersProcedure.NAME ),
+                procedureName( "dbms", "cluster", DiscoverEndpointAcquisitionServersProcedure.NAME ),
                 new Object[0] ) );
     }
 

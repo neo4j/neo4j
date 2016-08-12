@@ -51,7 +51,7 @@ import org.neo4j.coreedge.messaging.NonBlockingChannels;
 import org.neo4j.coreedge.messaging.SenderService;
 import org.neo4j.coreedge.discovery.procedures.AcquireEndpointsProcedure;
 import org.neo4j.coreedge.discovery.procedures.ClusterOverviewProcedure;
-import org.neo4j.coreedge.discovery.procedures.DiscoverCoreServersProcedure;
+import org.neo4j.coreedge.discovery.procedures.DiscoverEndpointAcquisitionServersProcedure;
 import org.neo4j.coreedge.logging.BetterMessageLogger;
 import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.logging.NullMessageLogger;
@@ -114,7 +114,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     {
         try
         {
-            procedures.register( new DiscoverCoreServersProcedure( discoveryService, logProvider ) );
+            procedures.register( new DiscoverEndpointAcquisitionServersProcedure( discoveryService, logProvider ) );
             procedures.register( new AcquireEndpointsProcedure( discoveryService, consensusModule.raftMachine(), logProvider ) );
             procedures.register( new ClusterOverviewProcedure( discoveryService, consensusModule.raftMachine(), logProvider ) );
             procedures.register( new CoreRoleProcedure( consensusModule.raftMachine()) );

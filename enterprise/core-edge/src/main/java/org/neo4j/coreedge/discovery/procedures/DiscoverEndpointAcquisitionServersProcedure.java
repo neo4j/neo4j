@@ -39,13 +39,13 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
-public class DiscoverCoreServersProcedure extends CallableProcedure.BasicProcedure
+public class DiscoverEndpointAcquisitionServersProcedure extends CallableProcedure.BasicProcedure
 {
-    public static final String NAME = "discoverCoreServers";
+    public static final String NAME = "discoverEndpointAcquisitionServers";
     private final CoreTopologyService discoveryService;
     private final Log log;
 
-    public DiscoverCoreServersProcedure( CoreTopologyService discoveryService, LogProvider logProvider )
+    public DiscoverEndpointAcquisitionServersProcedure( CoreTopologyService discoveryService, LogProvider logProvider )
     {
         super( procedureSignature( new ProcedureSignature.ProcedureName( new String[]{"dbms", "cluster"}, NAME ) )
                 .out( "address", Neo4jTypes.NTString ).build() );

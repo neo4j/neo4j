@@ -55,11 +55,11 @@ public class ClusterOverviewProcedureTest
         MemberId follower1 = new MemberId( UUID.randomUUID() );
         MemberId follower2 = new MemberId( UUID.randomUUID() );
 
-        coreMembers.put( theLeader, DiscoverCoreServersProcedureTest.coreAddresses( 0 ) );
-        coreMembers.put( follower1, DiscoverCoreServersProcedureTest.coreAddresses( 1 ) );
-        coreMembers.put( follower2, DiscoverCoreServersProcedureTest.coreAddresses( 2 ) );
+        coreMembers.put( theLeader, DiscoverEndpointAcquisitionServersProcedureTest.coreAddresses( 0 ) );
+        coreMembers.put( follower1, DiscoverEndpointAcquisitionServersProcedureTest.coreAddresses( 1 ) );
+        coreMembers.put( follower2, DiscoverEndpointAcquisitionServersProcedureTest.coreAddresses( 2 ) );
 
-        Set<EdgeAddresses> edges = DiscoverCoreServersProcedureTest.addresses( 4, 5 );
+        Set<EdgeAddresses> edges = DiscoverEndpointAcquisitionServersProcedureTest.addresses( 4, 5 );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, edges );
         when( topologyService.currentTopology() ).thenReturn( clusterTopology );
