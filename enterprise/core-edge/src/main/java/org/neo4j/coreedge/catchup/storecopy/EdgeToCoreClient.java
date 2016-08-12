@@ -89,19 +89,17 @@ public class EdgeToCoreClient extends CoreClient
             pipeline.addLast( new ClientMessageTypeHandler( protocol, logProvider ) );
 
             pipeline.addLast( new GetStoreIdResponseDecoder( protocol ) );
-            pipeline.addLast( new GetStoreIdResponseHandler( protocol, owner ) );
-
             pipeline.addLast( new TxPullResponseDecoder( protocol ) );
-            pipeline.addLast( new TxPullResponseHandler( protocol, owner ) );
-
             pipeline.addLast( new StoreCopyFinishedResponseDecoder( protocol ) );
-            pipeline.addLast( new StoreCopyFinishedResponseHandler( protocol, owner ) );
-
             pipeline.addLast( new TxStreamFinishedResponseDecoder( protocol ) );
+            pipeline.addLast( new FileHeaderDecoder( protocol ) );
+
+            pipeline.addLast( new GetStoreIdResponseHandler( protocol, owner ) );
+            pipeline.addLast( new TxPullResponseHandler( protocol, owner ) );
+            pipeline.addLast( new StoreCopyFinishedResponseHandler( protocol, owner ) );
             pipeline.addLast( new TxStreamFinishedResponseHandler( protocol, owner ) );
 
             // keep these after type-specific handlers since they process ByteBufs
-            pipeline.addLast( new FileHeaderDecoder( protocol ) );
             pipeline.addLast( new FileHeaderHandler( protocol, logProvider ) );
             pipeline.addLast( new FileContentHandler( protocol, owner ) );
 
@@ -110,7 +108,5 @@ public class EdgeToCoreClient extends CoreClient
 
             pipeline.addLast( new ExceptionLoggingHandler( logProvider.getLog( getClass() ) ) );
         }
-
     }
-
 }
