@@ -45,7 +45,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
-public class DiscoverMembersProcedureTest
+public class DiscoverCoreServersProcedureTest
 {
     @Test
     public void shouldOnlyReturnCoreMembers() throws Exception
@@ -61,8 +61,8 @@ public class DiscoverMembersProcedureTest
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 3, 4, 5 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
-        final DiscoverMembersProcedure proc =
-                new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
+        final DiscoverCoreServersProcedure proc =
+                new DiscoverCoreServersProcedure( coreTopologyService, NullLogProvider.getInstance() );
 
         // when
         final List<Object[]> members = asList( proc.apply( null, new Object[0] ) );
@@ -85,8 +85,8 @@ public class DiscoverMembersProcedureTest
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 3, 4, 5 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
-        final DiscoverMembersProcedure proc =
-                new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
+        final DiscoverCoreServersProcedure proc =
+                new DiscoverCoreServersProcedure( coreTopologyService, NullLogProvider.getInstance() );
 
         // when
         final List<Object[]> members = asList( proc.apply( null, new Object[0] ) );
@@ -109,8 +109,8 @@ public class DiscoverMembersProcedureTest
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 3, 4, 5) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
-        final DiscoverMembersProcedure proc =
-                new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
+        final DiscoverCoreServersProcedure proc =
+                new DiscoverCoreServersProcedure( coreTopologyService, NullLogProvider.getInstance() );
 
         // when
         final List<Object[]> members = asList( proc.apply( null, new Object[]{1} ) );
@@ -133,8 +133,8 @@ public class DiscoverMembersProcedureTest
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 3, 4, 5 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
-        final DiscoverMembersProcedure proc =
-                new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
+        final DiscoverCoreServersProcedure proc =
+                new DiscoverCoreServersProcedure( coreTopologyService, NullLogProvider.getInstance() );
 
         // when
         final List<Object[]> members = asList( proc.apply( null, new Object[]{"not numeric"} ) );
@@ -146,7 +146,7 @@ public class DiscoverMembersProcedureTest
     static Set<EdgeAddresses> addresses( int... ids )
     {
         return Arrays.stream( ids )
-                .mapToObj( DiscoverMembersProcedureTest::edgeAddresses )
+                .mapToObj( DiscoverCoreServersProcedureTest::edgeAddresses )
                 .collect( Collectors.toSet() );
     }
 

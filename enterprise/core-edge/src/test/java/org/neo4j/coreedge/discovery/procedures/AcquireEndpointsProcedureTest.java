@@ -53,9 +53,9 @@ public class AcquireEndpointsProcedureTest
 
         Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
         MemberId theLeader = member( 0 );
-        coreMembers.put( theLeader, DiscoverMembersProcedureTest.coreAddresses( 0 ) );
+        coreMembers.put( theLeader, DiscoverCoreServersProcedureTest.coreAddresses( 0 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, DiscoverMembersProcedureTest.addresses( 1 ) );
+        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, DiscoverCoreServersProcedureTest.addresses( 1 ) );
         when( topologyService.currentTopology() ).thenReturn( clusterTopology );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
@@ -69,8 +69,8 @@ public class AcquireEndpointsProcedureTest
 
         // then
         MatcherAssert.assertThat( members, containsInAnyOrder(
-                new Object[]{DiscoverMembersProcedureTest.coreAddresses( 0 ).getRaftServer().toString(), "WRITE"},
-                new Object[]{DiscoverMembersProcedureTest.coreAddresses( 1 ).getRaftServer().toString(), "READ"}
+                new Object[]{DiscoverCoreServersProcedureTest.coreAddresses( 0 ).getRaftServer().toString(), "WRITE"},
+                new Object[]{DiscoverCoreServersProcedureTest.coreAddresses( 1 ).getRaftServer().toString(), "READ"}
         ) );
     }
 
@@ -82,9 +82,9 @@ public class AcquireEndpointsProcedureTest
 
         Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
         MemberId theLeader = member( 0 );
-        coreMembers.put( theLeader, DiscoverMembersProcedureTest.coreAddresses( 0 ) );
+        coreMembers.put( theLeader, DiscoverCoreServersProcedureTest.coreAddresses( 0 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, DiscoverMembersProcedureTest.addresses( 1, 2, 3 ) );
+        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, DiscoverCoreServersProcedureTest.addresses( 1, 2, 3 ) );
         when( topologyService.currentTopology() ).thenReturn( clusterTopology );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
@@ -108,8 +108,8 @@ public class AcquireEndpointsProcedureTest
 
         Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
         MemberId theLeader = member( 0 );
-        coreMembers.put( theLeader, DiscoverMembersProcedureTest.coreAddresses( 0 ) );
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, DiscoverMembersProcedureTest.addresses() );
+        coreMembers.put( theLeader, DiscoverCoreServersProcedureTest.coreAddresses( 0 ) );
+        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, DiscoverCoreServersProcedureTest.addresses() );
 
         when( topologyService.currentTopology() ).thenReturn( clusterTopology );
 
@@ -124,8 +124,8 @@ public class AcquireEndpointsProcedureTest
 
         // then
         assertThat( members, containsInAnyOrder(
-                new Object[]{DiscoverMembersProcedureTest.coreAddresses( 0 ).getRaftServer().toString(), "WRITE"},
-                new Object[]{DiscoverMembersProcedureTest.coreAddresses( 0 ).getRaftServer().toString(), "READ"}
+                new Object[]{DiscoverCoreServersProcedureTest.coreAddresses( 0 ).getRaftServer().toString(), "WRITE"},
+                new Object[]{DiscoverCoreServersProcedureTest.coreAddresses( 0 ).getRaftServer().toString(), "READ"}
         ) );
     }
 
@@ -136,9 +136,9 @@ public class AcquireEndpointsProcedureTest
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
         Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
-        coreMembers.put( member( 0 ), DiscoverMembersProcedureTest.coreAddresses( 0 ) );
+        coreMembers.put( member( 0 ), DiscoverCoreServersProcedureTest.coreAddresses( 0 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, DiscoverMembersProcedureTest.addresses() );
+        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, DiscoverCoreServersProcedureTest.addresses() );
 
         when( topologyService.currentTopology() ).thenReturn( clusterTopology );
 
@@ -163,9 +163,9 @@ public class AcquireEndpointsProcedureTest
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
         Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
-        coreMembers.put( member( 0 ), DiscoverMembersProcedureTest.coreAddresses( 0 ) );
+        coreMembers.put( member( 0 ), DiscoverCoreServersProcedureTest.coreAddresses( 0 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, DiscoverMembersProcedureTest.addresses() );
+        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, DiscoverCoreServersProcedureTest.addresses() );
 
         when( topologyService.currentTopology() ).thenReturn( clusterTopology );
 

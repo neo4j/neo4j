@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import org.hamcrest.collection.IsIterableContainingInAnyOrder;
 import org.hamcrest.collection.IsIterableContainingInOrder;
 import org.junit.Test;
 
@@ -56,11 +55,11 @@ public class ClusterOverviewProcedureTest
         MemberId follower1 = new MemberId( UUID.randomUUID() );
         MemberId follower2 = new MemberId( UUID.randomUUID() );
 
-        coreMembers.put( theLeader, DiscoverMembersProcedureTest.coreAddresses( 0 ) );
-        coreMembers.put( follower1, DiscoverMembersProcedureTest.coreAddresses( 1 ) );
-        coreMembers.put( follower2, DiscoverMembersProcedureTest.coreAddresses( 2 ) );
+        coreMembers.put( theLeader, DiscoverCoreServersProcedureTest.coreAddresses( 0 ) );
+        coreMembers.put( follower1, DiscoverCoreServersProcedureTest.coreAddresses( 1 ) );
+        coreMembers.put( follower2, DiscoverCoreServersProcedureTest.coreAddresses( 2 ) );
 
-        Set<EdgeAddresses> edges = DiscoverMembersProcedureTest.addresses( 4, 5 );
+        Set<EdgeAddresses> edges = DiscoverCoreServersProcedureTest.addresses( 4, 5 );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, edges );
         when( topologyService.currentTopology() ).thenReturn( clusterTopology );
