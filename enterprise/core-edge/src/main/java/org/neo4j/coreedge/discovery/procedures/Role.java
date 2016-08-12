@@ -17,18 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.discovery;
+package org.neo4j.coreedge.discovery.procedures;
 
-
-import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
-import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.LogProvider;
-
-public interface DiscoveryServiceFactory
+public enum Role
 {
-    CoreTopologyService coreDiscoveryService( Config config, MemberId myself, LogProvider logProvider );
-
-    TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress, LogProvider logProvider, DelayedRenewableTimeoutService timeoutService, long edgeTimeToLiveTimeout );
+    LEADER,
+    FOLLOWER,
+    READ_REPLICA
 }

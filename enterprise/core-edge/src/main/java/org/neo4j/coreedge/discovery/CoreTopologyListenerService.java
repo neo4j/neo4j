@@ -19,9 +19,20 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 
-public interface EdgeTopologyService extends TopologyService
+class CoreTopologyListenerService
 {
-    void registerEdgeServer( AdvertisedSocketAddress address );
+    private final List<CoreTopologyService.Listener> listeners = new ArrayList<>();
+
+    void addCoreTopologyListener( CoreTopologyService.Listener listener )
+    {
+        listeners.add( listener );
+    }
+
+    void notifyListeners()
+    {
+        listeners.forEach( CoreTopologyService.Listener::onCoreTopologyChange );
+    }
 }

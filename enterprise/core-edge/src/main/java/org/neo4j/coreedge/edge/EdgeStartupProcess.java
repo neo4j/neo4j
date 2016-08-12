@@ -19,19 +19,15 @@
  */
 package org.neo4j.coreedge.edge;
 
-import static org.neo4j.coreedge.edge.EnterpriseEdgeEditionModule.extractBoltAddress;
-
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
 import org.neo4j.coreedge.core.state.machines.tx.RetryStrategy;
-import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionException;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -43,8 +39,6 @@ public class EdgeStartupProcess implements Lifecycle
     private final Lifecycle txPulling;
     private final CoreMemberSelectionStrategy connectionStrategy;
     private final Log log;
-    private final EdgeTopologyService discoveryService;
-    private final Config config;
     private final RetryStrategy.Timeout timeout;
 
     public EdgeStartupProcess(
@@ -53,7 +47,7 @@ public class EdgeStartupProcess implements Lifecycle
             Lifecycle txPulling,
             CoreMemberSelectionStrategy connectionStrategy,
             RetryStrategy retryStrategy,
-            LogProvider logProvider, EdgeTopologyService discoveryService, Config config )
+            LogProvider logProvider )
     {
         this.storeFetcher = storeFetcher;
         this.localDatabase = localDatabase;
@@ -61,8 +55,6 @@ public class EdgeStartupProcess implements Lifecycle
         this.connectionStrategy = connectionStrategy;
         this.timeout = retryStrategy.newTimeout();
         this.log = logProvider.getLog( getClass() );
-        this.discoveryService = discoveryService;
-        this.config = config;
     }
 
     @Override
@@ -101,8 +93,6 @@ public class EdgeStartupProcess implements Lifecycle
             {
                 MemberId memberId = connectionStrategy.coreMember();
                 log.info( "Server starting, connecting to core server at %s", memberId.toString() );
-
-                discoveryService.registerEdgeServer( extractBoltAddress( config ) );
                 return memberId;
             }
             catch ( CoreMemberSelectionException ex )

@@ -29,6 +29,6 @@ public class EdgeRoleProcedure extends RoleProcedure
     @Override
     Role role()
     {
-        return RoleProcedure.Role.READ_REPLICA;
+        return Role.READ_REPLICA;
     }
 }

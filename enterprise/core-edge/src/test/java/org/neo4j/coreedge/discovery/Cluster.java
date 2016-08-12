@@ -39,14 +39,14 @@ import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
-import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
-import org.neo4j.coreedge.core.state.machines.id.IdGenerationException;
-import org.neo4j.coreedge.core.consensus.roles.Role;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.CoreGraphDatabase;
+import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
+import org.neo4j.coreedge.core.consensus.roles.Role;
+import org.neo4j.coreedge.core.state.machines.id.IdGenerationException;
 import org.neo4j.coreedge.core.state.machines.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.edge.EdgeGraphDatabase;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -59,6 +59,7 @@ import org.neo4j.test.DbRepresentation;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.neo4j.concurrent.Futures.combine;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -105,7 +106,8 @@ public class Cluster
     public Set<CoreClusterMember> healthyCoreMembers()
     {
         return coreMembers.values().stream()
-                .filter( db -> db.database().getDependencyResolver().resolveDependency( DatabaseHealth.class ).isHealthy() )
+                .filter( db -> db.database().getDependencyResolver().resolveDependency( DatabaseHealth.class )
+                        .isHealthy() )
                 .collect( Collectors.toSet() );
     }
 
@@ -126,16 +128,16 @@ public class Cluster
 
     public EdgeClusterMember addEdgeMemberWithIdAndRecordFormat( int memberId, String recordFormat )
     {
-        CoreClusterMember coreClusterMember = coreMembers.values().stream().filter( ( member ) -> member.database() != null )
+        CoreClusterMember coreClusterMember = coreMembers.values().stream().filter( ( member ) -> member.database()
+                != null )
                 .findAny().orElseThrow( () -> new IllegalStateException(
                         "No core members are running to use as a template for the edge member" ) );
         Config config = coreClusterMember.database().getDependencyResolver().resolveDependency( Config.class );
 
-        List<AdvertisedSocketAddress> advertisedAddresses =
-                config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
-
-        EdgeClusterMember member = new EdgeClusterMember( parentDir, memberId, discoveryServiceFactory, advertisedAddresses,
-                stringMap(), emptyMap(), recordFormat );
+        List<AdvertisedSocketAddress> hazelcastAddresses =
+                config.get( CoreEdgeClusterSettings.initial_discovery_members );
+        EdgeClusterMember member = new EdgeClusterMember( parentDir, memberId, discoveryServiceFactory,
+                hazelcastAddresses, stringMap(), emptyMap(), recordFormat );
         edgeMembers.put( memberId, member );
         return member;
     }
@@ -157,7 +159,8 @@ public class Cluster
         List<Callable<Object>> memberShutdownSuppliers = new ArrayList<>();
         for ( final CoreClusterMember coreClusterMember : coreMembers.values() )
         {
-            memberShutdownSuppliers.add( () -> {
+            memberShutdownSuppliers.add( () ->
+            {
                 coreClusterMember.shutdown();
                 return null;
             } );
@@ -287,11 +290,15 @@ public class Cluster
         return leaderTx( op );
     }
 
-    private CoreClusterMember addCoreMemberWithId( int memberId, int intendedClusterSize, Map<String, String> extraParams,
-                                                   Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
+    private CoreClusterMember addCoreMemberWithId( int memberId, int intendedClusterSize, Map<String, String>
+            extraParams,
+                                                   Map<String, IntFunction<String>> instanceExtraParams, String
+                                                           recordFormat )
     {
-        Config config = firstOrNull( coreMembers.values() ).database().getDependencyResolver().resolveDependency( Config.class );
-        List<AdvertisedSocketAddress> advertisedAddress = config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
+        Config config = firstOrNull( coreMembers.values() ).database().getDependencyResolver().resolveDependency(
+                Config.class );
+        List<AdvertisedSocketAddress> advertisedAddress = config.get( CoreEdgeClusterSettings
+                .initial_discovery_members );
 
         CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, intendedClusterSize, advertisedAddress,
                 discoveryServiceFactory, recordFormat, parentDir,
@@ -349,8 +356,8 @@ public class Cluster
     private boolean isLockOnFollower( Throwable e )
     {
         return e instanceof AcquireLockTimeoutException &&
-                (e.getMessage().equals( LeaderOnlyLockManager .LOCK_NOT_ON_LEADER_ERROR_MESSAGE ) ||
-                e.getCause() instanceof NoLeaderFoundException);
+                (e.getMessage().equals( LeaderOnlyLockManager.LOCK_NOT_ON_LEADER_ERROR_MESSAGE ) ||
+                        e.getCause() instanceof NoLeaderFoundException);
     }
 
     private boolean isLockExpired( Throwable e )
@@ -391,7 +398,8 @@ public class Cluster
 
         for ( CoreClusterMember coreClusterMember : coreMembers.values() )
         {
-            ecs.submit( () -> {
+            ecs.submit( () ->
+            {
                 coreClusterMember.start();
                 return coreClusterMember.database();
             } );
@@ -409,7 +417,8 @@ public class Cluster
 
         for ( EdgeClusterMember edgeClusterMember : edgeMembers.values() )
         {
-            ecs.submit( () -> {
+            ecs.submit( () ->
+            {
                 edgeClusterMember.start();
                 return edgeClusterMember.database();
             } );
@@ -422,7 +431,7 @@ public class Cluster
     }
 
     private void createEdgeMembers( int noOfEdgeMembers,
-                                    final List<AdvertisedSocketAddress> addresses,
+                                    final List<AdvertisedSocketAddress> coreMemberAddresses,
                                     Map<String, String> extraParams,
                                     Map<String, IntFunction<String>> instanceExtraParams,
                                     String recordFormat )
@@ -430,7 +439,7 @@ public class Cluster
 
         for ( int i = 0; i < noOfEdgeMembers; i++ )
         {
-            edgeMembers.put( i, new EdgeClusterMember( parentDir, i, discoveryServiceFactory, addresses,
+            edgeMembers.put( i, new EdgeClusterMember( parentDir, i, discoveryServiceFactory, coreMemberAddresses,
                     extraParams, instanceExtraParams, recordFormat ) );
         }
     }
@@ -440,7 +449,8 @@ public class Cluster
         edgeMembers.values().forEach( EdgeClusterMember::shutdown );
     }
 
-    public static void dataMatchesEventually( CoreClusterMember member, Collection<CoreClusterMember> targetDBs ) throws TimeoutException, InterruptedException
+    public static void dataMatchesEventually( CoreClusterMember member, Collection<CoreClusterMember> targetDBs )
+            throws TimeoutException, InterruptedException
     {
         CoreGraphDatabase sourceDB = member.database();
         DbRepresentation sourceRepresentation = DbRepresentation.of( sourceDB );

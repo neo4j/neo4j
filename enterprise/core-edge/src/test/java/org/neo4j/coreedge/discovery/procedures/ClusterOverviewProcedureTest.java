@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.hamcrest.collection.IsIterableContainingInAnyOrder;
 import org.hamcrest.collection.IsIterableContainingInOrder;
 import org.junit.Test;
 
@@ -55,9 +56,9 @@ public class ClusterOverviewProcedureTest
         MemberId follower1 = new MemberId( UUID.randomUUID() );
         MemberId follower2 = new MemberId( UUID.randomUUID() );
 
-        coreMembers.put( follower2, DiscoverMembersProcedureTest.coreAddresses( 2 ) );
-        coreMembers.put( follower1, DiscoverMembersProcedureTest.coreAddresses( 1 ) );
         coreMembers.put( theLeader, DiscoverMembersProcedureTest.coreAddresses( 0 ) );
+        coreMembers.put( follower1, DiscoverMembersProcedureTest.coreAddresses( 1 ) );
+        coreMembers.put( follower2, DiscoverMembersProcedureTest.coreAddresses( 2 ) );
 
         Set<EdgeAddresses> edges = DiscoverMembersProcedureTest.addresses( 4, 5 );
 
@@ -75,11 +76,11 @@ public class ClusterOverviewProcedureTest
 
         // then
         assertThat( members, IsIterableContainingInOrder.contains(
-                new Object[]{theLeader.getUuid().toString(), "localhost:3000", "leader"},
-                new Object[]{follower1.getUuid().toString(), "localhost:3001", "follower"},
-                new Object[]{follower2.getUuid().toString(), "localhost:3002", "follower"},
-                new Object[]{null, "localhost:3004", "read_replica"},
-                new Object[]{null, "localhost:3005", "read_replica"}
+                new Object[]{theLeader.getUuid().toString(), "localhost:3000", "LEADER"},
+                new Object[]{follower1.getUuid().toString(), "localhost:3001", "FOLLOWER"},
+                new Object[]{follower2.getUuid().toString(), "localhost:3002", "FOLLOWER"},
+                new Object[]{"00000000-0000-0000-0000-000000000000", "localhost:3004", "READ_REPLICA"},
+                new Object[]{"00000000-0000-0000-0000-000000000000", "localhost:3005", "READ_REPLICA"}
         ) );
     }
 }

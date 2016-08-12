@@ -69,8 +69,8 @@ public class AcquireEndpointsProcedureTest
 
         // then
         MatcherAssert.assertThat( members, containsInAnyOrder(
-                new Object[]{DiscoverMembersProcedureTest.coreAddresses( 0 ).getRaftServer().toString(), "write"},
-                new Object[]{DiscoverMembersProcedureTest.coreAddresses( 1 ).getRaftServer().toString(), "read"}
+                new Object[]{DiscoverMembersProcedureTest.coreAddresses( 0 ).getRaftServer().toString(), "WRITE"},
+                new Object[]{DiscoverMembersProcedureTest.coreAddresses( 1 ).getRaftServer().toString(), "READ"}
         ) );
     }
 
@@ -97,7 +97,7 @@ public class AcquireEndpointsProcedureTest
         final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
 
         // then
-        assertEquals( 1, members.stream().filter( row -> row[1].equals( "read" ) ).count() );
+        assertEquals( 1, members.stream().filter( row -> row[1].equals( "READ" ) ).count() );
     }
 
     @Test
@@ -124,8 +124,8 @@ public class AcquireEndpointsProcedureTest
 
         // then
         assertThat( members, containsInAnyOrder(
-                new Object[]{DiscoverMembersProcedureTest.coreAddresses( 0 ).getRaftServer().toString(), "write"},
-                new Object[]{DiscoverMembersProcedureTest.coreAddresses( 0 ).getRaftServer().toString(), "read"}
+                new Object[]{DiscoverMembersProcedureTest.coreAddresses( 0 ).getRaftServer().toString(), "WRITE"},
+                new Object[]{DiscoverMembersProcedureTest.coreAddresses( 0 ).getRaftServer().toString(), "READ"}
         ) );
     }
 
@@ -152,8 +152,8 @@ public class AcquireEndpointsProcedureTest
         final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
 
         // then
-        assertEquals( 1, members.stream().filter( row1 -> row1[1].equals( "read" ) ).collect( toList() ).size() );
-        assertEquals( 0, members.stream().filter( row1 -> row1[1].equals( "write" ) ).collect( toList() ).size() );
+        assertEquals( 1, members.stream().filter( row1 -> row1[1].equals( "READ" ) ).collect( toList() ).size() );
+        assertEquals( 0, members.stream().filter( row1 -> row1[1].equals( "WRITE" ) ).collect( toList() ).size() );
     }
 
     @Test
@@ -179,7 +179,7 @@ public class AcquireEndpointsProcedureTest
         final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
 
         // then
-        assertEquals( 1, members.stream().filter( row1 -> row1[1].equals( "read" ) ).collect( toList() ).size() );
-        assertEquals( 0, members.stream().filter( row1 -> row1[1].equals( "write" ) ).collect( toList() ).size() );
+        assertEquals( 1, members.stream().filter( row1 -> row1[1].equals( "READ" ) ).collect( toList() ).size() );
+        assertEquals( 0, members.stream().filter( row1 -> row1[1].equals( "WRITE" ) ).collect( toList() ).size() );
     }
 }

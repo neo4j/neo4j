@@ -43,7 +43,7 @@ public class HazelcastClientConnector implements HazelcastConnector
 
         clientConfig.getGroupConfig().setName( config.get( CoreEdgeClusterSettings.cluster_name ) );
 
-        for ( AdvertisedSocketAddress address : config.get( CoreEdgeClusterSettings.initial_core_cluster_members ) )
+        for ( AdvertisedSocketAddress address : config.get( CoreEdgeClusterSettings.initial_discovery_members ) )
         {
             clientConfig.getNetworkConfig().addAddress( address.toString() );
         }

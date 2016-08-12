@@ -37,7 +37,7 @@ import org.neo4j.coreedge.catchup.tx.TxPullResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.TxPullResponseHandler;
 import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseHandler;
-import org.neo4j.coreedge.discovery.EdgeTopologyService;
+import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.messaging.IdleChannelReaperHandler;
 import org.neo4j.coreedge.messaging.NonBlockingChannels;
 import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
@@ -47,7 +47,7 @@ import org.neo4j.logging.LogProvider;
 public class EdgeToCoreClient extends CoreClient
 {
     public EdgeToCoreClient( LogProvider logProvider, ChannelInitializer channelInitializer, Monitors monitors,
-            int maxQueueSize, NonBlockingChannels nonBlockingChannels, EdgeTopologyService discoveryService,
+            int maxQueueSize, NonBlockingChannels nonBlockingChannels, TopologyService discoveryService,
             long logThresholdMillis )
     {
         super( logProvider, channelInitializer, monitors, maxQueueSize, nonBlockingChannels, discoveryService,

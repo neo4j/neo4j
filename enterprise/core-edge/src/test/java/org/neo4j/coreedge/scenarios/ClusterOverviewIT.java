@@ -19,16 +19,25 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
-import org.hamcrest.Description;
+import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import org.neo4j.collection.RawIterator;
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.discovery.procedures.ClusterOverviewProcedure;
+import org.neo4j.coreedge.discovery.procedures.Role;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
@@ -38,107 +47,285 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.coreedge.ClusterRule;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
-import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.equalTo;
+
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.security.AccessMode.Static.READ;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
+@SuppressWarnings( "unchecked" )
+@RunWith( Parameterized.class )
 public class ClusterOverviewIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 );
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
 
-    @Test
-    public void shouldDiscoverCoreClusterMembers() throws Exception
+    private enum DiscoveryService
     {
-        // when
-        Cluster cluster = clusterRule.withNumberOfEdgeMembers( 1 ).startCluster();
+        SHARED,
+        HAZELCAST
+    }
 
-        // then
-        List<Object[]> overview;
-        for ( int i = 0; i < 3; i++ )
+    @Parameterized.Parameters( name = "discovery:{0}" )
+    public static Collection<Object[]> data()
+    {
+        return Arrays.asList( new Object[][]{
+                {DiscoveryService.SHARED},
+                {DiscoveryService.HAZELCAST},
+        } );
+    }
+
+    public ClusterOverviewIT( DiscoveryService discoveryService )
+    {
+        switch ( discoveryService )
         {
-            overview = clusterOverview( cluster.getCoreMemberById( i ).database() );
-
-            assertThat( overview, containsRole( "leader", 1 ) );
-            assertThat( overview, containsRole( "follower", 2 ) );
-            assertThat( overview, containsRole( "read_replica", 1 ) );
-
-            // core
-            assertThat( overview, containsAddress( "127.0.0.1:8000" ) );
-            assertThat( overview, containsAddress( "127.0.0.1:8001" ) );
-            assertThat( overview, containsAddress( "127.0.0.1:8002" ) );
-
-            // read replicas
-            assertThat( overview, containsAddress( "127.0.0.1:9000" ) );
+        case SHARED:
+            clusterRule.withDiscoveryServiceFactory( new SharedDiscoveryService() );
+            break;
+        case HAZELCAST:
+            clusterRule.withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
+            break;
+        default:
+            throw new IllegalArgumentException();
         }
     }
 
-    private Matcher<? super List<Object[]>> containsAddress(String address)
+    @Test
+    public void shouldDiscoverCoreMembers() throws Exception
     {
-        return new TypeSafeMatcher<List<Object[]>>()
+        // given
+        clusterRule.withNumberOfCoreMembers( 3 );
+        clusterRule.withNumberOfEdgeMembers( 0 );
+
+        // when
+        Cluster cluster = clusterRule.startCluster();
+
+        Matcher<List<MemberInfo>> expected = allOf(
+                containsAddress( "127.0.0.1:8000" ), containsAddress( "127.0.0.1:8001" ), containsAddress( "127.0.0.1:8002" ),
+                containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 2 ), doesNotContainRole( Role.READ_REPLICA ) );
+
+        for ( int coreServerId = 0; coreServerId < 3; coreServerId++ )
+        {
+            // then
+            assertEventualOverview( cluster, expected, coreServerId );
+        }
+    }
+
+    @Test
+    public void shouldDiscoverCoreAndEdgeMembers() throws Exception
+    {
+        // given
+        clusterRule.withNumberOfCoreMembers( 3 );
+        clusterRule.withNumberOfEdgeMembers( 3 );
+
+        // when
+        Cluster cluster = clusterRule.startCluster();
+
+        Matcher<List<MemberInfo>> expected = allOf(
+                containsAddress( "127.0.0.1:8000" ), containsAddress( "127.0.0.1:8001" ), containsAddress( "127.0.0.1:8002" ),
+                containsAddress( "127.0.0.1:9000" ), containsAddress( "127.0.0.1:9001" ), containsAddress( "127.0.0.1:9002" ),
+                containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 2 ), containsRole( Role.READ_REPLICA, 3 ) );
+
+        for ( int coreServerId = 0; coreServerId < 3; coreServerId++ )
+        {
+            // then
+            assertEventualOverview( cluster, expected, coreServerId );
+        }
+    }
+
+    @Test
+    public void shouldDiscoverNewCoreMembers() throws Exception
+    {
+        // given
+        clusterRule.withNumberOfCoreMembers( 3 );
+        clusterRule.withNumberOfEdgeMembers( 0 );
+
+        Cluster cluster = clusterRule.startCluster();
+
+        // when
+        cluster.addCoreMemberWithId( 3, 4 ).start();
+        cluster.addCoreMemberWithId( 4, 5 ).start();
+
+        Matcher<List<MemberInfo>> expected = allOf(
+                containsAddress( "127.0.0.1:8000" ), containsAddress( "127.0.0.1:8001" ), containsAddress( "127.0.0.1:8002" ),
+                containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 4 ),
+                containsAddress( "127.0.0.1:8003" ), containsAddress( "127.0.0.1:8004" ) ); // new core members
+
+        for ( int coreServerId = 0; coreServerId < 5; coreServerId++ )
+        {
+            // then
+            assertEventualOverview( cluster, expected, coreServerId );
+        }
+    }
+
+    @Test
+    public void shouldDiscoverNewEdgeMembers() throws Exception
+    {
+        // given
+        clusterRule.withNumberOfCoreMembers( 3 );
+        clusterRule.withNumberOfEdgeMembers( 3 );
+
+        Cluster cluster = clusterRule.startCluster();
+
+        // when
+        cluster.addEdgeMemberWithId( 3 ).start();
+        cluster.addEdgeMemberWithId( 4 ).start();
+
+        Matcher<List<MemberInfo>> expected = allOf(
+                containsAddress( "127.0.0.1:8000" ), containsAddress( "127.0.0.1:8001" ), containsAddress( "127.0.0.1:8002" ),
+                containsAddress( "127.0.0.1:9000" ), containsAddress( "127.0.0.1:9001" ), containsAddress( "127.0.0.1:9002" ),
+                containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 2 ), containsRole( Role.READ_REPLICA, 5 ),
+                containsAddress( "127.0.0.1:9003" ), containsAddress( "127.0.0.1:9004" ) ); // new edge members
+
+        for ( int coreServerId = 0; coreServerId < 3; coreServerId++ )
+        {
+            // then
+            assertEventualOverview( cluster, expected, coreServerId );
+        }
+    }
+
+    @Test
+    public void shouldDiscoverRemovalOfEdgeMembers() throws Exception
+    {
+        // given
+        clusterRule.withNumberOfCoreMembers( 3 );
+        clusterRule.withNumberOfEdgeMembers( 3 );
+
+        Cluster cluster = clusterRule.startCluster();
+
+        for ( int coreServerId = 0; coreServerId < 3; coreServerId++ )
+        {
+            assertEventualOverview( cluster, containsRole( Role.READ_REPLICA, 3 ), coreServerId );
+        }
+
+        // when
+        cluster.removeEdgeMemberWithMemberId( 0 );
+        cluster.removeEdgeMemberWithMemberId( 1 );
+
+        for ( int coreServerId = 0; coreServerId < 3; coreServerId++ )
+        {
+            // then
+            assertEventualOverview( cluster, containsRole( Role.READ_REPLICA, 1 ), coreServerId );
+        }
+    }
+
+    @Test
+    public void shouldDiscoverRemovalOfCoreMembers() throws Exception
+    {
+        // given
+        clusterRule.withNumberOfCoreMembers( 5 );
+        clusterRule.withNumberOfEdgeMembers( 0 );
+
+        Cluster cluster = clusterRule.startCluster();
+
+        for ( int coreServerId = 0; coreServerId < 5; coreServerId++ )
+        {
+            assertEventualOverview( cluster, allOf( containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 4 ) ), coreServerId );
+        }
+
+        // when
+        cluster.removeCoreMemberWithMemberId( 0 );
+        cluster.removeCoreMemberWithMemberId( 1 );
+
+        for ( int coreServerId = 2; coreServerId < 5; coreServerId++ )
+        {
+            // then
+            assertEventualOverview( cluster, allOf( containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 2 ) ), coreServerId );
+        }
+    }
+
+    private void assertEventualOverview( Cluster cluster, Matcher<List<MemberInfo>> expected, int coreServerId ) throws org.neo4j.kernel.api.exceptions.KernelException, InterruptedException
+    {
+        assertEventually( "should have overview", () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 15, SECONDS );
+    }
+
+    private Matcher<List<MemberInfo>> containsAddress( String expectedAddress )
+    {
+        return new FeatureMatcher<List<MemberInfo>,Long>( equalTo( 1L ), expectedAddress, "count" )
         {
             @Override
-            public boolean matchesSafely( List<Object[]> overview )
+            protected Long featureValueOf( List<MemberInfo> overview )
             {
-                for ( Object[] row : overview )
-                {
-                    if ( row[1].toString().equals( address ) )
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "Expected to find leader in the cluster but didn't" );
+                return overview.stream().filter( info -> info.address.equals( expectedAddress ) ).count();
             }
         };
     }
 
-    private Matcher<? super List<Object[]>> containsRole(String role, int expectedRoleCount)
+    private Matcher<List<MemberInfo>> containsRole( Role expectedRole, long expectedCount )
     {
-        return new TypeSafeMatcher<List<Object[]>>()
+        return new FeatureMatcher<List<MemberInfo>,Long>( equalTo( expectedCount ), expectedRole.name(), "count" )
         {
             @Override
-            public boolean matchesSafely( List<Object[]> overview )
+            protected Long featureValueOf( List<MemberInfo> overview )
             {
-                int numberOfMachinesForRole = 0;
-
-                for ( Object[] row : overview )
-                {
-                    if ( row[2].toString().equals( role ) )
-                    {
-                        numberOfMachinesForRole++;
-                    }
-                }
-
-                return numberOfMachinesForRole == expectedRoleCount;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "Expected to find " + role + " in the cluster but didn't" );
+                return overview.stream().filter( info -> info.role == expectedRole ).count();
             }
         };
     }
 
-    private List<Object[]> clusterOverview( GraphDatabaseFacade db ) throws TransactionFailureException,
+    private Matcher<List<MemberInfo>> doesNotContainRole( Role unexpectedRole )
+    {
+       return containsRole( unexpectedRole, 0 );
+    }
+
+    private List<MemberInfo> clusterOverview( GraphDatabaseFacade db ) throws TransactionFailureException,
             ProcedureException
     {
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         KernelTransaction transaction = kernel.newTransaction( Type.implicit, READ );
         Statement statement = transaction.acquireStatement();
 
-        // when
-        return asList( statement.readOperations().procedureCallRead(
-                procedureName( "dbms", "cluster", ClusterOverviewProcedure.NAME ),
-                new Object[0] ) );
+        RawIterator<Object[],ProcedureException> itr = statement.readOperations().procedureCallRead(
+                procedureName( "dbms", "cluster", ClusterOverviewProcedure.PROCEDURE_NAME ), null );
+
+        List<MemberInfo> infos = new ArrayList<>();
+        while ( itr.hasNext() )
+        {
+            Object[] row = itr.next();
+            infos.add( new MemberInfo( (String) row[1], Role.valueOf( (String) row[2] ) ) );
+        }
+        return infos;
+    }
+
+    private class MemberInfo
+    {
+        private final String address;
+        private final Role role;
+
+        MemberInfo( String address, Role role )
+        {
+            this.address = address;
+            this.role = role;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            { return true; }
+            if ( o == null || getClass() != o.getClass() )
+            { return false; }
+            MemberInfo that = (MemberInfo) o;
+            return Objects.equals( address, that.address ) &&
+                   Objects.equals( role, that.role );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( address, role );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "MemberInfo{" +
+                   "address='" + address + '\'' +
+                   ", role=" + role +
+                   '}';
+        }
     }
 }

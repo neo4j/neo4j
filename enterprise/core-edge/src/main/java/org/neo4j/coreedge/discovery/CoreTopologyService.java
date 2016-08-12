@@ -21,10 +21,10 @@ package org.neo4j.coreedge.discovery;
 
 public interface CoreTopologyService extends TopologyService
 {
-    void addMembershipListener( Listener listener );
+    void addCoreTopologyListener( Listener listener );
 
     interface Listener
     {
-        void onTopologyChange();
+        void onCoreTopologyChange();
     }
 }

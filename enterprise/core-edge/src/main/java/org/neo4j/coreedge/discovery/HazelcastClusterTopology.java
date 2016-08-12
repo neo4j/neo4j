@@ -19,20 +19,31 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import com.hazelcast.config.MemberAttributeConfig;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.Member;
-
+import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import com.hazelcast.config.MemberAttributeConfig;
+import com.hazelcast.core.Client;
+import com.hazelcast.core.ClientService;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.HazelcastInstanceAware;
+import com.hazelcast.core.IExecutorService;
+import com.hazelcast.core.IMap;
+import com.hazelcast.core.Member;
+
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.edge.EnterpriseEdgeEditionModule;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
@@ -42,13 +53,14 @@ import static java.util.stream.Collectors.toSet;
 
 class HazelcastClusterTopology
 {
-    static final String EDGE_SERVERS = "edge-servers";
+    // hz client uuid string -> boltAddress string
+    static final String EDGE_SERVER_BOLT_ADDRESS_MAP_NAME = "edge-servers";
     static final String MEMBER_UUID = "member_uuid";
     static final String TRANSACTION_SERVER = "transaction_server";
     static final String RAFT_SERVER = "raft_server";
     static final String BOLT_SERVER = "bolt_server";
 
-    static ClusterTopology fromHazelcastInstance( HazelcastInstance hazelcastInstance, Log log )
+    static ClusterTopology getClusterTopology( HazelcastInstance hazelcastInstance, Log log )
     {
         Set<Member> coreMembers = emptySet();
         if ( hazelcastInstance != null )
@@ -56,19 +68,76 @@ class HazelcastClusterTopology
             coreMembers = hazelcastInstance.getCluster().getMembers();
         }
         return new ClusterTopology( canBeBootstrapped( coreMembers ), toCoreMemberMap( coreMembers, log ),
-                edgeMembers( hazelcastInstance ) );
+                edgeMembers( hazelcastInstance, log ) );
     }
 
-    private static Set<EdgeAddresses> edgeMembers( HazelcastInstance hazelcastInstance )
+    static class GetConnectedClients implements Callable<Collection<String>>, Serializable, HazelcastInstanceAware
+    {
+        private transient HazelcastInstance instance;
+
+        GetConnectedClients( HazelcastInstance instance )
+        {
+            this.instance = instance;
+        }
+
+        @Override
+        public Collection<String> call() throws Exception
+        {
+            final ClientService clientService = instance.getClientService();
+            return clientService.getConnectedClients()
+                    .stream()
+                    .map( Client::getUuid )
+                    .collect( Collectors.toCollection( HashSet::new ) );
+        }
+
+        @Override
+        public void setHazelcastInstance( HazelcastInstance hazelcastInstance )
+        {
+            this.instance = hazelcastInstance;
+        }
+    }
+
+    private static Set<EdgeAddresses> edgeMembers( HazelcastInstance hazelcastInstance, Log log )
     {
         if ( hazelcastInstance == null )
         {
+            log.info( "Cannot currently bind to distributed discovery service." );
             return emptySet();
         }
 
-        return hazelcastInstance.<String>getSet( EDGE_SERVERS ).stream()
-                .map( hostnamePort -> new EdgeAddresses( new AdvertisedSocketAddress( hostnamePort ) ) )
+        Collection<String> connectedUUIDs;
+        final IExecutorService executorService = hazelcastInstance.getExecutorService( "default" );
+        try
+        {
+            connectedUUIDs = executorService.submit( new GetConnectedClients( hazelcastInstance ) ).get();
+            removeDisconnectedEdgeServers( hazelcastInstance, connectedUUIDs );
+
+        }
+        catch ( InterruptedException | ExecutionException e )
+        {
+            log.info( "Unable to complete operation with distributed discovery service.", e );
+            return emptySet();
+        }
+
+        return hazelcastInstance.<String/*uuid*/, String/*boltAddress*/>getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
+                .entrySet().stream().
+                        filter( entry -> connectedUUIDs.contains( entry.getKey() ) )
+                .map( entry -> new EdgeAddresses( new AdvertisedSocketAddress( entry.getValue() /*boltAddress*/ ) ) )
                 .collect( toSet() );
+    }
+
+    private static void removeDisconnectedEdgeServers( HazelcastInstance hazelcastInstance,
+                                                       Collection<String> connectedUUIDs )
+    {
+        IMap<String, String> edgeServers =
+                hazelcastInstance.<String, String>getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME );
+
+        Set<String> toRemove = edgeServers.keySet()
+                .stream()
+                .filter( key -> !connectedUUIDs.contains( key ) )
+                .collect( Collectors.toSet() );
+
+        toRemove.forEach( edgeServers::remove );
     }
 
     private static boolean canBeBootstrapped( Set<Member> coreMembers )
@@ -116,13 +185,12 @@ class HazelcastClusterTopology
 
     static Pair<MemberId, CoreAddresses> extractMemberAttributes( Member member )
     {
-        MemberId memberId =
-                new MemberId( UUID.fromString( member.getStringAttribute( MEMBER_UUID ) ) );
+        MemberId memberId = new MemberId( UUID.fromString( member.getStringAttribute( MEMBER_UUID ) ) );
 
         return Pair.of( memberId, new CoreAddresses(
-                        new AdvertisedSocketAddress( member.getStringAttribute( RAFT_SERVER ) ),
-                        new AdvertisedSocketAddress( member.getStringAttribute( TRANSACTION_SERVER ) ),
-                        new AdvertisedSocketAddress( member.getStringAttribute( BOLT_SERVER ) )
+                new AdvertisedSocketAddress( member.getStringAttribute( RAFT_SERVER ) ),
+                new AdvertisedSocketAddress( member.getStringAttribute( TRANSACTION_SERVER ) ),
+                new AdvertisedSocketAddress( member.getStringAttribute( BOLT_SERVER ) )
         ) );
     }
 }

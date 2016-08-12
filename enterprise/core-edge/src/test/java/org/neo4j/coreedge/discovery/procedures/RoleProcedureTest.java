@@ -46,7 +46,7 @@ public class RoleProcedureTest
         RawIterator<Object[], ProcedureException> result = proc.apply( null, null );
 
         // then
-        assertEquals( RoleProcedure.Role.LEADER.name(), single( result )[0]);
+        assertEquals( Role.LEADER.name(), single( result )[0]);
     }
 
     @Test
@@ -61,7 +61,7 @@ public class RoleProcedureTest
         RawIterator<Object[], ProcedureException> result = proc.apply( null, null );
 
         // then
-        assertEquals( RoleProcedure.Role.FOLLOWER.name(), single( result )[0]);
+        assertEquals( Role.FOLLOWER.name(), single( result )[0]);
     }
 
     @Test
@@ -74,7 +74,7 @@ public class RoleProcedureTest
         RawIterator<Object[], ProcedureException> result = proc.apply( null, null );
 
         // then
-        assertEquals( RoleProcedure.Role.READ_REPLICA.name(), single( result )[0]);
+        assertEquals( Role.READ_REPLICA.name(), single( result )[0]);
     }
 
     private Object[] single( RawIterator<Object[], ProcedureException> result ) throws ProcedureException
