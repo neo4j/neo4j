@@ -21,6 +21,7 @@ package org.neo4j.kernel.builtinprocs;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Label;
@@ -92,11 +93,11 @@ public class BuiltInProcedures
     }
 
     @Procedure(name = "db.awaitIndex", mode = READ)
-    public void awaitIndex( @Name("label") String labelName, @Name("property") String propertyKeyName )
-            throws ProcedureException
-
+    public void awaitIndex( @Name("label") String labelName,
+                            @Name("property") String propertyKeyName,
+                            @Name(value = "timeOutSeconds") long timeout ) throws ProcedureException
     {
-        new AwaitIndexProcedure(tx).execute( labelName, propertyKeyName );
+        new AwaitIndexProcedure( tx ).execute( labelName, propertyKeyName, timeout, TimeUnit.SECONDS );
     }
 
     @Procedure(name = "db.constraints", mode = READ)

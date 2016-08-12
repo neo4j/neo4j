@@ -375,8 +375,10 @@ public interface Status
         ProcedureCallFailed( ClientError,
                 "Failed to invoke a procedure. See the detailed error description for exact cause." ),
         TypeError( ClientError,
-                "A procedure is using or receiving a value of an invalid type." )
-        ;
+                "A procedure is using or receiving a value of an invalid type." ),
+        ProcedureTimedOut( ClientError,
+                "The procedure has not completed within the specified timeout. You may want to retry with a longer " +
+                "timeout." );
 
         private final Code code;
 

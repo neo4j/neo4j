@@ -104,7 +104,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         assertThat( asList( stream ), containsInAnyOrder(
                 equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)"} ),
                 equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?)"} ),
-                equalTo( new Object[]{"db.awaitIndex", "db.awaitIndex(label :: STRING?, property :: STRING?) :: VOID"} ),
+                equalTo( new Object[]{"db.awaitIndex", "db.awaitIndex(label :: STRING?, property :: STRING?, " +
+                        "timeOutSeconds :: INTEGER?) :: VOID"} ),
                 equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)"} ),
                 equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)"} ),
                 equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: " +

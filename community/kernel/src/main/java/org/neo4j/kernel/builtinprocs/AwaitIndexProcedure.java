@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.neo4j.function.Predicates;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -28,41 +32,35 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 
-import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
+import static java.lang.String.format;
 
 public class AwaitIndexProcedure
 {
-    private ReadOperations operations;
+    private final ReadOperations operations;
 
     public AwaitIndexProcedure( KernelTransaction tx )
     {
         operations = tx.acquireStatement().readOperations();
     }
 
-    public void execute( String labelName, String propertyKeyName ) throws ProcedureException
+    public void execute( String labelName, String propertyKeyName, long timeout, TimeUnit timeoutUnits )
+            throws ProcedureException
     {
         int labelId = getLabelId( labelName );
         int propertyKeyId = getPropertyKeyId( propertyKeyName );
-
-        if ( ONLINE != getState( labelName, propertyKeyName, labelId, propertyKeyId ) )
-        {
-            throw new ProcedureException( Status.General.UnknownError, "Index not online" );
-        }
+        String indexDescription = formatIndex( labelName, propertyKeyName );
+        IndexDescriptor index = getIndex( labelId, propertyKeyId, indexDescription );
+        waitUntilOnline( index, indexDescription, timeout, timeoutUnits );
     }
 
-    private InternalIndexState getState( String labelName, String propertyKeyName, int labelId, int propertyKeyId )
-            throws ProcedureException
+    private int getLabelId( String labelName ) throws ProcedureException
     {
-        try
+        int labelId = operations.labelGetForName( labelName );
+        if ( labelId == ReadOperations.NO_SUCH_LABEL )
         {
-            IndexDescriptor index = operations.indexGetForLabelAndPropertyKey( labelId, propertyKeyId );
-            return operations.indexGetState( index );
+            throw new ProcedureException( Status.Schema.LabelAccessFailed, "No such label %s", labelName );
         }
-        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
-        {
-            throw new ProcedureException( Status.Schema.IndexNotFound, e,
-                    "No index on :%s(%s)", labelName, propertyKeyName );
-        }
+        return labelId;
     }
 
     private int getPropertyKeyId( String propertyKeyName ) throws ProcedureException
@@ -76,13 +74,69 @@ public class AwaitIndexProcedure
         return propertyKeyId;
     }
 
-    private int getLabelId( String labelName ) throws ProcedureException
+    private IndexDescriptor getIndex( int labelId, int propertyKeyId, String indexDescription ) throws
+            ProcedureException
     {
-        int labelId = operations.labelGetForName( labelName );
-        if ( labelId == ReadOperations.NO_SUCH_LABEL )
+        try
         {
-            throw new ProcedureException( Status.Schema.LabelAccessFailed, "No such label %s", labelName );
+            return operations.indexGetForLabelAndPropertyKey( labelId, propertyKeyId );
         }
-        return labelId;
+        catch ( SchemaRuleNotFoundException e )
+        {
+            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No index on %s", indexDescription );
+        }
+    }
+
+    private void waitUntilOnline( IndexDescriptor index, String indexDescription, long timeout, TimeUnit timeoutUnits )
+            throws ProcedureException
+    {
+        try
+        {
+            Predicates.awaitEx( () -> isOnline( indexDescription, index ), timeout, timeoutUnits );
+        }
+        catch ( TimeoutException e )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureTimedOut,
+                    "Index on %s did not come online within %s %s", indexDescription, timeout, timeoutUnits );
+        }
+        catch ( InterruptedException e )
+        {
+            throw new ProcedureException( Status.General.DatabaseUnavailable,
+                    "Interrupted waiting for index on %s to come online", indexDescription );
+        }
+    }
+
+    private boolean isOnline( String indexDescription, IndexDescriptor index ) throws ProcedureException
+    {
+        InternalIndexState state = getState( indexDescription, index );
+        switch ( state )
+        {
+            case POPULATING:
+                return false;
+            case ONLINE:
+                return true;
+            case FAILED:
+                throw new ProcedureException( Status.Schema.IndexCreationFailed,
+                        "Index on %s is in failed state", indexDescription );
+            default:
+                throw new IllegalStateException( "Unknown index state " + state );
+        }
+    }
+
+    private InternalIndexState getState( String indexDescription, IndexDescriptor index ) throws ProcedureException
+    {
+        try
+        {
+            return operations.indexGetState( index );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No index on %s", indexDescription );
+        }
+    }
+
+    private String formatIndex( String labelName, String propertyKeyName )
+    {
+        return format( ":%s(%s)", labelName, propertyKeyName );
     }
 }
