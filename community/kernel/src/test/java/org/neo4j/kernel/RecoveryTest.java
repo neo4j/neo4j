@@ -59,7 +59,7 @@ import org.neo4j.kernel.recovery.DefaultRecoverySPI;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -80,7 +80,7 @@ public class RecoveryTest
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Rule
-    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
     private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
     private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0,
             BASE_TX_COMMIT_TIMESTAMP, 0, 0 );

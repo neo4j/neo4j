@@ -24,10 +24,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -35,7 +33,7 @@ import static org.junit.Assert.fail;
 public class ValidatorsTest
 {
     @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
 
     @Test
     public void shouldFindFilesByRegex() throws Exception

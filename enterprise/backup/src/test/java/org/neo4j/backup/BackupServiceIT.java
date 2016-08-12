@@ -54,8 +54,8 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -89,7 +89,7 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -129,7 +129,7 @@ public class BackupServiceIT
     }
 
     @Rule
-    public final TargetDirectory.TestDirectory target = TargetDirectory.testDirForTest( BackupServiceIT.class );
+    public final TestDirectory target = TestDirectory.testDirectory();
     private static final String NODE_STORE = StoreFactory.NODE_STORE_NAME;
     private static final String RELATIONSHIP_STORE = StoreFactory.RELATIONSHIP_STORE_NAME;
     private static final String BACKUP_HOST = "localhost";

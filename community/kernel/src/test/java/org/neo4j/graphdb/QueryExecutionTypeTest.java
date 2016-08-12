@@ -29,8 +29,13 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.graphdb.QueryExecutionType.QueryType.*;
-import static org.neo4j.graphdb.QueryExecutionType.*;
+import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
+import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_WRITE;
+import static org.neo4j.graphdb.QueryExecutionType.QueryType.SCHEMA_WRITE;
+import static org.neo4j.graphdb.QueryExecutionType.QueryType.WRITE;
+import static org.neo4j.graphdb.QueryExecutionType.explained;
+import static org.neo4j.graphdb.QueryExecutionType.profiled;
+import static org.neo4j.graphdb.QueryExecutionType.query;
 
 @RunWith(Parameterized.class)
 public class QueryExecutionTypeTest

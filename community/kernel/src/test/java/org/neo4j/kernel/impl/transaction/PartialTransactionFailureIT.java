@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
@@ -50,12 +50,11 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -65,8 +64,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class PartialTransactionFailureIT
 {
     @Rule
-    public TargetDirectory.TestDirectory dir =
-            TargetDirectory.testDirForTest( PartialTransactionFailureIT.class );
+    public TestDirectory dir = TestDirectory.testDirectory();
 
     @Test
     public void concurrentlyCommittingTransactionsMustNotRotateOutLoggedCommandsOfFailingTransaction()

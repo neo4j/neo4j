@@ -26,8 +26,7 @@ import org.neo4j.kernel.api.security.AccessMode;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.kernel.api.KernelTransactionFactory.*;
+import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;
 
 public class TransactionStatementSequenceTest
 {

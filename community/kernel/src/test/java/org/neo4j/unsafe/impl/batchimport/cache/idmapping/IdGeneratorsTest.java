@@ -19,11 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
+import org.junit.Test;
+
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-
-import org.junit.Test;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 
 public class IdGeneratorsTest
 {

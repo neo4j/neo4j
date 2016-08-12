@@ -23,7 +23,6 @@ import org.neo4j.kernel.impl.util.Bits;
 
 import static java.lang.Integer.numberOfLeadingZeros;
 import static java.lang.Math.max;
-
 import static org.neo4j.kernel.impl.util.Bits.bitsFromLongs;
 
 /**

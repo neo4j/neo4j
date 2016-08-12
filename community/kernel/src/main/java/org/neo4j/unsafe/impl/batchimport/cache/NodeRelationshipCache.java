@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.neo4j.graphdb.Direction;
 
 import static java.lang.Math.toIntExact;

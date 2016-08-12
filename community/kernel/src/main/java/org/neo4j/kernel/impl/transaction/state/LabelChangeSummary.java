@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.copyOf;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
 public class LabelChangeSummary

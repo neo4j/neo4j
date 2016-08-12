@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.test.LimitedFileSystemGraphDatabase;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -149,7 +149,7 @@ public class RunOutOfDiskSpaceIT
     }
 
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 }

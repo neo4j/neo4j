@@ -76,8 +76,8 @@ public class NeoStoresRule extends ExternalResource
     public NeoStores open( FileSystemAbstraction fs, PageCache pageCache, RecordFormats format, String... config )
     {
         assert neoStores == null : "Already opened";
-        TargetDirectory targetDirectory = new TargetDirectory( fs, testClass );
-        File storeDir = targetDirectory.makeGraphDbDir();
+        TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fs );
+        File storeDir = testDirectory.makeGraphDbDir();
         Config configuration = new Config( stringMap( config ) );
         StoreFactory storeFactory = new StoreFactory( storeDir, configuration, new DefaultIdGeneratorFactory( fs ),
                 pageCache, fs, format, NullLogProvider.getInstance() );

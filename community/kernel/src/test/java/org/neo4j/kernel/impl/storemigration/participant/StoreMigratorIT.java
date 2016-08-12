@@ -53,8 +53,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -66,7 +65,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_T
 public class StoreMigratorIT
 {
     @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
     public final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();

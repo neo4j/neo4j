@@ -33,7 +33,7 @@ import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.system.SystemExitRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -61,7 +61,7 @@ public class BackupToolTest
     @Rule
     public SystemExitRule systemExitRule = SystemExitRule.none();
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 

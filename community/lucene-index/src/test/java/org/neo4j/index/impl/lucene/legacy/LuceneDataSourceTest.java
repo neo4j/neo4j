@@ -38,8 +38,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.lifecycle.LifeRule;
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -50,7 +49,7 @@ import static org.junit.Assert.assertTrue;
 public class LuceneDataSourceTest
 {
     private final LifeRule life = new LifeRule( true );
-    private final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final TestDirectory directory = TestDirectory.testDirectory();
     private final ExpectedException expectedException = ExpectedException.none();
 
     @Rule

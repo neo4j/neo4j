@@ -33,9 +33,9 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -48,7 +48,7 @@ public class StoreSingleRelationshipCursorTest
     private static final long RELATIONSHIP_ID = 1L;
 
     private NeoStores neoStores;
-    private final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 

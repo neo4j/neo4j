@@ -36,7 +36,7 @@ import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -47,7 +47,7 @@ public class ServerManagementTest
 {
 
     private final CleanupRule cleanup = new CleanupRule();
-    private final TargetDirectory.TestDirectory baseDir = TargetDirectory.testDirForTest( getClass() );
+    private final TestDirectory baseDir = TestDirectory.testDirectory();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( baseDir )

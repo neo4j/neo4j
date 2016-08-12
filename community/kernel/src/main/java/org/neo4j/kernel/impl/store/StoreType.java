@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.store;
 import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 
 public enum StoreType
 {

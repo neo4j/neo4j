@@ -22,12 +22,12 @@ package org.neo4j.coreedge.core.consensus.membership;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 public class RaftMembershipStateRecoveryManagerTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Test
     public void shouldReturnCorrectLogIndex() throws Exception

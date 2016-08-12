@@ -74,7 +74,7 @@ import org.neo4j.server.ServerTestUtils;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -161,7 +161,7 @@ public class StoreUpgradeIntegrationTest
         @Rule
         public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
         @Rule
-        public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+        public TestDirectory testDir = TestDirectory.testDirectory();
 
         @Test
         public void embeddedDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
@@ -280,7 +280,7 @@ public class StoreUpgradeIntegrationTest
     public static class StoreUpgradeFailingTest
     {
         @Rule
-        public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+        public TestDirectory testDir = TestDirectory.testDirectory();
 
         @Parameterized.Parameter(0)
         public String ignored; // to make JUnit happy...
@@ -334,7 +334,7 @@ public class StoreUpgradeIntegrationTest
         }
 
         @Rule
-        public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+        public TestDirectory testDir = TestDirectory.testDirectory();
 
         @Test
         public void shouldBeAbleToUpgradeAStoreWithoutIdFilesAsBackups() throws Throwable

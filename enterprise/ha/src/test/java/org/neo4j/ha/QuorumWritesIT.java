@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -211,7 +211,7 @@ public class QuorumWritesIT
     }
 
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private void waitOnHeartbeatFail( HighlyAvailableGraphDatabase master, final CountDownLatch latch )
     {

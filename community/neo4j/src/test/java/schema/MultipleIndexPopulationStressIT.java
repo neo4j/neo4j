@@ -57,7 +57,7 @@ import org.neo4j.test.Randoms;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -92,7 +92,7 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 public class MultipleIndexPopulationStressIT
 {
     private static final String[] TOKENS = new String[]{"One", "Two", "Three", "Four"};
-    private final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final TestDirectory directory = TestDirectory.testDirectory();
 
     private final RandomRule random = new RandomRule();
     private final CleanupRule cleanup = new CleanupRule();

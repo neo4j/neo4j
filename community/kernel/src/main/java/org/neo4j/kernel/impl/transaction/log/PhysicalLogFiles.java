@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_VERSION_SUFFIX;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.REGEX_DEFAULT_VERSION_SUFFIX;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;

@@ -33,7 +33,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -43,7 +43,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSam
 public class PlatformConstraintStoreUpgradeTest
 {
     @Rule
-    public TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory storeDir = TestDirectory.testDirectory();
 
     private FileSystemAbstraction fileSystem;
     private File prepareDir;

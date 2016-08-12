@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.cursor;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntStack;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.NotFoundException;

@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.transaction.log.rotation;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
+import org.neo4j.kernel.internal.DatabaseHealth;
 
 /**
  * Default implementation of the LogRotation interface.

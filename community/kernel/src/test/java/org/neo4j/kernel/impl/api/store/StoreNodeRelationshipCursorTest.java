@@ -41,9 +41,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -63,7 +63,7 @@ public class StoreNodeRelationshipCursorTest
     private static final long SECOND_OWNING_NODE = 2;
     private static final int TYPE = 0;
 
-    private final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule

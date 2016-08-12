@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static org.neo4j.kernel.impl.traversal.TraversalTestBase.assertContains;
+import org.junit.Test;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.junit.Test;
+import static org.neo4j.kernel.impl.traversal.TraversalTestBase.assertContains;
 
 public class TestCopyOnWriteHashMap
 {

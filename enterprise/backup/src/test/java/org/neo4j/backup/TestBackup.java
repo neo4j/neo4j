@@ -70,7 +70,7 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.subprocess.SubProcess;
 
 import static java.lang.Integer.parseInt;
@@ -86,7 +86,7 @@ import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 @RunWith( Parameterized.class )
 public class TestBackup
 {
-    private final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( TestBackup.class );
+    private final TestDirectory testDir = TestDirectory.testDirectory();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule

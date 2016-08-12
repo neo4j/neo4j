@@ -71,8 +71,7 @@ import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.emptyCollectionOf;
@@ -105,7 +104,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFile
 public class StoreUpgraderTest
 {
     @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
     private File dbDirectory;

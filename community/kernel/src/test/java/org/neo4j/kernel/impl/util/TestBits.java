@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.junit.Test;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import org.junit.Test;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.kernel.impl.util.Bits.bits;
 
 public class TestBits

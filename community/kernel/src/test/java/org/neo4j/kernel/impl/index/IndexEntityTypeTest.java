@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /*
  This seems like a weird test, but it's necessary because we have a binding between the Enum name

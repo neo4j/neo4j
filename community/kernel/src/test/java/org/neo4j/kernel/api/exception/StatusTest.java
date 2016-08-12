@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.api.exception;
 
+import org.junit.Test;
+
 import java.util.HashSet;
 import java.util.Set;
 
-import org.junit.Test;
-
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class StatusTest
 {

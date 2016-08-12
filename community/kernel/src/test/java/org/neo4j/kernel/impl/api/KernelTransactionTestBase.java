@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Before;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.util.Collection;
 import java.util.function.Supplier;
@@ -30,8 +28,6 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.store.StoreStatement;

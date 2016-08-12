@@ -44,7 +44,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.String.format;
-
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedDifference;

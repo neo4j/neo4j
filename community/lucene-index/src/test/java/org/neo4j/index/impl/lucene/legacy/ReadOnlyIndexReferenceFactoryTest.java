@@ -36,13 +36,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertSame;
 
 public class ReadOnlyIndexReferenceFactoryTest
 {
-    private TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    private TestDirectory testDirectory = TestDirectory.testDirectory();
     private ExpectedException expectedException = ExpectedException.none();
     private CleanupRule cleanupRule = new CleanupRule();
 

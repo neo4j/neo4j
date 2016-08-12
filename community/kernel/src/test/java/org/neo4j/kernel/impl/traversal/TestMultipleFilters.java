@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import java.util.function.Predicate;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.function.Predicate;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;

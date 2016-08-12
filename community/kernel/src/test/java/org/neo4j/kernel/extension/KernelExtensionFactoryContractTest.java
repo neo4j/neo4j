@@ -30,7 +30,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -47,7 +47,7 @@ public abstract class KernelExtensionFactoryContractTest
     private final String key;
 
     @Rule
-    public TargetDirectory.TestDirectory target = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory target = TestDirectory.testDirectory( getClass() );
 
     public KernelExtensionFactoryContractTest( String key, Class<? extends KernelExtensionFactory<?>> extClass )
     {

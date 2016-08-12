@@ -23,13 +23,13 @@ import java.io.File;
 import java.util.Collection;
 import java.util.function.Predicate;
 
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;

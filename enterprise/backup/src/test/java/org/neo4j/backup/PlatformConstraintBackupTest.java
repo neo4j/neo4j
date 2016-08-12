@@ -30,7 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -39,7 +39,7 @@ import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.TEST_
 public class PlatformConstraintBackupTest
 {
     @Rule
-    public TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory storeDir = TestDirectory.testDirectory();
 
     private File workingDir;
 

@@ -31,7 +31,7 @@ import java.util.Properties;
 import org.neo4j.desktop.Parameters;
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.model.DesktopModel;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -41,7 +41,7 @@ import static org.neo4j.server.configuration.ServerSettings.httpConnector;
 public class DatabaseActionsTest
 {
     @Rule
-    public TargetDirectory.TestDirectory baseDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private File storeDir;
     private File configFile;
@@ -76,10 +76,10 @@ public class DatabaseActionsTest
     @Before
     public void createFiles() throws IOException
     {
-        storeDir = new File( baseDir.directory(), "store_dir" );
+        storeDir = new File( testDirectory.directory(), "store_dir" );
         storeDir.mkdirs();
 
-        configFile = new File( baseDir.directory(), "neo4j.conf" );
+        configFile = new File( testDirectory.directory(), "neo4j.conf" );
         Properties props = new Properties();
         props.setProperty( httpConnector( "1" ).type.name(), "HTTP" );
         props.setProperty( httpConnector( "1" ).enabled.name(), "true" );

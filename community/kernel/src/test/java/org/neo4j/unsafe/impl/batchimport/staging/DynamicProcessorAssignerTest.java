@@ -29,7 +29,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.unsafe.impl.batchimport.staging.ControlledStep.stepWithStats;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 import static org.neo4j.unsafe.impl.batchimport.stats.Keys.avg_processing_time;

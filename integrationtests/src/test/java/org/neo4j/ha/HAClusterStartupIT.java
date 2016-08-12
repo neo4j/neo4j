@@ -33,8 +33,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -43,7 +42,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 public class HAClusterStartupIT
 {
     @Rule
-    public final TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory dir = TestDirectory.testDirectory();
 
     private Cluster cluster;
     private ClusterManager clusterManager;

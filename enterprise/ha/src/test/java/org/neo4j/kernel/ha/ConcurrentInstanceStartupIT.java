@@ -32,7 +32,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
 
@@ -40,7 +40,7 @@ public class ConcurrentInstanceStartupIT
 {
     public static final int INSTANCE_COUNT = 3;
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void concurrentStartupShouldWork() throws Exception

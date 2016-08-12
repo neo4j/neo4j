@@ -19,23 +19,21 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.test.DoubleLatch.awaitLatch;
+import org.junit.Test;
 
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.Test;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
+
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class SynchronizedArrayIdOrderingQueueStressTest
 {

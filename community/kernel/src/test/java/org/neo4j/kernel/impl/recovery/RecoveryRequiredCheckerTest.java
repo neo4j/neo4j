@@ -33,7 +33,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -45,8 +45,7 @@ public class RecoveryRequiredCheckerTest
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
-    public TargetDirectory.TestDirectory testDirectory =
-            TargetDirectory.testDirForTestWithEphemeralFS( fileSystem, getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory( fileSystem );
 
     private File storeDir;
 

@@ -31,7 +31,6 @@ import org.neo4j.function.Suppliers;
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**

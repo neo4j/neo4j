@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
-
 import static org.neo4j.unsafe.impl.batchimport.input.UpdateBehaviour.ADD;
 
 public class InputEntityTest

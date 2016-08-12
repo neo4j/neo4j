@@ -26,7 +26,6 @@ import org.neo4j.kernel.api.security.AccessMode;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;
 
 public class TransactionStatementSharingTest

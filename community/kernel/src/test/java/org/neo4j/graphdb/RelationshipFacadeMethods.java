@@ -21,7 +21,6 @@ package org.neo4j.graphdb;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
-
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 @SuppressWarnings("UnusedDeclaration")

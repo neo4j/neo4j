@@ -49,7 +49,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -68,7 +68,7 @@ public class UniqueDatabaseIndexPopulatorTest
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     private static final int LABEL_ID = 1;
     private static final int PROPERTY_KEY_ID = 2;

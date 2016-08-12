@@ -23,14 +23,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.test.rule.docs.DocsIncludeFile;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
+import org.neo4j.test.rule.docs.DocsIncludeFile;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.array_block_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.string_block_size;
 import static org.neo4j.kernel.impl.store.StoreFactory.NODE_STORE_NAME;

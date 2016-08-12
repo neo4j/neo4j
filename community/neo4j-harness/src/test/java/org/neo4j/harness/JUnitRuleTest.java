@@ -35,7 +35,7 @@ import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -43,13 +43,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
-import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class JUnitRuleTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule

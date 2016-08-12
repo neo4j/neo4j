@@ -19,7 +19,7 @@
  */
 package org.neo4j.helpers;
 
-import static org.junit.Assert.*;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,7 +27,8 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Enumeration;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ServiceTest {
 

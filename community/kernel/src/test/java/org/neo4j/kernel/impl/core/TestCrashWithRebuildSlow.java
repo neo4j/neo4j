@@ -48,8 +48,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -71,7 +70,7 @@ public class TestCrashWithRebuildSlow
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     // for dumping data about failing build
     @Rule
-    public final TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDir = TestDirectory.testDirectory();
 
     @Test
     public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception

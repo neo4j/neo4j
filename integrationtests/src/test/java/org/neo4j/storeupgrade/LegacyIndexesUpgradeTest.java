@@ -46,7 +46,7 @@ import org.neo4j.test.NestedThrowableMatcher;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -57,7 +57,7 @@ import static org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation.FULLT
 public class LegacyIndexesUpgradeTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

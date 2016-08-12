@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreFormatException;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -52,7 +52,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 public class RecordFormatsMigrationIT
 {
@@ -63,7 +62,7 @@ public class RecordFormatsMigrationIT
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Rule
-    public final TargetDirectory.TestDirectory testDir = testDirForTest( RecordFormatsMigrationIT.class, fs );
+    public final TestDirectory testDir = TestDirectory.testDirectory( fs );
 
     @Test
     public void migrateStandardToHighLimit() throws IOException

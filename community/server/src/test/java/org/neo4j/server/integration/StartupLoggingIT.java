@@ -41,7 +41,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static java.util.Arrays.asList;
@@ -60,7 +60,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
     }
 
     @Rule
-    public TargetDirectory.TestDirectory homeDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory homeDir = TestDirectory.testDirectory();
 
     @Test
     public void shouldLogHelpfulStartupMessages() throws Throwable

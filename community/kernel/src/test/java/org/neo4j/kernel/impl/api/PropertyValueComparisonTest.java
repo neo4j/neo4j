@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Comparator;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static java.lang.String.format;
+import java.util.Comparator;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_STRINGS;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
-import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.*;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;
 
 public class PropertyValueComparisonTest
 {

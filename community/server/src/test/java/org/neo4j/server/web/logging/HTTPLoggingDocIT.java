@@ -38,7 +38,7 @@ import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -134,7 +134,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     }
 
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private ThrowingSupplier<String, IOException> fileContentSupplier( final File file )
     {

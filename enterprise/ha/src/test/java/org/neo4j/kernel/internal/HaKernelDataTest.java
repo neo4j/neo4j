@@ -26,7 +26,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.ManagedResource;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertSame;
 
@@ -47,7 +47,7 @@ public class HaKernelDataTest
     public final ManagedResource<HighlyAvailableGraphDatabase> ha = new ManagedResource<HighlyAvailableGraphDatabase>()
     {
         @Override
-        protected HighlyAvailableGraphDatabase createResource( TargetDirectory.TestDirectory dir ) throws Exception
+        protected HighlyAvailableGraphDatabase createResource( TestDirectory dir ) throws Exception
         {
             return (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newEmbeddedDatabaseBuilder( dir.directory().getAbsoluteFile() )

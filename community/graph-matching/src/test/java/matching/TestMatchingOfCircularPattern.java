@@ -45,7 +45,7 @@ import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -291,6 +291,5 @@ public class TestMatchingOfCircularPattern
     }
 
     @ClassRule
-    public static TargetDirectory.TestDirectory testDirectory =
-            TargetDirectory.testDirForTest( TestMatchingOfCircularPattern.class );
+    public static TestDirectory testDirectory = TestDirectory.testDirectory();
 }

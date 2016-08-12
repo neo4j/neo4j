@@ -52,7 +52,7 @@ import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.test.Randoms;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.instanceOf;
@@ -66,7 +66,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     private static final int PROPERTY_KEY_ID = 42;
 
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Parameter
     public int nodesToCreate;

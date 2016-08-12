@@ -45,12 +45,12 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.test.rule.LoggerRule;
-import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.test.rule.LoggerRule;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -72,7 +72,7 @@ public class ClusterTest
     @Rule
     public LoggerRule logging = new LoggerRule( Level.OFF );
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void testCluster() throws Throwable

@@ -19,15 +19,24 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import org.junit.After;
 import org.junit.Rule;
 
+import java.io.IOException;
+
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 public class MuninnPageCacheWithRealFileSystemIT extends MuninnPageCacheTest
 {
     @Rule
-    public TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory directory = TestDirectory.testDirectory();
+
+    @After
+    public void tearDown() throws IOException
+    {
+        directory.cleanup();
+    }
 
     @Override
     protected Fixture<MuninnPageCache> createFixture()

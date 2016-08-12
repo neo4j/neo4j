@@ -25,7 +25,6 @@ import org.neo4j.helpers.Exceptions;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 

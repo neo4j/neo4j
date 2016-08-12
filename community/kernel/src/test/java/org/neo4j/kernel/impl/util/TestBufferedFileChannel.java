@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,12 +28,10 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import org.junit.Test;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
-
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.junit.Assert.assertEquals;
 

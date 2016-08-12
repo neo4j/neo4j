@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
@@ -66,7 +66,7 @@ public class RelationshipGroupStoreTest
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule( false );
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory();
     private File directory;
     private int defaultThreshold;
     private FileSystemAbstraction fs;

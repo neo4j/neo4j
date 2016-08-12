@@ -19,14 +19,14 @@
  */
 package org.neo4j.helpers;
 
+import org.junit.Test;
+
+import java.net.URI;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.Uris.parameter;
-
-import java.net.URI;
-
-import org.junit.Test;
 
 public class UrisTest
 {

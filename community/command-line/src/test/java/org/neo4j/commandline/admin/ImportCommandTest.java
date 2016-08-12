@@ -31,7 +31,7 @@ import java.io.File;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsNot.not;
@@ -41,7 +41,7 @@ import static org.junit.Assert.fail;
 
 public class ImportCommandTest
 {
-    private TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    private TestDirectory testDir = TestDirectory.testDirectory();
 
     @Rule
     public final DatabaseRule db = new EmbeddedDatabaseRule();

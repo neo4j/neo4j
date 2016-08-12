@@ -32,7 +32,7 @@ import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.test.ReflectionUtil;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -45,7 +45,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class BatchInserterImplTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void testHonorsPassedInParams() throws Exception

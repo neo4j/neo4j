@@ -29,9 +29,9 @@ import org.neo4j.cursor.IOCursor;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Predicates.in;
 import static org.neo4j.function.Predicates.not;
-import static org.neo4j.function.Predicates.alwaysTrue;
 
 public class FilteringIOCursorTest
 {

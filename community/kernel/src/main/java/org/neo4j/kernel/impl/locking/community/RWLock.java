@@ -31,7 +31,6 @@ import org.neo4j.logging.Logger;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
-
 import static org.neo4j.kernel.impl.locking.LockType.READ;
 import static org.neo4j.kernel.impl.locking.LockType.WRITE;
 

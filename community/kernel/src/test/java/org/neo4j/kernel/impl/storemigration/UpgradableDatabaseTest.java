@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -66,7 +66,7 @@ public class UpgradableDatabaseTest
     public static class SupportedVersions
     {
         @Rule
-        public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+        public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
         @Parameterized.Parameter( 0 )
         public String version;
@@ -201,7 +201,7 @@ public class UpgradableDatabaseTest
     public static class UnsupportedVersions
     {
         @Rule
-        public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+        public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
         @Parameterized.Parameter( 0 )
         public String version;

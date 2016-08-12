@@ -31,7 +31,7 @@ import org.neo4j.harness.TestServerBuilder;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -40,7 +40,7 @@ import static org.junit.Assert.assertThat;
 public class EnterpriseInProcessServerBuilderTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( EnterpriseInProcessServerBuilderTest.class );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();

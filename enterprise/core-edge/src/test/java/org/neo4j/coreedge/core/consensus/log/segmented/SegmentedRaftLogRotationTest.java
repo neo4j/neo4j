@@ -35,20 +35,18 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
-import org.neo4j.test.rule.Resources;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
-import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
 
 public class SegmentedRaftLogRotationTest
 {
     private static final int ROTATE_AT_SIZE_IN_BYTES = 100;
 
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public final LifeRule life = new LifeRule( true );
 

@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Map;
 
+import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
-import org.neo4j.kernel.impl.util.VersionedHashMap;
 
 /**
  * Indexes entities by what property and value has been modified on them.

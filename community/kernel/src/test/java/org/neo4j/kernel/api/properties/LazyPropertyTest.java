@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import java.util.concurrent.Callable;
-
 import org.junit.Test;
+
+import java.util.concurrent.Callable;
 
 import org.neo4j.helpers.ArrayUtil;
 

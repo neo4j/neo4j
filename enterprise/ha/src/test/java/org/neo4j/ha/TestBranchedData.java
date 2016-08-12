@@ -50,8 +50,7 @@ import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.impl.util.StoreUtil;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertFalse;
@@ -63,7 +62,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 public class TestBranchedData
 {
     private final LifeRule life = new LifeRule( true );
-    private final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final TestDirectory directory = TestDirectory.testDirectory();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( directory )

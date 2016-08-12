@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collection;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;

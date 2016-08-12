@@ -31,10 +31,9 @@ import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
-import static org.junit.Assert.assertTrue;
-
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
+import static org.junit.Assert.assertTrue;
 
 /**
  * A bit like a mocked {@link Step}, but easier to work with.

@@ -36,7 +36,7 @@ import org.neo4j.ha.TestRunConditions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.test.rule.LoggerRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -49,7 +49,7 @@ public class FailoverWithAdditionalSlaveFailuresIT
     @Rule
     public LoggerRule logger = new LoggerRule();
     @Rule
-    public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory dir = TestDirectory.testDirectory();
 
     // parameters
     private int clusterSize;

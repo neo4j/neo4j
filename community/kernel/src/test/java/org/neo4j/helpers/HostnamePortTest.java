@@ -19,19 +19,19 @@
  */
 package org.neo4j.helpers;
 
+import org.junit.Test;
+
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
-
-import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 public class HostnamePortTest
 {

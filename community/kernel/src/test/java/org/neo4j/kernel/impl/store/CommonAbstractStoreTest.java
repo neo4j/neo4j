@@ -56,8 +56,9 @@ import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
+import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -78,13 +79,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
-
-import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
-
 import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Event;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
-import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
+import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
 public class CommonAbstractStoreTest
 {
@@ -103,7 +101,7 @@ public class CommonAbstractStoreTest
     private final IdType idType = IdType.RELATIONSHIP; // whatever
 
     private static final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    private static final TargetDirectory.TestDirectory dir = testDirForTest( CommonAbstractStoreTest.class, fs );
+    private static final TestDirectory dir = testDirectory( fs );
     private static final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @ClassRule

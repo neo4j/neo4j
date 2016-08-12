@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import java.util.Iterator;
-
 import org.junit.Test;
+
+import java.util.Iterator;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.traversal.InitialBranchState;

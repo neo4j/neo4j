@@ -22,6 +22,8 @@ package org.neo4j.test;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.neo4j.string.HexString;
+
 public class Digests
 {
     public static String md5Hex( String message )
@@ -30,25 +32,11 @@ public class Digests
         {
             MessageDigest m = MessageDigest.getInstance( "MD5" );
             m.update( message.getBytes(), 0, message.getBytes().length);
-            return hex(m.digest());
+            return HexString.encodeHexString( m.digest() );
         }
         catch ( NoSuchAlgorithmException e )
         {
             throw new RuntimeException( "MD5 hash algorithm is not available on this platform: " + e.getMessage(),e );
         }
-    }
-
-    protected static final char[] hexArray = "0123456789ABCDEF".toCharArray();
-
-    // TODO: Replace with BytePrinter#compactHex once auth work is merged
-    private static String hex(byte[] bytes)
-    {
-        char[] hexChars = new char[bytes.length * 2];
-        for ( int j = 0; j < bytes.length; j++ ) {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = hexArray[v >>> 4];
-            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-        }
-        return new String(hexChars);
     }
 }

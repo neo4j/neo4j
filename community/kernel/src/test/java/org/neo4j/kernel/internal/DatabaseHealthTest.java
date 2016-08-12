@@ -30,7 +30,6 @@ import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.graphdb.event.ErrorState.TX_MANAGER_NOT_OK;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 

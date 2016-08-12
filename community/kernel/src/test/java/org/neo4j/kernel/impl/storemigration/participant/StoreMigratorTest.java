@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -58,7 +58,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_T
 public class StoreMigratorTest
 {
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    private final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final TestDirectory directory = TestDirectory.testDirectory();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final RandomRule random = new RandomRule();
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();

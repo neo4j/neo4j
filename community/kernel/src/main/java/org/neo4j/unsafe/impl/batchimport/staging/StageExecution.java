@@ -32,7 +32,6 @@ import org.neo4j.unsafe.impl.batchimport.stats.Key;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**

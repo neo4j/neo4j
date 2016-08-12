@@ -37,7 +37,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.User;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.Matchers.containsString;
@@ -52,8 +52,8 @@ import static org.mockito.Mockito.verify;
 
 public class SetPasswordCommandTest
 {
-    private TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
     private static String password_change_required = "password_change_required";
+    private TestDirectory testDir = TestDirectory.testDirectory();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( testDir );

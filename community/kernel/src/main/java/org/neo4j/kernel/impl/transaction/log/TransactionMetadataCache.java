@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.helpers.collection.LruCache;
 import java.util.Objects;
+
+import org.neo4j.helpers.collection.LruCache;
 
 public class TransactionMetadataCache
 {

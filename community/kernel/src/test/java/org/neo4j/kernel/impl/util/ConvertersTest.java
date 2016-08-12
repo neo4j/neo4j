@@ -25,8 +25,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.neo4j.kernel.impl.util.Converters.regexFiles;
@@ -34,7 +33,7 @@ import static org.neo4j.kernel.impl.util.Converters.regexFiles;
 public class ConvertersTest
 {
     @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
 
     @Test
     public void shouldSortFilesByNumberCleverly() throws Exception

@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -65,8 +65,7 @@ import static org.neo4j.graphdb.Label.label;
 public class UniqueIndexRecoveryTests
 {
     @Rule
-    public final TargetDirectory.TestDirectory storeDir =
-            TargetDirectory.testDirForTest( UniqueIndexRecoveryTests.class );
+    public final TestDirectory storeDir = TestDirectory.testDirectory();
 
     private static final String PROPERTY_KEY = "key";
     private static final String PROPERTY_VALUE = "value";

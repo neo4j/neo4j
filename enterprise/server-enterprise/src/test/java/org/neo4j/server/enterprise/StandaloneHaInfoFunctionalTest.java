@@ -31,7 +31,7 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
 import static org.junit.Assert.assertEquals;
@@ -45,7 +45,7 @@ public class StandaloneHaInfoFunctionalTest
     private static EnterpriseNeoServer server;
 
     @Rule
-    public TargetDirectory.TestDirectory target = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory target = TestDirectory.testDirectory();
 
     @Before
     public void before() throws IOException

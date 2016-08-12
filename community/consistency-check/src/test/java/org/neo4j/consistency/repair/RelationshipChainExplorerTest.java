@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -53,7 +53,7 @@ public class RelationshipChainExplorerTest
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
-    public TargetDirectory.TestDirectory storeLocation = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory storeLocation = TestDirectory.testDirectory();
     private StoreAccess store;
 
     @Before

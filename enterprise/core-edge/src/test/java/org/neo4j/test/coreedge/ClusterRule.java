@@ -23,23 +23,23 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
-import org.neo4j.coreedge.discovery.SharedDiscoveryService;
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.test.rule.TargetDirectory;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.IntFunction;
 
+import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.SharedDiscoveryService;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.test.rule.TestDirectory;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ClusterRule extends ExternalResource
 {
-    private final TargetDirectory.TestDirectory testDirectory;
+    private final TestDirectory testDirectory;
     private File clusterDirectory;
     private Cluster cluster;
 
@@ -54,7 +54,7 @@ public class ClusterRule extends ExternalResource
 
     public ClusterRule( Class<?> testClass )
     {
-        this.testDirectory = TargetDirectory.testDirForTest( testClass );
+        this.testDirectory = TestDirectory.testDirectory( testClass );
     }
 
     @Override
@@ -119,7 +119,7 @@ public class ClusterRule extends ExternalResource
         return cluster;
     }
 
-    public TargetDirectory.TestDirectory testDirectory()
+    public TestDirectory testDirectory()
     {
         return testDirectory;
     }

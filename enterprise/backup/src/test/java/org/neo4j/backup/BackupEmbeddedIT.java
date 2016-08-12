@@ -49,16 +49,15 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 @RunWith( Parameterized.class )
 public class BackupEmbeddedIT
 {
     @ClassRule
-    public static final TargetDirectory.TestDirectory testDirectory = testDirForTest( BackupEmbeddedIT.class );
+    public static final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( testDirectory.directory( "db" ) ).startLazily();
 
