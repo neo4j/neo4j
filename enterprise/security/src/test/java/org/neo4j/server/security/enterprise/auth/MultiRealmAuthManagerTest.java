@@ -171,8 +171,6 @@ public class MultiRealmAuthManagerTest
     @Test
     public void shouldDeleteUser() throws Throwable
     {
-        System.out.println("shouldDeleteUser");
-
         // Given
         final User user = newUser( "jake", "abc123" , true );
         final User user2 = newUser( "craig", "321cba" , true );
