@@ -119,6 +119,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
+    // default values for not committed tx id and tx commit time
+    private static final long NOT_COMMITTED_TRANSACTION_ID = -1;
+    private static final long NOT_COMMITTED_TRANSACTION_COMMIT_TIME = -1;
+
     // Logic
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionHooks hooks;
@@ -156,6 +160,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile long lastTransactionTimestampWhenStarted;
     private TransactionEvent transactionEvent;
     private Type type;
+    private long transactionId;
+    private long commitTime;
     private volatile int reuseCount;
 
     /**
@@ -215,6 +221,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionEvent = tracer.beginTransaction();
         assert transactionEvent != null : "transactionEvent was null!";
         this.accessMode = accessMode;
+        this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
+        this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.currentStatement.initialize( statementLocks );
         return this;
     }
@@ -556,16 +564,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     PhysicalTransactionRepresentation transactionRepresentation =
                             new PhysicalTransactionRepresentation( extractedCommands );
                     TransactionHeaderInformation headerInformation = headerInformationFactory.create();
+                    long timeCommitted = clock.currentTimeMillis();
                     transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
                             headerInformation.getMasterId(),
                             headerInformation.getAuthorId(),
-                            startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis(),
+                            startTimeMillis, lastTransactionIdWhenStarted, timeCommitted,
                             commitLocks.getLockSessionId() );
 
                     // Commit the transaction
                     success = true;
                     TransactionToApply batch = new TransactionToApply( transactionRepresentation );
-                    txId = commitProcess.commit( batch, commitEvent, INTERNAL );
+                    transactionId = commitProcess
+                            .commit( new TransactionToApply( transactionRepresentation ), commitEvent, INTERNAL );
+                    commitTime = timeCommitted;
                 }
             }
             success = true;
@@ -728,6 +739,28 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public Type transactionType()
     {
         return type;
+    }
+
+    @Override
+    public long getTransactionId()
+    {
+        if ( transactionId == NOT_COMMITTED_TRANSACTION_ID )
+        {
+            throw new IllegalStateException( "Transaction id is not assigned yet. " +
+                                             "It will be assigned during transaction commit." );
+        }
+        return transactionId;
+    }
+
+    @Override
+    public long getCommitTime()
+    {
+        if ( commitTime == NOT_COMMITTED_TRANSACTION_COMMIT_TIME )
+        {
+            throw new IllegalStateException( "Transaction commit time is not assigned yet. " +
+                                             "It will be assigned during transaction commit." );
+        }
+        return commitTime;
     }
 
     @Override

@@ -30,6 +30,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -44,6 +45,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -60,6 +62,7 @@ public class TxStateTransactionDataViewTest
     private final Statement stmt = mock( Statement.class );
     private final StoreReadLayer ops = mock( StoreReadLayer.class );
     private final StoreStatement storeStatement = mock( StoreStatement.class );
+    private final KernelTransaction transaction = mock( KernelTransaction.class );
 
     private final TransactionState state = new TxState();
 
@@ -282,6 +285,19 @@ public class TxStateTransactionDataViewTest
         assertThat( entry.node().getId(), equalTo( 1L ) );
     }
 
+    @Test
+    public void accessTransactionIdAndCommitTime()
+    {
+        long committedTransactionId = 7L;
+        long commitTime = 10L;
+        when( transaction.getTransactionId() ).thenReturn( committedTransactionId );
+        when( transaction.getCommitTime() ).thenReturn( commitTime );
+
+        TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
+        assertEquals( committedTransactionId, transactionDataSnapshot.getTransactionId() );
+        assertEquals( commitTime, transactionDataSnapshot.getCommitTime() );
+    }
+
     private List<Long> idList( Iterable<? extends PropertyContainer> entities )
     {
         List<Long> out = new ArrayList<>();
@@ -296,6 +312,6 @@ public class TxStateTransactionDataViewTest
     {
         NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
         final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
-        return new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops, storeStatement );
+        return new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops, storeStatement, transaction );
     }
 }

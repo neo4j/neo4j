@@ -33,6 +33,7 @@ import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -62,6 +63,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final StorageStatement storeStatement;
     private final RelationshipActions relationshipActions;
     private final StoreReadLayer store;
+    private KernelTransaction transaction;
 
     private final Collection<PropertyEntry<Node>> assignedNodeProperties = new ArrayList<>();
     private final Collection<PropertyEntry<Relationship>> assignedRelationshipProperties = new ArrayList<>();
@@ -74,14 +76,15 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
     public TxStateTransactionDataSnapshot(
             ReadableTransactionState state,
-            NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions relationshipActions,
-            StoreReadLayer storeReadLayer, StorageStatement storageStatement )
+            NodeProxy.NodeActions nodeActions, RelationshipActions relationshipActions,
+            StoreReadLayer storeReadLayer, StorageStatement storageStatement, KernelTransaction transaction )
     {
         this.state = state;
         this.nodeActions = nodeActions;
         this.relationshipActions = relationshipActions;
         this.storeStatement = storageStatement;
         this.store = storeReadLayer;
+        this.transaction = transaction;
 
         // Load changes that require store access eagerly, because we won't have access to the after-state
         // after the tx has been committed.
@@ -158,6 +161,18 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     public Iterable<LabelEntry> assignedLabels()
     {
         return assignedLabels;
+    }
+
+    @Override
+    public long getTransactionId()
+    {
+        return transaction.getTransactionId();
+    }
+
+    @Override
+    public long getCommitTime()
+    {
+        return transaction.getCommitTime();
     }
 
     private void takeSnapshot()

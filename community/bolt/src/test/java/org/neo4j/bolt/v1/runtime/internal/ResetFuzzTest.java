@@ -323,6 +323,18 @@ public class ResetFuzzTest
         }
 
         @Override
+        public long getTransactionId()
+        {
+            return -1;
+        }
+
+        @Override
+        public long getCommitTime()
+        {
+            return -1;
+        }
+
+        @Override
         public Revertable restrict( AccessMode read )
         {
             return null;
