@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Relationship;
  */
 public interface TransactionData
 {
+
     /**
      * Get the nodes that were created during the transaction.
      *
@@ -47,7 +48,7 @@ public interface TransactionData
      * @return all nodes that were deleted during the transaction.
      */
     Iterable<Node> deletedNodes();
-    
+
     /**
      * Returns whether or not {@code node} is deleted in this transaction.
      * @param node the {@link Node} to check whether or not it is deleted
@@ -119,7 +120,7 @@ public interface TransactionData
     /**
      * Returns whether or not {@code relationship} is deleted in this
      * transaction.
-     * 
+     *
      * @param relationship the {@link Relationship} to check whether or not it
      *            is deleted in this transaction.
      * @return whether or not {@code relationship} is deleted in this
@@ -159,4 +160,24 @@ public interface TransactionData
      * @return all properties that have been removed from relationships.
      */
     Iterable<PropertyEntry<Relationship>> removedRelationshipProperties();
+
+    /**
+     * Return transaction id that assigned during transaction commit process.
+     * @return transaction id.
+     * @throws IllegalStateException if transaction id is not assigned yet
+     */
+    default long getTransactionId()
+    {
+        throw new IllegalStateException( "Transaction id is not available." );
+    }
+
+    /**
+     * Return transaction commit time (in millis) that assigned during transaction commit process.
+     * @return transaction commit time
+     * @throws IllegalStateException if commit time is not assigned yet
+     */
+    default long getCommitTime()
+    {
+        throw new IllegalStateException( "Transaction commit time it not available." );
+    }
 }

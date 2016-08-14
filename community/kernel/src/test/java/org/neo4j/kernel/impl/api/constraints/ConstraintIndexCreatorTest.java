@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernel
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
@@ -230,6 +230,18 @@ public class ConstraintIndexCreatorTest
                 public Type transactionType()
                 {
                     return null;
+                }
+
+                @Override
+                public long getTransactionId()
+                {
+                    return -1;
+                }
+
+                @Override
+                public long getCommitTime()
+                {
+                    return -1;
                 }
 
                 @Override

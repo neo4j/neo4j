@@ -28,7 +28,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
  */
 public interface TransactionHook<OUTCOME extends TransactionHook.Outcome>
 {
-    public interface Outcome
+    interface Outcome
     {
         boolean isSuccessful();
         Throwable failure();

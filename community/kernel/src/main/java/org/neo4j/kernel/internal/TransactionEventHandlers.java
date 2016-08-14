@@ -115,7 +115,7 @@ public class TransactionEventHandlers
 
         TransactionData txData = state == null ? EMPTY_DATA :
                 new TxStateTransactionDataSnapshot( state, nodeActions, relationshipActions,
-                        storeReadLayer, statement );
+                        storeReadLayer, statement, transaction );
 
         TransactionHandlerState handlerStates = new TransactionHandlerState( txData );
         for ( TransactionEventHandler<?> handler : this.transactionEventHandlers )
