@@ -22,9 +22,11 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
+
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.test.OtherThreadRule;
@@ -32,13 +34,15 @@ import org.neo4j.test.OtherThreadRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-
+import static java.lang.Integer.parseInt;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class TicketedProcessingTest
 {
     @Rule
-    public final OtherThreadRule<Void> asserter = new OtherThreadRule<>();
+    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
 
     @Test
     public void shouldReturnTicketsInOrder() throws Exception
@@ -60,7 +64,7 @@ public class TicketedProcessingTest
         processing.processors( processorCount - processing.processors( 0 ) );
 
         // WHEN
-        Future<Void> assertions = asserter.execute( new WorkerCommand<Void,Void>()
+        Future<Void> assertions = t2.execute( new WorkerCommand<Void,Void>()
         {
             @Override
             public Void doWork( Void state ) throws Exception
@@ -77,11 +81,62 @@ public class TicketedProcessingTest
         } );
         for ( int i = 0; i < items; i++ )
         {
-            processing.submit( i, i );
+            processing.submit( i );
         }
         processing.shutdown( true );
 
         // THEN
         assertions.get();
+    }
+
+    @Test
+    public void shouldNotBeAbleToSubmitTooFarAhead() throws Exception
+    {
+        // GIVEN
+        TicketedProcessing<StringJob,Void,Integer> processing = new TicketedProcessing<>( "Parser", 2,
+                (job,state) ->
+                {
+                    awaitLatch( job.latch );
+                    return parseInt( job.string );
+                }, () -> null );
+        processing.processors( 1 );
+        StringJob firstJob = new StringJob( "1" );
+        processing.submit( firstJob );
+        StringJob secondJob = new StringJob( "2" );
+        processing.submit( secondJob );
+
+        // WHEN
+        StringJob thirdJob = new StringJob( "3" );
+        thirdJob.latch.countDown();
+        Future<Void> thirdSubmit = t2.execute( new WorkerCommand<Void,Void>()
+        {
+            @Override
+            public Void doWork( Void state ) throws Exception
+            {
+                processing.submit( thirdJob );
+                return null;
+            }
+        } );
+        t2.get().waitUntilThreadState( Thread.State.TIMED_WAITING, Thread.State.WAITING );
+        firstJob.latch.countDown();
+        assertEquals( 1, processing.next().intValue() );
+        thirdSubmit.get();
+        secondJob.latch.countDown();
+        assertEquals( 2, processing.next().intValue() );
+        assertEquals( 3, processing.next().intValue() );
+
+        // THEN
+        processing.shutdown( true );
+    }
+
+    private static class StringJob
+    {
+        final String string;
+        final CountDownLatch latch = new CountDownLatch( 1 );
+
+        StringJob( String string )
+        {
+            this.string = string;
+        }
     }
 }

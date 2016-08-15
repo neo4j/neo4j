@@ -76,8 +76,9 @@ public class QuickImport
         int relationshipTypeCount = args.getNumber( "relationship-types", 4 ).intValue();
         File dir = new File( args.get( ImportTool.Options.STORE_DIR.key() ) );
         long randomSeed = args.getNumber( "random-seed", currentTimeMillis() ).longValue();
+        Configuration config = COMMAS;
 
-        Extractors extractors = new Extractors( COMMAS.arrayDelimiter() );
+        Extractors extractors = new Extractors( config.arrayDelimiter() );
         IdType idType = IdType.valueOf( args.get( "id-type", IdType.ACTUAL.name() ) );
 
         Header nodeHeader = parseNodeHeader( args, idType, extractors );
@@ -105,11 +106,20 @@ public class QuickImport
                 nodeCount, relationshipCount,
                 generator.nodes(), generator.relationships(),
                 idType, silentBadCollector( 0 ) );
-        BatchImporter importer = new ParallelBatchImporter( dir, importConfig,
-                new SimpleLogService( sysoutLogProvider, sysoutLogProvider ),
-                defaultVisible(),
-                Config.defaults() );
-        importer.doImport( input );
+
+        BatchImporter consumer;
+        if ( args.getBoolean( "to-csv" ) )
+        {
+            consumer = new CsvOutput( dir, nodeHeader, relationshipHeader, config );
+        }
+        else
+        {
+            consumer = new ParallelBatchImporter( dir, importConfig,
+                    new SimpleLogService( sysoutLogProvider, sysoutLogProvider ),
+                    defaultVisible(),
+                    Config.defaults() );
+        }
+        consumer.doImport( input );
     }
 
     private static Header parseNodeHeader( Args args, IdType idType, Extractors extractors )

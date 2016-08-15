@@ -28,7 +28,7 @@ import org.neo4j.csv.reader.Extractor;
  * Header of tabular/csv data input, specifying meta data about values in each "column", for example
  * semantically of which {@link Type} they are and which {@link Extractor type of value} they are.
  */
-public class Header
+public class Header implements Cloneable
 {
     public interface Factory
     {
@@ -76,7 +76,18 @@ public class Header
         return Arrays.toString( entries );
     }
 
-    public static class Entry
+    @Override
+    public Header clone()
+    {
+        Entry[] entries = new Entry[this.entries.length];
+        for ( int i = 0; i < entries.length; i++ )
+        {
+            entries[i] = this.entries[i].clone();
+        }
+        return new Header( entries );
+    }
+
+    public static class Entry implements Cloneable
     {
         private final String name;
         private final Type type;
@@ -151,6 +162,12 @@ public class Header
             Entry other = (Entry) obj;
             return nullSafeEquals( name, other.name ) && type == other.type &&
                     nullSafeEquals( groupName, other.groupName ) && extractorEquals( extractor, other.extractor );
+        }
+
+        @Override
+        public Entry clone()
+        {
+            return new Entry( name, type, groupName, extractor != null ? extractor.clone() : null );
         }
 
         private boolean nullSafeEquals( Object o1, Object o2 )

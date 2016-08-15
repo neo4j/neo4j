@@ -71,6 +71,12 @@ public class ThreadAheadReadable extends ThreadAhead implements CharReadable
     }
 
     @Override
+    public int read( char[] into, int offset, int length ) throws IOException
+    {
+        throw new UnsupportedOperationException( "Unsupported for now" );
+    }
+
+    @Override
     protected boolean readAhead() throws IOException
     {
         theOtherBuffer = actual.read( theOtherBuffer, theOtherBuffer.front() );

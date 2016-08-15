@@ -53,10 +53,13 @@ class StringDeserialization implements Deserialization<String>
         {
             builder.append( config.delimiter() );
         }
-        stringify( entry, value );
+        if ( value != null )
+        {
+            stringify( value );
+        }
     }
 
-    private void stringify( Entry entry, Object value )
+    private void stringify( Object value )
     {
         if ( value instanceof String )
         {
@@ -82,7 +85,7 @@ class StringDeserialization implements Deserialization<String>
                 {
                     builder.append( config.arrayDelimiter() );
                 }
-                stringify( entry, item );
+                stringify( item );
             }
         }
         else if ( value instanceof Number )

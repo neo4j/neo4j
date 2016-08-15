@@ -32,7 +32,7 @@ package org.neo4j.csv.reader;
  *
  * @see Extractors for a collection of very common extractors.
  */
-public interface Extractor<T>
+public interface Extractor<T> extends Cloneable
 {
     /**
      * Extracts value of type {@code T} from the given character data.
@@ -54,4 +54,6 @@ public interface Extractor<T>
      */
     @Override
     String toString();
+
+    Extractor<T> clone();
 }

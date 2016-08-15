@@ -319,6 +319,7 @@ public class ImportTool
         boolean skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns;
         Config dbConfig;
         OutputStream badOutput = null;
+        org.neo4j.unsafe.impl.batchimport.Configuration configuration = null;
 
         boolean success = false;
         try
@@ -348,11 +349,13 @@ public class ImportTool
             Collector badCollector = badCollector( badOutput, badTolerance, collect( skipBadRelationships,
                     skipDuplicateNodes, ignoreExtraColumns ) );
 
-            input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
-                    relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
-                    idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector );
             dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.<File>optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
+            configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig );
+            input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
+                    relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
+                    idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
+                    configuration.maxNumberOfProcessors() );
             success = true;
         }
         catch ( IllegalArgumentException e )
@@ -376,8 +379,6 @@ public class ImportTool
         LogService logService = life.add( StoreLogService.inLogsDirectory( fs, storeDir ) );
 
         life.start();
-        org.neo4j.unsafe.impl.batchimport.Configuration configuration =
-                importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig );
         BatchImporter importer = new ParallelBatchImporter( storeDir,
                 configuration,
                 logService,
