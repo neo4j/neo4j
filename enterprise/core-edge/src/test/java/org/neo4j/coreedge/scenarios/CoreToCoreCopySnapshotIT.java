@@ -117,6 +117,7 @@ public class CoreToCoreCopySnapshotIT
     {
         // given
         Map<String,String> coreParams = stringMap();
+        coreParams.put( raft_log_rotation_size.name(), "1K" );
         coreParams.put( raft_log_pruning_strategy.name(), "keep_none" );
         coreParams.put( raft_log_pruning_frequency.name(), "100ms" );
         int numberOfTransactions = 100;
