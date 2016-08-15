@@ -83,34 +83,42 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
             return processors.length;
         }
 
-        int requestedNumber = processors.length + delta;
-        if ( delta > 0 )
+        synchronized ( this )
         {
-            requestedNumber = min( requestedNumber, maxProcessorCount );
-            if ( requestedNumber > processors.length )
+            if ( shutDown )
             {
-                Processor[] newProcessors = Arrays.copyOf( processors, requestedNumber );
-                for ( int i = processors.length; i < requestedNumber; i++ )
-                {
-                    newProcessors[i] = new Processor( processorThreadNamePrefix + "-" + i );
-                }
-                this.processors = newProcessors;
+                return processors.length;
             }
-        }
-        else
-        {
-            requestedNumber = max( 1, requestedNumber );
-            if ( requestedNumber < processors.length )
+
+            int requestedNumber = processors.length + delta;
+            if ( delta > 0 )
             {
-                Processor[] newProcessors = Arrays.copyOf( processors, requestedNumber );
-                for ( int i = newProcessors.length; i < processors.length; i++ )
+                requestedNumber = min( requestedNumber, maxProcessorCount );
+                if ( requestedNumber > processors.length )
                 {
-                    processors[i].shutDown = true;
+                    Processor[] newProcessors = Arrays.copyOf( processors, requestedNumber );
+                    for ( int i = processors.length; i < requestedNumber; i++ )
+                    {
+                        newProcessors[i] = new Processor( processorThreadNamePrefix + "-" + i );
+                    }
+                    this.processors = newProcessors;
                 }
-                this.processors = newProcessors;
             }
+            else
+            {
+                requestedNumber = max( 1, requestedNumber );
+                if ( requestedNumber < processors.length )
+                {
+                    Processor[] newProcessors = Arrays.copyOf( processors, requestedNumber );
+                    for ( int i = newProcessors.length; i < processors.length; i++ )
+                    {
+                        processors[i].processorShutDown = true;
+                    }
+                    this.processors = newProcessors;
+                }
+            }
+            return processors.length;
         }
-        return processors.length;
     }
 
     @Override
@@ -132,11 +140,11 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         {
             if ( panic != null )
             {
-                throw new IllegalStateException( "Executor has been shut down in panic", panic );
+                throw new TaskExecutionPanicException( "Executor has been shut down in panic", panic );
             }
             if ( abortQueued )
             {
-                throw new IllegalStateException( "Executor has been shut down, aborting queued" );
+                throw new TaskExecutionPanicException( "Executor has been shut down, aborting queued" );
             }
         }
     }
@@ -157,17 +165,13 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
             return;
         }
 
-        this.shutDown = true;
         boolean awaitAllCompleted = (flags & TaskExecutor.SF_AWAIT_ALL_COMPLETED) != 0;
         while ( awaitAllCompleted && !queue.isEmpty() && panic == null /*all bets are off in the event of panic*/ )
         {
             parkAWhile();
         }
+        this.shutDown = true;
         this.abortQueued = (flags & TaskExecutor.SF_ABORT_QUEUED) != 0;
-        for ( Processor processor : processors )
-        {
-            processor.shutDown = true;
-        }
         while ( awaitAllCompleted && anyAlive() && panic == null /*all bets are off in the event of panic*/ )
         {
             parkAWhile();
@@ -201,7 +205,9 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
 
     private class Processor extends Thread
     {
-        private volatile boolean shutDown;
+        // In addition to the global shutDown flag in the executor each processor has a local flag
+        // so that an individual processor can be shut down, for example when reducing number of processors
+        private volatile boolean processorShutDown;
 
         Processor( String name )
         {
@@ -215,7 +221,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         {
             // Initialized here since it's the thread itself that needs to call it
             final LOCAL threadLocalState = initialLocalState.get();
-            while ( !abortQueued && !shutDown )
+            while ( !shutDown && !processorShutDown )
             {
                 Task<LOCAL> task = queue.poll();
                 if ( task != null )
@@ -233,7 +239,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
                 }
                 else
                 {
-                    if ( shutDown )
+                    if ( processorShutDown )
                     {
                         break;
                     }

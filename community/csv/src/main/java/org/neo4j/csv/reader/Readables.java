@@ -77,6 +77,12 @@ public class Readables
         {
             return "EMPTY";
         }
+
+        @Override
+        public int read( char[] into, int offset, int length ) throws IOException
+        {
+            return -1;
+        }
     };
 
     public static CharReadable wrap( final InputStream stream, final String sourceName, Charset charset )
@@ -126,6 +132,22 @@ public class Readables
                 buffer.readFrom( reader );
                 position += buffer.available();
                 return buffer;
+            }
+
+            @Override
+            public int read( char[] into, int offset, int length ) throws IOException
+            {
+                int totalRead = 0;
+                while ( totalRead < length )
+                {
+                    int read = reader.read( into, offset + totalRead, length - totalRead );
+                    if ( read == -1 )
+                    {
+                        break;
+                    }
+                    totalRead += read;
+                }
+                return totalRead;
             }
 
             @Override

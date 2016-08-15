@@ -21,6 +21,10 @@ package org.neo4j.csv.reader;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,6 +37,8 @@ import java.io.StringReader;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -46,8 +52,35 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+@RunWith( Parameterized.class )
 public class ReadablesTest
 {
+    @Parameters
+    public static Collection<ReadMethod> readMethods()
+    {
+        return Arrays.asList(
+                (readable,length) ->
+                {
+                    SectionedCharBuffer readText = new SectionedCharBuffer( length );
+                    readable.read( readText, readText.front() );
+                    return copyOfRange( readText.array(), readText.pivot(), readText.front() );
+                },
+                (readable,length) ->
+                {
+                    char[] result = new char[length];
+                    readable.read( result, 0, length );
+                    return result;
+                } );
+    }
+
+    interface ReadMethod
+    {
+        char[] read( CharReadable readable, int length ) throws IOException;
+    }
+
+    @Parameter
+    public ReadMethod readMethod;
+
     @Test
     public void shouldReadTextCompressedInZipArchiveWithSingleFileIn() throws Exception
     {
@@ -304,9 +337,8 @@ public class ReadablesTest
 
     private void assertReadText( CharReadable readable, String text ) throws IOException
     {
-        SectionedCharBuffer readText = new SectionedCharBuffer( text.toCharArray().length );
-        readable.read( readText, readText.front() );
-        assertArrayEquals( text.toCharArray(), copyOfRange( readText.array(), readText.pivot(), readText.front() ) );
+        char[] readText = readMethod.read( readable, text.toCharArray().length );
+        assertArrayEquals( readText, text.toCharArray() );
     }
 
     @Rule

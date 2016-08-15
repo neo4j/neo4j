@@ -79,12 +79,12 @@ public class Inputs
     }
 
     public static Input csv( File nodes, File relationships, IdType idType,
-            Configuration configuration, Collector badCollector )
+            Configuration configuration, Collector badCollector, int maxProcessors )
     {
         return new CsvInput(
                 nodeData( data( NO_NODE_DECORATOR, defaultCharset(), nodes ) ), defaultFormatNodeFileHeader(),
                 relationshipData( data( NO_RELATIONSHIP_DECORATOR, defaultCharset(), relationships ) ),
                 defaultFormatRelationshipFileHeader(), idType, configuration,
-                badCollector );
+                badCollector, maxProcessors );
     }
 }

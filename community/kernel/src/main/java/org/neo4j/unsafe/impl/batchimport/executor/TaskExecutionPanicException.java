@@ -17,21 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.input.csv;
+package org.neo4j.unsafe.impl.batchimport.executor;
 
-import java.util.function.Function;
-
-import org.neo4j.csv.reader.CharReadable;
-import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
-
-/**
- * Produces a {@link CharSeeker} that can seek and extract values from a csv/tsv style data stream.
- * A decorator also comes with it which can specify global overrides/defaults of extracted input entities.
- */
-public interface Data<ENTITY extends InputEntity>
+public class TaskExecutionPanicException extends IllegalStateException
 {
-    CharReadable stream();
+    public TaskExecutionPanicException( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
 
-    Function<ENTITY,ENTITY> decorator();
+    public TaskExecutionPanicException( String message )
+    {
+        super( message );
+    }
 }

@@ -23,6 +23,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 
+import org.neo4j.csv.reader.Source.Chunk;
+
 import static java.lang.String.format;
 
 import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
@@ -37,12 +39,9 @@ public class BufferedCharSeeker implements CharSeeker
     private static final char EOF_CHAR = (char) -1;
     private static final char BACK_SLASH = '\\';
 
-    private final CharReadable reader;
     private char[] buffer;
-
-    // Wraps the char[] buffer and is only used during reading more data, using f.ex. compact()
-    // so that we don't have to duplicate that functionality.
-    private SectionedCharBuffer charBuffer;
+    private int dataLength;
+    private int dataCapacity;
 
     // index into the buffer character array to read the next time nextChar() is called
     private int bufferPos;
@@ -62,16 +61,14 @@ public class BufferedCharSeeker implements CharSeeker
     private long absoluteBufferStartPosition;
     private String sourceDescription;
     private final boolean multilineFields;
+    private final Source source;
+    private Chunk currentChunk;
 
-    public BufferedCharSeeker( CharReadable reader, Configuration config )
+    public BufferedCharSeeker( Source source, Configuration config )
     {
-        this.reader = reader;
-        this.charBuffer = new SectionedCharBuffer( config.bufferSize() );
-        this.buffer = charBuffer.array();
-        this.bufferPos = this.bufferEnd = charBuffer.pivot();
+        this.source = source;
         this.quoteChar = config.quotationCharacter();
         this.lineStartPos = this.bufferPos;
-        this.sourceDescription = reader.sourceDescription();
         this.multilineFields = config.multilineFields();
     }
 
@@ -269,32 +266,52 @@ public class BufferedCharSeeker implements CharSeeker
     {
         if ( bufferPos >= bufferEnd )
         {
-            if ( bufferPos - seekStartPos >= charBuffer.pivot() )
+            boolean first = currentChunk == null;
+
+            if ( !first )
             {
-                throw new IllegalStateException( "Tried to read a field larger than buffer size " +
-                        charBuffer.pivot() + ". A common cause of this is that a field has an unterminated " +
-                        "quote and so will try to seek until the next quote, which ever line it may be on." +
-                        " This should not happen if multi-line fields are disabled, given that the fields contains " +
-                        "no new-line characters. This field started at " + sourceDescription() + ":" + lineNumber() );
+                currentChunk.close();
+                if ( bufferPos - seekStartPos >= dataCapacity )
+                {
+                    throw new IllegalStateException( "Tried to read a field larger than buffer size " +
+                            dataLength + ". A common cause of this is that a field has an unterminated " +
+                            "quote and so will try to seek until the next quote, which ever line it may be on." +
+                            " This should not happen if multi-line fields are disabled, given that the fields contains " +
+                            "no new-line characters. This field started at " + sourceDescription() + ":" + lineNumber() );
+                }
             }
 
-            absoluteBufferStartPosition += charBuffer.available();
+            absoluteBufferStartPosition += dataLength;
 
             // Fill the buffer with new characters
-            charBuffer = reader.read( charBuffer, seekStartPos );
-            buffer = charBuffer.array();
-            bufferPos = charBuffer.pivot();
-            bufferEnd = charBuffer.front();
-            int shift = seekStartPos-charBuffer.back();
-            seekStartPos = charBuffer.back();
-            lineStartPos -= shift;
-            String sourceDescriptionAfterRead = reader.sourceDescription();
-            if ( !sourceDescription.equals( sourceDescriptionAfterRead ) )
+            Chunk nextChunk = source.nextChunk( first ? -1 : seekStartPos );
+            if ( nextChunk.backPosition() == nextChunk.startPosition() + nextChunk.length() )
+            {
+                return false;
+            }
+            buffer = nextChunk.data();
+            dataLength = nextChunk.length();
+            dataCapacity = nextChunk.maxFieldSize();
+            bufferPos = nextChunk.startPosition();
+            bufferEnd = bufferPos + dataLength;
+            int shift = seekStartPos-nextChunk.backPosition();
+            seekStartPos = nextChunk.backPosition();
+            if ( first )
+            {
+                lineStartPos = seekStartPos;
+            }
+            else
+            {
+                lineStartPos -= shift;
+            }
+            String sourceDescriptionAfterRead = nextChunk.sourceDescription();
+            if ( !sourceDescriptionAfterRead.equals( sourceDescription ) )
             {   // We moved over to a new source, reset line number
                 lineNumber = 0;
                 sourceDescription = sourceDescriptionAfterRead;
             }
-            return charBuffer.hasAvailable();
+            currentChunk = nextChunk;
+            return dataLength > 0;
         }
         return true;
     }
@@ -302,7 +319,7 @@ public class BufferedCharSeeker implements CharSeeker
     @Override
     public void close() throws IOException
     {
-        reader.close();
+        source.close();
     }
 
     @Override

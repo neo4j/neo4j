@@ -47,7 +47,7 @@ public class CharSeekers
         }
 
         // Give the reader to the char seeker
-        return new BufferedCharSeeker( reader, config );
+        return new BufferedCharSeeker( new AutoReadingSource( reader, config.bufferSize() ), config );
     }
 
     /**

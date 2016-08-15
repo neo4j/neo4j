@@ -253,6 +253,20 @@ public class Extractors
         {
             return toString;
         }
+
+        @Override
+        public Extractor<T> clone()
+        {
+            try
+            {
+                return (Extractor<T>) super.clone();
+            }
+            catch ( CloneNotSupportedException e )
+            {
+                throw new AssertionError( Extractor.class.getName() + " implements " + Cloneable.class.getSimpleName() +
+                        ", at least this implementation assumes that. This doesn't seem to be the case anymore", e );
+            }
+        }
     }
 
     private abstract static class AbstractSingleValueExtractor<T> extends AbstractExtractor<T>

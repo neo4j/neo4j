@@ -63,4 +63,13 @@ public interface SourceTraceability
             return 0;
         }
     }
+
+    SourceTraceability EMPTY = new Adapter()
+    {
+        @Override
+        public String sourceDescription()
+        {
+            return "EMPTY";
+        }
+    };
 }
