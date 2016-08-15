@@ -345,12 +345,12 @@ public class InternalJettyServletRequest extends Request
     }
 
     @Override
-	public Response getResponse()
+    public Response getResponse()
     {
-		return response;
-	}
+        return response;
+    }
 
-	@Override
+    @Override
     public String toString()
     {
         return String.format( "%s %s %s\n%s", getMethod(), getUri(), getProtocol(), getHttpFields() );
