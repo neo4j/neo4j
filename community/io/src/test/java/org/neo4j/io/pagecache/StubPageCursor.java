@@ -41,7 +41,7 @@ public class StubPageCursor extends PageCursor
     private String cursorErrorMessage;
     private boolean closed;
     private boolean needsRetry;
-    private StubPageCursor linkedCursor;
+    protected StubPageCursor linkedCursor;
 
     public StubPageCursor( long initialPageId, int pageSize )
     {

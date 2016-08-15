@@ -485,7 +485,7 @@ public class CompositePageCursor extends PageCursor
 
     /**
      * Build a CompositePageCursor that is a view of the first page cursor from its current offset through the given
-     * length, concaternated with the second cursor from its current offset through the given length. The offsets are
+     * length, concatenated with the second cursor from its current offset through the given length. The offsets are
      * changed as part of accessing the underlying cursors through the composite cursor. However, the size and position
      * of the view does NOT change if the offsets of the underlying cursors are changed after constructing the composite
      * cursor.
