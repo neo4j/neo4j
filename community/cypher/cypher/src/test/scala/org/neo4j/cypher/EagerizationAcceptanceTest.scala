@@ -44,6 +44,24 @@ class EagerizationAcceptanceTest
 
   val EagerRegEx: Regex = "Eager(?!(Aggregation))".r
 
+  test("should handle detach deleting the same node twice") {
+    val a = createLabeledNode("A")
+    relate(a, createNode())
+
+    val query = """MATCH (a:A)
+                  |UNWIND [0, 1] AS i
+                  |MATCH (a)-->()
+                  |DETACH DELETE a
+                  |RETURN count(*)
+                """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+
+    result.columnAs[Long]("count(*)").next should equal(2)
+    assertStats(result, nodesDeleted = 1, relationshipsDeleted = 1)
+    assertNumberOfEagerness(query, 1)
+  }
+
   test("should introduce eagerness between MATCH and DELETE relationships") {
     val a = createNode()
     val b = createNode()

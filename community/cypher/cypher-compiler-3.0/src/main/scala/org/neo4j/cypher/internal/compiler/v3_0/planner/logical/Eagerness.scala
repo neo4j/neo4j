@@ -286,6 +286,10 @@ object Eagerness {
       case apply@Apply(lhs, delete@DeleteNode(rhs, expr)) =>
         delete.copy(source = Apply(lhs, rhs)(apply.solved), expr)(apply.solved)
 
+      // L Ax (Dn R) => Dn Ax (L R)
+      case apply@Apply(lhs, delete@DetachDeleteNode(rhs, expr)) =>
+        delete.copy(source = Apply(lhs, rhs)(apply.solved), expr)(apply.solved)
+
       // L Ax (Dr R) => Dr Ax (L R)
       case apply@Apply(lhs, delete@DeleteRelationship(rhs, expr)) =>
         delete.copy(source = Apply(lhs, rhs)(apply.solved), expr)(apply.solved)
