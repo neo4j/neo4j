@@ -7,11 +7,11 @@ Import-Module "$src\Neo4j-Management.psm1"
 
 InModuleScope Neo4j-Management {
   Describe "Uninstall-Neo4jServer" {
-
     # Setup mocking environment
     #  Mock Java environment
     $javaHome = global:New-MockJavaHome
-    Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+    Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' }
+    Mock Set-Neo4jEnv { }
     Mock Test-Path { $false } -ParameterFilter {
       $Path -like 'Registry::*\JavaSoft\Java Runtime Environment'
     }
@@ -35,13 +35,13 @@ InModuleScope Neo4j-Management {
       Mock Get-Service -Verifiable { $null }
 
       $serverObject = global:New-MockNeo4jInstall
-      
+
       $result = Uninstall-Neo4jServer -Neo4jServer $serverObject
 
       It "result is 0" {
         $result | Should Be 0
       }
-      
+
       It "calls verified mocks" {
         Assert-VerifiableMocks
       }
@@ -58,10 +58,10 @@ InModuleScope Neo4j-Management {
         $result | Should Be 0
       }
     }
-    
+
     Context "During uninstall, does not stop service if already stopped" {
       Mock Get-Service { @{ 'State' = 'Stopped' } }
-      Mock Start-Process { @{ 'ExitCode' = 0 } }   
+      Mock Start-Process { @{ 'ExitCode' = 0 } }
 
       $serverObject = global:New-MockNeo4jInstall
 
@@ -70,7 +70,7 @@ InModuleScope Neo4j-Management {
       It "result is 0" {
         $result | Should Be 0
       }
-      
+
       It "does not call Stop-Service" {
         Assert-MockCalled Stop-Service -Times 0
       }

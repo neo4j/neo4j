@@ -7,10 +7,12 @@ Import-Module "$src\Neo4j-Management.psm1"
 
 InModuleScope Neo4j-Management {
   Describe "Start-Neo4jServer" {
+
     # Setup mocking environment
     #  Mock Java environment
     $javaHome = global:New-MockJavaHome
-    Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+    Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' }
+    Mock Set-Neo4jEnv { }
     Mock Test-Path { $false } -ParameterFilter {
       $Path -like 'Registry::*\JavaSoft\Java Runtime Environment'
     }
@@ -18,7 +20,7 @@ InModuleScope Neo4j-Management {
       $Path -like 'Registry::*\JavaSoft\Java Runtime Environment*'
     }
     # Mock Neo4j environment
-    Mock Get-Neo4jEnv { $global:mockNeo4jHome } -ParameterFilter { $Name -eq 'NEO4J_HOME' } 
+    Mock Get-Neo4jEnv { $global:mockNeo4jHome } -ParameterFilter { $Name -eq 'NEO4J_HOME' }
     Mock Start-Process { throw "Should not call Start-Process mock" }
 
     Context "Invalid or missing specified neo4j installation" {
@@ -32,22 +34,22 @@ InModuleScope Neo4j-Management {
         { Start-Neo4jServer -Console -Neo4jServer $serverObject -ErrorAction Stop } | Should Throw
       }
     }
-    
+
     # Windows Service Tests
     Context "Missing service name in configuration files" {
       Mock Start-Service { }
- 
+
       $serverObject = global:New-MockNeo4jInstall -WindowsService ''
 
       It "throws error for missing service name in configuration file" {
         { Start-Neo4jServer -Service -Neo4jServer $serverObject -ErrorAction Stop } | Should Throw
       }
-    }    
+    }
 
     Context "Start service succesfully but not running" {
       Mock Start-Service { throw "Wrong Service name" }
       Mock Start-Service -Verifiable { @{ Status = 'Start Pending'} } -ParameterFilter { $Name -eq $global:mockServiceName }
-      
+
       $serverObject = global:New-MockNeo4jInstall
 
       $result = Start-Neo4jServer -Service -Neo4jServer $serverObject
@@ -55,7 +57,7 @@ InModuleScope Neo4j-Management {
       It "result is 2" {
         $result | Should Be 2
       }
-      
+
       It "calls verified mocks" {
         Assert-VerifiableMocks
       }
@@ -64,7 +66,7 @@ InModuleScope Neo4j-Management {
     Context "Start service succesfully" {
       Mock Start-Service { throw "Wrong Service name" }
       Mock Start-Service -Verifiable { @{ Status = 'Running'} } -ParameterFilter { $Name -eq $global:mockServiceName }
-      
+
       $serverObject = global:New-MockNeo4jInstall
 
       $result = Start-Neo4jServer -Service -Neo4jServer $serverObject
@@ -72,7 +74,7 @@ InModuleScope Neo4j-Management {
       It "result is 0" {
         $result | Should Be 0
       }
-      
+
       It "calls verified mocks" {
         Assert-VerifiableMocks
       }
@@ -88,10 +90,10 @@ InModuleScope Neo4j-Management {
         'ServerVersion' = '3.0';
         'ServerType' = 'Enterprise';
         'DatabaseMode' = '';
-      })      
+      })
       It "throws error if missing Java" {
         { Start-Neo4jServer -Console -Neo4jServer $serverObject -ErrorAction Stop } | Should Throw
       }
-    }    
+    }
   }
 }

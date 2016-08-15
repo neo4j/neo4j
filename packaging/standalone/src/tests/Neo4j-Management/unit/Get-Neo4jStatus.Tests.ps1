@@ -9,7 +9,8 @@ InModuleScope Neo4j-Management {
   Describe "Get-Neo4jStatus" {
 
     $mockServerObject = global:New-MockNeo4jInstall
-    Mock Get-Neo4jEnv { $mockServerObject.Home } -ParameterFilter { $Name -eq 'NEO4J_HOME' } 
+    Mock Set-Neo4jEnv { }
+    Mock Get-Neo4jEnv { $mockServerObject.Home } -ParameterFilter { $Name -eq 'NEO4J_HOME' }
 
     Context "Missing service name in configuration files" {
       Mock -Verifiable Get-Neo4jWindowsServiceName { throw "Missing service name" }
@@ -17,7 +18,7 @@ InModuleScope Neo4j-Management {
       It "throws error for missing service name in configuration file" {
         { Get-Neo4jStatus -Neo4jServer $mockServerObject -ErrorAction Stop } | Should Throw
       }
-      
+
       It "calls verified mocks" {
         Assert-VerifiableMocks
       }
@@ -30,7 +31,7 @@ InModuleScope Neo4j-Management {
       It "result is 3" {
         $result | Should Be 3
       }
-      
+
       It "calls verified mocks" {
         Assert-VerifiableMocks
       }
@@ -43,7 +44,7 @@ InModuleScope Neo4j-Management {
       It "result is 3" {
         $result | Should Be 3
       }
-      
+
       It "calls verified mocks" {
         Assert-VerifiableMocks
       }
@@ -56,7 +57,7 @@ InModuleScope Neo4j-Management {
       It "result is 0" {
         $result | Should Be 0
       }
-      
+
       It "calls verified mocks" {
         Assert-VerifiableMocks
       }
