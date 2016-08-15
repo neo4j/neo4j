@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest.batch;
 
-import org.junit.Test;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -29,6 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+
+import org.junit.Test;
 
 import org.neo4j.server.rest.web.InternalJettyServletRequest;
 import org.neo4j.server.rest.web.InternalJettyServletResponse;
@@ -59,7 +59,7 @@ public class BatchOperationsTest {
     public void testSchemeInInternalJettyServletRequestForHttp() throws UnsupportedEncodingException
     {
         // when
-        InternalJettyServletRequest req = new InternalJettyServletRequest( "POST", "http://localhost:7473/db/data/node", "{'name':'node1'}", new InternalJettyServletResponse() );
+        InternalJettyServletRequest req = new InternalJettyServletRequest( "POST", "http://localhost:7473/db/data/node", "{'name':'node1'}", new InternalJettyServletResponse(), mock( HttpServletRequest.class ) );
 
         // then
         assertEquals("http",req.getScheme());
@@ -69,7 +69,7 @@ public class BatchOperationsTest {
     public void testSchemeInInternalJettyServletRequestForHttps() throws UnsupportedEncodingException
     {
         // when
-        InternalJettyServletRequest req = new InternalJettyServletRequest( "POST", "https://localhost:7473/db/data/node", "{'name':'node1'}", new InternalJettyServletResponse() );
+        InternalJettyServletRequest req = new InternalJettyServletRequest( "POST", "https://localhost:7473/db/data/node", "{'name':'node1'}", new InternalJettyServletResponse(), mock( HttpServletRequest.class ) );
 
         // then
         assertEquals("https",req.getScheme());
