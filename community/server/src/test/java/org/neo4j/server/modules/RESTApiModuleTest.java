@@ -59,7 +59,7 @@ public class RESTApiModuleTest
         Database db = mock(Database.class);
 
         // When
-        RESTApiModule module = new RESTApiModule( webServer, db, config, deps, NullLogProvider.getInstance() );
+        RESTApiModule module = new RESTApiModule( webServer, config, deps, NullLogProvider.getInstance() );
         module.start();
 
         // Then
