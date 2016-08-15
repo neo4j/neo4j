@@ -44,7 +44,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
   @Test def call_a_procedure() {
     testQuery(
       title = "Call a procedure",
-      text = "This invokes the built-in procedure 'db.labels', which lists all in-use labels in the database.",
+      text = "This calls the built-in procedure 'db.labels', which lists all in-use labels in the database.",
       queryText = "CALL db.labels",
       optionalResultExplanation = "",
       assertions = (p) => assert(p.nonEmpty) )
@@ -53,7 +53,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
   @Test def call_a_procedure_name_quoting() {
     testQuery(
       title = "Call a procedure using a quoted namespace and name",
-      text = "This invokes the built-in procedure 'db.labels', which lists all in-use labels in the database.",
+      text = "This calls the built-in procedure 'db.labels', which lists all in-use labels in the database.",
       queryText = "CALL `db`.`labels`",
       optionalResultExplanation = "",
       assertions = (p) => assert(p.nonEmpty) )
@@ -62,11 +62,11 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
   @Test def call_a_procedure_within_a_complex_query() {
     testQuery(
       title = "Call a procedure within a complex query",
-      text = "This invokes the built-in procedure 'db.labels' to count all in-use labels in the database",
+      text = "This calls the built-in procedure 'db.labels' to count all in-use labels in the database.",
       planners = Seq(""),
       queryText = "CALL db.labels() YIELD label RETURN count(label) AS numLabels",
       optionalResultExplanation =
-        "Since the procedure call is part of a larger query, all outputs must be named explicitly",
+        "Since the procedure call is part of a larger query, all outputs must be named explicitly.",
       assertions = (p) => assert(p.nonEmpty) )
   }
 
@@ -74,21 +74,21 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
     testQuery(
       title = "Call a procedure within a complex query and rename its outputs",
       text =
-        "This invokes the built-in procedure 'db.propertyKeys' as part of counting " +
-        "the number of nodes per property key in-use in the database",
+        "This calls the built-in procedure 'db.propertyKeys' as part of counting " +
+        "the number of nodes per property key that is currently used in the database.",
       planners = Seq(""),
       queryText = "CALL db.propertyKeys() YIELD propertyKey AS prop " +
                   "MATCH (n) WHERE n[prop] IS NOT NULL " +
                   "RETURN prop, count(n) AS numNodes",
       optionalResultExplanation =
-        "Since the procedure call is part of a larger query, all outputs must be named explicitly",
+        "Since the procedure call is part of a larger query, all outputs must be named explicitly.",
       assertions = (p) => assert(p.nonEmpty) )
   }
 
   @Test def call_a_procedure_with_literal_arguments() {
     testQuery(
       title = "Call a procedure with literal arguments",
-      text = "This invokes the example procedure `org.neo4j.procedure.example.addNodeToIndex` using arguments that are written out directly in the statement text. This is called literal arguments.",
+      text = "This calls the example procedure `org.neo4j.procedure.example.addNodeToIndex` using literal arguments, i.e. arguments that are written out directly in the statement text.",
       queryText = "CALL org.neo4j.procedure.example.addNodeToIndex('users', "+nodeId+", 'name')",
       optionalResultExplanation = "Since our example procedure does not return any result, the result is empty.",
       assertions = (p) => assert(p.isEmpty) )
@@ -97,7 +97,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
   @Test def call_a_procedure_with_parameter_arguments() {
     testQuery(
       title = "Call a procedure with parameter arguments",
-      text = "This invokes the example procedure `org.neo4j.procedure.example.addNodeToIndex` using parameters. The procedure arguments are satisfied by matching the parameter keys to the named procedure arguments.",
+      text = "This calls the example procedure `org.neo4j.procedure.example.addNodeToIndex` using parameters as arguments. Each procedure argument is taken to be the value of a corresponding statement parameters with the same name (or null if no such parameter has been given).",
       queryText = "CALL org.neo4j.procedure.example.addNodeToIndex",
       parameters = Map("indexName"->"users", "node"->nodeId, "propKey"-> "name"),
       optionalResultExplanation = "Since our example procedure does not return any result, the result is empty.",
@@ -107,9 +107,18 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
   @Test def call_a_procedure_with_mixed_arguments() {
     testQuery(
       title = "Call a procedure with mixed literal and parameter arguments",
-      text = "This invokes the example procedure `org.neo4j.procedure.example.addNodeToIndex` using both literal and parameterized arguments.",
+      text = "This calls the example procedure `org.neo4j.procedure.example.addNodeToIndex` using both literal and parameter arguments.",
       queryText = "CALL org.neo4j.procedure.example.addNodeToIndex('users', $node, 'name')",
       parameters = Map("node"->nodeId),
+      optionalResultExplanation = "Since our example procedure does not return any result, the result is empty.",
+      assertions = (p) => assert(p.isEmpty) )
+  }
+
+  @Test def call_a_procedure_with_literal_and_default_arguments() {
+    testQuery(
+      title = "Call a procedure with literal and default arguments",
+      text = "This calls the example procedure `org.neo4j.procedure.example.addNodeToIndex` using literal arguments, i.e. arguments that are written out directly in the statement text, and a trailing default argument that is provided by the procedure itself.",
+      queryText = "CALL org.neo4j.procedure.example.addNodeToIndex('users', "+nodeId+")",
       optionalResultExplanation = "Since our example procedure does not return any result, the result is empty.",
       assertions = (p) => assert(p.isEmpty) )
   }

@@ -43,7 +43,7 @@ public class IndexingProcedure
     @PerformsWrites
     public void addNodeToIndex( @Name("indexName") String indexName,
                                 @Name("node") long nodeId,
-                                @Name("propKey" ) String propKey )
+                                @Name( value = "propKey", defaultValue = "name" ) String propKey )
     {
         Node node = db.getNodeById( nodeId );
         db.index()
