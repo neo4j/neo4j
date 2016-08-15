@@ -69,7 +69,7 @@ public class ClusterOverviewIT
         HAZELCAST
     }
 
-    @Parameterized.Parameters( name = "discovery:{0}" )
+    @Parameterized.Parameters( name = "discovery-{0}" )
     public static Collection<Object[]> data()
     {
         return Arrays.asList( new Object[][]{
