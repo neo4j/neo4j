@@ -5,53 +5,36 @@ $common = Join-Path (Split-Path -Parent $here) 'Common.ps1'
 
 Import-Module "$src\Neo4j-Management.psm1"
 
-InModuleScope Neo4j-Management {  
+InModuleScope Neo4j-Management {
   Describe "Invoke-Neo4jAdmin" {
 
-    # Setup mocking environment
-    #  Mock Java environment
-    $javaHome = global:New-MockJavaHome
-    Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
-    Mock Test-Path { $false } -ParameterFilter {
-      $Path -like 'Registry::*\JavaSoft\Java Runtime Environment'
-    }
-    Mock Get-ItemProperty { $null } -ParameterFilter {
-      $Path -like 'Registry::*\JavaSoft\Java Runtime Environment*'
-    }
-    # Mock Neo4j environment
-    $mockNeo4jHome = global:New-MockNeo4jInstall
-    Mock Get-Neo4jEnv { $global:mockNeo4jHome } -ParameterFilter { $Name -eq 'NEO4J_HOME' } 
-    Mock Start-Process { throw "Should not call Start-Process mock" }
-    # Mock helper functions
-    Mock Invoke-Neo4jAdmin_Import { 2 }
+    Context "Nodes and Relationships as comma delimited list" {
+      # Commands from the command line come through as System.Object[]
+      # These commands can be simulated through crafting an appropriate array
 
-    Context "No arguments" {
-      $result = Invoke-Neo4jAdmin
-      
-      It "returns 1 if no arguments" {
+      # neo4j-admin import --mode=database --fake "file1,file2"
+      $testCommand = @('import','--setting=value','--fake', @('file1','file2'))
+
+      Mock Invoke-Neo4jUtility { Write-Host $CommandArgs -ForegroundColor Magenta   ;return 2 }
+      Mock Invoke-Neo4jUtility -Verifiable { return 0} -ParameterFilter {
+        $Command -eq 'admintool' `
+        -and $CommandArgs[0] -eq 'import' `
+        -and $CommandArgs[1] -eq '--setting=value' `
+        -and $CommandArgs[2] -eq '--fake' `
+        -and $CommandArgs[3] -eq 'file1,file2' `
+      }
+
+      $result = Invoke-Neo4jAdmin -CommandArgs $testCommand
+      It "Should return exit code 0" {
         $result | Should Be 0
       }
-    }
 
-    # Helper functions - error
-    Context "Helper function throws an error" {
-      Mock Invoke-Neo4jAdmin_Import { throw "error" }
-
-      It "returns non zero exit code on error" {
-        Invoke-Neo4jAdmin 'import' -ErrorAction SilentlyContinue | Should Be 1
-      }
-
-      It "throws error when terminating error" {
-        { Invoke-Neo4jAdmin 'import' -ErrorAction Stop } | Should Throw
+      It "Should call verified mocks" {
+        Assert-VerifiableMocks
       }
     }
 
 
-    # Helper functions
-    Context "Helper functions" {
-      It "returns exitcode from import command" {
-        Invoke-Neo4jAdmin 'import' | Should Be 2
-      }
-    }
+
   }
 }

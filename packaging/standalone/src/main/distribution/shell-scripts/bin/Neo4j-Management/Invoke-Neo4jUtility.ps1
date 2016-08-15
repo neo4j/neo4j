@@ -48,15 +48,15 @@ Function Invoke-Neo4jUtility
   param (
     [Parameter(Mandatory=$false,ValueFromPipeline=$false,Position=0)]
     [string]$Command = ''
-    
+
     ,[parameter(Mandatory=$false,ValueFromRemainingArguments=$true)]
     [object[]]$CommandArgs = @()
   )
-  
+
   Begin
   {
   }
-  
+
   Process
   {
     # Determine the Neo4j Home Directory.  Uses the NEO4J_HOME enironment variable or a parent directory of this script
@@ -66,7 +66,7 @@ Function Invoke-Neo4jUtility
     }
     if ($Neo4jHome -eq $null) { throw "Could not determine the Neo4j home Directory.  Set the NEO4J_HOME environment variable and retry" }
     Write-Verbose "Neo4j Root is '$Neo4jHome'"
-    
+
     $thisServer = Get-Neo4jServer -Neo4jHome $Neo4jHome -ErrorAction Stop
     if ($thisServer -eq $null) { throw "Unable to determine the Neo4j Server installation information" }
     Write-Verbose "Neo4j Server Type is '$($thisServer.ServerType)'"
@@ -77,7 +77,7 @@ Function Invoke-Neo4jUtility
     if (-not [bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544")) {
       Write-Warning "This command does not appear to be running with administrative rights.  Some commands may fail e.g. Start/Stop"
     }
-    
+
     $GetJavaParams = @{}
     switch ($Command.Trim().ToLower())
     {
@@ -85,6 +85,13 @@ Function Invoke-Neo4jUtility
         Write-Verbose "Shell command specified"
         $GetJavaParams = @{
           StartingClass = 'org.neo4j.shell.StartClient';
+        }
+        break
+      }
+      "admintool" {
+        Write-Verbose "Admintool command specified"
+        $GetJavaParams = @{
+          StartingClass = 'org.neo4j.commandline.admin.AdminTool';
         }
         break
       }
@@ -126,7 +133,7 @@ Function Invoke-Neo4jUtility
     # Generate the required Java invocation
     $JavaCMD = Get-Java -Neo4jServer $thisServer -ForUtility @GetJavaParams
     if ($JavaCMD -eq $null) { throw 'Unable to locate Java' }
-    
+
     $ShellArgs = $JavaCMD.args
     if ($ShellArgs -eq $null) { $ShellArgs = @() }
     # Add unbounded command line arguments
@@ -136,7 +143,7 @@ Function Invoke-Neo4jUtility
     $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $ShellArgs -Wait -NoNewWindow -PassThru)
     return $result.ExitCode
   }
-  
+
   End
   {
   }
