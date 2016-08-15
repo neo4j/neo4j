@@ -574,8 +574,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     // Commit the transaction
                     success = true;
                     TransactionToApply batch = new TransactionToApply( transactionRepresentation );
-                    transactionId = commitProcess
-                            .commit( new TransactionToApply( transactionRepresentation ), commitEvent, INTERNAL );
+                    txId = transactionId = commitProcess.commit( batch, commitEvent, INTERNAL );
                     commitTime = timeCommitted;
                 }
             }
