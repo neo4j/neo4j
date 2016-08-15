@@ -12,38 +12,40 @@ InModuleScope Neo4j-Management {
       $serverObject = global:New-InvalidNeo4jInstall
 
       $result = Get-Neo4jSetting -Neo4jServer $serverObject
-  
+
       It "return null if invalid directory" {
-        $result | Should BeNullOrEmpty      
+        $result | Should BeNullOrEmpty
       }
     }
-    
+
     Context "Missing configuration file is ignored" {
       $serverObject = global:New-MockNeo4jInstall
 
       "setting=value" | Out-File -FilePath "$($serverObject.Home)\conf\neo4j.conf"
-      Remove-Item -Path "$($serverObject.Home)\conf\neo4j-wrapper.conf" | Out-Null
-      
+      # Remove the neo4j-wrapper
+      $wrapperFile = "$($serverObject.Home)\conf\neo4j-wrapper.conf"
+      if (Test-Path -Path $wrapperFile) { Remove-Item -Path $wrapperFile | Out-Null }
+
       $result = Get-Neo4jSetting -Neo4jServer $serverObject
-      
+
       It "ignore the missing file" {
         $result.Name | Should Be "setting"
         $result.Value | Should Be "value"
-      } 
+      }
     }
-  
+
     Context "Simple configuration settings" {
       $serverObject = global:New-MockNeo4jInstall
 
       "setting1=value1" | Out-File -FilePath "$($serverObject.Home)\conf\neo4j.conf"
       "setting2=value2" | Out-File -FilePath "$($serverObject.Home)\conf\neo4j-wrapper.conf"
-      
+
       $result = Get-Neo4jSetting -Neo4jServer $serverObject
-      
+
       It "one setting per file" {
         $result.Count | Should Be 2
-      } 
-  
+      }
+
       # Parse the results and make sure the expected results are there
       $unknownSetting = $false
       $neo4jProperties = $false
@@ -57,19 +59,19 @@ InModuleScope Neo4j-Management {
           default { $unknownSetting = $true}
         }
       }
-  
+
       It "returns settings for file neo4j.conf" {
         $neo4jServerProperties | Should Be $true
-      } 
+      }
       It "returns settings for file neo4j-wrapper.conf" {
         $neo4jWrapper | Should Be $true
-      } 
-  
+      }
+
       It "returns no unknown settings" {
         $unknownSetting | Should Be $false
-      } 
+      }
     }
-  
+
     Context "Configuration settings with multiple values" {
       $serverObject = global:New-MockNeo4jInstall
 
@@ -77,7 +79,7 @@ InModuleScope Neo4j-Management {
       "" | Out-File -FilePath "$($serverObject.Home)\conf\neo4j-wrapper.conf"
 
       $result = Get-Neo4jSetting -Neo4jServer $serverObject
-      
+
       # Parse the results and make sure the expected results are there
       $singleSetting = $null
       $multiSetting = $null
@@ -88,7 +90,7 @@ InModuleScope Neo4j-Management {
           'setting2' { $multiSetting = $setting }
         }
       }
-      
+
       It "returns single settings" {
         ($singleSetting -ne $null) | Should Be $true
       }
@@ -105,6 +107,6 @@ InModuleScope Neo4j-Management {
       It "returns an object array for multiple settings with the correct size" {
         $multiSetting.Value.Count | Should Be 3
       }
-    }  
+    }
   }
 }
