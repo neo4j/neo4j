@@ -153,7 +153,7 @@ public class TestDirectory implements TestRule
 
     public File file( String name )
     {
-        return new File( ensureBase(), name );
+        return new File( directory(), name );
     }
 
     public File graphDbDir()

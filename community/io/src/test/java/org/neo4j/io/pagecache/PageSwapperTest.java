@@ -116,10 +116,9 @@ public abstract class PageSwapperTest
 
     @Before
     @After
-    public void clearStrayInterrupts() throws IOException
+    public void clearStrayInterrupts()
     {
         Thread.interrupted();
-        testDir.cleanup();
     }
 
     @After
