@@ -19,12 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.HttpChannelState;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -35,6 +29,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 import javax.servlet.DispatcherType;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
@@ -42,6 +37,12 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
+
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.server.HttpChannelState;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 import org.neo4j.string.UTF8;
 
@@ -54,17 +55,22 @@ public class InternalJettyServletRequest extends Request
         private int position = 0;
         private ReadListener readListener;
 
-        public Input( String data )
+        Input( String data )
         {
             bytes = UTF8.encode( data );
         }
 
         public int read() throws IOException
         {
-            if ( bytes.length > position ) return (int) bytes[position++];
+            if ( bytes.length > position )
+            {
+                return (int) bytes[position++];
+            }
 
-            if (readListener != null)
+            if ( readListener != null )
+            {
                 readListener.onAllDataRead();
+            }
 
             return -1;
         }
@@ -74,7 +80,7 @@ public class InternalJettyServletRequest extends Request
             return bytes.length;
         }
 
-        public long contentRead()
+        long contentRead()
         {
             return (long) position;
         }
@@ -132,21 +138,21 @@ public class InternalJettyServletRequest extends Request
     private final String method;
     private final InternalJettyServletResponse response;
 
-    /** Optional, another HttpServletRequest to use to pull metadata, like remote address and port, out of. */
+    /**
+     * Optional, another HttpServletRequest to use to pull metadata, like remote address and port, out of.
+     */
     private HttpServletRequest outerRequest;
 
-    public InternalJettyServletRequest( String method, String uri, String body, InternalJettyServletResponse res ) throws UnsupportedEncodingException
+    public InternalJettyServletRequest( String method, String uri, String body, InternalJettyServletResponse res,
+                                        HttpServletRequest outerReq ) throws UnsupportedEncodingException
     {
-        this( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON, StandardCharsets.UTF_8.name(), res );
-    }
-
-    public InternalJettyServletRequest( String method, String uri, String body, InternalJettyServletResponse res, HttpServletRequest outerReq ) throws UnsupportedEncodingException
-    {
-        this( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON, StandardCharsets.UTF_8.name(), res);
+        this( method, new HttpURI( uri ), body, new Cookie[]{}, MediaType.APPLICATION_JSON, StandardCharsets
+                .UTF_8.name(), res );
         this.outerRequest = outerReq;
     }
 
-    public InternalJettyServletRequest( String method, HttpURI uri, String body, Cookie[] cookies, String contentType, String encoding, InternalJettyServletResponse res )
+    private InternalJettyServletRequest( String method, HttpURI uri, String body, Cookie[] cookies, String
+            contentType, String encoding, InternalJettyServletResponse res )
             throws UnsupportedEncodingException
     {
         super( null, null );
@@ -166,7 +172,7 @@ public class InternalJettyServletRequest extends Request
         setRequestURI( null );
         setQueryString( null );
 
-        setScheme(uri.getScheme());
+        setScheme( uri.getScheme() );
         setDispatcherType( DispatcherType.REQUEST );
     }
 
@@ -213,19 +219,26 @@ public class InternalJettyServletRequest extends Request
     @Override
     public String getRemoteAddr()
     {
-        return outerRequest == null ? null : outerRequest.getRemoteAddr();
+        return swallowExceptions( outerRequest, HttpServletRequest::getRemoteAddr );
     }
 
     @Override
     public String getRemoteHost()
     {
-        return outerRequest == null ? null : outerRequest.getRemoteHost();
+        return swallowExceptions( outerRequest, HttpServletRequest::getRemoteHost );
     }
 
     @Override
     public boolean isSecure()
     {
-        return outerRequest != null && outerRequest.isSecure();
+        try
+        {
+            return outerRequest != null && outerRequest.isSecure();
+        }
+        catch ( Throwable t )
+        {
+            return false;
+        }
     }
 
     @Override
@@ -237,13 +250,13 @@ public class InternalJettyServletRequest extends Request
     @Override
     public String getLocalName()
     {
-        return outerRequest == null ? null : outerRequest.getLocalName();
+        return swallowExceptions( outerRequest, HttpServletRequest::getLocalName );
     }
 
     @Override
     public String getLocalAddr()
     {
-        return outerRequest == null ? null : outerRequest.getLocalAddr();
+        return swallowExceptions( outerRequest, HttpServletRequest::getLocalAddr );
     }
 
     @Override
@@ -255,7 +268,7 @@ public class InternalJettyServletRequest extends Request
     @Override
     public String getAuthType()
     {
-        return outerRequest == null ? null : outerRequest.getAuthType();
+        return swallowExceptions( outerRequest, HttpServletRequest::getAuthType );
     }
 
     @Override
@@ -264,9 +277,9 @@ public class InternalJettyServletRequest extends Request
         return cookies;
     }
 
-    public void addHeader(String header, String value)
+    public void addHeader( String header, String value )
     {
-        headers.put(header, value);
+        headers.put( header, value );
     }
 
     @Override
@@ -291,7 +304,7 @@ public class InternalJettyServletRequest extends Request
             }
             else if ( value instanceof Collection )
             {
-                return ( (Collection<?>) value ).iterator()
+                return ((Collection<?>) value).iterator()
                         .next()
                         .toString();
             }
@@ -345,12 +358,12 @@ public class InternalJettyServletRequest extends Request
     }
 
     @Override
-	public Response getResponse()
+    public Response getResponse()
     {
-		return response;
-	}
+        return response;
+    }
 
-	@Override
+    @Override
     public String toString()
     {
         return String.format( "%s %s %s\n%s", getMethod(), getUri(), getProtocol(), getHttpFields() );
@@ -360,5 +373,17 @@ public class InternalJettyServletRequest extends Request
     public HttpChannelState getHttpChannelState()
     {
         return DUMMY_HTTP_CHANNEL_STATE;
+    }
+
+    private <T> T swallowExceptions( HttpServletRequest outerRequest, Function<HttpServletRequest, T> function )
+    {
+        try
+        {
+            return outerRequest == null ? null : function.apply( outerRequest );
+        }
+        catch ( Throwable t )
+        {
+            return null;
+        }
     }
 }
