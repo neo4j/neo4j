@@ -53,6 +53,7 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
@@ -92,7 +93,7 @@ public class ResetFuzzTest
         // given
         life.start();
         BoltWorker boltWorker = sessions.newWorker( "<test>" );
-        boltWorker.enqueue( session -> session.init( "ResetFuzzTest/0.0", map(), new NullResponseHandler() ) );
+        boltWorker.enqueue( session -> session.init( "ResetFuzzTest/0.0", map(), nullResponseHandler() ) );
 
         BoltMessageRouter router = new BoltMessageRouter(
                 NullLog.getInstance(), boltWorker, new BoltResponseMessageHandler<IOException>()

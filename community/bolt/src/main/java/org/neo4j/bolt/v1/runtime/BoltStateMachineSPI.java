@@ -24,18 +24,8 @@ import java.util.Map;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
-import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
-import org.neo4j.graphdb.Result;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
-import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -46,69 +36,21 @@ class BoltStateMachineSPI implements BoltStateMachine.SPI
     private final ErrorReporter errorReporter;
     private final BoltConnectionTracker connectionTracker;
     private final Authentication authentication;
-
-    final TransactionStateMachine.SPI transactionSpi;
+    private final TransactionStateMachine.SPI transactionSpi;
 
     BoltStateMachineSPI( String connectionDescriptor,
                          UsageData usageData,
-                         GraphDatabaseAPI db,
-                         QueryExecutionEngine queryExecutionEngine,
                          LogService logging,
                          Authentication authentication,
-                         ThreadToStatementContextBridge txBridge,
-                         StatementRunner statementRunner,
-                         BoltConnectionTracker connectionTracker )
+                         BoltConnectionTracker connectionTracker,
+                         TransactionStateMachine.SPI transactionStateMachineSPI )
     {
         this.connectionDescriptor = connectionDescriptor;
         this.usageData = usageData;
         this.errorReporter = new ErrorReporter( logging );
         this.connectionTracker = connectionTracker;
-        Log log = logging.getInternalLog( BoltStateMachine.class );
         this.authentication = authentication;
-        this.transactionSpi = new TransactionStateMachine.SPI()
-        {
-            @Override
-            public KernelTransaction beginTransaction( AuthSubject authSubject )
-            {
-                db.beginTransaction( KernelTransaction.Type.explicit, authSubject );
-                return txBridge.getKernelTransactionBoundToThisThread( false );
-            }
-
-            @Override
-            public void bindTransactionToCurrentThread( KernelTransaction tx )
-            {
-                txBridge.bindTransactionToCurrentThread( tx );
-            }
-
-            @Override
-            public void unbindTransactionFromCurrentThread()
-            {
-                txBridge.unbindTransactionFromCurrentThread();
-            }
-
-            @Override
-            public boolean isPeriodicCommit( String query )
-            {
-                return queryExecutionEngine.isPeriodicCommit( query );
-            }
-
-            @Override
-            public Result executeQuery( String querySource,
-                                        AuthSubject authSubject,
-                                        String statement,
-                                        Map<String, Object> params ) throws QueryExecutionKernelException
-            {
-                try
-                {
-                    return statementRunner.run( querySource, authSubject, statement, params );
-                }
-                catch ( KernelException e )
-                {
-                    throw new QueryExecutionKernelException( e );
-                }
-            }
-
-        };
+        this.transactionSpi = transactionStateMachineSPI;
     }
 
     @Override
@@ -146,6 +88,7 @@ class BoltStateMachineSPI implements BoltStateMachine.SPI
     {
         return authentication.authenticate( authToken );
     }
+
     @Override
     public void udcRegisterClient( String clientName )
     {

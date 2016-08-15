@@ -34,6 +34,7 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 
 public class MonitoredBoltWorkerFactoryTest
 {
@@ -85,7 +86,7 @@ public class MonitoredBoltWorkerFactoryTest
 
         // when
         worker.enqueue( ( stateMachine ) -> {
-            stateMachine.run( "hello", null, new NullResponseHandler() );
+            stateMachine.run( "hello", null, nullResponseHandler() );
             clock.forward( 1338, TimeUnit.MILLISECONDS );
         } );
 

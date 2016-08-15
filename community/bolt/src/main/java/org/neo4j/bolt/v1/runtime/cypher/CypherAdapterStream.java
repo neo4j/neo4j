@@ -21,7 +21,7 @@ package org.neo4j.bolt.v1.runtime.cypher;
 
 import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.runtime.spi.Record;
-import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
@@ -34,7 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CypherAdapterStream implements RecordStream
+public class CypherAdapterStream extends BoltResult
 {
     private final Result delegate;
     private final String[] fieldNames;

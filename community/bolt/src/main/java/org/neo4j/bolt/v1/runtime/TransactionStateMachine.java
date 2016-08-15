@@ -20,10 +20,12 @@
 package org.neo4j.bolt.v1.runtime;
 
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v1.runtime.cypher.CypherAdapterStream;
 import org.neo4j.bolt.v1.runtime.cypher.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.cypher.StatementProcessor;
-import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Result;
@@ -37,6 +39,7 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class TransactionStateMachine implements StatementProcessor
 {
@@ -84,7 +87,7 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     @Override
-    public void streamResult( ThrowingConsumer<RecordStream, Exception> resultConsumer ) throws Exception
+    public void streamResult( ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception
     {
         before();
         try
@@ -146,7 +149,18 @@ public class TransactionStateMachine implements StatementProcessor
                         if ( statement.equalsIgnoreCase( BEGIN ) )
                         {
                             ctx.currentTransaction = spi.beginTransaction( ctx.authSubject );
-                            ctx.currentResult = RecordStream.EMPTY;
+
+                            if ( params.containsKey( "bookmark" ) )
+                            {
+                                final Bookmark bookmark = Bookmark.fromString( params.get( "bookmark" ).toString() );
+                                spi.awaitUpToDate( bookmark.txId(), 30, TimeUnit.SECONDS );
+                                ctx.currentResult = new BookmarkResult( bookmark );
+                            }
+                            else
+                            {
+                                ctx.currentResult = BoltResult.EMPTY;
+                            }
+
                             return EXPLICIT_TRANSACTION;
                         }
                         else if ( statement.equalsIgnoreCase( COMMIT ) )
@@ -181,7 +195,7 @@ public class TransactionStateMachine implements StatementProcessor
 
                     @Override
                     void streamResult( MutableTransactionState ctx,
-                                       ThrowingConsumer<RecordStream, Exception> resultConsumer ) throws Exception
+                                       ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception
                     {
                         assert ctx.currentResult != null;
                         resultConsumer.accept( ctx.currentResult );
@@ -209,7 +223,11 @@ public class TransactionStateMachine implements StatementProcessor
                             ctx.currentTransaction.success();
                             ctx.currentTransaction.close();
                             ctx.currentTransaction = null;
-                            ctx.currentResult = RecordStream.EMPTY;
+
+                            long txId = spi.newestEncounteredTxId();
+                            Bookmark bookmark = new Bookmark( txId );
+                            ctx.currentResult = new BookmarkResult( bookmark );
+
                             return AUTO_COMMIT;
                         }
                         else if ( statement.equalsIgnoreCase( ROLLBACK ) )
@@ -217,7 +235,7 @@ public class TransactionStateMachine implements StatementProcessor
                             ctx.currentTransaction.failure();
                             ctx.currentTransaction.close();
                             ctx.currentTransaction = null;
-                            ctx.currentResult = RecordStream.EMPTY;
+                            ctx.currentResult = BoltResult.EMPTY;
                             return AUTO_COMMIT;
                         }
                         else if( spi.isPeriodicCommit( statement ) )
@@ -236,7 +254,7 @@ public class TransactionStateMachine implements StatementProcessor
                     }
 
                     @Override
-                    void streamResult( MutableTransactionState ctx, ThrowingConsumer<RecordStream, Exception> resultConsumer ) throws Exception
+                    void streamResult( MutableTransactionState ctx, ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception
                     {
                         assert ctx.currentResult != null;
                         resultConsumer.accept( ctx.currentResult );
@@ -250,7 +268,7 @@ public class TransactionStateMachine implements StatementProcessor
                             Map<String, Object> params ) throws KernelException;
 
         abstract void streamResult( MutableTransactionState ctx,
-                                    ThrowingConsumer<RecordStream, Exception> resultConsumer ) throws Exception;
+                                    ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception;
 
         void rollbackTransaction( MutableTransactionState ctx ) throws TransactionFailureException
         {
@@ -291,7 +309,7 @@ public class TransactionStateMachine implements StatementProcessor
         KernelTransaction currentTransaction;
 
         /** The current pending result, if present */
-        RecordStream currentResult;
+        BoltResult currentResult;
 
         /** A re-usable statement metadata instance that always represents the currently running statement */
         private final StatementMetadata currentStatementMetadata = new StatementMetadata()
@@ -313,6 +331,10 @@ public class TransactionStateMachine implements StatementProcessor
 
     interface SPI
     {
+        void awaitUpToDate( long oldestAcceptableTxId, int timeout, TimeUnit timeoutUnit ) throws TransactionFailureException;
+
+        long newestEncounteredTxId();
+
         KernelTransaction beginTransaction( AuthSubject authSubject );
 
         void bindTransactionToCurrentThread( KernelTransaction tx );

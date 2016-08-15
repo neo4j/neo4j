@@ -63,12 +63,12 @@ public class StreamMatchers
         };
     }
 
-    public static Matcher<RecordStream> equalsStream( final String[] fieldNames, final Matcher ... records )
+    public static Matcher<BoltResult> equalsStream( final String[] fieldNames, final Matcher ... records )
     {
-        return new TypeSafeMatcher<RecordStream>()
+        return new TypeSafeMatcher<BoltResult>()
         {
             @Override
-            protected boolean matchesSafely( RecordStream item )
+            protected boolean matchesSafely( BoltResult item )
             {
                 if(!Arrays.equals(fieldNames, item.fieldNames()))
                 {
@@ -78,7 +78,7 @@ public class StreamMatchers
                 final AtomicBoolean matched = new AtomicBoolean( true );
                 try
                 {
-                    item.accept( new RecordStream.Visitor()
+                    item.accept( new BoltResult.Visitor()
                     {
                         @Override
                         public void visit( Record record )

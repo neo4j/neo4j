@@ -29,7 +29,7 @@ import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.testing.NullResponseHandler;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
 import org.neo4j.bolt.v1.runtime.spi.Record;
-import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import java.util.HashMap;
@@ -45,6 +45,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
+import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -159,8 +160,8 @@ public class BoltConnectionIT
         machine.init( USER_AGENT, emptyMap(), null );
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, new NullResponseHandler() );
-        machine.pullAll( new NullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
+        machine.pullAll( nullResponseHandler() );
 
         // When I run a new statement
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -178,8 +179,8 @@ public class BoltConnectionIT
         machine.init( USER_AGENT, emptyMap(), null );
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, new NullResponseHandler() );
-        machine.discardAll( new NullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
 
         // When I run a new statement
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -223,7 +224,7 @@ public class BoltConnectionIT
         machine.init( USER_AGENT, emptyMap(), null );
 
         // And Given that I've ran one statement
-        machine.run( "RETURN 1", EMPTY_PARAMS, new NullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
 
         // When I run a new statement, before consuming the stream
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -241,8 +242,8 @@ public class BoltConnectionIT
         machine.init( USER_AGENT, emptyMap(), null );
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, new NullResponseHandler() );
-        machine.pullAll( new NullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
+        machine.pullAll( nullResponseHandler() );
 
         // Then further attempts to PULL should be treated as protocol violations
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -260,8 +261,8 @@ public class BoltConnectionIT
         machine.init( USER_AGENT, emptyMap(), null );
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, new NullResponseHandler() );
-        machine.pullAll( new NullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
+        machine.pullAll( nullResponseHandler() );
 
         // When I attempt to pull more items from the stream
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -279,8 +280,8 @@ public class BoltConnectionIT
         machine.init( USER_AGENT, emptyMap(), null );
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, new NullResponseHandler() );
-        machine.discardAll( new NullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
 
         // When I attempt to pull more items from the stream
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -298,8 +299,8 @@ public class BoltConnectionIT
         machine.init( USER_AGENT, emptyMap(), null );
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, new NullResponseHandler() );
-        machine.discardAll( new NullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
 
         // When I attempt to pull more items from the stream
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -315,8 +316,8 @@ public class BoltConnectionIT
         // Given
         BoltStateMachine machine = env.newMachine( "<test>" );
         machine.init( USER_AGENT, emptyMap(), null );
-        machine.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, new NullResponseHandler() );
-        machine.discardAll( new NullResponseHandler() );
+        machine.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
 
         // When I perform an action that will fail on commit
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -343,10 +344,10 @@ public class BoltConnectionIT
         BoltStateMachine machine = env.newMachine("bolt-test");
         machine.init( USER_AGENT, emptyMap(), null );
 
-        machine.run( "BEGIN", EMPTY_PARAMS, new NullResponseHandler() );
-        machine.discardAll( new NullResponseHandler() );
-        machine.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, new NullResponseHandler() );
-        machine.discardAll( new NullResponseHandler() );
+        machine.run( "BEGIN", EMPTY_PARAMS, nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
+        machine.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
 
         // When I perform an action that will fail
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -376,7 +377,7 @@ public class BoltConnectionIT
         final AtomicReference<Neo4jError> error = new AtomicReference<>();
 
         // When something fails while publishing the result stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, new NullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
         machine.pullAll( new BoltResponseHandler()
         {
             @Override
@@ -385,13 +386,13 @@ public class BoltConnectionIT
             }
 
             @Override
-            public void addRecords( RecordStream record ) throws Exception
+            public void onRecords( BoltResult result, boolean pull ) throws Exception
             {
                 throw new RuntimeException( "Ooopsies!" );
             }
 
             @Override
-            public void addMetadata( String key, Object value )
+            public void onMetadata( String key, Object value )
             {
             }
 
@@ -529,8 +530,8 @@ public class BoltConnectionIT
 
         // And given I've started a transaction that failed
         runAndPull( machine, "BEGIN" );
-        machine.run( "invalid", EMPTY_PARAMS, new NullResponseHandler() );
-        machine.reset( new NullResponseHandler() );
+        machine.run( "invalid", EMPTY_PARAMS, nullResponseHandler() );
+        machine.reset( nullResponseHandler() );
 
         // When
         runAndPull( machine, "BEGIN" );
@@ -560,7 +561,7 @@ public class BoltConnectionIT
     private Object[] runAndPull( BoltStateMachine machine, String statement, Map<String, Object> params ) throws Exception
     {
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.run( statement, params, new NullResponseHandler() );
+        machine.run( statement, params, nullResponseHandler() );
         machine.pullAll( recorder );
         RecordedBoltResponse response = recorder.nextResponse();
         assertEquals( SUCCESS, response.message() );

@@ -33,6 +33,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.BoltMatchers.hasTransaction;
+import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 
 /**
  * Helpers for testing the {@link BoltStateMachine}.
@@ -67,13 +68,13 @@ public class MachineRoom
     private static void init( BoltStateMachine machine ) throws AuthenticationException, BoltConnectionFatality
     {
         when( machine.spi.authenticate( anyObject() ) ).thenReturn( mock( AuthenticationResult.class ) );
-        machine.init( USER_AGENT, emptyMap(), new NullResponseHandler() );
+        machine.init( USER_AGENT, emptyMap(), nullResponseHandler() );
     }
 
     private static void runBegin( BoltStateMachine machine ) throws AuthenticationException, BoltConnectionFatality
     {
-        machine.run( "BEGIN", EMPTY_PARAMS, new NullResponseHandler() );
-        machine.discardAll( new NullResponseHandler() );
+        machine.run( "BEGIN", EMPTY_PARAMS, nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
         assertThat( machine, hasTransaction() );
     }
 

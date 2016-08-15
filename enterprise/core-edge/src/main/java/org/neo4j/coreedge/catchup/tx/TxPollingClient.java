@@ -127,4 +127,14 @@ public class TxPollingClient extends LifecycleAdapter
             log.warn( "Tx pull attempt failed, will retry at the next regularly scheduled polling attempt.", e );
         }
     }
+
+    public void pause()
+    {
+        timeout.cancel();
+    }
+
+    public void resume()
+    {
+        timeout.renew();
+    }
 }

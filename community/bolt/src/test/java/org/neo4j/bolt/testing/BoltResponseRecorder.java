@@ -23,7 +23,7 @@ package org.neo4j.bolt.testing;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.Record;
-import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -58,9 +58,9 @@ public class BoltResponseRecorder implements BoltResponseHandler
     }
 
     @Override
-    public void addRecords( RecordStream recordStream ) throws Exception
+    public void onRecords( BoltResult result, boolean pull ) throws Exception
     {
-        recordStream.accept( new RecordStream.Visitor()
+        result.accept( new BoltResult.Visitor()
         {
             @Override
             public void visit( Record record ) throws Exception
@@ -77,7 +77,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
     }
 
     @Override
-    public void addMetadata( String key, Object value )
+    public void onMetadata( String key, Object value )
     {
         currentResponse.addMetadata( key, value );
     }
@@ -92,8 +92,8 @@ public class BoltResponseRecorder implements BoltResponseHandler
     public void markFailed( Neo4jError error )
     {
         currentResponse.setResponse( FAILURE );
-        addMetadata( "code", error.status().code().serialize() );
-        addMetadata( "message", error.message() );
+        onMetadata( "code", error.status().code().serialize() );
+        onMetadata( "message", error.message() );
     }
 
     @Override
