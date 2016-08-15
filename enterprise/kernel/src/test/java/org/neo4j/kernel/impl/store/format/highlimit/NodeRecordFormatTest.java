@@ -72,7 +72,7 @@ public class NodeRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenRelationshipIsMissing() throws IOException
+    public void useFixedReferencesFormatWhenRelationshipIsMissing() throws IOException
     {
         NodeRecord source = new NodeRecord( 1 );
         NodeRecord target = new NodeRecord( 1 );
@@ -80,12 +80,12 @@ public class NodeRecordFormatTest
 
         writeReadRecord( source, target );
 
-        assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
+        assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
         verifySameReferences( source, target );
     }
 
     @Test
-    public void useVariableLengthFormatWhenPropertyIsMissing() throws IOException
+    public void useFixedReferencesFormatWhenPropertyIsMissing() throws IOException
     {
         NodeRecord source = new NodeRecord( 1 );
         NodeRecord target = new NodeRecord( 1 );
@@ -93,7 +93,7 @@ public class NodeRecordFormatTest
 
         writeReadRecord( source, target );
 
-        assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
+        assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
         verifySameReferences( source, target );
     }
 

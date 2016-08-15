@@ -104,7 +104,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenNextPropertyIsMissing() throws IOException
+    public void useFixedReferenceFormatWhenNextPropertyIsMissing() throws IOException
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -112,12 +112,12 @@ public class PropertyRecordFormatTest
 
         writeReadRecord( source, target );
 
-        assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
+        assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
         verifySameReferences( source, target );
     }
 
     @Test
-    public void useVariableLengthFormatWhenPreviousPropertyIsMissing() throws IOException
+    public void useFixedReferenceFormatWhenPreviousPropertyIsMissing() throws IOException
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -125,7 +125,7 @@ public class PropertyRecordFormatTest
 
         writeReadRecord( source, target );
 
-        assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
+        assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
         verifySameReferences( source, target );
     }
 

@@ -76,7 +76,7 @@ public class RelationshipGroupRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenOneOfTheReferencesIsMissing() throws IOException
+    public void useFixedReferenceFormatWhenOneOfTheReferencesIsMissing() throws IOException
     {
         RelationshipGroupRecord source = new RelationshipGroupRecord( 1 );
         RelationshipGroupRecord target = new RelationshipGroupRecord( 1 );
@@ -167,6 +167,7 @@ public class RelationshipGroupRecordFormatTest
     private void verifyRecordsWithPoisonedReference( RelationshipGroupRecord source, RelationshipGroupRecord target,
             long poisonedReference ) throws IOException
     {
+        boolean nullPoisoned = poisonedReference == BaseHighLimitRecordFormat.NULL;
         int differentReferences = 5;
         List<Long> references = buildReferenceList( differentReferences, poisonedReference );
         for ( int i = 0; i < differentReferences; i++ )
@@ -179,7 +180,14 @@ public class RelationshipGroupRecordFormatTest
 
             writeReadRecord( source, target );
 
-            assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
+            if ( nullPoisoned )
+            {
+                assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
+            }
+            else
+            {
+                assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
+            }
             verifySameReferences( source, target );
             Collections.rotate( references, 1 );
         }

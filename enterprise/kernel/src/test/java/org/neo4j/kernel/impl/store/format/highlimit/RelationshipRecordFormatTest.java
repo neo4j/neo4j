@@ -129,7 +129,7 @@ public class RelationshipRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenAtLeastOneOfTheReferencesIsMissing() throws IOException
+    public void useFixedRecordFormatWhenAtLeastOneOfTheReferencesIsMissing() throws IOException
     {
         RelationshipRecord source = new RelationshipRecord( 1 );
         RelationshipRecord target = new RelationshipRecord( 1 );
@@ -238,7 +238,14 @@ public class RelationshipRecordFormatTest
 
             writeReadRecord( source, target );
 
-            assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
+            if ( nullPoison )
+            {
+                assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
+            }
+            else
+            {
+                assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
+            }
             verifySameReferences( source, target );
             Collections.rotate( references, 1 );
         }

@@ -196,11 +196,11 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
            return (isRecordBigEnoughForFixedReferences( recordSize ) &&
                   (record.getFirstNode() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
                   ((record.getSecondNode() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
-                  ((record.getFirstPrevRel() != NULL) && ((record.getFirstPrevRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
-                  ((record.getFirstNextRel() != NULL) && ((record.getFirstNextRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
-                  ((record.getSecondPrevRel() != NULL) && ((record.getSecondPrevRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
-                  ((record.getSecondNextRel() != NULL) && ((record.getSecondNextRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
-                  ((record.getNextProp() != NULL) && ((record.getNextProp() & THREE_BITS_OVERFLOW_BIT_MASK) == 0));
+                  ((record.getFirstPrevRel() == NULL) || ((record.getFirstPrevRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
+                  ((record.getFirstNextRel() == NULL) || ((record.getFirstNextRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
+                  ((record.getSecondPrevRel() == NULL) || ((record.getSecondPrevRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
+                  ((record.getSecondNextRel() == NULL) || ((record.getSecondNextRel() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
+                  ((record.getNextProp() == NULL) || ((record.getNextProp() & THREE_BITS_OVERFLOW_BIT_MASK) == 0));
     }
 
     private boolean isRecordBigEnoughForFixedReferences( int recordSize )
