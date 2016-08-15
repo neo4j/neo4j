@@ -231,4 +231,8 @@ public class CoreEdgeClusterSettings
     @Description( "Time To Live before edge server is considered unavailable" )
     public static final Setting<Long> edge_time_to_live =
             setting( "core_edge.edge_time_to_live", DURATION, "1m", min(60_000L) );
+
+    @Description( "Edge server 'call home' frequency"  )
+    public static final Setting<Long> edge_refresh_rate =
+            setting( "core_edge.edge_refresh_rate", DURATION, "5s", min(5_000L) );
 }

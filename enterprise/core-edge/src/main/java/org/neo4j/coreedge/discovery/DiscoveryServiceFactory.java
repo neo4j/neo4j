@@ -30,5 +30,5 @@ public interface DiscoveryServiceFactory
 {
     CoreTopologyService coreDiscoveryService( Config config, MemberId myself, LogProvider logProvider );
 
-    TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress, LogProvider logProvider, DelayedRenewableTimeoutService timeoutService, long edgeTimeToLiveTimeout );
+    TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress, LogProvider logProvider, DelayedRenewableTimeoutService timeoutService, long edgeTimeToLiveTimeout, long edgeRefreshRate );
 }

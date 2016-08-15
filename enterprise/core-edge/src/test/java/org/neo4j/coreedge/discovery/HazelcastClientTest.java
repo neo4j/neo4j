@@ -66,11 +66,9 @@ import com.hazelcast.mapreduce.aggregation.Supplier;
 import com.hazelcast.monitor.LocalExecutorStats;
 import com.hazelcast.monitor.LocalMapStats;
 import com.hazelcast.query.Predicate;
-import org.apache.commons.lang3.NotImplementedException;
 import org.junit.Test;
 
 import org.neo4j.coreedge.core.consensus.schedule.ControlledRenewableTimeoutService;
-import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -78,6 +76,8 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -87,11 +87,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.coreedge.discovery.HazelcastClient.REFRESH_EDGE;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.BOLT_SERVER;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.MEMBER_UUID;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.RAFT_SERVER;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.TRANSACTION_SERVER;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class HazelcastClientTest
 {
@@ -103,7 +105,7 @@ public class HazelcastClientTest
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
         HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
-                ControlledRenewableTimeoutService(), 60_000 );
+                ControlledRenewableTimeoutService(), 60_000, 5_000 );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -130,7 +132,7 @@ public class HazelcastClientTest
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
         HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
-                ControlledRenewableTimeoutService(), 60_000 );
+                ControlledRenewableTimeoutService(), 60_000, 5_000 );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -172,7 +174,7 @@ public class HazelcastClientTest
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
 
         HazelcastClient client = new HazelcastClient( connector, logProvider, ADDRESS, new
-                ControlledRenewableTimeoutService(), 60_000 );
+                ControlledRenewableTimeoutService(), 60_000, 5_000 );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -194,7 +196,7 @@ public class HazelcastClientTest
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
         HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
-                ControlledRenewableTimeoutService(), 60_000 );
+                ControlledRenewableTimeoutService(), 60_000, 5_000 );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -216,7 +218,7 @@ public class HazelcastClientTest
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
         HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
-                ControlledRenewableTimeoutService(), 60_000 );
+                ControlledRenewableTimeoutService(), 60_000, 5_000 );
 
         HazelcastInstance hazelcastInstance1 = mock( HazelcastInstance.class );
         HazelcastInstance hazelcastInstance2 = mock( HazelcastInstance.class );
@@ -281,10 +283,12 @@ public class HazelcastClientTest
         HazelcastConnector connector = mock( HazelcastConnector.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS, new
-                ControlledRenewableTimeoutService(), 60_000 );
+        ControlledRenewableTimeoutService renewableTimeoutService = new ControlledRenewableTimeoutService();
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS,
+                renewableTimeoutService, 60_000, 5_000 );
 
         hazelcastClient.start();
+        renewableTimeoutService.invokeTimeout( REFRESH_EDGE );
 
         // when
         ClusterTopology clusterTopology = hazelcastClient.currentTopology();
@@ -323,10 +327,12 @@ public class HazelcastClientTest
         HazelcastConnector connector = mock( HazelcastConnector.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
+        ControlledRenewableTimeoutService renewableTimeoutService = new ControlledRenewableTimeoutService();
         HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), ADDRESS,
-                new ControlledRenewableTimeoutService(), 60_000 );
+                renewableTimeoutService, 60_000, 5_000 );
 
         hazelcastClient.start();
+        renewableTimeoutService.invokeTimeout( REFRESH_EDGE );
 
         int numberOfStartedEdgeServers = hazelcastClient.currentTopology().edgeMemberAddresses().size();
 
