@@ -25,11 +25,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.BaseMessage;
+import org.neo4j.coreedge.messaging.Message;
 
 import static java.lang.String.format;
 
@@ -99,9 +100,10 @@ public interface RaftMessages
             private long lastLogIndex;
             private long lastLogTerm;
 
-            public Request( MemberId from, long term, MemberId candidate, long lastLogIndex, long lastLogTerm )
+            public Request( byte version, MemberId from, long term, MemberId candidate, long lastLogIndex,
+                    long lastLogTerm )
             {
-                super( from, Type.VOTE_REQUEST );
+                super( version, from, Type.VOTE_REQUEST );
                 this.term = term;
                 this.candidate = candidate;
                 this.lastLogIndex = lastLogIndex;
@@ -124,21 +126,19 @@ public interface RaftMessages
                 {
                     return false;
                 }
+                if ( !super.equals( o ) )
+                {
+                    return false;
+                }
                 Request request = (Request) o;
-                return lastLogIndex == request.lastLogIndex &&
-                        lastLogTerm == request.lastLogTerm &&
-                        term == request.term &&
-                        candidate.equals( request.candidate );
+                return term == request.term && lastLogIndex == request.lastLogIndex &&
+                        lastLogTerm == request.lastLogTerm && Objects.equals( candidate, request.candidate );
             }
 
             @Override
             public int hashCode()
             {
-                int result = (int) term;
-                result = 31 * result + candidate.hashCode();
-                result = 31 * result + (int) (lastLogIndex ^ (lastLogIndex >>> 32));
-                result = 31 * result + (int) (lastLogTerm ^ (lastLogTerm >>> 32));
-                return result;
+                return Objects.hash( super.hashCode(), term, candidate, lastLogIndex, lastLogTerm );
             }
 
             @Override
@@ -169,9 +169,9 @@ public interface RaftMessages
             private long term;
             private boolean voteGranted;
 
-            public Response( MemberId from, long term, boolean voteGranted )
+            public Response( byte version, MemberId from, long term, boolean voteGranted )
             {
-                super( from, Type.VOTE_RESPONSE );
+                super( version, from, Type.VOTE_RESPONSE );
                 this.term = term;
                 this.voteGranted = voteGranted;
             }
@@ -187,19 +187,18 @@ public interface RaftMessages
                 {
                     return false;
                 }
-
+                if ( !super.equals( o ) )
+                {
+                    return false;
+                }
                 Response response = (Response) o;
-
                 return term == response.term && voteGranted == response.voteGranted;
-
             }
 
             @Override
             public int hashCode()
             {
-                int result = (int) term;
-                result = 31 * result + (voteGranted ? 1 : 0);
-                return result;
+                return Objects.hash( super.hashCode(), term, voteGranted );
             }
 
             @Override
@@ -230,10 +229,10 @@ public interface RaftMessages
             private RaftLogEntry[] entries;
             private long leaderCommit;
 
-            public Request( MemberId from, long leaderTerm, long prevLogIndex, long prevLogTerm,
-                            RaftLogEntry[] entries, long leaderCommit )
+            public Request( byte version, MemberId from, long leaderTerm, long prevLogIndex, long prevLogTerm,
+                    RaftLogEntry[] entries, long leaderCommit )
             {
-                super( from, Type.APPEND_ENTRIES_REQUEST );
+                super( version, from, Type.APPEND_ENTRIES_REQUEST );
                 Objects.requireNonNull( entries );
                 assert !((prevLogIndex == -1 && prevLogTerm != -1) || (prevLogTerm == -1 && prevLogIndex != -1)) :
                         format( "prevLogIndex was %d and prevLogTerm was %d", prevLogIndex, prevLogTerm );
@@ -280,18 +279,20 @@ public interface RaftMessages
                 {
                     return false;
                 }
+                if ( !super.equals( o ) )
+                {
+                    return false;
+                }
                 Request request = (Request) o;
-                return Objects.equals( leaderTerm, request.leaderTerm ) &&
-                        Objects.equals( prevLogIndex, request.prevLogIndex ) &&
-                        Objects.equals( prevLogTerm, request.prevLogTerm ) &&
-                        Objects.equals( leaderCommit, request.leaderCommit ) &&
+                return leaderTerm == request.leaderTerm && prevLogIndex == request.prevLogIndex &&
+                        prevLogTerm == request.prevLogTerm && leaderCommit == request.leaderCommit &&
                         Arrays.equals( entries, request.entries );
             }
 
             @Override
             public int hashCode()
             {
-                return Objects.hash( leaderTerm, prevLogIndex, prevLogTerm, entries, leaderCommit );
+                return Objects.hash( super.hashCode(), leaderTerm, prevLogIndex, prevLogTerm, entries, leaderCommit );
             }
 
             @Override
@@ -310,9 +311,10 @@ public interface RaftMessages
             private long matchIndex;
             private long appendIndex;
 
-            public Response( MemberId from, long term, boolean success, long matchIndex, long appendIndex )
+            public Response( byte version, MemberId from, long term, boolean success, long matchIndex,
+                    long appendIndex )
             {
-                super( from, Type.APPEND_ENTRIES_RESPONSE );
+                super( version, from, Type.APPEND_ENTRIES_RESPONSE );
                 this.term = term;
                 this.success = success;
                 this.matchIndex = matchIndex;
@@ -382,9 +384,9 @@ public interface RaftMessages
         private long commitIndex;
         private long commitIndexTerm;
 
-        public Heartbeat( MemberId from, long leaderTerm, long commitIndex, long commitIndexTerm )
+        public Heartbeat( byte version, MemberId from, long leaderTerm, long commitIndex, long commitIndexTerm )
         {
-            super( from, Type.HEARTBEAT );
+            super( version, from, Type.HEARTBEAT );
             this.leaderTerm = leaderTerm;
             this.commitIndex = commitIndex;
             this.commitIndexTerm = commitIndexTerm;
@@ -420,22 +422,15 @@ public interface RaftMessages
             {
                 return false;
             }
-
             Heartbeat heartbeat = (Heartbeat) o;
-
-            return leaderTerm == heartbeat.leaderTerm &&
-                   commitIndex == heartbeat.commitIndex &&
-                   commitIndexTerm == heartbeat.commitIndexTerm;
+            return leaderTerm == heartbeat.leaderTerm && commitIndex == heartbeat.commitIndex &&
+                    commitIndexTerm == heartbeat.commitIndexTerm;
         }
 
         @Override
         public int hashCode()
         {
-            int result = super.hashCode();
-            result = 31 * result + (int) (leaderTerm ^ (leaderTerm >>> 32));
-            result = 31 * result + (int) (commitIndex ^ (commitIndex >>> 32));
-            result = 31 * result + (int) (commitIndexTerm ^ (commitIndexTerm >>> 32));
-            return result;
+            return Objects.hash( super.hashCode(), leaderTerm, commitIndex, commitIndexTerm );
         }
 
         @Override
@@ -451,9 +446,9 @@ public interface RaftMessages
         private long leaderTerm;
         private long prevIndex;
 
-        public LogCompactionInfo( MemberId from, long leaderTerm, long prevIndex )
+        public LogCompactionInfo( byte version, MemberId from, long leaderTerm, long prevIndex )
         {
-            super( from, Type.LOG_COMPACTION_INFO );
+            super( version, from, Type.LOG_COMPACTION_INFO );
             this.leaderTerm = leaderTerm;
             this.prevIndex = prevIndex;
         }
@@ -485,7 +480,6 @@ public interface RaftMessages
             }
 
             LogCompactionInfo other = (LogCompactionInfo) o;
-
             return leaderTerm == other.leaderTerm &&
                    prevIndex == other.prevIndex;
         }
@@ -493,10 +487,7 @@ public interface RaftMessages
         @Override
         public int hashCode()
         {
-            int result = super.hashCode();
-            result = 31 * result + (int) (leaderTerm ^ (leaderTerm >>> 32));
-            result = 31 * result + (int) (prevIndex ^ (prevIndex >>> 32));
-            return result;
+            return Objects.hash( super.hashCode(), leaderTerm, prevIndex );
         }
 
         @Override
@@ -510,9 +501,9 @@ public interface RaftMessages
     {
         class Election extends BaseRaftMessage
         {
-            public Election( MemberId from )
+            public Election( byte version, MemberId from )
             {
-                super( from, Type.ELECTION_TIMEOUT );
+                super( version, from, Type.ELECTION_TIMEOUT );
             }
 
             @Override
@@ -524,9 +515,9 @@ public interface RaftMessages
 
         class Heartbeat extends BaseRaftMessage
         {
-            public Heartbeat( MemberId from )
+            public Heartbeat( byte version, MemberId from )
             {
-                super( from, Type.HEARTBEAT_TIMEOUT );
+                super( version, from, Type.HEARTBEAT_TIMEOUT );
             }
 
             @Override
@@ -543,9 +534,9 @@ public interface RaftMessages
         {
             private ReplicatedContent content;
 
-            public Request( MemberId from, ReplicatedContent content )
+            public Request( byte version, MemberId from, ReplicatedContent content )
             {
-                super( from, Type.NEW_ENTRY_REQUEST );
+                super( version, from, Type.NEW_ENTRY_REQUEST );
                 this.content = content;
             }
 
@@ -566,16 +557,19 @@ public interface RaftMessages
                 {
                     return false;
                 }
+                if ( !super.equals( o ) )
+                {
+                    return false;
+                }
 
                 Request request = (Request) o;
-
-                return !(content != null ? !content.equals( request.content ) : request.content != null);
+                return Objects.equals( content, request.content );
             }
 
             @Override
             public int hashCode()
             {
-                return content != null ? content.hashCode() : 0;
+                return Objects.hash( super.hashCode(), content );
             }
 
             public ReplicatedContent content()
@@ -588,9 +582,9 @@ public interface RaftMessages
         {
             private List<ReplicatedContent> list;
 
-            public BatchRequest( int batchSize )
+            public BatchRequest( byte version, int batchSize )
             {
-                super( null, Type.NEW_BATCH_REQUEST );
+                super( version, null, Type.NEW_BATCH_REQUEST );
                 list = new ArrayList<>( batchSize );
             }
 
@@ -603,11 +597,18 @@ public interface RaftMessages
             public boolean equals( Object o )
             {
                 if ( this == o )
-                { return true; }
+                {
+                    return true;
+                }
                 if ( o == null || getClass() != o.getClass() )
-                { return false; }
+                {
+                    return false;
+                }
                 if ( !super.equals( o ) )
-                { return false; }
+                {
+                    return false;
+                }
+
                 BatchRequest batchRequest = (BatchRequest) o;
                 return Objects.equals( list, batchRequest.list );
             }
@@ -645,6 +646,12 @@ public interface RaftMessages
             this.message = message;
         }
 
+        @Override
+        public byte version()
+        {
+            return message.version();
+        }
+
         public StoreId storeId()
         {
             return storeId;
@@ -666,6 +673,7 @@ public interface RaftMessages
             {
                 return false;
             }
+
             StoreIdAwareMessage that = (StoreIdAwareMessage) o;
             return Objects.equals( storeId, that.storeId ) && Objects.equals( message, that.message );
         }
@@ -681,28 +689,28 @@ public interface RaftMessages
         {
             return format( "{storeId: %s, message: %s}", storeId, message );
         }
-
     }
 
-    abstract class BaseRaftMessage implements RaftMessage
+    abstract class BaseRaftMessage extends BaseMessage implements RaftMessage
     {
         protected MemberId from;
         private Type type;
 
-        BaseRaftMessage( MemberId from, Type type )
+        BaseRaftMessage( byte version, MemberId from, Type type )
         {
+            super( version );
             this.from = from;
             this.type = type;
         }
 
         @Override
-        public MemberId from()
+        public final MemberId from()
         {
             return from;
         }
 
         @Override
-        public Type type()
+        public final Type type()
         {
             return type;
         }
@@ -718,6 +726,10 @@ public interface RaftMessages
             {
                 return false;
             }
+            if ( !super.equals( o ) )
+            {
+                return false;
+            }
             BaseRaftMessage that = (BaseRaftMessage) o;
             return Objects.equals( from, that.from ) && type == that.type;
         }
@@ -725,7 +737,7 @@ public interface RaftMessages
         @Override
         public int hashCode()
         {
-            return Objects.hash( from, type );
+            return Objects.hash( super.hashCode(), from, type );
         }
     }
 }

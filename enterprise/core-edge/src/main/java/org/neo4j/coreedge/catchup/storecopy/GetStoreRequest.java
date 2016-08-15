@@ -19,11 +19,17 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
+import org.neo4j.coreedge.messaging.BaseMessage;
 import org.neo4j.coreedge.messaging.Message;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
 
-public class GetStoreRequest implements Message
+public class GetStoreRequest extends BaseMessage
 {
     public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.STORE;
+
+    public GetStoreRequest( byte version )
+    {
+        super( version );
+    }
 }

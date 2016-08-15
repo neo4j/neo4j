@@ -19,16 +19,20 @@
  */
 package org.neo4j.coreedge.catchup.tx;
 
+import java.util.Objects;
+
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.BaseMessage;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 
-public class TxPullResponse
+public class TxPullResponse extends BaseMessage
 {
     private final StoreId storeId;
     private final CommittedTransactionRepresentation tx;
 
-    public TxPullResponse( StoreId storeId, CommittedTransactionRepresentation tx )
+    public TxPullResponse( byte version, StoreId storeId, CommittedTransactionRepresentation tx )
     {
+        super( version );
         this.storeId = storeId;
         this.tx = tx;
     }
@@ -54,19 +58,18 @@ public class TxPullResponse
         {
             return false;
         }
-
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
         TxPullResponse that = (TxPullResponse) o;
-
-        return (storeId != null ? storeId.equals( that.storeId ) : that.storeId == null) &&
-                (tx != null ? tx.equals( that.tx ) : that.tx == null);
+        return Objects.equals( storeId, that.storeId ) && Objects.equals( tx, that.tx );
     }
 
     @Override
     public int hashCode()
     {
-        int result = storeId != null ? storeId.hashCode() : 0;
-        result = 31 * result + (tx != null ? tx.hashCode() : 0);
-        return result;
+        return Objects.hash( super.hashCode(), storeId, tx );
     }
 
     @Override

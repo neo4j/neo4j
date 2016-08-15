@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.coreedge.core.consensus.RaftMessageHandler;
+import org.neo4j.coreedge.core.consensus.roles.RaftMessageHandler;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.roles.Leader;
 import org.neo4j.coreedge.core.consensus.roles.Role;

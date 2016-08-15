@@ -26,6 +26,7 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.timeout.IdleStateHandler;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;
@@ -39,9 +40,12 @@ import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotResponseHandler;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
 import org.neo4j.coreedge.messaging.IdleChannelReaperHandler;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.messaging.NonBlockingChannels;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class CoreToCoreClient extends CoreClient
 {
@@ -89,12 +93,13 @@ public class CoreToCoreClient extends CoreClient
 
             pipeline.addLast( owner.decoders( protocol ) );
 
-            pipeline.addLast( new TxPullResponseHandler( protocol, owner ) );
-            pipeline.addLast( new CoreSnapshotResponseHandler( protocol, owner ) );
-            pipeline.addLast( new StoreCopyFinishedResponseHandler( protocol, owner ) );
-            pipeline.addLast( new TxStreamFinishedResponseHandler( protocol, owner ) );
-            pipeline.addLast( new FileHeaderHandler( protocol, logProvider ) );
-            pipeline.addLast( new FileContentHandler( protocol, owner ) );
+            Predicate<Message> versionChecker = (m) -> m.version() == CURRENT_VERSION;
+            pipeline.addLast( new TxPullResponseHandler( versionChecker, protocol, owner, logProvider ) );
+            pipeline.addLast( new CoreSnapshotResponseHandler( versionChecker, protocol, owner, logProvider ) );
+            pipeline.addLast( new StoreCopyFinishedResponseHandler( versionChecker, protocol, owner, logProvider ) );
+            pipeline.addLast( new TxStreamFinishedResponseHandler( versionChecker, protocol, owner, logProvider ) );
+            pipeline.addLast( new FileHeaderHandler( versionChecker, protocol, logProvider ) );
+            pipeline.addLast( new FileContentHandler( versionChecker, protocol, owner, logProvider ) );
 
             pipeline.addLast( new IdleStateHandler( 0, 0, 2, TimeUnit.MINUTES) );
             pipeline.addLast( new IdleChannelReaperHandler(nonBlockingChannels));

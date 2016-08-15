@@ -24,12 +24,16 @@ import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.io.OutputStream;
 
-class FileContent implements AutoCloseable
+import org.neo4j.coreedge.messaging.BaseMessage;
+
+class FileContent extends BaseMessage implements AutoCloseable
 {
     private final ByteBuf msg;
 
     FileContent( ByteBuf msg )
     {
+        // this is an internal message so we can use the current version
+        super( CURRENT_VERSION );
         msg.retain();
         this.msg = msg;
     }

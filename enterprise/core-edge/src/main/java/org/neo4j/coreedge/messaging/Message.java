@@ -24,4 +24,7 @@ package org.neo4j.coreedge.messaging;
  */
 public interface Message
 {
+    byte CURRENT_VERSION = 0;
+
+    byte version();
 }

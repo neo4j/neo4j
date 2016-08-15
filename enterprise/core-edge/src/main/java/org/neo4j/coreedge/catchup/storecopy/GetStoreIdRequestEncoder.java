@@ -31,6 +31,7 @@ class GetStoreIdRequestEncoder extends MessageToMessageEncoder<GetStoreIdRequest
     protected void encode( ChannelHandlerContext ctx, GetStoreIdRequest msg, List<Object> out ) throws Exception
     {
         ByteBuf buffer = ctx.alloc().buffer();
+        buffer.writeByte( msg.version() );
         buffer.writeByte( 0 );
         out.add( buffer );
     }

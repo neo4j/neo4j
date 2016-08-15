@@ -19,35 +19,48 @@
  */
 package org.neo4j.coreedge.catchup;
 
-import static java.lang.String.format;
+import org.neo4j.coreedge.messaging.Message;
 
-public enum ResponseMessageType
+public enum ResponseMessageType implements Message
 {
-    TX( (byte) 1 ),
-    STORE_ID( (byte) 2 ),
-    FILE( (byte) 3 ),
-    STORE_COPY_FINISHED( (byte) 4 ),
-    CORE_SNAPSHOT( (byte) 5 ),
-    TX_STREAM_FINISHED( (byte) 6 ),
-    UNKNOWN( (byte) 200 ),;
+    TX( CURRENT_VERSION, (byte) 1 ),
+    STORE_ID( CURRENT_VERSION, (byte) 2 ),
+    FILE( CURRENT_VERSION, (byte) 3 ),
+    STORE_COPY_FINISHED( CURRENT_VERSION, (byte) 4 ),
+    CORE_SNAPSHOT( CURRENT_VERSION, (byte) 5 ),
+    TX_STREAM_FINISHED( CURRENT_VERSION, (byte) 6 ),
+    UNKNOWN( CURRENT_VERSION, (byte) 200 ),;
 
+    private byte version;
     private byte messageType;
 
-    ResponseMessageType( byte messageType )
+    ResponseMessageType( byte version, byte messageType )
     {
+        this.version = version;
         this.messageType = messageType;
     }
 
-    public static ResponseMessageType from( byte b )
+    public static ResponseMessageType from( byte version, byte messageType )
     {
+        if ( version != CURRENT_VERSION )
+        {
+            return UNKNOWN;
+        }
+
         for ( ResponseMessageType responseMessageType : values() )
         {
-            if ( responseMessageType.messageType == b )
+            if ( responseMessageType.messageType == messageType )
             {
                 return responseMessageType;
             }
         }
         return UNKNOWN;
+    }
+
+    @Override
+    public byte version()
+    {
+        return version;
     }
 
     public byte messageType()
@@ -58,6 +71,6 @@ public enum ResponseMessageType
     @Override
     public String toString()
     {
-        return format( "ResponseMessageType{messageType=%s}", messageType );
+        return "ResponseMessageType{" + "version=" + version + ", messageType=" + messageType + '}';
     }
 }

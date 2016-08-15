@@ -19,8 +19,10 @@
  */
 package org.neo4j.coreedge.core.consensus.vote;
 
-import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
+import org.neo4j.coreedge.identity.MemberId;
+
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class VoteRequestBuilder
 {
@@ -29,10 +31,17 @@ public class VoteRequestBuilder
     private MemberId candidate;
     private long lastLogIndex;
     private long lastLogTerm;
+    private byte version = CURRENT_VERSION;
 
     public RaftMessages.Vote.Request build()
     {
-        return new RaftMessages.Vote.Request( from, term, candidate, lastLogIndex, lastLogTerm );
+        return new RaftMessages.Vote.Request( version, from, term, candidate, lastLogIndex, lastLogTerm );
+    }
+
+    public VoteRequestBuilder version( byte version )
+    {
+        this.version = version;
+        return this;
     }
 
     public VoteRequestBuilder from( MemberId from )

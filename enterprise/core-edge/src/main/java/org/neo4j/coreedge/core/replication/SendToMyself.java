@@ -20,8 +20,10 @@
 package org.neo4j.coreedge.core.replication;
 
 import org.neo4j.coreedge.core.consensus.RaftMessages;
-import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.Outbound;
+
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class SendToMyself
 {
@@ -36,6 +38,6 @@ public class SendToMyself
 
     public void replicate( ReplicatedContent content )
     {
-        outbound.send( myself, new RaftMessages.NewEntry.Request( myself, content ) );
+        outbound.send( myself, new RaftMessages.NewEntry.Request( CURRENT_VERSION, myself, content ) );
     }
 }

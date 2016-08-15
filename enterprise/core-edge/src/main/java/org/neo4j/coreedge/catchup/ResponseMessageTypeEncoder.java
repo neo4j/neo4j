@@ -31,6 +31,7 @@ public class ResponseMessageTypeEncoder extends MessageToMessageEncoder<Response
     protected void encode( ChannelHandlerContext ctx, ResponseMessageType response, List<Object> out ) throws Exception
     {
         ByteBuf encoded = ctx.alloc().buffer();
+        encoded.writeByte( response.version() );
         encoded.writeByte( response.messageType() );
         out.add( encoded );
     }

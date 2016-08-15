@@ -23,6 +23,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class TxPullResponseEncodeDecodeTest
 {
@@ -43,7 +45,7 @@ public class TxPullResponseEncodeDecodeTest
     {
         // given
         EmbeddedChannel channel = new EmbeddedChannel( new TxPullResponseEncoder(), new TxPullResponseDecoder() );
-        TxPullResponse sent = new TxPullResponse( new StoreId( 1, 2, 3, 4 ), newCommittedTransactionRepresentation() );
+        TxPullResponse sent = new TxPullResponse( CURRENT_VERSION, new StoreId( 1, 2, 3, 4 ), newCommittedTransactionRepresentation() );
 
         // when
         channel.writeOutbound( sent );

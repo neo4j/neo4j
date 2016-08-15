@@ -25,6 +25,10 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.util.List;
 
+import org.neo4j.coreedge.messaging.Message;
+
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
+
 public class FileContentDecoder extends MessageToMessageDecoder<ByteBuf>
 {
     @Override

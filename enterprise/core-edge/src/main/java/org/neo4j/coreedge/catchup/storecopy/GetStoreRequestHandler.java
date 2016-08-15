@@ -19,43 +19,48 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.stream.ChunkedNioStream;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.stream.ChunkedNioStream;
-
+import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
-public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStoreRequest>
+public class GetStoreRequestHandler extends VersionCheckerChannelInboundHandler<GetStoreRequest>
 {
     private final CatchupServerProtocol protocol;
     private final Supplier<NeoStoreDataSource> dataSource;
 
     private Supplier<CheckPointer> checkPointerSupplier;
 
-    public GetStoreRequestHandler( CatchupServerProtocol protocol,
+    public GetStoreRequestHandler( Predicate<Message> versionChecker, CatchupServerProtocol protocol,
                                    Supplier<NeoStoreDataSource> dataSource,
-                                   Supplier<CheckPointer> checkPointerSupplier )
+                                   Supplier<CheckPointer> checkPointerSupplier, LogProvider logProvider )
     {
+        super(versionChecker, logProvider );
         this.protocol = protocol;
         this.dataSource = dataSource;
         this.checkPointerSupplier = checkPointerSupplier;
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, GetStoreRequest msg ) throws Exception
+    protected void doChannelRead0( ChannelHandlerContext ctx, GetStoreRequest msg ) throws Exception
     {
         long lastCheckPointedTx = checkPointerSupplier.get().tryCheckPoint( new SimpleTriggerInfo( "Store copy" ) );
         sendFiles( ctx );
@@ -77,13 +82,13 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
     private void sendFile( ChannelHandlerContext ctx, File file ) throws FileNotFoundException
     {
         ctx.writeAndFlush( ResponseMessageType.FILE );
-        ctx.writeAndFlush( new FileHeader( file.getName(), file.length() ) );
+        ctx.writeAndFlush( new FileHeader( CURRENT_VERSION, file.getName(), file.length() ) );
         ctx.writeAndFlush( new ChunkedNioStream( new FileInputStream( file ).getChannel() ) );
     }
 
     private void endStoreCopy( ChannelHandlerContext ctx, long lastCommittedTxBeforeStoreCopy )
     {
         ctx.write( ResponseMessageType.STORE_COPY_FINISHED );
-        ctx.writeAndFlush( new StoreCopyFinishedResponse( lastCommittedTxBeforeStoreCopy ) );
+        ctx.writeAndFlush( new StoreCopyFinishedResponse( CURRENT_VERSION, lastCommittedTxBeforeStoreCopy ) );
     }
 }

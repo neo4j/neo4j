@@ -19,16 +19,21 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
-public class StoreCopyFinishedResponse
+import java.util.Objects;
+
+import org.neo4j.coreedge.messaging.BaseMessage;
+
+class StoreCopyFinishedResponse extends BaseMessage
 {
     private final long lastCommittedTxBeforeStoreCopy;
 
-    public StoreCopyFinishedResponse( long lastCommittedTxBeforeStoreCopy )
+    StoreCopyFinishedResponse( byte version, long lastCommittedTxBeforeStoreCopy )
     {
+        super( version );
         this.lastCommittedTxBeforeStoreCopy = lastCommittedTxBeforeStoreCopy;
     }
 
-    public long lastCommittedTxBeforeStoreCopy()
+    long lastCommittedTxBeforeStoreCopy()
     {
         return lastCommittedTxBeforeStoreCopy;
     }
@@ -44,20 +49,17 @@ public class StoreCopyFinishedResponse
         {
             return false;
         }
-
-        StoreCopyFinishedResponse that = (StoreCopyFinishedResponse) o;
-
-        if ( lastCommittedTxBeforeStoreCopy != that.lastCommittedTxBeforeStoreCopy )
+        if ( !super.equals( o ) )
         {
             return false;
         }
-
-        return true;
+        StoreCopyFinishedResponse that = (StoreCopyFinishedResponse) o;
+        return lastCommittedTxBeforeStoreCopy == that.lastCommittedTxBeforeStoreCopy;
     }
 
     @Override
     public int hashCode()
     {
-        return (int) (lastCommittedTxBeforeStoreCopy ^ (lastCommittedTxBeforeStoreCopy >>> 32));
+        return Objects.hash( super.hashCode(), lastCommittedTxBeforeStoreCopy );
     }
 }

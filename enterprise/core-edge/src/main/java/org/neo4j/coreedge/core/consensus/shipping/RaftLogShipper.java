@@ -29,6 +29,7 @@ import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.ReadableRaftLog;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.core.state.InFlightLogEntryReader;
 import org.neo4j.coreedge.identity.MemberId;
@@ -41,6 +42,7 @@ import static java.lang.String.format;
 import static org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
 import static org.neo4j.coreedge.core.consensus.shipping.RaftLogShipper.Mode.PIPELINE;
 import static org.neo4j.coreedge.core.consensus.shipping.RaftLogShipper.Timeouts.RESEND;
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 /// Optimizations
 // TODO: Have several outstanding batches in catchup mode, to bridge the latency gap.
@@ -380,7 +382,7 @@ public class RaftLogShipper
          * entry is the current term.
          */
         RaftMessages.Heartbeat appendRequest =
-                new RaftMessages.Heartbeat( leader, leaderContext.term, leaderContext.commitIndex,
+                new RaftMessages.Heartbeat( CURRENT_VERSION, leader, leaderContext.term, leaderContext.commitIndex,
                         leaderContext.term );
 
         outbound.send( follower, appendRequest );
@@ -393,9 +395,9 @@ public class RaftLogShipper
 
         lastSentIndex = prevLogIndex + 1;
 
-        RaftMessages.AppendEntries.Request appendRequest = new RaftMessages.AppendEntries.Request(
-                leader, leaderContext.term, prevLogIndex, prevLogTerm, newEntries, leaderContext.commitIndex
-        );
+        RaftMessages.AppendEntries.Request appendRequest =
+                new RaftMessages.AppendEntries.Request( CURRENT_VERSION, leader, leaderContext.term, prevLogIndex,
+                        prevLogTerm, newEntries, leaderContext.commitIndex );
 
         outbound.send( follower, appendRequest );
     }
@@ -425,8 +427,9 @@ public class RaftLogShipper
                 return;
             }
 
-            RaftMessages.AppendEntries.Request appendRequest = new RaftMessages.AppendEntries.Request(
-                    leader, leaderContext.term, prevLogIndex, prevLogTerm, RaftLogEntry.empty, leaderContext.commitIndex );
+            RaftMessages.AppendEntries.Request appendRequest =
+                    new RaftMessages.AppendEntries.Request( CURRENT_VERSION, leader, leaderContext.term, prevLogIndex,
+                            prevLogTerm, RaftLogEntry.empty, leaderContext.commitIndex );
 
             outbound.send( follower, appendRequest );
         }
@@ -493,8 +496,9 @@ public class RaftLogShipper
             }
             else
             {
-                RaftMessages.AppendEntries.Request appendRequest = new RaftMessages.AppendEntries.Request(
-                        leader, leaderContext.term, prevLogIndex, prevLogTerm, entries, leaderContext.commitIndex );
+                RaftMessages.AppendEntries.Request appendRequest =
+                        new RaftMessages.AppendEntries.Request( CURRENT_VERSION, leader, leaderContext.term,
+                                prevLogIndex, prevLogTerm, entries, leaderContext.commitIndex );
 
                 outbound.send( follower, appendRequest );
             }
@@ -515,8 +519,8 @@ public class RaftLogShipper
         log.warn( "Sending log compaction info. Log pruned? Status=%s, LeaderContext=%s",
                 statusAsString(), leaderContext );
 
-        outbound.send( follower, new RaftMessages.LogCompactionInfo(
-                leader, leaderContext.term, raftLog.prevIndex() ) );
+        outbound.send( follower, new RaftMessages.LogCompactionInfo( CURRENT_VERSION, leader, leaderContext.term,
+                raftLog.prevIndex() ) );
     }
 
     private String statusAsString()

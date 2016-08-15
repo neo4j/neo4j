@@ -34,6 +34,7 @@ import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.ReadableRaftLog;
 import org.neo4j.coreedge.messaging.Inbound;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.core.consensus.outcome.AppendLogEntry;
 import org.neo4j.coreedge.core.consensus.outcome.BatchAppendLogEntries;
@@ -60,6 +61,7 @@ import static org.neo4j.coreedge.core.consensus.TestMessageBuilders.appendEntrie
 import static org.neo4j.coreedge.core.consensus.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.core.consensus.state.RaftStateBuilder.raftState;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -363,7 +365,7 @@ public class LeaderTest
         Leader leader = new Leader();
 
         // when
-        Outcome outcome = leader.handle( new Heartbeat( member1 ), state, log() );
+        Outcome outcome = leader.handle( new Heartbeat( CURRENT_VERSION, member1 ), state, log() );
 
         // then
         assertTrue( messageFor( outcome, member1 ) instanceof RaftMessages.Heartbeat );
@@ -381,8 +383,8 @@ public class LeaderTest
 
         Leader leader = new Leader();
 
-        RaftMessages.NewEntry.Request newEntryRequest = new RaftMessages.NewEntry.Request(
-                member( 9 ), CONTENT );
+        RaftMessages.NewEntry.Request newEntryRequest =
+                new RaftMessages.NewEntry.Request( CURRENT_VERSION, member( 9 ), CONTENT );
 
         // when
         Outcome outcome = leader.handle( newEntryRequest, state, log() );
@@ -410,7 +412,7 @@ public class LeaderTest
 
         int BATCH_SIZE = 3;
         RaftMessages.NewEntry.BatchRequest batchRequest =
-                new RaftMessages.NewEntry.BatchRequest( BATCH_SIZE );
+                new RaftMessages.NewEntry.BatchRequest( CURRENT_VERSION, BATCH_SIZE );
         batchRequest.add( valueOf( 0 ) );
         batchRequest.add( valueOf( 1 ) );
         batchRequest.add( valueOf( 2 ) );
@@ -457,9 +459,9 @@ public class LeaderTest
         Leader leader = new Leader();
 
         // when a single instance responds (plus self == 2 out of 3 instances)
-        Outcome outcome = leader.handle(
-                new RaftMessages.AppendEntries.Response( member1, 0, true, 0, 0 ),
-                state, log() );
+        Outcome outcome =
+                leader.handle( new RaftMessages.AppendEntries.Response( CURRENT_VERSION, member1, 0, true, 0, 0 ),
+                        state, log() );
 
         // then
         assertEquals( 0L, outcome.getCommitIndex() );
@@ -487,8 +489,7 @@ public class LeaderTest
 
         // when
         Outcome outcome =
-                leader.handle( new AppendEntries.Response( member1, 0, true, 2, 2 ),
-                        state, log() );
+                leader.handle( new AppendEntries.Response( CURRENT_VERSION, member1, 0, true, 2, 2 ), state, log() );
 
         state.update( outcome );
 

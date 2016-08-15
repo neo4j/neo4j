@@ -20,23 +20,29 @@
 package org.neo4j.coreedge.core.state.snapshot;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+
+import java.util.function.Predicate;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
+import org.neo4j.coreedge.messaging.Message;
+import org.neo4j.logging.LogProvider;
 
-public class CoreSnapshotResponseHandler extends SimpleChannelInboundHandler<CoreSnapshot>
+public class CoreSnapshotResponseHandler extends VersionCheckerChannelInboundHandler<CoreSnapshot>
 {
     private final CatchupClientProtocol protocol;
     private final CoreSnapshotListener listener;
 
-    public CoreSnapshotResponseHandler( CatchupClientProtocol protocol, CoreSnapshotListener listener )
+    public CoreSnapshotResponseHandler( Predicate<Message> versionChecker, CatchupClientProtocol protocol,
+            CoreSnapshotListener listener, LogProvider logProvider )
     {
+        super( versionChecker, logProvider );
         this.protocol = protocol;
         this.listener = listener;
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, final CoreSnapshot coreSnapshot ) throws Exception
+    protected void doChannelRead0( ChannelHandlerContext ctx, final CoreSnapshot coreSnapshot ) throws Exception
     {
         if ( protocol.isExpecting( CatchupClientProtocol.State.CORE_SNAPSHOT ) )
         {

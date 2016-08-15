@@ -35,6 +35,7 @@ import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.monitoring.RaftLogCommitIndexMonitor;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -43,6 +44,7 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.Math.max;
 import static java.lang.String.format;
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class CommandApplicationProcess extends LifecycleAdapter
 {
@@ -269,7 +271,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
 
         long prevIndex = lastApplied;
         long prevTerm = raftLog.readEntryTerm( prevIndex );
-        CoreSnapshot coreSnapshot = new CoreSnapshot( prevIndex, prevTerm );
+        CoreSnapshot coreSnapshot = new CoreSnapshot( CURRENT_VERSION, prevIndex, prevTerm );
 
         coreStateMachines.addSnapshots( coreSnapshot );
         sessionTracker.addSnapshots( coreSnapshot );

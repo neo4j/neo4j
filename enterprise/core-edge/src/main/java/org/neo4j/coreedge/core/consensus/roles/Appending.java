@@ -31,7 +31,10 @@ import org.neo4j.coreedge.core.consensus.outcome.ShipCommand;
 import org.neo4j.coreedge.core.consensus.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.logging.Log;
+
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 class Appending
 {
@@ -41,8 +44,9 @@ class Appending
     {
         if ( request.leaderTerm() < state.term() )
         {
-            RaftMessages.AppendEntries.Response appendResponse = new RaftMessages.AppendEntries.Response(
-                    state.myself(), state.term(), false, -1, state.entryLog().appendIndex() );
+            RaftMessages.AppendEntries.Response appendResponse =
+                    new RaftMessages.AppendEntries.Response( CURRENT_VERSION, state.myself(), state.term(), false, -1,
+                            state.entryLog().appendIndex() );
 
             outcome.addOutgoingMessage( new RaftMessages.Directed( request.from(), appendResponse ) );
             return;
@@ -56,8 +60,9 @@ class Appending
         if ( !Follower.logHistoryMatches( state, request.prevLogIndex(), request.prevLogTerm(), log ) )
         {
             assert request.prevLogIndex() > -1 && request.prevLogTerm() > -1;
-            RaftMessages.AppendEntries.Response appendResponse = new RaftMessages.AppendEntries.Response(
-                    state.myself(), request.leaderTerm(), false, -1, state.entryLog().appendIndex() );
+            RaftMessages.AppendEntries.Response appendResponse =
+                    new RaftMessages.AppendEntries.Response( CURRENT_VERSION, state.myself(), request.leaderTerm(),
+                            false, -1, state.entryLog().appendIndex() );
 
             outcome.addOutgoingMessage( new RaftMessages.Directed( request.from(), appendResponse ) );
             return;
@@ -105,8 +110,9 @@ class Appending
                 state, request.prevLogIndex() + request.entries().length, request.leaderCommit(), outcome );
 
         long endMatchIndex = request.prevLogIndex() + request.entries().length; // this is the index of the last incoming entry
-        RaftMessages.AppendEntries.Response appendResponse = new RaftMessages.AppendEntries.Response(
-                state.myself(), request.leaderTerm(), true, endMatchIndex, endMatchIndex );
+        RaftMessages.AppendEntries.Response appendResponse =
+                new RaftMessages.AppendEntries.Response( CURRENT_VERSION, state.myself(), request.leaderTerm(), true,
+                        endMatchIndex, endMatchIndex );
         outcome.addOutgoingMessage( new RaftMessages.Directed( request.from(), appendResponse ) );
     }
 
