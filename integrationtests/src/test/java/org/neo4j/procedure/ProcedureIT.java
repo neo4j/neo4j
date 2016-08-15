@@ -715,6 +715,18 @@ public class ProcedureIT
     }
 
     @Test
+    public void shouldBeAbleToCallVoidProcedureWithDefaultValue() throws Throwable
+    {
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.execute( "CALL org.neo4j.procedure.sideEffectWithDefault('Person','name')" );
+            Result result = db.execute( "MATCH (n:Person) RETURN n.name AS name" );
+            assertThat( result.next().get( "name" ), equalTo( "Zhang Wei" ) );
+            assertFalse( result.hasNext() );
+        }
+    }
+
+    @Test
     public void shouldBeAbleToCallDelegatingVoidProcedure() throws Throwable
     {
         try ( Transaction ignore = db.beginTx() )
@@ -1406,6 +1418,16 @@ public class ProcedureIT
         public void sideEffect( @Name( "value" ) String value )
         {
             db.createNode( Label.label( value ) );
+        }
+
+        @Procedure( mode = WRITE )
+        public void sideEffectWithDefault(
+                @Name("label") String label,
+                @Name("propertyKey") String propertyKey,
+                /* Most common name, according to the internet */
+                @Name( value = "value", defaultValue = "Zhang Wei" ) String value )
+        {
+            db.createNode( Label.label( label ) ).setProperty( propertyKey, value );
         }
 
         @Procedure
