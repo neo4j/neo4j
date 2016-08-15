@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit;
+package org.neo4j.kernel.impl.store.format.highlimit.v30;
 
 import java.io.IOException;
 import java.util.function.Function;
@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.highlimit.Reference;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -44,23 +45,12 @@ import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdFor
  * hence the format name. The IDs take up between 3-8B depending on the size of the ID where relative ID
  * references are used as often as possible. See {@link Reference}.
  *
- * In case when record is small enough to fit into one record unit and references are not that big yet
- * record can be stored in a fixed reference format. Representing record in this format allow
- * to save some time on reference encoding/decoding since they will be saved in fixed format instead of
- * variable length encoding.
- * Fixed reference encoding can be applied only to single record unit records.
- * And since record will always contain only one single unit we can reuse bit number 4 as a marker for fixed
- * reference.
- * To be able to read previously stored records and distinguish them from fixed reference records marker bit is
- * inverted: 0 - fixed reference format use, 1 - variable length encoding used.
- *
  * For consistency, all formats have a one-byte header specifying:
  *
  * <ol>
  * <li>0x1: inUse [0=unused, 1=used]</li>
  * <li>0x2: record unit [0=single record, 1=multiple records]</li>
- * <li>0x4: record unit type [1=first, 0=consecutive]; fixed reference mark [0=fixed reference; 1=variable length
- * encoding]
+ * <li>0x4: record unit type [1=first, 0=consecutive]
  * <li>0x8 - 0x80 other flags for this record specific to each type</li>
  * </ol>
  *
@@ -87,19 +77,18 @@ import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdFor
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
+abstract class BaseHighLimitRecordFormatV3_0<RECORD extends AbstractBaseRecord>
         extends BaseOneByteHeaderRecordFormat<RECORD>
 {
-    static final int HEADER_BYTE = Byte.BYTES;
+    private static final int HEADER_BYTE = Byte.BYTES;
 
     static final long NULL = Record.NULL_REFERENCE.intValue();
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
     static final int HEADER_BIT_FIRST_RECORD_UNIT = 0b0000_0100;
-    static final int HEADER_BIT_FIXED_REFERENCE = 0b0000_0100;
 
-    protected BaseHighLimitRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
+    protected BaseHighLimitRecordFormatV3_0( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
     {
-        super( recordSize, recordHeaderSize, IN_USE_BIT, HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
+        super( recordSize, recordHeaderSize, IN_USE_BIT, HighLimitV3_0.DEFAULT_MAXIMUM_BITS_PER_ID );
     }
 
     public void read( RECORD record, PageCursor primaryCursor, RecordLoad mode, int recordSize )
@@ -109,7 +98,6 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         byte headerByte = primaryCursor.getByte();
         boolean inUse = isInUse( headerByte );
         boolean doubleRecordUnit = has( headerByte, HEADER_BIT_RECORD_UNIT );
-        record.setUseFixedReferences( false );
         if ( doubleRecordUnit )
         {
             boolean firstRecordUnit = has( headerByte, HEADER_BIT_FIRST_RECORD_UNIT );
@@ -153,14 +141,8 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         }
         else
         {
-            record.setUseFixedReferences( isUseFixedReferences( headerByte ) );
             doReadInternal( record, primaryCursor, recordSize, headerByte, inUse );
         }
-    }
-
-    private boolean isUseFixedReferences( byte headerByte )
-    {
-        return !has( headerByte, HEADER_BIT_FIXED_REFERENCE );
     }
 
     private String illegalSecondaryReferenceMessage( long secondaryId )
@@ -180,17 +162,10 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
             // Let the specific implementation provide the additional header bits and we'll provide the core format bits.
             byte headerByte = headerBits( record );
             assert (headerByte & 0x7) == 0 : "Format-specific header bits (" + headerByte +
-                    ") collides with format-generic header bits";
+                                             ") collides with format-generic header bits";
             headerByte = set( headerByte, IN_USE_BIT, record.inUse() );
             headerByte = set( headerByte, HEADER_BIT_RECORD_UNIT, record.requiresSecondaryUnit() );
-            if ( record.requiresSecondaryUnit() )
-            {
-                headerByte = set( headerByte, HEADER_BIT_FIRST_RECORD_UNIT, true );
-            }
-            else
-            {
-                headerByte = set( headerByte, HEADER_BIT_FIXED_REFERENCE, !record.isUseFixedReferences() );
-            }
+            headerByte = set( headerByte, HEADER_BIT_FIRST_RECORD_UNIT, true );
             primaryCursor.putByte( headerByte );
 
             if ( record.requiresSecondaryUnit() )
@@ -258,23 +233,17 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     {
         if ( record.inUse() )
         {
-            record.setUseFixedReferences( canUseFixedReferences( record, recordSize ));
-            if ( !record.isUseFixedReferences() )
+            int requiredLength = HEADER_BYTE + requiredDataLength( record );
+            boolean requiresSecondaryUnit = requiredLength > recordSize;
+            record.setRequiresSecondaryUnit( requiresSecondaryUnit );
+            if ( record.requiresSecondaryUnit() && !record.hasSecondaryUnitId() )
             {
-                int requiredLength = HEADER_BYTE + requiredDataLength( record );
-                boolean requiresSecondaryUnit = requiredLength > recordSize;
-                record.setRequiresSecondaryUnit( requiresSecondaryUnit );
-                if ( record.requiresSecondaryUnit() && !record.hasSecondaryUnitId() )
-                {
-                    // Allocate a new id at this point, but this is not the time to free this ID the the case where
-                    // this record doesn't need this secondary unit anymore... that needs to be done when applying to store.
-                    record.setSecondaryUnitId( idSequence.nextId() );
-                }
+                // Allocate a new id at this point, but this is not the time to free this ID the the case where
+                // this record doesn't need this secondary unit anymore... that needs to be done when applying to store.
+                record.setSecondaryUnitId( idSequence.nextId() );
             }
         }
     }
-
-    protected abstract boolean canUseFixedReferences( RECORD record, int recordSize );
 
     /**
      * Required length of the data in the given record (without the header byte).

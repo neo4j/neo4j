@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
 
@@ -67,9 +68,10 @@ public abstract class RecordFormatTest
 
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fsRule );
+    public final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fsRule ).around( suppressOutput );
 
     public RecordKeys keys = FullyCoveringRecordKeys.INSTANCE;
 

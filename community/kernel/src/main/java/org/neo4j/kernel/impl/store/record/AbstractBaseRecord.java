@@ -41,6 +41,10 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     private boolean requiresSecondaryUnit;
     private boolean inUse;
     private boolean created;
+    // Flag that indicates usage of fixed references format.
+    // Fixed references format allows to avoid encoding/decoding of references in variable length format and as result
+    // speed up records read/write operations.
+    private boolean useFixedReferences;
 
     protected AbstractBaseRecord( long id )
     {
@@ -54,6 +58,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
         this.created = false;
         this.secondaryUnitId = NO_ID;
         this.requiresSecondaryUnit = false;
+        this.useFixedReferences = false;
         return this;
     }
 
@@ -69,6 +74,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
         created = false;
         secondaryUnitId = NO_ID;
         requiresSecondaryUnit = false;
+        this.useFixedReferences = false;
     }
 
     public long getId()
@@ -143,6 +149,16 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
         return created;
     }
 
+    public boolean isUseFixedReferences()
+    {
+        return useFixedReferences;
+    }
+
+    public void setUseFixedReferences( boolean useFixedReferences )
+    {
+        this.useFixedReferences = useFixedReferences;
+    }
+
     @Override
     public int hashCode()
     {
@@ -170,25 +186,10 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
         throw new UnsupportedOperationException();
     }
 
-    @SuppressWarnings( "rawtypes" )
-    private static final Predicate IN_USE_FILTER = new Predicate<AbstractBaseRecord>()
-    {
-        @Override
-        public boolean test( AbstractBaseRecord item )
-        {
-            return item.inUse();
-        }
-    };
+    private static final Predicate IN_USE_FILTER = (Predicate<AbstractBaseRecord>) AbstractBaseRecord::inUse;
 
     @SuppressWarnings( "rawtypes" )
-    private static final Predicate NOT_IN_USE_FILTER = new Predicate<AbstractBaseRecord>()
-    {
-        @Override
-        public boolean test( AbstractBaseRecord item )
-        {
-            return !item.inUse();
-        }
-    };
+    private static final Predicate NOT_IN_USE_FILTER = (Predicate<AbstractBaseRecord>) item -> !item.inUse();
 
     /**
      * @return {@link Predicate filter} which only records that are {@link #inUse() in use} passes.

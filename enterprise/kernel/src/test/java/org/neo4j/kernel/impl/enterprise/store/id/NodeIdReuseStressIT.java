@@ -101,9 +101,6 @@ public class NodeIdReuseStressIT
         long currentHighestNodeId = highestNodeId( db );
 
         assertThat( currentHighestNodeId, lessThan( highestNodeIdWithoutReuse ) );
-
-        System.out.println( "highestNodeIdWithoutReuse = " + highestNodeIdWithoutReuse );
-        System.out.println( "currentHighestNodeId = " + currentHighestNodeId );
     }
 
     private static void createInitialNodes( GraphDatabaseService db )
