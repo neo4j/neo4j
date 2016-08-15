@@ -184,9 +184,11 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 systemUTC(), logProvider ) );
 
         long edgeTimeToLiveTimeout = config.get( CoreEdgeClusterSettings.edge_time_to_live );
+        long edgeRefreshRate = config.get( CoreEdgeClusterSettings.edge_refresh_rate );
 
         TopologyService discoveryService = discoveryServiceFactory.edgeDiscoveryService( config,
-                extractBoltAddress( config ), logProvider, refreshEdgeTimeoutService, edgeTimeToLiveTimeout );
+                extractBoltAddress( config ), logProvider, refreshEdgeTimeoutService, edgeTimeToLiveTimeout,
+                edgeRefreshRate );
         life.add( dependencies.satisfyDependency( discoveryService ) );
 
         NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();

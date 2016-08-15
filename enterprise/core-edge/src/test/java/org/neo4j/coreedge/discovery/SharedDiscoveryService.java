@@ -55,7 +55,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     }
 
     @Override
-    public TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress, LogProvider logProvider, DelayedRenewableTimeoutService timeoutService, long edgeTimeToLiveTimeout )
+    public TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress, LogProvider logProvider, DelayedRenewableTimeoutService timeoutService, long edgeTimeToLiveTimeout, long edgeRefreshRate )
     {
         return new SharedDiscoveryEdgeClient( this, boltAddress, logProvider );
     }

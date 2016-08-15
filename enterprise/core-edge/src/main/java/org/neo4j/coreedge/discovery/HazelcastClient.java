@@ -25,14 +25,12 @@ import com.hazelcast.client.HazelcastClientNotActiveException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 
-import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.time.Clock.systemUTC;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -41,19 +39,22 @@ import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.EDGE_SERVER_
 
 class HazelcastClient extends LifecycleAdapter implements TopologyService
 {
+    public static final RenewableTimeoutService.TimeoutName REFRESH_EDGE = () -> "Refresh Edge";
     private final Log log;
     private final AdvertisedSocketAddress boltAddress;
     private final HazelcastConnector connector;
     private final RenewableTimeoutService renewableTimeoutService;
     private HazelcastInstance hazelcastInstance;
     private RenewableTimeoutService.RenewableTimeout edgeRefreshTimer;
-    private long edgeTimeToLiveTimeout;
+    private final long edgeTimeToLiveTimeout;
+    private final long edgeRefreshRate;
 
     HazelcastClient( HazelcastConnector connector, LogProvider logProvider, AdvertisedSocketAddress boltAddress,
-                     RenewableTimeoutService renewableTimeoutService, long edgeTimeToLiveTimeout )
+                     RenewableTimeoutService renewableTimeoutService, long edgeTimeToLiveTimeout, long edgeRefreshRate )
     {
         this.connector = connector;
         this.renewableTimeoutService = renewableTimeoutService;
+        this.edgeRefreshRate = edgeRefreshRate;
         this.log = logProvider.getLog( getClass() );
         this.boltAddress = boltAddress;
         this.edgeTimeToLiveTimeout = edgeTimeToLiveTimeout;
@@ -78,8 +79,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     @Override
     public void start() throws Throwable
     {
-        retry( ( hazelcastInstance ) -> addEdgeServer( hazelcastInstance ) );
-        edgeRefreshTimer = renewableTimeoutService.create( () -> "Refresh Edge", 5_000, 0, timeout -> {
+        edgeRefreshTimer = renewableTimeoutService.create( REFRESH_EDGE, edgeRefreshRate, 0, timeout -> {
             retry( ( hazelcastInstance ) -> addEdgeServer( hazelcastInstance ) );
             timeout.renew();
         } );
@@ -93,7 +93,8 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
 
         log.debug( "Adding edge server into cluster (%s -> %s)", uuid, address  );
 
-        return hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME ).put( uuid, address, edgeTimeToLiveTimeout, MILLISECONDS );
+        return hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
+                .put( uuid, address, edgeTimeToLiveTimeout, MILLISECONDS );
     }
 
     @Override
@@ -107,7 +108,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
                 hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME ).remove( uuid );
                 hazelcastInstance.shutdown();
             }
-            catch ( HazelcastClientNotActiveException e )
+            catch ( HazelcastClientNotActiveException | HazelcastInstanceNotActiveException e )
             {
                 log.info( "Unable to shutdown Hazelcast", e );
             }

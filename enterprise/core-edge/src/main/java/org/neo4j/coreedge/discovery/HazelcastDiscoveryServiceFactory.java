@@ -37,10 +37,12 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
 
     @Override
     public TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress,
-                                                 LogProvider logProvider, DelayedRenewableTimeoutService timeoutService, long edgeTimeToLiveTimeout )
+                                                 LogProvider logProvider, DelayedRenewableTimeoutService timeoutService,
+                                                 long edgeTimeToLiveTimeout, long edgeRefreshRate )
     {
         makeHazelcastSilent( config );
-        return new HazelcastClient( new HazelcastClientConnector( config ), logProvider, boltAddress, timeoutService, edgeTimeToLiveTimeout );
+        return new HazelcastClient( new HazelcastClientConnector( config ), logProvider, boltAddress, timeoutService,
+                edgeTimeToLiveTimeout, edgeRefreshRate );
     }
 
     private static void makeHazelcastSilent( Config config )
