@@ -19,6 +19,10 @@
  */
 package org.neo4j.server;
 
+import com.sun.jersey.api.core.HttpContext;
+import org.apache.commons.configuration.Configuration;
+import org.bouncycastle.operator.OperatorCreationException;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -31,10 +35,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.servlet.Filter;
-
-import com.sun.jersey.api.core.HttpContext;
-import org.apache.commons.configuration.Configuration;
-import org.bouncycastle.operator.OperatorCreationException;
 
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
@@ -89,11 +89,13 @@ import org.neo4j.udc.UsageData;
 import static java.lang.Math.round;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTimeout;
-import static org.neo4j.server.configuration.ServerSettings.*;
+import static org.neo4j.server.configuration.ServerSettings.httpConnector;
+import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
+import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;
+import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_size;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
 
@@ -339,7 +341,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private void setUpTimeoutFilter()
     {
-        if ( getConfig().get( ServerSettings.webserver_limit_execution_time ) == null )
+        if ( getConfig().get( GraphDatabaseSettings.transaction_timeout ) == null )
         {
             return;
         }
@@ -348,11 +350,11 @@ public abstract class AbstractNeoServer implements NeoServer
         if ( guard == null )
         {
             throw new RuntimeException( format("Inconsistent configuration. In order to use %s, you must set %s.",
-                    ServerSettings.webserver_limit_execution_time.name(),
+                    GraphDatabaseSettings.transaction_timeout.name(),
                     GraphDatabaseSettings.execution_guard_enabled.name()) );
         }
 
-        Filter filter = new GuardingRequestFilter( guard, getConfig().get( ServerSettings.webserver_limit_execution_time ) );
+        Filter filter = new GuardingRequestFilter( guard, getConfig().get( GraphDatabaseSettings.transaction_timeout ) );
         webServer.addFilter( filter, "/*" );
     }
 

@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.concurrent.RecentK;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.logging.Log;
@@ -142,7 +143,7 @@ public class RESTApiModule implements ServerModule
 
     private void setupRequestTimeLimit()
     {
-        Long limit = config.get( ServerSettings.webserver_limit_execution_time );
+        Long limit = config.get( GraphDatabaseSettings.transaction_timeout );
         
         if ( limit != null )
         {

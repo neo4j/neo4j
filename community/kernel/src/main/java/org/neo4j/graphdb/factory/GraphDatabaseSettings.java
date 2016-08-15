@@ -203,6 +203,12 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Long> transaction_start_timeout =
             setting( "unsupported.dbms.transaction_start_timeout", DURATION, "1s" );
 
+    @Description("The maximum time interval of a transaction within which it should be completed.")
+    public static final Setting<Long> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, NO_DEFAULT );
+
+    @Description("The maximum time interval of a query within which it should be completed.")
+    public static final Setting<Long> query_timeout = setting( "dbms.query.timeout", DURATION, NO_DEFAULT );
+
     @Description( "The maximum amount of time to wait for running transactions to complete before allowing "
                   + "initiated database shutdown to continue" )
     @Internal
