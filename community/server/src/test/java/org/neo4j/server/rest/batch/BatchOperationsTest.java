@@ -47,7 +47,7 @@ public class BatchOperationsTest {
 
     @Test
     public void testReplaceLocations() throws Exception {
-        Map<Integer,String> map=new HashMap<Integer, String>();
+        Map<Integer,String> map=new HashMap<>();
         map.put(100,"bar");
         assertEquals("foo", ops.replaceLocationPlaceholders("foo", map));
         assertEquals("foo bar", ops.replaceLocationPlaceholders("foo {100}", map));
@@ -107,8 +107,8 @@ public class BatchOperationsTest {
     {
         // When/then
         assertEquals("foo {00000000010001010001001100111000100101010111001101110111}",
-                ops.replaceLocationPlaceholders("foo {00000000010001010001001100111000100101010111001101110111}", Collections.<Integer,String>emptyMap() ));
+                ops.replaceLocationPlaceholders("foo {00000000010001010001001100111000100101010111001101110111}", Collections.emptyMap() ));
         assertEquals("foo {2147483648}",
-                ops.replaceLocationPlaceholders("foo {2147483648}", Collections.<Integer,String>emptyMap() ));
+                ops.replaceLocationPlaceholders("foo {2147483648}", Collections.emptyMap() ));
     }
 }
