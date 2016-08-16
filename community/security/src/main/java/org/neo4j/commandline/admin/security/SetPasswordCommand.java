@@ -37,12 +37,12 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.security.auth.BasicAuthManager;
+import org.neo4j.server.security.auth.BasicAuthManagerFactory;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.PasswordPolicy;
 
 import static java.time.Clock.systemUTC;
-import static org.neo4j.dbms.DatabaseManagementSystemSettings.auth_store_directory;
 
 public class SetPasswordCommand implements AdminCommand
 {
@@ -102,9 +102,8 @@ public class SetPasswordCommand implements AdminCommand
         try
         {
             Config config = loadNeo4jConfig( homeDir, configDir );
-            File authDir = config.get( auth_store_directory );
-            FileUserRepository userRepository =
-                    new FileUserRepository( new File( authDir, "auth" ).toPath(), NullLogProvider.getInstance() );
+            Path userStoreFile = BasicAuthManagerFactory.getUserStoreFile( config );
+            FileUserRepository userRepository = new FileUserRepository( userStoreFile, NullLogProvider.getInstance() );
             userRepository.start();
             PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
             BasicAuthManager authManager = new BasicAuthManager( userRepository, passwordPolicy, systemUTC() );

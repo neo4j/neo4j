@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.security.auth;
 
+import java.io.File;
+import java.nio.file.Path;
+
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -34,6 +38,23 @@ import static java.time.Clock.systemUTC;
 @Service.Implementation( AuthManager.Factory.class )
 public class BasicAuthManagerFactory extends AuthManager.Factory
 {
+    private static final String USER_STORE_FILENAME = "auth";
+
+    public static Path getUserStoreFile( Config config )
+    {
+        // Resolve auth store file names
+        File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
+
+        // Because it contains sensitive information there is a legacy setting to configure
+        // the location of the user store file that we still respect
+        File userStoreFile = config.get( GraphDatabaseSettings.auth_store );
+        if ( userStoreFile == null )
+        {
+            userStoreFile = new File( authStoreDir, USER_STORE_FILENAME );
+        }
+        return userStoreFile.toPath();
+    }
+
     public interface Dependencies
     {
         Config config();
@@ -54,8 +75,8 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
                     "configuration setting auth_enabled=false" );
         }
 
-        final UserRepository userRepository =
-                new FileUserRepository( config.get( GraphDatabaseSettings.auth_store ).toPath(), logProvider );
+        final Path userStoreFile = getUserStoreFile( config );
+        final UserRepository userRepository = new FileUserRepository( userStoreFile, logProvider );
 
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 
