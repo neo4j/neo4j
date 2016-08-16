@@ -321,7 +321,7 @@ public class SetPasswordCommandTest
 
     private File authFile()
     {
-        return new File( new File( new File( testDir.graphDbDir(), "data" ), "dbms" ), "auth.db" );
+        return new File( new File( new File( testDir.graphDbDir(), "data" ), "dbms" ), "auth" );
     }
 
     private User createTestUser(String username, String password) throws IOException, InvalidArgumentsException

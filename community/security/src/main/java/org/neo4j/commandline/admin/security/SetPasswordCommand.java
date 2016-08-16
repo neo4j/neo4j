@@ -104,7 +104,7 @@ public class SetPasswordCommand implements AdminCommand
             Config config = loadNeo4jConfig( homeDir, configDir );
             File authDir = config.get( auth_store_directory );
             FileUserRepository userRepository =
-                    new FileUserRepository( new File( authDir, "auth.db" ).toPath(), NullLogProvider.getInstance() );
+                    new FileUserRepository( new File( authDir, "auth" ).toPath(), NullLogProvider.getInstance() );
             userRepository.start();
             PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
             BasicAuthManager authManager = new BasicAuthManager( userRepository, passwordPolicy, systemUTC() );
