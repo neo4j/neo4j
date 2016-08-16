@@ -31,7 +31,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
@@ -67,14 +66,14 @@ public class IndexProxySetup
     public IndexProxy createPopulatingIndexProxy( final long ruleId,
                                                   final IndexDescriptor descriptor,
                                                   final SchemaIndexProvider.Descriptor providerDescriptor,
-                                                  final boolean constraint,
+                                                  final IndexConfiguration config,
+                                                  final boolean flipToTentative,
                                                   final IndexingService.Monitor monitor ) throws IOException
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
-        final IndexConfiguration config = new IndexConfiguration( constraint );
         final IndexPopulator populator = populatorFromProvider( providerDescriptor, ruleId, descriptor, config,
                 samplingConfig );
 
@@ -103,7 +102,7 @@ public class IndexProxySetup
                 OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
                         descriptor, config, onlineAccessorFromProvider( providerDescriptor, ruleId,
                         config, samplingConfig ), storeView, providerDescriptor );
-                if ( constraint )
+                if ( flipToTentative )
                 {
                     return new TentativeConstraintIndexProxy( flipper, onlineProxy );
                 }

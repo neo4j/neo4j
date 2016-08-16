@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -234,7 +235,16 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
                     break;
                 case POPULATING:
                     // The database was shut down during population, or a crash has occurred, or some other sad thing.
-                    indexProxy = proxySetup.createRecoveringIndexProxy( descriptor, providerDescriptor, constraint );
+                    if ( constraint && indexRule.getOwningConstraint() == null )
+                    {
+                        // don't bother rebuilding if we are going to throw the index away anyhow
+                        indexProxy = proxySetup.createFailedIndexProxy( indexId, descriptor, providerDescriptor, constraint,
+                                failure( "Constraint for index was not committed." ) );
+                    }
+                    else
+                    {
+                        indexProxy = proxySetup.createRecoveringIndexProxy( descriptor, providerDescriptor, constraint );
+                    }
                     break;
                 case FAILED:
                     IndexPopulationFailure failure = failure( provider.getPopulationFailure( indexId ) );
@@ -293,16 +303,15 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
         for ( Map.Entry<Long,RebuildingIndexDescriptor> entry : rebuildingDescriptors.entrySet() )
         {
             long indexId = entry.getKey();
-            RebuildingIndexDescriptor descriptors = entry.getValue();
+            RebuildingIndexDescriptor descriptor = entry.getValue();
 
-            /*
-             * Passing in "false" for unique here may seem surprising, and.. well, yes, it is, I was surprised too.
-             * However, it is actually perfectly safe, because whenever we have constraint indexes here, they will
-             * be in a state where they didn't finish populating, and despite the fact that we re-create them here,
-             * they will get dropped as soon as recovery is completed by the constraint system.
-             */
             IndexProxy proxy = proxySetup.createPopulatingIndexProxy(
-                    indexId, descriptors.getIndexDescriptor(), descriptors.getProviderDescriptor(), false, monitor );
+                    indexId,
+                    descriptor.getIndexDescriptor(),
+                    descriptor.getProviderDescriptor(),
+                    descriptor.getConfiguration(),
+                    false, // never pass through a tentative online state during recovery
+                    monitor );
             proxy.start();
             indexMap.putIndexProxy( indexId, proxy );
         }
@@ -438,7 +447,7 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
             try
             {
                 index = proxySetup.createPopulatingIndexProxy(
-                        ruleId, descriptor, providerDescriptor, constraint, monitor );
+                        ruleId, descriptor, providerDescriptor, new IndexConfiguration( constraint ), constraint, monitor );
                 index.start();
             }
             catch ( IOException e )
