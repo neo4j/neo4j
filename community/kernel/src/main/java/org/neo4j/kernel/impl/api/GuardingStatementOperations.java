@@ -63,227 +63,226 @@ public class GuardingStatementOperations implements
             long endNodeId )
             throws EntityNotFoundException
     {
-        guard.check();
+        guard.check( statement );
         return entityWriteDelegate.relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );
     }
 
     @Override
     public long nodeCreate( KernelStatement statement )
     {
-        guard.check();
+        guard.check( statement );
         return entityWriteDelegate.nodeCreate( statement );
     }
 
     @Override
-    public void nodeDelete( KernelStatement state, long nodeId )
+    public void nodeDelete( KernelStatement statement, long nodeId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
-        guard.check();
-        entityWriteDelegate.nodeDelete( state, nodeId );
+        guard.check( statement );
+        entityWriteDelegate.nodeDelete( statement, nodeId );
     }
 
     @Override
-    public void relationshipDelete( KernelStatement state, long relationshipId )
+    public void relationshipDelete( KernelStatement statement, long relationshipId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
-        guard.check();
-        entityWriteDelegate.relationshipDelete( state, relationshipId );
+        guard.check( statement );
+        entityWriteDelegate.relationshipDelete( statement, relationshipId );
     }
 
     @Override
-    public int nodeDetachDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException,
-            AutoIndexingKernelException, InvalidTransactionTypeKernelException, KernelException
+    public int nodeDetachDelete( KernelStatement statement, long nodeId ) throws KernelException
     {
-        guard.check();
-        return entityWriteDelegate.nodeDetachDelete( state, nodeId );
+        guard.check( statement );
+        return entityWriteDelegate.nodeDetachDelete( statement, nodeId );
     }
 
     @Override
-    public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
+    public boolean nodeAddLabel( KernelStatement statement, long nodeId, int labelId )
             throws ConstraintValidationKernelException, EntityNotFoundException
     {
-        guard.check();
-        return entityWriteDelegate.nodeAddLabel( state, nodeId, labelId );
+        guard.check( statement );
+        return entityWriteDelegate.nodeAddLabel( statement, nodeId, labelId );
     }
 
     @Override
-    public boolean nodeRemoveLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( KernelStatement statement, long nodeId, int labelId ) throws EntityNotFoundException
     {
-        guard.check();
-        return entityWriteDelegate.nodeRemoveLabel( state, nodeId, labelId );
+        guard.check( statement );
+        return entityWriteDelegate.nodeRemoveLabel( statement, nodeId, labelId );
     }
 
     @Override
-    public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
+    public Property nodeSetProperty( KernelStatement statement, long nodeId, DefinedProperty property )
             throws ConstraintValidationKernelException, EntityNotFoundException, AutoIndexingKernelException,
             InvalidTransactionTypeKernelException
     {
-        guard.check();
-        return entityWriteDelegate.nodeSetProperty( state, nodeId, property );
+        guard.check( statement );
+        return entityWriteDelegate.nodeSetProperty( statement, nodeId, property );
     }
 
     @Override
-    public Property relationshipSetProperty( KernelStatement state,
+    public Property relationshipSetProperty( KernelStatement statement,
             long relationshipId,
             DefinedProperty property ) throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
-        guard.check();
-        return entityWriteDelegate.relationshipSetProperty( state, relationshipId, property );
+        guard.check( statement );
+        return entityWriteDelegate.relationshipSetProperty( statement, relationshipId, property );
     }
 
     @Override
-    public Property graphSetProperty( KernelStatement state, DefinedProperty property )
+    public Property graphSetProperty( KernelStatement statement, DefinedProperty property )
     {
-        guard.check();
-        return entityWriteDelegate.graphSetProperty( state, property );
+        guard.check( statement );
+        return entityWriteDelegate.graphSetProperty( statement, property );
     }
 
     @Override
-    public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
+    public Property nodeRemoveProperty( KernelStatement statement, long nodeId, int propertyKeyId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
-        guard.check();
-        return entityWriteDelegate.nodeRemoveProperty( state, nodeId, propertyKeyId );
+        guard.check( statement );
+        return entityWriteDelegate.nodeRemoveProperty( statement, nodeId, propertyKeyId );
     }
 
     @Override
-    public Property relationshipRemoveProperty( KernelStatement state,
+    public Property relationshipRemoveProperty( KernelStatement statement,
             long relationshipId,
             int propertyKeyId ) throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
-        guard.check();
-        return entityWriteDelegate.relationshipRemoveProperty( state, relationshipId, propertyKeyId );
+        guard.check( statement );
+        return entityWriteDelegate.relationshipRemoveProperty( statement, relationshipId, propertyKeyId );
     }
 
     @Override
-    public Property graphRemoveProperty( KernelStatement state, int propertyKeyId )
+    public Property graphRemoveProperty( KernelStatement statement, int propertyKeyId )
     {
-        guard.check();
-        return entityWriteDelegate.graphRemoveProperty( state, propertyKeyId );
+        guard.check( statement );
+        return entityWriteDelegate.graphRemoveProperty( statement, propertyKeyId );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId )
+    public PrimitiveLongIterator nodesGetForLabel( KernelStatement statement, int labelId )
     {
-        guard.check();
-        return entityReadDelegate.nodesGetForLabel( state, labelId );
+        guard.check( statement );
+        return entityReadDelegate.nodesGetForLabel( statement, labelId );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
-        guard.check();
-        return entityReadDelegate.nodesGetFromIndexSeek( state, index, value );
+        guard.check( statement );
+        return entityReadDelegate.nodesGetFromIndexSeek( statement, index, value );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state,
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement statement,
             IndexDescriptor index,
             Number lower, boolean includeLower,
             Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException
 
     {
-        guard.check();
-        return entityReadDelegate.nodesGetFromIndexRangeSeekByNumber( state, index, lower, includeLower, upper,
+        guard.check( statement );
+        return entityReadDelegate.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
                 includeUpper );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement state,
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement statement,
             IndexDescriptor index,
             String lower, boolean includeLower,
             String upper, boolean includeUpper )
             throws IndexNotFoundKernelException
 
     {
-        guard.check();
-        return entityReadDelegate.nodesGetFromIndexRangeSeekByString( state, index, lower, includeLower, upper,
+        guard.check( statement );
+        return entityReadDelegate.nodesGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
                 includeUpper );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement statement, IndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
-        guard.check();
-        return entityReadDelegate.nodesGetFromIndexRangeSeekByPrefix( state, index, prefix );
+        guard.check( statement );
+        return entityReadDelegate.nodesGetFromIndexRangeSeekByPrefix( statement, index, prefix );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )
+    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement statement, IndexDescriptor index )
             throws IndexNotFoundKernelException
     {
-        guard.check();
-        return entityReadDelegate.nodesGetFromIndexScan( state, index );
+        guard.check( statement );
+        return entityReadDelegate.nodesGetFromIndexScan( statement, index );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement statement, IndexDescriptor index,
             String term ) throws IndexNotFoundKernelException
     {
-        guard.check();
-        return entityReadDelegate.nodesGetFromIndexContainsScan( state, index, term );
+        guard.check( statement );
+        return entityReadDelegate.nodesGetFromIndexContainsScan( statement, index, term );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement statement, IndexDescriptor index,
             String suffix ) throws IndexNotFoundKernelException
     {
-        guard.check();
-        return entityReadDelegate.nodesGetFromIndexEndsWithScan( state, index, suffix );
+        guard.check( statement );
+        return entityReadDelegate.nodesGetFromIndexEndsWithScan( statement, index, suffix );
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+    public long nodeGetFromUniqueIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        guard.check();
-        return entityReadDelegate.nodeGetFromUniqueIndexSeek( state, index, value );
+        guard.check( statement );
+        return entityReadDelegate.nodeGetFromUniqueIndexSeek( statement, index, value );
     }
 
     @Override
     public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodesCountIndexed( statement, index, nodeId, value );
     }
 
     @Override
-    public boolean graphHasProperty( KernelStatement state, int propertyKeyId )
+    public boolean graphHasProperty( KernelStatement statement, int propertyKeyId )
     {
-        guard.check();
-        return entityReadDelegate.graphHasProperty( state, propertyKeyId );
+        guard.check( statement );
+        return entityReadDelegate.graphHasProperty( statement, propertyKeyId );
     }
 
     @Override
-    public Object graphGetProperty( KernelStatement state, int propertyKeyId )
+    public Object graphGetProperty( KernelStatement statement, int propertyKeyId )
     {
-        guard.check();
-        return entityReadDelegate.graphGetProperty( state, propertyKeyId );
+        guard.check( statement );
+        return entityReadDelegate.graphGetProperty( statement, propertyKeyId );
     }
 
     @Override
-    public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
+    public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement statement )
     {
-        guard.check();
-        return entityReadDelegate.graphGetPropertyKeys( state );
+        guard.check( statement );
+        return entityReadDelegate.graphGetPropertyKeys( statement );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetAll( KernelStatement state )
+    public PrimitiveLongIterator nodesGetAll( KernelStatement statement )
     {
-        guard.check();
-        return entityReadDelegate.nodesGetAll( state );
+        guard.check( statement );
+        return entityReadDelegate.nodesGetAll( statement );
     }
 
     @Override
-    public PrimitiveLongIterator relationshipsGetAll( KernelStatement state )
+    public PrimitiveLongIterator relationshipsGetAll( KernelStatement statement )
     {
-        guard.check();
-        return entityReadDelegate.relationshipsGetAll( state );
+        guard.check( statement );
+        return entityReadDelegate.relationshipsGetAll( statement );
     }
 
     @Override
@@ -291,21 +290,21 @@ public class GuardingStatementOperations implements
             RelationshipVisitor<EXCEPTION> visitor )
             throws EntityNotFoundException, EXCEPTION
     {
-        guard.check();
+        guard.check( statement );
         entityReadDelegate.relationshipVisit( statement, relId, visitor );
     }
 
     @Override
     public Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodeCursorById( statement, nodeId );
     }
 
     @Override
     public Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodeCursor( statement, nodeId );
     }
 
@@ -313,35 +312,35 @@ public class GuardingStatementOperations implements
     public Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
             throws EntityNotFoundException
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.relationshipCursorById( statement, relId );
     }
 
     @Override
     public Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId )
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.relationshipCursor( statement, relId );
     }
 
     @Override
     public Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement )
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodeCursorGetAll( statement );
     }
 
     @Override
     public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.relationshipCursorGetAll( statement );
     }
 
     @Override
     public Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId )
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodeCursorGetForLabel( statement, labelId );
     }
 
@@ -349,7 +348,7 @@ public class GuardingStatementOperations implements
     public Cursor<NodeItem> nodeCursorGetFromIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodeCursorGetFromIndexSeek( statement, index, value );
     }
 
@@ -357,7 +356,7 @@ public class GuardingStatementOperations implements
     public Cursor<NodeItem> nodeCursorGetFromIndexScan( KernelStatement statement, IndexDescriptor index )
             throws IndexNotFoundKernelException
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodeCursorGetFromIndexScan( statement, index );
     }
 
@@ -368,7 +367,7 @@ public class GuardingStatementOperations implements
             Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
                 includeUpper );
     }
@@ -380,7 +379,7 @@ public class GuardingStatementOperations implements
             String upper, boolean includeUpper )
             throws IndexNotFoundKernelException
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodeCursorGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
                 includeUpper );
     }
@@ -390,7 +389,7 @@ public class GuardingStatementOperations implements
             IndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodeCursorGetFromIndexSeekByPrefix( statement, index, prefix );
     }
 
@@ -399,7 +398,7 @@ public class GuardingStatementOperations implements
             IndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodeCursorGetFromIndexRangeSeekByPrefix( statement, index, prefix );
     }
 
@@ -408,28 +407,28 @@ public class GuardingStatementOperations implements
             IndexDescriptor index,
             Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodeCursorGetFromUniqueIndexSeek( statement, index, value );
     }
 
     @Override
     public long nodesGetCount( KernelStatement statement )
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodesGetCount( statement );
     }
 
     @Override
     public long relationshipsGetCount( KernelStatement statement )
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.relationshipsGetCount( statement );
     }
 
     @Override
     public boolean nodeExists( KernelStatement statement, long id )
     {
-        guard.check();
+        guard.check( statement );
         return entityReadDelegate.nodeExists( statement, id );
     }
 }

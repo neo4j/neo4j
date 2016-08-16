@@ -145,7 +145,7 @@ class TransactionBatchCommitter implements TransactionQueue.Applier
                         "  Transaction: lastCommittedTimestamp:" +
                         informativeTimestamp( txHandle.lastTransactionTimestampWhenStarted() ) +
                         ", lastCommittedTxId:" + txHandle.lastTransactionIdWhenStarted() +
-                        ", localStartTimestamp:" + informativeTimestamp( txHandle.localStartTime() ) );
+                        ", localStartTimestamp:" + informativeTimestamp( txHandle.startTime() ) );
 
                 txHandle.markForTermination( Status.Transaction.Outdated );
             }

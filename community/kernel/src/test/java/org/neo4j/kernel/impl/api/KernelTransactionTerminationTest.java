@@ -373,7 +373,8 @@ public class KernelTransactionTerminationTest
 
         TestKernelTransaction initialize()
         {
-            initialize( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.implicit, AccessMode.Static.FULL );
+            initialize( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.implicit,
+                    AccessMode.Static.FULL, 0L );
             monitor.reset();
             return this;
         }

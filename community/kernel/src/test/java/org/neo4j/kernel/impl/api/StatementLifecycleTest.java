@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
@@ -36,7 +37,7 @@ public class StatementLifecycleTest
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         StorageStatement storageStatement = mock( StorageStatement.class );
-        KernelStatement statement = new KernelStatement( transaction, null, null, storageStatement, new Procedures() );
+        KernelStatement statement = getKernelStatement( transaction, storageStatement );
         statement.acquire();
         verify( storageStatement ).acquire();
         statement.acquire();
@@ -56,7 +57,7 @@ public class StatementLifecycleTest
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         StorageStatement storageStatement = mock( StorageStatement.class );
-        KernelStatement statement = new KernelStatement( transaction, null, null, storageStatement, new Procedures() );
+        KernelStatement statement = getKernelStatement( transaction, storageStatement );
         statement.acquire();
 
         // when
@@ -64,5 +65,12 @@ public class StatementLifecycleTest
 
         // then
         verify( storageStatement ).release();
+    }
+
+    private KernelStatement getKernelStatement( KernelTransactionImplementation transaction,
+            StorageStatement storageStatement )
+    {
+        return new KernelStatement( transaction, null, null, storageStatement, new Procedures(),
+                Clock.SYSTEM_CLOCK);
     }
 }

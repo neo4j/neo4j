@@ -320,7 +320,13 @@ public class ResetFuzzTest
         }
 
         @Override
-        public long localStartTime()
+        public long startTime()
+        {
+            return 0;
+        }
+
+        @Override
+        public long timeout()
         {
             return 0;
         }

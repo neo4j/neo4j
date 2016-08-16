@@ -155,6 +155,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private boolean failure, success;
     private volatile Status terminationReason;
     private long startTimeMillis;
+    private long timeoutMillis;
     private long lastTransactionIdWhenStarted;
     private volatile long lastTransactionTimestampWhenStarted;
     private TransactionEvent transactionEvent;
@@ -201,7 +202,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clock = clock;
         this.tracer = tracer;
         this.storageStatement = storeLayer.newStatement();
-        this.currentStatement = new KernelStatement( this, this, operations, storageStatement, procedures );
+        this.currentStatement = new KernelStatement( this, this, operations, storageStatement, procedures, clock );
         this.txTerminationAwareLocks = txTerminationAwareLocks;
     }
 
@@ -209,10 +210,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
     public KernelTransactionImplementation initialize(
-            long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type, AccessMode accessMode )
+            long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type, AccessMode
+            accessMode, long timeoutMillis )
     {
         this.type = type;
         this.statementLocks = statementLocks;
+        this.timeoutMillis = timeoutMillis;
         this.terminationReason = null;
         this.closing = closed = failure = success = beforeHookInvoked = false;
         this.writeState = TransactionWriteState.NONE;
@@ -234,9 +237,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public long localStartTime()
+    public long startTime()
     {
         return startTimeMillis;
+    }
+
+    @Override
+    public long timeout()
+    {
+        return timeoutMillis;
     }
 
     @Override

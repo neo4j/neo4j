@@ -99,7 +99,7 @@ public class KernelTransactionTestBase
         KernelTransactionImplementation tx = newNotInitializedTransaction( txTerminationAwareLocks );
         StatementLocks statementLocks = new SimpleStatementLocks( locks );
         tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, statementLocks, Type.implicit,
-                accessMode );
+                accessMode, 0L );
         return tx;
     }
 

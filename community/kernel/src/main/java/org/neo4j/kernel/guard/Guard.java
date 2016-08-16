@@ -19,114 +19,64 @@
  */
 package org.neo4j.kernel.guard;
 
-import org.neo4j.logging.Log;
+import java.util.function.Supplier;
 
-import static java.lang.System.currentTimeMillis;
+import org.neo4j.helpers.Clock;
+import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.logging.Log;
 
 public class Guard
 {
-    private final ThreadLocal<GuardInternal> threadLocal = new ThreadLocal<>();
-
     private final Log log;
+    private Clock clock;
 
-    public Guard( final Log log )
+    public Guard( final Log log, Clock clock )
     {
         this.log = log;
+        this.clock = clock;
     }
 
-    public void check()
+    public void check( KernelStatement statement)
     {
-        GuardInternal guardInternal = currentGuard();
-        if ( guardInternal != null )
+        check( maxStatementCompletionTimeSupplier( statement ), "Statement timeout." );
+        check( statement.getTransaction() );
+    }
+
+    public void check (KernelTransactionImplementation transaction)
+    {
+        check( maxTransactionCompletionTimeSupplier( transaction ), "Transaction timeout." );
+    }
+
+    private void check( Supplier<Long> completionTimeSupplier, String timeoutDescription )
+    {
+        long now = clock.currentTimeMillis();
+        long transactionCompletionTime = completionTimeSupplier.get();
+        if ( transactionCompletionTime < now )
         {
-            guardInternal.check();
+            final long overtime = now - transactionCompletionTime;
+            log.warn( timeoutDescription + " ( Overtime: " + overtime + " ms)." );
+            throw new GuardTimeoutException( overtime );
         }
     }
 
-    public <T extends GuardInternal> T currentGuard()
+    private static Supplier<Long> maxTransactionCompletionTimeSupplier( KernelTransactionImplementation transaction )
     {
-        return (T) threadLocal.get();
+        return () -> getMaxTransactionCompletionTime( transaction );
     }
 
-    public void startOperationsCount( final long maxOps )
+    private static Supplier<Long> maxStatementCompletionTimeSupplier( KernelStatement statement )
     {
-        start( new OperationsCount( maxOps ) );
+        return () -> getMaxStatementCompletionTime( statement );
     }
 
-    public void startTimeout( final long validForInMilliSeconds )
+    private static long getMaxStatementCompletionTime( KernelStatement statement )
     {
-        final Timeout timeout = new Timeout( validForInMilliSeconds + currentTimeMillis() );
-        start( timeout );
+        return statement.startTime() + statement.timeout();
     }
 
-    public void start( final GuardInternal guard )
+    private static long getMaxTransactionCompletionTime( KernelTransactionImplementation transaction )
     {
-        threadLocal.set( guard );
-    }
-
-    public <T extends GuardInternal> T stop()
-    {
-        T guardInternal = Guard.this.<T>currentGuard();
-        if ( guardInternal != null )
-        {
-            threadLocal.remove();
-        }
-        return guardInternal;
-    }
-
-    public interface GuardInternal
-    {
-        void check();
-    }
-
-    public class OperationsCount implements GuardInternal
-    {
-        private final long max;
-        private long opsCount = 0;
-
-        private OperationsCount( final long max )
-        {
-            this.max = max;
-        }
-
-        @Override
-        public void check()
-        {
-            opsCount++;
-
-            if ( max < opsCount )
-            {
-                log.warn( "guard-timeout: node-ops: more than " + max );
-                throw new GuardOperationsCountException( opsCount );
-            }
-        }
-
-        public long getOpsCount()
-        {
-            return opsCount;
-        }
-    }
-
-    public class Timeout implements GuardInternal
-    {
-        private final long valid;
-        private final long start;
-
-        private Timeout( final long valid )
-        {
-            this.valid = valid;
-            this.start = currentTimeMillis();
-        }
-
-        @Override
-        public void check()
-        {
-            if ( valid < currentTimeMillis() )
-            {
-                final long overtime = currentTimeMillis() - valid;
-                log.warn( "guard-timeout:" + (valid - start) + "(+" + overtime + ")ms" );
-                throw new GuardTimeoutException( overtime );
-            }
-        }
+        return transaction.startTime() + transaction.timeout();
     }
 }

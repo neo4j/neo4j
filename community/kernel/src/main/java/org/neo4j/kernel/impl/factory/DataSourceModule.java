@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -148,9 +149,7 @@ public class DataSourceModule
 
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
 
-        Boolean isGuardEnabled = config.get( GraphDatabaseSettings.execution_guard_enabled );
-        Guard guard =
-                isGuardEnabled ? deps.satisfyDependency( new Guard( logging.getInternalLog( Guard.class ) ) ) : null;
+        Guard guard = buildGuard( config, logging );
 
         kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 
@@ -249,6 +248,12 @@ public class DataSourceModule
 
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
+    }
+
+    private Guard buildGuard( Config config, LogService logging )
+    {
+        Boolean isGuardEnabled = config.get( GraphDatabaseSettings.execution_guard_enabled );
+        return isGuardEnabled ? new Guard( logging.getInternalLog( Guard.class ), Clock.SYSTEM_CLOCK ) : null;
     }
 
     protected RelationshipProxy.RelationshipActions createRelationshipActions(
