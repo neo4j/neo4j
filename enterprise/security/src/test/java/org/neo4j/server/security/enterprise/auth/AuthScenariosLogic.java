@@ -19,7 +19,11 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.*;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
@@ -27,18 +31,12 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.A
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
 
-/*
-    This class is so far missing scenarios related to killing transactions and sessions. These are
-        Delete user scenario 4
-        Role management scenario 5 and 6
-        Suspend user scenario 3
-
-    Further, the scenario on calling procedures has been omitted for the time being
-
-    -- johan teleman
- */
 public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
 {
+
+    @Rule
+    public final ThreadingRule threading = new ThreadingRule();
+
     //---------- User creation -----------
 
     @Test
@@ -220,16 +218,19 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
     User Henrik logs in with correct password → ok
     Admin deletes user Henrik
     Henrik starts transaction with read query → fail
+    Henrik tries to login again → fail
     */
     @Test
     public void userDeletion4() throws Throwable
     {
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
-        S subject = neo.login( "Henrik", "bar" );
-        neo.assertAuthenticated( subject );
+        S henrik = neo.login( "Henrik", "bar" );
+        neo.assertAuthenticated( henrik );
         assertEmpty( adminSubject, "CALL dbms.deleteUser('Henrik')" );
-        testSessionKilled( subject );
+        testSessionKilled( henrik );
+        henrik = neo.login( "Henrik", "bar" );
+        neo.assertInitFailed( henrik );
     }
 
     //---------- Role management -----------
@@ -331,6 +332,73 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + PUBLISHER + "')" );
         testFailWrite( subject );
         testFailRead( subject, 4 );
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Admin adds user Henrik to role Publisher
+    Henrik logs in with correct password
+    Henrik starts transaction with long running writing query Q
+    Admin removes user Henrik from role Publisher (while Q still running)
+    Q finishes and transaction is committed → ok
+    Henrik starts new transaction with write query → permission denied
+     */
+    @Test
+    public void roleManagement5() throws Throwable
+    {
+        assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
+        assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
+        S henrik = neo.login( "Henrik", "bar" );
+        neo.assertAuthenticated( henrik );
+
+        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo );
+        write.execute( threading, henrik );
+        write.barrier.await();
+
+        assertEmpty( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + PUBLISHER + "')" );
+
+        write.closeAndAssertException( AuthorizationViolationException.class,
+                "Write operations are not allowed for 'Henrik'." );
+        testFailWrite( henrik );
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Admin adds user Henrik to role Publisher
+    Henrik logs in with correct password
+    Henrik starts transaction with long running writing query Q with periodic commit
+    Q commits a couple of times → ok
+    Admin adds user Henrik to role Reader
+    Admin removes Henrik from role Publisher (while Q still running)
+    Q commits again → permission denied, kill rest of query??? ok???
+    Henrik starts transaction with write query → permission denied
+     */
+    @Test
+    public void roleManagement6() throws Throwable
+    {
+        assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
+        assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
+        S henrik = neo.login( "Henrik", "bar" );
+        neo.assertAuthenticated( henrik );
+
+        ThreadedTransactionPeriodicCommit<S> perCommit = new ThreadedTransactionPeriodicCommit<>( neo );
+        perCommit.execute( threading, henrik );
+        perCommit.barrier.await();
+
+        // Would prefer something more robust here, but could not get it to work
+        // This test might turn flaky if committing the initial lines takes longer than 100 ms
+        // Ideally we would be polling for the correct number of nodes, given some timeout
+        Thread.sleep( 100 );
+
+        assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
+        assertEmpty( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + PUBLISHER + "')" );
+
+        perCommit.closeAndAssertError( "Write operations are not allowed for 'Henrik'." );
+
+        testFailWrite( henrik );
+
+        assertSuccess( henrik, "MATCH (n) RETURN n.name as name",
+                r -> assertKeyIs( r, "name", "node0", "node1", "node2", "line1", "line2" ) );
     }
 
     //---------- User suspension -----------
@@ -495,6 +563,44 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertSuccess( adminSubject,
                 "CALL dbms.listUsersForRole('" + PUBLISHER + "') YIELD value as users RETURN users",
                 r -> assertKeyIs( r, "users", "Henrik", "Craig", "writeSubject" ) );
+    }
+
+    //---------- calling procedures -----------
+
+    /*
+    Admin creates user Henrik with password bar
+    Admin adds user Henrik to role Publisher
+    Henrik logs in with correct password → ok
+    Henrik calls procedure marked as read-only → ok
+    Henrik calls procedure marked as read-write → ok
+    Admin adds user Henrik to role Reader
+    Henrik calls procedure marked as read-only → ok
+    Henrik calls procedure marked as read-write → ok
+    Admin removes Henrik from role Publisher
+    Henrik calls procedure marked as read-only → ok
+    Henrik calls procedure marked as read-write → permission denied
+     */
+    @Test
+    public void callProcedures1() throws Throwable
+    {
+        assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
+        assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
+        S henrik = neo.login( "Henrik", "bar" );
+        neo.assertAuthenticated( henrik );
+
+        assertEmpty( henrik, "CALL test.createNode()" );
+        assertSuccess( henrik, "CALL test.numNodes() YIELD count as count RETURN count",
+                 r -> assertKeyIs( r, "count", "4" ) );
+
+        assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
+
+        assertEmpty( henrik, "CALL test.createNode()" );
+        assertSuccess( henrik, "CALL test.numNodes() YIELD count as count RETURN count",
+                r -> assertKeyIs( r, "count", "5" ) );
+
+        assertEmpty( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + PUBLISHER + "')" );
+
+        assertFail( henrik, "CALL test.createNode()", "Write operations are not allowed for 'Henrik'." );
     }
 
     //---------- change password -----------

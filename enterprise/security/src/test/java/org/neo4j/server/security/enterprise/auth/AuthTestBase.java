@@ -31,8 +31,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.logging.Log;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.either;
@@ -43,6 +48,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.procedure.Procedure.Mode.WRITE;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
@@ -88,6 +94,8 @@ abstract class AuthTestBase<S>
     {
         Neo4jWithSocket.cleanupTemporaryTestFiles();
         neo = setUpNeoServer();
+        neo.getGraph().getDependencyResolver().resolveDependency( Procedures.class )
+                .register( ClassWithProcedures.class );
         userManager = neo.getManager();
 
         userManager.newUser( "noneSubject", "abc", false );
@@ -108,7 +116,7 @@ abstract class AuthTestBase<S>
         writeSubject = neo.login( "writeSubject", "abc" );
         schemaSubject = neo.login( "schemaSubject", "abc" );
         adminSubject = neo.login( "adminSubject", "abc" );
-        executeQuery( writeSubject, "UNWIND range(0,2) AS number CREATE (:Node {number:number})" );
+        executeQuery( writeSubject, "UNWIND range(0,2) AS number CREATE (:Node {number:number, name:'node'+number})" );
     }
 
     protected abstract NeoInteractionLevel<S> setUpNeoServer() throws Throwable;
@@ -136,8 +144,8 @@ abstract class AuthTestBase<S>
     {
         assertSuccess( subject, "MATCH (n) RETURN count(n) as count", r -> {
             List<Object> result = r.stream().map( s -> s.get( "count" ) ).collect( Collectors.toList() );
-            assertTrue( result.size() == 1 );
-            assertTrue( String.valueOf( count ).equals( String.valueOf( result.get( 0 ) ) ) );
+            assertThat( result.size(), equalTo( 1 ) );
+            assertThat( String.valueOf( result.get( 0 ) ), equalTo( String.valueOf( count ) ) );
         } );
     }
 
@@ -352,8 +360,36 @@ abstract class AuthTestBase<S>
         }
     }
 
-    void assertNoError( String errMsg )
+    public static class CountResult
     {
-        assertTrue( "Should not give error", errMsg.equals( "" ) );
+        public final String count;
+
+        CountResult( Long count )
+        {
+            this.count = ""+count;
+        }
+    }
+
+    public static class ClassWithProcedures
+    {
+        @Context
+        public GraphDatabaseService db;
+
+        @Context
+        public Log log;
+
+        @Procedure( name = "test.numNodes" )
+        public Stream<CountResult> numNodes()
+        {
+            Long nNodes = db.getAllNodes().stream().count();
+            return Stream.of( new CountResult( nNodes ) );
+        }
+
+        @Procedure( name = "test.createNode", mode = WRITE )
+        public void createNode()
+        {
+            db.createNode();
+            return;
+        }
     }
 }

@@ -21,22 +21,29 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.junit.BeforeClass;
 import org.junit.Rule;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
-import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.SuppressOutput;
 
 public class BoltProceduresIT extends AuthProceduresTestLogic<BoltInteraction.BoltSubject>
 {
+    private Neo4jWithSocket server = new Neo4jWithSocket( getTestGraphDatabaseFactory(),
+            settings -> {
+                settings.put( GraphDatabaseSettings.auth_enabled, "true" );
+            } );
+
+    @Rule
+    public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( server );
+
     @BeforeClass
     public static void beforeClass() throws IOException
     {
@@ -46,9 +53,6 @@ public class BoltProceduresIT extends AuthProceduresTestLogic<BoltInteraction.Bo
             Files.delete( IMPERMANENT_DB_ROLES_PATH );
         }
     }
-
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getTestGraphDatabaseFactory(), getSettingsFunction() );
 
     public BoltProceduresIT()
     {
@@ -60,13 +64,6 @@ public class BoltProceduresIT extends AuthProceduresTestLogic<BoltInteraction.Bo
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
         return new TestEnterpriseGraphDatabaseFactory();
-    }
-
-    protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
-    {
-        return settings -> {
-            settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-        };
     }
 
     @Override

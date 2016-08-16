@@ -29,6 +29,8 @@ import org.neo4j.test.NamedFunction;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static junit.framework.TestCase.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertTrue;
 
 public class ThreadedTransactionCreate<S>
@@ -87,6 +89,18 @@ public class ThreadedTransactionCreate<S>
         }
         assertTrue( "Expected TransactionTerminatedException in ThreadedCreate, got '"+exceptionInOtherThread.getMessage()
                 +"'", exceptionInOtherThread instanceof TransactionTerminatedException );
+    }
+
+    void closeAndAssertException( Class exceptionType, String msg ) throws Throwable
+    {
+        Throwable exceptionInOtherThread = join();
+        if ( exceptionInOtherThread == null )
+        {
+            fail( "Expected " + exceptionType + " in ThreadedCreate, but no exception was raised" );
+        }
+        assertTrue( "Expected " + exceptionType + " in ThreadedCreate, got " + exceptionInOtherThread.getClass() + "",
+                 exceptionType.isInstance( exceptionInOtherThread ) );
+        assertThat( exceptionInOtherThread.getMessage(), equalTo( msg ) );
     }
 
     private Throwable join() throws ExecutionException, InterruptedException
