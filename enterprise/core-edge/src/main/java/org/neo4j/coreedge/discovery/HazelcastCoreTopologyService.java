@@ -32,9 +32,9 @@ import com.hazelcast.instance.GroupProperties;
 
 import java.util.List;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -138,7 +138,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         c.setProperty( GroupProperties.PROP_LOGGING_TYPE, "none" );
 
         c.setNetworkConfig( networkConfig );
-        c.getGroupConfig().setName( config.get( CoreEdgeClusterSettings.cluster_name ) );
 
         MemberAttributeConfig memberAttributeConfig = HazelcastClusterTopology.buildMemberAttributes( myself, config );
 

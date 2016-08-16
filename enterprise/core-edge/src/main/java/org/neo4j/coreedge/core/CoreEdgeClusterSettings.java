@@ -29,7 +29,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.kernel.configuration.Internal;
 
-import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
@@ -37,9 +36,7 @@ import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.MANDATORY;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.list;
-import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
@@ -117,10 +114,6 @@ public class CoreEdgeClusterSettings
     public static final Setting<Integer> expected_core_cluster_size =
             setting( "core_edge.expected_core_cluster_size", INTEGER, "3" );
 
-    @Description("Timeout for taking remote (write) locks on slaves.")
-    public static final Setting<Long> lock_read_timeout =
-            setting( "core_edge.lock_read_timeout", DURATION, "20s" );
-
     @Description("Network interface and port for the transaction shipping server to listen on.")
     public static final Setting<ListenSocketAddress> transaction_listen_address =
             setting( "core_edge.transaction_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:6000" );
@@ -137,7 +130,7 @@ public class CoreEdgeClusterSettings
     public static final Setting<AdvertisedSocketAddress> raft_advertised_address =
             setting( "core_edge.raft_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7000" );
 
-    @Description("Host and port to bind the cluster management communication.")
+    @Description("Host and port to bind the cluster member discovery management communication.")
     public static final Setting<ListenSocketAddress> discovery_listen_address =
             setting( "core_edge.discovery_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5000" );
 
@@ -213,11 +206,6 @@ public class CoreEdgeClusterSettings
 
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Long> pull_interval = setting( "core_edge.pull_interval", DURATION, "1s" );
-
-    @Description( "The name of the core cluster." )
-    @Internal
-    public static final Setting<String> cluster_name = setting( "core_edge.cluster_name", STRING, "core-cluster",
-            illegalValueMessage( "must be a valid cluster name", matches( ANY ) ) );
 
     @Description("Throttle limit for logging unknown cluster member address")
     public static final Setting<Long> unknown_address_logging_throttle =
