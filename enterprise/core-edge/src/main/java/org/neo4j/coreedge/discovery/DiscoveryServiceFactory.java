@@ -27,7 +27,7 @@ import org.neo4j.logging.LogProvider;
 
 public interface DiscoveryServiceFactory
 {
-    CoreTopologyService coreDiscoveryService( Config config, MemberId myself, LogProvider logProvider );
+    CoreTopologyService coreTopologyService( Config config, MemberId myself, LogProvider logProvider );
 
     TopologyService edgeDiscoveryService( Config config, AdvertisedSocketAddress boltAddress, LogProvider logProvider, DelayedRenewableTimeoutService timeoutService, long edgeTimeToLiveTimeout, long edgeRefreshRate );
 }

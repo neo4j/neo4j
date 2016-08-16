@@ -30,7 +30,7 @@ import org.neo4j.coreedge.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
 import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenState;
 import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
-import org.neo4j.coreedge.core.state.storage.MemberIdStorage;
+import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.core.state.storage.StateMarshal;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.MemberId.Marshal;
@@ -42,7 +42,7 @@ import org.neo4j.logging.NullLogProvider;
 import static org.neo4j.coreedge.ReplicationModule.LAST_FLUSHED_NAME;
 import static org.neo4j.coreedge.ReplicationModule.SESSION_TRACKER_NAME;
 import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
-import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CORE_MEMBER_ID_NAME;
+import static org.neo4j.coreedge.core.IdentityModule.CORE_MEMBER_ID_NAME;
 import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_MEMBERSHIP_NAME;
 import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_TERM_NAME;
 import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_VOTE_NAME;
@@ -84,7 +84,7 @@ public class DumpClusterState
 
     void dump() throws IOException
     {
-        MemberIdStorage memberIdStorage = new MemberIdStorage( fs, clusterStateDirectory, CORE_MEMBER_ID_NAME,
+        SimpleStorage<MemberId> memberIdStorage = new SimpleStorage<>( fs, clusterStateDirectory, CORE_MEMBER_ID_NAME,
                 new Marshal(), NullLogProvider.getInstance() );
         if ( memberIdStorage.exists() )
         {

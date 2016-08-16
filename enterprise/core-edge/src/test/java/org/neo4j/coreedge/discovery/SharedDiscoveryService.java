@@ -49,7 +49,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     private final Condition enoughMembers = lock.newCondition();
 
     @Override
-    public CoreTopologyService coreDiscoveryService( Config config, MemberId myself, LogProvider logProvider )
+    public CoreTopologyService coreTopologyService( Config config, MemberId myself, LogProvider logProvider )
     {
         return new SharedDiscoveryCoreClient( this, myself, logProvider, config );
     }

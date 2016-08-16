@@ -35,8 +35,8 @@ import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.server.CoreServerModule;
+import org.neo4j.coreedge.core.state.ClusteringModule;
 import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
-import org.neo4j.coreedge.core.state.storage.MemberIdStorage;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.procedures.AcquireEndpointsProcedure;
@@ -95,10 +95,9 @@ import org.neo4j.udc.UsageData;
 public class EnterpriseCoreEditionModule extends EditionModule
 {
     public static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
-    public static final String CORE_MEMBER_ID_NAME = "core-member-id";
 
     private final ConsensusModule consensusModule;
-    private final CoreTopologyService discoveryService;
+    private final CoreTopologyService topologyService;
     private final LogProvider logProvider;
 
     public enum RaftLogImplementation
@@ -111,9 +110,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
     {
         try
         {
-            procedures.register( new DiscoverEndpointAcquisitionServersProcedure( discoveryService, logProvider ) );
-            procedures.register( new AcquireEndpointsProcedure( discoveryService, consensusModule.raftMachine(), logProvider ) );
-            procedures.register( new ClusterOverviewProcedure( discoveryService, consensusModule.raftMachine(), logProvider ) );
+            procedures.register( new DiscoverEndpointAcquisitionServersProcedure( topologyService, logProvider ) );
+            procedures.register( new AcquireEndpointsProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
+            procedures.register( new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
             procedures.register( new CoreRoleProcedure( consensusModule.raftMachine()) );
         }
         catch ( ProcedureException e )
@@ -147,20 +146,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         life.add( localDatabase );
 
-        MemberIdStorage memberIdStorage = new MemberIdStorage( fileSystem, clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberId.Marshal(), logProvider );
-        MemberId myself;
-        try
-        {
-            myself = memberIdStorage.readState();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory );
 
-        discoveryService = discoveryServiceFactory.coreDiscoveryService( config, myself, logProvider );
-
-        life.add( dependencies.satisfyDependency( discoveryService ) );
+        ClusteringModule clusteringModule = new ClusteringModule( discoveryServiceFactory, identityModule.myself(), platformModule );
+        topologyService = clusteringModule.topologyService();
 
         long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
@@ -170,20 +159,20 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 logProvider, platformModule.monitors, maxQueueSize );
         life.add( raftSender );
 
-        final MessageLogger<MemberId> messageLogger = createMessageLogger( config, life, myself );
+        final MessageLogger<MemberId> messageLogger = createMessageLogger( config, life, identityModule.myself() );
 
         Outbound<MemberId,RaftMessages.RaftMessage> raftOutbound = new LoggingOutbound<>(
-                new RaftOutbound( discoveryService, raftSender, localDatabase, logProvider, logThresholdMillis ),
-                myself, messageLogger );
+                new RaftOutbound( topologyService, raftSender, localDatabase, logProvider, logThresholdMillis ),
+                identityModule.myself(), messageLogger );
 
-        consensusModule = new ConsensusModule( myself, platformModule, raftOutbound, clusterStateDirectory, discoveryService );
+        consensusModule = new ConsensusModule( identityModule.myself(), platformModule, raftOutbound, clusterStateDirectory, topologyService );
 
         dependencies.satisfyDependency( consensusModule.raftMachine() );
 
-        ReplicationModule replicationModule = new ReplicationModule( myself, platformModule, config, consensusModule,
+        ReplicationModule replicationModule = new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule,
                 raftOutbound, clusterStateDirectory, fileSystem, logProvider );
 
-        CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( myself, platformModule, clusterStateDirectory, config,
+        CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(), platformModule, clusterStateDirectory, config,
                 replicationModule.getReplicator(), consensusModule.raftMachine(), dependencies, localDatabase );
 
         this.idGeneratorFactory = coreStateMachinesModule.idGeneratorFactory;
@@ -194,8 +183,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.lockManager = coreStateMachinesModule.lockManager;
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
 
-        CoreServerModule coreServerModule = new CoreServerModule( myself, platformModule, consensusModule,
-                coreStateMachinesModule, replicationModule, clusterStateDirectory, discoveryService, localDatabase,
+        CoreServerModule coreServerModule = new CoreServerModule( identityModule.myself(), platformModule, consensusModule,
+                coreStateMachinesModule, replicationModule, clusterStateDirectory, topologyService, localDatabase,
                 messageLogger );
 
         editionInvariants( platformModule, dependencies, config, logging, life );

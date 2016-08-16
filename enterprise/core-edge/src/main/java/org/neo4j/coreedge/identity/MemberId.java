@@ -81,7 +81,7 @@ public class MemberId
      * │leastSignificantBits   8 bytes│
      * └──────────────────────────────┘
      */
-    public static class MemberIdMarshal extends SafeStateMarshal<MemberId>
+    public static class Marshal extends SafeStateMarshal<MemberId>
     {
         @Override
         public void marshal( MemberId memberId, WritableChannel channel ) throws IOException
