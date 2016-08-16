@@ -143,8 +143,8 @@ public class ConsensusModule
             throw new RuntimeException( e );
         }
 
-        long electionTimeout1 = config.get( CoreEdgeClusterSettings.leader_election_timeout );
-        long heartbeatInterval = electionTimeout1 / 3;
+        long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
+        long heartbeatInterval = electionTimeout / 3;
 
         Integer expectedClusterSize = config.get( CoreEdgeClusterSettings.expected_core_cluster_size );
 
@@ -154,7 +154,7 @@ public class ConsensusModule
                 new SendToMyself( myself, loggingOutbound );
 
         raftMembershipManager = new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
-               expectedClusterSize, electionTimeout1, systemUTC(),
+               expectedClusterSize, electionTimeout, systemUTC(),
                config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage
         );
 
@@ -162,14 +162,14 @@ public class ConsensusModule
 
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( loggingOutbound, logProvider, raftLog, systemUTC(),
-                        myself, raftMembershipManager, electionTimeout1,
+                        myself, raftMembershipManager, electionTimeout,
                         config.get( CoreEdgeClusterSettings.catchup_batch_size ),
                         config.get( CoreEdgeClusterSettings.log_shipping_max_lag ), inFlightMap );
 
         raftTimeoutService = new DelayedRenewableTimeoutService( systemUTC(), logProvider );
 
         raftMachine =
-                new RaftMachine( myself, termState, voteState, raftLog, electionTimeout1,
+                new RaftMachine( myself, termState, voteState, raftLog, electionTimeout,
                         heartbeatInterval, raftTimeoutService, loggingOutbound, logProvider, raftMembershipManager,
                         logShipping, inFlightMap, platformModule.monitors );
 
