@@ -24,13 +24,13 @@ import io.netty.channel.ChannelHandlerContext;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
-import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.messaging.NetworkFlushableByteBuf;
-import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
+import org.neo4j.coreedge.messaging.marshalling.storeid.StoreIdMarshal;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.coreedge.catchup.CatchupServerProtocol.State;

@@ -29,7 +29,7 @@ import java.util.List;
 
 import org.neo4j.coreedge.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.coreedge.messaging.marsalling.StringMarshal;
+import org.neo4j.coreedge.messaging.marshalling.StringMarshal;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;

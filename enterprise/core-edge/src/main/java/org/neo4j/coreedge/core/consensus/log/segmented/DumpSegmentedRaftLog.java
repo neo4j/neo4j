@@ -27,7 +27,7 @@ import java.io.PrintStream;
 import org.neo4j.coreedge.core.consensus.log.EntryRecord;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
-import org.neo4j.coreedge.messaging.marsalling.ChannelMarshal;
+import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;

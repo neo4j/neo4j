@@ -27,7 +27,7 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import org.neo4j.com.CommittedTransactionSerializer;
 import org.neo4j.coreedge.messaging.NetworkFlushableByteBuf;
-import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
+import org.neo4j.coreedge.messaging.marshalling.storeid.StoreIdMarshal;
 
 public class TxPullResponseEncoder extends MessageToMessageEncoder<TxPullResponse>
 {

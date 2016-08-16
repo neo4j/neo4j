@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.neo4j.coreedge.messaging.marsalling.ChannelMarshal;
+import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
 import org.neo4j.coreedge.core.state.storage.SafeStateMarshal;
 import org.neo4j.coreedge.identity.MemberId;

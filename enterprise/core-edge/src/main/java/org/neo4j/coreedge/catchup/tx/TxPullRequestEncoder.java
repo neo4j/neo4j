@@ -26,7 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
 import org.neo4j.coreedge.messaging.NetworkFlushableChannelNetty4;
-import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
+import org.neo4j.coreedge.messaging.marshalling.storeid.StoreIdMarshal;
 
 public class TxPullRequestEncoder extends MessageToMessageEncoder<TxPullRequest>
 {
