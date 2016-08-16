@@ -69,7 +69,8 @@ public abstract class DiskLayerTest
         db = (GraphDatabaseAPI) createGraphDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         this.disk = resolver.resolveDependency( StorageEngine.class ).storeReadLayer();
-        this.state = new KernelStatement( null, null, null, disk.newStatement(), new Procedures(), Clock.SYSTEM_CLOCK );
+        this.state = new KernelStatement( null, null, null, disk.newStatement(), new Procedures(), Clock.SYSTEM_CLOCK,
+                1L );
     }
 
     protected GraphDatabaseService createGraphDatabase()

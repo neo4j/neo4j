@@ -174,19 +174,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Lock terminationReleaseLock = new ReentrantLock();
 
     public KernelTransactionImplementation( StatementOperationParts operations,
-                                            SchemaWriteGuard schemaWriteGuard,
-                                            TransactionHooks hooks,
-                                            ConstraintIndexCreator constraintIndexCreator,
-                                            Procedures procedures,
-                                            TransactionHeaderInformationFactory headerInformationFactory,
-                                            TransactionCommitProcess commitProcess,
-                                            TransactionMonitor transactionMonitor,
-                                            Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier,
-                                            Pool<KernelTransactionImplementation> pool,
-                                            Clock clock,
-                                            TransactionTracer tracer,
-                                            StorageEngine storageEngine,
-                                            boolean txTerminationAwareLocks )
+            SchemaWriteGuard schemaWriteGuard,
+            TransactionHooks hooks,
+            ConstraintIndexCreator constraintIndexCreator,
+            Procedures procedures,
+            TransactionHeaderInformationFactory headerInformationFactory,
+            TransactionCommitProcess commitProcess,
+            TransactionMonitor transactionMonitor,
+            Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier,
+            Pool<KernelTransactionImplementation> pool,
+            Clock clock,
+            TransactionTracer tracer,
+            StorageEngine storageEngine,
+            boolean txTerminationAwareLocks, long statementTimeout )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -202,7 +202,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clock = clock;
         this.tracer = tracer;
         this.storageStatement = storeLayer.newStatement();
-        this.currentStatement = new KernelStatement( this, this, operations, storageStatement, procedures, clock );
+        this.currentStatement = new KernelStatement( this, this, operations, storageStatement, procedures, clock, statementTimeout );
         this.txTerminationAwareLocks = txTerminationAwareLocks;
     }
 

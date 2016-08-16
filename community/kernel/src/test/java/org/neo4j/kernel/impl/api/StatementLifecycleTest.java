@@ -71,6 +71,6 @@ public class StatementLifecycleTest
             StorageStatement storageStatement )
     {
         return new KernelStatement( transaction, null, null, storageStatement, new Procedures(),
-                Clock.SYSTEM_CLOCK);
+                Clock.SYSTEM_CLOCK, 1L );
     }
 }

@@ -74,7 +74,7 @@ public class LockingStatementOperationsTest
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private final TxState txState = new TxState();
     private final KernelStatement state = new KernelStatement( transaction, new SimpleTxStateHolder( txState ),
-            null, mock( StorageStatement.class ), new Procedures(), Clock.SYSTEM_CLOCK );
+            null, mock( StorageStatement.class ), new Procedures(), Clock.SYSTEM_CLOCK, 1L );
     private final SchemaStateOperations schemaStateOps;
 
     public LockingStatementOperationsTest()

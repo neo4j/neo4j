@@ -42,7 +42,7 @@ public class KernelStatementTest
         when( transaction.mode() ).thenReturn( AccessMode.Static.FULL );
 
         KernelStatement statement = new KernelStatement(
-            transaction, null, null, mock( StorageStatement.class ), null, Clock.SYSTEM_CLOCK );
+            transaction, null, null, mock( StorageStatement.class ), null, Clock.SYSTEM_CLOCK, 1L );
         statement.acquire();
 
         statement.readOperations().nodeExists( 0 );
@@ -54,7 +54,7 @@ public class KernelStatementTest
         // given
         StorageStatement storeStatement = mock( StorageStatement.class );
         KernelStatement statement = new KernelStatement( mock( KernelTransactionImplementation.class ),
-                null, null, storeStatement, new Procedures(), Clock.SYSTEM_CLOCK );
+                null, null, storeStatement, new Procedures(), Clock.SYSTEM_CLOCK, 1L );
         statement.acquire();
 
         // when

@@ -70,12 +70,14 @@ public class KernelStatement implements TxStateHolder, Statement
 
     public KernelStatement( KernelTransactionImplementation transaction,
             TxStateHolder txStateHolder,
-            StatementOperationParts operations, StorageStatement storeStatement, Procedures procedures, Clock clock )
+            StatementOperationParts operations, StorageStatement storeStatement, Procedures procedures, Clock clock,
+            Long timeoutMillis )
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
         this.storeStatement = storeStatement;
         this.clock = clock;
+        this.timeoutMillis = timeoutMillis;
         this.facade = new OperationsFacade( transaction, this, operations, procedures );
     }
 

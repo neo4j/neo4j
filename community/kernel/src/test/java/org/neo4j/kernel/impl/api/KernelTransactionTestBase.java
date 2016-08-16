@@ -107,7 +107,7 @@ public class KernelTransactionTestBase
     {
         return new KernelTransactionImplementation( null, schemaWriteGuard, hooks, null, null, headerInformationFactory,
                 commitProcess, transactionMonitor, legacyIndexStateSupplier, txPool, clock, TransactionTracer.NULL,
-                storageEngine, txTerminationAwareLocks );
+                storageEngine, txTerminationAwareLocks, 1L );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

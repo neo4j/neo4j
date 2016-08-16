@@ -86,7 +86,7 @@ public class KernelTransactionFactory
                 mock( Pool.class ),
                 Clock.SYSTEM_CLOCK,
                 TransactionTracer.NULL,
-                storageEngine, false );
+                storageEngine, false, 1L );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 

@@ -29,6 +29,7 @@ import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -74,6 +75,7 @@ public class KernelTransactions extends LifecycleAdapter
 
     private final StatementLocksFactory statementLocksFactory;
     private final boolean txTerminationAwareLocks;
+    private final long statementTimeout;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StatementOperationParts statementOperations;
     private final SchemaWriteGuard schemaWriteGuard;
@@ -125,6 +127,7 @@ public class KernelTransactions extends LifecycleAdapter
     {
         this.statementLocksFactory = statementLocksFactory;
         this.txTerminationAwareLocks = config.get( tx_termination_aware_locks );
+        this.statementTimeout = config.get( GraphDatabaseSettings.statement_timeout );
         this.constraintIndexCreator = constraintIndexCreator;
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -154,7 +157,7 @@ public class KernelTransactions extends LifecycleAdapter
                     statementOperations, schemaWriteGuard, hooks, constraintIndexCreator, procedures,
                     transactionHeaderInformationFactory, transactionCommitProcess, transactionMonitor,
                     legacyIndexTxStateSupplier, localTxPool, clock, tracers.transactionTracer,
-                    storageEngine, txTerminationAwareLocks );
+                    storageEngine, txTerminationAwareLocks, statementTimeout );
 
             allTransactions.add( tx );
             return tx;
