@@ -58,8 +58,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.System.currentTimeMillis;
-import static org.junit.Assert.assertTrue;
-
 import static org.junit.Assert.fail;
 
 public class BackupServiceStressTestingBuilder
@@ -241,7 +239,7 @@ public class BackupServiceStressTestingBuilder
                 }
 
                 executor.shutdown();
-                if ( !executor.awaitTermination( 30, TimeUnit.SECONDS ) )
+                if ( !executor.awaitTermination( 5, TimeUnit.MINUTES ) )
                 {
                     DebugUtil.dumpThreads( System.err );
                     fail( "Didn't manage to shut down the workers correctly, dumped threads for forensic purposes" );
