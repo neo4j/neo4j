@@ -8,9 +8,8 @@ Homepage: http://neo4j.org/
 
 Package: neo4j-arbiter
 Architecture: all
-Depends: ${misc:Depends}, daemon, adduser, psmisc, lsof, java7-runtime | j2re1.7
-Conflicts: 
-Replaces: 
+Depends: ${misc:Depends}, daemon, adduser, psmisc, lsof, openjdk-7-jre | openjdk-8-jre | java7-runtime
+Conflicts:
+Replaces:
 Description: Arbiter service for Neo4j clusters.
  The arbiter service is used to break ties in Neo4j clusters that have an even number of cluster members.
-

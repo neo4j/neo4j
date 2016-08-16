@@ -8,8 +8,8 @@ Homepage: http://neo4j.org/
 
 Package: neo4j-enterprise
 Architecture: all
-Depends: ${misc:Depends}, daemon, adduser, psmisc, lsof, lsb-base, java7-runtime | j2re1.7
-Conflicts: 
+Depends: ${misc:Depends}, daemon, adduser, psmisc, lsof, lsb-base, openjdk-7-jre | openjdk-8-jre | java7-runtime
+Conflicts:
 Replaces: neo4j, neo4j-advanced
 Description: graph database server
  Neo4j server is a database that stores data as graphs rather than tables.
