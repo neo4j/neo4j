@@ -40,9 +40,20 @@ public interface KernelAPI
      * underlying graph.
      *
      * @param type the type of the new transaction: implicit (internally created) or explicit (created by the user)
-     * @param accessMode
+     * @param accessMode transaction access mode
      */
     KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode ) throws TransactionFailureException;
+
+    /**
+     * Creates and returns a new {@link KernelTransaction} capable of modifying the
+     * underlying graph.
+     *
+     * @param type the type of the new transaction: implicit (internally created) or explicit (created by the user)
+     * @param accessMode transaction access mode
+     * @param timeout transaction timeout
+     */
+    KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout )
+            throws TransactionFailureException;
 
     /**
      * Registers a {@link TransactionHook} that will receive notifications about committing transactions

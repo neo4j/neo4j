@@ -88,8 +88,15 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode ) throws TransactionFailureException
     {
+        return newTransaction( type, accessMode, defaultTransactionTimeout );
+    }
+
+    @Override
+    public KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout )
+            throws TransactionFailureException
+    {
         health.assertHealthy( TransactionFailureException.class );
-        KernelTransaction transaction = transactions.newInstance( type, accessMode, defaultTransactionTimeout );
+        KernelTransaction transaction = transactions.newInstance( type, accessMode, timeout );
         transactionMonitor.transactionStarted();
         return transaction;
     }

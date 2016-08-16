@@ -22,9 +22,11 @@ package org.neo4j.server.database;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
@@ -33,20 +35,28 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.web.ServerQuerySession;
 
 public class CypherExecutor extends LifecycleAdapter
 {
+    private static final String MAX_EXECUTION_TIME_HEADER = "max-execution-time";
+
     private final Database database;
     private ExecutionEngine executionEngine;
     private GraphDatabaseQueryService service;
     private ThreadToStatementContextBridge txBridge;
 
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
+    private final boolean guardEnabled;
+    private final Log log;
 
-    public CypherExecutor( Database database )
+    public CypherExecutor( Database database, Config config, LogProvider logProvider )
     {
         this.database = database;
+        log = logProvider.getLog( getClass() );
+        guardEnabled = config.get( GraphDatabaseSettings.execution_guard_enabled );
     }
 
     public ExecutionEngine getExecutionEngine()
@@ -73,8 +83,48 @@ public class CypherExecutor extends LifecycleAdapter
 
     public QuerySession createSession( HttpServletRequest request )
     {
-        InternalTransaction transaction = service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        InternalTransaction transaction = getInternalTransaction( request );
         TransactionalContext context = new Neo4jTransactionalContext( service, transaction, txBridge.get(), locker );
         return new ServerQuerySession( request, context );
+    }
+
+    private InternalTransaction getInternalTransaction( HttpServletRequest request )
+    {
+        if ( guardEnabled )
+        {
+            long customTimeout = getTransactionTimeLimit( request );
+            if ( customTimeout > 0 )
+            {
+                return beginCustomTransaction( customTimeout );
+            }
+        }
+        return beginDefaultTransaction();
+    }
+
+    private InternalTransaction beginCustomTransaction( long customTimeout )
+    {
+        return service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL, customTimeout );
+    }
+
+    private InternalTransaction beginDefaultTransaction()
+    {
+        return service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+    }
+
+    private long getTransactionTimeLimit( HttpServletRequest request )
+    {
+        String headerValue = request.getHeader( MAX_EXECUTION_TIME_HEADER );
+        if ( headerValue != null )
+        {
+            try
+            {
+                return Long.parseLong( headerValue );
+            }
+            catch ( NumberFormatException e )
+            {
+                log.error( "Fail to parse `" + MAX_EXECUTION_TIME_HEADER + "` header with value: " + headerValue, e );
+            }
+        }
+        return -1;
     }
 }

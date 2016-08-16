@@ -195,7 +195,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
             transactionFacade = createTransactionalActions();
 
-            cypherExecutor = new CypherExecutor( database );
+            cypherExecutor = new CypherExecutor( database, config, logProvider );
 
             configureWebServer();
 

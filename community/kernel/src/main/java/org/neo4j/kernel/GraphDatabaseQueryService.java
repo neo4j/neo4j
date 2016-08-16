@@ -26,8 +26,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.security.URLAccessValidationError;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 /*
@@ -41,6 +41,10 @@ public interface GraphDatabaseQueryService
     Node createNode( Label... labels );
     Node getNodeById(long id);
     Relationship getRelationshipById(long id);
+
     InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode );
+
+    InternalTransaction beginTransaction( KernelTransaction.Type implicit, AccessMode accessMode, long timeout );
+
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
 }
