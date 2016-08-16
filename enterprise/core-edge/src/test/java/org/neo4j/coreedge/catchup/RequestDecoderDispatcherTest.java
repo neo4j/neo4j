@@ -52,7 +52,7 @@ public class RequestDecoderDispatcherTest
 
     private enum Type
     {
-        type
+        one, two, three
     }
 
     @Test
@@ -60,9 +60,11 @@ public class RequestDecoderDispatcherTest
     {
         // given
         RequestDecoderDispatcher<Type> dispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
-        protocol.expect( Type.type );
+        protocol.expect( Type.two );
         ChannelInboundHandler delegate = mock( ChannelInboundHandler.class );
-        dispatcher.register( Type.type, delegate );
+        dispatcher.register( Type.one, mock( ChannelInboundHandler.class ) );
+        dispatcher.register( Type.two, delegate );
+        dispatcher.register( Type.three, mock( ChannelInboundHandler.class ) );
 
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         Object msg = new Object();
@@ -80,14 +82,16 @@ public class RequestDecoderDispatcherTest
     {
         // given
         RequestDecoderDispatcher<Type> dispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
-        protocol.expect( Type.type );
+        protocol.expect( Type.two );
+        dispatcher.register( Type.one, mock( ChannelInboundHandler.class ) );
+        dispatcher.register( Type.three, mock( ChannelInboundHandler.class ) );
 
         // when
         dispatcher.channelRead( mock( ChannelHandlerContext.class ), new Object() );
 
         // then
         AssertableLogProvider.LogMatcher matcher =
-                inLog( RequestDecoderDispatcher.class ).warn( "Unknown message %s", Type.type );
+                inLog( RequestDecoderDispatcher.class ).warn( "Unregistered handler for message type %s", Type.two );
 
         logProvider.assertExactly( matcher );
     }

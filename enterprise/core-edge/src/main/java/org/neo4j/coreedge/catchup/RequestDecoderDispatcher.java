@@ -48,7 +48,7 @@ class RequestDecoderDispatcher<E extends Enum<E>> extends ChannelInboundHandlerA
         ChannelInboundHandler delegate = decoders.get( expecting );
         if ( delegate == null )
         {
-            log.warn( "Unknown message %s", expecting );
+            log.warn( "Unregistered handler for message type %s", expecting );
             return;
         }
         delegate.channelRead( ctx, msg );
