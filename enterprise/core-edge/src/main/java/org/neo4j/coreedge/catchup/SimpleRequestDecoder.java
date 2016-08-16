@@ -17,36 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.storecopy;
+package org.neo4j.coreedge.catchup;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.util.List;
 
-import org.neo4j.coreedge.catchup.CatchupServerProtocol;
+import org.neo4j.coreedge.messaging.Message;
+import org.neo4j.function.Factory;
 
-public class GetStoreIdRequestDecoder extends MessageToMessageDecoder<ByteBuf>
+class SimpleRequestDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private final CatchupServerProtocol protocol;
+    private Factory<? extends Message> factory;
 
-    public GetStoreIdRequestDecoder( CatchupServerProtocol protocol )
+    SimpleRequestDecoder( Factory<? extends Message> factory )
     {
-        this.protocol = protocol;
+        this.factory = factory;
     }
 
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        if ( protocol.isExpecting( CatchupServerProtocol.NextMessage.GET_STORE_ID ) )
-        {
-            out.add( new GetStoreIdRequest() );
-        }
-        else
-        {
-            out.add( Unpooled.copiedBuffer( msg ) );
-        }
+        out.add( factory.newInstance() );
     }
 }

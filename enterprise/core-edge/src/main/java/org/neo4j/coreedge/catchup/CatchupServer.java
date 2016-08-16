@@ -21,6 +21,7 @@ package org.neo4j.coreedge.catchup;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
@@ -34,23 +35,24 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderEncoder;
-import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotEncoder;
-import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestDecoder;
-import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestHandler;
+import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequestHandler;
+import org.neo4j.coreedge.catchup.storecopy.GetStoreRequest;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreRequestHandler;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponseEncoder;
-import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequestDecoder;
-import org.neo4j.coreedge.catchup.storecopy.GetStoreRequestDecoder;
 import org.neo4j.coreedge.catchup.tx.TxPullRequestDecoder;
 import org.neo4j.coreedge.catchup.tx.TxPullRequestHandler;
 import org.neo4j.coreedge.catchup.tx.TxPullResponseEncoder;
 import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseEncoder;
 import org.neo4j.coreedge.core.state.CoreState;
-import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
+import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotEncoder;
+import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequest;
+import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestHandler;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
+import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -104,11 +106,6 @@ public class CatchupServer extends LifecycleAdapter
     @Override
     public synchronized void start() throws Throwable
     {
-        startNettyServer();
-    }
-
-    private void startNettyServer()
-    {
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
         ServerBootstrap bootstrap = new ServerBootstrap()
@@ -136,26 +133,32 @@ public class CatchupServer extends LifecycleAdapter
 
                         pipeline.addLast( new ServerMessageTypeHandler( protocol, logProvider ) );
 
-                        pipeline.addLast( new TxPullRequestDecoder( protocol ) );
+                        pipeline.addLast( decoders( protocol ) );
+
                         pipeline.addLast( new TxPullRequestHandler( protocol, storeIdSupplier,
                                 transactionIdStoreSupplier, logicalTransactionStoreSupplier,
                                 monitors, logProvider ) );
-
                         pipeline.addLast( new ChunkedWriteHandler() );
-                        pipeline.addLast( new GetStoreRequestDecoder( protocol ) );
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
                                 checkPointerSupplier ) );
-                        pipeline.addLast( new GetStoreIdRequestDecoder( protocol ) );
                         pipeline.addLast( new GetStoreIdRequestHandler( protocol, storeIdSupplier ) );
-
-                        pipeline.addLast( new CoreSnapshotRequestDecoder( protocol ) );
                         pipeline.addLast( new CoreSnapshotRequestHandler( protocol, coreState ) );
-
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                     }
                 } );
 
         channel = bootstrap.bind().syncUninterruptibly().channel();
+    }
+
+    private ChannelInboundHandler decoders( CatchupServerProtocol protocol )
+    {
+        RequestDecoderDispatcher<State> decoderDispatcher =
+                new RequestDecoderDispatcher<>( protocol, logProvider );
+        decoderDispatcher.register( State.TX_PULL, new TxPullRequestDecoder() );
+        decoderDispatcher.register( State.GET_STORE, new SimpleRequestDecoder( GetStoreRequest::new ) );
+        decoderDispatcher.register( State.GET_STORE_ID, new SimpleRequestDecoder( GetStoreIdRequest::new ) );
+        decoderDispatcher.register( State.GET_RAFT_STATE, new SimpleRequestDecoder( CoreSnapshotRequest::new) );
+        return decoderDispatcher;
     }
 
     @Override

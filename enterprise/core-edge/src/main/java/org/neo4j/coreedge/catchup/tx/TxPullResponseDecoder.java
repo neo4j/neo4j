@@ -20,56 +20,38 @@
 package org.neo4j.coreedge.catchup.tx;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.util.List;
 
-import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
-import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
-
 public class TxPullResponseDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private final CatchupClientProtocol protocol;
-
-    public TxPullResponseDecoder( CatchupClientProtocol protocol )
-    {
-        this.protocol = protocol;
-    }
-
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        if ( protocol.isExpecting( NextMessage.TX_PULL_RESPONSE ) )
-        {
-            NetworkReadableClosableChannelNetty4 logChannel = new NetworkReadableClosableChannelNetty4( msg );
-            StoreId storeId = StoreIdMarshal.unmarshal( logChannel );
-            LogEntryReader<NetworkReadableClosableChannelNetty4> reader = new VersionAwareLogEntryReader<>(
-                    new RecordStorageCommandReaderFactory() );
-            PhysicalTransactionCursor<NetworkReadableClosableChannelNetty4> transactionCursor =
-                    new PhysicalTransactionCursor<>( logChannel, reader );
+        NetworkReadableClosableChannelNetty4 logChannel = new NetworkReadableClosableChannelNetty4( msg );
+        StoreId storeId = StoreIdMarshal.unmarshal( logChannel );
+        LogEntryReader<NetworkReadableClosableChannelNetty4> reader =
+                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
+        PhysicalTransactionCursor<NetworkReadableClosableChannelNetty4> transactionCursor =
+                new PhysicalTransactionCursor<>( logChannel, reader );
 
-            transactionCursor.next();
-            CommittedTransactionRepresentation tx = transactionCursor.get();
+        transactionCursor.next();
+        CommittedTransactionRepresentation tx = transactionCursor.get();
 
-            if ( tx != null )
-            {
-                out.add( new TxPullResponse( storeId, tx ) );
-            }
-        }
-        else
+        if ( tx != null )
         {
-            out.add( Unpooled.copiedBuffer( msg ) );
+            out.add( new TxPullResponse( storeId, tx ) );
         }
     }
 }

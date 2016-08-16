@@ -19,14 +19,20 @@
  */
 package org.neo4j.coreedge.catchup;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-
+import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+
+import org.neo4j.coreedge.catchup.CatchupClientProtocol.State;
+import org.neo4j.coreedge.catchup.storecopy.FileContentDecoder;
+import org.neo4j.coreedge.catchup.storecopy.FileHeaderDecoder;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequest;
+import org.neo4j.coreedge.catchup.storecopy.GetStoreIdResponseDecoder;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreRequest;
+import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.storecopy.StoreFileReceiver;
 import org.neo4j.coreedge.catchup.storecopy.StoreFileStreamingCompleteListener;
 import org.neo4j.coreedge.catchup.storecopy.StoreFileStreams;
@@ -34,9 +40,12 @@ import org.neo4j.coreedge.catchup.storecopy.StoreIdReceiver;
 import org.neo4j.coreedge.catchup.tx.PullRequestMonitor;
 import org.neo4j.coreedge.catchup.tx.TxPullRequest;
 import org.neo4j.coreedge.catchup.tx.TxPullResponse;
+import org.neo4j.coreedge.catchup.tx.TxPullResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.TxPullResponseListener;
 import org.neo4j.coreedge.catchup.tx.TxStreamCompleteListener;
+import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseDecoder;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
+import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotDecoder;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotListener;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequest;
 import org.neo4j.coreedge.discovery.TopologyService;
@@ -55,26 +64,26 @@ import org.neo4j.logging.LogProvider;
 import static java.util.Arrays.asList;
 
 public abstract class CoreClient extends LifecycleAdapter implements StoreFileReceiver, StoreIdReceiver,
-        StoreFileStreamingCompleteListener,
-        TxStreamCompleteListener, TxPullResponseListener,
-        CoreSnapshotListener
+        StoreFileStreamingCompleteListener, TxStreamCompleteListener, TxPullResponseListener, CoreSnapshotListener
 {
-    private final PullRequestMonitor pullRequestMonitor;
+    private final LogProvider logProvider;
     private final SenderService senderService;
-    private StoreFileStreams storeFileStreams;
-    private Consumer<StoreId> storeIdConsumer;
+    private final Outbound<MemberId,Message> outbound;
+    private final PullRequestMonitor pullRequestMonitor;
+
     private final Listeners<StoreFileStreamingCompleteListener> storeFileStreamingCompleteListeners = new Listeners<>();
     private final Listeners<TxStreamCompleteListener> txStreamCompleteListeners = new Listeners<>();
     private final Listeners<TxPullResponseListener> txPullResponseListeners = new Listeners<>();
+
+    private StoreFileStreams storeFileStreams;
+    private Consumer<StoreId> storeIdConsumer;
     private CompletableFuture<CoreSnapshot> coreSnapshotFuture;
 
-    private Outbound<MemberId, Message> outbound;
-
     public CoreClient( LogProvider logProvider, ChannelInitializer<SocketChannel> channelInitializer, Monitors monitors,
-                       int maxQueueSize, NonBlockingChannels nonBlockingChannels, TopologyService discoveryService,
-                       long logThresholdMillis )
+            int maxQueueSize, NonBlockingChannels nonBlockingChannels, TopologyService discoveryService, long logThresholdMillis )
     {
-        senderService =
+        this.logProvider = logProvider;
+        this.senderService =
                 new SenderService( channelInitializer, logProvider, monitors, maxQueueSize, nonBlockingChannels );
         this.outbound = new CoreOutbound( discoveryService, senderService, logProvider, logThresholdMillis );
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
@@ -163,8 +172,7 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     @Override
     public void onFileStreamingComplete( long lastCommittedTxBeforeStoreCopy )
     {
-        storeFileStreamingCompleteListeners.notify(
-                listener -> listener.onFileStreamingComplete( lastCommittedTxBeforeStoreCopy ) );
+        storeFileStreamingCompleteListeners.notify( listener -> listener.onFileStreamingComplete( lastCommittedTxBeforeStoreCopy ) );
     }
 
     @Override
@@ -199,5 +207,19 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     public void removeTxStreamCompleteListener( TxStreamCompleteListener listener )
     {
         txStreamCompleteListeners.remove( listener );
+    }
+
+    protected ChannelInboundHandler decoders( CatchupClientProtocol protocol )
+    {
+        RequestDecoderDispatcher<State> decoderDispatcher =
+                new RequestDecoderDispatcher<>( protocol, logProvider );
+        decoderDispatcher.register( State.STORE_ID, new GetStoreIdResponseDecoder() );
+        decoderDispatcher.register( State.TX_PULL_RESPONSE, new TxPullResponseDecoder() );
+        decoderDispatcher.register( State.CORE_SNAPSHOT, new CoreSnapshotDecoder() );
+        decoderDispatcher.register( State.STORE_COPY_FINISHED, new StoreCopyFinishedResponseDecoder() );
+        decoderDispatcher.register( State.TX_STREAM_FINISHED, new TxStreamFinishedResponseDecoder() );
+        decoderDispatcher.register( State.FILE_HEADER, new FileHeaderDecoder() );
+        decoderDispatcher.register( State.FILE_CONTENTS, new FileContentDecoder() );
+        return decoderDispatcher;
     }
 }

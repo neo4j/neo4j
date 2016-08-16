@@ -19,42 +19,21 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
-import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
+import java.util.List;
 
 public class FileHeaderDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private final CatchupClientProtocol protocol;
-
-    public FileHeaderDecoder( CatchupClientProtocol protocol )
-    {
-        this.protocol = protocol;
-    }
-
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        if ( protocol.isExpecting( NextMessage.FILE_HEADER ) )
-        {
-            int nameLength = msg.readInt();
-            byte[] name = new byte[nameLength];
-            msg.readBytes( name );
-
-            long fileLength = msg.readLong();
-
-            out.add( new FileHeader( new String( name ), fileLength ) );
-        }
-        else
-        {
-            out.add( Unpooled.copiedBuffer( msg ) );
-        }
+        int nameLength = msg.readInt();
+        byte[] name = new byte[nameLength];
+        msg.readBytes( name );
+        long fileLength = msg.readLong();
+        out.add( new FileHeader( new String( name ), fileLength ) );
     }
 }

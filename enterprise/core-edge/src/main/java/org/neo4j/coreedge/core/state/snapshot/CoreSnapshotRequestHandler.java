@@ -28,7 +28,7 @@ import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
 import org.neo4j.coreedge.core.state.CoreState;
 
-import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
+import static org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 
 public class CoreSnapshotRequestHandler extends SimpleChannelInboundHandler<CoreSnapshotRequest>
 {
@@ -45,7 +45,7 @@ public class CoreSnapshotRequestHandler extends SimpleChannelInboundHandler<Core
     protected void channelRead0( ChannelHandlerContext ctx, CoreSnapshotRequest msg ) throws Exception
     {
         sendStates( ctx, coreState.snapshot() );
-        protocol.expect( NextMessage.MESSAGE_TYPE );
+        protocol.expect( State.MESSAGE_TYPE );
     }
 
     private void sendStates( ChannelHandlerContext ctx, CoreSnapshot coreSnapshot ) throws IOException

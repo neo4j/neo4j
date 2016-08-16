@@ -22,25 +22,17 @@ package org.neo4j.coreedge.catchup.storecopy;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
-import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
 
 public class StoreCopyFinishedResponseEncodeDecodeTest
 {
     @Test
     public void shouldEncodeAndDecodePullRequestMessage()
     {
-        CatchupClientProtocol protocol = new CatchupClientProtocol();
-        protocol.expect( NextMessage.STORE_COPY_FINISHED );
-
-        EmbeddedChannel channel = new EmbeddedChannel( new StoreCopyFinishedResponseEncoder(),
-                new StoreCopyFinishedResponseDecoder( protocol ) );
-
         // given
+        EmbeddedChannel channel =
+                new EmbeddedChannel( new StoreCopyFinishedResponseEncoder(), new StoreCopyFinishedResponseDecoder() );
         final long arbitraryId = 23;
         StoreCopyFinishedResponse sent = new StoreCopyFinishedResponse( arbitraryId );
 

@@ -38,10 +38,10 @@ class GetStoreIdResponseHandler extends SimpleChannelInboundHandler<GetStoreIdRe
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, final GetStoreIdResponse msg ) throws Exception
     {
-        if ( protocol.isExpecting( CatchupClientProtocol.NextMessage.STORE_ID ) )
+        if ( protocol.isExpecting( CatchupClientProtocol.State.STORE_ID ) )
         {
             storeIdReceiver.onStoreIdReceived( msg.storeId() );
-            protocol.expect( CatchupClientProtocol.NextMessage.MESSAGE_TYPE );
+            protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
         }
         else
         {

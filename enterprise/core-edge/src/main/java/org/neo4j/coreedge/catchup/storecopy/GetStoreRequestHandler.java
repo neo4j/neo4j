@@ -36,7 +36,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 
-import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
+import static org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 
 public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStoreRequest>
 {
@@ -60,7 +60,7 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
         long lastCheckPointedTx = checkPointerSupplier.get().tryCheckPoint( new SimpleTriggerInfo( "Store copy" ) );
         sendFiles( ctx );
         endStoreCopy( ctx, lastCheckPointedTx );
-        protocol.expect( NextMessage.MESSAGE_TYPE );
+        protocol.expect( State.MESSAGE_TYPE );
     }
 
     private void sendFiles( ChannelHandlerContext ctx ) throws IOException

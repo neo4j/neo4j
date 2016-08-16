@@ -19,21 +19,14 @@
  */
 package org.neo4j.coreedge.catchup;
 
-public class CatchupClientProtocol
+public class CatchupClientProtocol extends Protocol<CatchupClientProtocol.State>
 {
-    private NextMessage nextMessage = NextMessage.MESSAGE_TYPE;
-
-    public void expect( NextMessage nextMessage )
+    public CatchupClientProtocol()
     {
-        this.nextMessage = nextMessage;
+        super( State.MESSAGE_TYPE );
     }
 
-    public boolean isExpecting( NextMessage message )
-    {
-        return this.nextMessage == message;
-    }
-
-    public enum NextMessage
+    public enum State
     {
         MESSAGE_TYPE,
         STORE_ID,

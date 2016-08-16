@@ -39,10 +39,10 @@ public class TxPullResponseHandler extends SimpleChannelInboundHandler<TxPullRes
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, final TxPullResponse msg ) throws Exception
     {
-        if ( protocol.isExpecting( CatchupClientProtocol.NextMessage.TX_PULL_RESPONSE ) )
+        if ( protocol.isExpecting( CatchupClientProtocol.State.TX_PULL_RESPONSE ) )
         {
             listener.onTxReceived( msg );
-            protocol.expect( CatchupClientProtocol.NextMessage.MESSAGE_TYPE );
+            protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
         }
         else
         {

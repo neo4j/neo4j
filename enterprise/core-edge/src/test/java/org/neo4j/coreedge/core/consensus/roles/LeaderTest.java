@@ -409,8 +409,8 @@ public class LeaderTest
         Leader leader = new Leader();
 
         int BATCH_SIZE = 3;
-        RaftMessages.NewEntry.Batch batchRequest =
-                new RaftMessages.NewEntry.Batch( BATCH_SIZE );
+        RaftMessages.NewEntry.BatchRequest batchRequest =
+                new RaftMessages.NewEntry.BatchRequest( BATCH_SIZE );
         batchRequest.add( valueOf( 0 ) );
         batchRequest.add( valueOf( 1 ) );
         batchRequest.add( valueOf( 2 ) );

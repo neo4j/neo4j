@@ -24,7 +24,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
+import static org.neo4j.coreedge.catchup.CatchupClientProtocol.State;
 
 public class TxStreamFinishedResponseHandler extends SimpleChannelInboundHandler<TxStreamFinishedResponse>
 {
@@ -42,6 +42,6 @@ public class TxStreamFinishedResponseHandler extends SimpleChannelInboundHandler
     protected void channelRead0( ChannelHandlerContext ctx, TxStreamFinishedResponse msg ) throws Exception
     {
         listener.onTxStreamingComplete( msg.lastTransactionIdSent(), msg.isSuccess() );
-        protocol.expect( NextMessage.MESSAGE_TYPE );
+        protocol.expect( State.MESSAGE_TYPE );
     }
 }

@@ -17,37 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.core.state.snapshot;
-
-import java.util.List;
+package org.neo4j.coreedge.catchup.storecopy;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
-import org.neo4j.coreedge.catchup.CatchupServerProtocol;
+import java.util.List;
 
-public class CoreSnapshotRequestDecoder extends MessageToMessageDecoder<ByteBuf>
+public class FileContentDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private final CatchupServerProtocol protocol;
-
-    public CoreSnapshotRequestDecoder( CatchupServerProtocol protocol )
-    {
-        this.protocol = protocol;
-    }
-
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        if ( protocol.isExpecting( CatchupServerProtocol.NextMessage.GET_RAFT_STATE ) )
-        {
-            out.add( new CoreSnapshotRequest() );
-        }
-        else
-        {
-            out.add( Unpooled.copiedBuffer( msg ) );
-        }
-
+        out.add( new FileContent( msg ) );
     }
 }

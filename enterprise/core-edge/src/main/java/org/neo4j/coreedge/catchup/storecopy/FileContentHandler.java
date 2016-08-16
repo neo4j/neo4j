@@ -19,17 +19,14 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
-import java.io.OutputStream;
-
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.io.OutputStream;
+
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
-
-public class FileContentHandler extends SimpleChannelInboundHandler<ByteBuf>
+public class FileContentHandler  extends SimpleChannelInboundHandler<FileContent>
 {
     private final CatchupClientProtocol protocol;
     private long expectedBytes = 0;
@@ -50,22 +47,17 @@ public class FileContentHandler extends SimpleChannelInboundHandler<ByteBuf>
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, ByteBuf msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, FileContent fileContent ) throws Exception
     {
-        if ( protocol.isExpecting( NextMessage.FILE_CONTENTS ) )
+        try ( FileContent content = fileContent;
+                OutputStream outputStream = location.getStoreFileStreams().createStream( destination ) )
         {
-            int bytesInMessage = msg.readableBytes();
-            try ( OutputStream outputStream = location.getStoreFileStreams().createStream( destination ) )
-            {
-                msg.readBytes( outputStream, bytesInMessage );
-            }
+            expectedBytes -= content.writeTo( outputStream );
+        }
 
-            expectedBytes -= bytesInMessage;
-
-            if ( expectedBytes <= 0 )
-            {
-                protocol.expect( NextMessage.MESSAGE_TYPE );
-            }
+        if ( expectedBytes <= 0 )
+        {
+            protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
         }
     }
 }

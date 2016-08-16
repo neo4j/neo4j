@@ -19,35 +19,31 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
 
-import org.neo4j.coreedge.catchup.CatchupServerProtocol;
+import java.io.IOException;
+import java.io.OutputStream;
 
-public class GetStoreRequestDecoder extends MessageToMessageDecoder<ByteBuf>
+class FileContent implements AutoCloseable
 {
-    private final CatchupServerProtocol protocol;
+    private final ByteBuf msg;
 
-    public GetStoreRequestDecoder( CatchupServerProtocol protocol )
+    FileContent( ByteBuf msg )
     {
-        this.protocol = protocol;
+        msg.retain();
+        this.msg = msg;
+    }
+
+    int writeTo( OutputStream stream ) throws IOException
+    {
+        int bytes = msg.readableBytes();
+        msg.readBytes( stream, bytes );
+        return bytes;
     }
 
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
+    public void close()
     {
-        if ( protocol.isExpecting( CatchupServerProtocol.NextMessage.GET_STORE ) )
-        {
-            out.add( new GetStoreRequest() );
-        }
-        else
-        {
-            out.add( Unpooled.copiedBuffer( msg ) );
-        }
-
+        msg.release();
     }
 }

@@ -19,35 +19,17 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
-import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import java.util.List;
 
 public class StoreCopyFinishedResponseDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private final CatchupClientProtocol protocol;
-
-    public StoreCopyFinishedResponseDecoder( CatchupClientProtocol protocol )
-    {
-        this.protocol = protocol;
-    }
-
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        if ( protocol.isExpecting( CatchupClientProtocol.NextMessage.STORE_COPY_FINISHED ) )
-        {
-            out.add( new StoreCopyFinishedResponse( msg.readLong() ) );
-        }
-        else
-        {
-            out.add( Unpooled.copiedBuffer( msg ) );
-        }
-
+        out.add( new StoreCopyFinishedResponse( msg.readLong() ) );
     }
 }

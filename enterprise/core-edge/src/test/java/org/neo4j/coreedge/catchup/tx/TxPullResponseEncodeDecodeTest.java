@@ -22,7 +22,6 @@ package org.neo4j.coreedge.catchup.tx;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
-import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -36,21 +35,14 @@ import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
 
 public class TxPullResponseEncodeDecodeTest
 {
     @Test
     public void shouldEncodeAndDecodePullResponseMessage()
     {
-        CatchupClientProtocol protocol = new CatchupClientProtocol();
-        protocol.expect( NextMessage.TX_PULL_RESPONSE );
-
-        EmbeddedChannel channel = new EmbeddedChannel(
-                new TxPullResponseEncoder(),
-                new TxPullResponseDecoder( protocol ) );
-
         // given
+        EmbeddedChannel channel = new EmbeddedChannel( new TxPullResponseEncoder(), new TxPullResponseDecoder() );
         TxPullResponse sent = new TxPullResponse( new StoreId( 1, 2, 3, 4 ), newCommittedTransactionRepresentation() );
 
         // when

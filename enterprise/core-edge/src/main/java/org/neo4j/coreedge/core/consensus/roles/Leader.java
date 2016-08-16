@@ -226,7 +226,7 @@ public class Leader implements RaftMessageHandler
 
             case NEW_BATCH_REQUEST:
             {
-                RaftMessages.NewEntry.Batch req = (RaftMessages.NewEntry.Batch) message;
+                RaftMessages.NewEntry.BatchRequest req = (RaftMessages.NewEntry.BatchRequest) message;
                 List<ReplicatedContent> contents = req.contents();
                 Appending.appendNewEntries( ctx, outcome, contents );
                 break;

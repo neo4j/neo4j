@@ -24,7 +24,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
+import static org.neo4j.coreedge.catchup.CatchupClientProtocol.State;
 
 public class StoreCopyFinishedResponseHandler extends SimpleChannelInboundHandler<StoreCopyFinishedResponse>
 {
@@ -42,6 +42,6 @@ public class StoreCopyFinishedResponseHandler extends SimpleChannelInboundHandle
     protected void channelRead0( ChannelHandlerContext ctx, final StoreCopyFinishedResponse msg ) throws Exception
     {
         storeFileStreamingCompleteListener.onFileStreamingComplete( msg.lastCommittedTxBeforeStoreCopy() );
-        protocol.expect( NextMessage.MESSAGE_TYPE );
+        protocol.expect( State.MESSAGE_TYPE );
     }
 }

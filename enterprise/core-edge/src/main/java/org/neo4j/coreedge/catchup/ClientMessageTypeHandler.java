@@ -27,7 +27,6 @@ import io.netty.util.ReferenceCountUtil;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
 import static org.neo4j.coreedge.catchup.ResponseMessageType.from;
 
 public class ClientMessageTypeHandler extends ChannelInboundHandlerAdapter
@@ -44,29 +43,29 @@ public class ClientMessageTypeHandler extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
-        if ( protocol.isExpecting( NextMessage.MESSAGE_TYPE ) )
+        if ( protocol.isExpecting( CatchupClientProtocol.State.MESSAGE_TYPE ) )
         {
             ResponseMessageType responseMessageType = from( ((ByteBuf) msg).readByte() );
 
             switch ( responseMessageType )
             {
                 case STORE_ID:
-                    protocol.expect( NextMessage.STORE_ID );
+                    protocol.expect( CatchupClientProtocol.State.STORE_ID );
                     break;
                 case TX:
-                    protocol.expect( NextMessage.TX_PULL_RESPONSE );
+                    protocol.expect( CatchupClientProtocol.State.TX_PULL_RESPONSE );
                     break;
                 case FILE:
-                    protocol.expect( NextMessage.FILE_HEADER );
+                    protocol.expect( CatchupClientProtocol.State.FILE_HEADER );
                     break;
                 case STORE_COPY_FINISHED:
-                    protocol.expect( NextMessage.STORE_COPY_FINISHED );
+                    protocol.expect( CatchupClientProtocol.State.STORE_COPY_FINISHED );
                     break;
                 case CORE_SNAPSHOT:
-                    protocol.expect( NextMessage.CORE_SNAPSHOT );
+                    protocol.expect( CatchupClientProtocol.State.CORE_SNAPSHOT );
                     break;
                 case TX_STREAM_FINISHED:
-                    protocol.expect( NextMessage.TX_STREAM_FINISHED );
+                    protocol.expect( CatchupClientProtocol.State.TX_STREAM_FINISHED );
                     break;
                 default:
                     log.warn( "No handler found for message type %s", responseMessageType );

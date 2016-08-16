@@ -17,33 +17,45 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.storecopy;
+package org.neo4j.coreedge.catchup;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 
-import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.State;
-
-public class FileHeaderHandler extends SimpleChannelInboundHandler<FileHeader>
+class RequestDecoderDispatcher<E extends Enum<E>> extends ChannelInboundHandlerAdapter
 {
-    private final CatchupClientProtocol protocol;
+    private final Map<E, ChannelInboundHandler> decoders = new HashMap<>();
+    private final Protocol<E> protocol;
     private final Log log;
 
-    public FileHeaderHandler( CatchupClientProtocol protocol, LogProvider logProvider )
+    RequestDecoderDispatcher( Protocol<E> protocol, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, FileHeader msg ) throws Exception
+    public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
-        log.info( "Receiving file: %s (%d bytes)", msg.fileName(), msg.fileLength() );
-        ctx.pipeline().get( FileContentHandler.class ).setExpectedFile( msg );
-        protocol.expect( State.FILE_CONTENTS );
+        ChannelInboundHandler delegate = protocol.select( decoders );
+        if ( delegate == null )
+        {
+            log.warn( "Unregistered handler for protocol %s", protocol );
+            return;
+        }
+        delegate.channelRead( ctx, msg );
+    }
+
+    public void register( E type, ChannelInboundHandler decoder )
+    {
+        assert !decoders.containsKey( type ) : "registering twice a decoder for the same type (" + type + ")?";
+        decoders.put( type, decoder );
     }
 }

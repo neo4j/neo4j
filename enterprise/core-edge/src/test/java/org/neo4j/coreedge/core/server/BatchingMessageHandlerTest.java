@@ -116,10 +116,10 @@ public class BatchingMessageHandlerTest
         batchHandler.run();
 
         // then
-        RaftMessages.NewEntry.Batch batch = new RaftMessages.NewEntry.Batch( 2 );
-        batch.add( contentA );
-        batch.add( contentB );
-        verify( raftStateMachine ).handle( new RaftMessages.StoreIdAwareMessage( localStoreId, batch ) );
+        RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest( 2 );
+        batchRequest.add( contentA );
+        batchRequest.add( contentB );
+        verify( raftStateMachine ).handle( new RaftMessages.StoreIdAwareMessage( localStoreId, batchRequest ) );
     }
 
     @Test
@@ -151,11 +151,11 @@ public class BatchingMessageHandlerTest
         batchHandler.run();
 
         // then
-        RaftMessages.NewEntry.Batch batch = new RaftMessages.NewEntry.Batch( 2 );
-        batch.add( contentA );
-        batch.add( contentC );
+        RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest( 2 );
+        batchRequest.add( contentA );
+        batchRequest.add( contentC );
 
-        verify( raftStateMachine ).handle( new RaftMessages.StoreIdAwareMessage( localStoreId, batch ) );
+        verify( raftStateMachine ).handle( new RaftMessages.StoreIdAwareMessage( localStoreId, batchRequest ) );
         verify( raftStateMachine ).handle( messageB );
         verify( raftStateMachine ).handle( messageD );
     }

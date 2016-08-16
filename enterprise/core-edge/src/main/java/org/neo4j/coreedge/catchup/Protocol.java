@@ -19,15 +19,35 @@
  */
 package org.neo4j.coreedge.catchup;
 
-public class CatchupServerProtocol extends Protocol<CatchupServerProtocol.State>
+import java.util.Map;
+
+public abstract class Protocol<E extends Enum<E>>
 {
-    public CatchupServerProtocol()
+    private E state;
+
+    protected Protocol( E initialValue )
     {
-        super( State.MESSAGE_TYPE );
+        this.state = initialValue;
     }
 
-    public enum State
+    public void expect( E state )
     {
-        MESSAGE_TYPE, GET_STORE, GET_STORE_ID, GET_RAFT_STATE, TX_PULL
+        this.state = state;
+    }
+
+    public boolean isExpecting( E state )
+    {
+        return this.state == state;
+    }
+
+    public <T> T select( Map<E,T> map )
+    {
+        return map.get( state );
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "{" + "state=" + state + '}';
     }
 }

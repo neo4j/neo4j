@@ -27,14 +27,13 @@ import io.netty.util.ReferenceCountUtil;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 
-public class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
+class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
 {
     private final Log log;
     private final CatchupServerProtocol protocol;
 
-    public ServerMessageTypeHandler( CatchupServerProtocol protocol, LogProvider logProvider )
+    ServerMessageTypeHandler( CatchupServerProtocol protocol, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.log = logProvider.getLog( getClass() );
@@ -43,25 +42,25 @@ public class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
-        if ( protocol.isExpecting( NextMessage.MESSAGE_TYPE ) )
+        if ( protocol.isExpecting( CatchupServerProtocol.State.MESSAGE_TYPE ) )
         {
             RequestMessageType requestMessageType = RequestMessageType.from( ((ByteBuf) msg).readByte() );
 
             if ( requestMessageType.equals( RequestMessageType.TX_PULL_REQUEST ) )
             {
-                protocol.expect( NextMessage.TX_PULL );
+                protocol.expect( CatchupServerProtocol.State.TX_PULL );
             }
             else if ( requestMessageType.equals( RequestMessageType.STORE ) )
             {
-                protocol.expect( NextMessage.GET_STORE );
+                protocol.expect( CatchupServerProtocol.State.GET_STORE );
             }
             else if ( requestMessageType.equals( RequestMessageType.STORE_ID ) )
             {
-                protocol.expect( NextMessage.GET_STORE_ID );
+                protocol.expect( CatchupServerProtocol.State.GET_STORE_ID );
             }
             else if ( requestMessageType.equals( RequestMessageType.RAFT_STATE ) )
             {
-                protocol.expect( NextMessage.GET_RAFT_STATE );
+                protocol.expect( CatchupServerProtocol.State.GET_RAFT_STATE );
             }
             else
             {

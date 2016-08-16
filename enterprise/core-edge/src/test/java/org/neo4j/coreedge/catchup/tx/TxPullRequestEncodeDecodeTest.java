@@ -22,26 +22,18 @@ package org.neo4j.coreedge.catchup.tx;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
-import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.identity.StoreId;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-
-import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 
 public class TxPullRequestEncodeDecodeTest
 {
     @Test
     public void shouldEncodeAndDecodePullRequestMessage()
     {
-        CatchupServerProtocol protocol = new CatchupServerProtocol();
-        protocol.expect( NextMessage.TX_PULL );
-
-        EmbeddedChannel channel = new EmbeddedChannel( new TxPullRequestEncoder(),
-                new TxPullRequestDecoder( protocol ) );
-
         // given
+        EmbeddedChannel channel = new EmbeddedChannel( new TxPullRequestEncoder(), new TxPullRequestDecoder() );
         final long arbitraryId = 23;
         TxPullRequest sent = new TxPullRequest( arbitraryId, new StoreId( 1, 2, 3, 4 ) );
 

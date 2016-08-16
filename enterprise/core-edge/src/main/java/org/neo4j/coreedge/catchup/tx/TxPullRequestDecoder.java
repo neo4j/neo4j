@@ -19,41 +19,23 @@
  */
 package org.neo4j.coreedge.catchup.tx;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
-import org.neo4j.coreedge.catchup.CatchupServerProtocol;
+import java.util.List;
+
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
 
-import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage.TX_PULL;
-
 public class TxPullRequestDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private final CatchupServerProtocol protocol;
-
-    public TxPullRequestDecoder( CatchupServerProtocol protocol )
-    {
-        this.protocol = protocol;
-    }
-
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        if ( protocol.isExpecting( TX_PULL ) )
-        {
-            long txId = msg.readLong();
-            StoreId storeId = StoreIdMarshal.unmarshal( new NetworkReadableClosableChannelNetty4( msg ) );
-            out.add( new TxPullRequest( txId, storeId ) );
-        }
-        else
-        {
-            out.add( Unpooled.copiedBuffer( msg ) );
-        }
+        long txId = msg.readLong();
+        StoreId storeId = StoreIdMarshal.unmarshal( new NetworkReadableClosableChannelNetty4( msg ) );
+        out.add( new TxPullRequest( txId, storeId ) );
     }
 }
