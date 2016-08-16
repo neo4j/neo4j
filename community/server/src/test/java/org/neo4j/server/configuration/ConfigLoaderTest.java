@@ -202,8 +202,8 @@ public class ConfigLoaderTest
                 .build();
         Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
 
-        assertThat( config.get( GraphDatabaseSettings.auth_store ),
-                is( new File( folder.getRoot(), "data/dbms/auth" ).getAbsoluteFile() ) );
+        assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ),
+                is( new File( folder.getRoot(), "data/dbms" ).getAbsoluteFile() ) );
     }
 
     @Test
@@ -214,8 +214,8 @@ public class ConfigLoaderTest
                 .build();
         Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
 
-        assertThat( config.get( GraphDatabaseSettings.auth_store ),
-                is( new File( folder.getRoot(), "the-data-dir/dbms/auth" ).getAbsoluteFile() ) );
+        assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ),
+                is( new File( folder.getRoot(), "the-data-dir/dbms" ).getAbsoluteFile() ) );
     }
 
     @Test

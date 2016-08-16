@@ -132,10 +132,24 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         userRepository.start();
         roleRepository.start();
 
-        ensureDefaultUsersAndRoles();
+        ensureDefaultUsers();
+        ensureDefaultRoles();
     }
 
-    private void ensureDefaultUsersAndRoles() throws IOException, InvalidArgumentsException
+    /* Adds neo4j user if no users exist */
+    private void ensureDefaultUsers() throws IOException, InvalidArgumentsException
+    {
+        if ( authenticationEnabled || authorizationEnabled )
+        {
+            if ( numberOfUsers() == 0 )
+            {
+                newUser( "neo4j", "neo4j", true );
+            }
+        }
+    }
+
+    /* Builds all predefined roles if no roles exist. Adds 'neo4j' to admin role if no admin is assigned */
+    private void ensureDefaultRoles() throws IOException, InvalidArgumentsException
     {
         if ( authenticationEnabled || authorizationEnabled )
         {
@@ -146,11 +160,12 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
                     newRole( role );
                 }
             }
-            if ( numberOfUsers() == 0 )
+            if ( this.getUsernamesForRole( PredefinedRolesBuilder.ADMIN ).size() == 0 )
             {
-                newUser( "neo4j", "neo4j", true );
-                // Make the default user admin for now
-                addUserToRole( "neo4j", PredefinedRolesBuilder.ADMIN );
+                if ( getAllUsernames().contains( "neo4j" ) )
+                {
+                    addUserToRole( "neo4j", PredefinedRolesBuilder.ADMIN );
+                }
             }
         }
     }

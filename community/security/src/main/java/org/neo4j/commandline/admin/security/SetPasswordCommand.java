@@ -107,6 +107,7 @@ public class SetPasswordCommand implements AdminCommand
             userRepository.start();
             PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
             BasicAuthManager authManager = new BasicAuthManager( userRepository, passwordPolicy, systemUTC() );
+            authManager.start();    // required to setup default users
             try
             {
                 authManager.setUserPassword( username, password );
