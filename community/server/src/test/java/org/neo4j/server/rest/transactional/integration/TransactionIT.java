@@ -760,6 +760,27 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
+    public void shouldHandleMapParametersCorrectly() throws Exception
+    {
+        Response response = http.POST(
+                "/db/data/transaction/commit",
+                quotedJson("{ 'statements': [ { 'statement': " +
+                        "'WITH {map} AS map RETURN map[0]', 'parameters':{'map':[{'index':0,'name':'a'},{'index':1,'name':'b'}]} } ] }"));
+
+        // then
+        assertThat( response.status(), equalTo( 200 ) );
+
+        JsonNode data = response.get( "results" ).get( 0 );
+        JsonNode row = data.get( "data" ).get( 0 ).get( "row" );
+        assertThat( row.size(), equalTo( 1 ) );
+
+        assertThat( row.get(0).get("index").asInt(), equalTo( 0 ) );
+        assertThat( row.get(0).get("name").asText(), equalTo( "a" ) );
+
+        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
+    }
+
+    @Test
     public void restFormatNodesShouldHaveSensibleUris() throws Throwable
     {
         // given

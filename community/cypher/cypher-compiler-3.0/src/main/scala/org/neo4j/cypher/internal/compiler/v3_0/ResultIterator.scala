@@ -78,7 +78,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
   // TODO: Get rid of this in favor of using ScalaRuntimeValueConverte
   private def materialize(v: Any): Any = v match {
     case (x: Stream[_])   => x.map(materialize).toList
-    case (x: Map[_, _])   => Eagerly.immutableMapValues(x, materialize)
+    case (x: collection.Map[_, _])   => Eagerly.immutableMapValues(x.toMap, materialize)
     case (x: Iterable[_]) => x.map(materialize)
     case x => x
   }
