@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
+import org.neo4j.kernel.guard.EmptyGuard;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
@@ -1004,7 +1005,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
                 lockingContext, null, null, null );
         // + Guard
-        if ( guard != null )
+        if ( !EmptyGuard.EMPTY_GUARD.equals( guard ) )
         {
             GuardingStatementOperations guardingOperations = new GuardingStatementOperations(
                     parts.entityWriteOperations(), parts.entityReadOperations(), guard );

@@ -44,7 +44,9 @@ import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.guard.EmptyGuard;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.guard.TimeoutGuard;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
@@ -69,6 +71,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -149,7 +152,7 @@ public class DataSourceModule
 
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
 
-        Guard guard = buildGuard( config, logging );
+        Guard guard = buildGuard( deps, config, logging );
 
         kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 
@@ -250,10 +253,17 @@ public class DataSourceModule
         this.kernelAPI = neoStoreDataSource::getKernel;
     }
 
-    private Guard buildGuard( Config config, LogService logging )
+    private Guard buildGuard( Dependencies deps, Config config, LogService logging )
     {
         Boolean isGuardEnabled = config.get( GraphDatabaseSettings.execution_guard_enabled );
-        return isGuardEnabled ? new Guard( logging.getInternalLog( Guard.class ), Clock.SYSTEM_CLOCK ) : null;
+        Guard guard = isGuardEnabled ? createTimeoutGuard( logging ) : EmptyGuard.EMPTY_GUARD;
+        deps.satisfyDependency( guard );
+        return guard;
+    }
+
+    private TimeoutGuard createTimeoutGuard( LogService logging )
+    {
+        return new TimeoutGuard( logging.getInternalLog( TimeoutGuard.class ), Clock.SYSTEM_CLOCK );
     }
 
     protected RelationshipProxy.RelationshipActions createRelationshipActions(

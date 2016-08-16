@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -39,12 +41,13 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final ThreadToStatementContextBridge txBridge;
     private final KernelTransaction.Type transactionType;
     private final AccessMode mode;
-    private final DbmsOperations dbmsOperations;
+    private final Guard guard;
 
+    private final DbmsOperations dbmsOperations;
     private InternalTransaction transaction;
     private Statement statement;
-    private PropertyContainerLocker locker;
 
+    private PropertyContainerLocker locker;
     private boolean isOpen = true;
 
     public Neo4jTransactionalContext( GraphDatabaseQueryService graph, InternalTransaction initialTransaction,
@@ -56,8 +59,10 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.mode = initialTransaction.mode();
         this.statement = initialStatement;
         this.locker = locker;
-        this.txBridge = graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        this.dbmsOperations = graph.getDependencyResolver().resolveDependency( DbmsOperations.class );
+        DependencyResolver dependencyResolver = graph.getDependencyResolver();
+        this.txBridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
+        this.dbmsOperations = dependencyResolver.resolveDependency( DbmsOperations.class );
+        this.guard = dependencyResolver.resolveDependency( Guard.class );
     }
 
     @Override
@@ -157,6 +162,12 @@ public class Neo4jTransactionalContext implements TransactionalContext
     public Statement statement()
     {
         return statement;
+    }
+
+    @Override
+    public void check()
+    {
+        guard.check( (KernelStatement) statement );
     }
 
     @Override
