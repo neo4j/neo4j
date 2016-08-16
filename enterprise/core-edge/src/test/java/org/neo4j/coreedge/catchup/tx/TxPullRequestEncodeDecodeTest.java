@@ -22,13 +22,10 @@ package org.neo4j.coreedge.catchup.tx;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
-import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.identity.StoreId;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-
-import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 
 public class TxPullRequestEncodeDecodeTest
 {

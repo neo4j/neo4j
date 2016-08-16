@@ -35,7 +35,7 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
+import org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderEncoder;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequestHandler;
@@ -152,12 +152,12 @@ public class CatchupServer extends LifecycleAdapter
 
     private ChannelInboundHandler decoders( CatchupServerProtocol protocol )
     {
-        RequestDecoderDispatcher<CatchupServerProtocol.NextMessage> decoderDispatcher =
+        RequestDecoderDispatcher<State> decoderDispatcher =
                 new RequestDecoderDispatcher<>( protocol, logProvider );
-        decoderDispatcher.register( NextMessage.TX_PULL, new TxPullRequestDecoder() );
-        decoderDispatcher.register( NextMessage.GET_STORE, new SimpleRequestDecoder( GetStoreRequest::new ) );
-        decoderDispatcher.register( NextMessage.GET_STORE_ID, new SimpleRequestDecoder( GetStoreIdRequest::new ) );
-        decoderDispatcher.register( NextMessage.GET_RAFT_STATE, new SimpleRequestDecoder( CoreSnapshotRequest::new) );
+        decoderDispatcher.register( State.TX_PULL, new TxPullRequestDecoder() );
+        decoderDispatcher.register( State.GET_STORE, new SimpleRequestDecoder( GetStoreRequest::new ) );
+        decoderDispatcher.register( State.GET_STORE_ID, new SimpleRequestDecoder( GetStoreIdRequest::new ) );
+        decoderDispatcher.register( State.GET_RAFT_STATE, new SimpleRequestDecoder( CoreSnapshotRequest::new) );
         return decoderDispatcher;
     }
 

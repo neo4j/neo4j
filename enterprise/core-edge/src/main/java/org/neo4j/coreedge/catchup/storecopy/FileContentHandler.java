@@ -57,7 +57,7 @@ public class FileContentHandler  extends SimpleChannelInboundHandler<FileContent
 
         if ( expectedBytes <= 0 )
         {
-            protocol.expect( CatchupClientProtocol.NextMessage.MESSAGE_TYPE );
+            protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
         }
     }
 }

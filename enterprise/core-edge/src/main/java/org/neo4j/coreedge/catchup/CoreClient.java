@@ -26,7 +26,7 @@ import io.netty.channel.socket.SocketChannel;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
+import org.neo4j.coreedge.catchup.CatchupClientProtocol.State;
 import org.neo4j.coreedge.catchup.storecopy.FileContentDecoder;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderDecoder;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequest;
@@ -211,15 +211,15 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
 
     protected ChannelInboundHandler decoders( CatchupClientProtocol protocol )
     {
-        RequestDecoderDispatcher<NextMessage> decoderDispatcher =
+        RequestDecoderDispatcher<State> decoderDispatcher =
                 new RequestDecoderDispatcher<>( protocol, logProvider );
-        decoderDispatcher.register( NextMessage.STORE_ID, new GetStoreIdResponseDecoder() );
-        decoderDispatcher.register( NextMessage.TX_PULL_RESPONSE, new TxPullResponseDecoder() );
-        decoderDispatcher.register( NextMessage.CORE_SNAPSHOT, new CoreSnapshotDecoder() );
-        decoderDispatcher.register( NextMessage.STORE_COPY_FINISHED, new StoreCopyFinishedResponseDecoder() );
-        decoderDispatcher.register( NextMessage.TX_STREAM_FINISHED, new TxStreamFinishedResponseDecoder() );
-        decoderDispatcher.register( NextMessage.FILE_HEADER, new FileHeaderDecoder() );
-        decoderDispatcher.register( NextMessage.FILE_CONTENTS, new FileContentDecoder() );
+        decoderDispatcher.register( State.STORE_ID, new GetStoreIdResponseDecoder() );
+        decoderDispatcher.register( State.TX_PULL_RESPONSE, new TxPullResponseDecoder() );
+        decoderDispatcher.register( State.CORE_SNAPSHOT, new CoreSnapshotDecoder() );
+        decoderDispatcher.register( State.STORE_COPY_FINISHED, new StoreCopyFinishedResponseDecoder() );
+        decoderDispatcher.register( State.TX_STREAM_FINISHED, new TxStreamFinishedResponseDecoder() );
+        decoderDispatcher.register( State.FILE_HEADER, new FileHeaderDecoder() );
+        decoderDispatcher.register( State.FILE_CONTENTS, new FileContentDecoder() );
         return decoderDispatcher;
     }
 }

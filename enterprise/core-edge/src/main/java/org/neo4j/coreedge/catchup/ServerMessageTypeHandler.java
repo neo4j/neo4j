@@ -42,25 +42,25 @@ class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
-        if ( CatchupServerProtocol.NextMessage.MESSAGE_TYPE.equals( protocol.expecting() ) )
+        if ( protocol.isExpecting( CatchupServerProtocol.State.MESSAGE_TYPE ) )
         {
             RequestMessageType requestMessageType = RequestMessageType.from( ((ByteBuf) msg).readByte() );
 
             if ( requestMessageType.equals( RequestMessageType.TX_PULL_REQUEST ) )
             {
-                protocol.expect( CatchupServerProtocol.NextMessage.TX_PULL );
+                protocol.expect( CatchupServerProtocol.State.TX_PULL );
             }
             else if ( requestMessageType.equals( RequestMessageType.STORE ) )
             {
-                protocol.expect( CatchupServerProtocol.NextMessage.GET_STORE );
+                protocol.expect( CatchupServerProtocol.State.GET_STORE );
             }
             else if ( requestMessageType.equals( RequestMessageType.STORE_ID ) )
             {
-                protocol.expect( CatchupServerProtocol.NextMessage.GET_STORE_ID );
+                protocol.expect( CatchupServerProtocol.State.GET_STORE_ID );
             }
             else if ( requestMessageType.equals( RequestMessageType.RAFT_STATE ) )
             {
-                protocol.expect( CatchupServerProtocol.NextMessage.GET_RAFT_STATE );
+                protocol.expect( CatchupServerProtocol.State.GET_RAFT_STATE );
             }
             else
             {

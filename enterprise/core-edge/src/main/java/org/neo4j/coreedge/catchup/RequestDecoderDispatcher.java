@@ -44,11 +44,10 @@ class RequestDecoderDispatcher<E extends Enum<E>> extends ChannelInboundHandlerA
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
-        E expecting = protocol.expecting();
-        ChannelInboundHandler delegate = decoders.get( expecting );
+        ChannelInboundHandler delegate = protocol.select( decoders );
         if ( delegate == null )
         {
-            log.warn( "Unregistered handler for message type %s", expecting );
+            log.warn( "Unregistered handler for protocol %s", protocol );
             return;
         }
         delegate.channelRead( ctx, msg );
@@ -56,7 +55,7 @@ class RequestDecoderDispatcher<E extends Enum<E>> extends ChannelInboundHandlerA
 
     public void register( E type, ChannelInboundHandler decoder )
     {
-        assert !decoders.containsKey( type ) : "registering twice a decoder for the same type?";
+        assert !decoders.containsKey( type ) : "registering twice a decoder for the same type (" + type + ")?";
         decoders.put( type, decoder );
     }
 }

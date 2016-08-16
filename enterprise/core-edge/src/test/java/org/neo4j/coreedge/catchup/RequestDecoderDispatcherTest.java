@@ -28,14 +28,15 @@ import org.neo4j.logging.AssertableLogProvider;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class RequestDecoderDispatcherTest
 {
-    private final Protocol<Type> protocol = new Protocol<Type>( Type.two ) {};
+    private final Protocol<State> protocol = new Protocol<State>( State.two ) {};
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
-    private enum Type
+    private enum State
     {
         one, two, three
     }
@@ -44,11 +45,13 @@ public class RequestDecoderDispatcherTest
     public void shouldDispatchToRegisteredDecoder() throws Exception
     {
         // given
-        RequestDecoderDispatcher<Type> dispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
-        ChannelInboundHandler delegate = mock( ChannelInboundHandler.class );
-        dispatcher.register( Type.one, mock( ChannelInboundHandler.class ) );
-        dispatcher.register( Type.two, delegate );
-        dispatcher.register( Type.three, mock( ChannelInboundHandler.class ) );
+        RequestDecoderDispatcher<State> dispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
+        ChannelInboundHandler delegateOne = mock( ChannelInboundHandler.class );
+        ChannelInboundHandler delegateTwo = mock( ChannelInboundHandler.class );
+        ChannelInboundHandler delegateThree = mock( ChannelInboundHandler.class );
+        dispatcher.register( State.one, delegateOne );
+        dispatcher.register( State.two, delegateTwo );
+        dispatcher.register( State.three, delegateThree );
 
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         Object msg = new Object();
@@ -57,25 +60,29 @@ public class RequestDecoderDispatcherTest
         dispatcher.channelRead( ctx, msg );
 
         // then
-        verify( delegate ).channelRead( ctx, msg );
-        verifyNoMoreInteractions( delegate );
+        verify( delegateTwo ).channelRead( ctx, msg );
+        verifyNoMoreInteractions( delegateTwo );
+        verifyZeroInteractions( delegateOne, delegateThree );
     }
 
     @Test
     public void shouldLogAWarningIfThereIsNoDecoderForTheMessageType() throws Exception
     {
         // given
-        RequestDecoderDispatcher<Type> dispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
-        dispatcher.register( Type.one, mock( ChannelInboundHandler.class ) );
-        dispatcher.register( Type.three, mock( ChannelInboundHandler.class ) );
+        RequestDecoderDispatcher<State> dispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
+        ChannelInboundHandler delegateOne = mock( ChannelInboundHandler.class );
+        ChannelInboundHandler delegateThree = mock( ChannelInboundHandler.class );
+        dispatcher.register( State.one, delegateOne );
+        dispatcher.register( State.three, delegateThree );
 
         // when
         dispatcher.channelRead( mock( ChannelHandlerContext.class ), new Object() );
 
         // then
         AssertableLogProvider.LogMatcher matcher =
-                inLog( RequestDecoderDispatcher.class ).warn( "Unregistered handler for message type %s", Type.two );
+                inLog( RequestDecoderDispatcher.class ).warn( "Unregistered handler for protocol %s", protocol );
 
         logProvider.assertExactly( matcher );
+        verifyZeroInteractions( delegateOne, delegateThree );
     }
 }

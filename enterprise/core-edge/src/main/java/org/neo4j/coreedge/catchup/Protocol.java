@@ -19,22 +19,35 @@
  */
 package org.neo4j.coreedge.catchup;
 
+import java.util.Map;
+
 public abstract class Protocol<E extends Enum<E>>
 {
-    private E next;
+    private E state;
 
-    Protocol( E initialValue )
+    protected Protocol( E initialValue )
     {
-        this.next = initialValue;
+        this.state = initialValue;
     }
 
-    public void expect( E next )
+    public void expect( E state )
     {
-        this.next = next;
+        this.state = state;
     }
 
-    public E expecting()
+    public boolean isExpecting( E state )
     {
-        return next;
+        return this.state == state;
+    }
+
+    public <T> T select( Map<E,T> map )
+    {
+        return map.get( state );
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "{" + "state=" + state + '}';
     }
 }

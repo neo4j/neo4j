@@ -25,7 +25,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
-import org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
+import org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.cursor.IOCursor;
@@ -100,7 +100,7 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
         ctx.flush();
 
         monitor.increment();
-        protocol.expect( NextMessage.MESSAGE_TYPE );
+        protocol.expect( State.MESSAGE_TYPE );
     }
 
     @Override

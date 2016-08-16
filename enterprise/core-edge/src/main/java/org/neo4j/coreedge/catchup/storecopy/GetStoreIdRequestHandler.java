@@ -30,7 +30,7 @@ import org.neo4j.coreedge.messaging.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
 import org.neo4j.coreedge.identity.StoreId;
 
-import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
+import static org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 
 public class GetStoreIdRequestHandler extends SimpleChannelInboundHandler<GetStoreIdRequest>
 {
@@ -51,6 +51,6 @@ public class GetStoreIdRequestHandler extends SimpleChannelInboundHandler<GetSto
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
         StoreIdMarshal.marshal( storeId, channel );
         ctx.writeAndFlush( channel.buffer() );
-        protocol.expect( NextMessage.MESSAGE_TYPE );
+        protocol.expect( State.MESSAGE_TYPE );
     }
 }

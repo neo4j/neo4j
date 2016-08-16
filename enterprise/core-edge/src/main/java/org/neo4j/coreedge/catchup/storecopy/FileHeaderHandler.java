@@ -26,7 +26,7 @@ import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
+import static org.neo4j.coreedge.catchup.CatchupClientProtocol.State;
 
 public class FileHeaderHandler extends SimpleChannelInboundHandler<FileHeader>
 {
@@ -44,6 +44,6 @@ public class FileHeaderHandler extends SimpleChannelInboundHandler<FileHeader>
     {
         log.info( "Receiving file: %s (%d bytes)", msg.fileName(), msg.fileLength() );
         ctx.pipeline().get( FileContentHandler.class ).setExpectedFile( msg );
-        protocol.expect( NextMessage.FILE_CONTENTS );
+        protocol.expect( State.FILE_CONTENTS );
     }
 }
