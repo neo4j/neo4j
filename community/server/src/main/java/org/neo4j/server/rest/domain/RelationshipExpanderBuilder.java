@@ -32,7 +32,7 @@ public class RelationshipExpanderBuilder
     @SuppressWarnings( "unchecked" )
     public static PathExpander describeRelationships( Map<String, Object> description )
     {
-        PathExpanderBuilder expander = PathExpanderBuilder.empty();
+        PathExpanderBuilder expander = PathExpanderBuilder.allTypesAndDirections();
 
         Object relationshipsDescription = description.get( "relationships" );
         if ( relationshipsDescription != null )
