@@ -32,6 +32,7 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
     public CoreTopologyService coreDiscoveryService( Config config, MemberId myself, LogProvider logProvider )
     {
         makeHazelcastSilent( config );
+        hazelcastShouldNotPhoneHome();
         return new HazelcastCoreTopologyService( config, myself, logProvider );
     }
 
@@ -43,6 +44,11 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
         makeHazelcastSilent( config );
         return new HazelcastClient( new HazelcastClientConnector( config ), logProvider, boltAddress, timeoutService,
                 edgeTimeToLiveTimeout, edgeRefreshRate );
+    }
+
+    private void hazelcastShouldNotPhoneHome()
+    {
+        System.setProperty( "hazelcast.phone.home.enabled", "false" );
     }
 
     private static void makeHazelcastSilent( Config config )
