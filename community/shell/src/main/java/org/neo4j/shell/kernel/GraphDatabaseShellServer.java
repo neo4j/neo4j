@@ -228,7 +228,8 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     @Override
     protected String getWelcomeMessage()
     {
-        return "Welcome to the Neo4j Shell! Enter 'help' for a list of commands";
+        return "Welcome to the Neo4j Shell! Enter 'help' for a list of commands. " +
+                "Please note that neo4j-shell is deprecated and to be replaced by cypher-shell.";
     }
 
     /**
