@@ -19,20 +19,11 @@
  */
 package org.neo4j.coreedge.catchup;
 
-public class CatchupServerProtocol implements Protocol<CatchupServerProtocol.NextMessage>
+public class CatchupServerProtocol extends Protocol<CatchupServerProtocol.NextMessage>
 {
-    private NextMessage nextMessage = NextMessage.MESSAGE_TYPE;
-
-    @Override
-    public void expect( NextMessage nextMessage )
+    public CatchupServerProtocol()
     {
-        this.nextMessage = nextMessage;
-    }
-
-    @Override
-    public NextMessage expecting()
-    {
-        return nextMessage;
+        super( NextMessage.MESSAGE_TYPE );
     }
 
     public enum NextMessage

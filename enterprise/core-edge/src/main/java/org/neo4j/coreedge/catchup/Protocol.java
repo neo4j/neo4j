@@ -19,9 +19,22 @@
  */
 package org.neo4j.coreedge.catchup;
 
-public interface Protocol<E extends Enum<E>>
+public abstract class Protocol<E extends Enum<E>>
 {
-    void expect( E next );
+    private E next;
 
-    E expecting();
+    Protocol( E initialValue )
+    {
+        this.next = initialValue;
+    }
+
+    public void expect( E next )
+    {
+        this.next = next;
+    }
+
+    public E expecting()
+    {
+        return next;
+    }
 }

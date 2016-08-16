@@ -32,22 +32,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class RequestDecoderDispatcherTest
 {
-    private final Protocol<Type> protocol = new Protocol<Type>()
-    {
-        private Type next;
-
-        @Override
-        public void expect( Type next )
-        {
-            this.next = next;
-        }
-
-        @Override
-        public Type expecting()
-        {
-            return next;
-        }
-    };
+    private final Protocol<Type> protocol = new Protocol<Type>( Type.two ) {};
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     private enum Type
@@ -60,7 +45,6 @@ public class RequestDecoderDispatcherTest
     {
         // given
         RequestDecoderDispatcher<Type> dispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
-        protocol.expect( Type.two );
         ChannelInboundHandler delegate = mock( ChannelInboundHandler.class );
         dispatcher.register( Type.one, mock( ChannelInboundHandler.class ) );
         dispatcher.register( Type.two, delegate );
@@ -82,7 +66,6 @@ public class RequestDecoderDispatcherTest
     {
         // given
         RequestDecoderDispatcher<Type> dispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
-        protocol.expect( Type.two );
         dispatcher.register( Type.one, mock( ChannelInboundHandler.class ) );
         dispatcher.register( Type.three, mock( ChannelInboundHandler.class ) );
 
