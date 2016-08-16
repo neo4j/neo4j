@@ -32,7 +32,6 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.logging.Level;
 
 import static java.util.stream.Collectors.joining;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class EdgeClusterMember
@@ -52,7 +51,6 @@ public class EdgeClusterMember
                 .map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
         config.put( "dbms.mode", "EDGE" );
-        config.put( CoreEdgeClusterSettings.cluster_name.name(), CoreClusterMember.CLUSTER_NAME );
         config.put( CoreEdgeClusterSettings.initial_discovery_members.name(), initialHosts );
         config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
         config.put( GraphDatabaseSettings.record_format.name(), recordFormat );
