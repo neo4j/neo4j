@@ -59,7 +59,8 @@ public class IndexProxyCreator
     public IndexProxy createPopulatingIndexProxy( final long ruleId,
                                                   final IndexDescriptor descriptor,
                                                   final SchemaIndexProvider.Descriptor providerDescriptor,
-                                                  final boolean constraint,
+                                                  IndexConfiguration config,
+                                                  final boolean flipToTentative,
                                                   final IndexingService.Monitor monitor,
                                                   final IndexPopulationJob populationJob ) throws IOException
     {
@@ -67,7 +68,6 @@ public class IndexProxyCreator
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
-        final IndexConfiguration config = IndexConfiguration.of( constraint );
         IndexPopulator populator = populatorFromProvider( providerDescriptor, ruleId, descriptor, config,
                 samplingConfig );
 
@@ -96,7 +96,7 @@ public class IndexProxyCreator
                     descriptor, config, onlineAccessorFromProvider( providerDescriptor, ruleId,
                     config, samplingConfig ), storeView, providerDescriptor, true
             );
-            if ( constraint )
+            if ( flipToTentative )
             {
                 return new TentativeConstraintIndexProxy( flipper, onlineProxy );
             }
