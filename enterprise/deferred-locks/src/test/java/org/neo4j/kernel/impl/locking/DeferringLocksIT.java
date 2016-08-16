@@ -222,7 +222,7 @@ public class DeferringLocksIT
     @Test( timeout = TEST_TIMEOUT )
     public void readOwnChangesFromRacingIndexNoBlock() throws Throwable
     {
-        t2.execute( new WorkerCommand<Void,Void>()
+        Future<Void> t2Future = t2.execute( new WorkerCommand<Void,Void>()
         {
             @Override
             public Void doWork( Void state ) throws Exception
@@ -238,7 +238,7 @@ public class DeferringLocksIT
             }
         } );
 
-        t3.execute( new WorkerCommand<Void,Void>()
+        Future<Void> t3Future = t3.execute( new WorkerCommand<Void,Void>()
         {
             @Override
             public Void doWork( Void state ) throws Exception
@@ -251,6 +251,9 @@ public class DeferringLocksIT
                 return null;
             }
         } );
+
+        t3Future.get();
+        t2Future.get();
 
         assertInTxNodeWith( LABEL, PROPERTY_KEY, VALUE_1 );
     }
