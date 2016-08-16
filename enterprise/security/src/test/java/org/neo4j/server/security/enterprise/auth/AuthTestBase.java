@@ -37,6 +37,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -248,6 +249,7 @@ abstract class AuthTestBase<S>
     void assertFail( S subject, String call, String partOfErrorMsg )
     {
         String err = assertCallEmpty( subject, call );
+        assertThat( err, not( equalTo( "" ) ) );
         assertThat( err, containsString( partOfErrorMsg ) );
     }
 
