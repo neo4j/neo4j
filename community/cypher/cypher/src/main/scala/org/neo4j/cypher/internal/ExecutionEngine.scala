@@ -134,7 +134,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
     val phaseTracer = compilationTracer.compileQuery(queryText)
     try {
 
-      val externalTransactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.METADATA_KEY))
+      val externalTransactionalContext = TransactionalContextWrapper(session.get(TransactionalContext.METADATA_KEY))
       val preParsedQuery = try {
         preParseQuery(queryText)
       } catch {
@@ -190,8 +190,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
 
     throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
   }
-
-  private val txBridge = queryService.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
 
   private def getOrCreateFromSchemaState[V](operations: ReadOperations, creator: => V) = {
     val javaCreator = new java.util.function.Function[ExecutionEngine, V]() {

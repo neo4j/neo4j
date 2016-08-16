@@ -42,7 +42,7 @@ class LoadCsvIterator(url: URL, inner: Iterator[Array[String]])(onNext: => Unit)
 
   def msg = {
     val committedAnything = lastCommitted >= 0
-    (s"Failure when processing URL '$url' on line $lastProcessed") +
+    s"Failure when processing URL '$url' on line $lastProcessed" +
       (if (readAll) " (which is the last row in the file). " else ". ") +
       (if (committedAnything)
         s"Possibly the last row committed during import is line $lastCommitted. "
