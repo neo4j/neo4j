@@ -26,18 +26,17 @@ import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 public class StartupConstraintSemanticsTest
 {
     @Rule
-    public final TargetDirectory.TestDirectory dir = testDirForTest( StartupConstraintSemanticsTest.class );
+    public final TestDirectory dir = TestDirectory.testDirectory();
 
     @Test
     public void shouldNotAllowOpeningADatabaseWithPECInCommunityEdition() throws Exception

@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.concurrent.Future;
+
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
@@ -34,14 +35,12 @@ import org.neo4j.test.RepeatRule;
 import org.neo4j.test.RepeatRule.Repeat;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy.Park;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_ABORT_QUEUED;
 import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_AWAIT_ALL_COMPLETED;
 

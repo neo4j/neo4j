@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Transaction;

@@ -33,8 +33,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.Configuration.Default;
@@ -42,12 +41,10 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
 
 import static java.lang.Math.abs;
 import static java.lang.System.currentTimeMillis;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
@@ -62,7 +59,7 @@ public class InputCacheTest
     private static final String[] TOKENS = new String[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
 
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private final TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    private final TestDirectory dir = TestDirectory.testDirectory();
     private final RandomRule randomRule = new RandomRule();
 
     @Rule

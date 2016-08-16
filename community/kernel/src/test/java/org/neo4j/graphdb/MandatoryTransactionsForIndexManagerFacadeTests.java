@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.index.IndexManager;
 
 import static org.neo4j.graphdb.IndexManagerFacadeMethods.ALL_INDEX_MANAGER_FACADE_METHODS;

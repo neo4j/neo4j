@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -998,7 +998,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     // -- Set Up: Environment parts
 
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory( getClass() );
 
     @Before
     public void setUp() {

@@ -49,7 +49,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.Long.parseLong;
@@ -63,7 +63,7 @@ public class LuceneSchemaIndexPopulatorTest
     @Rule
     public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     private IndexDescriptor indexDescriptor;
     private IndexStoreView indexStoreView;

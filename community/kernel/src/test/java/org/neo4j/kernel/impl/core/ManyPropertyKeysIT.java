@@ -50,7 +50,7 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -106,7 +106,7 @@ public class ManyPropertyKeysIT
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     private File storeDir;
 
     @Before

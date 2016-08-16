@@ -27,7 +27,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 public class FileUtilsTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private File path;
 

@@ -43,8 +43,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.tooling.ImportTool.Options;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
@@ -59,7 +58,7 @@ import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 public class ImportToolDocIT
 {
     @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
 
     private static final int NODE_COUNT = 6;
     private static final int RELATIONSHIP_COUNT = 9;

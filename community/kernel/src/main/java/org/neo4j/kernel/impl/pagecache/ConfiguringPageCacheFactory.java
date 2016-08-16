@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -29,6 +28,7 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;

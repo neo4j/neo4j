@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -160,7 +160,7 @@ public class ReadAheadLogChannelTest
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     @Rule
-    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
 
     private File file( int index )
     {

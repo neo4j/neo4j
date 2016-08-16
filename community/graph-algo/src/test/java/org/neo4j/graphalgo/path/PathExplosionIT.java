@@ -40,7 +40,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertTrue;
@@ -80,7 +80,7 @@ public class PathExplosionIT
     }
 
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     void assertPathFinderCompletesWithinToleratedDuration( long toleratedRuntime, PathFinder<? extends Path> pathFinder )
             throws IOException

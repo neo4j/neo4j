@@ -61,7 +61,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -274,8 +274,7 @@ public class CountsRotationTest
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTestWithEphemeralFS( fsRule.get(),
-            getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory( fsRule.get() );
 
     private FileSystemAbstraction fs;
     private File dir;

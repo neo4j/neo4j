@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.register.Register;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class CountsOracle

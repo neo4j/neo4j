@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -53,8 +53,8 @@ import static org.mockito.Mockito.when;
 public class GraphDatabaseFacadeFactoryTest
 {
     @Rule
-    public final TargetDirectory.TestDirectory dir =
-            TargetDirectory.testDirForTestWithEphemeralFS( new EphemeralFileSystemAbstraction(), getClass() );
+    public final TestDirectory dir =
+            TestDirectory.testDirectory( new EphemeralFileSystemAbstraction() );
 
     private final GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
     private final GraphDatabaseFacadeFactory.Dependencies deps =

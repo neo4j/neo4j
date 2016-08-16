@@ -31,7 +31,7 @@ import java.util.UUID;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
@@ -41,7 +41,7 @@ public class LuceneSchemaIndexTest
     @Rule
     public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private SchemaIndex index;

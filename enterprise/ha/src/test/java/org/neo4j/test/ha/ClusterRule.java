@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.ha.ClusterManager.ClusterBuilder;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.ha.ClusterManager.StoreDirInitializer;
 import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
@@ -78,12 +78,12 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     private ClusterManager clusterManager;
     private File storeDirectory;
 
-    private final TargetDirectory.TestDirectory testDirectory;
+    private final TestDirectory testDirectory;
     private ManagedCluster cluster;
 
     public ClusterRule( Class<?> testClass )
     {
-        this.testDirectory = TargetDirectory.testDirForTest( testClass );
+        this.testDirectory = TestDirectory.testDirectory( testClass );
         this.clusterManagerBuilder = new ClusterManager.Builder()
                 .withSharedSetting( store_internal_log_level, "DEBUG" )
                 .withSharedSetting( default_timeout, "1s" )

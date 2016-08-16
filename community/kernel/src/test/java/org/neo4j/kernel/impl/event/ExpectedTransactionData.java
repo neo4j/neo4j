@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 
 class ExpectedTransactionData

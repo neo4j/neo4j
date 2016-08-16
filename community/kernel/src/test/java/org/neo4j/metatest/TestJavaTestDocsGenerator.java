@@ -39,7 +39,7 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -52,7 +52,7 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     @Rule
     public TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private final String sectionName = "testsection";
     private File directory;

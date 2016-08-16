@@ -27,8 +27,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;

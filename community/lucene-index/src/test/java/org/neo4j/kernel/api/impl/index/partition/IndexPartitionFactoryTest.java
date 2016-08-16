@@ -32,7 +32,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -40,7 +40,7 @@ public class IndexPartitionFactoryTest
 {
 
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 

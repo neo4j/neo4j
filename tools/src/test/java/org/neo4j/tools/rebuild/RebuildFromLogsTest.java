@@ -43,17 +43,16 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 @RunWith(Parameterized.class)
 public class RebuildFromLogsTest
 {
     @Rule
-    public final TargetDirectory.TestDirectory dir = testDirForTest( RebuildFromLogsTest.class );
+    public final TestDirectory dir = TestDirectory.testDirectory();
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 

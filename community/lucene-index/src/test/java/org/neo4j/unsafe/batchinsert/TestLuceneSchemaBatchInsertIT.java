@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -47,7 +47,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class TestLuceneSchemaBatchInsertIT
 {
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private static final Label LABEL = label( "Person" );
 

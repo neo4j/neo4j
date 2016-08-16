@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.io.pagecache.impl.ByteBufferPage;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
@@ -110,7 +110,7 @@ public abstract class PageSwapperTest
     }
 
     @Rule
-    public final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDir = TestDirectory.testDirectory();
 
     private final ConcurrentLinkedQueue<PageSwapper> openedSwappers = new ConcurrentLinkedQueue<>();
 

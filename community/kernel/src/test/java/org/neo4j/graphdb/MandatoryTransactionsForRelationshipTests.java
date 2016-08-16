@@ -21,8 +21,8 @@ package org.neo4j.graphdb;
 
 import org.junit.Test;
 
-import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.RelationshipFacadeMethods.ALL_RELATIONSHIP_FACADE_METHODS;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class MandatoryTransactionsForRelationshipTests extends AbstractMandatoryTransactionsTest<Relationship>
 {

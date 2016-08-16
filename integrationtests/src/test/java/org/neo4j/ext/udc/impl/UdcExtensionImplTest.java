@@ -52,7 +52,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.mockito.matcher.RegexMatcher;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -86,7 +86,7 @@ public class UdcExtensionImplTest
     private static final String VersionPattern = "(\\d\\.\\d+((\\.|\\-).*)?)|(dev)";
 
     @Rule
-    public TargetDirectory.TestDirectory path = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory path = TestDirectory.testDirectory();
 
     private PingerHandler handler;
     private Map<String, String> config;

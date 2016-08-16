@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
@@ -35,7 +36,7 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.NetworkFlag;
 import org.neo4j.test.rule.LoggerRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -48,14 +49,12 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.memberSeesOtherMemberAsFailed;
 
-import java.util.concurrent.CountDownLatch;
-
 public class ClusterPartitionIT
 {
     @Rule
     public LoggerRule logger = new LoggerRule();
     @Rule
-    public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory dir = TestDirectory.testDirectory();
 
     private final String testPropKey = "testPropKey";
     private final String testPropValue = "testPropValue";

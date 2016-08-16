@@ -27,7 +27,6 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.Format.duration;
 
 /**

@@ -19,10 +19,10 @@
  */
 package org.neo4j.restore;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -32,18 +32,17 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RestoreDatabaseCommandTest
 {
     @Rule
-    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
 
     @Test
     public void shouldNotCopyOverAndExistingDatabase() throws Exception

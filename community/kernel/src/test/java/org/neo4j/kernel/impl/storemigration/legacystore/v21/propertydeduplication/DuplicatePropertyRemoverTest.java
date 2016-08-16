@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -60,7 +60,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class DuplicatePropertyRemoverTest
 {
     @ClassRule
-    public static TargetDirectory.TestDirectory storePath = TargetDirectory.testDirForTest( IndexLookupTest.class );
+    public static TestDirectory storePath = TestDirectory.testDirectory();
 
     private static int PROPERTY_COUNT = 1_000;
     private static GraphDatabaseAPI api;

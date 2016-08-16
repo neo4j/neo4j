@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -64,7 +64,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFi
 public class StoreUpgradeOnStartupTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory();
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
     @Parameterized.Parameter( 0 )

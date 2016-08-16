@@ -24,10 +24,10 @@ import java.io.IOException;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_TYPE_ID;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_TYPE;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.RELATIONSHIP_TYPE_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_TYPE_ID;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
 /**

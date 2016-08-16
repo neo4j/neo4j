@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.staging;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.unsafe.impl.batchimport.staging.SpectrumExecutionMonitor.DEFAULT_WIDTH;
 
 /**

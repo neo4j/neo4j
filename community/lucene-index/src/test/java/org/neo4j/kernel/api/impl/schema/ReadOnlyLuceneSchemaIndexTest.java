@@ -34,14 +34,14 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
 
 public class ReadOnlyLuceneSchemaIndexTest
 {
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
     private ReadOnlyDatabaseSchemaIndex luceneSchemaIndex;

@@ -19,10 +19,10 @@
  */
 package org.neo4j.helpers;
 
+import org.junit.rules.ExternalResource;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.rules.ExternalResource;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;

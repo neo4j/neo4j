@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write3bLengthAndString;
 

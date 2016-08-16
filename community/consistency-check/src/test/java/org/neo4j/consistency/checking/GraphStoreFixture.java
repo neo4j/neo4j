@@ -79,7 +79,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
@@ -491,7 +491,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     @Override
     public Statement apply( final Statement base, Description description )
     {
-        final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( description.getTestClass() );
+        final TestDirectory directory = TestDirectory.testDirectory( description.getTestClass() );
         return super.apply( directory.apply( new Statement()
         {
             @Override

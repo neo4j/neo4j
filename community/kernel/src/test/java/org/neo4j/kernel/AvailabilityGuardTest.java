@@ -41,7 +41,6 @@ import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
 import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
 
 public class AvailabilityGuardTest

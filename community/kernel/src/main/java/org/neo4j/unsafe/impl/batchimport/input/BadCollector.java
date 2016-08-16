@@ -30,7 +30,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputId
 import static java.lang.String.format;
 import static java.util.Arrays.copyOf;
 import static java.util.Arrays.sort;
-
 import static org.neo4j.helpers.Exceptions.withMessage;
 
 public class BadCollector implements Collector

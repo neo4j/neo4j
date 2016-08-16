@@ -28,7 +28,7 @@ import java.io.File;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.ha.factory.HighlyAvailableEditionModule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -37,7 +37,7 @@ import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.TEST_
 public class PlatformConstraintGraphDatabaseFactoryTest
 {
     @Rule
-    public TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory storeDir = TestDirectory.testDirectory();
 
     private File workingDir;
 

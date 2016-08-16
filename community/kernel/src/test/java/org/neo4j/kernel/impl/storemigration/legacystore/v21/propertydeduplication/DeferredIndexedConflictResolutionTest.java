@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
@@ -58,7 +58,7 @@ import static org.mockito.Mockito.when;
 public class DeferredIndexedConflictResolutionTest
 {
     @ClassRule
-    public static TargetDirectory.TestDirectory storePath = TargetDirectory.testDirForTest( IndexLookupTest.class );
+    public static TestDirectory storePath = TestDirectory.testDirectory();
     private NodeRecord nodeRecord;
     private PropertyStore propertyStore;
     private NodeStore nodeStore;

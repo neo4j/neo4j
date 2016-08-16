@@ -33,8 +33,7 @@ import java.util.Random;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -266,5 +265,5 @@ public class PhysicalFlushableChannelTest
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
 }

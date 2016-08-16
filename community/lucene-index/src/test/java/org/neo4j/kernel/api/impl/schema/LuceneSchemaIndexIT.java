@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -56,7 +56,7 @@ public class LuceneSchemaIndexIT
 {
 
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Before
     public void before() throws Exception

@@ -23,7 +23,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 public abstract class ManagedResource<R> implements TestRule
 {
@@ -39,14 +39,14 @@ public abstract class ManagedResource<R> implements TestRule
         return result;
     }
 
-    protected abstract R createResource( TargetDirectory.TestDirectory dir ) throws Exception;
+    protected abstract R createResource( TestDirectory dir ) throws Exception;
 
     protected abstract void disposeResource( R resource );
 
     @Override
     public final Statement apply( final Statement base, Description description )
     {
-        final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( description.getTestClass() );
+        final TestDirectory dir = TestDirectory.testDirectory( description.getTestClass() );
         return dir.apply( new Statement()
         {
             @Override

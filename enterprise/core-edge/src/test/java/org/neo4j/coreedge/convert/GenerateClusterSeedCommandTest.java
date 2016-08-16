@@ -28,16 +28,15 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.backup.BackupEmbeddedIT;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertNotEquals;
-import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 public class GenerateClusterSeedCommandTest
 {
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void shouldGenerateDifferentSeeds() throws Exception

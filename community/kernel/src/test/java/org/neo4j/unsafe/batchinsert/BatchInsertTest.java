@@ -98,7 +98,7 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Collections.singletonList;
@@ -191,7 +191,7 @@ public class BatchInsertTest
     private final FileSystemAbstraction fs = new org.neo4j.io.fs.DefaultFileSystemAbstraction();
 
     @Rule
-    public TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory storeDir = TestDirectory.testDirectory();
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 

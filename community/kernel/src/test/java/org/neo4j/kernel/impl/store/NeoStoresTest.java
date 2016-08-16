@@ -84,7 +84,7 @@ import org.neo4j.string.UTF8;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -105,7 +105,7 @@ public class NeoStoresTest
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final ExpectedException exception = ExpectedException.none();
     private EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTestWithEphemeralFS( fs.get(), getClass() );
+    private TestDirectory dir = TestDirectory.testDirectory( fs.get() );
     private NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
 
     @Rule

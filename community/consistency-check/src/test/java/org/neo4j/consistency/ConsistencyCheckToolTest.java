@@ -38,9 +38,8 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
-
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -60,7 +59,7 @@ import static org.neo4j.test.rule.fs.EphemeralFileSystemRule.shutdownDbAction;
 
 public class ConsistencyCheckToolTest
 {
-    private TargetDirectory.TestDirectory storeDirectory = TargetDirectory.testDirForTest( getClass() );
+    private TestDirectory storeDirectory = TestDirectory.testDirectory();
     private EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Rule

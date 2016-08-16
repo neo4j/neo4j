@@ -43,7 +43,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.endsWith;
@@ -57,7 +57,7 @@ public class QueryLoggerIT
     @Rule
     public final EphemeralFileSystemRule fileSystem = new EphemeralFileSystemRule();
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     private AssertableLogProvider inMemoryLog;
     private GraphDatabaseBuilder databaseBuilder;
     public static final String QUERY = "CREATE (n:Foo{bar:\"baz\"})";

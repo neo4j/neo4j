@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.index;
 import org.junit.Test;
 
 import static java.lang.String.format;
-
 import static org.junit.Assert.assertEquals;
 
 public class PreexistingIndexEntryConflictExceptionTest

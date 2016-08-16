@@ -26,14 +26,14 @@ import org.junit.rules.TestName;
 import java.util.concurrent.Callable;
 
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class ExclusiveServerTestBase
 {
     @Rule
-    public TargetDirectory.TestDirectory folder = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory folder = TestDirectory.testDirectory( );
     @Rule
     public SuppressOutput suppressOutput = suppressAll();
     @Rule

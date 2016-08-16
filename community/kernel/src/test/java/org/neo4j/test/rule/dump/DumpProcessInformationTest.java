@@ -36,7 +36,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Runtime.getRuntime;
 import static org.hamcrest.Matchers.containsString;
@@ -51,7 +51,7 @@ public class DumpProcessInformationTest
     private static final String SIGNAL = "here";
 
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void shouldDumpProcessInformation() throws Exception

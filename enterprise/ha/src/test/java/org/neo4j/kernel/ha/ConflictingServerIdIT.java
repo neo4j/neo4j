@@ -28,7 +28,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -36,7 +36,7 @@ import static org.junit.Assert.fail;
 public class ConflictingServerIdIT
 {
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void testConflictingIdDoesNotSilentlyFail() throws Exception

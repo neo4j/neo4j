@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.containsString;
@@ -56,7 +56,7 @@ public class DatabaseRebuildToolTest
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
-    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
 
     @Test
     public void shouldRebuildDbFromTransactions() throws Exception

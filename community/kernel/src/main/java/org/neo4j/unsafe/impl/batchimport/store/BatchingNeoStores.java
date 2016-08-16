@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -65,7 +66,6 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoTracer;
 
 import static java.lang.String.valueOf;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;

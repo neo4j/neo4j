@@ -24,12 +24,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 

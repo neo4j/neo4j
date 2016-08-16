@@ -53,7 +53,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
@@ -61,7 +61,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class DetectAllRelationshipInconsistenciesIT
 {
-    private final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final TestDirectory directory = TestDirectory.testDirectory();
     private final RandomRule random = new RandomRule();
     private final DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 

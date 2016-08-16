@@ -19,6 +19,11 @@
  */
 package recovery;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -28,11 +33,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -47,17 +47,14 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Boolean.getBoolean;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.rule.SuppressOutput.suppress;
-import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 @RunWith( Parameterized.class )
 public class UniquenessRecoveryTest
@@ -85,7 +82,7 @@ public class UniquenessRecoveryTest
     @Rule
     public final SuppressOutput muted = suppress( SuppressOutput.System.out );
     @Rule
-    public final TargetDirectory.TestDirectory dir = testDirForTest( UniquenessRecoveryTest.class );
+    public final TestDirectory dir = TestDirectory.testDirectory();
     private final Configuration config;
 
     private static final Field PID;

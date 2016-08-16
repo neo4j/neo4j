@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.kernel.api.exceptions.Status;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

@@ -19,11 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-
-import org.junit.Test;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.CharSeekers;
@@ -38,7 +38,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.csv.reader.Readables.sources;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.array;

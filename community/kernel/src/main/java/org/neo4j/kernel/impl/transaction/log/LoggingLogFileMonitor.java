@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.File;
 
-import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
+import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;

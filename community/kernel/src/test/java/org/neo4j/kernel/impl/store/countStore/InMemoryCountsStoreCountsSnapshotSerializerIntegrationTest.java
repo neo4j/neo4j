@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotDeserializer.deserialize;
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
@@ -46,7 +46,7 @@ import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.se
 public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Test
     public void smallWorkloadOnInMemoryLogTest() throws IOException

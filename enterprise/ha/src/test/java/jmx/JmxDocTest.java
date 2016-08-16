@@ -55,7 +55,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.configuration.docs.AsciiDocListGenerator;
 import org.neo4j.kernel.configuration.docs.SettingDescription;
 import org.neo4j.test.AsciiDocGenerator;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -79,7 +79,7 @@ public class JmxDocTest
         }
     };
     @ClassRule
-    public static final TargetDirectory.TestDirectory test = TargetDirectory.testDirForTest( JmxDocTest.class );
+    public static final TestDirectory test = TestDirectory.testDirectory();
     private static GraphDatabaseService d1b;
 
     @BeforeClass

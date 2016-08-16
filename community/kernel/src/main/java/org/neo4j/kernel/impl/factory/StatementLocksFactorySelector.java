@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;

@@ -44,7 +44,7 @@ import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -68,7 +68,7 @@ public class NeoStoreDataSourceTest
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Rule
-    public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTestWithEphemeralFS( fs.get(), getClass() );
+    public TestDirectory dir = TestDirectory.testDirectory( fs.get() );
 
     @Rule
     public NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();

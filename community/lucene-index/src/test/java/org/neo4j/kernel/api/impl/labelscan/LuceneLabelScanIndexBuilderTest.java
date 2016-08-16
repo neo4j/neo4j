@@ -27,7 +27,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -36,7 +36,7 @@ public class LuceneLabelScanIndexBuilderTest
 {
 
     @Rule
-    public final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDir = TestDirectory.testDirectory( getClass() );
 
     @Test
     public void readOnlyIndexCreation() throws Exception

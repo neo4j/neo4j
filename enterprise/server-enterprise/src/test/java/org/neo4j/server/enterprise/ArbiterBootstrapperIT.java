@@ -55,7 +55,7 @@ import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.enterprise.functional.DumpPortListenerOnNettyBindFailure;
 import org.neo4j.test.InputStreamAwaiter;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.String.format;
@@ -126,7 +126,7 @@ public class ArbiterBootstrapperIT
     @Rule
     public TestRule dumpPorts = new DumpPortListenerOnNettyBindFailure();
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private File directory;
     private LifeSupport life;

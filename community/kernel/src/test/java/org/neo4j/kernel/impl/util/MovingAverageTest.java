@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.util;
 
 import org.junit.Test;
+
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;

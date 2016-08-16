@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 
 import static org.neo4j.graphdb.ConstraintDefinitionFacadeMethods.ALL_CONSTRAINT_DEFINITION_FACADE_METHODS;

@@ -48,7 +48,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -58,7 +58,7 @@ public class StoreMigratorFrom21IT
 {
 
     @Rule
-    public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory storeDir = TestDirectory.testDirectory();
 
     @Test
     public void mustMendDuplicatePropertiesWhenUpgradingFromVersion21() throws Exception

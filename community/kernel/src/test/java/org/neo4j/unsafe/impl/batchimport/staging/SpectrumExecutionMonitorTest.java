@@ -26,12 +26,13 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class SpectrumExecutionMonitorTest
 {

@@ -31,7 +31,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static java.lang.System.lineSeparator;
@@ -44,7 +44,7 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 public class FixturesTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( FixturesTest.class );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();

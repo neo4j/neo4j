@@ -61,7 +61,7 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.labelscan.storestrategy.BitmapDocumentFormat;
 import org.neo4j.kernel.api.impl.labelscan.writer.PartitionedLuceneLabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Long.parseLong;
 import static java.lang.String.valueOf;
@@ -85,7 +85,7 @@ public class LuceneLabelScanStoreWriterTest
     public BitmapDocumentFormat format;
 
     @Rule
-    public final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDir = TestDirectory.testDirectory();
     private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
 
     @Parameterized.Parameters( name = "{0} bits" )

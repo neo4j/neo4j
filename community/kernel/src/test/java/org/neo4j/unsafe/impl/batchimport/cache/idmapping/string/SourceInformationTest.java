@@ -24,10 +24,9 @@ import org.junit.Test;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static org.junit.Assert.assertEquals;
-
 import static java.lang.Math.abs;
 import static java.lang.String.format;
+import static org.junit.Assert.assertEquals;
 
 public class SourceInformationTest
 {

@@ -61,8 +61,7 @@ import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -93,7 +92,7 @@ public class StoreUpgraderInterruptionTestIT
     }
 
     @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();

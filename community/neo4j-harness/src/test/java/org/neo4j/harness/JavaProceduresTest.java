@@ -45,7 +45,7 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -56,7 +56,7 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 public class JavaProceduresTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( InProcessBuilderTest.class );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();

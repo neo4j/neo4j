@@ -36,7 +36,7 @@ import org.neo4j.coreedge.core.consensus.ReplicatedString;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -45,7 +45,7 @@ public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
 {
     private static final int MAX_CONTENT_SIZE = 2048;
     @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory dir = TestDirectory.testDirectory();
 
     protected abstract T createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable;
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -35,7 +36,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.test.DoubleLatch;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 {

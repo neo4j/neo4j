@@ -33,7 +33,6 @@ import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.helpers.FutureAdapter.future;
 import static org.neo4j.unsafe.impl.batchimport.staging.Processing.await;
 

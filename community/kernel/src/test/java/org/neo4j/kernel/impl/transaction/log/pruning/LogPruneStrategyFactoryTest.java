@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import org.junit.Test;
 import org.mockito.Mockito;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
 

@@ -54,7 +54,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertTrue;
@@ -76,7 +76,7 @@ public class RollingUpgradeIT
     public static final RelationshipType type2 = RelationshipType.withName( "type2" );
 
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private LegacyDatabase[] legacyDbs;
     private GraphDatabaseAPI[] newDbs;

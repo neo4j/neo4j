@@ -24,7 +24,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;

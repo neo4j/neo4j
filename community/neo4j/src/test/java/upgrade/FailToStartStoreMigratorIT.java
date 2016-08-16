@@ -31,7 +31,7 @@ import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
 import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertNull;
@@ -42,7 +42,7 @@ import static org.junit.Assert.fail;
 public class FailToStartStoreMigratorIT
 {
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Rule
     public final CleanupRule cleanup = new CleanupRule();

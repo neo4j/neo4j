@@ -66,7 +66,7 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -88,7 +88,7 @@ import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 public class LuceneLabelScanStoreTest
 {
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 

@@ -49,7 +49,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;

@@ -57,8 +57,7 @@ import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.Configuration.Default;
@@ -488,7 +487,7 @@ public class CsvInputBatchImportIT
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
     private final long seed = currentTimeMillis();
     private final Random random = new Random( seed );
 }

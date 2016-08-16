@@ -43,7 +43,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -58,7 +58,7 @@ public class PartitionedIndexStorageTest
     @Rule
     public final DefaultFileSystemRule fsRule = new DefaultFileSystemRule();
     @Rule
-    public final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass(), fsRule.get() );
+    public final TestDirectory testDir = TestDirectory.testDirectory( getClass(), fsRule.get() );
 
     private DefaultFileSystemAbstraction fs;
     private PartitionedIndexStorage storage;

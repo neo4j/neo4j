@@ -19,12 +19,12 @@
  */
 package org.neo4j.test;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import org.junit.Test;
 
 import org.neo4j.helpers.FakeClock;
 

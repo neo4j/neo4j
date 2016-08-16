@@ -32,7 +32,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CommunityCommitProcessFactoryTest

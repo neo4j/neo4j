@@ -19,6 +19,17 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
+import org.junit.Test;
+
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -29,16 +40,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.kernel.impl.store.id.FreeIdKeeper.NO_RESULT;
-
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.util.HashSet;
-import java.util.Set;
-
-import org.junit.Test;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 
 public class FreeIdKeeperTest
 {

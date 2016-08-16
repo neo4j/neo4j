@@ -48,7 +48,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -75,7 +75,7 @@ public class ConsistencyCheckServiceIntegrationTest
         }
     };
 
-    private final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Rule
     public final RuleChain chain = RuleChain.outerRule( testDirectory ).around( fixture );

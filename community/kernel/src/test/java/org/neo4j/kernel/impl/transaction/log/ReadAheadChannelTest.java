@@ -19,18 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.junit.Test;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class ReadAheadChannelTest
 {

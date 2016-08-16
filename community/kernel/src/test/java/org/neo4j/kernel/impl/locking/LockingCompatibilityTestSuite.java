@@ -33,7 +33,7 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 
@@ -68,7 +68,7 @@ public abstract class LockingCompatibilityTestSuite
         public OtherThreadRule<Void> threadC = new OtherThreadRule<>();
 
         @Rule
-        public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+        public TestDirectory testDir = TestDirectory.testDirectory( getClass() );
 
         protected final Locks locks;
         protected final Locks.Client clientA;

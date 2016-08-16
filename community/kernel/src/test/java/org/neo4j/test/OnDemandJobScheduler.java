@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.*;
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.NO_METADATA;
 
 public class OnDemandJobScheduler extends LifecycleAdapter implements JobScheduler
 {

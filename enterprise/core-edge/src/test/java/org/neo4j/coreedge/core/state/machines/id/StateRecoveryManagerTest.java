@@ -27,13 +27,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.coreedge.core.state.storage.SafeStateMarshal;
 import org.neo4j.coreedge.core.state.StateRecoveryManager;
+import org.neo4j.coreedge.core.state.storage.SafeStateMarshal;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -41,7 +41,7 @@ import static org.junit.Assert.fail;
 public class StateRecoveryManagerTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     private final int NUMBER_OF_RECORDS_PER_FILE = 100;
     private final int NUMBER_OF_BYTES_PER_RECORD = 10;

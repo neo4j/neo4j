@@ -43,10 +43,9 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -59,7 +58,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class BatchInsertEnterpriseTest
 {
     @Rule
-    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
 
     @Parameter
     public String recordFormat;

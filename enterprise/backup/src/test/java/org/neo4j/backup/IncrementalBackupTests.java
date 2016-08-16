@@ -39,7 +39,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -48,7 +48,7 @@ public class IncrementalBackupTests
     @Rule
     public TestName testName = new TestName();
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 

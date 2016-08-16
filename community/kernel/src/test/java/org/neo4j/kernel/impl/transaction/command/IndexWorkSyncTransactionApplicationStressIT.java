@@ -54,7 +54,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RecordStorageEngineRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 
 import static java.util.Arrays.asList;
@@ -70,7 +70,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
 {
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
-    private final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final TestDirectory directory = TestDirectory.testDirectory();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule

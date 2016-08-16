@@ -30,13 +30,16 @@ import java.util.concurrent.Future;
 
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.test.ProcessTestUtil.startSubProcess;
 
 public class TestBrokenStoreRecovery
 {
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+
     /**
      * Creates a store with a truncated property store file that remains like
      * that during recovery by truncating the logical log as well. Id
@@ -56,9 +59,6 @@ public class TestBrokenStoreRecovery
         trimFileToSize( log, 78 );
         new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsoluteFile() ).shutdown();
     }
-
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     private void trimFileToSize( File theFile, int toSize )
             throws IOException

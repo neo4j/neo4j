@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -33,7 +33,7 @@ import static org.neo4j.helpers.collection.Iterables.count;
 public class FirstStartupIT
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Test
     public void shouldBeEmptyWhenFirstStarted() throws Exception

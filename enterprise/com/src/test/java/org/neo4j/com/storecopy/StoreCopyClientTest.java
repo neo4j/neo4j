@@ -56,7 +56,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -72,7 +72,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreCopyClientTest
 {
-    private TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    private TestDirectory testDir = TestDirectory.testDirectory();
     private PageCacheRule pageCacheRule = new PageCacheRule();
     private CleanupRule cleanup = new CleanupRule();
 

@@ -35,7 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -47,7 +47,7 @@ import static org.neo4j.kernel.internal.StoreLocker.STORE_LOCK_FILENAME;
 public class StoreLockerTest
 {
     @Rule
-    public TargetDirectory.TestDirectory target = TargetDirectory.testDirForTest( StoreLockerTest.class );
+    public TestDirectory target = TestDirectory.testDirectory();
 
     @Test
     public void shouldObtainLockWhenStoreFileNotLocked() throws Exception

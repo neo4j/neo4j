@@ -30,8 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -41,7 +40,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class StoreLockerLifecycleAdapterTest
 {
     @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
 
     @Test
     public void shouldAllowDatabasesToUseFilesetsSequentially() throws Exception

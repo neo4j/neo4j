@@ -19,12 +19,12 @@
  */
 package org.neo4j.graphdb.index;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.Ignore;
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;

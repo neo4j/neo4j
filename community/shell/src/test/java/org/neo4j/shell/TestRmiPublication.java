@@ -31,7 +31,7 @@ import java.util.Properties;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.getProperty;
@@ -64,7 +64,7 @@ public class TestRmiPublication
     }
 
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private int spawnJvm( Class<?> mainClass, String name ) throws Exception
     {

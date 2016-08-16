@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import org.junit.Test;
+
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
-
-import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static junit.framework.Assert.assertTrue;

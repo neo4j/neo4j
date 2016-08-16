@@ -19,6 +19,9 @@
  */
 package org.neo4j.coreedge.backup;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -26,9 +29,6 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.coreedge.convert.ClusterSeed;
 import org.neo4j.coreedge.convert.StoreMetadata;
@@ -43,12 +43,11 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.test.coreedge.ClusterRule;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.coreedge.backup.ArgsBuilder.toArray;
 import static org.neo4j.coreedge.convert.GenerateClusterSeedCommand.storeId;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
@@ -59,7 +58,7 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 public class RestoreClusterCliTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )

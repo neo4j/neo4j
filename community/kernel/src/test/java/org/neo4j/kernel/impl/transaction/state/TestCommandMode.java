@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-
 import static org.neo4j.kernel.impl.transaction.command.Command.Mode.fromRecordState;
-
-import org.junit.Test;
 
 public class TestCommandMode
 {

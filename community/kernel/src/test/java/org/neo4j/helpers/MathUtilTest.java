@@ -21,8 +21,7 @@ package org.neo4j.helpers;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.MathUtil.numbersEqual;
 
 public class MathUtilTest

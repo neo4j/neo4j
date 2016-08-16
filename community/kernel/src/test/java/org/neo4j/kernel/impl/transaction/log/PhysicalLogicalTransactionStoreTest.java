@@ -50,7 +50,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -64,7 +64,6 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.Tra
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
-import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 public class PhysicalLogicalTransactionStoreTest
 {
@@ -72,7 +71,7 @@ public class PhysicalLogicalTransactionStoreTest
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     @Rule
-    public TargetDirectory.TestDirectory dir = testDirForTest( getClass() );
+    public TestDirectory dir = TestDirectory.testDirectory();
     private File testDir;
 
     @Before
