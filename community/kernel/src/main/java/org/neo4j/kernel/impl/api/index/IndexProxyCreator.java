@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
  * Helper class of {@link IndexingService}. Used mainly as factory of index proxies.
@@ -92,23 +91,16 @@ public class IndexProxyCreator
 
         // Prepare for flipping to online mode
         flipper.setFlipTarget( () -> {
-            try
+            monitor.populationCompleteOn( descriptor );
+            OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
+                    descriptor, config, onlineAccessorFromProvider( providerDescriptor, ruleId,
+                    config, samplingConfig ), storeView, providerDescriptor, true
+            );
+            if ( constraint )
             {
-                monitor.populationCompleteOn( descriptor );
-                OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
-                        descriptor, config, onlineAccessorFromProvider( providerDescriptor, ruleId,
-                        config, samplingConfig ), storeView, providerDescriptor, true
-                );
-                if ( constraint )
-                {
-                    return new TentativeConstraintIndexProxy( flipper, onlineProxy );
-                }
-                return onlineProxy;
+                return new TentativeConstraintIndexProxy( flipper, onlineProxy );
             }
-            catch ( IOException e )
-            {
-                return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, constraint, failure( e ) );
-            }
+            return onlineProxy;
         } );
 
         return new ContractCheckingIndexProxy( flipper, false );
@@ -141,7 +133,10 @@ public class IndexProxyCreator
         }
         catch ( IOException e )
         {
-            return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, failure( e ) );
+            logProvider.getLog( getClass() ).error( "Failed to open index: " + ruleId +
+                                                    " (" + descriptor.userDescription( tokenNameLookup ) +
+                                                    "), requesting re-population.", e );
+            return createRecoveringIndexProxy( descriptor, providerDescriptor, unique );
         }
     }
 

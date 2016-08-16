@@ -210,7 +210,6 @@ public class IndexingService extends LifecycleAdapter
                     break;
                 case POPULATING:
                     // The database was shut down during population, or a crash has occurred, or some other sad thing.
-
                     indexProxy = indexProxyCreator
                             .createRecoveringIndexProxy( descriptor, providerDescriptor, constraint );
                     break;

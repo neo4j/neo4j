@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -33,26 +34,29 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class LuceneSchemaIndexCorruptionTest
 {
     @Rule
     public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Test
-    public void shouldMarkIndexAsFailedIfIndexIsCorrupt() throws Exception
+    public void shouldRequestIndexPopulationIfTheIndexIsCorrupt() throws Exception
     {
         // Given
         long faultyIndexId = 1;
@@ -64,11 +68,12 @@ public class LuceneSchemaIndexCorruptionTest
         InternalIndexState initialState = provider.getInitialState( faultyIndexId );
 
         // Then
-        assertEquals( InternalIndexState.FAILED, initialState );
+        assertThat( initialState, equalTo(InternalIndexState.POPULATING) );
+        logProvider.assertAtLeastOnce( loggedException( error ) );
     }
 
     @Test
-    public void shouldMarkAsFailedAndReturnCorrectFailureMessageWhenFailingWithFileNotFoundException() throws Exception
+    public void shouldRequestIndexPopulationFailingWithFileNotFoundException() throws Exception
     {
         // Given
         long faultyIndexId = 1;
@@ -80,12 +85,12 @@ public class LuceneSchemaIndexCorruptionTest
         InternalIndexState initialState = provider.getInitialState( faultyIndexId );
 
         // Then
-        assertEquals( InternalIndexState.FAILED, initialState );
-        assertEquals( "File not found: " + error.getMessage(), provider.getPopulationFailure( faultyIndexId ) );
+        assertThat( initialState, equalTo(InternalIndexState.POPULATING) );
+        logProvider.assertAtLeastOnce( loggedException( error ) );
     }
 
     @Test
-    public void shouldMarkAsFailedAndReturnCorrectFailureMessageWhenFailingWithEOFException() throws Exception
+    public void shouldRequestIndexPopulationWhenFailingWithEOFException() throws Exception
     {
         // Given
         long faultyIndexId = 1;
@@ -97,40 +102,14 @@ public class LuceneSchemaIndexCorruptionTest
         InternalIndexState initialState = provider.getInitialState( faultyIndexId );
 
         // Then
-        assertEquals( InternalIndexState.FAILED, initialState );
-        assertEquals( "EOF encountered: " + error.getMessage(), provider.getPopulationFailure( faultyIndexId ) );
-    }
-
-    @Test
-    public void shouldDenyFailureForNonFailedIndex() throws Exception
-    {
-        // Given
-        long faultyIndexId = 1;
-        long validIndexId = 2;
-        EOFException error = new EOFException( "/some/path/somewhere" );
-
-        LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
-
-        // When
-        InternalIndexState initialState = provider.getInitialState( faultyIndexId );
-
-        // Then
-        assertEquals( InternalIndexState.FAILED, initialState );
-        try
-        {
-            provider.getPopulationFailure( validIndexId );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThat( initialState, equalTo(InternalIndexState.POPULATING) );
+        logProvider.assertAtLeastOnce( loggedException( error ) );
     }
 
     private LuceneSchemaIndexProvider newFaultySchemaIndexProvider( long faultyIndexId, Exception error )
     {
         FaultyIndexStorageFactory storageFactory = new FaultyIndexStorageFactory( faultyIndexId, error );
-        return new LuceneSchemaIndexProvider( storageFactory );
+        return new LuceneSchemaIndexProvider( storageFactory, logProvider );
     }
 
     private class FaultyIndexStorageFactory extends IndexStorageFactory
@@ -165,5 +144,11 @@ public class LuceneSchemaIndexCorruptionTest
                 throw new UncheckedIOException( e );
             }
         }
+    }
+
+    private static AssertableLogProvider.LogMatcher loggedException( Throwable exception )
+    {
+        return inLog( CoreMatchers.any( String.class ) )
+                .error( CoreMatchers.any( String.class ), sameInstance( exception ) );
     }
 }
