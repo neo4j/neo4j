@@ -486,14 +486,6 @@ public interface ReadOperations
      * <td>{@link #ANY_LABEL}</td>      <td>{@code REL}</td>                     <td>{@code RHS}</td>
      * <td>{@code MATCH}</td>    <td>{@code ()-[r:REL]->(:RHS)}</td>    <td>{@code RETURN count(r)}</td>
      * </tr>
-     * <tr>
-     * <td>{@code LHS}</td>             <td>{@link #ANY_RELATIONSHIP_TYPE}</td>  <td>{@code RHS}</td>
-     * <td>{@code MATCH}</td>    <td>{@code (:LHS)-[r]->(:RHS)}</td>    <td>{@code RETURN count(r)}</td>
-     * </tr>
-     * <tr>
-     * <td>{@code LHS}</td>             <td>{@code REL}</td>                     <td>{@code RHS}</td>
-     * <td>{@code MATCH}</td>    <td>{@code (:LHS)-[r:REL]->(:RHS)}</td><td>{@code RETURN count(r)}</td>
-     * </tr>
      * </tdata>
      * </table>
      *
