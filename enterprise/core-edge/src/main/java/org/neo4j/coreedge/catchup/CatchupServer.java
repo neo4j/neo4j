@@ -127,8 +127,8 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
                         pipeline.addLast( new LengthFieldPrepender( 4 ) );
 
-                        pipeline.addLast( new ResponseMessageTypeEncoder() );
-                        pipeline.addLast( new RequestMessageTypeEncoder() );
+                        pipeline.addLast( new ResponseMessageType.Encoder() );
+                        pipeline.addLast( new RequestMessageType.Encoder() );
                         pipeline.addLast( new TxPullResponseEncoder() );
                         pipeline.addLast( new CoreSnapshotEncoder() );
                         pipeline.addLast( new StoreCopyFinishedResponseEncoder() );

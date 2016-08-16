@@ -86,8 +86,8 @@ public class CoreToCoreClient extends CoreClient
             pipeline.addLast( new TxPullRequestEncoder() );
             pipeline.addLast( new GetStoreRequestEncoder() );
             pipeline.addLast( new CoreSnapshotRequestEncoder() );
-            pipeline.addLast( new ResponseMessageTypeEncoder() );
-            pipeline.addLast( new RequestMessageTypeEncoder() );
+            pipeline.addLast( new ResponseMessageType.Encoder() );
+            pipeline.addLast( new RequestMessageType.Encoder() );
 
             pipeline.addLast( new ClientMessageTypeHandler( protocol, logProvider ) );
 

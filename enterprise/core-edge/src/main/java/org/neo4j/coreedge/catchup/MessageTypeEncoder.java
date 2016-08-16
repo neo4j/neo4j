@@ -19,20 +19,20 @@
  */
 package org.neo4j.coreedge.catchup;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
-public class ResponseMessageTypeEncoder extends MessageToMessageEncoder<ResponseMessageType>
+import java.util.List;
+
+public class MessageTypeEncoder<M extends MessageType> extends MessageToMessageEncoder<M>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, ResponseMessageType response, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, M message, List<Object> out ) throws Exception
     {
         ByteBuf encoded = ctx.alloc().buffer();
-        encoded.writeByte( response.version() );
-        encoded.writeByte( response.messageType() );
+        encoded.writeByte( message.version() );
+        encoded.writeByte( message.type() );
         out.add( encoded );
     }
 }

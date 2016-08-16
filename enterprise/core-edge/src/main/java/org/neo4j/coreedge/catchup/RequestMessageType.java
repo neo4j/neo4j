@@ -19,9 +19,7 @@
  */
 package org.neo4j.coreedge.catchup;
 
-import org.neo4j.coreedge.messaging.Message;
-
-public enum RequestMessageType implements Message
+public enum RequestMessageType implements MessageType
 {
     TX_PULL_REQUEST( CURRENT_VERSION, (byte) 1 ),
     STORE( CURRENT_VERSION, (byte) 2 ),
@@ -30,24 +28,24 @@ public enum RequestMessageType implements Message
     UNKNOWN( CURRENT_VERSION, (byte) 404 );
 
     private byte version;
-    private byte messageType;
+    private byte type;
 
-    RequestMessageType( byte version, byte messageType )
+    RequestMessageType( byte version, byte type )
     {
         this.version = version;
-        this.messageType = messageType;
+        this.type = type;
     }
 
-    public static RequestMessageType from( byte version, byte messageType )
+    public static RequestMessageType from( byte version, byte type )
     {
         if ( version != CURRENT_VERSION )
         {
             return UNKNOWN;
         }
-        
+
         for ( RequestMessageType responseMessageType : values() )
         {
-            if ( responseMessageType.messageType == messageType )
+            if ( responseMessageType.type == type )
             {
                 return responseMessageType;
             }
@@ -61,14 +59,17 @@ public enum RequestMessageType implements Message
         return version;
     }
 
-    public byte messageType()
+    @Override
+    public byte type()
     {
-        return messageType;
+        return type;
     }
 
     @Override
     public String toString()
     {
-        return "RequestMessageType{" + "version=" + version + ", messageType=" + messageType + '}';
+        return "RequestMessageType{" + "version=" + version + ", type=" + type + '}';
     }
+
+    public static class Encoder extends MessageTypeEncoder<RequestMessageType>{}
 }

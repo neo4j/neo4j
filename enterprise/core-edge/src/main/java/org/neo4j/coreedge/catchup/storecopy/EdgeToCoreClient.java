@@ -31,8 +31,8 @@ import java.util.function.Predicate;
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 import org.neo4j.coreedge.catchup.ClientMessageTypeHandler;
 import org.neo4j.coreedge.catchup.CoreClient;
-import org.neo4j.coreedge.catchup.RequestMessageTypeEncoder;
-import org.neo4j.coreedge.catchup.ResponseMessageTypeEncoder;
+import org.neo4j.coreedge.catchup.RequestMessageType;
+import org.neo4j.coreedge.catchup.ResponseMessageType;
 import org.neo4j.coreedge.catchup.tx.TxPullRequestEncoder;
 import org.neo4j.coreedge.catchup.tx.TxPullResponseHandler;
 import org.neo4j.coreedge.catchup.tx.TxStreamFinishedResponseHandler;
@@ -85,8 +85,8 @@ public class EdgeToCoreClient extends CoreClient
             pipeline.addLast( new TxPullRequestEncoder() );
             pipeline.addLast( new GetStoreRequestEncoder() );
             pipeline.addLast( new GetStoreIdRequestEncoder() );
-            pipeline.addLast( new ResponseMessageTypeEncoder() );
-            pipeline.addLast( new RequestMessageTypeEncoder() );
+            pipeline.addLast( new ResponseMessageType.Encoder() );
+            pipeline.addLast( new RequestMessageType.Encoder() );
 
             pipeline.addLast( new ClientMessageTypeHandler( protocol, logProvider ) );
 
