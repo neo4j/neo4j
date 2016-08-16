@@ -37,7 +37,6 @@ import com.hazelcast.core.ClientService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IExecutorService;
-import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
@@ -53,8 +52,7 @@ import static java.util.stream.Collectors.toSet;
 
 class HazelcastClusterTopology
 {
-    // hz client uuid string -> boltAddress string
-    static final String EDGE_SERVER_BOLT_ADDRESS_MAP_NAME = "edge-servers";
+    static final String EDGE_SERVER_BOLT_ADDRESS_MAP_NAME = "edge-servers"; // hz client uuid string -> boltAddress string
     static final String MEMBER_UUID = "member_uuid";
     static final String TRANSACTION_SERVER = "transaction_server";
     static final String RAFT_SERVER = "raft_server";
@@ -71,7 +69,7 @@ class HazelcastClusterTopology
                 edgeMembers( hazelcastInstance, log ) );
     }
 
-    static class GetConnectedClients implements Callable<Collection<String>>, Serializable, HazelcastInstanceAware
+    private static class GetConnectedClients implements Callable<Collection<String>>, Serializable, HazelcastInstanceAware
     {
         private transient HazelcastInstance instance;
 

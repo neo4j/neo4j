@@ -53,7 +53,7 @@ public class ReplicationModule
     private final SessionTracker sessionTracker;
 
     public ReplicationModule( MemberId myself, PlatformModule platformModule, Config config,
-            ConsensusModule consensusModule, Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound,
+            ConsensusModule consensusModule, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
             File clusterStateDirectory, FileSystemAbstraction fileSystem, LogProvider logProvider )
     {
         LifeSupport life = platformModule.life;
@@ -77,8 +77,7 @@ public class ReplicationModule
         progressTracker = new ProgressTrackerImpl( myGlobalSession );
 
         replicator = new RaftReplicator( consensusModule.raftMachine(), myself,
-                loggingOutbound,
-                sessionPool, progressTracker,
+                outbound, sessionPool, progressTracker,
                 new ExponentialBackoffStrategy( 10, SECONDS ) );
 
     }

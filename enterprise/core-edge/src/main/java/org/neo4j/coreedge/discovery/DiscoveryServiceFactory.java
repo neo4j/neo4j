@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.discovery;
 
-
 import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;

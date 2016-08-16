@@ -57,16 +57,15 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     private int maxQueueSize;
 
     public SenderService( ChannelInitializer<SocketChannel> channelInitializer,
-                          LogProvider logProvider,
-                          Monitors monitors,
-                          int maxQueueSize,
-                          NonBlockingChannels nonBlockingChannels )
+            LogProvider logProvider,
+            Monitors monitors,
+            int maxQueueSize )
     {
         this.channelInitializer = channelInitializer;
         this.log = logProvider.getLog( getClass() );
         this.monitors = monitors;
         this.maxQueueSize = maxQueueSize;
-        this.nonBlockingChannels = nonBlockingChannels;
+        this.nonBlockingChannels = new NonBlockingChannels();
     }
 
     @Override

@@ -53,7 +53,6 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.CoreOutbound;
 import org.neo4j.coreedge.messaging.Message;
-import org.neo4j.coreedge.messaging.NonBlockingChannels;
 import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.messaging.SenderService;
 import org.neo4j.helpers.Listeners;
@@ -81,11 +80,10 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     private CompletableFuture<CoreSnapshot> coreSnapshotFuture;
 
     public CoreClient( LogProvider logProvider, ChannelInitializer<SocketChannel> channelInitializer, Monitors monitors,
-            int maxQueueSize, NonBlockingChannels nonBlockingChannels, TopologyService discoveryService, long logThresholdMillis )
+            int maxQueueSize, TopologyService discoveryService, long logThresholdMillis )
     {
         this.logProvider = logProvider;
-        this.senderService =
-                new SenderService( channelInitializer, logProvider, monitors, maxQueueSize, nonBlockingChannels );
+        this.senderService = new SenderService( channelInitializer, logProvider, monitors, maxQueueSize );
         this.outbound = new CoreOutbound( discoveryService, senderService, logProvider, logThresholdMillis );
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }

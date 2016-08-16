@@ -20,10 +20,7 @@
 package org.neo4j.coreedge.core.consensus;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.EnterpriseCoreEditionModule;
@@ -47,17 +44,8 @@ import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.logging.BetterMessageLogger;
-import org.neo4j.coreedge.logging.MessageLogger;
-import org.neo4j.coreedge.logging.NullMessageLogger;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
-import org.neo4j.coreedge.messaging.LoggingOutbound;
-import org.neo4j.coreedge.messaging.NonBlockingChannels;
 import org.neo4j.coreedge.messaging.Outbound;
-import org.neo4j.coreedge.messaging.RaftChannelInitializer;
-import org.neo4j.coreedge.messaging.RaftOutbound;
-import org.neo4j.coreedge.messaging.SenderService;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -81,7 +69,7 @@ public class ConsensusModule
     private final RaftMembershipManager raftMembershipManager;
     private final InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
 
-    public ConsensusModule( MemberId myself, final PlatformModule platformModule, RaftOutbound raftOutbound,
+    public ConsensusModule( MemberId myself, final PlatformModule platformModule, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
             File clusterStateDirectory, CoreTopologyService discoveryService )
     {
         final Config config = platformModule.config;
@@ -92,29 +80,10 @@ public class ConsensusModule
         LogProvider logProvider = logging.getInternalLogProvider();
 
         final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
-        int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
-        final SenderService senderService =
-                new SenderService( new RaftChannelInitializer( marshal, logProvider ), logProvider, platformModule.monitors,
-                        maxQueueSize, new NonBlockingChannels() );
-        life.add( senderService );
-
-        final MessageLogger<MemberId> messageLogger;
-        if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
-        {
-            File logsDir = config.get( GraphDatabaseSettings.logs_directory );
-            messageLogger = life.add( new BetterMessageLogger<>( myself, raftMessagesLog( logsDir ) ) );
-        }
-        else
-        {
-            messageLogger = new NullMessageLogger<>();
-        }
 
         RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider, platformModule.jobScheduler );
 
         raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
-
-        Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>(
-                raftOutbound, myself, messageLogger );
 
         StateStorage<TermState> termState;
         StateStorage<VoteState> voteState;
@@ -150,8 +119,7 @@ public class ConsensusModule
 
         MemberIdSetBuilder memberSetBuilder = new MemberIdSetBuilder();
 
-        SendToMyself leaderOnlyReplicator =
-                new SendToMyself( myself, loggingOutbound );
+        SendToMyself leaderOnlyReplicator = new SendToMyself( myself, outbound );
 
         raftMembershipManager = new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
                expectedClusterSize, electionTimeout, systemUTC(),
@@ -161,7 +129,7 @@ public class ConsensusModule
         life.add( raftMembershipManager );
 
         RaftLogShippingManager logShipping =
-                new RaftLogShippingManager( loggingOutbound, logProvider, raftLog, systemUTC(),
+                new RaftLogShippingManager( outbound, logProvider, raftLog, systemUTC(),
                         myself, raftMembershipManager, electionTimeout,
                         config.get( CoreEdgeClusterSettings.catchup_batch_size ),
                         config.get( CoreEdgeClusterSettings.log_shipping_max_lag ), inFlightMap );
@@ -170,7 +138,7 @@ public class ConsensusModule
 
         raftMachine =
                 new RaftMachine( myself, termState, voteState, raftLog, electionTimeout,
-                        heartbeatInterval, raftTimeoutService, loggingOutbound, logProvider, raftMembershipManager,
+                        heartbeatInterval, raftTimeoutService, outbound, logProvider, raftMembershipManager,
                         logShipping, inFlightMap, platformModule.monitors );
 
         life.add( new RaftDiscoveryServiceConnector( discoveryService, raftMachine ) );
@@ -208,21 +176,6 @@ public class ConsensusModule
             }
             default:
                 throw new IllegalStateException( "Unknown raft log implementation: " + raftLogImplementation );
-        }
-    }
-
-    private static PrintWriter raftMessagesLog( File logsDir )
-    {
-        //noinspection ResultOfMethodCallIgnored
-        logsDir.mkdirs();
-        try
-        {
-
-            return new PrintWriter( new FileOutputStream( new File( logsDir, "raft-messages.log" ), true ) );
-        }
-        catch ( FileNotFoundException e )
-        {
-            throw new RuntimeException( e );
         }
     }
 
