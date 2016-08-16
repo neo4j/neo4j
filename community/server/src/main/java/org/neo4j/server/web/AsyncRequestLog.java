@@ -72,8 +72,8 @@ public class AsyncRequestLog
         // %h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] "%r" %s %b "%i{Referer}" "%i{User-Agent}" %D
         String remoteHost = swallowExceptions( request, HttpServletRequest::getRemoteHost );
         String user = swallowExceptions( request, HttpServletRequest::getRemoteUser );
-        String requestURL = swallowExceptions( request, HttpServletRequest::getRequestURI ) + "?" + swallowExceptions
-                ( request, HttpServletRequest::getQueryString );
+        String requestURL = swallowExceptions( request, HttpServletRequest::getRequestURI ) + "?" +
+                swallowExceptions( request, HttpServletRequest::getQueryString );
         int statusCode = response.getStatus();
         long length = response.getContentLength();
         String referer = swallowExceptions( request, ( HttpServletRequest r ) -> (r.getHeader( "Referer" )) );
@@ -97,7 +97,6 @@ public class AsyncRequestLog
             return null;
         }
     }
-
 
     @Override
     protected synchronized void doStart() throws Exception
