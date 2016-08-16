@@ -145,7 +145,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
 
     private MemberId retrieveMember( ReadableChannel buffer ) throws IOException, EndOfStreamException
     {
-        MemberId.MemberIdMarshal memberIdMarshal = new MemberId.MemberIdMarshal();
+        MemberId.Marshal memberIdMarshal = new MemberId.Marshal();
         return memberIdMarshal.unmarshal( buffer );
     }
 }

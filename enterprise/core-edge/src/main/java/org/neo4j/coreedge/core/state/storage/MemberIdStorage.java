@@ -36,12 +36,12 @@ import org.neo4j.logging.LogProvider;
 public class MemberIdStorage
 {
     private final FileSystemAbstraction fileSystem;
-    private final MemberId.MemberIdMarshal marshal;
+    private final MemberId.Marshal marshal;
     private final File file;
     private Log log;
 
     public MemberIdStorage( FileSystemAbstraction fileSystem, File directory, String name,
-            MemberId.MemberIdMarshal marshal, LogProvider logProvider )
+            MemberId.Marshal marshal, LogProvider logProvider )
     {
         this.fileSystem = fileSystem;
         this.log = logProvider.getLog( getClass() );

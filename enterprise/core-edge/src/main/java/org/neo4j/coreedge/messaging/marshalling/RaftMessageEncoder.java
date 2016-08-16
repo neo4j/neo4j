@@ -48,7 +48,7 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Sto
     {
         RaftMessages.RaftMessage message = decoratedMessage.message();
         StoreId storeId = decoratedMessage.storeId();
-        MemberId.MemberIdMarshal memberMarshal = new MemberId.MemberIdMarshal();
+        MemberId.Marshal memberMarshal = new MemberId.Marshal();
 
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
         channel.put( message.version() );

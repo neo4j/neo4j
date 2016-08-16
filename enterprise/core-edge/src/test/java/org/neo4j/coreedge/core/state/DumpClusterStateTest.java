@@ -75,18 +75,18 @@ public class DumpClusterStateTest
 
     private void createStates() throws IOException
     {
-        MemberIdStorage memberIdStorage = new MemberIdStorage( fsa.get(), clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberId.MemberIdMarshal(), NullLogProvider.getInstance() );
+        MemberIdStorage memberIdStorage = new MemberIdStorage( fsa.get(), clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberId.Marshal(), NullLogProvider.getInstance() );
         memberIdStorage.readState();
 
         createDurableState( LAST_FLUSHED_NAME, new LongIndexMarshal() );
-        createDurableState( LOCK_TOKEN_NAME, new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() ) );
+        createDurableState( LOCK_TOKEN_NAME, new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() ) );
         createDurableState( ID_ALLOCATION_NAME, new IdAllocationState.Marshal() );
-        createDurableState( SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new MemberId.MemberIdMarshal() ) );
+        createDurableState( SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new MemberId.Marshal() ) );
 
         /* raft state */
         createDurableState( RAFT_MEMBERSHIP_NAME, new RaftMembershipState.Marshal() );
         createDurableState( RAFT_TERM_NAME, new TermState.Marshal() );
-        createDurableState( RAFT_VOTE_NAME, new VoteState.Marshal( new MemberId.MemberIdMarshal() ) );
+        createDurableState( RAFT_VOTE_NAME, new VoteState.Marshal( new MemberId.Marshal() ) );
     }
 
     private <T> void createDurableState( String name, StateMarshal<T> marshal ) throws IOException

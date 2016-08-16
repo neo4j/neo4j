@@ -39,8 +39,8 @@ public class MemberIdStorageTest
     public void shouldInitializeWithUniqueMemberId() throws Exception
     {
         // given
-        MemberIdStorage storageA = new MemberIdStorage( fsa.get(), new File( "state-dir" ), "member-id-a", new MemberId.MemberIdMarshal(), NullLogProvider.getInstance() );
-        MemberIdStorage storageB = new MemberIdStorage( fsa.get(), new File( "state-dir" ), "member-id-b", new MemberId.MemberIdMarshal(), NullLogProvider.getInstance() );
+        MemberIdStorage storageA = new MemberIdStorage( fsa.get(), new File( "state-dir" ), "member-id-a", new MemberId.Marshal(), NullLogProvider.getInstance() );
+        MemberIdStorage storageB = new MemberIdStorage( fsa.get(), new File( "state-dir" ), "member-id-b", new MemberId.Marshal(), NullLogProvider.getInstance() );
 
         // when
         MemberId idA = storageA.readState();
@@ -55,7 +55,7 @@ public class MemberIdStorageTest
     public void shouldReadInitializedStateOnSubsequentInvocation() throws Exception
     {
         // given
-        MemberIdStorage storage = new MemberIdStorage( fsa.get(), new File( "state-dir" ), "member-id", new MemberId.MemberIdMarshal(), NullLogProvider.getInstance() );
+        MemberIdStorage storage = new MemberIdStorage( fsa.get(), new File( "state-dir" ), "member-id", new MemberId.Marshal(), NullLogProvider.getInstance() );
         MemberId memberIdA = storage.readState();
 
         // when

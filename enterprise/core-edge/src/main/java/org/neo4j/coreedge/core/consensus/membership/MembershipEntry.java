@@ -83,7 +83,7 @@ class MembershipEntry
 
     static class Marshal extends SafeStateMarshal<MembershipEntry>
     {
-        MemberId.MemberIdMarshal memberMarshal = new MemberId.MemberIdMarshal();
+        MemberId.Marshal memberMarshal = new MemberId.Marshal();
 
         @Override
         public MembershipEntry startState()

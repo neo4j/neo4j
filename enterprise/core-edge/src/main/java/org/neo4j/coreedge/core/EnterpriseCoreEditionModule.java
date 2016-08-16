@@ -44,7 +44,6 @@ import org.neo4j.coreedge.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.coreedge.discovery.procedures.CoreRoleProcedure;
 import org.neo4j.coreedge.discovery.procedures.DiscoverEndpointAcquisitionServersProcedure;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.identity.MemberId.MemberIdMarshal;
 import org.neo4j.coreedge.logging.BetterMessageLogger;
 import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.logging.NullMessageLogger;
@@ -148,7 +147,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         life.add( localDatabase );
 
-        MemberIdStorage memberIdStorage = new MemberIdStorage( fileSystem, clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberIdMarshal(), logProvider );
+        MemberIdStorage memberIdStorage = new MemberIdStorage( fileSystem, clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberId.Marshal(), logProvider );
         MemberId myself;
         try
         {

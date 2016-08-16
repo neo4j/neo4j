@@ -99,7 +99,7 @@ public class ConsensusModule
 
             voteState = life.add(
                     new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_VOTE_NAME,
-                            new VoteState.Marshal( new MemberId.MemberIdMarshal() ),
+                            new VoteState.Marshal( new MemberId.Marshal() ),
                             config.get( CoreEdgeClusterSettings.vote_state_size ), logProvider ) );
 
             raftMembershipStorage = life.add(
