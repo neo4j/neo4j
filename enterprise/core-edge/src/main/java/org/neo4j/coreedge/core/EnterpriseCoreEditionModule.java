@@ -148,7 +148,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory );
 
-        ClusteringModule clusteringModule = new ClusteringModule( discoveryServiceFactory, identityModule.myself(), platformModule );
+        ClusteringModule clusteringModule = new ClusteringModule( discoveryServiceFactory, identityModule.myself(), platformModule, clusterStateDirectory );
         topologyService = clusteringModule.topologyService();
 
         long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );

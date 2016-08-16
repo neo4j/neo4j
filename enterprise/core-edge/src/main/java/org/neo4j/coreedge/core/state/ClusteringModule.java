@@ -19,9 +19,14 @@
  */
 package org.neo4j.coreedge.core.state;
 
+import java.io.File;
+
+import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -30,16 +35,24 @@ import org.neo4j.logging.LogProvider;
 
 public class ClusteringModule
 {
+    private static final String CLUSTER_ID_NAME = "cluster-id";
     private final CoreTopologyService topologyService;
 
-    public ClusteringModule( DiscoveryServiceFactory discoveryServiceFactory, MemberId myself, PlatformModule platformModule )
+    public ClusteringModule( DiscoveryServiceFactory discoveryServiceFactory, MemberId myself, PlatformModule platformModule, File clusterStateDirectory )
     {
         LifeSupport life = platformModule.life;
         Config config = platformModule.config;
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
         Dependencies dependencies = platformModule.dependencies;
+        FileSystemAbstraction fileSystem = platformModule.fileSystem;
 
+        SimpleStorage<ClusterId> clusterIdStorage = new SimpleStorage<>( fileSystem, clusterStateDirectory,
+                CLUSTER_ID_NAME, new ClusterId.Marshal(), logProvider );
+
+        BindingService bindingService = new BindingService( clusterIdStorage );
         topologyService = discoveryServiceFactory.coreTopologyService( config, myself, logProvider );
+
+        life.add( bindingService );
         life.add( topologyService );
 
         dependencies.satisfyDependency( topologyService ); // for tests
