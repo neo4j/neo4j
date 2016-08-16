@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
@@ -153,7 +154,8 @@ public class NonUniqueIndexTests
     {
         Config config = new Config();
         SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
-                DirectoryFactory.PERSISTENT, directory.graphDbDir(), new Config(), OperationalMode.single );
+                DirectoryFactory.PERSISTENT, directory.graphDbDir(), NullLogProvider.getInstance(),
+                new Config(), OperationalMode.single );
         IndexConfiguration indexConfig = new IndexConfiguration( false );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, indexConfig, samplingConfig );

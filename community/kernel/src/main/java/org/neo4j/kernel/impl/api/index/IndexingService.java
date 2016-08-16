@@ -234,7 +234,6 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
                     break;
                 case POPULATING:
                     // The database was shut down during population, or a crash has occurred, or some other sad thing.
-
                     indexProxy = proxySetup.createRecoveringIndexProxy( descriptor, providerDescriptor, constraint );
                     break;
                 case FAILED:

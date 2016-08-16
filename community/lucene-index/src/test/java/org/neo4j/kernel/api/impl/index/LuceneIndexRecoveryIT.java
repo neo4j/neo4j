@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageDataKeys.OperationalMode;
@@ -343,7 +344,7 @@ public class LuceneIndexRecoveryIT
                     throws Throwable
             {
                 return new LuceneSchemaIndexProvider( fs.get(), ignoreCloseDirectoryFactory, context.storeDir(),
-                        dependencies.getConfig(), OperationalMode.single )
+                        dependencies.getLogging().getInternalLogProvider(), dependencies.getConfig(), OperationalMode.single )
                 {
                     @Override
                     public InternalIndexState getInitialState( long indexId )
@@ -366,7 +367,7 @@ public class LuceneIndexRecoveryIT
                     throws Throwable
             {
                 return new LuceneSchemaIndexProvider( fs.get(), ignoreCloseDirectoryFactory, context.storeDir(),
-                        dependencies.getConfig(), OperationalMode.single )
+                        dependencies.getLogging().getInternalLogProvider(), dependencies.getConfig(), OperationalMode.single )
                 {
                     @Override
                     public int compareTo( SchemaIndexProvider o )

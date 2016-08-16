@@ -25,7 +25,9 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
 
@@ -41,6 +43,8 @@ public class LuceneSchemaIndexProviderFactory extends
     public interface Dependencies
     {
         Config getConfig();
+
+        LogService getLogging();
     }
 
     public LuceneSchemaIndexProviderFactory()
@@ -52,12 +56,13 @@ public class LuceneSchemaIndexProviderFactory extends
     public LuceneSchemaIndexProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         Config config = dependencies.getConfig();
+        LogProvider logging = dependencies.getLogging().getInternalLogProvider();
         boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
 
         FileSystemAbstraction fileSystem = context.fileSystem();
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystem );
 
-        return new LuceneSchemaIndexProvider( fileSystem, directoryFactory, context.storeDir(), config,
+        return new LuceneSchemaIndexProvider( fileSystem, directoryFactory, context.storeDir(), logging, config,
                 context.operationalMode() );
     }
 }

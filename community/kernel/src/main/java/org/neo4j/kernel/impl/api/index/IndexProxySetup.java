@@ -31,10 +31,10 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 public class IndexProxySetup
@@ -75,7 +75,7 @@ public class IndexProxySetup
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
         final IndexConfiguration config = new IndexConfiguration( constraint );
-        IndexPopulator populator = populatorFromProvider( providerDescriptor, ruleId, descriptor, config,
+        final IndexPopulator populator = populatorFromProvider( providerDescriptor, ruleId, descriptor, config,
                 samplingConfig );
 
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory(
@@ -97,25 +97,17 @@ public class IndexProxySetup
         flipper.setFlipTarget( new IndexProxyFactory()
         {
             @Override
-            public IndexProxy create()
+            public IndexProxy create() throws Exception
             {
-                try
+                monitor.populationCompleteOn( descriptor );
+                OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
+                        descriptor, config, onlineAccessorFromProvider( providerDescriptor, ruleId,
+                        config, samplingConfig ), storeView, providerDescriptor );
+                if ( constraint )
                 {
-                    monitor.populationCompleteOn( descriptor );
-                    OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
-                            descriptor, config, onlineAccessorFromProvider( providerDescriptor, ruleId,
-                            config, samplingConfig ), storeView, providerDescriptor
-                    );
-                    if ( constraint )
-                    {
-                        return new TentativeConstraintIndexProxy( flipper, onlineProxy );
-                    }
-                    return onlineProxy;
+                    return new TentativeConstraintIndexProxy( flipper, onlineProxy );
                 }
-                catch ( IOException e )
-                {
-                    return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, constraint, failure( e ) );
-                }
+                return onlineProxy;
             }
         } );
 
@@ -151,7 +143,10 @@ public class IndexProxySetup
         }
         catch ( IOException e )
         {
-            return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, failure( e ) );
+            logProvider.getLog( getClass() ).error( "Failed to open index: " + ruleId +
+                    " (" + descriptor.userDescription( tokenNameLookup ) +
+                    "), requesting re-population.", e );
+            return createRecoveringIndexProxy( descriptor, providerDescriptor, unique );
         }
     }
 

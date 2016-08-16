@@ -19,15 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.Directory;
 
-import java.io.EOFException;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -45,6 +40,8 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
@@ -54,10 +51,11 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     private final FailureStorage failureStorage;
     private final FolderLayout folderLayout;
     private final boolean readOnly;
-    private final Map<Long, String> failures = new HashMap<>();
+    private final Log log;
 
-    public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
-            File storeDir, Config config, OperationalMode operationalMode )
+    public LuceneSchemaIndexProvider(
+            FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
+            File storeDir, LogProvider logging, Config config, OperationalMode operationalMode )
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
@@ -65,6 +63,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         this.folderLayout = new FolderLayout( rootDirectory );
         this.failureStorage = new FailureStorage( fileSystem, folderLayout );
         this.readOnly = isReadOnly( config, operationalMode );
+        this.log = logging.getLog( getClass() );
     }
 
     @Override
@@ -114,38 +113,24 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public InternalIndexState getInitialState( long indexId )
     {
+        String failure = failureStorage.loadIndexFailure( indexId );
+        if ( failure != null )
+        {
+            return InternalIndexState.FAILED;
+        }
+        File indexLocation = folderLayout.getFolder( indexId );
         try
         {
-            String failure = failureStorage.loadIndexFailure( indexId );
-            if ( failure != null )
-            {
-                failures.put( indexId, failure );
-                return InternalIndexState.FAILED;
-            }
-
-            try ( Directory directory = directoryFactory.open( folderLayout.getFolder( indexId ) ) )
+            try ( Directory directory = directoryFactory.open( indexLocation ) )
             {
                 boolean status = LuceneIndexWriter.isOnline( directory );
                 return status ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
             }
         }
-        catch( CorruptIndexException e )
+        catch( IOException e )
         {
-            return InternalIndexState.FAILED;
-        }
-        catch( FileNotFoundException e )
-        {
-            failures.put( indexId, "File not found: " + e.getMessage() );
-            return InternalIndexState.FAILED;
-        }
-        catch( EOFException e )
-        {
-            failures.put( indexId, "EOF encountered: " + e.getMessage() );
-            return InternalIndexState.FAILED;
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+            log.error( "Failed to open index:" + indexId + ", requesting re-population.", e );
+            return InternalIndexState.POPULATING;
         }
     }
 
@@ -159,10 +144,6 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     public String getPopulationFailure( long indexId ) throws IllegalStateException
     {
         String failure = failureStorage.loadIndexFailure( indexId );
-        if ( failure == null )
-        {
-            failure = failures.get( indexId );
-        }
         if ( failure == null )
         {
             throw new IllegalStateException( "Index " + indexId + " isn't failed" );
