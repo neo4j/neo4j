@@ -57,13 +57,13 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
         -> N * Asel * Bsel,
 
       "MATCH (a:Z)"
-        -> 0.0,
+        -> 1.0,
 
       "MATCH (a:A:Z)"
-        -> 0.0,
+        -> 0.2,
 
       "MATCH (a:Z:B)"
-        -> 0.0,
+        -> 0.1,
 
       "MATCH (a:A) WHERE a.prop = 42"
         -> A * Aprop,

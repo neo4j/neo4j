@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, StatisticsC
 import org.neo4j.cypher.internal.frontend.v3_0.{LabelId, NameId, PropertyKeyId, RelTypeId}
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.kernel.api.{Statement => KernelStatement, ReadOperations}
+import org.neo4j.kernel.api.ReadOperations
 
 object TransactionBoundGraphStatistics {
   def apply(ops: ReadOperations) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(ops))
@@ -65,11 +65,13 @@ object TransactionBoundGraphStatistics {
       }
 
     def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-      Cardinality(operations.countsForNodeWithoutTxState(labelId))
+      atLeastOne(operations.countsForNodeWithoutTxState(labelId))
 
-    def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-      Cardinality(operations.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
+    def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId],
+                                               toLabel: Option[LabelId]): Cardinality =
+      atLeastOne(operations.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
   }
+
 }
 
 

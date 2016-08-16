@@ -53,6 +53,18 @@ trait GraphStatistics {
       indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE has(x.prop)|
    */
   def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity]
+
+  /**
+    * Due to the way cardinality calculations work, zero is a bit dangerous, as it cancels out
+    * any cost that it multiplies with. To avoid this pitfall, we determine that the least count
+    * available is one, not zero.
+    */
+  protected def atLeastOne(count: Double): Cardinality = {
+    if (count < 1)
+      Cardinality.SINGLE
+    else
+      Cardinality(count)
+  }
 }
 
 class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatistics {

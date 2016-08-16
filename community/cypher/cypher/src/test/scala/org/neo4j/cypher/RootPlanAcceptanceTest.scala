@@ -126,7 +126,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("EstimatedRows should be properly formatted") {
-    given("match (n) return n").planDescription.getArguments.get("EstimatedRows") should equal(0)
+    given("match (n) return n").planDescription.getArguments.get("EstimatedRows") should equal(1) // on missing statistics, we fake cardinality to one
   }
 
   for(planner <- Seq(IDPPlannerName, DPPlannerName, RulePlannerName);
