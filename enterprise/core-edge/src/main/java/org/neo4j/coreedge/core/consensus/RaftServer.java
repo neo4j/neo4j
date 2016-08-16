@@ -46,12 +46,11 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
-
 public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.StoreIdAwareMessage>
 {
     private final ListenSocketAddress listenAddress;
     private final Log log;
+    private Predicate<Message> versionChecker;
     private final LogProvider logProvider;
     private final ChannelMarshal<ReplicatedContent> marshal;
 
@@ -62,10 +61,11 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
     public RaftServer( ChannelMarshal<ReplicatedContent> marshal, ListenSocketAddress listenAddress,
-            LogProvider logProvider )
+            Predicate<Message> versionChecker, LogProvider logProvider )
     {
         this.marshal = marshal;
         this.listenAddress = listenAddress;
+        this.versionChecker = versionChecker;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
     }
@@ -91,7 +91,6 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
                         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
                         pipeline.addLast( new LengthFieldPrepender( 4 ) );
                         pipeline.addLast( new RaftMessageDecoder( marshal ) );
-                        Predicate<Message> versionChecker = ( m ) -> m.version() == CURRENT_VERSION;
                         pipeline.addLast( new RaftMessageHandler( versionChecker, () -> messageHandler, logProvider ) );
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                     }

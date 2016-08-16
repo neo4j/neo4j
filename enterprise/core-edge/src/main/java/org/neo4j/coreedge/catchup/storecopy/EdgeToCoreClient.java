@@ -44,8 +44,6 @@ import org.neo4j.coreedge.messaging.NonBlockingChannels;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
-
 public class EdgeToCoreClient extends CoreClient
 {
     public EdgeToCoreClient( LogProvider logProvider, ChannelInitializer channelInitializer, Monitors monitors,
@@ -58,12 +56,14 @@ public class EdgeToCoreClient extends CoreClient
 
     public static class ChannelInitializer extends io.netty.channel.ChannelInitializer<SocketChannel>
     {
+        private Predicate<Message> versionChecker;
         private final LogProvider logProvider;
         private NonBlockingChannels nonBlockingChannels;
         private EdgeToCoreClient owner;
 
-        public ChannelInitializer( LogProvider logProvider, NonBlockingChannels nonBlockingChannels )
+        public ChannelInitializer( Predicate<Message> versionChecker, LogProvider logProvider, NonBlockingChannels nonBlockingChannels )
         {
+            this.versionChecker = versionChecker;
             this.logProvider = logProvider;
             this.nonBlockingChannels = nonBlockingChannels;
         }
@@ -92,7 +92,6 @@ public class EdgeToCoreClient extends CoreClient
 
             pipeline.addLast( owner.decoders( protocol ) );
 
-            Predicate<Message> versionChecker = ( m ) -> m.version() == CURRENT_VERSION;
             pipeline.addLast( new GetStoreIdResponseHandler( versionChecker, protocol, owner, logProvider ) );
             pipeline.addLast( new TxPullResponseHandler( versionChecker, protocol, owner, logProvider ) );
             pipeline.addLast( new StoreCopyFinishedResponseHandler( versionChecker, protocol, owner, logProvider ) );

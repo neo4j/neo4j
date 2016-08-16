@@ -28,8 +28,8 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 public class TxStreamFinishedResponseEncoder extends MessageToMessageEncoder<TxStreamFinishedResponse>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, TxStreamFinishedResponse response, List<Object> out ) throws
-            Exception
+    protected void encode( ChannelHandlerContext ctx, TxStreamFinishedResponse response, List<Object> out )
+            throws Exception
     {
         ByteBuf encoded = ctx.alloc().buffer();
         encoded.writeByte( response.version() );

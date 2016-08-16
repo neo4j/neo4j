@@ -21,6 +21,7 @@ package org.neo4j.coreedge.core.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.ReplicationModule;
@@ -54,6 +55,7 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.messaging.LoggingInbound;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.messaging.NonBlockingChannels;
 import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
 import org.neo4j.coreedge.messaging.routing.NotMyselfSelectionStrategy;
@@ -69,6 +71,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
 public class CoreServerModule
@@ -106,7 +109,9 @@ public class CoreServerModule
 
         ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );
 
-        RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), raftListenAddress, logProvider );
+        Predicate<Message> versionChecker = ( m ) -> m.version() == CURRENT_VERSION;
+        RaftServer raftServer =
+                new RaftServer( new CoreReplicatedContentMarshal(), raftListenAddress, versionChecker, logProvider );
 
         LoggingInbound<RaftMessages.StoreIdAwareMessage> loggingRaftInbound =
                 new LoggingInbound<>( raftServer, messageLogger, myself );
@@ -114,7 +119,7 @@ public class CoreServerModule
         NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
 
         CoreToCoreClient.ChannelInitializer channelInitializer =
-                new CoreToCoreClient.ChannelInitializer( logProvider, nonBlockingChannels );
+                new CoreToCoreClient.ChannelInitializer( versionChecker, logProvider, nonBlockingChannels );
 
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
         long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );

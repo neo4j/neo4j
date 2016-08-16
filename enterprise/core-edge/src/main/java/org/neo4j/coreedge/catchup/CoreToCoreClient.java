@@ -59,12 +59,14 @@ public class CoreToCoreClient extends CoreClient
 
     public static class ChannelInitializer extends io.netty.channel.ChannelInitializer<SocketChannel>
     {
+        private Predicate<Message> versionChecker;
         private final LogProvider logProvider;
         private NonBlockingChannels nonBlockingChannels;
         private CoreToCoreClient owner;
 
-        public ChannelInitializer( LogProvider logProvider, NonBlockingChannels nonBlockingChannels )
+        public ChannelInitializer( Predicate<Message> versionChecker, LogProvider logProvider, NonBlockingChannels nonBlockingChannels )
         {
+            this.versionChecker = versionChecker;
             this.logProvider = logProvider;
             this.nonBlockingChannels = nonBlockingChannels;
         }
@@ -93,7 +95,6 @@ public class CoreToCoreClient extends CoreClient
 
             pipeline.addLast( owner.decoders( protocol ) );
 
-            Predicate<Message> versionChecker = (m) -> m.version() == CURRENT_VERSION;
             pipeline.addLast( new TxPullResponseHandler( versionChecker, protocol, owner, logProvider ) );
             pipeline.addLast( new CoreSnapshotResponseHandler( versionChecker, protocol, owner, logProvider ) );
             pipeline.addLast( new StoreCopyFinishedResponseHandler( versionChecker, protocol, owner, logProvider ) );
