@@ -19,43 +19,170 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
-import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.impl.api.TokenAccess;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Name;
+import org.neo4j.procedure.Procedure;
 
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
+import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.procedure.Procedure.Mode.READ;
 
-/**
- * This registers procedures that are expected to be available by default in Neo4j.
- */
-public class BuiltInProcedures implements ThrowingConsumer<Procedures, ProcedureException>
+public class BuiltInProcedures
 {
-    private final String neo4jVersion;
-    private final String neo4jEdition;
+    @Context
+    public KernelTransaction tx;
 
-    public BuiltInProcedures( String neo4jVersion, String neo4jEdition )
+    @Procedure(name = "db.labels", mode = READ)
+    public Stream<LabelResult> listLabels()
     {
-        this.neo4jVersion = neo4jVersion;
-        this.neo4jEdition = neo4jEdition;
+        return TokenAccess.LABELS.inUse( tx.acquireStatement() ).map( LabelResult::new ).stream();
     }
 
-    @Override
-    public void accept( Procedures procs ) throws ProcedureException
+    @Procedure(name = "db.propertyKeys", mode = READ)
+    public Stream<PropertyKeyResult> listPropertyKeys()
     {
-        // These are 'db'-namespaced procedures. They deal with database-level
-        // functionality - eg. things that differ across databases
-        procs.register( new ListLabelsProcedure( procedureName( "db", "labels" ) ) );
-        procs.register( new ListPropertyKeysProcedure( procedureName( "db", "propertyKeys" ) ) );
-        procs.register( new ListRelationshipTypesProcedure( procedureName( "db", "relationshipTypes" ) ) );
-        procs.register( new ListIndexesProcedure( procedureName( "db", "indexes" ) ) );
-        procs.register( new ListConstraintsProcedure( procedureName( "db", "constraints" ) ) );
+        return TokenAccess.PROPERTY_KEYS.inUse( tx.acquireStatement() ).map( PropertyKeyResult::new ).stream();
+    }
 
-        // These are 'sys'-namespaced procedures, they deal with DBMS-level
-        // functionality - eg. things that apply across databases.
-        procs.register( new ListProceduresProcedure( procedureName( "dbms", "procedures" ) ) );
-        procs.register( new ListComponentsProcedure( procedureName( "dbms", "components" ), neo4jVersion, neo4jEdition ) );
-        procs.register( new JmxQueryProcedure( procedureName( "dbms", "queryJmx" ), ManagementFactory.getPlatformMBeanServer() ) );
+    @Procedure(name = "db.relationshipTypes", mode = READ)
+    public Stream<RelationshipTypeResult> listRelationshipTypes()
+    {
+        return TokenAccess.RELATIONSHIP_TYPES.inUse( tx.acquireStatement() )
+                .map( RelationshipTypeResult::new ).stream();
+    }
+
+    @Procedure(name = "db.indexes", mode = READ)
+    public Stream<IndexResult> listIndexes() throws ProcedureException
+    {
+        ReadOperations operations = tx.acquireStatement().readOperations();
+        TokenNameLookup tokens = new StatementTokenNameLookup( operations );
+
+        List<IndexDescriptor> indexes = asList( operations.indexesGetAll() );
+        indexes.sort( ( a, b ) -> a.userDescription( tokens ).compareTo( b.userDescription( tokens ) ) );
+        ArrayList<IndexResult> result = new ArrayList<>();
+        for ( IndexDescriptor index : indexes )
+        {
+            try
+            {
+                result.add( new IndexResult( "INDEX ON " + index.userDescription( tokens ),
+                        operations.indexGetState( index ).toString() ) );
+            }
+            catch ( IndexNotFoundKernelException e )
+            {
+                throw new ProcedureException( Status.Schema.IndexNotFound, e,
+                        "No index on ", index.userDescription( tokens ) );
+            }
+        }
+        return result.stream();
+    }
+
+    @Procedure(name = "db.awaitIndex", mode = READ)
+    public void awaitIndex( @Name("label") String labelName,
+                            @Name("property") String propertyKeyName,
+                            @Name(value = "timeOutSeconds") long timeout ) throws ProcedureException
+    {
+        new AwaitIndexProcedure( tx ).execute( labelName, propertyKeyName, timeout, TimeUnit.SECONDS );
+    }
+
+    @Procedure(name = "db.constraints", mode = READ)
+    public Stream<ConstraintResult> listConstraints()
+    {
+        ReadOperations operations = tx.acquireStatement().readOperations();
+        TokenNameLookup tokens = new StatementTokenNameLookup( operations );
+
+        return asList( operations.constraintsGetAll() )
+                .stream()
+                .map( ( constraint ) -> constraint.userDescription( tokens ) )
+                .sorted()
+                .map( ConstraintResult::new );
+    }
+
+    @Procedure(name = "dbms.procedures", mode = READ)
+    public Stream<ProcedureResult> listProcedures()
+    {
+        return tx.acquireStatement().readOperations().proceduresGetAll()
+                .stream()
+                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .map( ProcedureResult::new );
+    }
+
+    public class LabelResult
+    {
+        public final String label;
+
+        private LabelResult( Label label )
+        {
+            this.label = label.name();
+        }
+    }
+
+    public class PropertyKeyResult
+    {
+        public final String propertyKey;
+
+        private PropertyKeyResult( String propertyKey )
+        {
+            this.propertyKey = propertyKey;
+        }
+    }
+
+    public class RelationshipTypeResult
+    {
+        public final String relationshipType;
+
+        private RelationshipTypeResult( RelationshipType relationshipType )
+        {
+            this.relationshipType = relationshipType.name();
+        }
+    }
+
+    public class IndexResult
+    {
+        public final String description;
+        public final String state;
+
+        private IndexResult( String description, String state )
+        {
+            this.description = description;
+            this.state = state;
+        }
+    }
+
+    public class ConstraintResult
+    {
+        public final String description;
+
+        private ConstraintResult( String description )
+        {
+            this.description = description;
+        }
+    }
+
+    public class ProcedureResult
+    {
+        public final String name;
+        public final String signature;
+
+        private ProcedureResult( ProcedureSignature signature )
+        {
+            this.name = signature.name().toString();
+            this.signature = signature.toString();
+        }
     }
 }

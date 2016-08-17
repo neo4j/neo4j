@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
+import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
@@ -349,7 +349,7 @@ public class DataSourceModule
         Log internalLog = platform.logging.getInternalLog( Procedures.class );
 
         Procedures procedures = new Procedures(
-                new BuiltInProcedures( Version.getKernel().getReleaseVersion(),
+                new SpecialBuiltInProcedures( Version.getKernel().getReleaseVersion(),
                         platform.databaseInfo.edition.toString() ),
                 pluginDir, internalLog );
         platform.life.add( procedures );
