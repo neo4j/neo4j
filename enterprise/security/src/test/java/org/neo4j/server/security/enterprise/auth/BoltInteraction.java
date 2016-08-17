@@ -69,11 +69,12 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
 
     EnterpriseAuthManager authManager;
 
-    public BoltInteraction( Neo4jWithSocket server ) throws IOException
+    public BoltInteraction( Neo4jWithSocket server ) throws Throwable
     {
         this.server = server;
         GraphDatabaseFacade db = (GraphDatabaseFacade) server.graphDatabaseService();
         authManager = db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        authManager.start();
     }
 
     @Override
