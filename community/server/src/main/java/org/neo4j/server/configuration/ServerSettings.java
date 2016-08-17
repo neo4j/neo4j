@@ -216,7 +216,6 @@ public interface ServerSettings
     @Description("Path of the lib directory")
     Setting<File> lib_directory = pathSetting( "dbms.directories.lib", "lib" );
 
-    //TODO: do we need this setting and mechanism at all?
     @Description("Timeout for idle transactions in the REST endpoint.")
     Setting<Long> transaction_timeout = setting( "dbms.transaction_timeout", DURATION, "60s" );
 

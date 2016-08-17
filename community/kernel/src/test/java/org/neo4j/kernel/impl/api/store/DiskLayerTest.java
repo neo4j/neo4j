@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.store;
 import org.junit.After;
 import org.junit.Before;
 
+import java.time.Clock;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -31,7 +32,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -69,7 +69,7 @@ public abstract class DiskLayerTest
         db = (GraphDatabaseAPI) createGraphDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         this.disk = resolver.resolveDependency( StorageEngine.class ).storeReadLayer();
-        this.state = new KernelStatement( null, null, null, disk.newStatement(), new Procedures(), Clock.SYSTEM_CLOCK,
+        this.state = new KernelStatement( null, null, null, disk.newStatement(), new Procedures(), Clock.systemUTC(),
                 1L );
     }
 

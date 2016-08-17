@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
-import org.neo4j.helpers.Clock;
+import java.time.Clock;
+
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
@@ -71,6 +72,6 @@ public class StatementLifecycleTest
             StorageStatement storageStatement )
     {
         return new KernelStatement( transaction, null, null, storageStatement, new Procedures(),
-                Clock.SYSTEM_CLOCK, 1L );
+                Clock.systemUTC(), 1L );
     }
 }

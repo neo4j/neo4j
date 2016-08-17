@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v3_0
 
 import java.net.URL
+import java.time.Clock
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.DynamicIterable
@@ -31,7 +32,6 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation}
@@ -57,7 +57,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     outerTx = mock[InternalTransaction]
     val kernelTransaction = mock[KernelTransactionImplementation]
     when(kernelTransaction.mode()).thenReturn(AccessMode.Static.FULL)
-    statement = new KernelStatement(kernelTransaction, null, null, null, new Procedures(), Clock.SYSTEM_CLOCK, 1L)
+    statement = new KernelStatement(kernelTransaction, null, null, null, new Procedures(), Clock.systemUTC, 1L)
   }
 
   override def afterEach() {

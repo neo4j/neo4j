@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
+import java.time.Clock;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -31,7 +32,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -263,7 +263,7 @@ public class DataSourceModule
 
     private TimeoutGuard createTimeoutGuard( LogService logging )
     {
-        return new TimeoutGuard( logging.getInternalLog( TimeoutGuard.class ), Clock.SYSTEM_CLOCK );
+        return new TimeoutGuard( logging.getInternalLog( TimeoutGuard.class ), Clock.systemUTC() );
     }
 
     protected RelationshipProxy.RelationshipActions createRelationshipActions(

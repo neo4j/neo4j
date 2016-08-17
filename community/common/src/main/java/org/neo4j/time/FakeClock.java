@@ -50,6 +50,12 @@ public class FakeClock extends Clock
         return Instant.ofEpochMilli( millis );
     }
 
+    @Override
+    public long millis()
+    {
+        return millis;
+    }
+
     public FakeClock forward( long delta, TimeUnit unit )
     {
         millis += unit.toMillis( delta );

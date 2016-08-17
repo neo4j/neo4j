@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import java.time.Clock;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -33,7 +34,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -450,12 +450,12 @@ public class KernelTransactionsTest
                     TransactionHeaderInformationFactory.DEFAULT,
                     commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
                     tracers, storageEngine, new Procedures(), transactionIdStore, Config.empty(),
-                    Clock.SYSTEM_CLOCK );
+                    Clock.systemUTC() );
         }
         return new KernelTransactions( statementLocksFactory, null, null, null,
                 TransactionHeaderInformationFactory.DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                tracers, storageEngine, new Procedures(), transactionIdStore, Config.empty(), Clock.SYSTEM_CLOCK );
+                tracers, storageEngine, new Procedures(), transactionIdStore, Config.empty(), Clock.systemUTC() );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )

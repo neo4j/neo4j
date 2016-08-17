@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.time.Clock;
+
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -170,7 +171,6 @@ public class KernelStatement implements TxStateHolder, Statement
     void initialize( StatementLocks statementLocks )
     {
         this.statementLocks = statementLocks;
-        this.timeoutMillis = clock.currentTimeMillis();
     }
 
     public StatementLocks locks()
@@ -182,7 +182,7 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         if ( referenceCount++ == 0 )
         {
-            startTimeMillis = clock.currentTimeMillis();
+            startTimeMillis = clock.millis();
             storeStatement.acquire();
         }
     }

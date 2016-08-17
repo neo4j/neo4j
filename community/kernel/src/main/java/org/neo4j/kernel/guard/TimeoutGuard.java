@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.guard;
 
+import java.time.Clock;
 import java.util.function.Supplier;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.logging.Log;
@@ -51,13 +51,14 @@ public class TimeoutGuard implements Guard
 
     private void check( Supplier<Long> completionTimeSupplier, String timeoutDescription )
     {
-        long now = clock.currentTimeMillis();
-        long transactionCompletionTime = completionTimeSupplier.get();
-        if ( transactionCompletionTime < now )
+        long now = clock.millis();
+        long completionTime = completionTimeSupplier.get();
+        if ( completionTime < now )
         {
-            final long overtime = now - transactionCompletionTime;
-            log.warn( timeoutDescription + " ( Overtime: " + overtime + " ms)." );
-            throw new GuardTimeoutException( overtime );
+            final long overtime = now - completionTime;
+            String message = timeoutDescription + " (Overtime: " + overtime + " ms).";
+            log.warn( message );
+            throw new GuardTimeoutException(message, overtime );
         }
     }
 
