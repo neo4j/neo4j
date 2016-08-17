@@ -210,8 +210,8 @@ public class UsersCommand implements AdminCommand
     private FileUserRepository getUserRepository() throws Throwable
     {
         Config config = loadNeo4jConfig( homeDir, configDir );
-        Path userStoreFile = BasicAuthManagerFactory.getUserStoreFile( config );
-        FileUserRepository userRepository = new FileUserRepository( userStoreFile, NullLogProvider.getInstance() );
+        FileUserRepository userRepository =
+                BasicAuthManagerFactory.getUserRepository( config, NullLogProvider.getInstance() );
         userRepository.start();
         return userRepository;
     }

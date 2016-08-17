@@ -86,11 +86,9 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider )
     {
         // Resolve auth store and roles file names
-        Path userStoreFile = getUserStoreFile( config );
         File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
         File roleStoreFile = new File( authStoreDir, ROLE_STORE_FILENAME );
-
-        final UserRepository userRepository = new FileUserRepository( userStoreFile, logProvider );
+        final UserRepository userRepository = getUserRepository( config, logProvider );
 
         final RoleRepository roleRepository =
                 new FileRoleRepository( roleStoreFile.toPath(), logProvider );

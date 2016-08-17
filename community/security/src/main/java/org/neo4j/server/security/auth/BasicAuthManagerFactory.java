@@ -40,7 +40,7 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
 {
     private static final String USER_STORE_FILENAME = "auth";
 
-    public static Path getUserStoreFile( Config config )
+    public static FileUserRepository getUserRepository( Config config, LogProvider logProvider )
     {
         // Resolve auth store file names
         File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
@@ -52,7 +52,7 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
         {
             userStoreFile = new File( authStoreDir, USER_STORE_FILENAME );
         }
-        return userStoreFile.toPath();
+        return new FileUserRepository( userStoreFile.toPath(), logProvider );
     }
 
     public interface Dependencies
@@ -75,8 +75,7 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
                     "configuration setting auth_enabled=false" );
         }
 
-        final Path userStoreFile = getUserStoreFile( config );
-        final UserRepository userRepository = new FileUserRepository( userStoreFile, logProvider );
+        final UserRepository userRepository = getUserRepository( config, logProvider );
 
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 
