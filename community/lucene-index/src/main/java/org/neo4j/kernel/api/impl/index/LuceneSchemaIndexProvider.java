@@ -47,11 +47,13 @@ import org.neo4j.udc.UsageDataKeys.OperationalMode;
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
     private final DirectoryFactory directoryFactory;
+    private final LogProvider logging;
     private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
     private final FailureStorage failureStorage;
     private final FolderLayout folderLayout;
     private final boolean readOnly;
     private final Log log;
+    private final boolean archiveFailedIndex;
 
     public LuceneSchemaIndexProvider(
             FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
@@ -59,10 +61,12 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
+        this.logging = logging;
         File rootDirectory = getRootDirectory( storeDir, LuceneSchemaIndexProviderFactory.KEY );
         this.folderLayout = new FolderLayout( rootDirectory );
         this.failureStorage = new FailureStorage( fileSystem, folderLayout );
         this.readOnly = isReadOnly( config, operationalMode );
+        this.archiveFailedIndex = config.get( GraphDatabaseSettings.archive_failed_index );
         this.log = logging.getLog( getClass() );
     }
 
@@ -77,15 +81,16 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         if ( config.isUnique() )
         {
             return new DeferredConstraintVerificationUniqueLuceneIndexPopulator(
-                    documentStructure, IndexWriterFactories.tracking(), SearcherManagerFactories.standard() ,
-                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId, descriptor );
+                    documentStructure, logging, IndexWriterFactories.tracking(), SearcherManagerFactories.standard() ,
+                    directoryFactory, folderLayout.getFolder( indexId ), archiveFailedIndex, failureStorage,
+                    indexId, descriptor );
         }
         else
         {
             return new NonUniqueLuceneIndexPopulator(
-                    NonUniqueLuceneIndexPopulator.DEFAULT_QUEUE_THRESHOLD, documentStructure,
+                    NonUniqueLuceneIndexPopulator.DEFAULT_QUEUE_THRESHOLD, documentStructure, logging,
                     IndexWriterFactories.tracking(), directoryFactory, folderLayout.getFolder( indexId ),
-                    failureStorage, indexId, samplingConfig );
+                    archiveFailedIndex, failureStorage, indexId, samplingConfig );
         }
     }
 

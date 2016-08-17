@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageDataKeys.OperationalMode;
@@ -59,6 +59,8 @@ import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 public class LuceneIndexRecoveryIT
 {
     private final static Label myLabel = label( "MyLabel" );
+    @Rule
+    public final AssertableLogProvider log = new AssertableLogProvider( true );
 
     @Test
     public void addShouldBeIdempotentWhenDoingRecovery() throws Exception
@@ -243,6 +245,7 @@ public class LuceneIndexRecoveryIT
 
        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
        factory.setFileSystem( fs.get() );
+       factory.setInternalLogProvider( log );
        factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( indexProviderFactory ) );
        db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }

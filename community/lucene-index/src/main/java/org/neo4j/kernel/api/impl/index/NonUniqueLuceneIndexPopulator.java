@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 
 class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
@@ -45,12 +46,12 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     private final NonUniqueIndexSampler sampler;
     private final List<NodePropertyUpdate> updates = new ArrayList<>();
 
-    NonUniqueLuceneIndexPopulator( int queueThreshold, LuceneDocumentStructure documentStructure,
+    NonUniqueLuceneIndexPopulator( int queueThreshold, LuceneDocumentStructure documentStructure, LogProvider logging,
                                    IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-                                   DirectoryFactory dirFactory, File dirFile, FailureStorage failureStorage,
-                                   long indexId, IndexSamplingConfig samplingConfig )
+                                   DirectoryFactory dirFactory, File dirFile, boolean archiveOld,
+                                   FailureStorage failureStorage, long indexId, IndexSamplingConfig samplingConfig )
     {
-        super( documentStructure, indexWriterFactory, dirFactory, dirFile, failureStorage, indexId );
+        super( documentStructure, logging, indexWriterFactory, dirFactory, dirFile, archiveOld, failureStorage, indexId );
         this.queueThreshold = queueThreshold;
         this.sampler = new NonUniqueIndexSampler( samplingConfig.bufferSize() );
     }

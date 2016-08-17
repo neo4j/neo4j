@@ -513,4 +513,9 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<Integer> batch_inserter_batch_size = setting( "batch_inserter_batch_size", INTEGER,
             "10000" );
+
+    @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
+    @Internal
+    public static final Setting<Boolean> archive_failed_index = setting(
+            "unsupported.dbms.index.archive_failed", BOOLEAN, "false" );
 }
