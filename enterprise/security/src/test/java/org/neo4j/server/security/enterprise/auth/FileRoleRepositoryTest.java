@@ -249,7 +249,7 @@ public class FileRoleRepositoryTest
         FileRoleRepository roles = new FileRoleRepository( roleFile, logProvider );
 
         thrown.expect( IllegalStateException.class );
-        thrown.expectMessage( startsWith( "Failed to read role file: " ) );
+        thrown.expectMessage( startsWith( "Failed to read role file '" ) );
 
         try
         {

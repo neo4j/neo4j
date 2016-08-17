@@ -22,15 +22,11 @@ package org.neo4j.server.security.enterprise.auth;
 import java.io.IOException;
 import java.util.Set;
 
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.server.security.auth.UserManager;
 
 public interface EnterpriseUserManager extends UserManager
 {
-    void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
-            InvalidArgumentsException;
-
     void suspendUser( String username ) throws IOException, InvalidArgumentsException;
 
     void activateUser( String username ) throws IOException, InvalidArgumentsException;

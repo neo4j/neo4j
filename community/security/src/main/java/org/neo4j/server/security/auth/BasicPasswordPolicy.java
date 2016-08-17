@@ -29,7 +29,7 @@ public class BasicPasswordPolicy implements PasswordPolicy
     {
         if ( password == null || password.isEmpty() )
         {
-            throw new InvalidArgumentsException( "Password cannot be empty." );
+            throw new InvalidArgumentsException( "A password cannot be empty." );
         }
     }
 }

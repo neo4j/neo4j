@@ -59,7 +59,7 @@ public class FileRoleRepository extends AbstractRoleRepository
             catch ( FormatException e )
             {
                 log.error( "Failed to read role file \"%s\" (%s)", roleFile.toAbsolutePath(), e.getMessage() );
-                throw new IllegalStateException( "Failed to read role file: " + roleFile );
+                throw new IllegalStateException( "Failed to read role file '" + roleFile + "'." );
             }
 
             roles = loadedRoles;

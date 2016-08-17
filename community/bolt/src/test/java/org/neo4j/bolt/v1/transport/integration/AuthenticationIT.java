@@ -343,7 +343,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( msgFailure(Status.Security.InvalidArguments,
-                "Password cannot be empty.") ) );
+                "A password cannot be empty.") ) );
     }
 
     @Test

@@ -75,7 +75,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
             {
                 if ( other.name().equals( role.name() ) )
                 {
-                    throw new IllegalArgumentException( "The specified role already exists" );
+                    throw new IllegalArgumentException( "The specified role '" + role.name() + "' already exists." );
                 }
             }
 
@@ -96,7 +96,8 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
         // Assert input is ok
         if ( !existingRole.name().equals( updatedRole.name() ) )
         {
-            throw new IllegalArgumentException( "updated role has a different name" );
+            throw new IllegalArgumentException( "Updated role '" + updatedRole.name() + "' has a different name than " +
+                    "existing '" + existingRole.name() + "'." );
         }
 
         synchronized ( this )
