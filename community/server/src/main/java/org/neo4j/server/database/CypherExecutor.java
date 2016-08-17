@@ -22,6 +22,7 @@ package org.neo4j.server.database;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -41,7 +42,7 @@ import org.neo4j.server.rest.web.ServerQuerySession;
 
 public class CypherExecutor extends LifecycleAdapter
 {
-    private static final String MAX_EXECUTION_TIME_HEADER = "max-execution-time";
+    static final String MAX_EXECUTION_TIME_HEADER = "max-execution-time";
 
     private final Database database;
     private ExecutionEngine executionEngine;
@@ -67,10 +68,10 @@ public class CypherExecutor extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        this.executionEngine = (ExecutionEngine) database.getGraph().getDependencyResolver()
-                .resolveDependency( QueryExecutionEngine.class );
+        DependencyResolver dependencyResolver = database.getGraph().getDependencyResolver();
+        this.executionEngine = (ExecutionEngine) dependencyResolver.resolveDependency( QueryExecutionEngine.class );
         this.service = executionEngine.queryService();
-        this.txBridge = service.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        this.txBridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     @Override
@@ -122,7 +123,8 @@ public class CypherExecutor extends LifecycleAdapter
             }
             catch ( NumberFormatException e )
             {
-                log.error( "Fail to parse `" + MAX_EXECUTION_TIME_HEADER + "` header with value: " + headerValue, e );
+                log.error( String.format( "Fail to parse `%s` header with value: '%s'. Should be a positive number.",
+                        MAX_EXECUTION_TIME_HEADER, headerValue), e );
             }
         }
         return -1;

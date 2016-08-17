@@ -44,7 +44,7 @@ public interface GraphDatabaseQueryService
 
     InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode );
 
-    InternalTransaction beginTransaction( KernelTransaction.Type implicit, AccessMode accessMode, long timeout );
+    InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout );
 
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
 }

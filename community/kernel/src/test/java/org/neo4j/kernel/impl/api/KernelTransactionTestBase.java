@@ -24,10 +24,12 @@ import org.junit.Before;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
@@ -64,8 +66,10 @@ public class KernelTransactionTestBase
     protected final TransactionHeaderInformationFactory headerInformationFactory =  mock( TransactionHeaderInformationFactory.class );
     protected final SchemaWriteGuard schemaWriteGuard = mock( SchemaWriteGuard.class );
     protected final FakeClock clock = new FakeClock();
-    protected final KernelTransactions kernelTransactions = mock( KernelTransactions.class );
     protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
+    private final long defaultTransactionTimeoutMillis = GraphDatabaseSettings.transaction_timeout.from( Config.defaults() );
+    protected static final long DEFAULT_STATEMENT_TIMEOUT = 1000L;
+
 
     @Before
     public void before()
@@ -77,6 +81,11 @@ public class KernelTransactionTestBase
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
     }
 
+    public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )
+    {
+        return newTransaction( 0, AccessMode.Static.FULL, transactionTimeoutMillis );
+    }
+
     public KernelTransactionImplementation newTransaction( AccessMode accessMode )
     {
         return newTransaction( 0, accessMode );
@@ -85,21 +94,28 @@ public class KernelTransactionTestBase
     public KernelTransactionImplementation newTransaction( AccessMode accessMode, Locks.Client locks,
             boolean txTerminationAwareLocks )
     {
-        return newTransaction( 0, accessMode, locks, txTerminationAwareLocks );
+        return newTransaction( 0, accessMode, locks, txTerminationAwareLocks, defaultTransactionTimeoutMillis );
     }
 
     public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode )
     {
-        return newTransaction( lastTransactionIdWhenStarted, accessMode, new NoOpClient(), false );
+        return newTransaction( lastTransactionIdWhenStarted, accessMode, defaultTransactionTimeoutMillis );
     }
 
     public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode,
-            Locks.Client locks, boolean txTerminationAwareLocks )
+            long transactionTimeoutMillis )
+    {
+        return newTransaction( lastTransactionIdWhenStarted, accessMode, new NoOpClient(), false,
+                transactionTimeoutMillis );
+    }
+
+    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode,
+            Locks.Client locks, boolean txTerminationAwareLocks, long transactionTimeout )
     {
         KernelTransactionImplementation tx = newNotInitializedTransaction( txTerminationAwareLocks );
         StatementLocks statementLocks = new SimpleStatementLocks( locks );
         tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, statementLocks, Type.implicit,
-                accessMode, 0L );
+                accessMode, transactionTimeout );
         return tx;
     }
 
@@ -107,7 +123,7 @@ public class KernelTransactionTestBase
     {
         return new KernelTransactionImplementation( null, schemaWriteGuard, hooks, null, null, headerInformationFactory,
                 commitProcess, transactionMonitor, legacyIndexStateSupplier, txPool, clock, TransactionTracer.NULL,
-                storageEngine, txTerminationAwareLocks, 1L );
+                storageEngine, txTerminationAwareLocks, DEFAULT_STATEMENT_TIMEOUT );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

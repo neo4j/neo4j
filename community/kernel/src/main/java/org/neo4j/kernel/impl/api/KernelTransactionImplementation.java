@@ -211,11 +211,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     public KernelTransactionImplementation initialize(
             long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type, AccessMode
-            accessMode, long timeoutMillis )
+            accessMode, long transactionTimeout )
     {
         this.type = type;
         this.statementLocks = statementLocks;
-        this.timeoutMillis = timeoutMillis;
+        this.timeoutMillis = transactionTimeout;
         this.terminationReason = null;
         this.closing = closed = failure = success = beforeHookInvoked = false;
         this.writeState = TransactionWriteState.NONE;

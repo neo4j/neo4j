@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.Kernel;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -560,6 +562,29 @@ public class KernelIT extends KernelIntegrationTest
         catch( TransactionTerminatedException e )
         {
             // Success
+        }
+    }
+
+    @Test
+    public void startTransactionWithDefaultTimeout() throws Throwable
+    {
+        try ( KernelTransaction transaction =
+                      kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL ) )
+        {
+            long defaultTimeout = Config.defaults().get( GraphDatabaseSettings.transaction_timeout );
+            assertEquals( "By default should start transaction with default timeout.", defaultTimeout, transaction
+                    .timeout() );
+        }
+    }
+
+    @Test
+    public void startTransactionWithCustomTimeout() throws Exception
+    {
+        long transactionTimeout = 12345L;
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.explicit,
+                AccessMode.Static.READ, transactionTimeout ) )
+        {
+            assertEquals( "Transaction should have custom timeout.", transactionTimeout, transaction.timeout() );
         }
     }
 

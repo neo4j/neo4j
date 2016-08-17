@@ -595,6 +595,55 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     }
 
     @Test
+    public void transactionWithCustomTimeout()
+    {
+        long transactionTimeout = 5L;
+        KernelTransactionImplementation transaction = newTransaction( transactionTimeout );
+        assertEquals( "Transaction should have custom configured timeout.", transactionTimeout, transaction.timeout() );
+    }
+
+    @Test
+    public void transactionStartTime()
+    {
+        long startTime = clock.forward( 5, TimeUnit.MINUTES ).millis();
+        KernelTransactionImplementation transaction = newTransaction( AccessMode.Static.FULL );
+        assertEquals( "Transaction start time should be the same as clock time.", startTime, transaction.startTime() );
+    }
+
+    @Test
+    public void statementStartTimeAssignedOnFirstAcquisition()
+    {
+        KernelTransactionImplementation transaction = newTransaction( AccessMode.Static.FULL );
+        long startTime = clock.forward( 17, TimeUnit.SECONDS ).millis();
+        KernelStatement kernelStatement = transaction.acquireStatement();
+
+        assertEquals( "Statement start time assigned during first acquisition.", startTime,
+                kernelStatement.startTime() );
+
+        clock.forward( 1, TimeUnit.SECONDS ).millis();
+        kernelStatement = transaction.acquireStatement();
+        assertEquals( "Statement start time assigned during first acquisition.", startTime,
+                kernelStatement.startTime() );
+
+        clock.forward( 2, TimeUnit.SECONDS ).millis();
+        kernelStatement = transaction.acquireStatement();
+        assertEquals( "Statement start time assigned during first acquisition.", startTime,
+                kernelStatement.startTime() );
+
+        clock.forward( 3, TimeUnit.SECONDS ).millis();
+        kernelStatement = transaction.acquireStatement();
+        assertEquals( "Statement start time assigned during first acquisition.", startTime,
+                kernelStatement.startTime() );
+    }
+
+    @Test
+    public void statementDefaultTimeout()
+    {
+        KernelTransactionImplementation transaction = newTransaction( AccessMode.Static.FULL );
+        assertEquals( "Statement should have default timeout.", DEFAULT_STATEMENT_TIMEOUT, transaction.timeout() );
+    }
+
+    @Test
     public void markForTerminationWithCorrectReuseCount() throws Exception
     {
         int reuseCount = 10;
