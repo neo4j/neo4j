@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
+import java.util.Optional;
 
 /**
  * A page caching mechanism that allows caching multiple files and accessing their data
@@ -60,6 +61,22 @@ public interface PageCache extends AutoCloseable
      * mapping conflicts.
      */
     PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException;
+
+    /**
+     * Ask for an already mapped paged file, backed by this page cache.
+     * <p>
+     * If mapping exist, the returned {@link Optional} will report {@link Optional#isPresent()} true and
+     * {@link Optional#get()} will return the same {@link PagedFile} instance that was initially returned my
+     * {@link #map(File, int, OpenOption...)}.
+     * If no mapping exist for this file, then returned {@link Optional} will report {@link Optional#isPresent()}
+     * false.
+     *
+     * @param file The file to try to get the mapped paged file for.
+     * @return {@link Optional} containing the {@link PagedFile} mapped by this {@link PageCache} for given file, or an
+     * empty {@link Optional} if no mapping exist.
+     * @throws IOException // TODO
+     */
+    Optional<PagedFile> tryMappedPagedFile( File file ) throws IOException;
 
     /** Flush all dirty pages */
     void flushAndForce() throws IOException;

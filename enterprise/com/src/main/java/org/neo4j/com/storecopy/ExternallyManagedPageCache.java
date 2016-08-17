@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.Map;
+import java.util.Optional;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -65,6 +66,13 @@ public class ExternallyManagedPageCache implements PageCache
     public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
     {
         return delegate.map( file, pageSize, openOptions );
+    }
+
+    @Override
+    public Optional<PagedFile> tryMappedPagedFile( File file ) throws IOException
+    {
+        // TODO
+        return null;
     }
 
     @Override

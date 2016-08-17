@@ -29,11 +29,10 @@ import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.traversal.BranchState.NO_STATE;
 import static org.neo4j.graphdb.traversal.Paths.singleNodePath;
 import static org.neo4j.helpers.collection.Iterables.asSet;

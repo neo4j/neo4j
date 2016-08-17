@@ -38,6 +38,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -73,6 +74,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -1034,6 +1036,27 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void writeToPreviouslyBoundCursorAfterNextReturnsFalseMustThrow() throws Exception
     {
         verifyOnWriteCursor( this::checkPreviouslyBoundWriteCursorAfterFailedNext );
+    }
+
+    @Test
+    public void tryMappedPagedFileShouldReportMappedFilePresent() throws Exception
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        final File file = file( "file" );
+        try ( PagedFile pf = cache.map( file, filePageSize ) )
+        {
+            final Optional<PagedFile> mappedPagedFile = cache.tryMappedPagedFile( file );
+            assertTrue( mappedPagedFile.isPresent() );
+            assertThat( mappedPagedFile.get(), sameInstance( pf ) );
+        }
+    }
+
+    @Test
+    public void tryMappedPagedFileShouldReportNonMappedFileNotPresent() throws Exception
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        final Optional<PagedFile> dont_exist = cache.tryMappedPagedFile( new File( "dont_exist" ) );
+        assertFalse( dont_exist.isPresent() );
     }
 
     private void verifyOnReadCursor(

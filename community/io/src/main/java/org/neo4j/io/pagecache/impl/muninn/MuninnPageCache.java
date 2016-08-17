@@ -25,6 +25,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -379,6 +380,13 @@ public class MuninnPageCache implements PageCache
         mappedFiles = current;
         tracer.mappedFile( file );
         return pagedFile;
+    }
+
+    @Override
+    public Optional<PagedFile> tryMappedPagedFile( File file ) throws IOException
+    {
+        // TODO
+        return null;
     }
 
     /**

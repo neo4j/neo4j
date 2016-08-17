@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -65,6 +66,13 @@ public class AdversarialPageCache implements PageCache
         }
         PagedFile pagedFile = delegate.map( file, pageSize, openOptions );
         return new AdversarialPagedFile( pagedFile, adversary );
+    }
+
+    @Override
+    public Optional<PagedFile> tryMappedPagedFile( File file ) throws IOException
+    {
+        // TODO
+        return null;
     }
 
     @Override
