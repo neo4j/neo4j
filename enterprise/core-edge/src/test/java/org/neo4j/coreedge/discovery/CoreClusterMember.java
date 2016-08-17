@@ -39,7 +39,6 @@ import org.neo4j.logging.Level;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
-
 import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
