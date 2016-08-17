@@ -30,10 +30,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
@@ -108,8 +111,21 @@ public class LuceneSchemaIndexCorruptionTest
 
     private LuceneSchemaIndexProvider newFaultySchemaIndexProvider( long faultyIndexId, Exception error )
     {
-        FaultyIndexStorageFactory storageFactory = new FaultyIndexStorageFactory( faultyIndexId, error );
-        return new LuceneSchemaIndexProvider( storageFactory, logProvider );
+        DirectoryFactory directoryFactory = mock( DirectoryFactory.class );
+        File indexRootFolder = testDirectory.graphDbDir();
+        FaultyIndexStorageFactory storageFactory = new FaultyIndexStorageFactory( faultyIndexId, error,
+                directoryFactory, indexRootFolder );
+        return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, indexRootFolder, logProvider,
+                Config.defaults(), OperationalMode.single )
+        {
+            @Override
+            protected IndexStorageFactory buildIndexStorageFactory( FileSystemAbstraction fileSystem,
+                                                                    DirectoryFactory directoryFactory,
+                                                                    File schemaIndexStoreFolder )
+            {
+                return storageFactory;
+            }
+        };
     }
 
     private class FaultyIndexStorageFactory extends IndexStorageFactory
@@ -117,17 +133,18 @@ public class LuceneSchemaIndexCorruptionTest
         final long faultyIndexId;
         final Exception error;
 
-        FaultyIndexStorageFactory( long faultyIndexId, Exception error )
+        FaultyIndexStorageFactory( long faultyIndexId, Exception error, DirectoryFactory directoryFactory,
+                                   File indexRootFolder )
         {
-            super( mock( DirectoryFactory.class ), fs.get(), testDirectory.graphDbDir() );
+            super( directoryFactory, fs.get(), indexRootFolder );
             this.faultyIndexId = faultyIndexId;
             this.error = error;
         }
 
         @Override
-        public PartitionedIndexStorage indexStorageOf( long indexId )
+        public PartitionedIndexStorage indexStorageOf( long indexId, boolean archiveFailed )
         {
-            return indexId == faultyIndexId ? newFaultyPartitionedIndexStorage() : super.indexStorageOf( indexId );
+            return indexId == faultyIndexId ? newFaultyPartitionedIndexStorage() : super.indexStorageOf( indexId, archiveFailed );
         }
 
         PartitionedIndexStorage newFaultyPartitionedIndexStorage()

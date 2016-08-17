@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.schema;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
@@ -58,20 +59,21 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         File schemaIndexStoreFolder = getSchemaIndexStoreDirectory( storeDir );
-        this.indexStorageFactory = new IndexStorageFactory( directoryFactory, fileSystem, schemaIndexStoreFolder );
+        this.indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory, schemaIndexStoreFolder );
         this.config = config;
         this.operationalMode = operationalMode;
         this.log = logging.getLog( getClass() );
     }
 
+
     /**
      * Visible <b>only</b> for testing.
      */
-    LuceneSchemaIndexProvider( IndexStorageFactory indexStorageFactory, LogProvider logging )
+    protected IndexStorageFactory buildIndexStorageFactory( FileSystemAbstraction fileSystem,
+                                                            DirectoryFactory directoryFactory,
+                                                            File schemaIndexStoreFolder )
     {
-        super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
-        this.indexStorageFactory = indexStorageFactory;
-        this.log = logging.getLog( getClass() );
+        return new IndexStorageFactory( directoryFactory, fileSystem, schemaIndexStoreFolder );
     }
 
     @Override
@@ -160,7 +162,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 
     private PartitionedIndexStorage getIndexStorage( long indexId )
     {
-        return indexStorageFactory.indexStorageOf( indexId );
+        return indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
     }
 
     private boolean indexIsOnline( PartitionedIndexStorage indexStorage ) throws IOException

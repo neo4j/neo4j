@@ -531,7 +531,7 @@ public class LuceneLabelScanStoreTest
         monitor = new TrackingMonitor();
 
         indexStorage = new PartitionedIndexStorage( directoryFactory, new DefaultFileSystemAbstraction(), dir,
-                LuceneLabelScanIndexBuilder.DEFAULT_INDEX_IDENTIFIER );
+                LuceneLabelScanIndexBuilder.DEFAULT_INDEX_IDENTIFIER, false );
         LabelScanIndex index = LuceneLabelScanIndexBuilder.create()
                                 .withDirectoryFactory( directoryFactory )
                                 .withIndexStorage( indexStorage )

@@ -19,24 +19,29 @@
  */
 package org.neo4j.index;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -46,7 +51,7 @@ public class IndexFailureOnStartupTest
 {
     private static final Label PERSON = label( "Person" );
     @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule();
+    public final DatabaseRule db = new EmbeddedDatabaseRule().startLazily();
 
     @Test
     public void failedIndexShouldRepairAutomatically() throws Exception
@@ -93,6 +98,39 @@ public class IndexFailureOnStartupTest
         }
         assertNotNull( failure );
         indexStateShouldBe( equalTo( ONLINE ) );
+    }
+
+    @Test
+    public void shouldArchiveFailedIndex() throws Exception
+    {
+        // given
+        db.setConfig( GraphDatabaseSettings.archive_failed_index, "true" );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().constraintFor( PERSON ).assertPropertyIsUnique( "name" ).create();
+            tx.success();
+        }
+        assertThat( archiveFile(), nullValue() );
+
+        // when
+        db.restartDatabase( new DeleteIndexFile( "segments_1" ) );
+
+        // then
+        indexStateShouldBe( equalTo( ONLINE ) );
+        assertThat( archiveFile(), notNullValue() );
+    }
+
+    private File archiveFile()
+    {
+        File indexDir = soleIndexDir( new DefaultFileSystemAbstraction(), new File( db.getStoreDir() ) );
+        File[] files = indexDir.getParentFile().listFiles(
+                pathname -> pathname.isFile() && pathname.getName().startsWith( "archive-" ) );
+        if ( files == null || files.length == 0 )
+        {
+            return null;
+        }
+        assertEquals( 1, files.length );
+        return files[0];
     }
 
     private void awaitIndexesOnline( int timeout, TimeUnit unit )
@@ -147,13 +185,19 @@ public class IndexFailureOnStartupTest
         @Override
         public void run( FileSystemAbstraction fs, File base ) throws IOException
         {
-            fs.deleteFile( new File( soleIndexDir( fs, base ), source ) );
+            File fileToDelete = new File( new File( soleIndexDir( fs, base ), "1" ), source );
+            if ( !fs.fileExists( fileToDelete ) )
+            {
+                throw new AssertionError( fileToDelete + " does not exist" );
+            }
+            fs.deleteFile( fileToDelete );
         }
     }
 
     private static File soleIndexDir( FileSystemAbstraction fs, File base )
     {
-        File[] indexes = fs.listFiles( new File( base, "schema/index/lucene" ) );
+        File[] indexes = fs.listFiles( new File( base, "schema/index/lucene" ),
+                ( dir, name ) -> fs.isDirectory( new File( dir, name ) ) );
         assert indexes.length == 1 : "expecting only a single index directory";
         return indexes[0];
     }

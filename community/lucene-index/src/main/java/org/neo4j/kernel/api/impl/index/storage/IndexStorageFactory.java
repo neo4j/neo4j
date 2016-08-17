@@ -36,8 +36,8 @@ public class IndexStorageFactory
         this.indexRootFolder = indexRootFolder;
     }
 
-    public PartitionedIndexStorage indexStorageOf( long indexId )
+    public PartitionedIndexStorage indexStorageOf( long indexId, boolean archiveFailed )
     {
-        return new PartitionedIndexStorage( dirFactory, fileSystem, indexRootFolder, String.valueOf( indexId ) );
+        return new PartitionedIndexStorage( dirFactory, fileSystem, indexRootFolder, String.valueOf( indexId ), archiveFailed );
     }
 }

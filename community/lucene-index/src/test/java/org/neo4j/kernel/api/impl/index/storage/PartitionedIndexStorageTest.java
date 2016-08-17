@@ -67,7 +67,7 @@ public class PartitionedIndexStorageTest
     public void createIndexStorage() throws Exception
     {
         fs = fsRule.get();
-        storage = new PartitionedIndexStorage( getOrCreateDirFactory( fs ), fs, testDir.graphDbDir(), INDEX_ID );
+        storage = new PartitionedIndexStorage( getOrCreateDirFactory( fs ), fs, testDir.graphDbDir(), INDEX_ID, false );
     }
 
     @Test

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.index.builder;
 
 import java.io.File;
 
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -127,6 +128,17 @@ public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBu
      */
     protected boolean isReadOnly()
     {
-        return config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == operationalMode);
+        return getConfig( GraphDatabaseSettings.read_only ) && (OperationalMode.single == operationalMode);
+    }
+
+    /**
+     * Lookup a config parameter.
+     * @param flag the parameter to look up.
+     * @param <F> the type of the parameter.
+     * @return the value of the parameter.
+     */
+    protected  <F> F getConfig( Setting<F> flag )
+    {
+        return config.get( flag );
     }
 }
