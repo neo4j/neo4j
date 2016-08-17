@@ -24,50 +24,50 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
 
-import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.security.auth.Credential;
-import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.auth.User;
-import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
-public class SetPasswordCommandTest
+public class SetPasswordCommandTest extends CommandTestBase
 {
-    private static String password_change_required = "password_change_required";
-    private TestDirectory testDir = TestDirectory.testDirectory();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( testDir );
 
     @Test
-    public void shouldFailWithNoArguments() throws Exception
+    public void shouldFailSetPasswordWithNoArguments() throws Exception
     {
-        SetPasswordCommand setPasswordCommand = new SetPasswordCommand( testDir.directory( "home" ).toPath(),
-                testDir.directory( "conf" ).toPath(), mock(OutsideWorld.class) );
+        UsersCommand usersCommand = new UsersCommand( testDir.directory( "home" ).toPath(),
+                testDir.directory( "conf" ).toPath(), mock( OutsideWorld.class ) );
 
-        String[] arguments = {};
+        String[] arguments = {"set-password"};
         try
         {
-            setPasswordCommand.execute( arguments );
+            usersCommand.execute( arguments );
+            fail( "Should have thrown an exception." );
+        }
+        catch ( IncorrectUsage e )
+        {
+            assertThat( e.getMessage(), containsString( "username" ) );
+        }
+    }
+
+    @Test
+    public void shouldFailSetPasswordWithOnlyOneArgument() throws Exception
+    {
+        UsersCommand usersCommand = new UsersCommand( testDir.directory( "home" ).toPath(),
+                testDir.directory( "conf" ).toPath(), mock( OutsideWorld.class ) );
+
+        String[] arguments = {"set-password", "neo4j"};
+        try
+        {
+            usersCommand.execute( arguments );
             fail( "Should have thrown an exception." );
         }
         catch ( IncorrectUsage e )
@@ -77,33 +77,15 @@ public class SetPasswordCommandTest
     }
 
     @Test
-    public void shouldFailOnOnlyOneArgument() throws Exception
+    public void shouldFailSetPasswordWithNonExistingUser() throws Exception
     {
-        SetPasswordCommand setPasswordCommand = new SetPasswordCommand( testDir.directory( "home" ).toPath(),
-                testDir.directory( "conf" ).toPath(), mock(OutsideWorld.class) );
+        UsersCommand usersCommand = new UsersCommand( testDir.directory( "home" ).toPath(),
+                testDir.directory( "conf" ).toPath(), mock( OutsideWorld.class ) );
 
-        String[] arguments = {"neo4j"};
+        String[] arguments = {"set-password", "nosuchuser", "whatever"};
         try
         {
-            setPasswordCommand.execute( arguments );
-            fail( "Should have thrown an exception." );
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), containsString( "password" ) );
-        }
-    }
-
-    @Test
-    public void shouldFailWitNonExistingUser() throws Exception
-    {
-        SetPasswordCommand setPasswordCommand = new SetPasswordCommand( testDir.directory( "home" ).toPath(),
-                testDir.directory( "conf" ).toPath(), mock(OutsideWorld.class) );
-
-        String[] arguments = {"nosuchuser", "whatever"};
-        try
-        {
-            setPasswordCommand.execute( arguments );
+            usersCommand.execute( arguments );
             fail( "Should have thrown an exception." );
         }
         catch ( CommandFailed e )
@@ -113,277 +95,37 @@ public class SetPasswordCommandTest
     }
 
     @Test
-    public void shouldRunSetPasswordCommandWithDefaultUser() throws Throwable
+    public void shouldRunSetPasswordWithDefaultUser() throws Throwable
     {
         // Given - no created user
 
         // When - the admin command sets the password
         File graphDir = testDir.graphDbDir();
         File confDir = new File( graphDir, "conf" );
-        SetPasswordCommand setPasswordCommand =
-                new SetPasswordCommand( graphDir.toPath(), confDir.toPath(), mock( OutsideWorld.class ) );
-        setPasswordCommand.execute( new String[]{"neo4j", "abc"} );
+        UsersCommand usersCommand =
+                new UsersCommand( graphDir.toPath(), confDir.toPath(), mock( OutsideWorld.class ) );
+        usersCommand.execute( new String[]{"set-password", "neo4j", "abc"} );
 
         // Then - the default user does not require a password change
         assertUserDoesNotRequirePasswordChange( "neo4j" );
     }
 
     @Test
-    public void shouldRunSetPasswordCommandWithExistingUser() throws Throwable
+    public void shouldRunSetPasswordWithExistingUser() throws Throwable
     {
         // Given - new user that requires password change
-        createTestUser("neo4j", "neo4j");
-        assertUserRequiresPasswordChange( "neo4j" );
-
-        // When - the admin command sets the password
-        File graphDir = testDir.graphDbDir();
-        File confDir = new File( graphDir, "conf" );
-        SetPasswordCommand setPasswordCommand =
-                new SetPasswordCommand( graphDir.toPath(), confDir.toPath(), mock( OutsideWorld.class ) );
-        setPasswordCommand.execute( new String[]{"neo4j", "abc"} );
-
-        // Then - the new user no longer requires a password change
-        assertUserDoesNotRequirePasswordChange( "neo4j" );
-    }
-
-    @Test
-    public void shouldRunSetPasswordCommandWithoutExistingUser() throws Throwable
-    {
-        // Given - no user
-
-        // When - the admin command sets the password
-        File graphDir = testDir.graphDbDir();
-        File confDir = new File( graphDir, "conf" );
-        SetPasswordCommand setPasswordCommand =
-                new SetPasswordCommand( graphDir.toPath(), confDir.toPath(), mock( OutsideWorld.class ) );
-        setPasswordCommand.execute( new String[]{"neo4j", "abc", "--create"} );
-
-        // Then - the new user no longer requires a password change
-        assertUserDoesNotRequirePasswordChange( "neo4j" );
-    }
-
-    @Test
-    public void shouldFailToRunSetPasswordCommandWithoutExistingUser() throws Throwable
-    {
-        // Given - no user
-
-        // When - the admin command sets the password
-        try
-        {
-            File graphDir = testDir.graphDbDir();
-            File confDir = new File( graphDir, "conf" );
-            SetPasswordCommand setPasswordCommand =
-                    new SetPasswordCommand( graphDir.toPath(), confDir.toPath(), mock( OutsideWorld.class ) );
-            setPasswordCommand.execute( new String[]{"neo4j", "abc"} );
-        }
-        catch ( CommandFailed e )
-        {
-            // Then we get an error
-            assertThat( e.getMessage(), containsString( "does not exist" ) );
-        }
-    }
-
-    @Test
-    public void shouldRunAdminToolWithSetPasswordCommandAndNoArgs() throws Throwable
-    {
-        // Given only default user
-
-        // When running the neo4j-admin tool with incorrect parameters
-        Path homeDir = testDir.graphDbDir().toPath();
-        Path configDir = testDir.directory( "conf" ).toPath();
-        OutsideWorld out = mock( OutsideWorld.class );
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        tool.execute( homeDir, configDir, "set-password" );
-
-        // Then we get error output and user still requires password change
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
-        verify( out ).stdErrLine( "neo4j-admin set-password [--create=<true|false>] <username> <password>" );
-        verify( out ).stdErrLine( "    Sets the password for the specified user and removes the password change " );
-        verify( out ).stdErrLine( "    requirement. If the user does not exist an error message will be shown, unless " );
-        verify( out ).stdErrLine( "    you specify the option --create=true." );
-        verify( out ).stdErrLine( "Missing arguments: expected username and password" );
-        verify( out ).exit( 1 );
-    }
-
-    @Test
-    public void shouldRunAdminToolWithSetPasswordCommandAndArgsButNoUser() throws Throwable
-    {
-        // Given no existing user
-
-        // When running the neo4j-admin tool without --create parameter
-        Path homeDir = testDir.graphDbDir().toPath();
-        Path configDir = testDir.directory( "conf" ).toPath();
-        OutsideWorld out = mock( OutsideWorld.class );
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        tool.execute( homeDir, configDir, "set-password", "another", "abc" );
-
-        // Then we get error output and user still requires password change
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
-        verify( out ).stdErrLine( "command failed: Failed to set password for 'another': User 'another' does not exist" );
-        verify( out ).exit( 1 );
-    }
-
-    @Test
-    public void shouldRunAdminToolWithSetPasswordCommandAndArgsButNoUserAndCreateFalse() throws Throwable
-    {
-        // Given no existing user
-
-        // When running the neo4j-admin tool without --create parameter
-        Path homeDir = testDir.graphDbDir().toPath();
-        Path configDir = testDir.directory( "conf" ).toPath();
-        OutsideWorld out = mock( OutsideWorld.class );
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        tool.execute( homeDir, configDir, "set-password", "another", "abc", "--create=false" );
-
-        // Then we get error output and user still requires password change
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
-        verify( out ).stdErrLine( "command failed: Failed to set password for 'another': User 'another' does not exist" );
-        verify( out ).exit( 1 );
-    }
-
-    @Test
-    public void shouldRunAdminToolWithSetPasswordCommandAndDefaultUser() throws Throwable
-    {
-        // Given default state (only default user)
-
-        // When running the neo4j-admin tool with correct parameters
-        Path homeDir = testDir.graphDbDir().toPath();
-        Path configDir = testDir.directory( "conf" ).toPath();
-        OutsideWorld out = mock( OutsideWorld.class );
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        tool.execute( homeDir, configDir, "set-password", "neo4j", "abc" );
-
-        // Then we get no error output and the user no longer requires password change
-        verify( out ).stdOutLine( "Changed password for user 'neo4j'" );
-        verify( out, times( 0 ) ).stdErrLine( anyString() );
-        verify( out ).exit( 0 );
-        assertUserDoesNotRequirePasswordChange( "neo4j" );
-    }
-
-    @Test
-    public void shouldRunAdminToolWithSetPasswordCommandAndExistingUser() throws Throwable
-    {
-        // Given a user that requires password change
-        createTestUser("another", "neo4j");
+        createTestUser( "another", "neo4j" );
         assertUserRequiresPasswordChange( "another" );
 
-        // When running the neo4j-admin tool with correct parameters
-        Path homeDir = testDir.graphDbDir().toPath();
-        Path configDir = testDir.directory( "conf" ).toPath();
-        OutsideWorld out = mock( OutsideWorld.class );
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        tool.execute( homeDir, configDir, "set-password", "another", "abc" );
+        // When - the admin command sets the password
+        File graphDir = testDir.graphDbDir();
+        File confDir = new File( graphDir, "conf" );
+        UsersCommand usersCommand =
+                new UsersCommand( graphDir.toPath(), confDir.toPath(), mock( OutsideWorld.class ) );
+        usersCommand.execute( new String[]{"set-password", "another", "abc"} );
 
-        // Then we get no error output and the user no longer requires password change
-        verify( out ).stdOutLine( "Changed password for user 'another'" );
-        verify( out, times( 0 ) ).stdErrLine( anyString() );
-        verify( out ).exit( 0 );
+        // Then - the new user no longer requires a password change
         assertUserDoesNotRequirePasswordChange( "another" );
     }
 
-    @Test
-    public void shouldRunAdminToolWithSetPasswordCommandAndNoExistingUser() throws Throwable
-    {
-        // Given no previously existing user
-
-        // When running the neo4j-admin tool with correct parameters
-        Path homeDir = testDir.graphDbDir().toPath();
-        Path configDir = testDir.directory( "conf" ).toPath();
-        OutsideWorld out = mock( OutsideWorld.class );
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        tool.execute( homeDir, configDir, "set-password", "--create=true", "another", "abc" );
-
-        // Then we get no error output and the user no longer requires password change
-        verify( out ).stdOutLine( "Created new user 'another'" );
-        verify( out, times( 0 ) ).stdErrLine( anyString() );
-        verify( out ).exit( 0 );
-        assertUserDoesNotRequirePasswordChange( "another" );
-    }
-
-    @Test
-    public void shouldRunAdminToolWithSetPasswordCommandAndExistingUserAndCreateTrue() throws Throwable
-    {
-        // Given a user that requires password change
-        createTestUser("neo4j", "neo4j");
-        assertUserRequiresPasswordChange( "neo4j" );
-
-        // When running the neo4j-admin tool with correct parameters
-        Path homeDir = testDir.graphDbDir().toPath();
-        Path configDir = testDir.directory( "conf" ).toPath();
-        OutsideWorld out = mock( OutsideWorld.class );
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        tool.execute( homeDir, configDir, "set-password", "--create=true", "neo4j", "abc" );
-
-        // Then we get no error output and the user no longer requires password change
-        verify( out ).stdOutLine( "Changed password for user 'neo4j'" );
-        verify( out, times( 0 ) ).stdErrLine( anyString() );
-        verify( out ).exit( 0 );
-        assertUserDoesNotRequirePasswordChange( "neo4j" );
-    }
-
-    @Test
-    public void shouldRunAdminToolWithSetPasswordCommandAndExistingUserAndCreateTrueAndSamePassword() throws Throwable
-    {
-        // Given a user that requires password change
-        createTestUser("neo4j", "neo4j");
-        assertUserRequiresPasswordChange( "neo4j" );
-
-        // When running the neo4j-admin tool with correct parameters
-        Path homeDir = testDir.graphDbDir().toPath();
-        Path configDir = testDir.directory( "conf" ).toPath();
-        OutsideWorld out = mock( OutsideWorld.class );
-        AdminTool tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
-        tool.execute( homeDir, configDir, "set-password", "--create=true", "neo4j", "abc" );
-
-        // Then we get no error output and the user no longer requires password change
-        verify( out ).stdOutLine( "Changed password for user 'neo4j'" );
-        verify( out, times( 0 ) ).stdErrLine( anyString() );
-        verify( out ).exit( 0 );
-        assertUserDoesNotRequirePasswordChange( "neo4j" );
-
-        // Then when running another password set to same password
-        reset(out);
-        tool.execute( homeDir, configDir, "set-password", "--create=true", "neo4j", "abc" );
-
-        // Then we should get a 'password cannot be the same' error
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
-        verify( out ).stdErrLine( "command failed: Failed to set password for 'neo4j': Old password and new password cannot be the same." );
-        verify( out ).exit( 1 );
-    }
-
-    private File authFile()
-    {
-        return new File( new File( new File( testDir.graphDbDir(), "data" ), "dbms" ), "auth" );
-    }
-
-    private User createTestUser(String username, String password) throws IOException, InvalidArgumentsException
-    {
-        FileUserRepository users = new FileUserRepository( authFile().toPath(), NullLogProvider.getInstance() );
-        User user = new User.Builder( username, Credential.forPassword( password ) ).withRequiredPasswordChange( true )
-                .build();
-        users.create( user );
-        return user;
-    }
-
-    private User getUser(String username) throws Throwable
-    {
-        FileUserRepository afterUsers = new FileUserRepository( authFile().toPath(), NullLogProvider.getInstance() );
-        afterUsers.start(); // load users from disk
-        return afterUsers.getUserByName( username );
-    }
-
-    private void assertUserRequiresPasswordChange(String username) throws Throwable
-    {
-        User user = getUser( username );
-        assertThat( "User should require password change", user.getFlags(), hasItem( password_change_required ) );
-
-    }
-
-    private void assertUserDoesNotRequirePasswordChange(String username) throws Throwable
-    {
-        User user = getUser( username );
-        assertThat( "User should not require password change", user.getFlags(),
-                not( hasItem( password_change_required ) ) );
-
-    }
 }
