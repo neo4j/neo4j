@@ -171,6 +171,7 @@ public class Man extends AbstractApp
             out.println( header + " " + availableCommandsAsString( server ) );
         }
         out.println( "Use " + getShortUsageString() + " for info about each command." );
+        out.println( "Please note that neo4j-shell is deprecated and to be replaced by cypher-shell." );
     }
 
     /**
