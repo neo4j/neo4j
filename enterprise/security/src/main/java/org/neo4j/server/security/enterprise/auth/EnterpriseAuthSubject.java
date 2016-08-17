@@ -21,6 +21,8 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.io.IOException;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
@@ -111,6 +113,19 @@ public class EnterpriseAuthSubject implements AuthSubject
     public boolean overrideOriginalMode()
     {
         return false;
+    }
+
+    @Override
+    public AuthorizationViolationException onViolation( String msg )
+    {
+        if ( shiroSubject.getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
+        {
+            return AccessMode.Static.CREDENTIALS_EXPIRED.onViolation( msg );
+        }
+        else
+        {
+            return new AuthorizationViolationException( msg );
+        }
     }
 
     @Override
