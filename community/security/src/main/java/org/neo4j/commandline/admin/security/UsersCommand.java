@@ -133,6 +133,8 @@ public class UsersCommand implements AdminCommand
                 }
                 deleteUser( username );
                 break;
+            default:
+                throw new IncorrectUsage( "Unknown users command: " + command );
             }
         }
         catch ( IncorrectUsage e )

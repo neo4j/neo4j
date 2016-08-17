@@ -63,6 +63,24 @@ public class ListCommandTest extends CommandTestBase
     }
 
     @Test
+    public void shouldFailWithUnknownSubcommand() throws Exception
+    {
+        UsersCommand usersCommand = new UsersCommand( testDir.directory( "home" ).toPath(),
+                testDir.directory( "conf" ).toPath(), mock( OutsideWorld.class ) );
+
+        String[] arguments = {"make-love-not-war"};
+        try
+        {
+            usersCommand.execute( arguments );
+            fail( "Should have thrown an exception." );
+        }
+        catch ( IncorrectUsage e )
+        {
+            assertThat( e.getMessage(), containsString( "Unknown users command" ) );
+        }
+    }
+
+    @Test
     public void shouldRunListWithExistingUser() throws Throwable
     {
         // Given - new user that requires password change

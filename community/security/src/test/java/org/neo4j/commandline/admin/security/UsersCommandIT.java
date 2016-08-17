@@ -239,7 +239,6 @@ public class UsersCommandIT extends CommandTestBase
         assertUserRequiresPasswordChange( "another" );
     }
 
-
     //
     // Tests for delete command
     //
