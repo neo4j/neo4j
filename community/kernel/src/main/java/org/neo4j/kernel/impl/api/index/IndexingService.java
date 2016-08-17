@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -238,7 +239,7 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
                     indexProxy = proxySetup.createRecoveringIndexProxy( descriptor, providerDescriptor, constraint );
                     break;
                 case FAILED:
-                    IndexPopulationFailure failure = failure( provider.getPopulationFailure( indexId ) );
+                    IndexPopulationFailure failure = failure( provider.getIndexFailure( indexId ) );
                     indexProxy = proxySetup.createFailedIndexProxy( indexId, descriptor, providerDescriptor, constraint, failure );
                     break;
                 default:

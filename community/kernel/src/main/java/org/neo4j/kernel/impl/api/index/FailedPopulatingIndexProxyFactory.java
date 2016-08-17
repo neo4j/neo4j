@@ -57,6 +57,16 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     @Override
     public IndexProxy create( Throwable failure )
     {
+        IndexPopulationFailure populationFailure = failure( failure );
+        try
+        {
+            populator.markAsFailed( populationFailure.asString() );
+        }
+        catch ( Exception e )
+        {
+            // we're already in a hole, stop digging
+        }
+        logProvider.getLog( FailedIndexProxy.class ).error( "Index failed " + indexUserDescription, failure );
         return
             new FailedIndexProxy(
                 descriptor, configuration, providerDescriptor,

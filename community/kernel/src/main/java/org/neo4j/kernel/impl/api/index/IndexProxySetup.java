@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 public class IndexProxySetup
@@ -114,7 +113,7 @@ public class IndexProxySetup
                 }
                 catch ( IOException e )
                 {
-                    return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, constraint, failure( e ) );
+                    return fail( ruleId, descriptor, providerDescriptor, constraint, e );
                 }
             }
         } );
@@ -151,8 +150,27 @@ public class IndexProxySetup
         }
         catch ( IOException e )
         {
-            return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, failure( e ) );
+            return fail( ruleId, descriptor, providerDescriptor, unique, e );
         }
+    }
+
+    private IndexProxy fail( long ruleId,
+                             IndexDescriptor descriptor,
+                             SchemaIndexProvider.Descriptor providerDescriptor,
+                             boolean unique,
+                             Throwable failure )
+    {
+        IndexPopulationFailure populationFailure = failure( failure );
+        try
+        {
+            this.providerMap.apply( providerDescriptor ).storeIndexFailure( ruleId, populationFailure.asString() );
+        }
+        catch ( Exception e )
+        {
+            // we're already in a hole, stop digging
+        }
+        logProvider.getLog( FailedIndexProxy.class ).error( "Index failed " + descriptor.userDescription( tokenNameLookup ), failure );
+        return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, populationFailure );
     }
 
     public IndexProxy createFailedIndexProxy( long ruleId,

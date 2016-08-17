@@ -95,7 +95,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    public String getIndexFailure( long indexId ) throws IllegalStateException
     {
         String failure = indexes.get( indexId ).failure;
         if ( failure == null )
@@ -103,6 +103,12 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
             throw new IllegalStateException();
         }
         return failure;
+    }
+
+    @Override
+    public void storeIndexFailure( long indexId, String failure )
+    {
+        indexes.get( indexId ).failure = failure;
     }
 
     public InMemoryIndexProvider snapshot()

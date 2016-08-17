@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -33,6 +34,7 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertTrue;
@@ -81,7 +83,7 @@ public class LuceneSchemaIndexCorruptionTest
 
         // Then
         assertThat( initialState, equalTo(InternalIndexState.FAILED) );
-        assertThat( p.getPopulationFailure( 1l ), equalTo( "File not found: " + toThrow.getMessage() ) );
+        assertThat( p.getIndexFailure( 1l ), startsWith( FileNotFoundException.class.getName() + ": " + toThrow.getMessage() ) );
     }
 
     @Test
@@ -101,7 +103,7 @@ public class LuceneSchemaIndexCorruptionTest
 
         // Then
         assertThat( initialState, equalTo(InternalIndexState.FAILED) );
-        assertThat( p.getPopulationFailure( 1l ), equalTo( "EOF encountered: " + toThrow.getMessage() ) );
+        assertThat( p.getIndexFailure( 1l ), startsWith( EOFException.class.getName() + ": " + toThrow.getMessage() ) );
     }
 
     @Test
@@ -125,7 +127,7 @@ public class LuceneSchemaIndexCorruptionTest
         boolean exceptionOnOtherIndexThrown = false;
         try
         {
-            p.getPopulationFailure( 2l );
+            p.getIndexFailure( 2l );
         }
         catch( IllegalStateException e )
         {

@@ -524,9 +524,15 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public String getPopulationFailure( long indexId ) throws IllegalStateException
+        public String getIndexFailure( long indexId ) throws IllegalStateException
         {
-            return delegate.getPopulationFailure( indexId );
+            return delegate.getIndexFailure( indexId );
+        }
+
+        @Override
+        public void storeIndexFailure( long indexId, String failure ) throws IOException
+        {
+            delegate.storeIndexFailure( indexId, failure );
         }
     }
 
