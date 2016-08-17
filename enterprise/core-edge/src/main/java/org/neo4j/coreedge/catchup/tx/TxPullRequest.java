@@ -23,17 +23,19 @@ import java.util.Objects;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.BaseMessage;
 import org.neo4j.coreedge.messaging.Message;
 
-public class TxPullRequest implements Message
+public class TxPullRequest extends BaseMessage
 {
     public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.TX_PULL_REQUEST;
 
     private long txId;
     private final StoreId storeId;
 
-    public TxPullRequest( long txId, StoreId storeId )
+    public TxPullRequest( byte version, long txId, StoreId storeId )
     {
+        super( version );
         this.txId = txId;
         this.storeId = storeId;
     }

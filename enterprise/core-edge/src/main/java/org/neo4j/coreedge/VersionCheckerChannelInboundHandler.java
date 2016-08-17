@@ -17,45 +17,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.core.consensus;
+package org.neo4j.coreedge;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
-import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
-import org.neo4j.coreedge.messaging.Inbound;
 import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.lang.String.format;
-
-class RaftMessageHandler extends VersionCheckerChannelInboundHandler<RaftMessages.StoreIdAwareMessage>
+public abstract class VersionCheckerChannelInboundHandler<M extends Message> extends SimpleChannelInboundHandler<M>
 {
-    private final Supplier<Inbound.MessageHandler<RaftMessages.StoreIdAwareMessage>> messageHandler;
+    private final Predicate<Message> versionChecker;
     private final Log log;
 
-    RaftMessageHandler( Predicate<Message> versionChecker,
-            Supplier<Inbound.MessageHandler<RaftMessages.StoreIdAwareMessage>> messageHandler, LogProvider logProvider )
+    protected VersionCheckerChannelInboundHandler( Predicate<Message> versionChecker, LogProvider logProvider )
     {
-        super( versionChecker, logProvider );
-        this.messageHandler = messageHandler;
+        this.versionChecker = versionChecker;
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
-    protected void doChannelRead0( ChannelHandlerContext channelHandlerContext,
-            RaftMessages.StoreIdAwareMessage storeIdAwareMessage ) throws Exception
+    protected final void channelRead0( ChannelHandlerContext ctx, M message ) throws Exception
     {
-        try
+        if ( !versionChecker.test( message ) )
         {
-            messageHandler.get().handle( storeIdAwareMessage );
+            log.error( "Unsupported version %d, unable to process message %s", message.version(), message );
+            return;
         }
-        catch ( Exception e )
-        {
-            log.error( format( "Failed to process message %s", storeIdAwareMessage ), e );
-        }
+
+        doChannelRead0( ctx, message );
     }
+
+    protected abstract void doChannelRead0( ChannelHandlerContext ctx, M msg ) throws Exception;
 }

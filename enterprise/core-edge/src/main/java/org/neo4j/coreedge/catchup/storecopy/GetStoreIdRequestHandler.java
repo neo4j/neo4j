@@ -20,35 +20,41 @@
 package org.neo4j.coreedge.catchup.storecopy;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
+import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
+import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.messaging.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
-import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 
-public class GetStoreIdRequestHandler extends SimpleChannelInboundHandler<GetStoreIdRequest>
+public class GetStoreIdRequestHandler extends VersionCheckerChannelInboundHandler<GetStoreIdRequest>
 {
     private final CatchupServerProtocol protocol;
     private final Supplier<StoreId> storeIdSupplier;
 
-    public GetStoreIdRequestHandler( CatchupServerProtocol protocol, Supplier<StoreId> storeIdSupplier )
+    public GetStoreIdRequestHandler( Predicate<Message> versionChecker, CatchupServerProtocol protocol,
+            Supplier<StoreId> storeIdSupplier, LogProvider logProvider )
     {
+        super( versionChecker, logProvider );
         this.protocol = protocol;
         this.storeIdSupplier = storeIdSupplier;
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, GetStoreIdRequest msg ) throws Exception
+    protected void doChannelRead0( ChannelHandlerContext ctx, GetStoreIdRequest message ) throws Exception
     {
         StoreId storeId = storeIdSupplier.get();
         ctx.writeAndFlush( ResponseMessageType.STORE_ID );
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
+        channel.put( message.version() );
         StoreIdMarshal.marshal( storeId, channel );
         ctx.writeAndFlush( channel.buffer() );
         protocol.expect( State.MESSAGE_TYPE );

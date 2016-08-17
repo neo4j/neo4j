@@ -17,26 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.tx;
-
-import java.util.List;
+package org.neo4j.coreedge.catchup;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
-import org.neo4j.coreedge.messaging.NetworkFlushableChannelNetty4;
-import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
+import java.util.List;
 
-public class TxPullRequestEncoder extends MessageToMessageEncoder<TxPullRequest>
+public class MessageTypeEncoder<M extends MessageType> extends MessageToMessageEncoder<M>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, TxPullRequest request, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, M message, List<Object> out ) throws Exception
     {
         ByteBuf encoded = ctx.alloc().buffer();
-        encoded.writeByte( request.version() );
-        encoded.writeLong( request.txId() );
-        StoreIdMarshal.marshal( request.storeId(), new NetworkFlushableChannelNetty4( encoded ) );
+        encoded.writeByte( message.version() );
+        encoded.writeByte( message.type() );
         out.add( encoded );
     }
 }

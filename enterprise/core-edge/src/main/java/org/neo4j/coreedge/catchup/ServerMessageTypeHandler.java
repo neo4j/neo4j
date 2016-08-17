@@ -44,7 +44,10 @@ class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
     {
         if ( protocol.isExpecting( CatchupServerProtocol.State.MESSAGE_TYPE ) )
         {
-            RequestMessageType requestMessageType = RequestMessageType.from( ((ByteBuf) msg).readByte() );
+            ByteBuf buffer = (ByteBuf) msg;
+            byte version = buffer.readByte();
+            byte messageType = buffer.readByte();
+            RequestMessageType requestMessageType = RequestMessageType.from( version, messageType );
 
             if ( requestMessageType.equals( RequestMessageType.TX_PULL_REQUEST ) )
             {
@@ -64,7 +67,7 @@ class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
             }
             else
             {
-                log.warn( "No handler found for message type %s", requestMessageType );
+                log.warn( "No handler found for version %d and message type %s", version, requestMessageType );
             }
 
             ReferenceCountUtil.release( msg );

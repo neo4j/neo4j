@@ -20,13 +20,16 @@
 package org.neo4j.coreedge.catchup.storecopy;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.io.OutputStream;
+import java.util.function.Predicate;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
+import org.neo4j.coreedge.messaging.Message;
+import org.neo4j.logging.LogProvider;
 
-public class FileContentHandler  extends SimpleChannelInboundHandler<FileContent>
+public class FileContentHandler extends VersionCheckerChannelInboundHandler<FileContent>
 {
     private final CatchupClientProtocol protocol;
     private long expectedBytes = 0;
@@ -34,8 +37,10 @@ public class FileContentHandler  extends SimpleChannelInboundHandler<FileContent
     private StoreFileReceiver location;
     private String destination;
 
-    public FileContentHandler( CatchupClientProtocol protocol, StoreFileReceiver location )
+    public FileContentHandler( Predicate<Message> versionChecker, CatchupClientProtocol protocol,
+            StoreFileReceiver location, LogProvider logProvider )
     {
+        super( versionChecker, logProvider );
         this.protocol = protocol;
         this.location = location;
     }
@@ -47,7 +52,7 @@ public class FileContentHandler  extends SimpleChannelInboundHandler<FileContent
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, FileContent fileContent ) throws Exception
+    protected void doChannelRead0( ChannelHandlerContext ctx, FileContent fileContent ) throws Exception
     {
         try ( FileContent content = fileContent;
                 OutputStream outputStream = location.getStoreFileStreams().createStream( destination ) )

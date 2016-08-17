@@ -19,30 +19,35 @@
  */
 package org.neo4j.coreedge.catchup;
 
-import static java.lang.String.format;
-
-public enum ResponseMessageType
+public enum ResponseMessageType implements MessageType
 {
-    TX( (byte) 1 ),
-    STORE_ID( (byte) 2 ),
-    FILE( (byte) 3 ),
-    STORE_COPY_FINISHED( (byte) 4 ),
-    CORE_SNAPSHOT( (byte) 5 ),
-    TX_STREAM_FINISHED( (byte) 6 ),
-    UNKNOWN( (byte) 200 ),;
+    TX( CURRENT_VERSION, (byte) 1 ),
+    STORE_ID( CURRENT_VERSION, (byte) 2 ),
+    FILE( CURRENT_VERSION, (byte) 3 ),
+    STORE_COPY_FINISHED( CURRENT_VERSION, (byte) 4 ),
+    CORE_SNAPSHOT( CURRENT_VERSION, (byte) 5 ),
+    TX_STREAM_FINISHED( CURRENT_VERSION, (byte) 6 ),
+    UNKNOWN( CURRENT_VERSION, (byte) 200 ),;
 
-    private byte messageType;
+    private byte version;
+    private byte type;
 
-    ResponseMessageType( byte messageType )
+    ResponseMessageType( byte version, byte type )
     {
-        this.messageType = messageType;
+        this.version = version;
+        this.type = type;
     }
 
-    public static ResponseMessageType from( byte b )
+    public static ResponseMessageType from( byte version, byte type )
     {
+        if ( version != CURRENT_VERSION )
+        {
+            return UNKNOWN;
+        }
+
         for ( ResponseMessageType responseMessageType : values() )
         {
-            if ( responseMessageType.messageType == b )
+            if ( responseMessageType.type == type )
             {
                 return responseMessageType;
             }
@@ -50,14 +55,22 @@ public enum ResponseMessageType
         return UNKNOWN;
     }
 
-    public byte messageType()
+    @Override
+    public byte version()
     {
-        return messageType;
+        return version;
+    }
+
+    public byte type()
+    {
+        return type;
     }
 
     @Override
     public String toString()
     {
-        return format( "ResponseMessageType{messageType=%s}", messageType );
+        return "ResponseMessageType{" + "version=" + version + ", type=" + type + '}';
     }
+
+    public static class Encoder extends MessageTypeEncoder<ResponseMessageType>{}
 }

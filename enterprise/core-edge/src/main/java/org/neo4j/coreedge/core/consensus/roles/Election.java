@@ -26,7 +26,10 @@ import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.logging.Log;
+
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class Election
 {
@@ -43,8 +46,8 @@ public class Election
         outcome.setNextTerm( ctx.term() + 1 );
 
         RaftMessages.Vote.Request voteForMe =
-                new RaftMessages.Vote.Request( ctx.myself(), outcome.getTerm(), ctx.myself(), ctx.entryLog()
-                        .appendIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ) );
+                new RaftMessages.Vote.Request( CURRENT_VERSION, ctx.myself(), outcome.getTerm(), ctx.myself(),
+                        ctx.entryLog().appendIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ) );
 
         currentMembers.stream().filter( member -> !member.equals( ctx.myself() ) ).forEach( member ->
             outcome.addOutgoingMessage( new RaftMessages.Directed( member, voteForMe ) )

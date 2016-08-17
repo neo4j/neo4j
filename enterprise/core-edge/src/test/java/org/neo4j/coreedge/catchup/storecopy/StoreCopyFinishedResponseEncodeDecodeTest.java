@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class StoreCopyFinishedResponseEncodeDecodeTest
 {
@@ -34,7 +35,7 @@ public class StoreCopyFinishedResponseEncodeDecodeTest
         EmbeddedChannel channel =
                 new EmbeddedChannel( new StoreCopyFinishedResponseEncoder(), new StoreCopyFinishedResponseDecoder() );
         final long arbitraryId = 23;
-        StoreCopyFinishedResponse sent = new StoreCopyFinishedResponse( arbitraryId );
+        StoreCopyFinishedResponse sent = new StoreCopyFinishedResponse( CURRENT_VERSION, arbitraryId );
 
         // when
         channel.writeOutbound( sent );
@@ -45,5 +46,4 @@ public class StoreCopyFinishedResponseEncodeDecodeTest
         assertNotSame( sent, received );
         assertEquals( sent, received );
     }
-
 }

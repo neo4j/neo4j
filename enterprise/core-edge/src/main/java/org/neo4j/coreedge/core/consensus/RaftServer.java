@@ -19,40 +19,41 @@
  */
 package org.neo4j.coreedge.core.consensus;
 
-import java.util.concurrent.TimeUnit;
-
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
-import org.neo4j.coreedge.messaging.Inbound;
-import org.neo4j.coreedge.messaging.marsalling.RaftMessageDecoder;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
-import org.neo4j.coreedge.messaging.marsalling.ChannelMarshal;
-import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
 import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
+import org.neo4j.coreedge.messaging.Inbound;
+import org.neo4j.coreedge.messaging.Message;
+import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
+import org.neo4j.coreedge.messaging.marsalling.ChannelMarshal;
+import org.neo4j.coreedge.messaging.marsalling.RaftMessageDecoder;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.lang.String.format;
-
 public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.StoreIdAwareMessage>
 {
     private final ListenSocketAddress listenAddress;
     private final Log log;
+    private Predicate<Message> versionChecker;
+    private final LogProvider logProvider;
     private final ChannelMarshal<ReplicatedContent> marshal;
+
     private MessageHandler<RaftMessages.StoreIdAwareMessage> messageHandler;
     private EventLoopGroup workerGroup;
     private Channel channel;
@@ -60,17 +61,42 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
     public RaftServer( ChannelMarshal<ReplicatedContent> marshal, ListenSocketAddress listenAddress,
-                       LogProvider logProvider )
+            Predicate<Message> versionChecker, LogProvider logProvider )
     {
         this.marshal = marshal;
         this.listenAddress = listenAddress;
+        this.versionChecker = versionChecker;
+        this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public synchronized void start() throws Throwable
     {
-        startNettyServer();
+        workerGroup = new NioEventLoopGroup( 0, threadFactory );
+
+        log.info( "Starting server at: " + listenAddress );
+
+        ServerBootstrap bootstrap = new ServerBootstrap()
+                .group( workerGroup )
+                .channel( NioServerSocketChannel.class )
+                .option( ChannelOption.SO_REUSEADDR, true )
+                .localAddress( listenAddress.socketAddress() )
+                .childHandler( new ChannelInitializer<SocketChannel>()
+                {
+                    @Override
+                    protected void initChannel( SocketChannel ch ) throws Exception
+                    {
+                        ChannelPipeline pipeline = ch.pipeline();
+                        pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
+                        pipeline.addLast( new LengthFieldPrepender( 4 ) );
+                        pipeline.addLast( new RaftMessageDecoder( marshal ) );
+                        pipeline.addLast( new RaftMessageHandler( versionChecker, () -> messageHandler, logProvider ) );
+                        pipeline.addLast( new ExceptionLoggingHandler( log ) );
+                    }
+                } );
+
+        channel = bootstrap.bind().syncUninterruptibly().channel();
     }
 
     @Override
@@ -92,55 +118,9 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
         }
     }
 
-    private void startNettyServer()
-    {
-        workerGroup = new NioEventLoopGroup( 0, threadFactory );
-
-        log.info( "Starting server at: " + listenAddress );
-
-        ServerBootstrap bootstrap = new ServerBootstrap()
-                .group( workerGroup )
-                .channel( NioServerSocketChannel.class )
-                .option( ChannelOption.SO_REUSEADDR, true )
-                .localAddress( listenAddress.socketAddress() )
-                .childHandler( new ChannelInitializer<SocketChannel>()
-                {
-                    @Override
-                    protected void initChannel( SocketChannel ch ) throws Exception
-                    {
-                        ChannelPipeline pipeline = ch.pipeline();
-                        pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
-                        pipeline.addLast( new LengthFieldPrepender( 4 ) );
-                        pipeline.addLast( new RaftMessageDecoder( marshal ) );
-                        pipeline.addLast( new RaftMessageHandler() );
-                        pipeline.addLast( new ExceptionLoggingHandler( log ) );
-                    }
-                } );
-
-        channel = bootstrap.bind().syncUninterruptibly().channel();
-    }
-
     @Override
     public void registerHandler( Inbound.MessageHandler<RaftMessages.StoreIdAwareMessage> handler )
     {
         this.messageHandler = handler;
     }
-
-    private class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.StoreIdAwareMessage>
-    {
-        @Override
-        protected void channelRead0( ChannelHandlerContext channelHandlerContext,
-                                     RaftMessages.StoreIdAwareMessage storeIdAwareMessage ) throws Exception
-        {
-            try
-            {
-                messageHandler.handle( storeIdAwareMessage );
-            }
-            catch ( Exception e )
-            {
-                log.error( format( "Failed to process message %s", storeIdAwareMessage ), e );
-            }
-        }
-    }
-
 }

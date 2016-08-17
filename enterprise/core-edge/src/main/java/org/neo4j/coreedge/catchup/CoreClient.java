@@ -62,6 +62,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public abstract class CoreClient extends LifecycleAdapter implements StoreFileReceiver, StoreIdReceiver,
         StoreFileStreamingCompleteListener, TxStreamCompleteListener, TxPullResponseListener, CoreSnapshotListener
@@ -91,27 +92,27 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
 
     public void requestStore( MemberId serverAddress )
     {
-        GetStoreRequest getStoreRequest = new GetStoreRequest();
+        GetStoreRequest getStoreRequest = new GetStoreRequest( CURRENT_VERSION );
         send( serverAddress, RequestMessageType.STORE, getStoreRequest );
     }
 
     public void requestStoreId( MemberId serverAddress )
     {
-        GetStoreIdRequest getStoreIdRequest = new GetStoreIdRequest();
+        GetStoreIdRequest getStoreIdRequest = new GetStoreIdRequest( CURRENT_VERSION );
         send( serverAddress, RequestMessageType.STORE_ID, getStoreIdRequest );
     }
 
     public CompletableFuture<CoreSnapshot> requestCoreSnapshot( MemberId serverAddress )
     {
         coreSnapshotFuture = new CompletableFuture<>();
-        CoreSnapshotRequest coreSnapshotRequest = new CoreSnapshotRequest();
+        CoreSnapshotRequest coreSnapshotRequest = new CoreSnapshotRequest( CURRENT_VERSION );
         send( serverAddress, RequestMessageType.RAFT_STATE, coreSnapshotRequest );
         return coreSnapshotFuture;
     }
 
     public void pollForTransactions( MemberId serverAddress, StoreId storeId, long lastTransactionId )
     {
-        TxPullRequest txPullRequest = new TxPullRequest( lastTransactionId, storeId );
+        TxPullRequest txPullRequest = new TxPullRequest( CURRENT_VERSION, lastTransactionId, storeId );
         send( serverAddress, RequestMessageType.TX_PULL_REQUEST, txPullRequest );
         pullRequestMonitor.txPullRequest( lastTransactionId );
     }

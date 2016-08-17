@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -42,6 +43,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
 import static org.neo4j.kernel.impl.util.Cursors.cursor;
 import static org.neo4j.kernel.impl.util.Cursors.io;
@@ -65,22 +67,22 @@ public class TxPullRequestHandlerTest
                 tx( 15 )
         ) ) );
 
-        TxPullRequestHandler txPullRequestHandler = new TxPullRequestHandler( new CatchupServerProtocol(),
+        TxPullRequestHandler txPullRequestHandler = new TxPullRequestHandler( (m) -> true, new CatchupServerProtocol(),
                 () -> storeId, () -> transactionIdStore, () -> logicalTransactionStore,
                 new Monitors(), NullLogProvider.getInstance() );
         ChannelHandlerContext context = mock( ChannelHandlerContext.class );
 
         // when
-        txPullRequestHandler.channelRead0( context, new TxPullRequest( 12, storeId ) );
+        txPullRequestHandler.doChannelRead0( context, new TxPullRequest( CURRENT_VERSION, 12, storeId ) );
 
         // then
         verify( context, times( 3 ) ).write( ResponseMessageType.TX );
-        verify( context ).write( new TxPullResponse( storeId, tx( 13 ) ) );
-        verify( context ).write( new TxPullResponse( storeId, tx( 14 ) ) );
-        verify( context ).write( new TxPullResponse( storeId, tx( 15 ) ) );
+        verify( context ).write( new TxPullResponse( CURRENT_VERSION, storeId, tx( 13 ) ) );
+        verify( context ).write( new TxPullResponse( CURRENT_VERSION, storeId, tx( 14 ) ) );
+        verify( context ).write( new TxPullResponse( CURRENT_VERSION, storeId, tx( 15 ) ) );
 
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( 15, true ) );
+        verify( context ).write( new TxStreamFinishedResponse( CURRENT_VERSION, 15, true ) );
     }
 
     @Test
@@ -96,18 +98,18 @@ public class TxPullRequestHandlerTest
         when( logicalTransactionStore.getTransactions( 13L ) ).thenThrow( new NoSuchTransactionException( 13 ) );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TxPullRequestHandler txPullRequestHandler = new TxPullRequestHandler( new CatchupServerProtocol(),
+        TxPullRequestHandler txPullRequestHandler = new TxPullRequestHandler( (m) -> true, new CatchupServerProtocol(),
                 () -> storeId, () -> transactionIdStore, () -> logicalTransactionStore,
                 new Monitors(), logProvider );
         ChannelHandlerContext context = mock( ChannelHandlerContext.class );
 
         // when
-        txPullRequestHandler.channelRead0( context, new TxPullRequest( 12, storeId ) );
+        txPullRequestHandler.doChannelRead0( context, new TxPullRequest( CURRENT_VERSION, 12, storeId ) );
 
         // then
         verify( context, never() ).write( ResponseMessageType.TX );
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( 12, false ) );
+        verify( context ).write( new TxStreamFinishedResponse( CURRENT_VERSION, 12, false ) );
         logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
                 .info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", 12L ) );
     }
@@ -123,18 +125,18 @@ public class TxPullRequestHandlerTest
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TxPullRequestHandler txPullRequestHandler = new TxPullRequestHandler( new CatchupServerProtocol(),
+        TxPullRequestHandler txPullRequestHandler = new TxPullRequestHandler( (m) -> true, new CatchupServerProtocol(),
                 () -> serverStoreId, () -> transactionIdStore, () -> logicalTransactionStore,
                 new Monitors(), logProvider );
         ChannelHandlerContext context = mock( ChannelHandlerContext.class );
 
         // when
-        txPullRequestHandler.channelRead0( context, new TxPullRequest( 1, clientStoreId ) );
+        txPullRequestHandler.doChannelRead0( context, new TxPullRequest( CURRENT_VERSION, 1, clientStoreId ) );
 
         // then
         verify( context, never() ).write( ResponseMessageType.TX );
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( 1, false ) );
+        verify( context ).write( new TxStreamFinishedResponse( CURRENT_VERSION, 1, false ) );
         logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
                 .info( "Failed to serve TxPullRequest for tx %d and storeId %s because that storeId is different " +
                         "from this machine with %s", 1L, clientStoreId, serverStoreId ) );

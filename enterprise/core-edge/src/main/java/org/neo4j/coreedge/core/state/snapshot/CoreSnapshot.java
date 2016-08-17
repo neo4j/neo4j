@@ -24,21 +24,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
+import org.neo4j.coreedge.messaging.BaseMessage;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
 
-public class CoreSnapshot
+public class CoreSnapshot extends BaseMessage
 {
     private final long prevIndex;
     private final long prevTerm;
 
     private final Map<CoreStateType,Object> snapshotCollection = new HashMap<>();
 
-    public CoreSnapshot( long prevIndex, long prevTerm )
+    public CoreSnapshot( byte version, long prevIndex, long prevTerm )
     {
+        super( version );
         this.prevIndex = prevIndex;
         this.prevTerm = prevTerm;
     }
@@ -78,6 +80,7 @@ public class CoreSnapshot
         @Override
         public void marshal( CoreSnapshot coreSnapshot, WritableChannel buffer ) throws IOException
         {
+            buffer.put( coreSnapshot.version() );
             buffer.putLong( coreSnapshot.prevIndex );
             buffer.putLong( coreSnapshot.prevTerm );
 
@@ -92,10 +95,11 @@ public class CoreSnapshot
         @Override
         public CoreSnapshot unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
         {
+            byte version = channel.get();
             long prevIndex = channel.getLong();
             long prevTerm = channel.getLong();
 
-            CoreSnapshot coreSnapshot = new CoreSnapshot( prevIndex, prevTerm );
+            CoreSnapshot coreSnapshot = new CoreSnapshot( version, prevIndex, prevTerm );
             int snapshotCount = channel.getInt();
             for ( int i = 0; i < snapshotCount; i++ )
             {

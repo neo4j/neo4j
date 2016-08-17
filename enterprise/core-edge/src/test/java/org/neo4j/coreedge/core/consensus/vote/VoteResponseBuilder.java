@@ -19,18 +19,27 @@
  */
 package org.neo4j.coreedge.core.consensus.vote;
 
-import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
+import org.neo4j.coreedge.identity.MemberId;
+
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class VoteResponseBuilder
 {
-    boolean voteGranted = false;
+    private byte version = CURRENT_VERSION;
+    private boolean voteGranted = false;
     private long term = -1;
     private MemberId from = null;
 
     public RaftMessages.Vote.Response build()
     {
-        return new RaftMessages.Vote.Response( from, term, voteGranted );
+        return new RaftMessages.Vote.Response( version, from, term, voteGranted );
+    }
+
+    public VoteResponseBuilder version( byte version )
+    {
+        this.version = version;
+        return this;
     }
 
     public VoteResponseBuilder from( MemberId from )

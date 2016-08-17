@@ -24,13 +24,13 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
 
-import org.neo4j.coreedge.messaging.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
-import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.NetworkFlushableByteBuf;
+import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
 
 public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.StoreIdAwareMessage>
 {
@@ -51,6 +51,7 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Sto
         MemberId.MemberIdMarshal memberMarshal = new MemberId.MemberIdMarshal();
 
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
+        channel.put( message.version() );
         StoreIdMarshal.marshal( storeId, channel );
         channel.putInt( message.type().ordinal() );
         memberMarshal.marshal( message.from(), channel );

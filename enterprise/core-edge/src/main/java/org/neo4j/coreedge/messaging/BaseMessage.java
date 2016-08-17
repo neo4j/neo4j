@@ -17,21 +17,43 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup;
+package org.neo4j.coreedge.messaging;
 
-import java.util.List;
+import java.util.Objects;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
-
-public class ResponseMessageTypeEncoder extends MessageToMessageEncoder<ResponseMessageType>
+public class BaseMessage implements Message
 {
-    @Override
-    protected void encode( ChannelHandlerContext ctx, ResponseMessageType response, List<Object> out ) throws Exception
+    private final byte version;
+
+    public BaseMessage( byte version )
     {
-        ByteBuf encoded = ctx.alloc().buffer();
-        encoded.writeByte( response.messageType() );
-        out.add( encoded );
+        this.version = version;
+    }
+
+    @Override
+    public final byte version()
+    {
+        return version;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        BaseMessage that = (BaseMessage) o;
+        return version == that.version;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( version );
     }
 }

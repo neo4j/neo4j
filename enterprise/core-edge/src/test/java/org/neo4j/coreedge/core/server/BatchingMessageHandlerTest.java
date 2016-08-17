@@ -19,12 +19,12 @@
  */
 package org.neo4j.coreedge.core.server;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
@@ -37,6 +37,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class BatchingMessageHandlerTest
 {
@@ -60,7 +61,7 @@ public class BatchingMessageHandlerTest
                 raftStateMachine, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
 
         RaftMessages.StoreIdAwareMessage message = new RaftMessages.StoreIdAwareMessage(
-                localStoreId, new RaftMessages.NewEntry.Request( null, null ) );
+                localStoreId, new RaftMessages.NewEntry.Request( CURRENT_VERSION, null, null ) );
         batchHandler.handle( message );
         verifyZeroInteractions( raftStateMachine );
 
@@ -78,7 +79,7 @@ public class BatchingMessageHandlerTest
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
                 raftStateMachine, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
         RaftMessages.StoreIdAwareMessage message = new RaftMessages.StoreIdAwareMessage( localStoreId,
-                new RaftMessages.NewEntry.Request( null, null ) );
+                new RaftMessages.NewEntry.Request( CURRENT_VERSION, null, null ) );
 
         ExecutorService executor = Executors.newCachedThreadPool();
         Future<?> future = executor.submit( batchHandler );
@@ -105,8 +106,8 @@ public class BatchingMessageHandlerTest
                 raftStateMachine, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
         ReplicatedString contentA = new ReplicatedString( "A" );
         ReplicatedString contentB = new ReplicatedString( "B" );
-        RaftMessages.NewEntry.Request messageA = new RaftMessages.NewEntry.Request( null, contentA );
-        RaftMessages.NewEntry.Request messageB = new RaftMessages.NewEntry.Request( null, contentB );
+        RaftMessages.NewEntry.Request messageA = new RaftMessages.NewEntry.Request( CURRENT_VERSION, null, contentA );
+        RaftMessages.NewEntry.Request messageB = new RaftMessages.NewEntry.Request( CURRENT_VERSION, null, contentB );
 
         batchHandler.handle( new RaftMessages.StoreIdAwareMessage( localStoreId, messageA ) );
         batchHandler.handle( new RaftMessages.StoreIdAwareMessage( localStoreId, messageB ) );
@@ -116,7 +117,7 @@ public class BatchingMessageHandlerTest
         batchHandler.run();
 
         // then
-        RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest( 2 );
+        RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest( CURRENT_VERSION, 2 );
         batchRequest.add( contentA );
         batchRequest.add( contentB );
         verify( raftStateMachine ).handle( new RaftMessages.StoreIdAwareMessage( localStoreId, batchRequest ) );
@@ -133,13 +134,13 @@ public class BatchingMessageHandlerTest
         ReplicatedString contentC = new ReplicatedString( "C" );
 
         RaftMessages.StoreIdAwareMessage messageA = new RaftMessages.StoreIdAwareMessage( localStoreId,
-                new RaftMessages.NewEntry.Request( null, contentA ) );
+                new RaftMessages.NewEntry.Request( CURRENT_VERSION, null, contentA ) );
         RaftMessages.StoreIdAwareMessage messageB = new RaftMessages.StoreIdAwareMessage( localStoreId,
-                new RaftMessages.Heartbeat( null, 0, 0, 0 ) );
+                new RaftMessages.Heartbeat( CURRENT_VERSION, null, 0, 0, 0 ) );
         RaftMessages.StoreIdAwareMessage messageC = new RaftMessages.StoreIdAwareMessage( localStoreId,
-                new RaftMessages.NewEntry.Request( null, contentC ) );
+                new RaftMessages.NewEntry.Request( CURRENT_VERSION, null, contentC ) );
         RaftMessages.StoreIdAwareMessage messageD = new RaftMessages.StoreIdAwareMessage( localStoreId,
-                new RaftMessages.Heartbeat( null, 1, 1, 1 ) );
+                new RaftMessages.Heartbeat( CURRENT_VERSION, null, 1, 1, 1 ) );
 
         batchHandler.handle( messageA );
         batchHandler.handle( messageB );
@@ -151,7 +152,7 @@ public class BatchingMessageHandlerTest
         batchHandler.run();
 
         // then
-        RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest( 2 );
+        RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest( CURRENT_VERSION, 2 );
         batchRequest.add( contentA );
         batchRequest.add( contentC );
 

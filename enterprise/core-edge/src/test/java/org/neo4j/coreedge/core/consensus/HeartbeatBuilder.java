@@ -21,8 +21,11 @@ package org.neo4j.coreedge.core.consensus;
 
 import org.neo4j.coreedge.identity.MemberId;
 
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
+
 public class HeartbeatBuilder
 {
+    private byte version = CURRENT_VERSION;
     private long commitIndex = -1;
     private long leaderTerm = -1;
     private long commitIndexTerm = -1;
@@ -30,7 +33,13 @@ public class HeartbeatBuilder
 
     public RaftMessages.Heartbeat build()
     {
-        return new RaftMessages.Heartbeat( from, leaderTerm, commitIndex, commitIndexTerm );
+        return new RaftMessages.Heartbeat( version, from, leaderTerm, commitIndex, commitIndexTerm );
+    }
+
+    public HeartbeatBuilder version( byte version )
+    {
+        this.version = version;
+        return this;
     }
 
     public HeartbeatBuilder from( MemberId from )

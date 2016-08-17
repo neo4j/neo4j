@@ -25,6 +25,9 @@ import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.Message;
+
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class Voting
 {
@@ -48,9 +51,9 @@ public class Voting
             outcome.renewElectionTimeout();
         }
 
-        outcome.addOutgoingMessage( new RaftMessages.Directed( voteRequest.from(), new RaftMessages.Vote.Response(
-                state.myself(), outcome.getTerm(),
-                willVoteForCandidate ) ) );
+        outcome.addOutgoingMessage( new RaftMessages.Directed( voteRequest.from(),
+                new RaftMessages.Vote.Response( CURRENT_VERSION, state.myself(), outcome.getTerm(),
+                        willVoteForCandidate ) ) );
     }
 
     public static boolean shouldVoteFor( MemberId candidate, long contextTerm, long requestTerm,

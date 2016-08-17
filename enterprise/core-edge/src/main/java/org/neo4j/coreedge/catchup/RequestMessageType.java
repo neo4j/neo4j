@@ -19,30 +19,33 @@
  */
 package org.neo4j.coreedge.catchup;
 
-import org.neo4j.coreedge.messaging.Message;
-
-import static java.lang.String.format;
-
-public enum RequestMessageType implements Message
+public enum RequestMessageType implements MessageType
 {
-    TX_PULL_REQUEST( (byte) 1 ),
-    STORE( (byte) 2 ),
-    RAFT_STATE( (byte) 3 ),
-    STORE_ID( (byte) 4 ),
-    UNKNOWN( (byte) 404 );
+    TX_PULL_REQUEST( CURRENT_VERSION, (byte) 1 ),
+    STORE( CURRENT_VERSION, (byte) 2 ),
+    RAFT_STATE( CURRENT_VERSION, (byte) 3 ),
+    STORE_ID( CURRENT_VERSION, (byte) 4 ),
+    UNKNOWN( CURRENT_VERSION, (byte) 404 );
 
-    private byte messageType;
+    private byte version;
+    private byte type;
 
-    RequestMessageType( byte messageType )
+    RequestMessageType( byte version, byte type )
     {
-        this.messageType = messageType;
+        this.version = version;
+        this.type = type;
     }
 
-    public static RequestMessageType from( byte b )
+    public static RequestMessageType from( byte version, byte type )
     {
+        if ( version != CURRENT_VERSION )
+        {
+            return UNKNOWN;
+        }
+
         for ( RequestMessageType responseMessageType : values() )
         {
-            if ( responseMessageType.messageType == b )
+            if ( responseMessageType.type == type )
             {
                 return responseMessageType;
             }
@@ -50,14 +53,23 @@ public enum RequestMessageType implements Message
         return UNKNOWN;
     }
 
-    public byte messageType()
+    @Override
+    public byte version()
     {
-        return messageType;
+        return version;
+    }
+
+    @Override
+    public byte type()
+    {
+        return type;
     }
 
     @Override
     public String toString()
     {
-        return format( "RequestMessageType{messageType=%s}", messageType );
+        return "RequestMessageType{" + "version=" + version + ", type=" + type + '}';
     }
+
+    public static class Encoder extends MessageTypeEncoder<RequestMessageType>{}
 }

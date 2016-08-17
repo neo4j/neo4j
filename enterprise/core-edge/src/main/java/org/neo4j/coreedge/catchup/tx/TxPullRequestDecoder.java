@@ -34,8 +34,9 @@ public class TxPullRequestDecoder extends MessageToMessageDecoder<ByteBuf>
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
+        byte version = msg.readByte();
         long txId = msg.readLong();
         StoreId storeId = StoreIdMarshal.unmarshal( new NetworkReadableClosableChannelNetty4( msg ) );
-        out.add( new TxPullRequest( txId, storeId ) );
+        out.add( new TxPullRequest( version, txId, storeId ) );
     }
 }

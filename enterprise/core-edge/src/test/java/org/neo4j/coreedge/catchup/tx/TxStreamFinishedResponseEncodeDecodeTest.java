@@ -22,8 +22,11 @@ package org.neo4j.coreedge.catchup.tx;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
+import org.neo4j.coreedge.messaging.Message;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class TxStreamFinishedResponseEncodeDecodeTest
 {
@@ -34,7 +37,7 @@ public class TxStreamFinishedResponseEncodeDecodeTest
         EmbeddedChannel channel =
                 new EmbeddedChannel( new TxStreamFinishedResponseEncoder(), new TxStreamFinishedResponseDecoder() );
         final long arbitraryId = 23;
-        TxStreamFinishedResponse sent = new TxStreamFinishedResponse( arbitraryId, true );
+        TxStreamFinishedResponse sent = new TxStreamFinishedResponse( CURRENT_VERSION, arbitraryId, true );
 
         // when
         channel.writeOutbound( sent );
