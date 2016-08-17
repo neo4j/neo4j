@@ -22,6 +22,7 @@ package synchronization;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.concurrent.CyclicBarrier;
@@ -41,6 +42,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
@@ -48,8 +50,13 @@ import static org.junit.Assert.fail;
 
 public class ConcurrentChangesOnEntitiesTest
 {
+
+    private SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    private TestDirectory testDirectory = TestDirectory.testDirectory();
+
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    public RuleChain ruleChain = RuleChain.outerRule( suppressOutput ).around( testDirectory );
+
     private final CyclicBarrier barrier = new CyclicBarrier( 2 );
     private final AtomicReference<Exception> ex = new AtomicReference<>();
     private GraphDatabaseService db;

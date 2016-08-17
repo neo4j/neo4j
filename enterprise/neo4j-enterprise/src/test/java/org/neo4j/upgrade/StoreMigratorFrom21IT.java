@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package upgrade;
+package org.neo4j.upgrade;
 
 import org.junit.Rule;
 import org.junit.Test;

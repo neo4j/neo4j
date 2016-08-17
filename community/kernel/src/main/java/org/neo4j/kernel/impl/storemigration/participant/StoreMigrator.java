@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
@@ -169,7 +170,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
         RecordFormats oldFormat = selectForVersion( versionToMigrateFrom );
         RecordFormats newFormat = selectForVersion( versionToMigrateTo );
-        if ( !oldFormat.equals( newFormat ) )
+        if ( !oldFormat.hasSameCapabilities( newFormat, CapabilityType.FORMAT ) )
         {
             // TODO if this store has relationship indexes then warn user about that they will be incorrect
             // after migration, because now we're rewriting the relationship ids.

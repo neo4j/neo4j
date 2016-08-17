@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package upgrade;
+package org.neo4j.upgrade;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +34,7 @@ public class StoreMigratorTestUtil
 {
     StoreMigratorTestUtil()
     {
-        // no istance allowed
+        // no instance allowed
     }
 
     public static ClusterManager.ManagedCluster buildClusterWithMasterDirIn( FileSystemAbstraction fs,
@@ -45,15 +45,11 @@ public class StoreMigratorTestUtil
         fs.deleteRecursively( haRootDir );
 
         ClusterManager clusterManager = new ClusterManager.Builder( haRootDir )
-                .withStoreDirInitializer( new ClusterManager.StoreDirInitializer()
+                .withStoreDirInitializer( ( serverId, storeDir ) ->
                 {
-                    @Override
-                    public void initializeStoreDir( int serverId, File storeDir ) throws IOException
+                    if ( serverId == 1 ) // Initialize dir only for master, others will copy store from it
                     {
-                        if ( serverId == 1 ) // Initialize dir only for master, others will copy store from it
-                        {
-                            FileUtils.copyRecursively( legacyStoreDir, storeDir );
-                        }
+                        FileUtils.copyRecursively( legacyStoreDir, storeDir );
                     }
                 } )
                 .withCluster( clusterOfSize( 3 ) )

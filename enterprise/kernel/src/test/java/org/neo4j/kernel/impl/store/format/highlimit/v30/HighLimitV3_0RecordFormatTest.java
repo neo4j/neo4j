@@ -17,30 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package upgrade;
+package org.neo4j.kernel.impl.store.format.highlimit.v30;
 
-import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.RecordFormatTest;
 
-/**
- * Runs the store upgrader tests from older versions, migrating to the current enterprise version.
- */
-public class EnterpriseStoreUpgraderTest extends StoreUpgraderTest
+public class HighLimitV3_0RecordFormatTest extends RecordFormatTest
 {
-    public EnterpriseStoreUpgraderTest( String version )
+    public HighLimitV3_0RecordFormatTest()
     {
-        super( version );
-    }
-
-    @Override
-    protected RecordFormats getRecordFormats()
-    {
-        return HighLimit.RECORD_FORMATS;
-    }
-
-    @Override
-    protected String getRecordFormatsName()
-    {
-        return HighLimit.NAME;
+        super( HighLimitV3_0.RECORD_FORMATS, 50, 50 );
     }
 }
