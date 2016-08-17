@@ -83,7 +83,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
             tryCount++;
             try
             {
-                if ( lock.tryLock( tryCount < 10? 0 : 10, TimeUnit.MILLISECONDS ) )
+                if ( tryLock( tryCount, unit ) )
                 {
                     try
                     {
@@ -91,7 +91,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
                     }
                     finally
                     {
-                        lock.unlock();
+                        unlock();
                     }
                 }
             }
@@ -109,6 +109,16 @@ public class WorkSync<Material, W extends Work<Material,W>>
         {
             Thread.currentThread().interrupt();
         }
+    }
+
+    private boolean tryLock( int tryCount, WorkUnit<Material,W> unit ) throws InterruptedException
+    {
+        return lock.tryLock( tryCount < 10? 0 : 10, TimeUnit.MILLISECONDS );
+    }
+
+    private void unlock()
+    {
+        lock.unlock();
     }
 
     private void doSynchronizedWork()
