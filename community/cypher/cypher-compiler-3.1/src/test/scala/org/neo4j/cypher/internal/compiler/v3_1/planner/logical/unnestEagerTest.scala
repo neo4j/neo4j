@@ -64,6 +64,15 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     rewrite(input) should equal(DeleteNode(Apply(lhs, rhs)(solved), null)(solved))
   }
 
+  test("should unnest detach delete node from rhs of apply") {
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
+    val delete = DetachDeleteNode(rhs, null)(solved)
+    val input = Apply(lhs, delete)(solved)
+
+    rewrite(input) should equal(DetachDeleteNode(Apply(lhs, rhs)(solved), null)(solved))
+  }
+
   test("should unnest set node property from rhs of apply") {
     val lhs = newMockedLogicalPlan()
     val rhs = newMockedLogicalPlan()
