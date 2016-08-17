@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.core.state;
 
 import java.io.File;
+import java.time.Clock;
 
 import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
@@ -49,11 +50,11 @@ public class ClusteringModule
         SimpleStorage<ClusterId> clusterIdStorage = new SimpleStorage<>( fileSystem, clusterStateDirectory,
                 CLUSTER_ID_NAME, new ClusterId.Marshal(), logProvider );
 
-        BindingService bindingService = new BindingService( clusterIdStorage );
         topologyService = discoveryServiceFactory.coreTopologyService( config, myself, logProvider );
+        BindingService bindingService = new BindingService( clusterIdStorage, topologyService, logProvider, Clock.systemUTC(), () -> Thread.sleep( 100 ), 60000 );
 
-        life.add( bindingService );
         life.add( topologyService );
+        life.add( bindingService );
 
         dependencies.satisfyDependency( topologyService ); // for tests
     }

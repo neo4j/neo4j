@@ -26,11 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
@@ -47,6 +49,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
 
     private final Lock lock = new ReentrantLock();
     private final Condition enoughMembers = lock.newCondition();
+    private AtomicReference<ClusterId> clusterId = new AtomicReference<>();
 
     @Override
     public CoreTopologyService coreTopologyService( Config config, MemberId myself, LogProvider logProvider )
@@ -82,6 +85,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         try
         {
             return new ClusterTopology(
+                    clusterId.get(),
                     coreClients.size() > 0 && coreClients.get( 0 ) == client,
                     unmodifiableMap( coreMembers ),
                     unmodifiableSet( edgeAddresses )
@@ -150,4 +154,8 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
+    boolean casClusterId( ClusterId clusterId )
+    {
+        return this.clusterId.compareAndSet( null, clusterId ) || this.clusterId.get().equals( clusterId );
+    }
 }

@@ -17,18 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.discovery;
+package org.neo4j.coreedge.core.state;
 
-import org.neo4j.coreedge.identity.ClusterId;
-
-public interface CoreTopologyService extends TopologyService
+class BindingException extends Exception
 {
-    void addCoreTopologyListener( Listener listener );
-
-    boolean publishClusterId( ClusterId clusterId );
-
-    interface Listener
+    BindingException( String message )
     {
-        void onCoreTopologyChange();
+        super( message );
     }
 }

@@ -61,7 +61,7 @@ public class ClusterOverviewProcedureTest
 
         Set<EdgeAddresses> edges = DiscoverEndpointAcquisitionServersProcedureTest.addresses( 4, 5 );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, edges );
+        final ClusterTopology clusterTopology = new ClusterTopology( null, false, coreMembers, edges );
         when( topologyService.currentTopology() ).thenReturn( clusterTopology );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );

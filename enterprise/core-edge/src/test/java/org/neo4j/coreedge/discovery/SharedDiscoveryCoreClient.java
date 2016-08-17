@@ -22,6 +22,7 @@ package org.neo4j.coreedge.discovery;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.MemberId;
@@ -51,6 +52,12 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     public synchronized void addCoreTopologyListener( Listener listener )
     {
         listeners.add( listener );
+    }
+
+    @Override
+    public boolean publishClusterId( ClusterId clusterId )
+    {
+        return sharedDiscoveryService.casClusterId( clusterId );
     }
 
     @Override

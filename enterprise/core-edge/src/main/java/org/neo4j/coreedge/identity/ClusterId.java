@@ -31,7 +31,7 @@ public class ClusterId
 {
     private final UUID uuid;
 
-    private ClusterId( UUID uuid )
+    public ClusterId( UUID uuid )
     {
         this.uuid = uuid;
     }

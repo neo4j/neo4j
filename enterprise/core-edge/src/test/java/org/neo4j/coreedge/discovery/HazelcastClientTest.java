@@ -19,6 +19,35 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import com.hazelcast.core.Client;
+import com.hazelcast.core.ClientService;
+import com.hazelcast.core.Cluster;
+import com.hazelcast.core.Endpoint;
+import com.hazelcast.core.EntryListener;
+import com.hazelcast.core.EntryView;
+import com.hazelcast.core.ExecutionCallback;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.HazelcastInstanceNotActiveException;
+import com.hazelcast.core.IAtomicReference;
+import com.hazelcast.core.IExecutorService;
+import com.hazelcast.core.IMap;
+import com.hazelcast.core.ISet;
+import com.hazelcast.core.ItemListener;
+import com.hazelcast.core.Member;
+import com.hazelcast.core.MemberSelector;
+import com.hazelcast.core.MultiExecutionCallback;
+import com.hazelcast.map.EntryProcessor;
+import com.hazelcast.map.MapInterceptor;
+import com.hazelcast.map.listener.MapListener;
+import com.hazelcast.map.listener.MapPartitionLostListener;
+import com.hazelcast.mapreduce.JobTracker;
+import com.hazelcast.mapreduce.aggregation.Aggregation;
+import com.hazelcast.mapreduce.aggregation.Supplier;
+import com.hazelcast.monitor.LocalExecutorStats;
+import com.hazelcast.monitor.LocalMapStats;
+import com.hazelcast.query.Predicate;
+import org.junit.Test;
+
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,34 +69,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import com.hazelcast.core.Client;
-import com.hazelcast.core.ClientService;
-import com.hazelcast.core.Cluster;
-import com.hazelcast.core.Endpoint;
-import com.hazelcast.core.EntryListener;
-import com.hazelcast.core.EntryView;
-import com.hazelcast.core.ExecutionCallback;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.HazelcastInstanceNotActiveException;
-import com.hazelcast.core.IExecutorService;
-import com.hazelcast.core.IMap;
-import com.hazelcast.core.ISet;
-import com.hazelcast.core.ItemListener;
-import com.hazelcast.core.Member;
-import com.hazelcast.core.MemberSelector;
-import com.hazelcast.core.MultiExecutionCallback;
-import com.hazelcast.map.EntryProcessor;
-import com.hazelcast.map.MapInterceptor;
-import com.hazelcast.map.listener.MapListener;
-import com.hazelcast.map.listener.MapPartitionLostListener;
-import com.hazelcast.mapreduce.JobTracker;
-import com.hazelcast.mapreduce.aggregation.Aggregation;
-import com.hazelcast.mapreduce.aggregation.Supplier;
-import com.hazelcast.monitor.LocalExecutorStats;
-import com.hazelcast.monitor.LocalMapStats;
-import com.hazelcast.query.Predicate;
-import org.junit.Test;
-
 import org.neo4j.coreedge.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
@@ -75,9 +76,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -86,14 +84,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.coreedge.discovery.HazelcastClient.REFRESH_EDGE;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.BOLT_SERVER;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.MEMBER_UUID;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.RAFT_SERVER;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.TRANSACTION_SERVER;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class HazelcastClientTest
 {
@@ -110,6 +106,7 @@ public class HazelcastClientTest
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
+        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -137,6 +134,7 @@ public class HazelcastClientTest
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
+        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
         when( hazelcastInstance.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
 
@@ -170,7 +168,7 @@ public class HazelcastClientTest
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenThrow( new IllegalStateException() );
-
+        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
 
         HazelcastClient client = new HazelcastClient( connector, logProvider, ADDRESS, new
@@ -230,7 +228,9 @@ public class HazelcastClientTest
                 .thenThrow( new HazelcastInstanceNotActiveException() );
         when( hazelcastInstance2.getCluster() ).thenReturn( cluster );
 
+        when( hazelcastInstance1.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance1.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
+        when( hazelcastInstance2.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance2.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
 
         when( hazelcastInstance1.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
@@ -274,6 +274,7 @@ public class HazelcastClientTest
         HazelcastMap hazelcastMap = new HazelcastMap();
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
+        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getMap( anyString() ) ).thenReturn( hazelcastMap );
         when( hazelcastInstance.getLocalEndpoint() ).thenReturn( endpoint );
         when( hazelcastInstance.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
@@ -318,6 +319,7 @@ public class HazelcastClientTest
         HazelcastMap hazelcastMap = new HazelcastMap();
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
+        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getMap( anyString() ) ).thenReturn( hazelcastMap );
         when( hazelcastInstance.getLocalEndpoint() ).thenReturn( endpoint );
         when( hazelcastInstance.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
@@ -353,7 +355,7 @@ public class HazelcastClientTest
         return member;
     }
 
-    private class HazelcastMap implements IMap<Object, Object>
+    private class HazelcastMap implements IMap<Object,Object>
     {
         private HashMap delegate = new HashMap();
 
@@ -473,7 +475,7 @@ public class HazelcastClientTest
         }
 
         @Override
-        public Set<Entry<Object, Object>> entrySet()
+        public Set<Entry<Object,Object>> entrySet()
         {
             return delegate.entrySet();
         }
@@ -485,7 +487,7 @@ public class HazelcastClientTest
         }
 
         @Override
-        public Set<Map.Entry<Object, Object>> entrySet( Predicate predicate )
+        public Set<Map.Entry<Object,Object>> entrySet( Predicate predicate )
         {
             return null;
         }
@@ -539,13 +541,13 @@ public class HazelcastClientTest
         }
 
         @Override
-        public Map<Object, Object> executeOnEntries( EntryProcessor entryProcessor )
+        public Map<Object,Object> executeOnEntries( EntryProcessor entryProcessor )
         {
             return null;
         }
 
         @Override
-        public Map<Object, Object> executeOnEntries( EntryProcessor entryProcessor, Predicate predicate )
+        public Map<Object,Object> executeOnEntries( EntryProcessor entryProcessor, Predicate predicate )
         {
             return null;
         }
@@ -563,7 +565,7 @@ public class HazelcastClientTest
         }
 
         @Override
-        public Map<Object, Object> executeOnKeys( Set keys, EntryProcessor entryProcessor )
+        public Map<Object,Object> executeOnKeys( Set keys, EntryProcessor entryProcessor )
         {
             return null;
         }
@@ -1095,19 +1097,19 @@ public class HazelcastClientTest
         }
 
         @Override
-        public <T> Map<Member, Future<T>> submitToMembers( Callable<T> task, Collection<Member> members )
+        public <T> Map<Member,Future<T>> submitToMembers( Callable<T> task, Collection<Member> members )
         {
             return null;
         }
 
         @Override
-        public <T> Map<Member, Future<T>> submitToMembers( Callable<T> task, MemberSelector memberSelector )
+        public <T> Map<Member,Future<T>> submitToMembers( Callable<T> task, MemberSelector memberSelector )
         {
             return null;
         }
 
         @Override
-        public <T> Map<Member, Future<T>> submitToAllMembers( Callable<T> task )
+        public <T> Map<Member,Future<T>> submitToAllMembers( Callable<T> task )
         {
             return null;
         }
