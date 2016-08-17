@@ -19,14 +19,13 @@
  */
 package org.neo4j.coreedge.core.state.machines.id;
 
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.Math.max;
-
 import static org.neo4j.coreedge.core.state.machines.id.IdRangeIterator.EMPTY_ID_RANGE_ITERATOR;
 import static org.neo4j.coreedge.core.state.machines.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
 
@@ -85,18 +84,13 @@ class ReplicatedIdGenerator implements IdGenerator
     @Override
     public synchronized long nextId()
     {
-        long nextId = nextLocalId();
+        long nextId = idQueue.next();
         if ( nextId == VALUE_REPRESENTING_NULL )
         {
             IdAllocation allocation;
-            try
-            {
-                allocation = acquirer.acquireIds( idType );
-            }
-            catch ( InterruptedException e )
-            {
-                throw new IdGenerationException( e );
-            }
+            allocation = acquirer.acquireIds( idType );
+
+            assert allocation.getIdRange().getRangeLength() > 0;
             log.debug( "Received id allocation " + allocation + " for " + idType );
             nextId = storeLocally( allocation );
         }
@@ -121,19 +115,20 @@ class ReplicatedIdGenerator implements IdGenerator
     private IdRange respectingHighId( IdRange idRange )
     {
         int adjustment = 0;
-        if ( highId > idRange.getRangeStart() )
+        long originalRangeStart = idRange.getRangeStart();
+        if ( highId > originalRangeStart )
         {
-            adjustment = (int) (highId - idRange.getRangeStart());
+            adjustment = (int) (highId - originalRangeStart);
         }
-        IdRange adjustedForLocalHighId = new IdRange( idRange.getDefragIds(),
-                max( this.highId, idRange.getRangeStart() ), idRange.getRangeLength() - adjustment );
-        return adjustedForLocalHighId;
-
-    }
-
-    private long nextLocalId()
-    {
-        return this.idQueue.next();
+        long rangeStart = max( this.highId, originalRangeStart );
+        int rangeLength = idRange.getRangeLength() - adjustment;
+        if ( rangeLength <= 0 )
+        {
+            throw new IllegalStateException(
+                    "IdAllocation state is probably corrupted or out of sync with the cluster. " +
+                    "Local highId is " + highId + " and allocation range is " + idRange );
+        }
+        return new IdRange( idRange.getDefragIds(), rangeStart, rangeLength );
     }
 
     @Override
