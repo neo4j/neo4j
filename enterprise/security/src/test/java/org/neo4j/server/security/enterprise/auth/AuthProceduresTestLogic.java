@@ -862,19 +862,24 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 
     //---------- permissions -----------
 
-    /*
-    TODO: uncomment and fix un-authentication handling
     @Test
-    public void shouldSetCorrectUnAuthenticatedPermissions() throws Exception
+    public void shouldSetCorrectUnAuthenticatedPermissions() throws Throwable
     {
-        pwdSubject.logout();
-        testUnAuthenticated( pwdSubject, "MATCH (n) RETURN n" );
-        testUnAuthenticated( pwdSubject, "CREATE (:Node)" );
-        testUnAuthenticated( pwdSubject, "CREATE INDEX ON :Node(number)" );
-        testUnAuthenticated( pwdSubject, "CALL dbms.changePassword( '321' )" );
-        testUnAuthenticated( pwdSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
+        S unknownUser = neo.login( "Batman", "Matban" );
+        assertFail( unknownUser, "MATCH (n) RETURN n", "" );
+
+        unknownUser = neo.login( "Batman", "Matban" );
+        assertFail( unknownUser, "CREATE (:Node)", "" );
+
+        unknownUser = neo.login( "Batman", "Matban" );
+        assertFail( unknownUser, "CREATE INDEX ON :Node(number)", "" );
+
+        unknownUser = neo.login( "Batman", "Matban" );
+        assertFail( unknownUser, "CALL dbms.changePassword( '321' )", "" );
+
+        unknownUser = neo.login( "Batman", "Matban" );
+        assertFail( unknownUser, "CALL dbms.createUser('Henrik', 'bar', true)", "" );
     }
-    */
 
     @Test
     public void shouldSetCorrectPasswordChangeRequiredPermissions() throws Throwable
