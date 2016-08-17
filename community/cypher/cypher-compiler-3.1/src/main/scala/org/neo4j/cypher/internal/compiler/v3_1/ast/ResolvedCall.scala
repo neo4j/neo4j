@@ -88,8 +88,8 @@ case class ResolvedCall(signature: ProcedureSignature,
 
   private def argumentCheck: SemanticCheck = {
     val expectedNumArgs = signature.inputSignature.length
-    val defaultArgs = signature.inputSignature.flatMap(_.default).drop(callArguments.length)
-    val actualNumArgs = callArguments.length + defaultArgs.length
+    val usedDefaultArgs = signature.inputSignature.drop(callArguments.length).flatMap(_.default)
+    val actualNumArgs = callArguments.length + usedDefaultArgs.length
 
     if (declaredArguments) {
       if (expectedNumArgs == actualNumArgs) {
