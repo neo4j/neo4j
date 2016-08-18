@@ -23,14 +23,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Map;
 import java.util.function.BiFunction;
-
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 
@@ -108,6 +107,9 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
         switch ( outcome )
         {
         case PROTOCOL_CHOSEN:
+            // A protocol version has been successfully agreed upon, therefore we can
+            // reply positively with four bytes reflecting this selection and leave
+            // the connection open for INIT etc...
             protocol = protocolChooser.chosenProtocol();
             ctx.writeAndFlush( ctx.alloc().buffer( 4 ).writeInt( protocol.version() ) );
 
@@ -125,17 +127,29 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
             }
             return;
         case NO_APPLICABLE_PROTOCOL:
+            // No protocol match could be found between the versions suggested by the
+            // client and the versions supported by the server. In this case, we have
+            // no option but to report a 'zero' version match and close the connection.
             buffer.release();
             ctx.writeAndFlush( wrappedBuffer( new byte[]{0, 0, 0, 0} ) )
                     .sync()
                     .channel()
                     .close();
             return;
+        case INSECURE_HANDSHAKE:
+            // There has been an attempt to carry out an unencrypted handshake over a
+            // connection that requires encryption. No response will be sent and the
+            // connection will be closed immediately. Note this is the same action as
+            // for INVALID_HANDSHAKE below, so we can just fall through.
         case INVALID_HANDSHAKE:
+            // The handshake went horribly wrong for some reason. As above, we'll
+            // simply close the connection and say no more about it.
             buffer.release();
             ctx.close();
             return;
         case PARTIAL_HANDSHAKE:
+            // Handshake ongoing. More bytes are required before the exchange is
+            // complete so we'll simply return and take no specific action.
             return;
         default:
             throw new IllegalStateException( "Unknown handshake outcome: " + outcome );
@@ -151,7 +165,9 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
         /** the client sent an invalid handshake */
         INVALID_HANDSHAKE,
         /** None of the clients suggested protocol versions are available :( */
-        NO_APPLICABLE_PROTOCOL
+        NO_APPLICABLE_PROTOCOL,
+        /** Encryption is required but the connection is not encrypted */
+        INSECURE_HANDSHAKE
     }
 
     /**
@@ -163,7 +179,8 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
      */
     public static class ProtocolChooser
     {
-        private final PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions;
+        private final Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> availableVersions;
+        private final boolean encryptionRequired;
         private final boolean isEncrypted;
         private final ByteBuffer handShake = ByteBuffer.allocateDirect( 5 * 4 ).order( ByteOrder.BIG_ENDIAN );
         public static final int BOLT_MAGIC_PREAMBLE = 0x6060B017;
@@ -172,16 +189,23 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
 
         /**
          * @param availableVersions version -> protocol mapping
+         * @param encryptionRequired whether or not the server allows only encrypted connections
+         * @param isEncrypted whether of not this connection is encrypted
          */
-        public ProtocolChooser( PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions, boolean isEncrypted )
+        public ProtocolChooser( Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> availableVersions, boolean encryptionRequired, boolean isEncrypted )
         {
             this.availableVersions = availableVersions;
+            this.encryptionRequired = encryptionRequired;
             this.isEncrypted = isEncrypted;
         }
 
         public HandshakeOutcome handleVersionHandshakeChunk( ByteBuf buffer, Channel ch )
         {
-            if ( handShake.remaining() > buffer.readableBytes() )
+            if ( encryptionRequired && !isEncrypted )
+            {
+                return HandshakeOutcome.INSECURE_HANDSHAKE;
+            }
+            else if ( handShake.remaining() > buffer.readableBytes() )
             {
                 handShake.limit( handShake.position() + buffer.readableBytes() );
                 buffer.readBytes( handShake );
@@ -195,7 +219,7 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
             if ( handShake.remaining() == 0 )
             {
                 handShake.flip();
-                //Check so that handshake starts with 0x606 0B017
+                // Verify that the handshake starts with a Bolt-shaped preamble.
                 if ( handShake.getInt() != BOLT_MAGIC_PREAMBLE )
                 {
                     return HandshakeOutcome.INVALID_HANDSHAKE;

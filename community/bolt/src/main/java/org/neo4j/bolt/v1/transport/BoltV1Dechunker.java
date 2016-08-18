@@ -23,15 +23,15 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.v1.messaging.MessageHandler;
+import org.neo4j.bolt.v1.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
+import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
 
 public class BoltV1Dechunker
 {
     private final ChunkedInput input;
-    private final PackStreamMessageFormatV1.Reader unpacker;
-    private final MessageHandler<RuntimeException> onMessage;
+    private final BoltRequestMessageReader unpacker;
+    private final BoltRequestMessageHandler<RuntimeException> onMessage;
     private final Runnable onMessageStarted;
 
     public enum State
@@ -45,12 +45,12 @@ public class BoltV1Dechunker
     private State state = State.AWAITING_CHUNK;
     private int chunkSize = 0;
 
-    public BoltV1Dechunker( MessageHandler<RuntimeException> messageHandler, Runnable onMessageStarted )
+    public BoltV1Dechunker( BoltRequestMessageHandler<RuntimeException> messageHandler, Runnable onMessageStarted )
     {
         this.onMessage = messageHandler;
         this.onMessageStarted = onMessageStarted;
         this.input = new ChunkedInput();
-        this.unpacker = new PackStreamMessageFormatV1.Reader( new Neo4jPack.Unpacker( input ) );
+        this.unpacker = new BoltRequestMessageReader( new Neo4jPack.Unpacker( input ) );
     }
 
     /** Check if we are currently "in the middle of" a message, eg. we've gotten parts of it, but are waiting for more. */

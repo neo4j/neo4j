@@ -19,10 +19,6 @@
  */
 package org.neo4j.bolt.v1.runtime.integration;
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -31,35 +27,38 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.v1.runtime.Session;
-import org.neo4j.bolt.v1.runtime.Sessions;
-import org.neo4j.bolt.v1.runtime.internal.StandardSessions;
-import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
+import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.v1.runtime.BoltStateMachine;
+import org.neo4j.bolt.v1.runtime.LifecycleManagedBoltFactory;
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.bolt.SessionTracker;
+import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageData;
 
-class SessionRule implements TestRule, Sessions
+import static org.junit.Assert.fail;
+
+class SessionRule implements TestRule
 {
     private GraphDatabaseAPI gdb;
-    private Sessions actual;
-    private LinkedList<Session> startedSessions = new LinkedList<>();
-    private final LifeSupport life = new LifeSupport();
+    private LifecycleManagedBoltFactory boltFactory;
+    private LinkedList<BoltStateMachine> runningMachines = new LinkedList<>();
     private boolean authEnabled = false;
 
     @Override
@@ -73,20 +72,16 @@ class SessionRule implements TestRule, Sessions
                 Map<Setting<?>,String> config = new HashMap<>();
                 config.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
                 gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( config );
-                Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
                 DependencyResolver resolver = gdb.getDependencyResolver();
                 LogService logService = NullLogService.getInstance();
 
                 Authentication authentication = authentication( resolver.resolveDependency( Config.class ),
                         resolver.resolveDependency( AuthManager.class ), logService );
-                StandardSessions sessions = life.add(
-                        new StandardSessions( gdb, new UsageData( scheduler ), logService,
+                boltFactory = new LifecycleManagedBoltFactory( gdb, new UsageData( null ), logService,
                                 resolver.resolveDependency( ThreadToStatementContextBridge.class ),
                                 authentication, resolver.resolveDependency( NeoStoreDataSource.class ),
-                                SessionTracker.NOOP )
-                );
-                actual = new ThreadedSessions( sessions, scheduler, logService );
-                life.start();
+                                BoltConnectionTracker.NOOP );
+                boltFactory.start();
                 try
                 {
                     base.evaluate();
@@ -95,7 +90,7 @@ class SessionRule implements TestRule, Sessions
                 {
                     try
                     {
-                        startedSessions.forEach( Session::close );
+                        runningMachines.forEach( BoltStateMachine::close );
                     }
                     catch ( Throwable e ) { e.printStackTrace(); }
 
@@ -118,16 +113,15 @@ class SessionRule implements TestRule, Sessions
         }
     }
 
-    @Override
-    public Session newSession( String connectionDescriptor, boolean isEncrypted )
+    BoltStateMachine newMachine( String connectionDescriptor )
     {
-        if ( actual == null )
+        if ( boltFactory == null )
         {
             throw new IllegalStateException( "Cannot access test environment before test is running." );
         }
-        Session session = actual.newSession( connectionDescriptor, isEncrypted );
-        startedSessions.add( session );
-        return session;
+        BoltStateMachine connection = boltFactory.newMachine( connectionDescriptor, () -> {} );
+        runningMachines.add( connection );
+        return connection;
     }
 
     SessionRule withAuthEnabled( boolean authEnabled )
@@ -156,4 +150,5 @@ class SessionRule implements TestRule, Sessions
     {
         return gdb.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
     }
+
 }

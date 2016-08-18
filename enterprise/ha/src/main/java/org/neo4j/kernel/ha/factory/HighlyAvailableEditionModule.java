@@ -61,7 +61,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.bolt.SessionTracker;
+import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -163,7 +163,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.impl.enterprise.StandardSessionTracker;
+import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -858,8 +858,8 @@ public class HighlyAvailableEditionModule
     }
 
     @Override
-    protected SessionTracker createSessionTracker()
+    protected BoltConnectionTracker createSessionTracker()
     {
-        return new StandardSessionTracker();
+        return new StandardBoltConnectionTracker();
     }
 }

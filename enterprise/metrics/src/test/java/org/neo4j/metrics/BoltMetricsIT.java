@@ -23,21 +23,20 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import java.io.File;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.bolt.v1.messaging.message.Messages;
-import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.metrics.source.db.BoltMetrics;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import java.io.File;
+import java.util.concurrent.TimeUnit;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.acceptedVersions;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
@@ -52,7 +51,7 @@ public class BoltMetricsIT
     public TemporaryFolder tmpDir = new TemporaryFolder();
 
     private GraphDatabaseAPI db;
-    private Connection conn;
+    private TransportConnection conn;
 
     @Test
     public void shouldMonitorBolt() throws Throwable
@@ -72,10 +71,10 @@ public class BoltMetricsIT
         conn = new SocketConnection()
                 .connect( new HostnamePort( "localhost", 7687 ) )
                 .send( acceptedVersions( 1, 0, 0, 0 ) )
-                .send( chunk( Messages.init( "TestClient", map("scheme", "basic", "principal", "neo4j", "credentials", "neo4j") ) ) );
+                .send( chunk( init( "TestClient", map("scheme", "basic", "principal", "neo4j", "credentials", "neo4j") ) ) );
 
         // Then
-        assertEventually( "init request shows up as recieved",
+        assertEventually( "init request shows up as received",
                 () -> readLongValue( metricsCsv( metricsFolder, BoltMetrics.MESSAGES_RECIEVED ) ),
                 equalTo( 1L ), 5, TimeUnit.SECONDS );
         assertEventually( "init request shows up as started",

@@ -34,6 +34,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -228,7 +229,9 @@ abstract class AuthTestBase<S>
         String errorMessage = "Invalid username or password";
         if ( IS_BOLT )
         {
-            errorMessage = "The session is no longer available, possibly due to termination.";
+            // After the connection has been terminated, attempts to receive
+            // data will result in an IOException with the message below.
+            errorMessage = "Failed to read 2 bytes, missing 2 bytes. Buffer: 00 00";
         }
         else if ( IS_EMBEDDED )
         {

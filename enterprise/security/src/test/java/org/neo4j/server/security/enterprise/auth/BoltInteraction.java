@@ -17,7 +17,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.server.security.enterprise.auth;
+
+import org.neo4j.bolt.security.auth.AuthenticationException;
+import org.neo4j.bolt.v1.messaging.message.FailureMessage;
+import org.neo4j.bolt.v1.messaging.message.InitMessage;
+import org.neo4j.bolt.v1.messaging.message.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.message.RecordMessage;
+import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
+import org.neo4j.bolt.v1.messaging.message.RunMessage;
+import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
+import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
+import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
+import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
+import org.neo4j.function.Factory;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,39 +53,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.neo4j.bolt.security.auth.AuthenticationException;
-import org.neo4j.bolt.v1.messaging.message.FailureMessage;
-import org.neo4j.bolt.v1.messaging.message.Message;
-import org.neo4j.bolt.v1.messaging.message.RecordMessage;
-import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
-import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.Connection;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
-import org.neo4j.function.Factory;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.bolt.v1.messaging.message.Messages.init;
-import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
-import static org.neo4j.bolt.v1.messaging.message.Messages.reset;
-import static org.neo4j.bolt.v1.messaging.message.Messages.run;
+import static org.neo4j.bolt.v1.messaging.message.ResetMessage.reset;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject>
 {
     protected final HostnamePort address = new HostnamePort( "localhost:7687" );
-    protected final Factory<Connection> connectionFactory = SocketConnection::new;
+    protected final Factory<TransportConnection> connectionFactory = SocketConnection::new;
     private final Neo4jWithSocket server;
     private Map<String,BoltSubject> subjects = new HashMap<>();
 
@@ -104,7 +105,7 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
         }
         try
         {
-            subject.client.send( TransportTestUtil.chunk( run( call, params ), pullAll() ) );
+            subject.client.send( TransportTestUtil.chunk( RunMessage.run( call, params ), PullAllMessage.pullAll() ) );
             resultConsumer.accept( collectResults( subject.client ) );
             return "";
         }
@@ -115,7 +116,7 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
     }
 
     @Override
-    public BoltSubject login( String username, String password ) throws Throwable
+    public BoltSubject login( String username, String password ) throws Exception
     {
         BoltSubject subject = subjects.get( username );
         if ( subject == null )
@@ -129,10 +130,10 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
             subject.client = connectionFactory.newInstance();
         }
         subject.client.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( init( "TestClient/1.1",
+                .send( TransportTestUtil.chunk( InitMessage.init( "TestClient/1.1",
                         map( "principal", username, "credentials", password, "scheme", "basic" ) ) ) );
-        assertThat( subject.client, TransportTestUtil.eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        subject.setLoginResult( TransportTestUtil.recvOneMessage( subject.client ) );
+        assertThat( subject.client, TransportTestUtil.eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        subject.setLoginResult( TransportTestUtil.receiveOneResponseMessage( subject.client ) );
         return subject;
     }
 
@@ -184,14 +185,14 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
     }
 
     @Override
-    public void assertUnauthenticated( BoltSubject subject )
+    public void assertInitFailed( BoltSubject subject )
     {
         assertFalse( "Should not be authenticated", subject.isAuthenticated() );
     }
 
-    private static BoltResult collectResults( Connection client ) throws Exception
+    private static BoltResult collectResults( TransportConnection client ) throws Exception
     {
-        Message message = TransportTestUtil.recvOneMessage( client );
+        ResponseMessage message = TransportTestUtil.receiveOneResponseMessage( client );
         List<String> fieldNames = new ArrayList<>();
         List<Map<String,Object>> result = new ArrayList<>();
 
@@ -203,23 +204,16 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
         else if ( message instanceof FailureMessage )
         {
             FailureMessage failMessage = ((FailureMessage) message);
-            if ( failMessage.status().equals( Status.Session.InvalidSession ) )
-            {
-                client.disconnect();
-            }
-            else
-            {
-                // drain ignoredMessage, ack failure, get successMessage
-                TransportTestUtil.recvOneMessage( client );
-                client.send( TransportTestUtil.chunk( reset() ) );
-                TransportTestUtil.recvOneMessage( client );
-            }
+            // drain ignoredMessage, ack failure, get successMessage
+            TransportTestUtil.receiveOneResponseMessage( client );
+            client.send( TransportTestUtil.chunk( reset() ) );
+            TransportTestUtil.receiveOneResponseMessage( client );
             throw new AuthenticationException( failMessage.status(), failMessage.message() );
         }
 
         do
         {
-            message = TransportTestUtil.recvOneMessage( client );
+            message = TransportTestUtil.receiveOneResponseMessage( client );
             if ( message instanceof RecordMessage )
             {
                 Object[] row = ((RecordMessage) message).record().fields();
@@ -238,7 +232,7 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
             FailureMessage failMessage = ((FailureMessage) message);
             // ack failure, get successMessage
             client.send( TransportTestUtil.chunk( reset() ) );
-            TransportTestUtil.recvOneMessage( client );
+            TransportTestUtil.receiveOneResponseMessage( client );
             throw new AuthenticationException( failMessage.status(), failMessage.message() );
         }
 
@@ -247,19 +241,19 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
 
     public static class BoltSubject
     {
-        Connection client;
+        TransportConnection client;
         String username;
         String password;
         AuthenticationResult loginResult = AuthenticationResult.FAILURE;
 
-        public BoltSubject( Connection client, String username, String password )
+        public BoltSubject( TransportConnection client, String username, String password )
         {
             this.client = client;
             this.username = username;
             this.password = password;
         }
 
-        public void setLoginResult( Message result )
+        public void setLoginResult( ResponseMessage result )
         {
             if ( result instanceof SuccessMessage )
             {

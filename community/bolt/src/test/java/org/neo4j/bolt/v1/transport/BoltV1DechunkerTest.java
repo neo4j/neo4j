@@ -24,13 +24,14 @@ import org.junit.Test;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.bolt.v1.messaging.RecordingMessageHandler;
+import org.neo4j.bolt.v1.messaging.BoltRequestMessageRecorder;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.messaging.util.MessageMatchers;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 
 public class BoltV1DechunkerTest
 {
@@ -46,14 +47,14 @@ public class BoltV1DechunkerTest
             {
                 content.appendCodePoint( 'a' + random.nextInt( 'z' - 'a' ) );
             }
-            RunMessage run = new RunMessage( content.toString() );
+            RunMessage run = run( content.toString() );
             byte[] message = MessageMatchers.serialize( run );
             byte head1 = (byte) (message.length >> 8), head2 = (byte) (message.length & 0xFF);
             byte[] chunk2 = new byte[message.length + 3];
             chunk2[0] = head2;
             System.arraycopy( message, 0, chunk2, 1, message.length );
 
-            RecordingMessageHandler messages = new RecordingMessageHandler();
+            BoltRequestMessageRecorder messages = new BoltRequestMessageRecorder();
             BoltV1Dechunker dechunker = new BoltV1Dechunker( messages, () -> {
             } );
 

@@ -24,24 +24,40 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.util.ArrayList;
-import java.util.Collection;
-
-import org.neo4j.bolt.v1.messaging.message.Message;
+import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
+import org.neo4j.bolt.v1.messaging.BoltResponseMessageReader;
+import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
+import org.neo4j.bolt.v1.messaging.message.FailureMessage;
+import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
+import org.neo4j.bolt.v1.messaging.message.RecordMessage;
+import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
+import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
+import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
+import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
+import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
-import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.message;
+import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.dechunk;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.recvOneMessage;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.receiveOneResponseMessage;
 
 @RunWith( Parameterized.class )
 public class BoltFullExchangesDocTest
@@ -59,7 +75,7 @@ public class BoltFullExchangesDocTest
     public DocExchangeExample example;
 
     @Parameterized.Parameter( 2 )
-    public Connection client;
+    public TransportConnection client;
 
     @Parameterized.Parameter( 3 )
     public HostnamePort address;
@@ -149,17 +165,17 @@ public class BoltFullExchangesDocTest
                                 equalTo( hex( DocSerialization.packAndChunk( event.humanReadableMessage(), 1024 * 8 ) ) ) );
 
                         // Ensure that the server replies as documented
-                        Message serverMessage = recvOneMessage( client );
+                        ResponseMessage serverMessage = receiveOneResponseMessage( client );
                         assertThat(
-                                "The message recieved from the server should match the documented binary representation. " +
+                                "The message received from the server should match the documented binary representation. " +
                                 "Human-readable message is <" + event.humanReadableMessage() + ">, received message was: " + serverMessage,
                                 serverMessage,
-                                equalTo( message( dechunk( event.payload() ) ) ) );
+                                equalTo( unpackedResponseMessage( dechunk( event.payload() ) ) ) );
                     }
                     else
                     {
                         // Raw data assertions - used for documenting the version negotiation, for instance
-                        assertThat( "The data recieved from the server should match the documented binary representation.",
+                        assertThat( "The data received from the server should match the documented binary representation.",
                                 hex( client.recv( event.payload().length ) ),
                                 equalTo( hex( event.payload() ) ) );
                     }
@@ -176,4 +192,45 @@ public class BoltFullExchangesDocTest
     {
         return HexPrinter.hex( payload, 4, "  " );
     }
+
+    private static ResponseMessage unpackedResponseMessage( byte[] data ) throws IOException
+    {
+        final RecordingByteChannel channel = new RecordingByteChannel();
+        channel.write( ByteBuffer.wrap( data ) );
+
+        final BufferedChannelInput input = new BufferedChannelInput( 8192 );
+        input.reset( channel );
+
+        final List<ResponseMessage> messages = new ArrayList<>( 1 );
+        final BoltResponseMessageReader reader = new BoltResponseMessageReader( new Neo4jPack.Unpacker( input ) );
+        reader.read( new BoltResponseMessageHandler<RuntimeException>()
+        {
+            @Override
+            public void onSuccess( Map<String, Object> metadata ) throws RuntimeException
+            {
+                messages.add( new SuccessMessage( metadata ) );
+            }
+
+            @Override
+            public void onRecord( Record item ) throws RuntimeException
+            {
+                messages.add( new RecordMessage( item ) );
+            }
+
+            @Override
+            public void onIgnored() throws RuntimeException
+            {
+                messages.add( new IgnoredMessage() );
+            }
+
+            @Override
+            public void onFailure( Status status, String message ) throws RuntimeException
+            {
+                messages.add( new FailureMessage( status, message ) );
+            }
+        } );
+        assert messages.size() == 1;
+        return messages.get( 0 );
+    }
+
 }

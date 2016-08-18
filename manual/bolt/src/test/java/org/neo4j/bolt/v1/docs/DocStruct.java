@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.docs;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -26,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.neo4j.bolt.v1.packstream.PackStream;
 
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.COMMENTS;
@@ -166,5 +169,29 @@ public class DocStruct implements Iterable<DocStruct.Field>
     public int size()
     {
         return fields.size();
+    }
+
+    static void packValueOf( String type, PackStream.Packer packer ) throws IOException
+    {
+        if ( type.equalsIgnoreCase( "String" ) )
+        {
+            packer.pack( "Hello, world!" );
+        }
+        else if ( type.startsWith( "Map" ) )
+        {
+            packer.packMapHeader( 1 );
+            packer.pack( "k" );
+            packer.pack( 12345 );
+        }
+        else if ( type.startsWith( "List" ) )
+        {
+            packer.packListHeader( 2 );
+            packer.pack( 1 );
+            packer.pack( 2 );
+        }
+        else
+        {
+            throw new RuntimeException( "Unknown type: " + type );
+        }
     }
 }

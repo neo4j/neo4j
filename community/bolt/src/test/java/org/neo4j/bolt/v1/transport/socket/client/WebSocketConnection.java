@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.util.HexPrinter;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class WebSocketConnection implements Connection, WebSocketListener
+public class WebSocketConnection implements TransportConnection, WebSocketListener
 {
     private final Supplier<WebSocketClient> clientSupplier;
     private final Function<HostnamePort,URI> uriGenerator;
@@ -75,7 +75,7 @@ public class WebSocketConnection implements Connection, WebSocketListener
     }
 
     @Override
-    public Connection connect( HostnamePort address ) throws Exception
+    public TransportConnection connect( HostnamePort address ) throws Exception
     {
         URI target = uriGenerator.apply( address );
 
@@ -97,7 +97,7 @@ public class WebSocketConnection implements Connection, WebSocketListener
     }
 
     @Override
-    public Connection send( byte[] rawBytes ) throws Exception
+    public TransportConnection send( byte[] rawBytes ) throws IOException
     {
         // The WS client *mutates* the buffer we give it, so we need to copy it here to allow the caller to retain
         // ownership
@@ -107,13 +107,13 @@ public class WebSocketConnection implements Connection, WebSocketListener
     }
 
     @Override
-    public byte[] recv( int length ) throws Exception
+    public byte[] recv( int length ) throws IOException, InterruptedException
     {
         int remaining = length;
         byte[] target = new byte[remaining];
         while ( remaining > 0 )
         {
-            waitForRecievedData( length, remaining, target );
+            waitForReceivedData( length, remaining, target );
             for ( int i = 0; i < Math.min( remaining, currentReceiveBuffer.length - currentReceiveIndex ); i++ )
             {
                 target[length - remaining] = currentReceiveBuffer[currentReceiveIndex++];
@@ -123,13 +123,7 @@ public class WebSocketConnection implements Connection, WebSocketListener
         return target;
     }
 
-    @Override
-    public void discard( int length ) throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    private void waitForRecievedData( int length, int remaining, byte[] target )
+    private void waitForReceivedData( int length, int remaining, byte[] target )
             throws InterruptedException, IOException
     {
         long start = System.currentTimeMillis();
@@ -154,11 +148,18 @@ public class WebSocketConnection implements Connection, WebSocketListener
     }
 
     @Override
-    public void disconnect() throws Exception
+    public void disconnect() throws IOException
     {
         if (client != null)
         {
-            client.stop();
+            try
+            {
+                client.stop();
+            }
+            catch ( Exception e )
+            {
+                throw new IOException( e );
+            }
         }
     }
 

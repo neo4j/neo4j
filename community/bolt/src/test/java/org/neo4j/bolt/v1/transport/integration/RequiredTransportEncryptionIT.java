@@ -25,24 +25,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.util.Collection;
-
-import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.api.exceptions.Status;
+
+import java.util.Collection;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.message.Messages.init;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.REQUIRED;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
@@ -58,23 +52,23 @@ public class RequiredTransportEncryptionIT
             } );
 
     @Parameterized.Parameter( 0 )
-    public Factory<Connection> cf;
+    public Factory<TransportConnection> cf;
 
     @Parameterized.Parameter( 1 )
     public HostnamePort address;
 
-    private Connection client;
+    private TransportConnection client;
 
     @Parameterized.Parameters
     public static Collection<Object[]> transports()
     {
         return asList(
                 new Object[]{
-                        (Factory<Connection>) SocketConnection::new,
+                        (Factory<TransportConnection>) SocketConnection::new,
                         new HostnamePort( "localhost:7687" )
                 },
                 new Object[]{
-                        (Factory<Connection>) WebSocketConnection::new,
+                        (Factory<TransportConnection>) WebSocketConnection::new,
                         new HostnamePort( "localhost:7687" )
                 } );
     }
@@ -95,16 +89,12 @@ public class RequiredTransportEncryptionIT
     }
 
     @Test
-    public void shouldReceiveSecurityErrorAfterInit() throws Throwable
+    public void shouldCloseUnencryptedConnectionOnHandshakeWhenEncryptionIsRequired() throws Throwable
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( init( "TestClient/1.1", emptyMap()  ) ) );
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
 
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-
-        assertThat( client, eventuallyRecieves(
-                msgFailure( Status.Security.EncryptionRequired, "This server requires a TLS encrypted connection." ) ) );
+        assertThat( client, TransportTestUtil.eventuallyDisconnects() );
     }
 }

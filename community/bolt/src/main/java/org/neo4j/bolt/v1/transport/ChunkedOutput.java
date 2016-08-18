@@ -25,7 +25,7 @@ import io.netty.channel.Channel;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.bolt.v1.messaging.MessageBoundaryHook;
+import org.neo4j.bolt.v1.messaging.BoltResponseMessageBoundaryHook;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
 
@@ -35,7 +35,7 @@ import static java.lang.Math.max;
  * A target output for {@link PackStream} which breaks the data into a continuous stream of chunks before pushing them into a netty
  * channel.
  */
-public class ChunkedOutput implements PackOutput, MessageBoundaryHook
+public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHook
 {
     public static final int CHUNK_HEADER_SIZE = 2;
     public static final int MESSAGE_BOUNDARY = 0;

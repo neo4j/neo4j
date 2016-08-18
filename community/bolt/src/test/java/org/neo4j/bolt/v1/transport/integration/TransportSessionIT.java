@@ -26,23 +26,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.util.Collection;
-
-import org.neo4j.bolt.v1.transport.socket.client.Connection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.*;
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.InputPosition;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.SeverityLevel;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
+
+import java.util.Collection;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -50,15 +41,12 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.message.Messages.init;
-import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
-import static org.neo4j.bolt.v1.messaging.message.Messages.run;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.hasNotification;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
+import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
+import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.*;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 @SuppressWarnings( "unchecked" )
@@ -70,31 +58,31 @@ public class TransportSessionIT
             settings.put( GraphDatabaseSettings.auth_enabled, "false"  ));
 
     @Parameterized.Parameter(0)
-    public Factory<Connection> cf;
+    public Factory<TransportConnection> cf;
 
     @Parameterized.Parameter(1)
     public HostnamePort address;
 
-    private Connection client;
+    private TransportConnection client;
 
     @Parameterized.Parameters
     public static Collection<Object[]> transports()
     {
         return asList(
                 new Object[]{
-                        (Factory<Connection>) SocketConnection::new,
+                        (Factory<TransportConnection>) SocketConnection::new,
                         new HostnamePort( "localhost:7687" )
                 },
                 new Object[]{
-                        (Factory<Connection>) WebSocketConnection::new,
+                        (Factory<TransportConnection>) WebSocketConnection::new,
                         new HostnamePort( "localhost:7687" )
                 },
                 new Object[]{
-                        (Factory<Connection>) SecureSocketConnection::new,
+                        (Factory<TransportConnection>) SecureSocketConnection::new,
                         new HostnamePort( "localhost:7687" )
                 },
                 new Object[]{
-                        (Factory<Connection>) SecureWebSocketConnection::new,
+                        (Factory<TransportConnection>) SecureWebSocketConnection::new,
                         new HostnamePort( "localhost:7687" )
                 } );
     }
@@ -107,7 +95,7 @@ public class TransportSessionIT
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
 
         // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
     }
 
     @Test
@@ -118,7 +106,7 @@ public class TransportSessionIT
                 .send( TransportTestUtil.acceptedVersions( 1337, 0, 0, 0 ) );
 
         // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 0} ) );
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 0} ) );
     }
 
     @Test
@@ -133,8 +121,8 @@ public class TransportSessionIT
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves(
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( map( "fields", asList( "a", "a_squared" ) ) ),
                 msgRecord( eqRecord( equalTo( 1L ), equalTo( 1L ) ) ),
@@ -154,8 +142,8 @@ public class TransportSessionIT
                         run( "CREATE (n:Test {age: 2}) RETURN n.age AS age" ),
                         pullAll() ) );
 
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves(
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( map( "fields", asList( "age" ) ) ),
                 msgRecord( eqRecord( equalTo( 2L ) ) ),
@@ -167,7 +155,7 @@ public class TransportSessionIT
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves(
+        assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess( map( "fields", asList( "label" ) ) ),
                 msgRecord( eqRecord( Matchers.equalTo( "Test" ) ) ),
                 msgSuccess()
@@ -186,8 +174,8 @@ public class TransportSessionIT
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves(
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( map("fields", singletonList( "n" )))));
 
@@ -199,9 +187,9 @@ public class TransportSessionIT
         //                  props: {} (A)]
         //}
         assertThat( client,
-                eventuallyRecieves(bytes(0x00, 0x08, 0xB1, 0x71,  0x91,
+                eventuallyReceives(bytes(0x00, 0x08, 0xB1, 0x71,  0x91,
                         0xB3, 0x4E,  0x00, 0x90, 0xA0, 0x00, 0x00) ));
-        assertThat(client, eventuallyRecieves( msgSuccess()));
+        assertThat(client, TransportTestUtil.eventuallyReceives( msgSuccess()));
     }
 
     @Test
@@ -216,8 +204,8 @@ public class TransportSessionIT
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves(
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( map( "fields", singletonList( "r" ) ) ) ) );
 
@@ -231,9 +219,9 @@ public class TransportSessionIT
         //                 props: {} (A0)]
         //}
         assertThat( client,
-                eventuallyRecieves( bytes( 0x00, 0x0B, 0xB1, 0x71, 0x91,
+                eventuallyReceives( bytes( 0x00, 0x0B, 0xB1, 0x71, 0x91,
                         0xB5, 0x52, 0x00, 0x00, 0x01, 0x81, 0x54, 0xA0, 0x00,0x00  ) ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertThat( client, TransportTestUtil.eventuallyReceives( msgSuccess() ) );
     }
 
     private byte[] bytes( int...ints )
@@ -256,8 +244,8 @@ public class TransportSessionIT
                         init( "TestClient/1.1", emptyMap() ),
                         run( "CREATE (n)" ),
                         pullAll() ) );
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves(
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 msgSuccess() ) );
@@ -269,7 +257,7 @@ public class TransportSessionIT
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves(
+        assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( 1L ) ) ),
                 msgSuccess( map( "type", "r" ) ) ) );
@@ -287,8 +275,8 @@ public class TransportSessionIT
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves(
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 hasNotification(
@@ -314,8 +302,8 @@ public class TransportSessionIT
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves(
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( map( "fields", singletonList( "p") ) ),
                 msgRecord(eqRecord( nullValue() )),
@@ -343,8 +331,8 @@ public class TransportSessionIT
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves(
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( map( "fields", singletonList( "n.binary") ) ),
                 msgRecord(eqRecord( nullValue() )),

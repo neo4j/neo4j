@@ -132,7 +132,7 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
     }
 
     @Override
-    public RESTSubject login( String username, String password ) throws Throwable
+    public RESTSubject login( String username, String password ) throws Exception
     {
         String principalCredentials = challengeResponse( username, password );
         return new RESTSubject( username, password, principalCredentials );
@@ -182,7 +182,7 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
     }
 
     @Override
-    public void assertUnauthenticated( RESTSubject subject )
+    public void assertInitFailed( RESTSubject subject )
     {
         assertThat( authenticate( subject.principalCredentials ).status(), not( equalTo( 200 ) ) );
     }

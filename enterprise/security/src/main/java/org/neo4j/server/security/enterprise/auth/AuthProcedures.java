@@ -30,8 +30,8 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
-import org.neo4j.kernel.api.bolt.HaltableUserSession;
-import org.neo4j.kernel.api.bolt.SessionTracker;
+import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
+import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
@@ -82,7 +82,7 @@ public class AuthProcedures
         {
             enterpriseSubject.getUserManager().setUserPassword( username, newPassword );
             terminateTransactionsForValidUser( username );
-            terminateSessionsForValidUser( username );
+            terminateConnectionsForValidUser( username );
         }
     }
 
@@ -116,7 +116,7 @@ public class AuthProcedures
         }
         adminSubject.getUserManager().deleteUser( username );
         terminateTransactionsForValidUser( username );
-        terminateSessionsForValidUser( username );
+        terminateConnectionsForValidUser( username );
     }
 
     @Procedure( name = "dbms.suspendUser", mode = DBMS )
@@ -129,7 +129,7 @@ public class AuthProcedures
         }
         adminSubject.getUserManager().suspendUser( username );
         terminateTransactionsForValidUser( username );
-        terminateSessionsForValidUser( username );
+        terminateConnectionsForValidUser( username );
     }
 
     @Procedure( name = "dbms.activateUser", mode = DBMS )
@@ -220,21 +220,21 @@ public class AuthProcedures
         return terminateTransactionsForValidUser( username );
     }
 
-    @Procedure( name = "dbms.listSessions", mode = DBMS )
-    public Stream<SessionResult> listSessions()
+    @Procedure( name = "dbms.listConnections", mode = DBMS )
+    public Stream<ConnectionResult> listConnections()
     {
         ensureAdminAuthSubject();
 
-        SessionTracker sessionTracker = getSessionTracker();
-        return countSessionByUsername(
-                sessionTracker.getActiveSessions().stream()
-                        .filter( session -> !session.willBeHalted() )
-                        .map( HaltableUserSession::username )
+        BoltConnectionTracker boltConnectionTracker = getBoltConnectionTracker();
+        return countConnectionsByUsername(
+                boltConnectionTracker.getActiveConnections().stream()
+                        .filter( session -> !session.hasTerminated() )
+                        .map( ManagedBoltStateMachine::owner )
                 );
     }
 
-    @Procedure( name = "dbms.terminateSessionsForUser", mode = DBMS )
-    public Stream<SessionResult> terminateSessionsForUser( @Name( "username" ) String username )
+    @Procedure( name = "dbms.terminateConnectionsForUser", mode = DBMS )
+    public Stream<ConnectionResult> terminateConnectionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException
     {
         EnterpriseAuthSubject subject = EnterpriseAuthSubject.castOrFail( authSubject );
@@ -245,7 +245,7 @@ public class AuthProcedures
 
         subject.getUserManager().getUser( username );
 
-        return terminateSessionsForValidUser( username );
+        return terminateConnectionsForValidUser( username );
     }
 
     // ----------------- helpers ---------------------
@@ -267,19 +267,15 @@ public class AuthProcedures
         return Stream.of( new TransactionTerminationResult( username, terminatedCount ) );
     }
 
-    private Stream<SessionResult> terminateSessionsForValidUser( String username )
+    private Stream<ConnectionResult> terminateConnectionsForValidUser( String username )
     {
         Long killCount = 0L;
-        for ( HaltableUserSession session : getSessionTracker().getActiveSessions() )
+        for ( ManagedBoltStateMachine connection : getBoltConnectionTracker().getActiveConnections( username ) )
         {
-            if ( session.username().equals( username ) )
-            {
-                session.markForHalting( Status.Session.InvalidSession,
-                        Status.Session.InvalidSession.code().description() );
-                killCount += 1;
-            }
+            connection.terminate();
+            killCount += 1;
         }
-        return Stream.of( new SessionResult( username, killCount ) );
+        return Stream.of( new ConnectionResult( username, killCount ) );
     }
 
     private Set<KernelTransactionHandle> getActiveTransactions()
@@ -287,9 +283,9 @@ public class AuthProcedures
         return graph.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
     }
 
-    private SessionTracker getSessionTracker()
+    private BoltConnectionTracker getBoltConnectionTracker()
     {
-        return graph.getDependencyResolver().resolveDependency( SessionTracker.class );
+        return graph.getDependencyResolver().resolveDependency( BoltConnectionTracker.class );
     }
 
     private Stream<TransactionResult> countTransactionByUsername( Stream<String> usernames )
@@ -301,12 +297,12 @@ public class AuthProcedures
                 );
     }
 
-    private Stream<SessionResult> countSessionByUsername( Stream<String> usernames )
+    private Stream<ConnectionResult> countConnectionsByUsername( Stream<String> usernames )
     {
         return usernames.collect(
                     Collectors.groupingBy( Function.identity(), Collectors.counting() )
                 ).entrySet().stream().map(
-                    entry -> new SessionResult( entry.getKey(), entry.getValue() )
+                    entry -> new ConnectionResult( entry.getKey(), entry.getValue() )
                 );
     }
 
@@ -395,15 +391,15 @@ public class AuthProcedures
         }
     }
 
-    public static class SessionResult
+    public static class ConnectionResult
     {
         public final String username;
-        public final Long sessionCount;
+        public final Long connectionCount;
 
-        SessionResult( String username, Long sessionCount )
+        ConnectionResult( String username, Long connectionCount )
         {
             this.username = username;
-            this.sessionCount = sessionCount;
+            this.connectionCount = connectionCount;
         }
     }
 }

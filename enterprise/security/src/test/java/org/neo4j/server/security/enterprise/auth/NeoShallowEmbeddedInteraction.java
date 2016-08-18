@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -106,7 +107,7 @@ class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAut
     }
 
     @Override
-    public EnterpriseAuthSubject login( String username, String password ) throws Throwable
+    public EnterpriseAuthSubject login( String username, String password ) throws Exception
     {
         return manager.login( authToken( username, password ) );
     }
@@ -149,7 +150,7 @@ class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAut
     }
 
     @Override
-    public void assertUnauthenticated( EnterpriseAuthSubject subject )
+    public void assertInitFailed( EnterpriseAuthSubject subject )
     {
         assertThat( subject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
     }

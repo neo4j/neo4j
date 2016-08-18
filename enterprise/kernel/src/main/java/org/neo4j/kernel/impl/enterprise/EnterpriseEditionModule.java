@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
-import org.neo4j.kernel.api.bolt.SessionTracker;
+import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
@@ -61,9 +61,9 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     }
 
     @Override
-    protected SessionTracker createSessionTracker()
+    protected BoltConnectionTracker createSessionTracker()
     {
-        return new StandardSessionTracker();
+        return new StandardBoltConnectionTracker();
     }
 
     @Override

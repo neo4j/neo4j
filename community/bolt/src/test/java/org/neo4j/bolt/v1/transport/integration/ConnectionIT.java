@@ -28,7 +28,7 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.neo4j.bolt.v1.transport.socket.client.Connection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
@@ -47,7 +47,7 @@ public class ConnectionIT
     public Neo4jWithSocket server = new Neo4jWithSocket();
 
     @Parameterized.Parameter(0)
-    public Connection connection;
+    public TransportConnection connection;
 
     @Parameterized.Parameter(1)
     public HostnamePort address;

@@ -83,7 +83,7 @@ All parameters in the `INIT` message are required.
 - `SUCCESS {}` if initialization has completed successfully
 - `FAILURE {"code": ..., "message": ...}` if the request was malformed, or if initialization cannot be performed at this time, or if the authorization failed.
 
-[source,bolt_message_struct]
+[source,bolt_request_message_struct]
 ----
 InitMessage (signature=0x01) {
     String clientName
@@ -115,7 +115,7 @@ B1 01 8C 4D  79 43 6C 69  65 6E 74 2F  31 2E 30 A3
 
 The `RUN` message is a client message used to pass a Cypher statement for execution on the server. It has the following structure:
 
-[source,bolt_message_struct]
+[source,bolt_request_message_struct]
 ----
 RunMessage (signature=0x10) {
     String             statement
@@ -154,7 +154,7 @@ B2 10 8F 52  45 54 55 52  4E 20 31 20  41 53 20 6E  75 6D A0
 The `DISCARD_ALL` message is a client message used to discard all remaining items from the active result
 stream. It has the following structure:
 
-[source,bolt_message_struct]
+[source,bolt_request_message_struct]
 ----
 DiscardAllMessage (signature=0x2F) {
 }
@@ -182,7 +182,7 @@ B0 2F
 The `PULL_ALL` message is a client message used to retrieve all remaining items from the active result stream.
 It has the following structure:
 
-[source,bolt_message_struct]
+[source,bolt_request_message_struct]
 ----
 PullAllMessage (signature=0x3F) {
 }
@@ -228,7 +228,7 @@ See <<bolt-examples-reset>> for example usage.
 Also, see <<bolt-message-structs-ack-failure>> for a message that only clears `FAILURE` state
 
 
-[source,bolt_message_struct]
+[source,bolt_request_message_struct]
 ----
 ResetMessage (signature=0x0F) {
 }
@@ -262,7 +262,7 @@ The following actions are performed by `ACK_FAILURE`:
 
 See <<bolt-examples-ack-failure>> for an example.
 
-[source,bolt_message_struct]
+[source,bolt_request_message_struct]
 ----
 AckFailureMessage (signature=0x0E) {
 }
@@ -286,7 +286,7 @@ The `RECORD` message is a server detail message used to deliver data from the se
 Each record message contains a single List, which in turn contains the fields of the record in order.
 It has the following structure:
 
-[source,bolt_message_struct]
+[source,bolt_response_message_struct]
 ----
 RecordMessage (signature=0x71) {
     List<Value> fields
@@ -307,7 +307,7 @@ The `SUCCESS` message is a server summary message used to signal that a correspo
 The message contains a map of metadata, the contents of which depend on the original request.
 It has the following structure:
 
-[source,bolt_message_struct]
+[source,bolt_response_message_struct]
 ----
 SuccessMessage (signature=0x70) {
     Map<String,Value> metadata
@@ -328,7 +328,7 @@ B1 70 A1 86  66 69 65 6C  64 73 92 84  6E 61 6D 65
 The `FAILURE` message is a server summary message used to signal that a corresponding client message has encountered an error while being processed.
 It has the following structure:
 
-[source,bolt_message_struct]
+[source,bolt_response_message_struct]
 ----
 FailureMessage (signature=0x7F) {
     Map<String,Value> metadata
@@ -361,7 +361,7 @@ B1 7F A2 84  63 6F 64 65  D0 25 4E 65  6F 2E 43 6C
 The `IGNORED` message is a server summary message used to signal that a corresponding client message has been ignored and not actioned.
 It has the following structure:
 
-[source,bolt_message_struct]
+[source,bolt_response_message_struct]
 ----
 IgnoredMessage (signature=0x7E) {
     Map<String,Value>  metadata

@@ -22,12 +22,11 @@ package org.neo4j.bolt.v1.transport.socket;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import org.junit.Test;
-
-import java.util.function.BiFunction;
-
 import org.neo4j.bolt.transport.BoltProtocol;
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.BiFunction;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -36,6 +35,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome;
+import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome.INSECURE_HANDSHAKE;
 import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome.INVALID_HANDSHAKE;
 import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome.NO_APPLICABLE_PROTOCOL;
 import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome.PARTIAL_HANDSHAKE;
@@ -44,7 +44,7 @@ import static org.neo4j.bolt.transport.SocketTransportHandler.ProtocolChooser;
 
 public class ProtocolChooserTest
 {
-    private final PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> available = Primitive.longObjectMap();
+    private final Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> available = new HashMap<>();
     private final BiFunction factory = mock( BiFunction.class );
     private final BoltProtocol protocol = mock( BoltProtocol.class );
     private final Channel ch = mock(Channel.class);
@@ -54,9 +54,9 @@ public class ProtocolChooserTest
     {
         // Given
         when( factory.apply( ch, true ) ).thenReturn( protocol );
-        available.put( 1, factory );
+        available.put( 1L, factory );
 
-        ProtocolChooser chooser = new ProtocolChooser( available, true );
+        ProtocolChooser chooser = new ProtocolChooser( available, false, true );
 
         // When
         HandshakeOutcome outcome =
@@ -77,9 +77,9 @@ public class ProtocolChooserTest
     {
         // Given
         when( factory.apply( ch, true ) ).thenReturn( protocol );
-        available.put( 1, factory );
+        available.put( 1L, factory );
 
-        ProtocolChooser chooser = new ProtocolChooser( available, true );
+        ProtocolChooser chooser = new ProtocolChooser( available, false, true );
 
         // When
         HandshakeOutcome firstOutcome = chooser.handleVersionHandshakeChunk( wrappedBuffer( new byte[]{
@@ -108,9 +108,9 @@ public class ProtocolChooserTest
     {
         // Given
         when( factory.apply( ch, true ) ).thenReturn( protocol );
-        available.put( 1, factory );
+        available.put( 1L, factory );
 
-        ProtocolChooser chooser = new ProtocolChooser( available, true );
+        ProtocolChooser chooser = new ProtocolChooser( available, false, true );
 
         // When
         ByteBuf buffer = wrappedBuffer( new byte[]{
@@ -138,7 +138,7 @@ public class ProtocolChooserTest
         when( factory.apply( ch, true ) ).thenReturn( protocol );
         available.put( maxUnsignedInt32, factory );
 
-        ProtocolChooser chooser = new ProtocolChooser( available, true );
+        ProtocolChooser chooser = new ProtocolChooser( available, false, true );
 
         // When
         HandshakeOutcome outcome = chooser.handleVersionHandshakeChunk( wrappedBuffer( new byte[]{
@@ -159,9 +159,9 @@ public class ProtocolChooserTest
         // Given
         when( factory.apply( ch, true ) ).thenReturn( protocol );
 
-        available.put( 1, mock( BiFunction.class ) );
+        available.put( 1L, mock( BiFunction.class ) );
 
-        ProtocolChooser chooser = new ProtocolChooser( available, true );
+        ProtocolChooser chooser = new ProtocolChooser( available, false, true );
 
         // When
         HandshakeOutcome outcome = chooser.handleVersionHandshakeChunk( wrappedBuffer( new byte[]{
@@ -182,9 +182,9 @@ public class ProtocolChooserTest
         // Given
         when( factory.apply( ch, true ) ).thenReturn( protocol );
 
-        available.put( 1, mock( BiFunction.class ) );
+        available.put( 1L, mock( BiFunction.class ) );
 
-        ProtocolChooser chooser = new ProtocolChooser( available, true );
+        ProtocolChooser chooser = new ProtocolChooser( available, false, true );
 
         // When
         HandshakeOutcome outcome = chooser.handleVersionHandshakeChunk( wrappedBuffer( new byte[]{
@@ -196,6 +196,29 @@ public class ProtocolChooserTest
 
         // Then
         assertThat( outcome, equalTo( INVALID_HANDSHAKE ) );
+        assertThat( chooser.chosenProtocol(), nullValue() );
+    }
+
+    @Test
+    public void shouldRejectIfInsecureHandshake() throws Throwable
+    {
+        // Given
+        when( factory.apply( ch, true ) ).thenReturn( protocol );
+
+        available.put( 1L, mock( BiFunction.class ) );
+
+        ProtocolChooser chooser = new ProtocolChooser( available, true, false );
+
+        // When
+        HandshakeOutcome outcome = chooser.handleVersionHandshakeChunk( wrappedBuffer( new byte[]{
+                (byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17,
+                0, 0, 0, 1,
+                0, 0, 0, 0,
+                0, 0, 0, 0,
+                0, 0, 0, 0} ), ch );
+
+        // Then
+        assertThat( outcome, equalTo( INSECURE_HANDSHAKE ) );
         assertThat( chooser.chosenProtocol(), nullValue() );
     }
 }

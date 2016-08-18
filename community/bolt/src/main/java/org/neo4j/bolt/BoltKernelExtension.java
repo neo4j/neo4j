@@ -23,14 +23,6 @@ import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.bouncycastle.operator.OperatorCreationException;
-
-import java.io.File;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.time.Clock;
-import java.util.List;
-import java.util.function.BiFunction;
-
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.security.ssl.Certificates;
@@ -41,14 +33,13 @@ import org.neo4j.bolt.transport.Netty4LogBridge;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
-import org.neo4j.bolt.v1.runtime.MonitoredSessions;
-import org.neo4j.bolt.v1.runtime.Session;
-import org.neo4j.bolt.v1.runtime.Sessions;
-import org.neo4j.bolt.v1.runtime.internal.EncryptionRequiredSessions;
-import org.neo4j.bolt.v1.runtime.internal.StandardSessions;
-import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
+import org.neo4j.bolt.v1.runtime.BoltWorker;
+import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory;
+import org.neo4j.bolt.v1.runtime.WorkerFactory;
+import org.neo4j.bolt.v1.runtime.BoltFactory;
+import org.neo4j.bolt.v1.runtime.LifecycleManagedBoltFactory;
+import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
@@ -58,7 +49,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.bolt.SessionTracker;
+import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Internal;
@@ -74,14 +65,20 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
 
+import java.io.File;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.time.Clock;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
-import static org.neo4j.kernel.configuration.Settings.PATH;
-import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.pathSetting;
+import static org.neo4j.kernel.configuration.Settings.*;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 
 /**
@@ -125,7 +122,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         ThreadToStatementContextBridge txBridge();
 
-        SessionTracker sessionTracker();
+        BoltConnectionTracker sessionTracker();
 
         NeoStoreDataSource dataSource();
 
@@ -144,7 +141,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         final GraphDatabaseService gdb = dependencies.db();
         final GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
         final LogService logService = dependencies.logService();
-        final Log log = logService.getInternalLog( Sessions.class );
+        final Log log = logService.getInternalLog( WorkerFactory.class );
 
         final LifeSupport life = new LifeSupport();
 
@@ -154,11 +151,11 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         Authentication authentication = authentication( dependencies.config(), dependencies.authManager(), logService );
 
-        StandardSessions standardSessions = life.add(
-                new StandardSessions( api, dependencies.usageData(), logService, dependencies.txBridge(),
+        BoltFactory boltConnectionManagerFactory = life.add(
+                new LifecycleManagedBoltFactory( api, dependencies.usageData(), logService, dependencies.txBridge(),
                         authentication, dependencies.dataSource(), dependencies.sessionTracker() ) );
-        ThreadedSessions threadedSessions = new ThreadedSessions( standardSessions, scheduler, logService );
-        Sessions sessions = new MonitoredSessions( dependencies.monitors(), threadedSessions, Clock.systemUTC() );
+        ThreadedWorkerFactory threadedSessions = new ThreadedWorkerFactory( boltConnectionManagerFactory, scheduler, logService );
+        WorkerFactory workerFactory = new MonitoredWorkerFactory( dependencies.monitors(), threadedSessions, Clock.systemUTC() );
 
         List<ProtocolInitializer> connectors = config
                 .view( enumerate( GraphDatabaseSettings.Connector.class ) )
@@ -168,26 +165,39 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 .map( ( connConfig ) -> {
                     HostnamePort address = config.get( connConfig.address );
                     SslContext sslCtx;
-                    boolean requireEncryption = false;
-                    switch ( config.get( connConfig.encryption_level ) )
+                    boolean requireEncryption;
+                    final BoltConnector.EncryptionLevel encryptionLevel = config.get( connConfig.encryption_level );
+                    switch ( encryptionLevel )
                     {
-                    // self signed cert should be generated when encryption is REQUIRED or OPTIONAL on the server
-                    // while no cert is generated if encryption is DISABLED
                     case REQUIRED:
+                        // Encrypted connections are mandatory, a self-signed certificate may be generated.
                         requireEncryption = true;
-                        // no break here
-                    case OPTIONAL:
                         sslCtx = createSslContext( config, log, address );
                         break;
+                    case OPTIONAL:
+                        // Encrypted connections are optional, a self-signed certificate may be generated.
+                        requireEncryption = false;
+                        sslCtx = createSslContext( config, log, address );
+                        break;
+                    case DISABLED:
+                        // Encryption is turned off, no self-signed certificate will be generated.
+                        requireEncryption = false;
+                        sslCtx = null;
+                        break;
                     default:
-                        // case DISABLED:
+                        // In the unlikely event that we happen to fall through to the default option here,
+                        // there is a mismatch between the BoltConnector.EncryptionLevel enum and the options
+                        // handled in this switch statement. In this case, we'll log a warning and default to
+                        // disabling encryption, since this mirrors the functionality introduced in 3.0.
+                        log.warn( format( "Unhandled encryption level %s - assuming DISABLED.", encryptionLevel.name() ) );
+                        requireEncryption = false;
                         sslCtx = null;
                         break;
                     }
 
-                    return new SocketTransport( address, sslCtx, logService.getInternalLogProvider(),
-                            newVersions( logService, requireEncryption ?
-                                                  new EncryptionRequiredSessions( sessions ) : sessions ) );
+                    final Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> versions =
+                            newVersions( logService, workerFactory );
+                    return new SocketTransport( address, sslCtx, requireEncryption, logService.getInternalLogProvider(), versions );
                 } )
                 .collect( toList() );
 
@@ -197,7 +207,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
             log.info( "Bolt Server extension loaded." );
             for ( ProtocolInitializer connector : connectors )
             {
-                logService.getUserLog( Sessions.class ).info( "Bolt enabled on %s.", connector.address() );
+                logService.getUserLog( WorkerFactory.class ).info( "Bolt enabled on %s.", connector.address() );
             }
         }
 
@@ -218,16 +228,16 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         }
     }
 
-    private PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> newVersions( LogService logging,
-            Sessions sessions )
+    private Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> newVersions(
+            LogService logging, WorkerFactory workerFactory )
     {
-        PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions = longObjectMap();
+        Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> availableVersions = new HashMap<>();
         availableVersions.put(
-                BoltProtocolV1.VERSION,
+                (long) BoltProtocolV1.VERSION,
                 ( channel, isEncrypted ) -> {
                     String descriptor = format( "\tclient%s\tserver%s", channel.remoteAddress(), channel.localAddress() );
-                    Session session = sessions.newSession( descriptor, isEncrypted );
-                    return new BoltProtocolV1( session, channel, logging );
+                    BoltWorker worker = workerFactory.newWorker( descriptor, channel::close );
+                    return new BoltProtocolV1( worker, channel, logging );
                 }
         );
         return availableVersions;

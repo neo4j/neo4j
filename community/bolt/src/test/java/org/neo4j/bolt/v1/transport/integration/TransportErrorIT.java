@@ -19,29 +19,27 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
+import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
+import org.neo4j.bolt.v1.packstream.PackStream;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
+import org.neo4j.function.Factory;
+import org.neo4j.helpers.HostnamePort;
 
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
-import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
-import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
-import org.neo4j.bolt.v1.packstream.PackStream;
-import org.neo4j.bolt.v1.transport.socket.client.Connection;
-import org.neo4j.function.Factory;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.api.exceptions.Status;
-
-import static org.neo4j.bolt.v1.messaging.message.Messages.run;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
+import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.*;
 
 @RunWith( Parameterized.class )
 public class TransportErrorIT
@@ -50,12 +48,12 @@ public class TransportErrorIT
     public Neo4jWithSocket server = new Neo4jWithSocket();
 
     @Parameterized.Parameter(0)
-    public Factory<Connection> cf;
+    public Factory<TransportConnection> cf;
 
     @Parameterized.Parameter(1)
     public HostnamePort address;
 
-    private Connection client;
+    private TransportConnection client;
 
     @Parameterized.Parameters
     public static Collection<Object[]> transports()
@@ -72,15 +70,12 @@ public class TransportErrorIT
 
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( 32, truncated ) );
+                .send( acceptedVersions( 1, 0, 0, 0 ) )
+                .send( chunk( 32, truncated ) );
 
         // Then
-        MatcherAssert.assertThat( client, TransportTestUtil.eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        MatcherAssert.assertThat( client, TransportTestUtil.eventuallyRecieves(
-                msgFailure( Status.Request.InvalidFormat,
-                        "Unable to deserialize request, message boundary found before message ended. This indicates " +
-                        "a serialization or framing problem with your client driver." ) ) );
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyDisconnects() );
     }
 
     @Test
@@ -90,7 +85,7 @@ public class TransportErrorIT
         final RecordingByteChannel rawData = new RecordingByteChannel();
         final PackStream.Packer packer = new PackStream.Packer( new BufferedChannelOutput( rawData ) );
 
-        packer.packStructHeader( 2, PackStreamMessageFormatV1.MessageTypes.MSG_RUN );
+        packer.packStructHeader( 2, RUN.signature() );
         packer.pack( "RETURN 1" );
         packer.pack( 1234 ); // Should've been a map
         packer.flush();
@@ -99,15 +94,12 @@ public class TransportErrorIT
 
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( 32, invalidMessage ) );
+                .send( acceptedVersions( 1, 0, 0, 0 ) )
+                .send( chunk( 32, invalidMessage ) );
 
         // Then
-        MatcherAssert.assertThat( client, TransportTestUtil.eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        MatcherAssert.assertThat( client, TransportTestUtil.eventuallyRecieves(
-                msgFailure( Status.Request.InvalidFormat,
-                        "Unable to read MSG_RUN message. Error was: Wrong type received. Expected MAP, received: " +
-                        "INTEGER (0xff)." ) ) );
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyDisconnects() );
     }
 
     @Test
@@ -125,13 +117,12 @@ public class TransportErrorIT
 
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( 32, invalidMessage ) );
+                .send( acceptedVersions( 1, 0, 0, 0 ) )
+                .send( chunk( 32, invalidMessage ) );
 
         // Then
-        MatcherAssert.assertThat( client, TransportTestUtil.eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        MatcherAssert.assertThat( client, TransportTestUtil.eventuallyRecieves(
-                msgFailure( Status.Request.Invalid, "0x66 is not a valid message type." ) ) );
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyDisconnects() );
     }
 
     @Test
@@ -142,7 +133,7 @@ public class TransportErrorIT
         final BufferedChannelOutput out = new BufferedChannelOutput( rawData );
         final PackStream.Packer packer = new PackStream.Packer( out );
 
-        packer.packStructHeader( 2, PackStreamMessageFormatV1.MessageTypes.MSG_RUN );
+        packer.packStructHeader( 2, RUN.signature() );
         out.writeByte( PackStream.RESERVED_C4 ); // Invalid marker byte
         out.flush();
 
@@ -150,15 +141,12 @@ public class TransportErrorIT
 
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( 32, invalidMessage ) );
+                .send( acceptedVersions( 1, 0, 0, 0 ) )
+                .send( chunk( 32, invalidMessage ) );
 
         // Then
-        MatcherAssert.assertThat( client, TransportTestUtil.eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        MatcherAssert.assertThat( client, TransportTestUtil.eventuallyRecieves(
-                msgFailure( Status.Request.InvalidFormat,
-                        "Unable to read MSG_RUN message. Error was: Wrong type received. Expected STRING, received: " +
-                        "RESERVED (0xff)." ) ) );
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyDisconnects() );
     }
 
     @Before

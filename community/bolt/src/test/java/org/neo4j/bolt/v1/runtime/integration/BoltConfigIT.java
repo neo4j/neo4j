@@ -21,22 +21,16 @@ package org.neo4j.bolt.v1.runtime.integration;
 
 import org.junit.Rule;
 import org.junit.Test;
-
+import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.Connection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.*;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.message.Messages.init;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.REQUIRED;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
@@ -74,23 +68,19 @@ public class BoltConfigIT
 
     }
 
-    private void assertConnectionRejected( HostnamePort address, Connection client ) throws Exception
+    private void assertConnectionRejected( HostnamePort address, TransportConnection client ) throws Exception
     {
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( init( "TestClient/1.1", emptyMap() ) ) );
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
 
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves(
-                msgFailure( Status.Security.EncryptionRequired,
-                        "This server requires a TLS encrypted connection." ) ) );
+        assertThat( client, eventuallyDisconnects() );
     }
 
-    private void assertConnectionAccepted( HostnamePort address, Connection client ) throws Exception
+    private void assertConnectionAccepted( HostnamePort address, TransportConnection client ) throws Exception
     {
         client.connect( address )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( init( "TestClient/1.1", emptyMap() ) ) );
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+                .send( TransportTestUtil.chunk( InitMessage.init( "TestClient/1.1", emptyMap() ) ) );
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
     }
 }
