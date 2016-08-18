@@ -21,10 +21,9 @@ package org.neo4j.coreedge.core.state.storage;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.UUID;
 
-import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
+import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
@@ -33,15 +32,15 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class MemberIdStorage
+public class SimpleStorage<T>
 {
     private final FileSystemAbstraction fileSystem;
-    private final MemberId.MemberIdMarshal marshal;
+    private final ChannelMarshal<T> marshal;
     private final File file;
     private Log log;
 
-    public MemberIdStorage( FileSystemAbstraction fileSystem, File directory, String name,
-            MemberId.MemberIdMarshal marshal, LogProvider logProvider )
+    public SimpleStorage( FileSystemAbstraction fileSystem, File directory, String name,
+            ChannelMarshal<T> marshal, LogProvider logProvider )
     {
         this.fileSystem = fileSystem;
         this.log = logProvider.getLog( getClass() );
@@ -54,38 +53,27 @@ public class MemberIdStorage
         return fileSystem.fileExists( file );
     }
 
-    public MemberId readState() throws IOException
+    public T readState() throws IOException
     {
-        if ( exists() )
+        try ( ReadableClosableChannel channel = new ReadAheadChannel<>( fileSystem.open( file, "r" ) ) )
         {
-            try ( ReadableClosableChannel channel = new ReadAheadChannel<>( fileSystem.open( file, "r" ) ) )
-            {
-                MemberId memberId = marshal.unmarshal( channel );
-                if ( memberId != null )
-                {
-                    return memberId;
-                }
-            }
-            catch ( EndOfStreamException e )
-            {
-                log.error( "End of stream reached" );
-            }
+            return marshal.unmarshal( channel );
         }
-        else
+        catch ( EndOfStreamException e )
         {
-            log.warn( "File does not exist" );
+            log.error( "End of stream reached: " + file );
+            throw new IOException( e );
         }
+    }
 
+    public void writeState( T state ) throws IOException
+    {
         fileSystem.mkdirs( file.getParentFile() );
         fileSystem.deleteFile( file );
 
-        UUID uuid = UUID.randomUUID();
-        MemberId memberId = new MemberId( uuid );
-        log.info( String.format( "Generated new id: %s (%s)", memberId, uuid ) );
         try ( FlushableChannel channel = new PhysicalFlushableChannel( fileSystem.create( file ) ) )
         {
-            marshal.marshal( memberId, channel );
+            marshal.marshal( state, channel );
         }
-        return memberId;
     }
 }

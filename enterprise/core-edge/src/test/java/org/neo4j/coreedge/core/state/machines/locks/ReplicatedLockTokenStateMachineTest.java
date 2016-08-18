@@ -185,7 +185,7 @@ public class ReplicatedLockTokenStateMachineTest
         fsa.mkdir( testDir.directory() );
 
         StateMarshal<ReplicatedLockTokenState> marshal =
-                new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() );
+                new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() );
 
         MemberId memberA = member( 0 );
         MemberId memberB = member( 1 );
@@ -227,7 +227,7 @@ public class ReplicatedLockTokenStateMachineTest
         fsa.mkdir( testDir.directory() );
 
         StateMarshal<ReplicatedLockTokenState> marshal =
-                new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() );
+                new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() );
 
         DurableStateStorage<ReplicatedLockTokenState> storage = new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", marshal, 100, NullLogProvider.getInstance() );

@@ -32,9 +32,10 @@ import com.hazelcast.instance.GroupProperties;
 
 import java.util.List;
 
+import org.neo4j.coreedge.identity.ClusterId;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -64,6 +65,12 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     {
         listenerService.addCoreTopologyListener( listener );
         listener.onCoreTopologyChange();
+    }
+
+    @Override
+    public boolean publishClusterId( ClusterId clusterId )
+    {
+        return HazelcastClusterTopology.casClusterId( hazelcastInstance, clusterId );
     }
 
     @Override

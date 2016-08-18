@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.messaging.marsalling;
+package org.neo4j.coreedge.messaging.marshalling;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -32,9 +32,8 @@ import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.coreedge.messaging.marsalling.storeid.StoreIdMarshal;
+import org.neo4j.coreedge.messaging.marshalling.storeid.StoreIdMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 
 import static org.neo4j.coreedge.core.consensus.RaftMessages.Type.APPEND_ENTRIES_REQUEST;
@@ -146,7 +145,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
 
     private MemberId retrieveMember( ReadableChannel buffer ) throws IOException, EndOfStreamException
     {
-        MemberId.MemberIdMarshal memberIdMarshal = new MemberId.MemberIdMarshal();
+        MemberId.Marshal memberIdMarshal = new MemberId.Marshal();
         return memberIdMarshal.unmarshal( buffer );
     }
 }

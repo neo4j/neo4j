@@ -19,9 +19,13 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import org.neo4j.coreedge.identity.ClusterId;
+
 public interface CoreTopologyService extends TopologyService
 {
     void addCoreTopologyListener( Listener listener );
+
+    boolean publishClusterId( ClusterId clusterId );
 
     interface Listener
     {

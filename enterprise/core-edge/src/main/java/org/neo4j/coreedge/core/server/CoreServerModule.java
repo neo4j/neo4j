@@ -126,7 +126,7 @@ public class CoreServerModule
 
         CoreToCoreClient coreToCoreClient = life.add(
                 new CoreToCoreClient( logProvider, channelInitializer, platformModule.monitors, maxQueueSize,
-                        nonBlockingChannels, discoveryService, logThresholdMillis ) );
+                        discoveryService, logThresholdMillis ) );
         channelInitializer.setOwner( coreToCoreClient );
 
         StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,

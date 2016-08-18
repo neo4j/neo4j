@@ -37,7 +37,7 @@ import org.neo4j.coreedge.core.state.machines.token.ReplicatedTokenRequest;
 import org.neo4j.coreedge.core.state.machines.token.ReplicatedTokenRequestSerializer;
 import org.neo4j.coreedge.core.state.machines.token.TokenType;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransactionFactory;
-import org.neo4j.coreedge.messaging.marsalling.ChannelMarshal;
+import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.impl.store.id.IdType;

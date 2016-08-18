@@ -26,12 +26,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.NullLogProvider;
@@ -47,6 +49,8 @@ import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class DiscoverEndpointAcquisitionServersProcedureTest
 {
+    private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
+
     @Test
     public void shouldOnlyReturnCoreMembers() throws Exception
     {
@@ -58,7 +62,7 @@ public class DiscoverEndpointAcquisitionServersProcedureTest
         coreMembers.put( member( 1 ), coreAddresses( 1 ) );
         coreMembers.put( member( 2 ), coreAddresses( 2 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 3, 4, 5 ) );
+        final ClusterTopology clusterTopology = new ClusterTopology( clusterId, false, coreMembers, addresses( 3, 4, 5 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
         final DiscoverEndpointAcquisitionServersProcedure proc =
@@ -83,7 +87,7 @@ public class DiscoverEndpointAcquisitionServersProcedureTest
         Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 3, 4, 5 ) );
+        final ClusterTopology clusterTopology = new ClusterTopology( clusterId, false, coreMembers, addresses( 3, 4, 5 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
         final DiscoverEndpointAcquisitionServersProcedure proc =
                 new DiscoverEndpointAcquisitionServersProcedure( coreTopologyService, NullLogProvider.getInstance() );
@@ -106,7 +110,7 @@ public class DiscoverEndpointAcquisitionServersProcedureTest
         coreMembers.put( member( 1 ), coreAddresses( 1 ) );
         coreMembers.put( member( 2 ), coreAddresses( 2 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 3, 4, 5) );
+        final ClusterTopology clusterTopology = new ClusterTopology( clusterId, false, coreMembers, addresses( 3, 4, 5) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
         final DiscoverEndpointAcquisitionServersProcedure proc =
@@ -130,7 +134,7 @@ public class DiscoverEndpointAcquisitionServersProcedureTest
         coreMembers.put( member( 1 ), coreAddresses( 1 ) );
         coreMembers.put( member( 2 ), coreAddresses( 2 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 3, 4, 5 ) );
+        final ClusterTopology clusterTopology = new ClusterTopology( clusterId, false, coreMembers, addresses( 3, 4, 5 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
         final DiscoverEndpointAcquisitionServersProcedure proc =

@@ -72,7 +72,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
         {
             log.info( "Failed to read cluster topology from Hazelcast. Continuing with empty (disconnected) topology. "
                     + "Connection will be reattempted on next polling attempt.", e );
-            return new ClusterTopology( false, emptyMap(), emptySet() );
+            return new ClusterTopology( null /* TODO */, false, emptyMap(), emptySet() );
         }
     }
 
@@ -83,7 +83,6 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
             retry( ( hazelcastInstance ) -> addEdgeServer( hazelcastInstance ) );
             timeout.renew();
         } );
-
     }
 
     private Object addEdgeServer( HazelcastInstance hazelcastInstance )

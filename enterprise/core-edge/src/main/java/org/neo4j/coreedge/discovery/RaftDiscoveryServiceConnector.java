@@ -32,8 +32,7 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
     private final CoreTopologyService discoveryService;
     private final RaftMachine raftMachine;
 
-    public RaftDiscoveryServiceConnector( CoreTopologyService discoveryService,
-                                            RaftMachine raftMachine )
+    public RaftDiscoveryServiceConnector( CoreTopologyService discoveryService, RaftMachine raftMachine )
     {
         this.discoveryService = discoveryService;
         this.raftMachine = raftMachine;

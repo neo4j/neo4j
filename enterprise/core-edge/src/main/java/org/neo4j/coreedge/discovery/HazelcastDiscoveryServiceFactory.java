@@ -29,7 +29,7 @@ import org.neo4j.logging.LogProvider;
 public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
 {
     @Override
-    public CoreTopologyService coreDiscoveryService( Config config, MemberId myself, LogProvider logProvider )
+    public CoreTopologyService coreTopologyService( Config config, MemberId myself, LogProvider logProvider )
     {
         makeHazelcastSilent( config );
         hazelcastShouldNotPhoneHome();

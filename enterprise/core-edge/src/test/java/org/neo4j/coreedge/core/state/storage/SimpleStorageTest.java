@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.UUID;
 
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.NullLogProvider;
@@ -30,39 +31,24 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.*;
 
-public class MemberIdStorageTest
+public class SimpleStorageTest
 {
     @Rule
     public EphemeralFileSystemRule fsa = new EphemeralFileSystemRule();
 
     @Test
-    public void shouldInitializeWithUniqueMemberId() throws Exception
+    public void shouldWriteAndReadState() throws Exception
     {
         // given
-        MemberIdStorage storageA = new MemberIdStorage( fsa.get(), new File( "state-dir" ), "member-id-a", new MemberId.MemberIdMarshal(), NullLogProvider.getInstance() );
-        MemberIdStorage storageB = new MemberIdStorage( fsa.get(), new File( "state-dir" ), "member-id-b", new MemberId.MemberIdMarshal(), NullLogProvider.getInstance() );
+        SimpleStorage<MemberId> storage = new SimpleStorage<>( fsa.get(), new File( "state-dir" ), "member-id-a", new MemberId.Marshal(), NullLogProvider.getInstance() );
 
         // when
-        MemberId idA = storageA.readState();
-        MemberId idB = storageB.readState();
+        MemberId idA = new MemberId( UUID.randomUUID() );
+        storage.writeState( idA );
+        MemberId idB = storage.readState();
 
         // then
-        assertNotEquals( idA.getUuid(), idB.getUuid() );
-        assertNotEquals( idA, idB );
-    }
-
-    @Test
-    public void shouldReadInitializedStateOnSubsequentInvocation() throws Exception
-    {
-        // given
-        MemberIdStorage storage = new MemberIdStorage( fsa.get(), new File( "state-dir" ), "member-id", new MemberId.MemberIdMarshal(), NullLogProvider.getInstance() );
-        MemberId memberIdA = storage.readState();
-
-        // when
-        MemberId memberIdB = storage.readState();
-
-        // then
-        assertEquals( memberIdA, memberIdB );
-        assertEquals( memberIdA.getUuid(), memberIdB.getUuid() );
+        assertEquals( idA.getUuid(), idB.getUuid() );
+        assertEquals( idA, idB );
     }
 }

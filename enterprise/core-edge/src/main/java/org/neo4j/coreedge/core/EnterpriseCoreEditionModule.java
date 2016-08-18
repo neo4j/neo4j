@@ -26,35 +26,33 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.core.server.CoreServerModule;
-import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.coreedge.ReplicationModule;
+import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
-import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
-import org.neo4j.coreedge.core.state.storage.MemberIdStorage;
-import org.neo4j.coreedge.discovery.CoreTopologyService;
-import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.core.consensus.ConsensusModule;
 import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
+import org.neo4j.coreedge.core.consensus.roles.Role;
+import org.neo4j.coreedge.core.server.CoreServerModule;
+import org.neo4j.coreedge.core.state.ClusteringModule;
+import org.neo4j.coreedge.core.state.machines.CoreStateMachinesModule;
+import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.procedures.AcquireEndpointsProcedure;
+import org.neo4j.coreedge.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.coreedge.discovery.procedures.CoreRoleProcedure;
+import org.neo4j.coreedge.discovery.procedures.DiscoverEndpointAcquisitionServersProcedure;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.logging.BetterMessageLogger;
+import org.neo4j.coreedge.logging.MessageLogger;
+import org.neo4j.coreedge.logging.NullMessageLogger;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.messaging.LoggingOutbound;
 import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.messaging.RaftChannelInitializer;
 import org.neo4j.coreedge.messaging.RaftOutbound;
-import org.neo4j.coreedge.core.consensus.roles.Role;
-import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.identity.MemberId.MemberIdMarshal;
-import org.neo4j.coreedge.messaging.NonBlockingChannels;
 import org.neo4j.coreedge.messaging.SenderService;
-import org.neo4j.coreedge.discovery.procedures.AcquireEndpointsProcedure;
-import org.neo4j.coreedge.discovery.procedures.ClusterOverviewProcedure;
-import org.neo4j.coreedge.discovery.procedures.DiscoverEndpointAcquisitionServersProcedure;
-import org.neo4j.coreedge.logging.BetterMessageLogger;
-import org.neo4j.coreedge.logging.MessageLogger;
-import org.neo4j.coreedge.logging.NullMessageLogger;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -97,12 +95,10 @@ import org.neo4j.udc.UsageData;
 public class EnterpriseCoreEditionModule extends EditionModule
 {
     public static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
-    public static final String CORE_MEMBER_ID_NAME = "core-member-id";
 
     private final ConsensusModule consensusModule;
-    private final CoreTopologyService discoveryService;
+    private final CoreTopologyService topologyService;
     private final LogProvider logProvider;
-    private final CoreStateMachinesModule coreStateMachinesModule;
 
     public enum RaftLogImplementation
     {
@@ -114,9 +110,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
     {
         try
         {
-            procedures.register( new DiscoverEndpointAcquisitionServersProcedure( discoveryService, logProvider ) );
-            procedures.register( new AcquireEndpointsProcedure( discoveryService, consensusModule.raftMachine(), logProvider ) );
-            procedures.register( new ClusterOverviewProcedure( discoveryService, consensusModule.raftMachine(), logProvider ) );
+            procedures.register( new DiscoverEndpointAcquisitionServersProcedure( topologyService, logProvider ) );
+            procedures.register( new AcquireEndpointsProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
+            procedures.register( new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
             procedures.register( new CoreRoleProcedure( consensusModule.raftMachine()) );
         }
         catch ( ProcedureException e )
@@ -125,8 +121,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         }
     }
 
-    EnterpriseCoreEditionModule( final PlatformModule platformModule, DiscoveryServiceFactory
-            discoveryServiceFactory )
+    EnterpriseCoreEditionModule( final PlatformModule platformModule,
+            final DiscoveryServiceFactory discoveryServiceFactory )
     {
         final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
@@ -150,30 +146,57 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         life.add( localDatabase );
 
-        MemberIdStorage memberIdStorage = new MemberIdStorage( fileSystem, clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberIdMarshal(), logProvider );
-        MemberId myself;
-        try
-        {
-            myself = memberIdStorage.readState();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory );
 
-        discoveryService = discoveryServiceFactory.coreDiscoveryService( config, myself, logProvider );
-
-        life.add( dependencies.satisfyDependency( discoveryService ) );
+        ClusteringModule clusteringModule = new ClusteringModule( discoveryServiceFactory, identityModule.myself(), platformModule, clusterStateDirectory );
+        topologyService = clusteringModule.topologyService();
 
         long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
 
-        final SenderService senderService =
-                new SenderService( new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider ),
-                        logProvider, platformModule.monitors,
-                        maxQueueSize, new NonBlockingChannels() );
-        life.add( senderService );
+        final SenderService raftSender = new SenderService(
+                new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider ),
+                logProvider, platformModule.monitors, maxQueueSize );
+        life.add( raftSender );
 
+        final MessageLogger<MemberId> messageLogger = createMessageLogger( config, life, identityModule.myself() );
+
+        Outbound<MemberId,RaftMessages.RaftMessage> raftOutbound = new LoggingOutbound<>(
+                new RaftOutbound( topologyService, raftSender, localDatabase, logProvider, logThresholdMillis ),
+                identityModule.myself(), messageLogger );
+
+        consensusModule = new ConsensusModule( identityModule.myself(), platformModule, raftOutbound, clusterStateDirectory, topologyService );
+
+        dependencies.satisfyDependency( consensusModule.raftMachine() );
+
+        ReplicationModule replicationModule = new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule,
+                raftOutbound, clusterStateDirectory, fileSystem, logProvider );
+
+        CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(), platformModule, clusterStateDirectory, config,
+                replicationModule.getReplicator(), consensusModule.raftMachine(), dependencies, localDatabase );
+
+        this.idGeneratorFactory = coreStateMachinesModule.idGeneratorFactory;
+        this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
+        this.labelTokenHolder = coreStateMachinesModule.labelTokenHolder;
+        this.propertyKeyTokenHolder = coreStateMachinesModule.propertyKeyTokenHolder;
+        this.relationshipTypeTokenHolder = coreStateMachinesModule.relationshipTypeTokenHolder;
+        this.lockManager = coreStateMachinesModule.lockManager;
+        this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
+
+        CoreServerModule coreServerModule = new CoreServerModule( identityModule.myself(), platformModule, consensusModule,
+                coreStateMachinesModule, replicationModule, clusterStateDirectory, topologyService, localDatabase,
+                messageLogger );
+
+        editionInvariants( platformModule, dependencies, config, logging, life );
+
+        dependencies.satisfyDependency( lockManager );
+
+        life.add( consensusModule.raftTimeoutService() );
+        life.add( coreServerModule.membershipWaiterLifecycle );
+    }
+
+    private MessageLogger<MemberId> createMessageLogger( Config config, LifeSupport life, MemberId myself )
+    {
         final MessageLogger<MemberId> messageLogger;
         if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
         {
@@ -184,42 +207,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         {
             messageLogger = new NullMessageLogger<>();
         }
-
-        RaftOutbound raftOutbound =
-                new RaftOutbound( discoveryService, senderService, localDatabase, logProvider, logThresholdMillis );
-        Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>(
-                raftOutbound, myself, messageLogger );
-
-        consensusModule =
-                new ConsensusModule( myself, platformModule, raftOutbound, clusterStateDirectory, discoveryService );
-
-        dependencies.satisfyDependency( consensusModule.raftMachine() );
-
-        ReplicationModule replicationModule = new ReplicationModule( myself, platformModule, config, consensusModule,
-                loggingOutbound, clusterStateDirectory,
-                fileSystem, logProvider );
-
-        coreStateMachinesModule = new CoreStateMachinesModule( myself, platformModule, clusterStateDirectory, config, replicationModule.getReplicator(), consensusModule.raftMachine(),
-                dependencies, localDatabase );
-
-        this.idGeneratorFactory = coreStateMachinesModule.idGeneratorFactory;
-        this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
-        this.labelTokenHolder = coreStateMachinesModule.labelTokenHolder;
-        this.propertyKeyTokenHolder = coreStateMachinesModule.propertyKeyTokenHolder;
-        this.relationshipTypeTokenHolder = coreStateMachinesModule.relationshipTypeTokenHolder;
-        this.lockManager = coreStateMachinesModule.lockManager;
-        this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
-
-        CoreServerModule coreServerModule = new CoreServerModule( myself, platformModule, consensusModule,
-                coreStateMachinesModule, replicationModule, clusterStateDirectory, discoveryService, localDatabase,
-                messageLogger );
-
-        editionInvariants( platformModule, dependencies, config, logging, life );
-
-        dependencies.satisfyDependency( lockManager );
-
-        life.add( consensusModule.raftTimeoutService() );
-        life.add( coreServerModule.membershipWaiterLifecycle );
+        return messageLogger;
     }
 
     private void editionInvariants( PlatformModule platformModule, Dependencies dependencies, Config config,

@@ -27,8 +27,8 @@ import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenState;
 
 public enum CoreStateType
 {
-    LOCK_TOKEN( new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() ) ),
-    SESSION_TRACKER( new GlobalSessionTrackerState.Marshal( new MemberId.MemberIdMarshal() ) ),
+    LOCK_TOKEN( new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() ) ),
+    SESSION_TRACKER( new GlobalSessionTrackerState.Marshal( new MemberId.Marshal() ) ),
     ID_ALLOCATION( new IdAllocationState.Marshal() );
 
     public final StateMarshal marshal;

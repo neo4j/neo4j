@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.UUID;
 
 import org.neo4j.coreedge.core.consensus.membership.RaftMembershipState;
 import org.neo4j.coreedge.core.consensus.term.TermState;
@@ -34,7 +35,7 @@ import org.neo4j.coreedge.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
 import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenState;
 import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
-import org.neo4j.coreedge.core.state.storage.MemberIdStorage;
+import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.core.state.storage.StateMarshal;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -44,7 +45,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.ReplicationModule.LAST_FLUSHED_NAME;
 import static org.neo4j.coreedge.ReplicationModule.SESSION_TRACKER_NAME;
-import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CORE_MEMBER_ID_NAME;
+import static org.neo4j.coreedge.core.IdentityModule.CORE_MEMBER_ID_NAME;
 import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_MEMBERSHIP_NAME;
 import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_TERM_NAME;
 import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_VOTE_NAME;
@@ -75,18 +76,18 @@ public class DumpClusterStateTest
 
     private void createStates() throws IOException
     {
-        MemberIdStorage memberIdStorage = new MemberIdStorage( fsa.get(), clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberId.MemberIdMarshal(), NullLogProvider.getInstance() );
-        memberIdStorage.readState();
+        SimpleStorage<MemberId> memberIdStorage = new SimpleStorage<>( fsa.get(), clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberId.Marshal(), NullLogProvider.getInstance() );
+        memberIdStorage.writeState( new MemberId( UUID.randomUUID() ) );
 
         createDurableState( LAST_FLUSHED_NAME, new LongIndexMarshal() );
-        createDurableState( LOCK_TOKEN_NAME, new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() ) );
+        createDurableState( LOCK_TOKEN_NAME, new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() ) );
         createDurableState( ID_ALLOCATION_NAME, new IdAllocationState.Marshal() );
-        createDurableState( SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new MemberId.MemberIdMarshal() ) );
+        createDurableState( SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new MemberId.Marshal() ) );
 
         /* raft state */
         createDurableState( RAFT_MEMBERSHIP_NAME, new RaftMembershipState.Marshal() );
         createDurableState( RAFT_TERM_NAME, new TermState.Marshal() );
-        createDurableState( RAFT_VOTE_NAME, new VoteState.Marshal( new MemberId.MemberIdMarshal() ) );
+        createDurableState( RAFT_VOTE_NAME, new VoteState.Marshal( new MemberId.Marshal() ) );
     }
 
     private <T> void createDurableState( String name, StateMarshal<T> marshal ) throws IOException

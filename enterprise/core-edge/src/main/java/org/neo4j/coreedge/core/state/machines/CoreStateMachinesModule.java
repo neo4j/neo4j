@@ -95,7 +95,7 @@ public class CoreStateMachinesModule
         {
             lockTokenState = life.add(
                     new DurableStateStorage<>( fileSystem, clusterStateDirectory, LOCK_TOKEN_NAME,
-                            new ReplicatedLockTokenState.Marshal( new MemberId.MemberIdMarshal() ),
+                            new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() ),
                             config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ), logProvider ) );
 
             idAllocationState = life.add(

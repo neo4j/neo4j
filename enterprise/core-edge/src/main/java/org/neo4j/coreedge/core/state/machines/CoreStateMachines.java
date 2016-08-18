@@ -189,6 +189,7 @@ public class CoreStateMachines implements SnapFlushable
             replicatedTxStateMachine.ensuredApplied();
             replicatedLockTokenStateMachine.applyCommand( lockRequest, commandIndex, callback );
         }
+
         @Override
         public void close()
         {

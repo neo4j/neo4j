@@ -30,10 +30,10 @@ import org.neo4j.coreedge.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
 import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenState;
 import org.neo4j.coreedge.core.state.storage.DurableStateStorage;
-import org.neo4j.coreedge.core.state.storage.MemberIdStorage;
+import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.core.state.storage.StateMarshal;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.identity.MemberId.MemberIdMarshal;
+import org.neo4j.coreedge.identity.MemberId.Marshal;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -42,7 +42,7 @@ import org.neo4j.logging.NullLogProvider;
 import static org.neo4j.coreedge.ReplicationModule.LAST_FLUSHED_NAME;
 import static org.neo4j.coreedge.ReplicationModule.SESSION_TRACKER_NAME;
 import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
-import static org.neo4j.coreedge.core.EnterpriseCoreEditionModule.CORE_MEMBER_ID_NAME;
+import static org.neo4j.coreedge.core.IdentityModule.CORE_MEMBER_ID_NAME;
 import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_MEMBERSHIP_NAME;
 import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_TERM_NAME;
 import static org.neo4j.coreedge.core.consensus.ConsensusModule.RAFT_VOTE_NAME;
@@ -84,8 +84,8 @@ public class DumpClusterState
 
     void dump() throws IOException
     {
-        MemberIdStorage memberIdStorage = new MemberIdStorage( fs, clusterStateDirectory, CORE_MEMBER_ID_NAME,
-                new MemberIdMarshal(), NullLogProvider.getInstance() );
+        SimpleStorage<MemberId> memberIdStorage = new SimpleStorage<>( fs, clusterStateDirectory, CORE_MEMBER_ID_NAME,
+                new Marshal(), NullLogProvider.getInstance() );
         if ( memberIdStorage.exists() )
         {
             MemberId memberId = memberIdStorage.readState();
@@ -93,14 +93,14 @@ public class DumpClusterState
         }
 
         dumpState( LAST_FLUSHED_NAME, new LongIndexMarshal() );
-        dumpState( LOCK_TOKEN_NAME, new ReplicatedLockTokenState.Marshal( new MemberIdMarshal() ) );
+        dumpState( LOCK_TOKEN_NAME, new ReplicatedLockTokenState.Marshal( new Marshal() ) );
         dumpState( ID_ALLOCATION_NAME, new IdAllocationState.Marshal() );
-        dumpState( SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new MemberIdMarshal() ) );
+        dumpState( SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new Marshal() ) );
 
         /* raft state */
         dumpState( RAFT_MEMBERSHIP_NAME, new RaftMembershipState.Marshal() );
         dumpState( RAFT_TERM_NAME, new TermState.Marshal() );
-        dumpState( RAFT_VOTE_NAME, new VoteState.Marshal( new MemberIdMarshal() ) );
+        dumpState( RAFT_VOTE_NAME, new VoteState.Marshal( new Marshal() ) );
     }
 
     private void dumpState( String name, StateMarshal<?> marshal ) throws IOException

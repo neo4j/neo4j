@@ -200,7 +200,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
         long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );
         EdgeToCoreClient edgeToCoreClient = life.add( new EdgeToCoreClient( logProvider,
-                channelInitializer, platformModule.monitors, maxQueueSize, nonBlockingChannels, discoveryService,
+                channelInitializer, platformModule.monitors, maxQueueSize, discoveryService,
                 logThresholdMillis ) );
         channelInitializer.setOwner( edgeToCoreClient );
 

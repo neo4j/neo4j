@@ -47,10 +47,9 @@ import org.neo4j.logging.LogProvider;
 public class EdgeToCoreClient extends CoreClient
 {
     public EdgeToCoreClient( LogProvider logProvider, ChannelInitializer channelInitializer, Monitors monitors,
-            int maxQueueSize, NonBlockingChannels nonBlockingChannels, TopologyService discoveryService,
-            long logThresholdMillis )
+            int maxQueueSize, TopologyService discoveryService, long logThresholdMillis )
     {
-        super( logProvider, channelInitializer, monitors, maxQueueSize, nonBlockingChannels, discoveryService,
+        super( logProvider, channelInitializer, monitors, maxQueueSize, discoveryService,
                 logThresholdMillis );
     }
 

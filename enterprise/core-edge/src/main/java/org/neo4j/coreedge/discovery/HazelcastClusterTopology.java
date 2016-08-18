@@ -19,6 +19,15 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import com.hazelcast.config.MemberAttributeConfig;
+import com.hazelcast.core.Client;
+import com.hazelcast.core.ClientService;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.HazelcastInstanceAware;
+import com.hazelcast.core.IAtomicReference;
+import com.hazelcast.core.IExecutorService;
+import com.hazelcast.core.Member;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
@@ -31,30 +40,23 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import com.hazelcast.config.MemberAttributeConfig;
-import com.hazelcast.core.Client;
-import com.hazelcast.core.ClientService;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.HazelcastInstanceAware;
-import com.hazelcast.core.IExecutorService;
-import com.hazelcast.core.IMap;
-import com.hazelcast.core.Member;
-
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.edge.EnterpriseEdgeEditionModule;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toSet;
 
 class HazelcastClusterTopology
 {
-    // hz client uuid string -> boltAddress string
-    static final String EDGE_SERVER_BOLT_ADDRESS_MAP_NAME = "edge-servers";
+    static final String EDGE_SERVER_BOLT_ADDRESS_MAP_NAME = "edge-servers"; // hz client uuid string -> boltAddress string
+    static final String CLUSTER_UUID = "cluster_uuid";
     static final String MEMBER_UUID = "member_uuid";
     static final String TRANSACTION_SERVER = "transaction_server";
     static final String RAFT_SERVER = "raft_server";
@@ -62,16 +64,43 @@ class HazelcastClusterTopology
 
     static ClusterTopology getClusterTopology( HazelcastInstance hazelcastInstance, Log log )
     {
-        Set<Member> coreMembers = emptySet();
+        Map<MemberId,CoreAddresses> coreMembers = emptyMap();
+        Set<EdgeAddresses> edgeMembers = emptySet();
+        boolean canBeBootstrapped = false;
+        ClusterId clusterId = null;
+
         if ( hazelcastInstance != null )
         {
-            coreMembers = hazelcastInstance.getCluster().getMembers();
+            Set<Member> hzMembers = hazelcastInstance.getCluster().getMembers();
+            canBeBootstrapped = canBeBootstrapped( hzMembers );
+
+            coreMembers = toCoreMemberMap( hzMembers, log );
+            edgeMembers = edgeMembers( hazelcastInstance, log );
+
+            clusterId = getClusterId( hazelcastInstance );
         }
-        return new ClusterTopology( canBeBootstrapped( coreMembers ), toCoreMemberMap( coreMembers, log ),
-                edgeMembers( hazelcastInstance, log ) );
+        else
+        {
+            log.info( "Cannot currently bind to distributed discovery service." );
+        }
+
+        return new ClusterTopology( clusterId, canBeBootstrapped, coreMembers, edgeMembers );
     }
 
-    static class GetConnectedClients implements Callable<Collection<String>>, Serializable, HazelcastInstanceAware
+    private static ClusterId getClusterId( HazelcastInstance hazelcastInstance )
+    {
+        IAtomicReference<UUID> uuidReference = hazelcastInstance.getAtomicReference( CLUSTER_UUID );
+        UUID uuid = uuidReference.get();
+        return uuid != null ? new ClusterId( uuid ) : null;
+    }
+
+    static boolean casClusterId( HazelcastInstance hazelcastInstance, ClusterId clusterId )
+    {
+        IAtomicReference<UUID> uuidReference = hazelcastInstance.getAtomicReference( CLUSTER_UUID );
+        return uuidReference.compareAndSet( null, clusterId.uuid() ) || uuidReference.get().equals( clusterId.uuid() );
+    }
+
+    private static class GetConnectedClients implements Callable<Collection<String>>, Serializable, HazelcastInstanceAware
     {
         private transient HazelcastInstance instance;
 
@@ -99,12 +128,6 @@ class HazelcastClusterTopology
 
     private static Set<EdgeAddresses> edgeMembers( HazelcastInstance hazelcastInstance, Log log )
     {
-        if ( hazelcastInstance == null )
-        {
-            log.info( "Cannot currently bind to distributed discovery service." );
-            return emptySet();
-        }
-
         Collection<String> connectedUUIDs;
         final IExecutorService executorService = hazelcastInstance.getExecutorService( "default" );
         try
@@ -117,7 +140,7 @@ class HazelcastClusterTopology
             return emptySet();
         }
 
-        return hazelcastInstance.<String/*uuid*/, String/*boltAddress*/>getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
+        return hazelcastInstance.<String/*uuid*/,String/*boltAddress*/>getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
                 .entrySet().stream().
                         filter( entry -> connectedUUIDs.contains( entry.getKey() ) )
                 .map( entry -> new EdgeAddresses( new AdvertisedSocketAddress( entry.getValue() /*boltAddress*/ ) ) )
@@ -130,15 +153,15 @@ class HazelcastClusterTopology
         return iterator.hasNext() && iterator.next().localMember();
     }
 
-    static Map<MemberId, CoreAddresses> toCoreMemberMap( Set<Member> members, Log log )
+    static Map<MemberId,CoreAddresses> toCoreMemberMap( Set<Member> members, Log log )
     {
-        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
 
         for ( Member member : members )
         {
             try
             {
-                Pair<MemberId, CoreAddresses> pair = extractMemberAttributes( member );
+                Pair<MemberId,CoreAddresses> pair = extractMemberAttributes( member );
                 coreMembers.put( pair.first(), pair.other() );
             }
             catch ( IllegalArgumentException e )
@@ -167,7 +190,7 @@ class HazelcastClusterTopology
         return memberAttributeConfig;
     }
 
-    static Pair<MemberId, CoreAddresses> extractMemberAttributes( Member member )
+    static Pair<MemberId,CoreAddresses> extractMemberAttributes( Member member )
     {
         MemberId memberId = new MemberId( UUID.fromString( member.getStringAttribute( MEMBER_UUID ) ) );
 

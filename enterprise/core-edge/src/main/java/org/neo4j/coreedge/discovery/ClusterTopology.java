@@ -23,19 +23,23 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
 
 public class ClusterTopology
 {
+    private ClusterId clusterId;
     private final Map<MemberId, CoreAddresses> coreMembers;
     private final Set<EdgeAddresses> edgeAddresses;
     private final boolean canBeBootstrapped;
 
-    public ClusterTopology( boolean canBeBootstrapped,
-                            Map<MemberId, CoreAddresses> coreMembers,
-                            Set<EdgeAddresses> edgeAddresses )
+    public ClusterTopology( ClusterId clusterId, boolean canBeBootstrapped,
+            Map<MemberId,CoreAddresses> coreMembers,
+            Set<EdgeAddresses> edgeAddresses )
     {
+        this.clusterId = clusterId;
         this.canBeBootstrapped = canBeBootstrapped;
         this.edgeAddresses = edgeAddresses;
         this.coreMembers = new HashMap<>( coreMembers );
@@ -56,7 +60,7 @@ public class ClusterTopology
         return edgeAddresses;
     }
 
-    boolean canBeBootstrapped()
+    public boolean canBeBootstrapped()
     {
         return canBeBootstrapped;
     }
@@ -76,5 +80,10 @@ public class ClusterTopology
     {
         return String.format( "{coreMembers=%s, bootstrappable=%s, edgeMemberAddresses=%s}",
                 coreMembers.keySet(), canBeBootstrapped(), edgeAddresses );
+    }
+
+    public ClusterId clusterId()
+    {
+        return clusterId;
     }
 }

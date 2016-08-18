@@ -50,10 +50,9 @@ import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 public class CoreToCoreClient extends CoreClient
 {
     public CoreToCoreClient( LogProvider logProvider, ChannelInitializer channelInitializer, Monitors monitors,
-            int maxQueueSize, NonBlockingChannels nonBlockingChannels, CoreTopologyService discoveryService,
-            long logThresholdMillis )
+            int maxQueueSize, CoreTopologyService discoveryService, long logThresholdMillis )
     {
-        super( logProvider, channelInitializer, monitors, maxQueueSize, nonBlockingChannels, discoveryService,
+        super( logProvider, channelInitializer, monitors, maxQueueSize, discoveryService,
                 logThresholdMillis );
     }
 
