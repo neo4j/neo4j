@@ -35,6 +35,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome;
+import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome.INSECURE_HANDSHAKE;
 import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome.INVALID_HANDSHAKE;
 import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome.NO_APPLICABLE_PROTOCOL;
 import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome.PARTIAL_HANDSHAKE;
@@ -195,6 +196,29 @@ public class ProtocolChooserTest
 
         // Then
         assertThat( outcome, equalTo( INVALID_HANDSHAKE ) );
+        assertThat( chooser.chosenProtocol(), nullValue() );
+    }
+
+    @Test
+    public void shouldRejectIfInsecureHandshake() throws Throwable
+    {
+        // Given
+        when( factory.apply( ch, true ) ).thenReturn( protocol );
+
+        available.put( 1L, mock( BiFunction.class ) );
+
+        ProtocolChooser chooser = new ProtocolChooser( available, true, false );
+
+        // When
+        HandshakeOutcome outcome = chooser.handleVersionHandshakeChunk( wrappedBuffer( new byte[]{
+                (byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17,
+                0, 0, 0, 1,
+                0, 0, 0, 0,
+                0, 0, 0, 0,
+                0, 0, 0, 0} ), ch );
+
+        // Then
+        assertThat( outcome, equalTo( INSECURE_HANDSHAKE ) );
         assertThat( chooser.chosenProtocol(), nullValue() );
     }
 }
