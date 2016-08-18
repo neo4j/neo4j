@@ -20,6 +20,7 @@
 package org.neo4j.server.security.auth;
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 
@@ -33,4 +34,6 @@ public interface UserManager
     User getUser( String username ) throws InvalidArgumentsException;
 
     void setUserPassword( String username, String password ) throws IOException, InvalidArgumentsException;
+
+    Set<String> getAllUsernames();
 }

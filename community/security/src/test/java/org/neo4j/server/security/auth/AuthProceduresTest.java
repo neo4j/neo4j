@@ -39,39 +39,39 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 public class AuthProceduresTest extends KernelIntegrationTest
 {
     @Test
-        public void callChangePasswordWithAccessModeInDbmsMode() throws Throwable
+    public void callChangePasswordWithAccessModeInDbmsMode() throws Throwable
+    {
+        // Given
+        Object[] inputArray = new Object[1];
+        inputArray[0] = "newPassword";
+        AuthSubject authSubject = mock( AuthSubject.class );
+
+        // When
+        RawIterator<Object[], ProcedureException> stream = dbmsOperations( authSubject )
+                .procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray );
+
+        // Then
+        verify( authSubject ).setPassword( (String) inputArray[0] );
+        assertThat( asList( stream ), emptyIterable() );
+    }
+
+    @Test
+    public void shouldFailWhenChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
+    {
+        try
         {
             // Given
             Object[] inputArray = new Object[1];
             inputArray[0] = "newPassword";
-            AuthSubject authSubject = mock( AuthSubject.class );
 
             // When
-            RawIterator<Object[], ProcedureException> stream = dbmsOperations( authSubject )
-                    .procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray );
-
-            // Then
-            verify( authSubject ).setPassword( (String) inputArray[0] );
-            assertThat( asList( stream ), emptyIterable() );
+            dbmsOperations( AccessMode.Static.NONE ).procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray );
+            fail( "Should have failed." );
         }
-
-        @Test
-        public void shouldFailWhenChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
+        catch ( Exception e )
         {
-            try
-            {
-                // Given
-                Object[] inputArray = new Object[1];
-                inputArray[0] = "newPassword";
-
-                // When
-                dbmsOperations( AccessMode.Static.NONE ).procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray );
-                fail( "Should have failed." );
-            }
-            catch ( Exception e )
-            {
-                // Then
-                assertThat( e.getClass(), equalTo( ProcedureException.class ) );
-            }
+            // Then
+            assertThat( e.getClass(), equalTo( ProcedureException.class ) );
         }
+    }
 }

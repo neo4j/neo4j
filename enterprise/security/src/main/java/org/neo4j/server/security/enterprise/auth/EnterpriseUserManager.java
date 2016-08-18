@@ -31,8 +31,6 @@ public interface EnterpriseUserManager extends UserManager
 
     void activateUser( String username ) throws IOException, InvalidArgumentsException;
 
-    Set<String> getAllUsernames();
-
     RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException;
 
     RoleRecord getRole( String roleName ) throws InvalidArgumentsException;
