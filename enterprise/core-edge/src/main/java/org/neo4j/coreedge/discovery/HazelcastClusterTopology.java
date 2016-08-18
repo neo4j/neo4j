@@ -110,8 +110,6 @@ class HazelcastClusterTopology
         try
         {
             connectedUUIDs = executorService.submit( new GetConnectedClients( hazelcastInstance ) ).get();
-            removeDisconnectedEdgeServers( hazelcastInstance, connectedUUIDs );
-
         }
         catch ( InterruptedException | ExecutionException e )
         {
@@ -124,20 +122,6 @@ class HazelcastClusterTopology
                         filter( entry -> connectedUUIDs.contains( entry.getKey() ) )
                 .map( entry -> new EdgeAddresses( new AdvertisedSocketAddress( entry.getValue() /*boltAddress*/ ) ) )
                 .collect( toSet() );
-    }
-
-    private static void removeDisconnectedEdgeServers( HazelcastInstance hazelcastInstance,
-                                                       Collection<String> connectedUUIDs )
-    {
-        IMap<String, String> edgeServers =
-                hazelcastInstance.<String, String>getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME );
-
-        Set<String> toRemove = edgeServers.keySet()
-                .stream()
-                .filter( key -> !connectedUUIDs.contains( key ) )
-                .collect( Collectors.toSet() );
-
-        toRemove.forEach( edgeServers::remove );
     }
 
     private static boolean canBeBootstrapped( Set<Member> coreMembers )
