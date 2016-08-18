@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.core.state.machines.id;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import org.neo4j.coreedge.core.replication.Replicator;
 import org.neo4j.coreedge.identity.MemberId;
@@ -56,34 +55,36 @@ public class ReplicatedIdRangeAcquirer
         this.log = logProvider.getLog( getClass() );
     }
 
-    IdAllocation acquireIds( IdType idType ) throws InterruptedException
+    IdAllocation acquireIds( IdType idType )
     {
         while ( true )
         {
             long firstUnallocated = idAllocationStateMachine.firstUnallocated( idType );
-            ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest(
-                    me, idType, firstUnallocated, allocationChunk );
+            ReplicatedIdAllocationRequest idAllocationRequest =
+                    new ReplicatedIdAllocationRequest( me, idType, firstUnallocated, allocationChunk );
 
-            Future<Object> futureResult = replicator.replicate( idAllocationRequest, true );
+            if ( replicateIdAllocationRequest( idType, idAllocationRequest ) )
+            {
+                IdRange idRange = new IdRange( EMPTY_LONG_ARRAY, firstUnallocated, allocationChunk );
+                return new IdAllocation( idRange, -1, 0 );
+            }
+            else
+            {
+                log.info( "Retrying ID generation due to conflict. Request was: " + idAllocationRequest );
+            }
+        }
+    }
 
-            try
-            {
-                boolean success = (boolean) futureResult.get();
-                if( success )
-                {
-                    IdRange idRange = new IdRange( EMPTY_LONG_ARRAY, firstUnallocated, allocationChunk );
-                    return new IdAllocation( idRange, -1, 0 );
-                }
-                else
-                {
-                    log.info( "Retrying ID generation due to conflict. Request was: " + idAllocationRequest );
-                }
-            }
-            catch ( InterruptedException | ExecutionException e )
-            {
-                log.error( format( "Failed to acquire id range for idType %s", idType ), e );
-                throw new IdGenerationException( e );
-            }
+    private boolean replicateIdAllocationRequest( IdType idType, ReplicatedIdAllocationRequest idAllocationRequest )
+    {
+        try
+        {
+            return (Boolean) replicator.replicate( idAllocationRequest, true ).get();
+        }
+        catch ( InterruptedException | ExecutionException e )
+        {
+            log.error( format( "Failed to acquire id range for idType %s", idType ), e );
+            throw new IdGenerationException( e );
         }
     }
 }
