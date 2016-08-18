@@ -65,8 +65,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
-
 public class CatchupServer extends LifecycleAdapter
 {
     private final LogProvider logProvider;
@@ -78,6 +76,7 @@ public class CatchupServer extends LifecycleAdapter
     private final Supplier<NeoStoreDataSource> dataSourceSupplier;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
+    private Predicate<Message> versionChecker;
     private final CoreState coreState;
     private final ListenSocketAddress listenAddress;
 
@@ -86,7 +85,7 @@ public class CatchupServer extends LifecycleAdapter
     private Supplier<CheckPointer> checkPointerSupplier;
     private Log log;
 
-    public CatchupServer( LogProvider logProvider,
+    public CatchupServer( LogProvider logProvider, Predicate<Message> versionChecker,
                           Supplier<StoreId> storeIdSupplier,
                           Supplier<TransactionIdStore> transactionIdStoreSupplier,
                           Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
@@ -95,6 +94,7 @@ public class CatchupServer extends LifecycleAdapter
                           CoreState coreState,
                           ListenSocketAddress listenAddress, Monitors monitors )
     {
+        this.versionChecker = versionChecker;
         this.coreState = coreState;
         this.listenAddress = listenAddress;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
@@ -139,7 +139,6 @@ public class CatchupServer extends LifecycleAdapter
 
                         pipeline.addLast( decoders( protocol ) );
 
-                        Predicate<Message> versionChecker = (m) -> m.version() == CURRENT_VERSION;
                         pipeline.addLast( new TxPullRequestHandler( versionChecker, protocol, storeIdSupplier,
                                 transactionIdStoreSupplier, logicalTransactionStoreSupplier, monitors, logProvider ) );
                         pipeline.addLast( new ChunkedWriteHandler() );

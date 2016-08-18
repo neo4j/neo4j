@@ -174,7 +174,7 @@ public class CoreServerModule
 
         loggingRaftInbound.registerHandler( batchingMessageHandler );
 
-        CatchupServer catchupServer = new CatchupServer( logProvider, localDatabase,
+        CatchupServer catchupServer = new CatchupServer( logProvider, versionChecker, localDatabase,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
                 new DataSourceSupplier( platformModule ), new CheckpointerSupplier( platformModule.dependencies ),
