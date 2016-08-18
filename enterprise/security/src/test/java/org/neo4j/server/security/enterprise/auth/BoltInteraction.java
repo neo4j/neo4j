@@ -74,7 +74,6 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
         this.server = server;
         GraphDatabaseFacade db = (GraphDatabaseFacade) server.graphDatabaseService();
         authManager = db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
-        authManager.start();
     }
 
     @Override
