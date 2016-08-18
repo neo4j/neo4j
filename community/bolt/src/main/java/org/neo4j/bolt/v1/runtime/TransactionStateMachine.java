@@ -128,6 +128,12 @@ public class TransactionStateMachine implements StatementProcessor
         return state == State.EXPLICIT_TRANSACTION;
     }
 
+    @Override
+    public void setQuerySource( String querySource )
+    {
+        this.ctx.querySource = querySource;
+    }
+
     enum State
     {
         AUTO_COMMIT
@@ -275,7 +281,7 @@ public class TransactionStateMachine implements StatementProcessor
     {
         try
         {
-            return spi.executeQuery( ctx.authSubject, statement, params );
+            return spi.executeQuery( ctx.querySource, ctx.authSubject, statement, params );
         }
         catch ( AuthorizationViolationException e )
         {
@@ -320,6 +326,8 @@ public class TransactionStateMachine implements StatementProcessor
             }
         };
 
+        String querySource;
+
         private MutableTransactionState( AuthenticationResult authenticationResult )
         {
             this.authSubject = authenticationResult.getAuthSubject();
@@ -337,6 +345,7 @@ public class TransactionStateMachine implements StatementProcessor
 
         boolean isPeriodicCommit( String query );
 
-        Result executeQuery( AuthSubject authSubject, String statement, Map<String, Object> params ) throws QueryExecutionKernelException;
+        Result executeQuery( String querySource, AuthSubject authSubject, String statement, Map<String, Object> params )
+                throws QueryExecutionKernelException;
     }
 }

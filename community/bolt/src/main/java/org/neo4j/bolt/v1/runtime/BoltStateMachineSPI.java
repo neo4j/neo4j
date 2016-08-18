@@ -93,13 +93,14 @@ class BoltStateMachineSPI implements BoltStateMachine.SPI
             }
 
             @Override
-            public Result executeQuery( AuthSubject authSubject,
+            public Result executeQuery( String querySource,
+                                        AuthSubject authSubject,
                                         String statement,
                                         Map<String, Object> params ) throws QueryExecutionKernelException
             {
                 try
                 {
-                    return statementRunner.run( authSubject, statement, params );
+                    return statementRunner.run( querySource, authSubject, statement, params );
                 }
                 catch ( KernelException e )
                 {

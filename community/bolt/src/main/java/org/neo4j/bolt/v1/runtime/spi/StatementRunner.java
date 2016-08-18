@@ -32,5 +32,6 @@ import java.util.Map;
  */
 public interface StatementRunner
 {
-    Result run( AuthSubject authSubject, String statement, Map<String, Object> params ) throws KernelException;
+    Result run( String querySource, AuthSubject authSubject, String statement, Map<String, Object> params )
+            throws KernelException;
 }

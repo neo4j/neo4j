@@ -38,4 +38,6 @@ public interface StatementProcessor
     void markCurrentTransactionForTermination();
 
     boolean hasTransaction();
+
+    void setQuerySource( String querySource );
 }

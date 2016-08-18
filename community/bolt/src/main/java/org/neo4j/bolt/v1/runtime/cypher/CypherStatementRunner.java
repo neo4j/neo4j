@@ -51,14 +51,14 @@ public class CypherStatementRunner implements StatementRunner
     }
 
     @Override
-    public Result run( final AuthSubject authSubject, final String statement, final Map<String, Object> params )
+    public Result run( final String querySource, final AuthSubject authSubject, final String statement, final Map<String, Object> params )
             throws KernelException
     {
         GraphDatabaseQueryService service = queryExecutionEngine.queryService();
         InternalTransaction transaction = service.beginTransaction( implicit, authSubject );
         Neo4jTransactionalContext transactionalContext =
                 new Neo4jTransactionalContext( service, transaction, txBridge.get(), locker );
-        QuerySession session = new BoltQuerySession( transactionalContext, "INSECURE" );  // TODO
+        QuerySession session = new BoltQuerySession( transactionalContext, querySource );
         return queryExecutionEngine.executeQuery( statement, params, session );
     }
 

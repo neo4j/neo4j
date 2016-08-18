@@ -673,17 +673,7 @@ public class BoltStateMachine implements ManagedBoltStateMachine
 
         String owner = null;
 
-        /**
-         * The current query source, if initialized
-         */
-        String currentQuerySource;
-
         boolean closed = false;
-
-        /**
-         * Counter for the number of failed authentication attempts.
-         */
-        AtomicInteger authFailures = new AtomicInteger( 0 );
 
         MutableConnectionState( SPI spi )
         {
@@ -695,16 +685,12 @@ public class BoltStateMachine implements ManagedBoltStateMachine
             this.statementProcessor = new TransactionStateMachine( spi.transactionSpi(), authenticationResult );
         }
 
-        String querySource()
-        {
-            return currentQuerySource;
-        }
-
         private void setQuerySourceFromClientNameAndPrincipal( String clientName, String principal,
                                                                String connectionDescriptor )
         {
             String principalName = principal == null ? "null" : principal;
-            currentQuerySource = format( "bolt\t%s\t%s\t%s>", principalName, clientName, connectionDescriptor );
+            statementProcessor.setQuerySource( format( "bolt\t%s\t%s\t%s>",
+                    principalName, clientName, connectionDescriptor ) );
         }
 
         @Override
@@ -809,6 +795,12 @@ public class BoltStateMachine implements ManagedBoltStateMachine
         public boolean hasTransaction()
         {
             return false;
+        }
+
+        @Override
+        public void setQuerySource( String querySource )
+        {
+            // nothing to do
         }
     }
 
