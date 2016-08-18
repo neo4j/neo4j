@@ -640,7 +640,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void statementDefaultTimeout()
     {
         KernelTransactionImplementation transaction = newTransaction( AccessMode.Static.FULL );
-        assertEquals( "Statement should have default timeout.", DEFAULT_STATEMENT_TIMEOUT, transaction.timeout() );
+        assertEquals( "Statement should have default timeout.", DEFAULT_STATEMENT_TIMEOUT, transaction.acquireStatement().timeout() );
     }
 
     @Test
