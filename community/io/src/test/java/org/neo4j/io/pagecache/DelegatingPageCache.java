@@ -41,8 +41,7 @@ public class DelegatingPageCache implements PageCache
     @Override
     public Optional<PagedFile> tryMappedPagedFile( File file ) throws IOException
     {
-        // TODO
-        return null;
+        return delegate.tryMappedPagedFile( file );
     }
 
     public int pageSize()

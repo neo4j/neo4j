@@ -285,7 +285,6 @@ public class MuninnPageCache implements PageCache
         boolean createIfNotExists = false;
         boolean truncateExisting = false;
         boolean deleteOnClose = false;
-        boolean exclusiveMapping = false;
         boolean anyPageSize = false;
         for ( OpenOption option : openOptions )
         {
@@ -300,10 +299,6 @@ public class MuninnPageCache implements PageCache
             else if ( option.equals( StandardOpenOption.DELETE_ON_CLOSE ) )
             {
                 deleteOnClose = true;
-            }
-            else if ( option.equals( PageCacheOpenOptions.EXCLUSIVE ) )
-            {
-                exclusiveMapping = true;
             }
             else if ( option.equals( PageCacheOpenOptions.ANY_PAGE_SIZE ) )
             {
@@ -336,19 +331,6 @@ public class MuninnPageCache implements PageCache
                 {
                     throw new UnsupportedOperationException( "Cannot truncate a file that is already mapped" );
                 }
-                if ( exclusiveMapping || pagedFile.isExclusiveMapping() )
-                {
-                    String msg;
-                    if ( exclusiveMapping )
-                    {
-                        msg = "Cannot exclusively map file because it is already mapped: " + file;
-                    }
-                    else
-                    {
-                        msg = "Cannot map file because it is already exclusively mapped: " + file;
-                    }
-                    throw new IOException( msg );
-                }
                 pagedFile.incrementRefCount();
                 pagedFile.markDeleteOnClose( deleteOnClose );
                 return pagedFile;
@@ -371,8 +353,7 @@ public class MuninnPageCache implements PageCache
                 swapperFactory,
                 tracer,
                 createIfNotExists,
-                truncateExisting,
-                exclusiveMapping );
+                truncateExisting );
         pagedFile.incrementRefCount();
         pagedFile.markDeleteOnClose( deleteOnClose );
         current = new FileMapping( file, pagedFile );
@@ -383,10 +364,29 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public Optional<PagedFile> tryMappedPagedFile( File file ) throws IOException
+    public synchronized Optional<PagedFile> tryMappedPagedFile( File file ) throws IOException
     {
-        // TODO
-        return null;
+        assertHealthy();
+        ensureThreadsInitialised();
+
+        file = file.getCanonicalFile();
+
+        FileMapping current = mappedFiles;
+
+        // find an existing mapping
+        while ( current != null )
+        {
+            if ( current.file.equals( file ) )
+            {
+                MuninnPagedFile pagedFile = current.pagedFile;
+                pagedFile.incrementRefCount();
+                return Optional.of( current.pagedFile );
+            }
+            current = current.next;
+        }
+
+        // no mapping exists
+        return Optional.empty();
     }
 
     /**

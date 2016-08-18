@@ -66,7 +66,6 @@ final class MuninnPagedFile implements PagedFile, Flushable
 
     final PageSwapper swapper;
     private final CursorPool cursorPool;
-    private final boolean exclusiveMapping;
 
     // Guarded by the monitor lock on MuninnPageCache (map and unmap)
     private boolean deleteOnClose;
@@ -95,14 +94,12 @@ final class MuninnPagedFile implements PagedFile, Flushable
             PageSwapperFactory swapperFactory,
             PageCacheTracer tracer,
             boolean createIfNotExists,
-            boolean truncateExisting,
-            boolean exclusiveMapping ) throws IOException
+            boolean truncateExisting ) throws IOException
     {
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
         this.cursorPool = new CursorPool( this );
         this.tracer = tracer;
-        this.exclusiveMapping = exclusiveMapping;
 
         // The translation table is an array of arrays of references to either null, MuninnPage objects, or Latch
         // objects. The table only grows the outer array, and all the inner "chunks" all stay the same size. This
@@ -430,11 +427,6 @@ final class MuninnPagedFile implements PagedFile, Flushable
         }
         while ( lastPageId < newLastPageId
                 && !UnsafeUtil.compareAndSwapLong( this, headerStateOffset, current, update ) );
-    }
-
-    boolean isExclusiveMapping()
-    {
-        return exclusiveMapping;
     }
 
     /**

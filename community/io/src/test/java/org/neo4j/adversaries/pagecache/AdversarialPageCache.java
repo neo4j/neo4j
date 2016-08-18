@@ -71,8 +71,13 @@ public class AdversarialPageCache implements PageCache
     @Override
     public Optional<PagedFile> tryMappedPagedFile( File file ) throws IOException
     {
-        // TODO
-        return null;
+        adversary.injectFailure( IOException.class, SecurityException.class );
+        final Optional<PagedFile> optional = delegate.tryMappedPagedFile( file );
+        if ( optional.isPresent() )
+        {
+            return Optional.of( new AdversarialPagedFile( optional.get(), adversary ) );
+        }
+        return optional;
     }
 
     @Override

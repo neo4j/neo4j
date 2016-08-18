@@ -51,9 +51,6 @@ public interface PageCache extends AutoCloseable
      * the {@link StandardOpenOption#TRUNCATE_EXISTING} will truncate any existing file <em>iff</em> it has not already
      * been mapped.
      * The {@link StandardOpenOption#DELETE_ON_CLOSE} will cause the file to be deleted after the last unmapping.
-     * The {@link PageCacheOpenOptions#EXCLUSIVE} will cause the {@code map} method to throw if the file is already
-     * mapped. Otherwise, the file will be mapped exclusively, and subsequent attempts at mapping the file will fail
-     * with an exception until the exclusively mapped file is closed.
      * All other options are either silently ignored, or will cause an exception to be thrown.
      * @throws java.nio.file.NoSuchFileException if the given file does not exist, and the
      * {@link StandardOpenOption#CREATE} option was not specified.
@@ -70,11 +67,13 @@ public interface PageCache extends AutoCloseable
      * {@link #map(File, int, OpenOption...)}.
      * If no mapping exist for this file, then returned {@link Optional} will report {@link Optional#isPresent()}
      * false.
+     * <p>
+     * NOTE! User is responsible for closing the returned paged file.
      *
      * @param file The file to try to get the mapped paged file for.
      * @return {@link Optional} containing the {@link PagedFile} mapped by this {@link PageCache} for given file, or an
      * empty {@link Optional} if no mapping exist.
-     * @throws IOException // TODO
+     * @throws IOException if page cache has been closed or page eviction problems occur.
      */
     Optional<PagedFile> tryMappedPagedFile( File file ) throws IOException;
 

@@ -71,8 +71,7 @@ public class ExternallyManagedPageCache implements PageCache
     @Override
     public Optional<PagedFile> tryMappedPagedFile( File file ) throws IOException
     {
-        // TODO
-        return null;
+        return delegate.tryMappedPagedFile( file );
     }
 
     @Override
