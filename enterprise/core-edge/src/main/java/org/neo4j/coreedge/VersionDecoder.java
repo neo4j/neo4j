@@ -19,37 +19,46 @@
  */
 package org.neo4j.coreedge;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import java.util.List;
 
-import java.util.function.Predicate;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
 
 import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public abstract class VersionCheckerChannelInboundHandler<M extends Message> extends SimpleChannelInboundHandler<M>
+public class VersionDecoder extends ByteToMessageDecoder
 {
-    private final Predicate<Message> versionChecker;
     private final Log log;
+    private final byte currentVersion;
 
-    protected VersionCheckerChannelInboundHandler( Predicate<Message> versionChecker, LogProvider logProvider )
+    protected VersionDecoder( LogProvider logProvider, byte currentVersion )
     {
-        this.versionChecker = versionChecker;
+        this.currentVersion = currentVersion;
         this.log = logProvider.getLog( getClass() );
     }
 
-    @Override
-    protected final void channelRead0( ChannelHandlerContext ctx, M message ) throws Exception
+    public VersionDecoder( LogProvider logProvider )
     {
-        if ( !versionChecker.test( message ) )
-        {
-            log.error( "Unsupported version %d, unable to process message %s", message.version(), message );
-            return;
-        }
-
-        doChannelRead0( ctx, message );
+        this( logProvider, Message.CURRENT_VERSION );
     }
 
-    protected abstract void doChannelRead0( ChannelHandlerContext ctx, M msg ) throws Exception;
+    @Override
+    protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception
+    {
+        byte version = in.readByte();
+
+        if ( version != currentVersion )
+        {
+            log.error( "Unsupported version %d, current version is %d", version, currentVersion );
+        }
+        else
+        {
+            ByteBuf retained = in.slice( in.readerIndex(), in.readableBytes() ).retain();
+            in.readerIndex( in.writerIndex() );
+            out.add( retained );
+        }
+    }
 }

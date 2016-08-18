@@ -22,11 +22,8 @@ package org.neo4j.coreedge.core.consensus.roles;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.identity.MemberId;
 
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
-
 public class AppendEntriesResponseBuilder
 {
-    private byte version = CURRENT_VERSION;
     private boolean success;
     private long term = -1;
     private MemberId from;
@@ -37,13 +34,7 @@ public class AppendEntriesResponseBuilder
     {
         // a response of false should always have a match index of -1
         assert success || matchIndex == -1;
-        return new RaftMessages.AppendEntries.Response( version, from, term, success, matchIndex, appendIndex );
-    }
-
-    public AppendEntriesResponseBuilder version( byte version )
-    {
-        this.version = version;
-        return this;
+        return new RaftMessages.AppendEntries.Response( from, term, success, matchIndex, appendIndex );
     }
 
     public AppendEntriesResponseBuilder from( MemberId from )

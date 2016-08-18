@@ -25,20 +25,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
+import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.consensus.membership.RaftMembership;
-import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.core.consensus.outcome.RaftLogCommand;
+import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.core.consensus.roles.follower.FollowerStates;
 import org.neo4j.coreedge.core.consensus.term.TermState;
 import org.neo4j.coreedge.core.consensus.vote.VoteState;
-import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
-import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.emptySet;
@@ -51,24 +50,17 @@ public class RaftStateBuilder
         return new RaftStateBuilder();
     }
 
-    private byte version = Message.CURRENT_VERSION;
-    private MemberId myself;
+    public MemberId myself;
     private Set<MemberId> votingMembers = emptySet();
-    private long term;
-    private MemberId leader;
-    private long leaderCommit = -1;
+    public long term;
+    public MemberId leader;
+    public long leaderCommit = -1;
     private MemberId votedFor;
     private RaftLog entryLog = new InMemoryRaftLog();
     private Set votesForMe = emptySet();
     private long lastLogIndexBeforeWeBecameLeader = -1;
-    private long commitIndex = -1;
+    public long commitIndex = -1;
     private FollowerStates followerStates = new FollowerStates<>();
-
-    public RaftStateBuilder version( byte version )
-    {
-        this.version = version;
-        return this;
-    }
 
     public RaftStateBuilder myself( MemberId myself )
     {
@@ -142,7 +134,7 @@ public class RaftStateBuilder
         Collection<RaftMessages.Directed> noMessages = Collections.emptyList();
         List<RaftLogCommand> noLogCommands = Collections.emptyList();
 
-        state.update( new Outcome( version, null, term, leader, leaderCommit, votedFor, votesForMe,
+        state.update( new Outcome( null, term, leader, leaderCommit, votedFor, votesForMe,
                 lastLogIndexBeforeWeBecameLeader, followerStates, false, noLogCommands,
                 noMessages, Collections.emptySet(), commitIndex ) );
 

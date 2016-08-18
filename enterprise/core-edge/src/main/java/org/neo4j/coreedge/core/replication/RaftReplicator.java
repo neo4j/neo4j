@@ -25,15 +25,12 @@ import java.util.function.BiConsumer;
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.core.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.core.replication.session.OperationContext;
 import org.neo4j.coreedge.core.state.machines.tx.RetryStrategy;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.impl.util.Listener;
-
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 /**
  * A replicator implementation suitable in a RAFT context. Will handle resending due to timeouts and leader switches.
@@ -80,7 +77,7 @@ public class RaftReplicator implements Replicator, Listener<MemberId>
         RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
         do
         {
-            outbound.send( leader, new RaftMessages.NewEntry.Request( CURRENT_VERSION, me, operation ) );
+            outbound.send( leader, new RaftMessages.NewEntry.Request( me, operation ) );
             try
             {
                 progress.awaitReplication( timeout.getMillis() );

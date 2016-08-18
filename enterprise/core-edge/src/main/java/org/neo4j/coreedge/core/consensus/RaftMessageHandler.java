@@ -19,43 +19,13 @@
  */
 package org.neo4j.coreedge.core.consensus;
 
-import io.netty.channel.ChannelHandlerContext;
+import java.io.IOException;
 
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
-import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
-import org.neo4j.coreedge.messaging.Inbound;
-import org.neo4j.coreedge.messaging.Message;
+import org.neo4j.coreedge.core.consensus.outcome.Outcome;
+import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
-import static java.lang.String.format;
-
-class RaftMessageHandler extends VersionCheckerChannelInboundHandler<RaftMessages.StoreIdAwareMessage>
+public interface RaftMessageHandler
 {
-    private final Supplier<Inbound.MessageHandler<RaftMessages.StoreIdAwareMessage>> messageHandler;
-    private final Log log;
-
-    RaftMessageHandler( Predicate<Message> versionChecker,
-            Supplier<Inbound.MessageHandler<RaftMessages.StoreIdAwareMessage>> messageHandler, LogProvider logProvider )
-    {
-        super( versionChecker, logProvider );
-        this.messageHandler = messageHandler;
-        this.log = logProvider.getLog( getClass() );
-    }
-
-    @Override
-    protected void doChannelRead0( ChannelHandlerContext channelHandlerContext,
-            RaftMessages.StoreIdAwareMessage storeIdAwareMessage ) throws Exception
-    {
-        try
-        {
-            messageHandler.get().handle( storeIdAwareMessage );
-        }
-        catch ( Exception e )
-        {
-            log.error( format( "Failed to process message %s", storeIdAwareMessage ), e );
-        }
-    }
+    Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState context, Log log ) throws IOException;
 }

@@ -40,7 +40,6 @@ public class TxPullResponseDecoder extends MessageToMessageDecoder<ByteBuf>
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
         NetworkReadableClosableChannelNetty4 logChannel = new NetworkReadableClosableChannelNetty4( msg );
-        byte version = logChannel.get();
         StoreId storeId = StoreIdMarshal.unmarshal( logChannel );
         LogEntryReader<NetworkReadableClosableChannelNetty4> reader =
                 new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
@@ -52,7 +51,7 @@ public class TxPullResponseDecoder extends MessageToMessageDecoder<ByteBuf>
 
         if ( tx != null )
         {
-            out.add( new TxPullResponse( version, storeId, tx ) );
+            out.add( new TxPullResponse( storeId, tx ) );
         }
     }
 }

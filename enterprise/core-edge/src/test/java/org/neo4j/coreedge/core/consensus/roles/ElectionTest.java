@@ -136,6 +136,6 @@ public class ElectionTest
         raft.handle( voteRequest().from( member1 ).candidate( member1 ).term( 1 ).build() );
 
         // then
-        verify( outbound, times( 2 ) ).send( member1, voteResponse().from( myself ).term( 1 ).grant().build() );
+        verify( outbound, times( 2 ) ).send( member1, voteResponse().term( 1 ).grant().build() );
     }
 }

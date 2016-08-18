@@ -22,7 +22,6 @@ package org.neo4j.coreedge.edge;
 import java.io.File;
 import java.time.Clock;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.backup.OnlineBackupSettings;
@@ -43,7 +42,6 @@ import org.neo4j.coreedge.core.state.machines.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.discovery.procedures.EdgeRoleProcedure;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.messaging.NonBlockingChannels;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.routing.ConnectToRandomCoreMember;
@@ -96,7 +94,6 @@ import org.neo4j.udc.UsageData;
 import static java.time.Clock.systemUTC;
 import static java.util.Collections.singletonMap;
 
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
@@ -166,7 +163,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 
-        schemaWriteGuard = () -> {};
+        schemaWriteGuard = () -> {
+        };
 
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
 
@@ -194,9 +192,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         life.add( dependencies.satisfyDependency( discoveryService ) );
 
         NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
-        Predicate<Message> versionChecker = ( m ) -> m.version() == CURRENT_VERSION;
-        EdgeToCoreClient.ChannelInitializer channelInitializer =
-                new EdgeToCoreClient.ChannelInitializer( versionChecker, logProvider, nonBlockingChannels );
+        EdgeToCoreClient.ChannelInitializer channelInitializer = new EdgeToCoreClient.ChannelInitializer(
+                logProvider, nonBlockingChannels );
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
         long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );
         EdgeToCoreClient edgeToCoreClient = life.add( new EdgeToCoreClient( logProvider,

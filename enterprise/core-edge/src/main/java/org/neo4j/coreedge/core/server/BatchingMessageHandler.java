@@ -26,8 +26,8 @@ import java.util.concurrent.BlockingQueue;
 
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.RaftMessages.RaftMessage;
-import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.Inbound.MessageHandler;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -128,10 +128,8 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
 
                 if ( batchRequest == null )
                 {
-                    batchRequest = new RaftMessages.NewEntry.BatchRequest( newEntryRequest.version(), batch.size() );
+                    batchRequest = new RaftMessages.NewEntry.BatchRequest( batch.size() );
                 }
-
-                assert batchRequest.version() == newEntryRequest.version();
                 batchRequest.add( newEntryRequest.content() );
             }
             else

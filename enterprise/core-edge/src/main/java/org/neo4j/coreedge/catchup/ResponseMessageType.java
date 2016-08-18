@@ -19,35 +19,30 @@
  */
 package org.neo4j.coreedge.catchup;
 
-public enum ResponseMessageType implements MessageType
+import static java.lang.String.format;
+
+public enum ResponseMessageType
 {
-    TX( CURRENT_VERSION, (byte) 1 ),
-    STORE_ID( CURRENT_VERSION, (byte) 2 ),
-    FILE( CURRENT_VERSION, (byte) 3 ),
-    STORE_COPY_FINISHED( CURRENT_VERSION, (byte) 4 ),
-    CORE_SNAPSHOT( CURRENT_VERSION, (byte) 5 ),
-    TX_STREAM_FINISHED( CURRENT_VERSION, (byte) 6 ),
-    UNKNOWN( CURRENT_VERSION, (byte) 200 ),;
+    TX( (byte) 1 ),
+    STORE_ID( (byte) 2 ),
+    FILE( (byte) 3 ),
+    STORE_COPY_FINISHED( (byte) 4 ),
+    CORE_SNAPSHOT( (byte) 5 ),
+    TX_STREAM_FINISHED( (byte) 6 ),
+    UNKNOWN( (byte) 200 ),;
 
-    private byte version;
-    private byte type;
+    private byte messageType;
 
-    ResponseMessageType( byte version, byte type )
+    ResponseMessageType( byte messageType )
     {
-        this.version = version;
-        this.type = type;
+        this.messageType = messageType;
     }
 
-    public static ResponseMessageType from( byte version, byte type )
+    public static ResponseMessageType from( byte b )
     {
-        if ( version != CURRENT_VERSION )
-        {
-            return UNKNOWN;
-        }
-
         for ( ResponseMessageType responseMessageType : values() )
         {
-            if ( responseMessageType.type == type )
+            if ( responseMessageType.messageType == b )
             {
                 return responseMessageType;
             }
@@ -55,22 +50,14 @@ public enum ResponseMessageType implements MessageType
         return UNKNOWN;
     }
 
-    @Override
-    public byte version()
+    public byte messageType()
     {
-        return version;
-    }
-
-    public byte type()
-    {
-        return type;
+        return messageType;
     }
 
     @Override
     public String toString()
     {
-        return "ResponseMessageType{" + "version=" + version + ", type=" + type + '}';
+        return format( "ResponseMessageType{messageType=%s}", messageType );
     }
-
-    public static class Encoder extends MessageTypeEncoder<ResponseMessageType>{}
 }

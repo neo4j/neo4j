@@ -33,9 +33,10 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.VersionDecoder;
+import org.neo4j.coreedge.VersionPrepender;
 import org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderEncoder;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequest;
@@ -53,7 +54,6 @@ import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequest;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestHandler;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -76,7 +76,6 @@ public class CatchupServer extends LifecycleAdapter
     private final Supplier<NeoStoreDataSource> dataSourceSupplier;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
-    private Predicate<Message> versionChecker;
     private final CoreState coreState;
     private final ListenSocketAddress listenAddress;
 
@@ -85,7 +84,7 @@ public class CatchupServer extends LifecycleAdapter
     private Supplier<CheckPointer> checkPointerSupplier;
     private Log log;
 
-    public CatchupServer( LogProvider logProvider, Predicate<Message> versionChecker,
+    public CatchupServer( LogProvider logProvider,
                           Supplier<StoreId> storeIdSupplier,
                           Supplier<TransactionIdStore> transactionIdStoreSupplier,
                           Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
@@ -94,7 +93,6 @@ public class CatchupServer extends LifecycleAdapter
                           CoreState coreState,
                           ListenSocketAddress listenAddress, Monitors monitors )
     {
-        this.versionChecker = versionChecker;
         this.coreState = coreState;
         this.listenAddress = listenAddress;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
@@ -127,8 +125,12 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
                         pipeline.addLast( new LengthFieldPrepender( 4 ) );
 
-                        pipeline.addLast( new ResponseMessageType.Encoder() );
-                        pipeline.addLast( new RequestMessageType.Encoder() );
+                        pipeline.addLast( new VersionDecoder(logProvider ) );
+                        pipeline.addLast( new VersionPrepender() );
+
+                        pipeline.addLast( new ResponseMessageTypeEncoder() );
+                        pipeline.addLast( new RequestMessageTypeEncoder() );
+
                         pipeline.addLast( new TxPullResponseEncoder() );
                         pipeline.addLast( new CoreSnapshotEncoder() );
                         pipeline.addLast( new StoreCopyFinishedResponseEncoder() );
@@ -139,15 +141,14 @@ public class CatchupServer extends LifecycleAdapter
 
                         pipeline.addLast( decoders( protocol ) );
 
-                        pipeline.addLast( new TxPullRequestHandler( versionChecker, protocol, storeIdSupplier,
-                                transactionIdStoreSupplier, logicalTransactionStoreSupplier, monitors, logProvider ) );
+                        pipeline.addLast( new TxPullRequestHandler( protocol, storeIdSupplier,
+                                transactionIdStoreSupplier, logicalTransactionStoreSupplier,
+                                monitors, logProvider ) );
                         pipeline.addLast( new ChunkedWriteHandler() );
-                        pipeline.addLast( new GetStoreRequestHandler( versionChecker, protocol, dataSourceSupplier,
-                                checkPointerSupplier, logProvider ) );
-                        pipeline.addLast( new GetStoreIdRequestHandler( versionChecker, protocol, storeIdSupplier,
-                                logProvider ) );
-                        pipeline.addLast(
-                                new CoreSnapshotRequestHandler( versionChecker, protocol, coreState, logProvider ) );
+                        pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
+                                checkPointerSupplier ) );
+                        pipeline.addLast( new GetStoreIdRequestHandler( protocol, storeIdSupplier ) );
+                        pipeline.addLast( new CoreSnapshotRequestHandler( protocol, coreState ) );
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                     }
                 } );

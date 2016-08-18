@@ -19,23 +19,21 @@
  */
 package org.neo4j.coreedge.core.state.snapshot;
 
+import java.util.List;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
-
-import java.util.List;
 
 import org.neo4j.coreedge.messaging.NetworkFlushableByteBuf;
 
 public class CoreSnapshotEncoder extends MessageToMessageEncoder<CoreSnapshot>
 {
-    private final CoreSnapshot.Marshal coreSnapshotMarshal = new CoreSnapshot.Marshal();
-
     @Override
     protected void encode( ChannelHandlerContext ctx, CoreSnapshot coreSnapshot, List<Object> out ) throws Exception
     {
         ByteBuf encoded = ctx.alloc().buffer();
-        coreSnapshotMarshal.marshal( coreSnapshot, new NetworkFlushableByteBuf( encoded ) );
+        new CoreSnapshot.Marshal().marshal( coreSnapshot, new NetworkFlushableByteBuf( encoded ) );
         out.add( encoded );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.coreedge.core.consensus.roles;
 
 import java.io.IOException;
 
+import org.neo4j.coreedge.core.consensus.RaftMessageHandler;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.RaftMessages.AppendEntries;
 import org.neo4j.coreedge.core.consensus.RaftMessages.Heartbeat;

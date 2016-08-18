@@ -39,7 +39,6 @@ import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -53,7 +52,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 import static org.neo4j.test.matchers.Matchers.hasMessage;
 
 public class RaftLogShipperTest
@@ -123,9 +121,7 @@ public class RaftLogShipperTest
         startLogShipper();
 
         // then
-        RaftMessages.AppendEntries.Request expected =
-                new RaftMessages.AppendEntries.Request( CURRENT_VERSION, leader, leaderTerm, 0, entry0.term(),
-                        RaftLogEntry.empty, leaderCommit );
+        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, 0, entry0.term(), RaftLogEntry.empty, leaderCommit );
         assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
@@ -142,9 +138,7 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 0, new LeaderContext( 0, 0 ) );
 
         // then
-        RaftMessages.AppendEntries.Request expected =
-                new RaftMessages.AppendEntries.Request( CURRENT_VERSION, leader, leaderTerm, -1, -1, RaftLogEntry.empty,
-                        leaderCommit );
+        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, -1, -1, RaftLogEntry.empty, leaderCommit );
         assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
@@ -164,9 +158,7 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 0, new LeaderContext( 0, 0 ) );
 
         // then
-        RaftMessages.AppendEntries.Request expected =
-                new RaftMessages.AppendEntries.Request( CURRENT_VERSION, leader, leaderTerm, -1, -1, RaftLogEntry.empty,
-                        leaderCommit );
+        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, -1, -1, RaftLogEntry.empty, leaderCommit );
         assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
@@ -245,9 +237,7 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 1, new LeaderContext( 0, 0 ) );
 
         // then
-        RaftMessages.AppendEntries.Request expected =
-                new RaftMessages.AppendEntries.Request( CURRENT_VERSION, leader, leaderTerm, 1, entry1.term(),
-                        RaftLogEntry.empty, leaderCommit );
+        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, 1, entry1.term(), RaftLogEntry.empty, leaderCommit );
         assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
@@ -271,9 +261,7 @@ public class RaftLogShipperTest
         startLogShipper();
 
         // back-tracking stage
-        RaftMessages.AppendEntries.Request expected =
-                new RaftMessages.AppendEntries.Request( CURRENT_VERSION, leader, leaderTerm, -1, -1, RaftLogEntry.empty,
-                        leaderCommit );
+        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, -1, -1, RaftLogEntry.empty, leaderCommit );
         while ( !outbound.sentTo( follower ).contains( expected ) )
         {
             logShipper.onMismatch( -1, new LeaderContext( 0, 0 ) );
@@ -312,9 +300,7 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 0, new LeaderContext( 0, 0 ) );
 
         //then
-        RaftMessages.AppendEntries.Request expected =
-                new RaftMessages.AppendEntries.Request( CURRENT_VERSION, leader, leaderTerm, 2, entry2.term(),
-                        RaftLogEntry.empty, leaderCommit );
+        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, 2, entry2.term(), RaftLogEntry.empty, leaderCommit );
         assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
@@ -338,6 +324,6 @@ public class RaftLogShipperTest
         //then
         assertTrue( outbound.hasAnyEntriesTo( follower ) );
         assertThat( outbound.sentTo( follower ),
-                hasMessage( new RaftMessages.LogCompactionInfo( CURRENT_VERSION, leader, 0, 2 ) ) );
+                hasMessage( new RaftMessages.LogCompactionInfo( leader, 0, 2 ) ) );
     }
 }

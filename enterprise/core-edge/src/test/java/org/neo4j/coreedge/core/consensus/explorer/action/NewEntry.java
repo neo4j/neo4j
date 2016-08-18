@@ -28,8 +28,6 @@ import org.neo4j.coreedge.core.consensus.ReplicatedString;
 import org.neo4j.coreedge.core.consensus.explorer.ClusterState;
 import org.neo4j.coreedge.identity.MemberId;
 
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
-
 public class NewEntry implements Action
 {
     private final MemberId member;
@@ -44,8 +42,8 @@ public class NewEntry implements Action
     {
         ClusterState newClusterState = new ClusterState( previous );
         Queue<RaftMessages.RaftMessage> newQueue = new LinkedList<>( previous.queues.get( member ) );
-        newQueue.offer(
-                new RaftMessages.NewEntry.Request( CURRENT_VERSION, member, new ReplicatedString( "content" ) ) );
+        newQueue.offer( new RaftMessages.NewEntry.Request( member, new ReplicatedString(
+                "content" ) ) );
         newClusterState.queues.put( member, newQueue );
         return newClusterState;
     }

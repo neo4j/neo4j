@@ -19,10 +19,10 @@
  */
 package org.neo4j.coreedge.messaging.marshalling;
 
+import java.util.List;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
-
-import java.util.List;
 
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
@@ -51,7 +51,6 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Sto
         MemberId.Marshal memberMarshal = new MemberId.Marshal();
 
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
-        channel.put( message.version() );
         StoreIdMarshal.marshal( storeId, channel );
         channel.putInt( message.type().ordinal() );
         memberMarshal.marshal( message.from(), channel );

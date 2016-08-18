@@ -19,33 +19,30 @@
  */
 package org.neo4j.coreedge.catchup;
 
-public enum RequestMessageType implements MessageType
+import org.neo4j.coreedge.messaging.Message;
+
+import static java.lang.String.format;
+
+public enum RequestMessageType implements Message
 {
-    TX_PULL_REQUEST( CURRENT_VERSION, (byte) 1 ),
-    STORE( CURRENT_VERSION, (byte) 2 ),
-    RAFT_STATE( CURRENT_VERSION, (byte) 3 ),
-    STORE_ID( CURRENT_VERSION, (byte) 4 ),
-    UNKNOWN( CURRENT_VERSION, (byte) 404 );
+    TX_PULL_REQUEST( (byte) 1 ),
+    STORE( (byte) 2 ),
+    RAFT_STATE( (byte) 3 ),
+    STORE_ID( (byte) 4 ),
+    UNKNOWN( (byte) 404 );
 
-    private byte version;
-    private byte type;
+    private byte messageType;
 
-    RequestMessageType( byte version, byte type )
+    RequestMessageType( byte messageType )
     {
-        this.version = version;
-        this.type = type;
+        this.messageType = messageType;
     }
 
-    public static RequestMessageType from( byte version, byte type )
+    public static RequestMessageType from( byte b )
     {
-        if ( version != CURRENT_VERSION )
-        {
-            return UNKNOWN;
-        }
-
         for ( RequestMessageType responseMessageType : values() )
         {
-            if ( responseMessageType.type == type )
+            if ( responseMessageType.messageType == b )
             {
                 return responseMessageType;
             }
@@ -53,23 +50,14 @@ public enum RequestMessageType implements MessageType
         return UNKNOWN;
     }
 
-    @Override
-    public byte version()
+    public byte messageType()
     {
-        return version;
-    }
-
-    @Override
-    public byte type()
-    {
-        return type;
+        return messageType;
     }
 
     @Override
     public String toString()
     {
-        return "RequestMessageType{" + "version=" + version + ", type=" + type + '}';
+        return format( "RequestMessageType{messageType=%s}", messageType );
     }
-
-    public static class Encoder extends MessageTypeEncoder<RequestMessageType>{}
 }

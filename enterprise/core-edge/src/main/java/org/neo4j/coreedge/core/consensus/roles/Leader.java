@@ -23,14 +23,15 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.coreedge.core.consensus.Followers;
+import org.neo4j.coreedge.core.consensus.RaftMessageHandler;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.RaftMessages.Heartbeat;
 import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.core.consensus.outcome.ShipCommand;
+import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
 import org.neo4j.coreedge.core.consensus.roles.follower.FollowerState;
 import org.neo4j.coreedge.core.consensus.roles.follower.FollowerStates;
-import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
-import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.logging.Log;
@@ -38,7 +39,6 @@ import org.neo4j.logging.Log;
 import static java.lang.Math.max;
 import static org.neo4j.coreedge.core.consensus.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.core.consensus.roles.Role.LEADER;
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class Leader implements RaftMessageHandler
 {
@@ -51,7 +51,8 @@ public class Leader implements RaftMessageHandler
     {
         long commitIndex = ctx.leaderCommit();
         long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
-        Heartbeat heartbeat = new Heartbeat( CURRENT_VERSION, ctx.myself(), ctx.term(), commitIndex, commitIndexTerm );
+        Heartbeat heartbeat = new Heartbeat( ctx.myself(), ctx.term(), commitIndex,
+                commitIndexTerm );
         for ( MemberId to : replicationTargets( ctx ) )
         {
             outcome.addOutgoingMessage( new RaftMessages.Directed( to, heartbeat ) );
@@ -96,8 +97,8 @@ public class Leader implements RaftMessageHandler
                 if ( req.leaderTerm() < ctx.term() )
                 {
                     RaftMessages.AppendEntries.Response appendResponse =
-                            new RaftMessages.AppendEntries.Response( CURRENT_VERSION, ctx.myself(), ctx.term(), false,
-                                    req.prevLogIndex(), ctx.entryLog().appendIndex() );
+                            new RaftMessages.AppendEntries.Response( ctx.myself(), ctx.term(), false, req.prevLogIndex(),
+                                    ctx.entryLog().appendIndex() );
 
                     outcome.addOutgoingMessage( new RaftMessages.Directed( req.from(), appendResponse ) );
                     break;
@@ -189,8 +190,7 @@ public class Leader implements RaftMessageHandler
                         // There are no earlier entries, message the follower that we have compacted so that
                         // it can take appropriate action.
                         outcome.addOutgoingMessage( new RaftMessages.Directed( response.from(),
-                                new RaftMessages.LogCompactionInfo( CURRENT_VERSION, ctx.myself(), ctx.term(),
-                                        ctx.entryLog().prevIndex() ) ) );
+                                new RaftMessages.LogCompactionInfo( ctx.myself(), ctx.term(), ctx.entryLog().prevIndex() ) ) );
                     }
                 }
                 break;
@@ -212,7 +212,7 @@ public class Leader implements RaftMessageHandler
                 }
 
                 outcome.addOutgoingMessage( new RaftMessages.Directed( req.from(),
-                        new RaftMessages.Vote.Response( CURRENT_VERSION, ctx.myself(), ctx.term(), false ) ) );
+                        new RaftMessages.Vote.Response( ctx.myself(), ctx.term(), false ) ) );
                 break;
             }
 

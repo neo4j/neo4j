@@ -25,7 +25,6 @@ import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -38,7 +37,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class CoreStateTest
 {
@@ -56,7 +54,7 @@ public class CoreStateTest
         CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
 
         CoreState coreState = new CoreState( null, localDatabase, logProvider, null, null, applicationProcess );
-        RaftMessages.NewEntry.Request message = new RaftMessages.NewEntry.Request( CURRENT_VERSION, member( 0 ), null );
+        RaftMessages.NewEntry.Request message = new RaftMessages.NewEntry.Request( member( 0 ), null );
 
         // when
         coreState.handle( new RaftMessages.StoreIdAwareMessage( otherStoreId, message ) );
@@ -72,7 +70,7 @@ public class CoreStateTest
         // given
         StoreId localStoreId = new StoreId( 1, 2, 3, 4 );
         StoreId otherStoreId = StoreId.DEFAULT;
-        RaftMessages.NewEntry.Request message = new RaftMessages.NewEntry.Request( CURRENT_VERSION, member( 0 ), null );
+        RaftMessages.NewEntry.Request message = new RaftMessages.NewEntry.Request( member( 0 ), null );
         CoreStateDownloader downloader = mock( CoreStateDownloader.class );
 
         LocalDatabase localDatabase = mock( LocalDatabase.class );

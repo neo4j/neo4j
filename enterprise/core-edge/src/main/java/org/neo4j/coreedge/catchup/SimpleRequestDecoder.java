@@ -24,15 +24,15 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.util.List;
-import java.util.function.Function;
 
 import org.neo4j.coreedge.messaging.Message;
+import org.neo4j.function.Factory;
 
 class SimpleRequestDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private Function<Byte, ? extends Message> factory;
+    private Factory<? extends Message> factory;
 
-    SimpleRequestDecoder( Function<Byte, ? extends Message> factory )
+    SimpleRequestDecoder( Factory<? extends Message> factory )
     {
         this.factory = factory;
     }
@@ -40,7 +40,6 @@ class SimpleRequestDecoder extends MessageToMessageDecoder<ByteBuf>
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        byte version = msg.readByte();
-        out.add( factory.apply( version ) );
+        out.add( factory.newInstance() );
     }
 }

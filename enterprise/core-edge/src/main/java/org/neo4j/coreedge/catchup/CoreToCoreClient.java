@@ -26,8 +26,9 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.timeout.IdleStateHandler;
 
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
+import org.neo4j.coreedge.VersionDecoder;
+import org.neo4j.coreedge.VersionPrepender;
 import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreRequestEncoder;
@@ -40,12 +41,9 @@ import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotResponseHandler;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
 import org.neo4j.coreedge.messaging.IdleChannelReaperHandler;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.messaging.NonBlockingChannels;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
-
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class CoreToCoreClient extends CoreClient
 {
@@ -58,14 +56,12 @@ public class CoreToCoreClient extends CoreClient
 
     public static class ChannelInitializer extends io.netty.channel.ChannelInitializer<SocketChannel>
     {
-        private Predicate<Message> versionChecker;
         private final LogProvider logProvider;
         private NonBlockingChannels nonBlockingChannels;
         private CoreToCoreClient owner;
 
-        public ChannelInitializer( Predicate<Message> versionChecker, LogProvider logProvider, NonBlockingChannels nonBlockingChannels )
+        public ChannelInitializer( LogProvider logProvider, NonBlockingChannels nonBlockingChannels )
         {
-            this.versionChecker = versionChecker;
             this.logProvider = logProvider;
             this.nonBlockingChannels = nonBlockingChannels;
         }
@@ -84,22 +80,25 @@ public class CoreToCoreClient extends CoreClient
             pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
             pipeline.addLast( new LengthFieldPrepender( 4 ) );
 
+            pipeline.addLast( new VersionDecoder(logProvider ) );
+            pipeline.addLast( new VersionPrepender() );
+
             pipeline.addLast( new TxPullRequestEncoder() );
             pipeline.addLast( new GetStoreRequestEncoder() );
             pipeline.addLast( new CoreSnapshotRequestEncoder() );
-            pipeline.addLast( new ResponseMessageType.Encoder() );
-            pipeline.addLast( new RequestMessageType.Encoder() );
+            pipeline.addLast( new ResponseMessageTypeEncoder() );
+            pipeline.addLast( new RequestMessageTypeEncoder() );
 
             pipeline.addLast( new ClientMessageTypeHandler( protocol, logProvider ) );
 
             pipeline.addLast( owner.decoders( protocol ) );
 
-            pipeline.addLast( new TxPullResponseHandler( versionChecker, protocol, owner, logProvider ) );
-            pipeline.addLast( new CoreSnapshotResponseHandler( versionChecker, protocol, owner, logProvider ) );
-            pipeline.addLast( new StoreCopyFinishedResponseHandler( versionChecker, protocol, owner, logProvider ) );
-            pipeline.addLast( new TxStreamFinishedResponseHandler( versionChecker, protocol, owner, logProvider ) );
-            pipeline.addLast( new FileHeaderHandler( versionChecker, protocol, logProvider ) );
-            pipeline.addLast( new FileContentHandler( versionChecker, protocol, owner, logProvider ) );
+            pipeline.addLast( new TxPullResponseHandler( protocol, owner ) );
+            pipeline.addLast( new CoreSnapshotResponseHandler( protocol, owner ) );
+            pipeline.addLast( new StoreCopyFinishedResponseHandler( protocol, owner ) );
+            pipeline.addLast( new TxStreamFinishedResponseHandler( protocol, owner ) );
+            pipeline.addLast( new FileHeaderHandler( protocol, logProvider ) );
+            pipeline.addLast( new FileContentHandler( protocol, owner ) );
 
             pipeline.addLast( new IdleStateHandler( 0, 0, 2, TimeUnit.MINUTES) );
             pipeline.addLast( new IdleChannelReaperHandler(nonBlockingChannels));

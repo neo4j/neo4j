@@ -29,21 +29,20 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.consensus.membership.RaftMembership;
 import org.neo4j.coreedge.core.consensus.outcome.AppendLogEntry;
-import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.core.consensus.outcome.RaftLogCommand;
+import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.core.consensus.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.core.consensus.roles.follower.FollowerState;
 import org.neo4j.coreedge.core.consensus.roles.follower.FollowerStates;
 import org.neo4j.coreedge.core.consensus.term.TermState;
 import org.neo4j.coreedge.core.consensus.vote.VoteState;
-import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
-import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.emptySet;
@@ -53,14 +52,14 @@ import static org.junit.Assert.assertNull;
 import static org.neo4j.coreedge.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.core.consensus.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class RaftStateTest
 {
+
     @Test
     public void shouldUpdateCacheState() throws Exception
     {
-        //Test that updates applied to the raft state will be reflected in the entry cache.
+        //Test that updates applied to the raft state will be refelcted in the entry cache.
 
         //given
         InFlightMap<Long,RaftLogEntry> cache = new InFlightMap<>();
@@ -78,8 +77,9 @@ public class RaftStateTest
             add( new AppendLogEntry( 3, new RaftLogEntry( 0L, valueOf( 5 ) ) ) );
         }};
 
-        Outcome raftTestMemberOutcome = new Outcome( CURRENT_VERSION, CANDIDATE, 0, null, -1, null, new HashSet<>(), -1,
-                initialFollowerStates(), true, logCommands, emptyOutgoingMessages(), emptySet(), -1 );
+        Outcome raftTestMemberOutcome =
+                new Outcome( CANDIDATE, 0, null, -1, null, new HashSet<>(), -1, initialFollowerStates(), true,
+                        logCommands, emptyOutgoingMessages(), Collections.emptySet(), -1 );
 
         //when
         raftState.update(raftTestMemberOutcome);
@@ -102,13 +102,12 @@ public class RaftStateTest
                 new InMemoryStateStorage<>( new VoteState( ) ),
                 new InFlightMap<>(), NullLogProvider.getInstance() );
 
-        raftState.update( new Outcome( CURRENT_VERSION, CANDIDATE, 1, null, -1, null, new HashSet<>(), -1,
-                initialFollowerStates(), true, emptyLogCommands(), emptyOutgoingMessages(), emptySet(), -1 ) );
+        raftState.update( new Outcome( CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, initialFollowerStates(), true, emptyLogCommands(),
+                emptyOutgoingMessages(), Collections.emptySet(), -1) );
 
         // when
-        raftState.update(
-                new Outcome( CURRENT_VERSION, CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, new FollowerStates<>(),
-                        true, emptyLogCommands(), emptyOutgoingMessages(), emptySet(), -1 ) );
+        raftState.update( new Outcome( CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, new FollowerStates<>(), true, emptyLogCommands(),
+                emptyOutgoingMessages(), Collections.emptySet(), -1) );
 
         // then
         assertEquals( 0, raftState.followerStates().size() );
@@ -119,7 +118,7 @@ public class RaftStateTest
         return new ArrayList<>();
     }
 
-    private FollowerStates<MemberId> initialFollowerStates()
+    private FollowerStates initialFollowerStates()
     {
         return new FollowerStates<>( new FollowerStates<>(), member( 1 ), new FollowerState() );
     }

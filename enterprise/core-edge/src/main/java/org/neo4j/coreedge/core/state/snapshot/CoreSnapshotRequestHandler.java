@@ -19,35 +19,30 @@
  */
 package org.neo4j.coreedge.core.state.snapshot;
 
-import io.netty.channel.ChannelHandlerContext;
-
 import java.io.IOException;
-import java.util.function.Predicate;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
-import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
 import org.neo4j.coreedge.core.state.CoreState;
-import org.neo4j.coreedge.messaging.Message;
-import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 
-public class CoreSnapshotRequestHandler extends VersionCheckerChannelInboundHandler<CoreSnapshotRequest>
+public class CoreSnapshotRequestHandler extends SimpleChannelInboundHandler<CoreSnapshotRequest>
 {
     private final CatchupServerProtocol protocol;
     private final CoreState coreState;
 
-    public CoreSnapshotRequestHandler( Predicate<Message> versionChecker, CatchupServerProtocol protocol,
-            CoreState coreState, LogProvider logProvider )
+    public CoreSnapshotRequestHandler( CatchupServerProtocol protocol, CoreState coreState )
     {
-        super( versionChecker, logProvider );
         this.protocol = protocol;
         this.coreState = coreState;
     }
 
     @Override
-    protected void doChannelRead0( ChannelHandlerContext ctx, CoreSnapshotRequest msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, CoreSnapshotRequest msg ) throws Exception
     {
         sendStates( ctx, coreState.snapshot() );
         protocol.expect( State.MESSAGE_TYPE );

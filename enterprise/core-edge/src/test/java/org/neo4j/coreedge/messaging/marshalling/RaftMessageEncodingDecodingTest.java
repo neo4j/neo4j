@@ -40,14 +40,12 @@ import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class RaftMessageEncodingDecodingTest
 {
@@ -107,7 +105,7 @@ public class RaftMessageEncodingDecodingTest
         // When
         MemberId sender = new MemberId( UUID.randomUUID() );
         RaftMessages.StoreIdAwareMessage message = new RaftMessages.StoreIdAwareMessage( storeId,
-                new RaftMessages.Heartbeat( CURRENT_VERSION, sender, 1, 2, 3 ) );
+        new RaftMessages.Heartbeat( sender, 1, 2, 3 ) );
         encoder.encode( setupContext(), message, resultingBuffers );
 
         // Then

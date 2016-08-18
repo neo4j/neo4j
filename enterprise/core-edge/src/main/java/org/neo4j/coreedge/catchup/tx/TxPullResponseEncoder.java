@@ -36,7 +36,6 @@ public class TxPullResponseEncoder extends MessageToMessageEncoder<TxPullRespons
     {
         ByteBuf encoded = ctx.alloc().buffer();
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( encoded );
-        channel.put( response.version() );
         StoreIdMarshal.marshal( response.storeId(), channel );
         new CommittedTransactionSerializer( channel ).visit( response.tx() );
         out.add( encoded );

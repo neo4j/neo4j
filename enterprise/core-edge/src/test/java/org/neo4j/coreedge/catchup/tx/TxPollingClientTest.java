@@ -26,7 +26,6 @@ import org.neo4j.coreedge.catchup.CoreClient;
 import org.neo4j.coreedge.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -41,7 +40,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.catchup.tx.TxPollingClient.Timeouts.TX_PULLER_TIMEOUT;
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TxPollingClientTest
@@ -104,8 +102,7 @@ public class TxPollingClientTest
 
         // when
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
-        txPuller.onTxReceived(
-                new TxPullResponse( CURRENT_VERSION, storeId, mock( CommittedTransactionRepresentation.class ) ) );
+        txPuller.onTxReceived( new TxPullResponse( storeId, mock( CommittedTransactionRepresentation.class ) ) );
 
         // then
         verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ), times( 2 ) ).renew();

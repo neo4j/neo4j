@@ -22,17 +22,16 @@ package org.neo4j.coreedge.core.consensus.roles;
 import java.io.IOException;
 
 import org.neo4j.coreedge.core.consensus.NewLeaderBarrier;
+import org.neo4j.coreedge.core.consensus.RaftMessageHandler;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.coreedge.core.consensus.MajorityIncludingSelfQuorum.isQuorum;
 import static org.neo4j.coreedge.core.consensus.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.core.consensus.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.core.consensus.roles.Role.LEADER;
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 class Candidate implements RaftMessageHandler
 {
@@ -66,7 +65,7 @@ class Candidate implements RaftMessageHandler
                 if ( req.leaderTerm() < ctx.term() )
                 {
                     RaftMessages.AppendEntries.Response appendResponse =
-                            new RaftMessages.AppendEntries.Response( CURRENT_VERSION, ctx.myself(), ctx.term(), false,
+                            new RaftMessages.AppendEntries.Response( ctx.myself(), ctx.term(), false,
                                     req.prevLogIndex(), ctx.entryLog().appendIndex() );
 
                     outcome.addOutgoingMessage( new RaftMessages.Directed( req.from(), appendResponse ) );
@@ -131,7 +130,7 @@ class Candidate implements RaftMessageHandler
                 }
 
                 outcome.addOutgoingMessage( new RaftMessages.Directed( req.from(),
-                        new RaftMessages.Vote.Response( CURRENT_VERSION, ctx.myself(), outcome.getTerm(), false ) ) );
+                        new RaftMessages.Vote.Response( ctx.myself(), outcome.getTerm(), false ) ) );
                 break;
             }
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.core.consensus.roles;
 
+import org.neo4j.coreedge.core.consensus.RaftMessageHandler;
+
 public enum Role
 {
     FOLLOWER( new Follower() ),

@@ -22,15 +22,13 @@ package org.neo4j.coreedge.catchup.storecopy;
 import java.util.Objects;
 
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.coreedge.messaging.BaseMessage;
 
-class GetStoreIdResponse extends BaseMessage
+class GetStoreIdResponse
 {
     private final StoreId storeId;
 
-    GetStoreIdResponse( byte version, StoreId storeId )
+    GetStoreIdResponse( StoreId storeId )
     {
-        super( version );
         this.storeId = storeId;
     }
 
@@ -50,10 +48,6 @@ class GetStoreIdResponse extends BaseMessage
         {
             return false;
         }
-        if ( !super.equals( o ) )
-        {
-            return false;
-        }
         GetStoreIdResponse that = (GetStoreIdResponse) o;
         return Objects.equals( storeId, that.storeId );
     }
@@ -61,7 +55,7 @@ class GetStoreIdResponse extends BaseMessage
     @Override
     public int hashCode()
     {
-        return Objects.hash( super.hashCode(), storeId );
+        return Objects.hash( storeId );
     }
 
     @Override

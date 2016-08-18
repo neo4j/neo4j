@@ -31,7 +31,6 @@ public class StoreCopyFinishedResponseEncoder extends MessageToMessageEncoder<St
     protected void encode( ChannelHandlerContext ctx, StoreCopyFinishedResponse msg, List<Object> out ) throws Exception
     {
         ByteBuf buffer = ctx.alloc().buffer();
-        buffer.writeByte( msg.version() );
         buffer.writeLong( msg.lastCommittedTxBeforeStoreCopy() );
         out.add( buffer );
     }

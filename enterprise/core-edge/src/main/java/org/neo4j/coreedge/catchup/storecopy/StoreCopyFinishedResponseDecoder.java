@@ -30,8 +30,6 @@ public class StoreCopyFinishedResponseDecoder extends MessageToMessageDecoder<By
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        byte version = msg.readByte();
-        long lastCommittedTxBeforeStoreCopy = msg.readLong();
-        out.add( new StoreCopyFinishedResponse( version, lastCommittedTxBeforeStoreCopy ) );
+        out.add( new StoreCopyFinishedResponse( msg.readLong() ) );
     }
 }

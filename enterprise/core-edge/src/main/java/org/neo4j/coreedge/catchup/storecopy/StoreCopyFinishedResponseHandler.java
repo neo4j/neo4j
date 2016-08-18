@@ -20,31 +20,26 @@
 package org.neo4j.coreedge.catchup.storecopy;
 
 import io.netty.channel.ChannelHandlerContext;
-
-import java.util.function.Predicate;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
-import org.neo4j.coreedge.messaging.Message;
-import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.coreedge.catchup.CatchupClientProtocol.State;
 
-public class StoreCopyFinishedResponseHandler extends VersionCheckerChannelInboundHandler<StoreCopyFinishedResponse>
+public class StoreCopyFinishedResponseHandler extends SimpleChannelInboundHandler<StoreCopyFinishedResponse>
 {
     private final CatchupClientProtocol protocol;
     private StoreFileStreamingCompleteListener storeFileStreamingCompleteListener;
 
-    public StoreCopyFinishedResponseHandler( Predicate<Message> versionChecker, CatchupClientProtocol protocol,
-            StoreFileStreamingCompleteListener storeFileStreamingCompleteListener, LogProvider logProvider )
+    public StoreCopyFinishedResponseHandler( CatchupClientProtocol protocol,
+                                             StoreFileStreamingCompleteListener storeFileStreamingCompleteListener )
     {
-        super( versionChecker, logProvider );
         this.protocol = protocol;
         this.storeFileStreamingCompleteListener = storeFileStreamingCompleteListener;
     }
 
     @Override
-    protected void doChannelRead0( ChannelHandlerContext ctx, final StoreCopyFinishedResponse msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, final StoreCopyFinishedResponse msg ) throws Exception
     {
         storeFileStreamingCompleteListener.onFileStreamingComplete( msg.lastCommittedTxBeforeStoreCopy() );
         protocol.expect( State.MESSAGE_TYPE );

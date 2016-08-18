@@ -42,7 +42,6 @@ import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RaftMessageProcessingTest
@@ -103,7 +102,7 @@ public class RaftMessageProcessingTest
     {
         // given
         MemberId member = new MemberId( UUID.randomUUID() );
-        RaftMessages.Vote.Request request = new RaftMessages.Vote.Request( CURRENT_VERSION, member, 1, member, 1, 1 );
+        RaftMessages.Vote.Request request = new RaftMessages.Vote.Request( member, 1, member, 1, 1 );
 
         // when
         channel.writeOutbound( request );
@@ -118,7 +117,7 @@ public class RaftMessageProcessingTest
     {
         // given
         MemberId member = new MemberId( UUID.randomUUID() );
-        RaftMessages.Vote.Response response = new RaftMessages.Vote.Response( CURRENT_VERSION, member, 1, true );
+        RaftMessages.Vote.Response response = new RaftMessages.Vote.Response( member, 1, true );
 
         // when
         channel.writeOutbound( response );
@@ -133,9 +132,9 @@ public class RaftMessageProcessingTest
     {
         // given
         MemberId member = new MemberId( UUID.randomUUID() );
-        RaftLogEntry[] logEntries = {new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) )};
+        RaftLogEntry logEntry = new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) );
         RaftMessages.AppendEntries.Request request =
-                new RaftMessages.AppendEntries.Request( CURRENT_VERSION, member, 1, 1, 99, logEntries, 1 );
+                new RaftMessages.AppendEntries.Request( member, 1, 1, 99, new RaftLogEntry[] { logEntry }, 1 );
 
         // when
         channel.writeOutbound( request );
@@ -151,7 +150,7 @@ public class RaftMessageProcessingTest
         // given
         MemberId member = new MemberId( UUID.randomUUID() );
         RaftMessages.AppendEntries.Response response =
-                new RaftMessages.AppendEntries.Response( CURRENT_VERSION, member, 1, false, -1, 0 );
+                new RaftMessages.AppendEntries.Response( member, 1, false, -1, 0 );
 
         // when
         channel.writeOutbound( response );
@@ -167,7 +166,7 @@ public class RaftMessageProcessingTest
         // given
         MemberId member = new MemberId( UUID.randomUUID() );
         RaftMessages.NewEntry.Request request =
-                new RaftMessages.NewEntry.Request( CURRENT_VERSION, member, ReplicatedInteger.valueOf( 12 ) );
+                new RaftMessages.NewEntry.Request( member, ReplicatedInteger.valueOf( 12 ) );
 
         // when
         channel.writeOutbound( request );

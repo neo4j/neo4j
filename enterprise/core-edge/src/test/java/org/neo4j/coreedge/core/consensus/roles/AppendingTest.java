@@ -32,7 +32,6 @@ import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.core.consensus.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.logging.NullLog;
 
 import static org.junit.Assert.fail;
@@ -44,7 +43,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class AppendingTest
 {
@@ -70,9 +68,10 @@ public class AppendingTest
         // when
         // the leader asks to append after the commit index an entry that mismatches on term
         Appending.handleAppendEntriesRequest( state, outcome,
-                new RaftMessages.AppendEntries.Request( CURRENT_VERSION, aMember, localTermForAllEntries,
-                        appendIndex - 2, localTermForAllEntries, new RaftLogEntry[]{
-                        new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
+                new RaftMessages.AppendEntries.Request( aMember, localTermForAllEntries, appendIndex - 2,
+                        localTermForAllEntries,
+                        new RaftLogEntry[]{
+                                new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
                         appendIndex + 3 ), NullLog.getInstance() );
 
         // then
@@ -100,9 +99,10 @@ public class AppendingTest
         try
         {
             Appending.handleAppendEntriesRequest( state, outcome,
-                    new RaftMessages.AppendEntries.Request( CURRENT_VERSION, aMember, localTermForAllEntries,
-                            commitIndex - 1, localTermForAllEntries, new RaftLogEntry[]{
-                            new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
+                    new RaftMessages.AppendEntries.Request( aMember, localTermForAllEntries, commitIndex - 1,
+                            localTermForAllEntries,
+                            new RaftLogEntry[]{
+                                    new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
                             commitIndex + 3 ), NullLog.getInstance() );
             fail( "Appending should not allow truncation at or before the commit index" );
         }
@@ -132,9 +132,10 @@ public class AppendingTest
         try
         {
             Appending.handleAppendEntriesRequest( state, outcome,
-                    new RaftMessages.AppendEntries.Request( CURRENT_VERSION, aMember, localTermForAllEntries,
-                            commitIndex - 2, localTermForAllEntries, new RaftLogEntry[]{
-                            new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
+                    new RaftMessages.AppendEntries.Request( aMember, localTermForAllEntries, commitIndex - 2,
+                            localTermForAllEntries,
+                            new RaftLogEntry[]{
+                                    new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
                             commitIndex + 3 ), NullLog.getInstance() );
             fail( "Appending should not allow truncation at or before the commit index" );
         }
@@ -169,8 +170,10 @@ public class AppendingTest
         // an appendEntriesRequest arrives for appending entries before the prevIndex (for whatever reason)
         Outcome outcome = mock( Outcome.class );
         Appending.handleAppendEntriesRequest( state, outcome,
-                new RaftMessages.AppendEntries.Request( CURRENT_VERSION, aMember, prevTerm, prevIndex - 2, prevTerm,
-                        new RaftLogEntry[]{new RaftLogEntry( prevTerm, ReplicatedInteger.valueOf( 2 ) )},
+                new RaftMessages.AppendEntries.Request( aMember, prevTerm, prevIndex - 2,
+                        prevTerm,
+                        new RaftLogEntry[]{
+                                new RaftLogEntry( prevTerm, ReplicatedInteger.valueOf( 2 ) )},
                         commitIndex + 3 ), NullLog.getInstance() );
 
         // then

@@ -35,7 +35,6 @@ import org.neo4j.coreedge.messaging.Inbound;
 import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.core.consensus.state.RaftState;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -50,7 +49,6 @@ import static org.neo4j.coreedge.core.consensus.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.core.consensus.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.core.consensus.state.RaftStateBuilder.raftState;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -75,7 +73,7 @@ public class FollowerTest
                 .build();
 
         // when
-        Outcome outcome = new Follower().handle( new Election( CURRENT_VERSION, myself ), state, log() );
+        Outcome outcome = new Follower().handle( new Election( myself ), state, log() );
 
         state.update( outcome );
 
@@ -98,7 +96,7 @@ public class FollowerTest
         Follower follower = new Follower();
 
         // when
-        Outcome outcome = follower.handle( new Election( CURRENT_VERSION, myself ), state, log() );
+        Outcome outcome = follower.handle( new Election( myself ), state, log() );
 
         // then
         assertEquals( CANDIDATE, outcome.getRole() );
@@ -145,15 +143,18 @@ public class FollowerTest
 
         Follower follower = new Follower();
 
-        state.update( follower.handle( new AppendEntries.Request( CURRENT_VERSION, member1, 1, -1, -1,
-                new RaftLogEntry[]{new RaftLogEntry( 2, ContentGenerator.content() ),}, -1 ), state, log() ) );
+        state.update( follower.handle( new AppendEntries.Request( member1, 1, -1, -1,
+                new RaftLogEntry[]{
+                        new RaftLogEntry( 2, ContentGenerator.content() ),
+                },
+                -1 ), state, log() ) );
 
         RaftLogEntry[] entries = {
                 new RaftLogEntry( 1, new ReplicatedString( "commit this!" ) ),
         };
 
         Outcome outcome = follower.handle(
-                new AppendEntries.Request( CURRENT_VERSION, member1, 1, -1, -1, entries, -1 ), state, log() );
+                new AppendEntries.Request( member1, 1, -1, -1, entries, -1 ), state, log() );
         state.update( outcome );
 
         // then
@@ -175,8 +176,8 @@ public class FollowerTest
         appendSomeEntriesToLog( state, follower, 3, 0 );
 
         // when receiving AppEntries with high leader commit (3)
-        Outcome outcome = follower.handle( new AppendEntries.Request( CURRENT_VERSION, myself, 0, 2, 0,
-                new RaftLogEntry[]{new RaftLogEntry( 0, ContentGenerator.content() )}, 3 ), state, log() );
+        Outcome outcome = follower.handle( new AppendEntries.Request( myself, 0, 2, 0,
+                new RaftLogEntry[] { new RaftLogEntry( 0, ContentGenerator.content() ) }, 3 ), state, log() );
 
         state.update( outcome );
 
@@ -235,8 +236,8 @@ public class FollowerTest
 
         Follower follower = new Follower();
 
-        Outcome outcome =
-                follower.handle( new RaftMessages.Heartbeat( CURRENT_VERSION, myself, 1, 1, 1 ), state, log() );
+        Outcome outcome = follower.handle( new RaftMessages.Heartbeat( myself, 1, 1, 1 ),
+                state, log() );
 
         // then
         assertTrue( outcome.electionTimeoutRenewed() );
@@ -253,8 +254,8 @@ public class FollowerTest
 
         Follower follower = new Follower();
 
-        Outcome outcome =
-                follower.handle( new RaftMessages.Heartbeat( CURRENT_VERSION, myself, 1, 1, 1 ), state, log() );
+        Outcome outcome = follower.handle( new RaftMessages.Heartbeat( myself, 1, 1, 1 ),
+                state, log() );
 
         // then
         assertFalse( outcome.electionTimeoutRenewed() );
@@ -267,13 +268,15 @@ public class FollowerTest
         {
             if ( i == 0 )
             {
-                raft.update( follower.handle( new AppendEntries.Request( CURRENT_VERSION, myself, term, i - 1, -1,
-                        new RaftLogEntry[]{new RaftLogEntry( term, ContentGenerator.content() )}, -1 ), raft, log() ) );
+                raft.update( follower.handle( new AppendEntries.Request( myself, term, i - 1, -1,
+                        new RaftLogEntry[] { new RaftLogEntry( term, ContentGenerator.content() ) }, -1
+                ), raft, log() ) );
             }
             else
             {
-                raft.update( follower.handle( new AppendEntries.Request( CURRENT_VERSION, myself, term, i - 1, term,
-                        new RaftLogEntry[]{new RaftLogEntry( term, ContentGenerator.content() )}, -1 ), raft, log() ) );
+                raft.update( follower.handle( new AppendEntries.Request( myself, term, i - 1, term,
+                        new RaftLogEntry[]{new RaftLogEntry( term, ContentGenerator.content() )}, -1 ), raft,
+                        log() ) );
             }
         }
     }

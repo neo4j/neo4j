@@ -19,16 +19,13 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
-import org.neo4j.coreedge.messaging.BaseMessage;
-
-public class FileHeader extends BaseMessage
+public class FileHeader
 {
     private final String fileName;
     private final long fileLength;
 
-    public FileHeader( byte version, String fileName, long fileLength )
+    public FileHeader( String fileName, long fileLength )
     {
-        super( version );
         this.fileName = fileName;
         this.fileLength = fileLength;
     }
@@ -46,6 +43,6 @@ public class FileHeader extends BaseMessage
     @Override
     public String toString()
     {
-        return "FileHeader{" + "fileName='" + fileName + '\'' + ", fileLength=" + fileLength + '}';
+        return String.format( "FileHeader{fileName='%s', fileLength=%d}", fileName, fileLength );
     }
 }

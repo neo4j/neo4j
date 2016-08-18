@@ -17,16 +17,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.core.consensus.roles;
+package org.neo4j.coreedge.core.consensus.explorer.action;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import org.neo4j.coreedge.core.consensus.RaftMessages;
-import org.neo4j.coreedge.core.consensus.outcome.Outcome;
-import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
-import org.neo4j.logging.Log;
+import org.neo4j.coreedge.core.consensus.explorer.ClusterState;
+import org.neo4j.coreedge.identity.MemberId;
 
-public interface RaftMessageHandler
+public class HeartbeatTimeout implements Action
 {
-    Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState context, Log log ) throws IOException;
+    private final MemberId member;
+
+    public HeartbeatTimeout( MemberId member )
+    {
+        this.member = member;
+    }
+
+    @Override
+    public ClusterState advance( ClusterState previous ) throws IOException
+    {
+        ClusterState newClusterState = new ClusterState( previous );
+        Queue<RaftMessages.RaftMessage> newQueue = new LinkedList<>( previous.queues.get( member ) );
+        newQueue.offer( new RaftMessages.Timeout.Heartbeat( member ) );
+        newClusterState.queues.put( member, newQueue );
+        return newClusterState;
+    }
 }

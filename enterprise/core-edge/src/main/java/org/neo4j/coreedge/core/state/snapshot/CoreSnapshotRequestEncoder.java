@@ -31,7 +31,6 @@ public class CoreSnapshotRequestEncoder extends MessageToMessageEncoder<CoreSnap
     protected void encode( ChannelHandlerContext ctx, CoreSnapshotRequest msg, List<Object> out ) throws Exception
     {
         ByteBuf buffer = ctx.alloc().buffer();
-        buffer.writeByte( msg.version() );
         buffer.writeByte( 0 );
         out.add( buffer );
     }

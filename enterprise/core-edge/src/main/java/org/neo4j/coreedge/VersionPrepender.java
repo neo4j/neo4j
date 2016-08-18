@@ -17,22 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup;
+package org.neo4j.coreedge;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
+import io.netty.handler.codec.MessageToByteEncoder;
 
-import java.util.List;
+import org.neo4j.coreedge.messaging.Message;
 
-public class MessageTypeEncoder<M extends MessageType> extends MessageToMessageEncoder<M>
+public class VersionPrepender extends MessageToByteEncoder<ByteBuf>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, M message, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out ) throws Exception
     {
-        ByteBuf encoded = ctx.alloc().buffer();
-        encoded.writeByte( message.version() );
-        encoded.writeByte( message.type() );
-        out.add( encoded );
+        out.writeByte( Message.CURRENT_VERSION );
+        out.writeBytes( msg, msg.readerIndex(), msg.readableBytes() );
     }
 }

@@ -30,11 +30,10 @@ public class FileHeaderDecoder extends MessageToMessageDecoder<ByteBuf>
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        byte version = msg.readByte();
         int nameLength = msg.readInt();
         byte[] name = new byte[nameLength];
         msg.readBytes( name );
         long fileLength = msg.readLong();
-        out.add( new FileHeader( version, new String( name ), fileLength ) );
+        out.add( new FileHeader( new String( name ), fileLength ) );
     }
 }

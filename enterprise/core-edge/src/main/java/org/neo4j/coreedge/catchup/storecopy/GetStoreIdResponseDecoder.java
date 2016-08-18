@@ -29,14 +29,12 @@ import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.messaging.marshalling.storeid.StoreIdMarshal;
 
-public class GetStoreIdResponseDecoder extends MessageToMessageDecoder<ByteBuf>
+public class GetStoreIdResponseDecoder  extends MessageToMessageDecoder<ByteBuf>
 {
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( msg );
-        byte version = channel.get();
-        StoreId storeId = StoreIdMarshal.unmarshal( channel );
-        out.add( new GetStoreIdResponse( version, storeId ) );
+        StoreId storeId = StoreIdMarshal.unmarshal( new NetworkReadableClosableChannelNetty4( msg ) );
+        out.add( new GetStoreIdResponse( storeId ) );
     }
 }

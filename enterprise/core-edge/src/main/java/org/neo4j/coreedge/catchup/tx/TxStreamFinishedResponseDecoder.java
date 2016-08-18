@@ -30,9 +30,8 @@ public class TxStreamFinishedResponseDecoder extends MessageToMessageDecoder<Byt
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        byte version = msg.readByte();
         long lastTransactionIdSent = msg.readLong();
         boolean success = msg.readBoolean();
-        out.add( new TxStreamFinishedResponse( version, lastTransactionIdSent, success ) );
+        out.add( new TxStreamFinishedResponse( lastTransactionIdSent, success ) );
     }
 }

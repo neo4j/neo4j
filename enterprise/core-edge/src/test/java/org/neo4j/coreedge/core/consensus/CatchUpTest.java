@@ -30,7 +30,6 @@ import org.neo4j.coreedge.core.consensus.log.ReadableRaftLog;
 import org.neo4j.coreedge.core.consensus.membership.RaftTestGroup;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.Message;
 
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.Matchers.empty;
@@ -38,7 +37,6 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.coreedge.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.core.consensus.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class CatchUpTest
 {
@@ -58,8 +56,7 @@ public class CatchUpTest
         // when
         fixture.members().withId( leader ).timeoutService().invokeTimeout( RaftMachine.Timeouts.ELECTION );
         net.processMessages();
-        fixture.members().withId( leader ).raftInstance()
-                .handle( new Request( CURRENT_VERSION, leaderMember, valueOf( 42 ) ) );
+        fixture.members().withId( leader ).raftInstance().handle( new Request( leaderMember, valueOf( 42 ) ) );
         net.processMessages();
 
         // then
@@ -92,14 +89,10 @@ public class CatchUpTest
         net.disconnect( sleepyId );
 
         // when
-        fixture.members().withId( leaderId ).raftInstance()
-                .handle( new Request( CURRENT_VERSION, leader, valueOf( 10 ) ) );
-        fixture.members().withId( leaderId ).raftInstance()
-                .handle( new Request( CURRENT_VERSION, leader, valueOf( 20 ) ) );
-        fixture.members().withId( leaderId ).raftInstance()
-                .handle( new Request( CURRENT_VERSION, leader, valueOf( 30 ) ) );
-        fixture.members().withId( leaderId ).raftInstance()
-                .handle( new Request( CURRENT_VERSION, leader, valueOf( 40 ) ) );
+        fixture.members().withId( leaderId ).raftInstance().handle( new Request( leader, valueOf( 10 ) ) );
+        fixture.members().withId( leaderId ).raftInstance().handle( new Request( leader, valueOf( 20 ) ) );
+        fixture.members().withId( leaderId ).raftInstance().handle( new Request( leader, valueOf( 30 ) ) );
+        fixture.members().withId( leaderId ).raftInstance().handle( new Request( leader, valueOf( 40 ) ) );
         net.processMessages();
 
         // then

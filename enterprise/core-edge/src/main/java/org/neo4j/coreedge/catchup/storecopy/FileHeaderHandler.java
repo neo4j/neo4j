@@ -20,31 +20,27 @@
 package org.neo4j.coreedge.catchup.storecopy;
 
 import io.netty.channel.ChannelHandlerContext;
-
-import java.util.function.Predicate;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.coreedge.catchup.CatchupClientProtocol.State;
 
-public class FileHeaderHandler extends VersionCheckerChannelInboundHandler<FileHeader>
+public class FileHeaderHandler extends SimpleChannelInboundHandler<FileHeader>
 {
     private final CatchupClientProtocol protocol;
     private final Log log;
 
-    public FileHeaderHandler( Predicate<Message> versionChecker, CatchupClientProtocol protocol, LogProvider logProvider )
+    public FileHeaderHandler( CatchupClientProtocol protocol, LogProvider logProvider )
     {
-        super( versionChecker, logProvider );
         this.protocol = protocol;
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
-    protected void doChannelRead0( ChannelHandlerContext ctx, FileHeader msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, FileHeader msg ) throws Exception
     {
         log.info( "Receiving file: %s (%d bytes)", msg.fileName(), msg.fileLength() );
         ctx.pipeline().get( FileContentHandler.class ).setExpectedFile( msg );

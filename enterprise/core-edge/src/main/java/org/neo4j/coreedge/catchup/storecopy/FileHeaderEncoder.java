@@ -31,11 +31,13 @@ public class FileHeaderEncoder extends MessageToMessageEncoder<FileHeader>
     protected void encode( ChannelHandlerContext ctx, FileHeader msg, List<Object> out ) throws Exception
     {
         ByteBuf buffer = ctx.alloc().buffer();
-        buffer.writeByte( msg.version() );
+
         String name = msg.fileName();
+
         buffer.writeInt( name.length() );
         buffer.writeBytes( name.getBytes() );
         buffer.writeLong( msg.fileLength() );
+
         out.add( buffer );
     }
 }

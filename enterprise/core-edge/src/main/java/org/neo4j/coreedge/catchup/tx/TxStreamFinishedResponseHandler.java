@@ -20,31 +20,26 @@
 package org.neo4j.coreedge.catchup.tx;
 
 import io.netty.channel.ChannelHandlerContext;
-
-import java.util.function.Predicate;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
-import org.neo4j.coreedge.messaging.Message;
-import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.coreedge.catchup.CatchupClientProtocol.State;
 
-public class TxStreamFinishedResponseHandler extends VersionCheckerChannelInboundHandler<TxStreamFinishedResponse>
+public class TxStreamFinishedResponseHandler extends SimpleChannelInboundHandler<TxStreamFinishedResponse>
 {
     private final CatchupClientProtocol protocol;
     private final TxStreamCompleteListener listener;
 
-    public TxStreamFinishedResponseHandler( Predicate<Message> versionChecker, CatchupClientProtocol protocol,
-            TxStreamCompleteListener streamingListener, LogProvider logProvider )
+    public TxStreamFinishedResponseHandler( CatchupClientProtocol protocol, TxStreamCompleteListener
+            streamingListener )
     {
-        super( versionChecker, logProvider );
         this.protocol = protocol;
         this.listener = streamingListener;
     }
 
     @Override
-    protected void doChannelRead0( ChannelHandlerContext ctx, TxStreamFinishedResponse msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, TxStreamFinishedResponse msg ) throws Exception
     {
         listener.onTxStreamingComplete( msg.lastTransactionIdSent(), msg.isSuccess() );
         protocol.expect( State.MESSAGE_TYPE );

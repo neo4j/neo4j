@@ -44,7 +44,6 @@ import org.neo4j.coreedge.core.consensus.vote.VoteState;
 import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -54,7 +53,6 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static org.neo4j.coreedge.core.consensus.roles.Role.LEADER;
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 /**
  * Implements the Raft Consensus Algorithm.
@@ -126,7 +124,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
                 timeout -> {
                     try
                     {
-                        handle( new RaftMessages.Timeout.Election( CURRENT_VERSION, myself ) );
+                        handle( new RaftMessages.Timeout.Election( myself ) );
                     }
                     catch ( IOException e )
                     {
@@ -138,7 +136,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
                 timeout -> {
                     try
                     {
-                        handle( new RaftMessages.Timeout.Heartbeat( CURRENT_VERSION, myself ) );
+                        handle( new RaftMessages.Timeout.Heartbeat( myself ) );
                     }
                     catch ( IOException e )
                     {

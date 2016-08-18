@@ -20,29 +20,23 @@
 package org.neo4j.coreedge.catchup.storecopy;
 
 import io.netty.channel.ChannelHandlerContext;
-
-import java.util.function.Predicate;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
-import org.neo4j.coreedge.messaging.Message;
-import org.neo4j.logging.LogProvider;
 
-class GetStoreIdResponseHandler extends VersionCheckerChannelInboundHandler<GetStoreIdResponse>
+class GetStoreIdResponseHandler extends SimpleChannelInboundHandler<GetStoreIdResponse>
 {
     private final StoreIdReceiver storeIdReceiver;
     private final CatchupClientProtocol protocol;
 
-    GetStoreIdResponseHandler( Predicate<Message> versionChecker, CatchupClientProtocol protocol,
-            StoreIdReceiver storeIdReceiver, LogProvider logProvider )
+    GetStoreIdResponseHandler( CatchupClientProtocol protocol, StoreIdReceiver storeIdReceiver )
     {
-        super( versionChecker, logProvider );
         this.protocol = protocol;
         this.storeIdReceiver = storeIdReceiver;
     }
 
     @Override
-    protected void doChannelRead0( ChannelHandlerContext ctx, final GetStoreIdResponse msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, final GetStoreIdResponse msg ) throws Exception
     {
         if ( protocol.isExpecting( CatchupClientProtocol.State.STORE_ID ) )
         {

@@ -20,16 +20,14 @@
 package org.neo4j.coreedge.catchup.tx;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
-import org.neo4j.coreedge.VersionCheckerChannelInboundHandler;
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -39,9 +37,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
-
-public class TxPullRequestHandler extends VersionCheckerChannelInboundHandler<TxPullRequest>
+public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequest>
 {
     private final CatchupServerProtocol protocol;
     private final StoreId storeId;
@@ -50,13 +46,12 @@ public class TxPullRequestHandler extends VersionCheckerChannelInboundHandler<Tx
     private final TxPullRequestsMonitor monitor;
     private final Log log;
 
-    public TxPullRequestHandler( Predicate<Message> versionChecker, CatchupServerProtocol protocol,
+    public TxPullRequestHandler( CatchupServerProtocol protocol,
                                  Supplier<StoreId> storeIdSupplier,
                                  Supplier<TransactionIdStore> transactionIdStoreSupplier,
                                  Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
                                  Monitors monitors, LogProvider logProvider )
     {
-        super( versionChecker, logProvider );
         this.protocol = protocol;
         this.storeId = storeIdSupplier.get();
         this.transactionIdStore = transactionIdStoreSupplier.get();
@@ -66,7 +61,7 @@ public class TxPullRequestHandler extends VersionCheckerChannelInboundHandler<Tx
     }
 
     @Override
-    protected void doChannelRead0( ChannelHandlerContext ctx, final TxPullRequest msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, final TxPullRequest msg ) throws Exception
     {
         long startTxId = Math.max( msg.txId(), TransactionIdStore.BASE_TX_ID );
         long endTxId = startTxId;
@@ -90,7 +85,7 @@ public class TxPullRequestHandler extends VersionCheckerChannelInboundHandler<Tx
                     ctx.write( ResponseMessageType.TX );
                     CommittedTransactionRepresentation tx = cursor.get();
                     endTxId = tx.getCommitEntry().getTxId();
-                    ctx.write( new TxPullResponse( CURRENT_VERSION, storeId, tx ) );
+                    ctx.write( new TxPullResponse( storeId, tx ) );
                 }
                 ctx.flush();
             }
@@ -101,7 +96,7 @@ public class TxPullRequestHandler extends VersionCheckerChannelInboundHandler<Tx
             }
         }
         ctx.write( ResponseMessageType.TX_STREAM_FINISHED );
-        ctx.write( new TxStreamFinishedResponse( CURRENT_VERSION, endTxId, success ) );
+        ctx.write( new TxStreamFinishedResponse( endTxId, success ) );
         ctx.flush();
 
         monitor.increment();
@@ -114,5 +109,4 @@ public class TxPullRequestHandler extends VersionCheckerChannelInboundHandler<Tx
         cause.printStackTrace();
         ctx.close();
     }
-
 }

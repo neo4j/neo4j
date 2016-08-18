@@ -26,7 +26,6 @@ import org.neo4j.coreedge.identity.StoreId;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class TxPullRequestEncodeDecodeTest
 {
@@ -36,7 +35,7 @@ public class TxPullRequestEncodeDecodeTest
         // given
         EmbeddedChannel channel = new EmbeddedChannel( new TxPullRequestEncoder(), new TxPullRequestDecoder() );
         final long arbitraryId = 23;
-        TxPullRequest sent = new TxPullRequest( CURRENT_VERSION, arbitraryId, new StoreId( 1, 2, 3, 4 ) );
+        TxPullRequest sent = new TxPullRequest( arbitraryId, new StoreId( 1, 2, 3, 4 ) );
 
         // when
         channel.writeOutbound( sent );
@@ -47,4 +46,5 @@ public class TxPullRequestEncodeDecodeTest
         assertNotSame( sent, received );
         assertEquals( sent, received );
     }
+
 }

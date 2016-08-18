@@ -24,12 +24,12 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.coreedge.messaging.Message;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.roles.Role;
-import org.neo4j.coreedge.core.consensus.roles.follower.FollowerStates;
 import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
+import org.neo4j.coreedge.core.consensus.roles.follower.FollowerStates;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.Message;
 
 /**
  * Holds the outcome of a RAFT role's handling of a message. The role handling logic is stateless
@@ -42,7 +42,6 @@ import org.neo4j.coreedge.messaging.Message;
 public class Outcome implements Message, ConsensusOutcome
 {
     /* Common */
-    private byte version;
     private Role nextRole;
 
     private long term;
@@ -75,13 +74,12 @@ public class Outcome implements Message, ConsensusOutcome
         defaults( currentRole, ctx );
     }
 
-    public Outcome( byte version, Role nextRole, long term, MemberId leader, long leaderCommit, MemberId votedFor,
+    public Outcome( Role nextRole, long term, MemberId leader, long leaderCommit, MemberId votedFor,
                     Set<MemberId> votesForMe, long lastLogIndexBeforeWeBecameLeader,
                     FollowerStates<MemberId> followerStates, boolean renewElectionTimeout,
                     Collection<RaftLogCommand> logCommands, Collection<RaftMessages.Directed> outgoingMessages,
                     Collection<ShipCommand> shipCommands, long commitIndex )
     {
-        this.version = version;
         this.nextRole = nextRole;
         this.term = term;
         this.leader = leader;
@@ -100,7 +98,6 @@ public class Outcome implements Message, ConsensusOutcome
 
     private void defaults( Role currentRole, ReadableRaftState ctx )
     {
-        version = Message.CURRENT_VERSION;
         nextRole = currentRole;
 
         term = ctx.term();
@@ -304,11 +301,5 @@ public class Outcome implements Message, ConsensusOutcome
     public void setCommitIndex( long commitIndex )
     {
         this.commitIndex = commitIndex;
-    }
-
-    @Override
-    public byte version()
-    {
-        return version;
     }
 }

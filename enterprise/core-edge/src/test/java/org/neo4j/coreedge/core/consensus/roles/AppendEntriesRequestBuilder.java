@@ -25,13 +25,9 @@ import java.util.List;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.Message;
-
-import static org.neo4j.coreedge.messaging.Message.CURRENT_VERSION;
 
 public class AppendEntriesRequestBuilder
 {
-    private byte version = CURRENT_VERSION;
     private List<RaftLogEntry> logEntries = new LinkedList<>();
     private long leaderCommit = -1;
     private long prevLogTerm = -1;
@@ -41,14 +37,8 @@ public class AppendEntriesRequestBuilder
 
     public RaftMessages.AppendEntries.Request build()
     {
-        return new RaftMessages.AppendEntries.Request( version, from, leaderTerm, prevLogIndex, prevLogTerm,
+        return new RaftMessages.AppendEntries.Request( from, leaderTerm, prevLogIndex, prevLogTerm,
                 logEntries.toArray( new RaftLogEntry[logEntries.size()] ), leaderCommit );
-    }
-
-    public AppendEntriesRequestBuilder version( byte version )
-    {
-        this.version = version;
-        return this;
     }
 
     public AppendEntriesRequestBuilder from( MemberId from )

@@ -19,18 +19,13 @@
  */
 package org.neo4j.coreedge.catchup.tx;
 
-import java.util.Objects;
-
-import org.neo4j.coreedge.messaging.BaseMessage;
-
-class TxStreamFinishedResponse extends BaseMessage
+class TxStreamFinishedResponse
 {
     private final long lastTransactionIdSent;
     private final boolean success;
 
-    TxStreamFinishedResponse( byte version, long lastTransactionIdSent, boolean success )
+    TxStreamFinishedResponse( long lastTransactionIdSent, boolean success )
     {
-        super( version );
         this.lastTransactionIdSent = lastTransactionIdSent;
         this.success = success;
     }
@@ -56,17 +51,15 @@ class TxStreamFinishedResponse extends BaseMessage
         {
             return false;
         }
-        if ( !super.equals( o ) )
-        {
-            return false;
-        }
+
         TxStreamFinishedResponse that = (TxStreamFinishedResponse) o;
+
         return lastTransactionIdSent == that.lastTransactionIdSent && success == that.success;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( super.hashCode(), lastTransactionIdSent, success );
+        return (int) (lastTransactionIdSent ^ (lastTransactionIdSent >>> 32));
     }
 }
