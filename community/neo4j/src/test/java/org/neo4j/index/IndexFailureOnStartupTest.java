@@ -68,6 +68,7 @@ public class IndexFailureOnStartupTest
         db.restartDatabase( new DeleteIndexFile( "_0.cfs" ) );
         // then - the database should still be operational
         createNamed( PERSON, "Lars" );
+        awaitIndexesOnline( 5, SECONDS );
         indexStateShouldBe( equalTo( ONLINE ) );
         assertFindsNamed( PERSON, "Lars" );
     }
