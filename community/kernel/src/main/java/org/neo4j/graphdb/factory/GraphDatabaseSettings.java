@@ -579,4 +579,9 @@ public abstract class GraphDatabaseSettings
     {
         return new BoltConnector( key );
     }
+
+    @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
+    @Internal
+    public static final Setting<Boolean> archive_failed_index = setting(
+            "unsupported.dbms.index.archive_failed", BOOLEAN, "false" );
 }

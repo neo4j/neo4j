@@ -106,7 +106,7 @@ public class DatabaseIndexIntegrationTest
     private static WritableTestDatabaseIndex createTestLuceneIndex( DirectoryFactory dirFactory, File folder ) throws IOException
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fs, folder, "test" );
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fs, folder, "test", false );
         WritableTestDatabaseIndex index = new WritableTestDatabaseIndex( indexStorage );
         index.create();
         index.open();

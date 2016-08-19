@@ -39,6 +39,7 @@ public class LuceneIndexStorageBuilder
     private File indexRootFolder;
     private String indexIdentifier;
     private PartitionedIndexStorage indexStorage;
+    private boolean archiveFailed;
 
     private LuceneIndexStorageBuilder()
     {
@@ -68,7 +69,7 @@ public class LuceneIndexStorageBuilder
             Objects.requireNonNull( indexRootFolder );
             Objects.requireNonNull( indexIdentifier );
             indexStorage =
-                    new PartitionedIndexStorage( directoryFactory, fileSystem, indexRootFolder, indexIdentifier );
+                    new PartitionedIndexStorage( directoryFactory, fileSystem, indexRootFolder, indexIdentifier, archiveFailed );
         }
         return indexStorage;
     }
@@ -130,6 +131,12 @@ public class LuceneIndexStorageBuilder
     public LuceneIndexStorageBuilder withIndexStorage( PartitionedIndexStorage indexStorage )
     {
         this.indexStorage = indexStorage;
+        return this;
+    }
+
+    public LuceneIndexStorageBuilder archivingFailed( boolean archiveFailed )
+    {
+        this.archiveFailed = archiveFailed;
         return this;
     }
 }
