@@ -129,11 +129,10 @@ public class LogTestUtils
      * Opens a {@link LogEntryCursor} over all log files found in the storeDirectory
      *
      * @param fs {@link FileSystemAbstraction} to find {@code storeDirectory} in.
-     * @param storeDirectory the store directory where the log files are.
+     * @param logFiles the physical log files to read from
      */
-    public static LogEntryCursor openLogs( final FileSystemAbstraction fs, File storeDirectory )
+    public static LogEntryCursor openLogs( final FileSystemAbstraction fs, PhysicalLogFiles logFiles )
     {
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, fs );
         File firstFile = logFiles.getLogFileForVersion( logFiles.getLowestLogVersion() );
         return openLogEntryCursor( fs, firstFile, new ReaderLogVersionBridge( fs, logFiles ) );
     }
