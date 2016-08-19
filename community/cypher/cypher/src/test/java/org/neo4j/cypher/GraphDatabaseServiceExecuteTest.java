@@ -22,6 +22,7 @@ package org.neo4j.cypher;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +38,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class GraphDatabaseServiceExecuteTest
 {
@@ -137,4 +139,107 @@ public class GraphDatabaseServiceExecuteTest
         Map<String,Object> points = (Map<String, Object>)execute.next().get( "m" );
         assertThat( points.get("p"), Matchers.instanceOf(Point.class));
     }
+
+    @Test
+    public void shouldBeAbleToUseResultingPointFromOneQueryAsParameterToNext() throws Exception
+    {
+        // given a point create by one cypher query
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        Result execute = graphDb.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
+        Point point = (Point) execute.next().get( "p" );
+
+        // when passing as params to a distance function
+        Result result = graphDb.execute(
+                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),{previous}) AS dist",
+                map( "previous", point ) );
+
+        // then
+        Double dist = (Double) result.next().get( "dist" );
+        assertThat( dist, equalTo( 0.0 ) );
+    }
+
+    @Test
+    public void shouldBeAbleToUseExternalPointAsParameterToQuery() throws Exception
+    {
+        // given a point created from public interface
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        Point point = makeFakePoint( 144.317718, -37.031738, makeWGS84() );
+
+        // when passing as params to a distance function
+        Result result = graphDb.execute(
+                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),{previous}) AS dist",
+                map( "previous", point ) );
+
+        // then
+        Double dist = (Double) result.next().get( "dist" );
+        assertThat( dist, equalTo( 0.0 ) );
+    }
+
+    @Test
+    public void shouldBeAbleToUseExternalPointArrayAsParameterToQuery() throws Exception
+    {
+        // given a point created from public interface
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        Point point = makeFakePoint( 144.317718, -37.031738, makeWGS84() );
+        Point[] points = new Point[]{point, point};
+
+        // when passing as params to a distance function
+        Result result = graphDb.execute(
+                "RETURN distance({points}[0],{points}[1]) AS dist",
+                map( "points", points ) );
+
+        // then
+        Double dist = (Double) result.next().get( "dist" );
+        assertThat( dist, equalTo( 0.0 ) );
+    }
+
+    private Point makeFakePoint(double x, double y, final CRS crs)
+    {
+        final Coordinate coord = new Coordinate( x, y );
+        return new Point() {
+
+            @Override
+            public String getGeometryType()
+            {
+                return "Point";
+            }
+
+            @Override
+            public List<Coordinate> getCoordinates()
+            {
+                return Arrays.asList( new Coordinate[]{coord} );
+            }
+
+            @Override
+            public CRS getCRS()
+            {
+                return crs;
+            }
+        };
+    }
+
+    private CRS makeWGS84()
+    {
+        // "WGS-84", 4326, "http://spatialreference.org/ref/epsg/4326/"
+        return new CRS() {
+            @Override
+            public int getCode()
+            {
+                return 4326;
+            }
+
+            @Override
+            public String getType()
+            {
+                return "WGS-84";
+            }
+
+            @Override
+            public String getHref()
+            {
+                return "http://spatialreference.org/ref/epsg/4326/";
+            }
+        };
+    }
+
 }

@@ -56,14 +56,28 @@ object helpersv3_0 {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, session: QuerySession): Unit = {
     monitor.endFailure(session, t)
   }
+}
 
+object typeConversionsFor3_0 {
   def asPublicType(value: Any): Any = value match {
-    case p: Point => wrapPoint(p)
-
+    case p: Point => asPublicPoint(p)
     case other => other
   }
 
-  private def wrapPoint(point: Point) = new graphdb.spatial.Point {
+  def asPrivateType(obj: Any): Any = obj match {
+    case map: Map[String, Any] => asPrivateMap(map)
+    case seq: Seq[Any] => seq.foldLeft(Seq.empty[Any]) { (s, v: Any) => s :+ asPrivateType(v) }
+    case arr: Array[Any] => arr.foldLeft(Array.empty[Any]) { (a, v: Any) => a :+ asPrivateType(v) }
+    case point: graphdb.spatial.Point => asPrivatePoint(point)
+    case value => value
+  }
+
+  def asPrivateMap(incoming: Map[String, Any]): Map[String, Any] =
+    incoming.foldLeft(Map.empty[String, Any]) { (params, v: (String, Any)) =>
+      params + (v._1 -> asPrivateType(v._2))
+    }
+
+  private def asPublicPoint(point: Point) = new graphdb.spatial.Point {
     override def getGeometryType = "Point"
 
     override def getCRS: graphdb.spatial.CRS = new graphdb.spatial.CRS {
@@ -77,6 +91,14 @@ object helpersv3_0 {
 
     override def getCoordinates: java.util.List[graphdb.spatial.Coordinate] = Collections
       .singletonList(new graphdb.spatial.Coordinate(point.coordinates:_*))
+  }
+
+  private def asPrivatePoint(point: graphdb.spatial.Point) = new Point {
+    override def x: Double = point.getCoordinate.getCoordinate.get(0)
+
+    override def y: Double = point.getCoordinate.getCoordinate.get(1)
+
+    override def crs: CRS = CRS.fromURL(point.getCRS.getHref)
   }
 }
 
@@ -221,7 +243,8 @@ trait CompatibilityFor3_0 {
         case CypherExecutionMode.normal => NormalModev3_0
       }
       exceptionHandlerFor3_0.runSafely {
-        ExecutionResultWrapperFor3_0(inner.run(queryContext(transactionalContext), innerExecutionMode, params), inner.plannerUsed, inner.runtimeUsed)
+        val innerParams = typeConversionsFor3_0.asPrivateMap(params)
+        ExecutionResultWrapperFor3_0(inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams), inner.plannerUsed, inner.runtimeUsed)
       }
     }
 
@@ -537,7 +560,7 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseQueryService,
     val monitors = new WrappedMonitors3_0(kernelMonitors)
     CypherCompilerFactory.costBasedCompiler(graph, config, clock,
                                             monitors, logger, rewriterSequencer, plannerName, runtimeName,
-                                            updateStrategy, helpersv3_0.asPublicType)
+                                            updateStrategy, typeConversionsFor3_0.asPublicType)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize
@@ -550,7 +573,7 @@ case class CompatibilityFor3_0Rule(graph: GraphDatabaseQueryService,
                                    kernelAPI: KernelAPI) extends CompatibilityFor3_0 {
   protected val compiler = {
     val monitors = new WrappedMonitors3_0(kernelMonitors)
-    CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer, helpersv3_0.asPublicType)
+    CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer, typeConversionsFor3_0.asPublicType)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize
