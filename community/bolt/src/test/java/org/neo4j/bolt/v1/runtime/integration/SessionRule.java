@@ -33,10 +33,9 @@ import org.junit.runners.model.Statement;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.LifecycleManagedBoltFactory;
-import org.neo4j.function.ThrowingAction;
+import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -51,8 +50,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageData;
-
-import static org.junit.Assert.fail;
 
 class SessionRule implements TestRule
 {
@@ -69,6 +66,7 @@ class SessionRule implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
+                Neo4jWithSocket.cleanupTemporaryTestFiles();
                 Map<Setting<?>,String> config = new HashMap<>();
                 config.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
                 gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( config );

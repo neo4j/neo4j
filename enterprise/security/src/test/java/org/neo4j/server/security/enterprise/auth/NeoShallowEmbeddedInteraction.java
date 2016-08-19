@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,12 +49,6 @@ class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAut
 
     NeoShallowEmbeddedInteraction() throws Throwable
     {
-        Path IMPERMANENT_DB_ROLES_PATH = Paths.get( "target/test-data/impermanent-db/data/dbms/roles" );
-        if ( Files.exists( IMPERMANENT_DB_ROLES_PATH ) )
-        {
-            Files.delete( IMPERMANENT_DB_ROLES_PATH );
-        }
-
         Map<Setting<?>, String> settings = new HashMap<>();
         settings.put( boltConnector( "0" ).enabled, "true" );
         settings.put( boltConnector( "0" ).encryption_level, OPTIONAL.name() );

@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 
@@ -85,6 +86,7 @@ abstract class AuthTestBase<S>
     @Before
     public void setUp() throws Throwable
     {
+        Neo4jWithSocket.cleanupTemporaryTestFiles();
         neo = setUpNeoServer();
         userManager = neo.getManager();
 
@@ -115,6 +117,7 @@ abstract class AuthTestBase<S>
     public void tearDown() throws Throwable
     {
         neo.tearDown();
+        Neo4jWithSocket.cleanupTemporaryTestFiles();
     }
 
     protected String[] with( String[] strs, String... moreStr )

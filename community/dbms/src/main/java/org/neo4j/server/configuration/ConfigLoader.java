@@ -89,9 +89,5 @@ public class ConfigLoader
     private static void overrideEmbeddedDefaults( Map<String, String> config )
     {
         config.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), "true" );
-
-        String dataDirectory = config.getOrDefault( data_directory.name(), data_directory.getDefaultValue() );
-        config.putIfAbsent( GraphDatabaseSettings.auth_store.name(),
-                new File( dataDirectory, "dbms/auth" ).toString() );
     }
 }

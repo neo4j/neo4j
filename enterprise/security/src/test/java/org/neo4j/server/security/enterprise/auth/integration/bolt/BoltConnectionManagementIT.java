@@ -77,6 +77,7 @@ public class BoltConnectionManagementIT
     @Before
     public void setup() throws Exception
     {
+        Neo4jWithSocket.cleanupTemporaryTestFiles();
         this.admin = cf.newInstance();
         this.user = cf.newInstance();
 
@@ -95,6 +96,7 @@ public class BoltConnectionManagementIT
         {
             user.disconnect();
         }
+        Neo4jWithSocket.cleanupTemporaryTestFiles();
     }
 
     @Rule

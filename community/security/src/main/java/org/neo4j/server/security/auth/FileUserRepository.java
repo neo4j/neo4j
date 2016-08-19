@@ -51,6 +51,8 @@ public class FileUserRepository extends AbstractUserRepository
     @Override
     public void start() throws Throwable
     {
+        users.clear();
+        usersByName.clear();
         if ( Files.exists( authFile ) )
         {
             List<User> loadedUsers;

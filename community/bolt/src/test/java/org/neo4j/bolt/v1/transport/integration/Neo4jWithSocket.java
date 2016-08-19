@@ -26,6 +26,7 @@ import org.junit.runners.model.Statement;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -124,5 +125,17 @@ public class Neo4jWithSocket implements TestRule
     public GraphDatabaseService graphDatabaseService()
     {
         return gdb;
+    }
+
+    public static void cleanupTemporaryTestFiles() throws IOException
+    {
+        for ( String name : new String[]{"roles", "auth"} )
+        {
+            Path file = Paths.get( "target/test-data/impermanent-db/data/dbms/" + name );
+            if ( Files.exists( file ) )
+            {
+                Files.delete( file );
+            }
+        }
     }
 }

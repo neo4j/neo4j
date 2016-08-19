@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -370,8 +371,9 @@ public class AuthenticationIT
     }
 
     @Before
-    public void setup()
+    public void setup() throws IOException
     {
+        Neo4jWithSocket.cleanupTemporaryTestFiles();
         this.client = cf.newInstance();
     }
 
@@ -382,6 +384,7 @@ public class AuthenticationIT
         {
             client.disconnect();
         }
+        Neo4jWithSocket.cleanupTemporaryTestFiles();
     }
 
     private void reconnect() throws Exception

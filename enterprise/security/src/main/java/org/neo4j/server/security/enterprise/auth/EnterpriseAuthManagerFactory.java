@@ -22,11 +22,11 @@ package org.neo4j.server.security.enterprise.auth;
 import org.apache.shiro.realm.Realm;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
@@ -39,6 +39,7 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
 
 import static java.time.Clock.systemUTC;
+import static org.neo4j.server.security.auth.BasicAuthManagerFactory.*;
 
 /**
  * Wraps EnterpriseAuthManager and exposes it as a Service
@@ -46,7 +47,6 @@ import static java.time.Clock.systemUTC;
 @Service.Implementation( AuthManager.Factory.class )
 public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 {
-    private static final String USER_STORE_FILENAME = "auth";
     private static final String ROLE_STORE_FILENAME = "roles";
 
     public EnterpriseAuthManagerFactory()
@@ -83,22 +83,12 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         return new MultiRealmAuthManager( internalRealm, realms );
     }
 
-    private InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider )
+    private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider )
     {
-        // Resolve auth store file names
+        // Resolve auth store and roles file names
         File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
-
-        // Because it contains sensitive information there is a legacy setting to configure
-        // the location of the user store file that we still respect
-        File userStoreFile = config.get( GraphDatabaseSettings.auth_store );
-        if ( userStoreFile == null )
-        {
-            userStoreFile = new File( authStoreDir, USER_STORE_FILENAME );
-        }
         File roleStoreFile = new File( authStoreDir, ROLE_STORE_FILENAME );
-
-        final UserRepository userRepository =
-                new FileUserRepository( userStoreFile.toPath(), logProvider );
+        final UserRepository userRepository = getUserRepository( config, logProvider );
 
         final RoleRepository roleRepository =
                 new FileRoleRepository( roleStoreFile.toPath(), logProvider );
