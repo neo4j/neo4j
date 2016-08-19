@@ -300,12 +300,16 @@ public class StoreCopyClientTest
                     CheckPointer checkPointer =
                             original.getDependencyResolver().resolveDependency( CheckPointer.class );
 
-                    RequestContext requestContext = new StoreCopyServer( neoStoreDataSource,
-                            checkPointer, fs, originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ) )
+                    PageCache pageCache =
+                            original.getDependencyResolver().resolveDependency( PageCache.class );
+
+                    RequestContext requestContext = new StoreCopyServer( neoStoreDataSource, checkPointer, fs,
+                            originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ), pageCache )
                             .flushStoresAndStreamStoreFiles( "test", writer, false );
 
-                    final StoreId storeId = original.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                    .testAccessNeoStores().getMetaDataStore().getStoreId();
+                    final StoreId storeId =
+                            original.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                                    .testAccessNeoStores().getMetaDataStore().getStoreId();
 
                     ResponsePacker responsePacker = new ResponsePacker( logicalTransactionStore,
                             transactionIdStore, () -> storeId );

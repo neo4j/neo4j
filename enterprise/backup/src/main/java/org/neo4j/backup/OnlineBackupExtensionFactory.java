@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -62,6 +63,8 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
         Supplier<LogFileInformation> logFileInformationSupplier();
 
         FileSystemAbstraction fileSystemAbstraction();
+
+        PageCache pageCache();
     }
 
     public OnlineBackupExtensionFactory()
@@ -85,6 +88,7 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
                 dependencies.transactionIdStoreSupplier(),
                 dependencies.logicalTransactionStoreSupplier(),
                 dependencies.logFileInformationSupplier(),
-                dependencies.fileSystemAbstraction());
+                dependencies.fileSystemAbstraction(),
+                dependencies.pageCache() );
     }
 }
