@@ -19,14 +19,8 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -43,16 +37,6 @@ public class BoltProceduresIT extends AuthProceduresTestLogic<BoltInteraction.Bo
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( server );
-
-    @BeforeClass
-    public static void beforeClass() throws IOException
-    {
-        Path IMPERMANENT_DB_ROLES_PATH = Paths.get( "target/test-data/impermanent-db/data/dbms/roles" );
-        if ( Files.exists( IMPERMANENT_DB_ROLES_PATH ) )
-        {
-            Files.delete( IMPERMANENT_DB_ROLES_PATH );
-        }
-    }
 
     public BoltProceduresIT()
     {
