@@ -1044,7 +1044,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         final File file = file( "a" );
         try ( PagedFile pf = cache.map( file, filePageSize ) )
         {
-            final Optional<PagedFile> optional = cache.tryMappedPagedFile( file );
+            final Optional<PagedFile> optional = cache.getExistingMapping( file );
             assertTrue( optional.isPresent() );
             final PagedFile actual = optional.get();
             assertThat( actual, sameInstance( pf ) );
@@ -1056,7 +1056,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void tryMappedPagedFileShouldReportNonMappedFileNotPresent() throws Exception
     {
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-        final Optional<PagedFile> dont_exist = cache.tryMappedPagedFile( new File( "dont_exist" ) );
+        final Optional<PagedFile> dont_exist = cache.getExistingMapping( new File( "dont_exist" ) );
         assertFalse( dont_exist.isPresent() );
     }
 

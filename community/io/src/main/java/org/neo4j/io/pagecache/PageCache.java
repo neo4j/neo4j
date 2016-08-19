@@ -54,8 +54,7 @@ public interface PageCache extends AutoCloseable
      * All other options are either silently ignored, or will cause an exception to be thrown.
      * @throws java.nio.file.NoSuchFileException if the given file does not exist, and the
      * {@link StandardOpenOption#CREATE} option was not specified.
-     * @throws IOException if the file could otherwise not be mapped. Causes include the file being locked, or exclusive
-     * mapping conflicts.
+     * @throws IOException if the file could otherwise not be mapped. Causes include the file being locked.
      */
     PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException;
 
@@ -75,7 +74,7 @@ public interface PageCache extends AutoCloseable
      * empty {@link Optional} if no mapping exist.
      * @throws IOException if page cache has been closed or page eviction problems occur.
      */
-    Optional<PagedFile> tryMappedPagedFile( File file ) throws IOException;
+    Optional<PagedFile> getExistingMapping( File file ) throws IOException;
 
     /** Flush all dirty pages */
     void flushAndForce() throws IOException;

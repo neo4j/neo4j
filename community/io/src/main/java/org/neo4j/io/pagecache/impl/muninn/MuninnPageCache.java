@@ -364,7 +364,7 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized Optional<PagedFile> tryMappedPagedFile( File file ) throws IOException
+    public synchronized Optional<PagedFile> getExistingMapping( File file ) throws IOException
     {
         assertHealthy();
         ensureThreadsInitialised();
