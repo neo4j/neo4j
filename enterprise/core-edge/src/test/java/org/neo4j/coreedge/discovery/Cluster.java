@@ -290,10 +290,8 @@ public class Cluster
         return leaderTx( op );
     }
 
-    private CoreClusterMember addCoreMemberWithId( int memberId, int intendedClusterSize, Map<String, String>
-            extraParams,
-                                                   Map<String, IntFunction<String>> instanceExtraParams, String
-                                                           recordFormat )
+    private CoreClusterMember addCoreMemberWithId( int memberId, int intendedClusterSize,
+            Map<String,String> extraParams, Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
         Config config = firstOrNull( coreMembers.values() ).database().getDependencyResolver().resolveDependency(
                 Config.class );

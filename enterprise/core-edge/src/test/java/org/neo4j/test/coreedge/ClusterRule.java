@@ -45,7 +45,7 @@ public class ClusterRule extends ExternalResource
 
     private int noCoreMembers = 3;
     private int noEdgeMembers = 3;
-    private DiscoveryServiceFactory disoveryServiceFactory = new SharedDiscoveryService();
+    private DiscoveryServiceFactory discoveryServiceFactory = new SharedDiscoveryService();
     private Map<String,String> coreParams = stringMap();
     private Map<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
     private Map<String,String> edgeParams = stringMap();
@@ -111,7 +111,7 @@ public class ClusterRule extends ExternalResource
     {
         if ( cluster == null )
         {
-            cluster = new Cluster( clusterDirectory, noCoreMembers, noEdgeMembers, disoveryServiceFactory, coreParams,
+            cluster = new Cluster( clusterDirectory, noCoreMembers, noEdgeMembers, discoveryServiceFactory, coreParams,
                     instanceCoreParams, edgeParams, instanceEdgeParams, recordFormat );
 
         }
@@ -143,7 +143,7 @@ public class ClusterRule extends ExternalResource
 
     public ClusterRule withDiscoveryServiceFactory( DiscoveryServiceFactory factory )
     {
-        this.disoveryServiceFactory = factory;
+        this.discoveryServiceFactory = factory;
         return this;
     }
 

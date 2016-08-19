@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -37,7 +38,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     private final SharedDiscoveryService sharedDiscoveryService;
     private final MemberId member;
     private final CoreAddresses coreAddresses;
-    private final Set<Listener> listeners = new LinkedHashSet<>();
+    private final Set<Listener> listeners = Collections.synchronizedSet( new LinkedHashSet<>() );
     private final Log log;
 
     SharedDiscoveryCoreClient( SharedDiscoveryService sharedDiscoveryService, MemberId member, LogProvider logProvider, Config config )
@@ -49,9 +50,10 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public synchronized void addCoreTopologyListener( Listener listener )
+    public void addCoreTopologyListener( Listener listener )
     {
         listeners.add( listener );
+        listener.onCoreTopologyChange();
     }
 
     @Override
@@ -84,7 +86,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
         return topology;
     }
 
-    synchronized void onTopologyChange()
+    void onTopologyChange()
     {
         log.info( "Notified of topology change" );
         listeners.forEach( Listener::onCoreTopologyChange );

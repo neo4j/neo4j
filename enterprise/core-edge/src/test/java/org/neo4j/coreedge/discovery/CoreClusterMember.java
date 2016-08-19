@@ -53,8 +53,6 @@ public class CoreClusterMember
     private final int serverId;
     private CoreGraphDatabase database;
 
-    static final String CLUSTER_NAME = "core-neo4j";
-
     public CoreClusterMember( int serverId, int clusterSize,
                               List<AdvertisedSocketAddress> addresses,
                               DiscoveryServiceFactory discoveryServiceFactory,
