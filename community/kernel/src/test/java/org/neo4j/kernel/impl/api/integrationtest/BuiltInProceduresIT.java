@@ -115,6 +115,9 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "Schedule resampling of all outdated indexes."} ),
                 equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)", "List all property keys in the database."} ),
                 equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database."} ),
+                equalTo( new Object[]{"db.schema", "db.schema() :: (nodes :: LIST? OF NODE?, relationships :: LIST? " +
+                        "OF " +
+                        "RELATIONSHIP?)", "Show the schema of the data."} ),
                 equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: " +
                         "STRING?)", "List all relationship types in the database."} ),
                 equalTo( new Object[]{"dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: " +

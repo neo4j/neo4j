@@ -31,6 +31,9 @@ import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
@@ -42,10 +45,13 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.BasicContext;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.TypeMappers;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.Token;
 
 import static java.util.Collections.emptyIterator;
@@ -62,6 +68,10 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
+
 public class BuiltInProceduresTest
 {
     private final List<IndexDescriptor> indexes = new LinkedList<>();
@@ -75,6 +85,7 @@ public class BuiltInProceduresTest
     private final Statement statement = mock( Statement.class );
     private final KernelTransaction tx = mock( KernelTransaction.class );
     private final DependencyResolver resolver = mock( DependencyResolver.class );
+    private final GraphDatabaseAPI graphDatabaseAPI = mock(GraphDatabaseAPI.class);
 
     private final Procedures procs = new Procedures();
 
@@ -181,6 +192,8 @@ public class BuiltInProceduresTest
             record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)", "List all relationship types in the database." ),
             record( "db.resampleIndex", "db.resampleIndex(index :: STRING?) :: VOID", "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"))." ),
             record( "db.resampleOutdatedIndexes", "db.resampleOutdatedIndexes() :: VOID", "Schedule resampling of all outdated indexes." ),
+            record( "db.schema", "db.schema() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
+             "Show the schema of the data."),
             record( "dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)", "List DBMS components and their versions." ),
             record( "dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: STRING?, description :: STRING?)", "List all procedures in the DBMS." ),
             record( "dbms.functions", "dbms.functions() :: (name :: STRING?, signature :: STRING?, description :: STRING?)", "List all user functions in the DBMS." ),
@@ -268,6 +281,12 @@ public class BuiltInProceduresTest
     {
         procs.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ) );
         procs.registerComponent( DependencyResolver.class, ( ctx ) -> ctx.get( DEPENDENCY_RESOLVER ) );
+        procs.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> ctx.get( GRAPHDATABASEAPI ) );
+
+        procs.registerType( Node.class, new TypeMappers.SimpleConverter( NTNode, Node.class ) );
+        procs.registerType( Relationship.class, new TypeMappers.SimpleConverter( NTRelationship, Relationship.class ) );
+        procs.registerType( Path.class, new TypeMappers.SimpleConverter( NTPath, Path.class ) );
+
         new SpecialBuiltInProcedures("1.3.37", Edition.enterprise.toString() ).accept( procs );
         procs.registerProcedure( BuiltInProcedures.class );
 
@@ -312,9 +331,13 @@ public class BuiltInProceduresTest
         BasicContext ctx = new BasicContext();
         ctx.put( KERNEL_TRANSACTION, tx );
         ctx.put( DEPENDENCY_RESOLVER, resolver );
+        ctx.put( GRAPHDATABASEAPI, graphDatabaseAPI);
         return Iterators.asList( procs.callProcedure( ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), args ) );
     }
 
     private static final Key<DependencyResolver> DEPENDENCY_RESOLVER =
             Key.key( "DependencyResolver", DependencyResolver.class );
+
+    private static final Key<GraphDatabaseAPI> GRAPHDATABASEAPI =
+            Key.key( "GraphDatabaseAPI", GraphDatabaseAPI.class );
 }
