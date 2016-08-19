@@ -31,7 +31,7 @@ public class TimeoutGuard implements Guard
     private final Log log;
     private Clock clock;
 
-    public TimeoutGuard( final Log log, Clock clock )
+    public TimeoutGuard( Clock clock, final Log log )
     {
         this.log = log;
         this.clock = clock;

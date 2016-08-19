@@ -152,7 +152,8 @@ public class DataSourceModule
 
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
 
-        Guard guard = buildGuard( deps, config, logging );
+        Clock clock = getClock();
+        Guard guard = createGuard( deps, config, clock, logging );
 
         kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 
@@ -208,7 +209,8 @@ public class DataSourceModule
                 platformModule.monitors,
                 platformModule.tracers,
                 procedures,
-                editionModule.ioLimiter ) );
+                editionModule.ioLimiter,
+                clock ) );
 
         dataSourceManager.register( neoStoreDataSource );
 
@@ -253,17 +255,9 @@ public class DataSourceModule
         this.kernelAPI = neoStoreDataSource::getKernel;
     }
 
-    private Guard buildGuard( Dependencies deps, Config config, LogService logging )
+    protected Clock getClock()
     {
-        Boolean isGuardEnabled = config.get( GraphDatabaseSettings.execution_guard_enabled );
-        Guard guard = isGuardEnabled ? createTimeoutGuard( logging ) : EmptyGuard.EMPTY_GUARD;
-        deps.satisfyDependency( guard );
-        return guard;
-    }
-
-    private TimeoutGuard createTimeoutGuard( LogService logging )
-    {
-        return new TimeoutGuard( logging.getInternalLog( TimeoutGuard.class ), Clock.systemUTC() );
+        return Clock.systemUTC();
     }
 
     protected RelationshipProxy.RelationshipActions createRelationshipActions(
@@ -359,6 +353,19 @@ public class DataSourceModule
         };
     }
 
+    private Guard createGuard( Dependencies deps, Config config, Clock clock, LogService logging )
+    {
+        Boolean isGuardEnabled = config.get( GraphDatabaseSettings.execution_guard_enabled );
+        Guard guard = isGuardEnabled ? createTimeoutGuard( clock, logging ) : EmptyGuard.EMPTY_GUARD;
+        deps.satisfyDependency( guard );
+        return guard;
+    }
+
+    private TimeoutGuard createTimeoutGuard( Clock clock, LogService logging )
+    {
+        return new TimeoutGuard( clock, logging.getInternalLog( TimeoutGuard.class ) );
+    }
+
     private Procedures setupProcedures( PlatformModule platform, CoreAPIAvailabilityGuard coreAPIAvailabilityGuard )
     {
         File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
@@ -407,7 +414,7 @@ public class DataSourceModule
         private final AvailabilityGuard availabilityGuard;
         private final long timeout;
 
-        public StartupWaiter( AvailabilityGuard availabilityGuard, long timeout )
+        StartupWaiter( AvailabilityGuard availabilityGuard, long timeout )
         {
             this.availabilityGuard = availabilityGuard;
             this.timeout = timeout;

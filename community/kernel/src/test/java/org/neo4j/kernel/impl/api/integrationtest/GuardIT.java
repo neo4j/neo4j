@@ -54,7 +54,7 @@ public class GuardIT
 
         DependencyResolver dependencyResolver = database.getDependencyResolver();
         Guard guard = dependencyResolver.resolveDependency( Guard.class );
-        assertThat(guard, instanceOf( TimeoutGuard.class));
+        assertThat( guard, instanceOf( TimeoutGuard.class ) );
     }
 
     @Test
@@ -64,7 +64,7 @@ public class GuardIT
 
         DependencyResolver dependencyResolver = database.getDependencyResolver();
         Guard guard = dependencyResolver.resolveDependency( Guard.class );
-        assertThat(guard, instanceOf( EmptyGuard.class));
+        assertThat( guard, instanceOf( EmptyGuard.class ) );
     }
 
     @Test
@@ -101,11 +101,11 @@ public class GuardIT
 
     private Map<Setting<?>,String> getEnabledGuardConfigMap()
     {
-        return genericMap( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE);
+        return genericMap( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE );
     }
 
     private Map<Setting<?>,String> getDisabledGuardConfigMap()
     {
-        return genericMap( GraphDatabaseSettings.execution_guard_enabled, Settings.FALSE);
+        return genericMap( GraphDatabaseSettings.execution_guard_enabled, Settings.FALSE );
     }
 }

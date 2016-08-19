@@ -132,7 +132,7 @@ public class TimeoutGuardTest extends KernelTransactionTestBase
     private TimeoutGuard buildGuard( AssertableLogProvider logProvider )
     {
         Log log = logProvider.getLog( TimeoutGuard.class );
-        return new TimeoutGuard( log, clock );
+        return new TimeoutGuard( clock, log );
     }
 
     private long getStartTime()
