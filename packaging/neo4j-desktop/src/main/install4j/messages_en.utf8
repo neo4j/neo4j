@@ -3,7 +3,7 @@ SetupWindowTitle=Neo4j Community Edition Setup
 
 PrepareInstaller=Preparing to install Neo4j Community Edition
 
-UninstallAppFullTitle=Neo4j Community Edition Uninstallion
+UninstallAppFullTitle=Neo4j Community Edition Uninstallation
 
 LocateOrDownloadJre2=Setup could not find a Java(TM) Runtime Environment on your system. You can locate or download a suitable JRE. (minimum version: {0}, maximum version: {1})
 LocateJre2=Setup could not find a Java(TM) Runtime Environment on your system. Please locate a suitable JRE. (minimum version: {0}, maximum version: {1})
