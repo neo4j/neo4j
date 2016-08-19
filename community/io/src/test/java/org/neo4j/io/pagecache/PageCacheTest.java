@@ -38,6 +38,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -66,13 +67,13 @@ import org.neo4j.test.RepeatRule;
 
 import static java.lang.Long.toHexString;
 import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -1034,6 +1035,29 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void writeToPreviouslyBoundCursorAfterNextReturnsFalseMustThrow() throws Exception
     {
         verifyOnWriteCursor( this::checkPreviouslyBoundWriteCursorAfterFailedNext );
+    }
+
+    @Test
+    public void tryMappedPagedFileShouldReportMappedFilePresent() throws Exception
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        final File file = file( "a" );
+        try ( PagedFile pf = cache.map( file, filePageSize ) )
+        {
+            final Optional<PagedFile> optional = cache.getExistingMapping( file );
+            assertTrue( optional.isPresent() );
+            final PagedFile actual = optional.get();
+            assertThat( actual, sameInstance( pf ) );
+            actual.close();
+        }
+    }
+
+    @Test
+    public void tryMappedPagedFileShouldReportNonMappedFileNotPresent() throws Exception
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        final Optional<PagedFile> dont_exist = cache.getExistingMapping( new File( "dont_exist" ) );
+        assertFalse( dont_exist.isPresent() );
     }
 
     private void verifyOnReadCursor(
@@ -3663,85 +3687,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             pageCache.map( file, filePageSize, StandardOpenOption.DELETE_ON_CLOSE ).close();
         }
         pageCache.map( file, filePageSize );
-    }
-
-    @Test
-    public void mustAllowMappingFileWithExclusiveOpenOption() throws Exception
-    {
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize, PageCacheOpenOptions.EXCLUSIVE );
-              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ))
-        {
-            assertTrue( cursor.next() );
-        }
-    }
-
-    @Test( expected = IOException.class )
-    public void mustThrowWhenMappingFileAlreadyMappedWithExclusive() throws Exception
-    {
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-        try ( PagedFile ignore = pageCache.map( file( "a" ), filePageSize, PageCacheOpenOptions.EXCLUSIVE ) )
-        {
-            pageCache.map( file( "a" ), filePageSize );
-            fail( "mapping should have thrown" );
-        }
-    }
-
-    @Test( expected = IOException.class )
-    public void mustThrowWhenExclusivelyMappingAlreadyMappedFile() throws Exception
-    {
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-        try ( PagedFile ignore = pageCache.map( file( "a" ), filePageSize ) )
-        {
-            pageCache.map( file( "a" ), filePageSize, PageCacheOpenOptions.EXCLUSIVE );
-            fail( "mapping should have thrown" );
-        }
-    }
-
-    @Test
-    public void mappingExclusivityMustApplyOnCanonicalPath() throws Exception
-    {
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-        File dir = new File( file( "a" ).getParent(), "dir" );
-        fs.mkdirs( dir );
-        File base = new File( dir, "a" );
-        File abs1 = new File( base.getParentFile(), "a" );
-        File abs2 = abs1.getAbsoluteFile();
-        File abs3 = new File( base, "b" ).getParentFile();
-        File abs4 = new File( base.getParent() + File.separator + ".." + File.separator + "dir" + File.separator + "a" );
-        File abs5 = abs4.getAbsoluteFile();
-
-        try ( PagedFile ignore = pageCache.map( base, filePageSize,
-                PageCacheOpenOptions.EXCLUSIVE, StandardOpenOption.CREATE ) )
-        {
-            assertCannotMap( abs1 );
-            assertCannotMap( abs2 );
-            assertCannotMap( abs3 );
-            assertCannotMap( abs4 );
-            assertCannotMap( abs5 );
-        }
-    }
-
-    private void assertCannotMap( File file )
-    {
-        try
-        {
-            pageCache.map( file, filePageSize, PageCacheOpenOptions.ANY_PAGE_SIZE, StandardOpenOption.CREATE ).close();
-            fail( "Should not have been able to map file: " + file );
-        }
-        catch ( IOException e )
-        {
-            try
-            {
-                String message = "Cannot map file because it is already exclusively mapped";
-                assertThat( e.getMessage(), containsString( message ) );
-            }
-            catch ( AssertionError assertionError )
-            {
-                assertionError.addSuppressed( e );
-                throw assertionError;
-            }
-        }
     }
 
     @Test
