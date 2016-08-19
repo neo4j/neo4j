@@ -35,7 +35,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.CoreMatchers.either;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -229,18 +229,24 @@ abstract class AuthTestBase<S>
 
     void testSessionKilled( S subject )
     {
-        String errorMessage = "Invalid username or password";
         if ( IS_BOLT )
         {
             // After the connection has been terminated, attempts to receive
-            // data will result in an IOException with the message below.
-            errorMessage = "Failed to read 2 bytes, missing 2 bytes. Buffer: 00 00";
+            // data will result in an IOException with the message below...
+            String unixErrorMessage = "Failed to read 2 bytes, missing 2 bytes. Buffer: 00 00";
+            // ...but only on Unix. If we're on Windows, we get...
+            String windowsErrorMessage = "Software caused connection abort: recv failed";
+            // TODO: This whole method is probably ripe for a bit of refactoring.
+            assertFail( subject, "MATCH (n:Node) RETURN count(n)", unixErrorMessage, windowsErrorMessage );
         }
         else if ( IS_EMBEDDED )
         {
-            errorMessage = "Read operations are not allowed";
+            assertFail( subject, "MATCH (n:Node) RETURN count(n)", "Read operations are not allowed" );
         }
-        assertFail( subject, "MATCH (n:Node) RETURN count(n)", errorMessage );
+        else
+        {
+            assertFail( subject, "MATCH (n:Node) RETURN count(n)", "Invalid username or password" );
+        }
     }
 
     void assertPasswordChangeWhenPasswordChangeRequired( S subject, String newPassword )
@@ -257,6 +263,13 @@ abstract class AuthTestBase<S>
         String err = assertCallEmpty( subject, call );
         assertThat( err, not( equalTo( "" ) ) );
         assertThat( err, containsString( partOfErrorMsg ) );
+    }
+
+    void assertFail( S subject, String call, String partOfErrorMsg1, String partOfErrorMsg2 )
+    {
+        String err = assertCallEmpty( subject, call );
+        assertThat( err, not( equalTo( "" ) ) );
+        assertThat( err, either( containsString( partOfErrorMsg1 ) ).or( containsString( partOfErrorMsg2 ) ) );
     }
 
     void assertEmpty( S subject, String call )
