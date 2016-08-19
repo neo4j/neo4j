@@ -34,8 +34,7 @@ import org.neo4j.com.ServerUtil;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -43,7 +42,9 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -82,13 +83,14 @@ public class OnlineBackupKernelExtension implements Lifecycle
                                         final Supplier<TransactionIdStore> transactionIdStoreSupplier,
                                         final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
                                         final Supplier<LogFileInformation> logFileInformationSupplier,
-                                        final FileSystemAbstraction fileSystemAbstraction)
+                                        final FileSystemAbstraction fileSystemAbstraction,
+                                        final PageCache pageCache )
     {
         this( config, graphDatabaseAPI, () -> {
             TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
             StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, checkPointerSupplier.get(),
                     fileSystemAbstraction, new File( graphDatabaseAPI.getStoreDir() ),
-                    monitors.newMonitor( StoreCopyServer.Monitor.class ) );
+                    monitors.newMonitor( StoreCopyServer.Monitor.class ), pageCache );
             LogicalTransactionStore logicalTransactionStore = logicalTransactionStoreSupplier.get();
             LogFileInformation logFileInformation = logFileInformationSupplier.get();
             return new BackupImpl( copier, monitors,

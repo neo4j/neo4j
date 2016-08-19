@@ -22,6 +22,8 @@ package org.neo4j.com.storecopy;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.util.Optional;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -29,7 +31,8 @@ import org.neo4j.com.ServerFailureException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -114,15 +117,17 @@ public class StoreCopyServer
     private final FileSystemAbstraction fileSystem;
     private final File storeDirectory;
     private final Monitor monitor;
+    private final PageCache pageCache;
 
     public StoreCopyServer( NeoStoreDataSource dataSource, CheckPointer checkPointer, FileSystemAbstraction fileSystem,
-            File storeDirectory, Monitor monitor )
+            File storeDirectory, Monitor monitor, PageCache pageCache )
     {
         this.dataSource = dataSource;
         this.checkPointer = checkPointer;
         this.fileSystem = fileSystem;
         this.storeDirectory = getMostCanonicalFile( storeDirectory );
         this.monitor = monitor;
+        this.pageCache = pageCache;
     }
 
     public Monitor monitor()
@@ -155,12 +160,24 @@ public class StoreCopyServer
                 while ( files.hasNext() )
                 {
                     File file = files.next().file();
-                    try ( StoreChannel fileChannel = fileSystem.open( file, "r" ) )
+
+                    // Read from paged file if mapping exists. Otherwise read through file system.
+                    final Optional<PagedFile> optionalPagedFile = pageCache.tryMappedPagedFile( file );
+                    try ( ReadableByteChannel fileChannel = optionalPagedFile.isPresent() ?
+                                                            optionalPagedFile.get().openReadableByteChannel() :
+                                                            fileSystem.open( file, "r" ) )
                     {
                         monitor.startStreamingStoreFile( file );
                         writer.write( relativePath( storeDirectory, file ), fileChannel,
                                 temporaryBuffer, file.length() > 0 );
                         monitor.finishStreamingStoreFile( file );
+                    }
+                    finally
+                    {
+                        if ( optionalPagedFile.isPresent() )
+                        {
+                            optionalPagedFile.get().close();
+                        }
                     }
                 }
             }
