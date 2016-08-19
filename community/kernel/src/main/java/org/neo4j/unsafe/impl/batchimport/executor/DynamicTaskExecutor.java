@@ -178,6 +178,12 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         }
     }
 
+    @Override
+    public boolean isShutdown()
+    {
+        return shutDown;
+    }
+
     private boolean anyAlive()
     {
         for ( Processor processor : processors )
