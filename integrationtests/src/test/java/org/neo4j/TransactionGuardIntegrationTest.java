@@ -23,7 +23,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.Serializable;
+import java.rmi.RemoteException;
 import java.time.Clock;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -41,11 +44,18 @@ import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.shell.InterruptSignalHandler;
+import org.neo4j.shell.Response;
+import org.neo4j.shell.ShellException;
+import org.neo4j.shell.impl.CollectingOutput;
+import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.time.FakeClock;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -102,6 +112,55 @@ public class TransactionGuardIntegrationTest
         }
 
         assertDatabaseDoesNotHaveNodes( database );
+    }
+
+    @Test
+    public void terminateLongRunningShellQuery() throws Exception
+    {
+        FakeClock clock = new FakeClock();
+        Map<Setting<?>,String> configMap = MapUtil.genericMap(
+                GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE,
+                GraphDatabaseSettings.transaction_timeout, "2s",
+                GraphDatabaseSettings.statement_timeout, "100s" );
+        GraphDatabaseAPI database = startCustomDatabase( clock, configMap );
+        GraphDatabaseShellServer shellServer = getGraphDatabaseShellServer( database );
+        try
+        {
+            SameJvmClient client = getShellClient( shellServer );
+            CollectingOutput commandOutput = new CollectingOutput();
+            execute( shellServer, commandOutput, client.getId(), "begin Transaction" );
+            clock.forward( 3, TimeUnit.SECONDS );
+            execute( shellServer, commandOutput, client.getId(), "create (n);" );
+            execute( shellServer, commandOutput, client.getId(), "commit" );
+            fail( "Transaction should be already terminated." );
+        }
+        catch ( ShellException e )
+        {
+            assertThat( e.getMessage(), containsString( "Transaction timeout." ) );
+        }
+
+        assertDatabaseDoesNotHaveNodes( database );
+    }
+
+    private Response execute( GraphDatabaseShellServer shellServer,
+            CollectingOutput output, Serializable clientId, String command ) throws ShellException
+    {
+        return shellServer.interpretLine( clientId, command, output );
+    }
+
+    private SameJvmClient getShellClient( GraphDatabaseShellServer shellServer ) throws ShellException, RemoteException
+    {
+        SameJvmClient client = new SameJvmClient( new HashMap<>(), shellServer,
+                new CollectingOutput(), InterruptSignalHandler.getHandler() );
+        cleanupRule.add( client );
+        return client;
+    }
+
+    private GraphDatabaseShellServer getGraphDatabaseShellServer( GraphDatabaseAPI database ) throws RemoteException
+    {
+        GraphDatabaseShellServer shellServer = new GraphDatabaseShellServer( database );
+        cleanupRule.add( shellServer );
+        return shellServer;
     }
 
     private void assertDatabaseDoesNotHaveNodes( GraphDatabaseAPI database )
