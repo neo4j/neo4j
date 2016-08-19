@@ -324,7 +324,8 @@ public class LuceneIndexRecoveryIT
                     throws Throwable
             {
                 return new LuceneSchemaIndexProvider( fs.get(),directoryFactory, context
-                        .storeDir(), dependencies.getConfig(), context.databaseInfo().operationalMode )
+                        .storeDir(), dependencies.getLogging().getInternalLogProvider(), dependencies.getConfig(),
+                        context.databaseInfo().operationalMode )
                 {
                     @Override
                     public InternalIndexState getInitialState( long indexId )
@@ -348,7 +349,8 @@ public class LuceneIndexRecoveryIT
                     throws Throwable
             {
                 return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, context.storeDir(),
-                        dependencies.getConfig(), context.databaseInfo().operationalMode )
+                        dependencies.getLogging().getInternalLogProvider(), dependencies.getConfig(),
+                        context.databaseInfo().operationalMode )
                 {
                     @Override
                     public int compareTo( SchemaIndexProvider o )

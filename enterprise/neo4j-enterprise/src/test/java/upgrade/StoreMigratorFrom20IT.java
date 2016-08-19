@@ -113,7 +113,7 @@ public class StoreMigratorFrom20IT
         pageCache = pageCacheRule.getPageCache( fs );
 
         schemaIndexProvider = new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, storeDir.directory(),
-                Config.empty(), OperationalMode.single );
+                NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
         labelScanStoreProvider = new LabelScanStoreProvider( new InMemoryLabelScanStore(), 1 );
 
         upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),

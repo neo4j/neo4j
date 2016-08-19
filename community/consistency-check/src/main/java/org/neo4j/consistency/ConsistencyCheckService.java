@@ -153,7 +153,7 @@ public class ConsistencyCheckService
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         fileSystem,
                         DirectoryFactory.PERSISTENT,
-                        storeDir, consistencyCheckerConfig, operationalMode );
+                        storeDir, logProvider, consistencyCheckerConfig, operationalMode );
 
                 int numberOfThreads = defaultConsistencyCheckThreadsNumber();
                 Statistics statistics;

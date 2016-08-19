@@ -139,7 +139,7 @@ public class AccessUniqueDatabaseIndexTest
     {
         IndexStorageFactory storageFactory =
                 new IndexStorageFactory( directoryFactory, new EphemeralFileSystemAbstraction(), indexDirectory );
-        return storageFactory.indexStorageOf( 1 );
+        return storageFactory.indexStorageOf( 1, false );
     }
 
     private NodePropertyUpdate add( long nodeId, Object propertyValue )

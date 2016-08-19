@@ -49,6 +49,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -82,7 +83,7 @@ public class LuceneSchemaIndexPopulatorTest
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
         provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, testDir.directory( "folder" ),
-                Config.empty(), OperationalMode.single );
+                NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
         indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
         indexStoreView = mock( IndexStoreView.class );
         IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;

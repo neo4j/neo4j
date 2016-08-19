@@ -88,7 +88,7 @@ public class UniqueDatabaseIndexPopulatorTest
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File folder = testDir.directory( "folder" );
-        indexStorage = new PartitionedIndexStorage( directoryFactory, fs, folder, INDEX_IDENTIFIER );
+        indexStorage = new PartitionedIndexStorage( directoryFactory, fs, folder, INDEX_IDENTIFIER, false );
         index = LuceneSchemaIndexBuilder.create()
                 .withIndexStorage( indexStorage )
                 .build();

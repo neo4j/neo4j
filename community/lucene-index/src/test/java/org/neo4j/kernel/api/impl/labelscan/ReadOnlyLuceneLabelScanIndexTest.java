@@ -48,7 +48,7 @@ public class ReadOnlyLuceneLabelScanIndexTest
     public void setUp()
     {
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT,
-                new DefaultFileSystemAbstraction(), testDirectory.directory(), "1" );
+                new DefaultFileSystemAbstraction(), testDirectory.directory(), "1", false );
         luceneLabelScanIndex = new ReadOnlyDatabaseLabelScanIndex( BitmapDocumentFormat._32, indexStorage );
     }
 

@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -120,6 +124,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.loop;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
@@ -817,7 +822,7 @@ public class IndexingServiceTest
         // GIVEN
         IndexingService.Monitor monitor = IndexingService.NO_MONITOR;
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor,
-                withData( NodePropertyUpdate.add( 0, 0, "value", new long[] {1} ) ), monitor );
+                withData( NodePropertyUpdate.add( 0, 0, "value", new long[]{1} ) ), monitor );
         life.start();
 
         // WHEN
@@ -835,6 +840,108 @@ public class IndexingServiceTest
                 eq( IndexConfiguration.NON_UNIQUE ), any( IndexSamplingConfig.class ) );
 
         waitForIndexesToComeOnline( indexing, 0, 1, 2 );
+    }
+
+    @Test
+    public void shouldStoreIndexFailureWhenFailingToCreateOnlineAccessorAfterPopulating() throws Exception
+    {
+        // given
+        long indexId = 1;
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
+
+        IOException exception = new IOException( "Expected failure" );
+        when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
+        when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
+
+        when( indexProvider.getOnlineAccessor(
+                eq( indexId ), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
+                .thenThrow( exception );
+
+        life.start();
+        ArgumentCaptor<Boolean> closeArgs = ArgumentCaptor.forClass( Boolean.class );
+
+        // when
+        indexing.createIndexes( indexRule( indexId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+        verify( populator, timeout( 1000 ).times( 2 ) ).close( closeArgs.capture() );
+
+        // then
+        assertEquals( FAILED, indexing.getIndexProxy( 1 ).getState() );
+        assertEquals( asList( true, false ), closeArgs.getAllValues() );
+        assertThat( storedFailure(), containsString( "java.io.IOException: Expected failure\n\tat " ) );
+        logProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
+                "Failed to populate index: [:TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]]" ),
+                causedBy( exception ) ) );
+        logProvider.assertNone( inLog( IndexPopulationJob.class ).info(
+                "Index population completed. Index is now online: [%s]",
+                ":TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]" ) );
+    }
+
+    @Test
+    public void shouldStoreIndexFailureWhenFailingToCreateOnlineAccessorAfterRecoveringPopulatingIndex() throws Exception
+    {
+        // given
+        long indexId = 1;
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(),
+                indexRule( indexId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+
+        IOException exception = new IOException( "Expected failure" );
+        when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
+        when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
+
+        when( indexProvider.getInitialState( indexId ) ).thenReturn( POPULATING );
+        when( indexProvider.getOnlineAccessor(
+                eq( indexId ), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
+                .thenThrow( exception );
+
+        life.start();
+        ArgumentCaptor<Boolean> closeArgs = ArgumentCaptor.forClass( Boolean.class );
+
+        // when
+        verify( populator, timeout( 1000 ).times( 2 ) ).close( closeArgs.capture() );
+
+        // then
+        assertEquals( FAILED, indexing.getIndexProxy( 1 ).getState() );
+        assertEquals( asList( true, false ), closeArgs.getAllValues() );
+        assertThat( storedFailure(), containsString( "java.io.IOException: Expected failure\n\tat " ) );
+        logProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
+                "Failed to populate index: [:TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]]" ),
+                causedBy( exception ) ) );
+        logProvider.assertNone( inLog( IndexPopulationJob.class ).info(
+                "Index population completed. Index is now online: [%s]",
+                ":TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]" ) );
+    }
+
+    static Matcher<? extends Throwable> causedBy( final Throwable exception )
+    {
+        return new TypeSafeMatcher<Throwable>()
+        {
+            @Override
+            protected boolean matchesSafely( Throwable item )
+            {
+                while ( item != null )
+                {
+                    if ( item == exception )
+                    {
+                        return true;
+                    }
+                    item = item.getCause();
+                }
+                return false;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "exception caused by " ).appendValue( exception );
+            }
+        };
+    }
+
+    private String storedFailure() throws IOException
+    {
+        ArgumentCaptor<String> reason = ArgumentCaptor.forClass( String.class );
+        verify( populator ).markAsFailed( reason.capture() );
+        return reason.getValue();
     }
 
     private static class ControlledIndexPopulator extends IndexPopulator.Adapter
