@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -106,8 +107,8 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     private SchemaIndexProvider createIndexes( FileSystemAbstraction fileSystem, Config config,
             OperationalMode operationalMode )
     {
-        return new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT, directory, config,
-                operationalMode );
+        return new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT, directory,
+                NullLogProvider.getInstance(), config, operationalMode );
     }
 
     public File directory()

@@ -147,7 +147,7 @@ public class ConsistencyCheckService
                         .build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         fileSystem, DirectoryFactory.PERSISTENT,
-                        storeDir, tuningConfiguration, operationalMode );
+                        storeDir, logProvider, tuningConfiguration, operationalMode );
                 DirectStoreAccess stores = new DirectStoreAccess( store, labelScanStore, indexes );
                 FullCheck check = new FullCheck( tuningConfiguration, progressFactory );
                 summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );

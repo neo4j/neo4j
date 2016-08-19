@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -509,8 +510,9 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     {
         DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
                 DeferredConstraintVerificationUniqueLuceneIndexPopulator( new LuceneDocumentStructure(),
+                NullLogProvider.getInstance(),
                 IndexWriterFactories.tracking(), searcherManagerFactory, directoryFactory, indexDirectory,
-                failureStorage, INDEX_ID, descriptor );
+                false, failureStorage, INDEX_ID, descriptor );
 
         populator.create();
 

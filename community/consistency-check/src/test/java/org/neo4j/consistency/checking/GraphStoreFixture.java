@@ -142,7 +142,8 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     private SchemaIndexProvider createIndexes( FileSystemAbstraction fileSystem, Config config,
             OperationalMode operationalMode )
     {
-        return new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT, directory, config, operationalMode );
+        return new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT, directory,
+                FormattedLogProvider.toOutputStream( System.out ), config, operationalMode );
     }
 
     public File directory()

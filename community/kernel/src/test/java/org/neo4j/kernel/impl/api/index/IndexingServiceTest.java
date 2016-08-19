@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -33,6 +27,16 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
@@ -71,6 +75,7 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.DoubleLatch;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.equalTo;
@@ -94,15 +99,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.BATCHED;
@@ -799,6 +802,108 @@ public class IndexingServiceTest
         // THEN afterwards the index should be ONLINE
         assertEquals( 2, indexId.get() );
         assertEquals( ONLINE, indexing.getIndexProxy( indexId.get() ).getState() );
+    }
+
+    @Test
+    public void shouldStoreIndexFailureWhenFailingToCreateOnlineAccessorAfterPopulating() throws Exception
+    {
+        // given
+        long indexId = 1;
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
+
+        IOException exception = new IOException( "Expected failure" );
+        when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
+        when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
+
+        when( indexProvider.getOnlineAccessor(
+                eq( indexId ), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
+                .thenThrow( exception );
+
+        life.start();
+        ArgumentCaptor<Boolean> closeArgs = ArgumentCaptor.forClass( Boolean.class );
+
+        // when
+        indexing.createIndex( indexRule( indexId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+        verify( populator, timeout( 1000 ).times( 2 ) ).close( closeArgs.capture() );
+
+        // then
+        assertEquals( FAILED, indexing.getIndexProxy( 1 ).getState() );
+        assertEquals( asList( true, false ), closeArgs.getAllValues() );
+        assertThat( storedFailure(), containsString( "java.io.IOException: Expected failure\n\tat " ) );
+        logProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
+                "Failed to populate index: [:TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]]" ),
+                causedBy( exception ) ) );
+        logProvider.assertNone( inLog( IndexPopulationJob.class ).info(
+                "Index population completed. Index is now online: [%s]",
+                ":TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]" ) );
+    }
+
+    @Test
+    public void shouldStoreIndexFailureWhenFailingToCreateOnlineAccessorAfterRecoveringPopulatingIndex() throws Exception
+    {
+        // given
+        long indexId = 1;
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(),
+                indexRule( indexId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+
+        IOException exception = new IOException( "Expected failure" );
+        when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
+        when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
+
+        when( indexProvider.getInitialState( indexId ) ).thenReturn( POPULATING );
+        when( indexProvider.getOnlineAccessor(
+                eq( indexId ), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
+                .thenThrow( exception );
+
+        life.start();
+        ArgumentCaptor<Boolean> closeArgs = ArgumentCaptor.forClass( Boolean.class );
+
+        // when
+        verify( populator, timeout( 1000 ).times( 2 ) ).close( closeArgs.capture() );
+
+        // then
+        assertEquals( FAILED, indexing.getIndexProxy( 1 ).getState() );
+        assertEquals( asList( true, false ), closeArgs.getAllValues() );
+        assertThat( storedFailure(), containsString( "java.io.IOException: Expected failure\n\tat " ) );
+        logProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
+                "Failed to populate index: [:TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]]" ),
+                causedBy( exception ) ) );
+        logProvider.assertNone( inLog( IndexPopulationJob.class ).info(
+                "Index population completed. Index is now online: [%s]",
+                ":TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]" ) );
+    }
+
+    static Matcher<? extends Throwable> causedBy( final Throwable exception )
+    {
+        return new TypeSafeMatcher<Throwable>()
+        {
+            @Override
+            protected boolean matchesSafely( Throwable item )
+            {
+                while ( item != null )
+                {
+                    if ( item == exception )
+                    {
+                        return true;
+                    }
+                    item = item.getCause();
+                }
+                return false;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "exception caused by " ).appendValue( exception );
+            }
+        };
+    }
+
+    private String storedFailure() throws IOException
+    {
+        ArgumentCaptor<String> reason = ArgumentCaptor.forClass( String.class );
+        verify( populator ).markAsFailed( reason.capture() );
+        return reason.getValue();
     }
 
     private static class ControlledIndexPopulator extends IndexPopulator.Adapter

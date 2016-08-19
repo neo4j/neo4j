@@ -68,6 +68,7 @@ import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterRule;
@@ -556,14 +557,16 @@ public class SchemaIndexHaIT
             {
                 ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider(
                         new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
-                                DirectoryFactory.PERSISTENT, context.storeDir(), deps.config(), context.operationalMode() ) );
+                                DirectoryFactory.PERSISTENT, context.storeDir(), NullLogProvider.getInstance(),
+                                deps.config(), context.operationalMode() ) );
                 perDbIndexProvider.put( deps.db(), provider );
                 return provider;
             }
             else
             {
                 return new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
-                        DirectoryFactory.PERSISTENT, context.storeDir(), deps.config(), context.operationalMode() );
+                        DirectoryFactory.PERSISTENT, context.storeDir(), NullLogProvider.getInstance(),
+                        deps.config(), context.operationalMode() );
             }
         }
     }

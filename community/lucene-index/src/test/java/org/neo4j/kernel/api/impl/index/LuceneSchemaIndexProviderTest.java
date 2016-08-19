@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.udc.UsageDataKeys.OperationalMode;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -105,6 +106,6 @@ public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTes
 
     private LuceneSchemaIndexProvider getLuceneSchemaIndexProvider( Config config, DirectoryFactory directoryFactory )
     {
-        return new LuceneSchemaIndexProvider( fs, directoryFactory, graphDbDir, config, OperationalMode.single );
+        return new LuceneSchemaIndexProvider( fs, directoryFactory, graphDbDir, NullLogProvider.getInstance(), config, OperationalMode.single );
     }
 }

@@ -19,15 +19,19 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.Directory;
-
 import java.io.File;
 import java.io.IOException;
+
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.Directory;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.util.FailureStorage;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+
+import static java.lang.System.currentTimeMillis;
 
 public abstract class LuceneIndexPopulator implements IndexPopulator
 {
@@ -35,29 +39,45 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     private final IndexWriterFactory<LuceneIndexWriter> indexWriterFactory;
     private final DirectoryFactory dirFactory;
     private final File dirFile;
+    private final boolean archiveOld;
     private final FailureStorage failureStorage;
     private final long indexId;
-
+    private final Log log;
     protected LuceneIndexWriter writer;
     private Directory directory;
 
     LuceneIndexPopulator(
-            LuceneDocumentStructure documentStructure, IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-            DirectoryFactory dirFactory, File dirFile, FailureStorage failureStorage, long indexId )
+            LuceneDocumentStructure documentStructure, LogProvider logging,
+            IndexWriterFactory<LuceneIndexWriter> indexWriterFactory, DirectoryFactory dirFactory, File dirFile,
+            boolean archiveOld, FailureStorage failureStorage, long indexId )
     {
         this.documentStructure = documentStructure;
         this.indexWriterFactory = indexWriterFactory;
         this.dirFactory = dirFactory;
         this.dirFile = dirFile;
+        this.archiveOld = archiveOld;
         this.failureStorage = failureStorage;
         this.indexId = indexId;
+        this.log = logging.getLog( getClass() );
     }
 
     @Override
     public void create() throws IOException
     {
         this.directory = dirFactory.open( dirFile );
-        DirectorySupport.deleteDirectoryContents( directory );
+        if ( archiveOld )
+        {
+            String archiveName = "archive-" + currentTimeMillis() + ".zip";
+            DirectorySupport.archiveAndDeleteDirectoryContents( directory, archiveName );
+            if ( directory.fileExists( archiveName ) )
+            {
+                log.info( "Created archive of previous (failed) index %s", new File( dirFile, archiveName ).getPath() );
+            }
+        }
+        else
+        {
+            DirectorySupport.deleteDirectoryContents( directory );
+        }
         failureStorage.reserveForIndex( indexId );
         writer = indexWriterFactory.create( directory );
     }

@@ -136,6 +136,7 @@ public class IndexRule extends AbstractSchemaRule
         {
             throw new IllegalStateException( "Can only get owner from constraint indexes." );
         }
+        long owningConstraint = this.owningConstraint;
         if ( owningConstraint == NO_OWNING_CONSTRAINT )
         {
             return null;
