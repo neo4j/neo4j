@@ -20,9 +20,13 @@
 package org.neo4j.coreedge.core.state.snapshot;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
-import org.neo4j.coreedge.messaging.Message;
+import org.neo4j.coreedge.messaging.CatchUpRequest;
 
-public class CoreSnapshotRequest implements Message
+public class CoreSnapshotRequest implements CatchUpRequest
 {
-    public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.STORE;
+    @Override
+    public RequestMessageType messageType()
+    {
+        return RequestMessageType.CORE_SNAPSHOT;
+    }
 }

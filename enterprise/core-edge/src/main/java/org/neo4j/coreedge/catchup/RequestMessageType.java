@@ -27,7 +27,7 @@ public enum RequestMessageType implements Message
 {
     TX_PULL_REQUEST( (byte) 1 ),
     STORE( (byte) 2 ),
-    RAFT_STATE( (byte) 3 ),
+    CORE_SNAPSHOT( (byte) 3 ),
     STORE_ID( (byte) 4 ),
     UNKNOWN( (byte) 404 );
 

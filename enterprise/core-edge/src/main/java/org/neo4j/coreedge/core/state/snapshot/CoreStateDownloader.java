@@ -22,7 +22,8 @@ package org.neo4j.coreedge.core.state.snapshot;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.coreedge.catchup.CoreClient;
+import org.neo4j.coreedge.catchup.CatchUpClient;
+import org.neo4j.coreedge.catchup.CatchUpResponseAdaptor;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
@@ -38,15 +39,15 @@ public class CoreStateDownloader
 {
     private final LocalDatabase localDatabase;
     private final StoreFetcher storeFetcher;
-    private final CoreClient coreClient;
+    private final CatchUpClient catchUpClient;
     private final Log log;
 
-    public CoreStateDownloader( LocalDatabase localDatabase, StoreFetcher storeFetcher, CoreClient coreClient,
+    public CoreStateDownloader( LocalDatabase localDatabase, StoreFetcher storeFetcher, CatchUpClient catchUpClient,
                                 LogProvider logProvider )
     {
         this.localDatabase = localDatabase;
         this.storeFetcher = storeFetcher;
-        this.coreClient = coreClient;
+        this.catchUpClient = catchUpClient;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -65,17 +66,15 @@ public class CoreStateDownloader
              * are ahead, and the correct decisions for their applicability have already been taken as encapsulated
              * in the copied store. */
 
-            CompletableFuture<CoreSnapshot> snapshotFuture = coreClient.requestCoreSnapshot( source );
-
-            CoreSnapshot coreSnapshot;
-            try
-            {
-                coreSnapshot = snapshotFuture.get( 1, MINUTES ); // TODO: Configurable timeout.
-            }
-            catch ( TimeoutException e )
-            {
-                throw new StoreCopyFailedException( e );
-            }
+            CoreSnapshot coreSnapshot = catchUpClient.makeBlockingRequest( source, new CoreSnapshotRequest(),
+                    1, MINUTES, new CatchUpResponseAdaptor<CoreSnapshot>()
+                    {
+                        @Override
+                        public void onCoreSnapshot( CompletableFuture<CoreSnapshot> signal, CoreSnapshot response )
+                        {
+                            signal.complete( response );
+                        }
+                    } );
 
             localDatabase.bringUpToDateOrReplaceStoreFrom( source, storeId, storeFetcher ); // this deletes the current store
             log.info( "Replaced store with one downloaded from %s", source );

@@ -23,12 +23,10 @@ import java.util.Objects;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.coreedge.messaging.Message;
+import org.neo4j.coreedge.messaging.CatchUpRequest;
 
-public class TxPullRequest implements Message
+public class TxPullRequest implements CatchUpRequest
 {
-    public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.TX_PULL_REQUEST;
-
     private long txId;
     private final StoreId storeId;
 
@@ -73,5 +71,11 @@ public class TxPullRequest implements Message
     public String toString()
     {
         return String.format( "TxPullRequest{txId=%d, storeId=%s}", txId, storeId );
+    }
+
+    @Override
+    public RequestMessageType messageType()
+    {
+        return RequestMessageType.TX_PULL_REQUEST;
     }
 }

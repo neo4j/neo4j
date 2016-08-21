@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.catchup.tx;
 
-class TxStreamFinishedResponse
+public class TxStreamFinishedResponse
 {
     private final long lastTransactionIdSent;
     private final boolean success;

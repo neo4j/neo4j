@@ -22,6 +22,7 @@ package org.neo4j.coreedge.catchup.storecopy;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import org.neo4j.coreedge.catchup.CatchUpResponseHandler;
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 
 import static org.neo4j.coreedge.catchup.CatchupClientProtocol.State;
@@ -29,19 +30,19 @@ import static org.neo4j.coreedge.catchup.CatchupClientProtocol.State;
 public class StoreCopyFinishedResponseHandler extends SimpleChannelInboundHandler<StoreCopyFinishedResponse>
 {
     private final CatchupClientProtocol protocol;
-    private StoreFileStreamingCompleteListener storeFileStreamingCompleteListener;
+    private CatchUpResponseHandler handler;
 
     public StoreCopyFinishedResponseHandler( CatchupClientProtocol protocol,
-                                             StoreFileStreamingCompleteListener storeFileStreamingCompleteListener )
+                                             CatchUpResponseHandler handler )
     {
         this.protocol = protocol;
-        this.storeFileStreamingCompleteListener = storeFileStreamingCompleteListener;
+        this.handler = handler;
     }
 
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, final StoreCopyFinishedResponse msg ) throws Exception
     {
-        storeFileStreamingCompleteListener.onFileStreamingComplete( msg.lastCommittedTxBeforeStoreCopy() );
+        handler.onFileStreamingComplete( msg );
         protocol.expect( State.MESSAGE_TYPE );
     }
 }

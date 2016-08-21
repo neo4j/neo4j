@@ -22,6 +22,7 @@ package org.neo4j.coreedge.catchup.storecopy;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import org.neo4j.coreedge.catchup.CatchUpResponseHandler;
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -31,11 +32,13 @@ import static org.neo4j.coreedge.catchup.CatchupClientProtocol.State;
 public class FileHeaderHandler extends SimpleChannelInboundHandler<FileHeader>
 {
     private final CatchupClientProtocol protocol;
+    private final CatchUpResponseHandler handler;
     private final Log log;
 
-    public FileHeaderHandler( CatchupClientProtocol protocol, LogProvider logProvider )
+    public FileHeaderHandler( CatchupClientProtocol protocol, CatchUpResponseHandler handler, LogProvider logProvider )
     {
         this.protocol = protocol;
+        this.handler = handler;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -43,7 +46,7 @@ public class FileHeaderHandler extends SimpleChannelInboundHandler<FileHeader>
     protected void channelRead0( ChannelHandlerContext ctx, FileHeader msg ) throws Exception
     {
         log.info( "Receiving file: %s (%d bytes)", msg.fileName(), msg.fileLength() );
-        ctx.pipeline().get( FileContentHandler.class ).setExpectedFile( msg );
+        handler.onFileHeader( msg );
         protocol.expect( State.FILE_CONTENTS );
     }
 }

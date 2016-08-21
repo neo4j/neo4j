@@ -19,61 +19,88 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
-import org.neo4j.coreedge.catchup.CoreClient;
+import org.neo4j.coreedge.catchup.CatchUpClient;
+import org.neo4j.coreedge.catchup.CatchUpClientException;
+import org.neo4j.coreedge.catchup.CatchUpResponseAdaptor;
+import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class StoreCopyClient
 {
-    private final CoreClient coreClient;
+    private final CatchUpClient catchUpClient;
 
-    public StoreCopyClient( CoreClient coreClient )
+    public StoreCopyClient( CatchUpClient catchUpClient )
     {
-        this.coreClient = coreClient;
+        this.catchUpClient = catchUpClient;
     }
 
     long copyStoreFiles( MemberId from, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
     {
-        coreClient.setStoreFileStreams( storeFileStreams );
-
-        CompletableFuture<Long> txId = new CompletableFuture<>();
-        StoreFileStreamingCompleteListener fileStreamingCompleteListener = txId::complete;
-
-        coreClient.addStoreFileStreamingCompleteListener( fileStreamingCompleteListener );
-
         try
         {
-            coreClient.requestStore( from );
-            return txId.get();
+            return catchUpClient.makeBlockingRequest( from, new GetStoreRequest(), 30, SECONDS,
+                    new CatchUpResponseAdaptor<Long>()
+                    {
+                        private long expectedBytes = 0;
+                        private String destination;
+
+                        @Override
+                        public void onFileHeader( CompletableFuture<Long> requestOutcomeSignal, FileHeader fileHeader )
+                        {
+                            this.expectedBytes = fileHeader.fileLength();
+                            this.destination = fileHeader.fileName();
+                        }
+
+                        @Override
+                        public boolean onFileContent( CompletableFuture<Long> signal, FileContent fileContent )
+                                throws IOException
+                        {
+                            try ( FileContent content = fileContent;
+                                  OutputStream outputStream = storeFileStreams.createStream( destination ) )
+                            {
+                                expectedBytes -= content.writeTo( outputStream );
+                            }
+
+                            return expectedBytes <= 0;
+                        }
+
+                        @Override
+                        public void onFileStreamingComplete( CompletableFuture<Long> signal,
+                                                             StoreCopyFinishedResponse response )
+                        {
+                            signal.complete( response.lastCommittedTxBeforeStoreCopy() );
+                        }
+                    } );
         }
-        catch ( InterruptedException | ExecutionException e )
+        catch ( CatchUpClientException | NoKnownAddressesException e )
         {
             throw new StoreCopyFailedException( e );
-        }
-        finally
-        {
-            coreClient.removeStoreFileStreamingCompleteListener( fileStreamingCompleteListener );
         }
     }
 
     StoreId fetchStoreId( MemberId from ) throws StoreIdDownloadFailedException
     {
-        CompletableFuture<StoreId> storeIdCompletableFuture = new CompletableFuture<>();
-        coreClient.setStoreIdConsumer( storeIdCompletableFuture::complete );
-        coreClient.requestStoreId( from );
         try
         {
-            return storeIdCompletableFuture.get();
+            return catchUpClient.makeBlockingRequest( from, new GetStoreIdRequest(), 30, SECONDS,
+                    new CatchUpResponseAdaptor<StoreId>()
+                    {
+                        @Override
+                        public void onGetStoreIdResponse( CompletableFuture<StoreId> signal,
+                                                          GetStoreIdResponse response )
+                        {
+                            signal.complete( response.storeId() );
+                        }
+                    } );
         }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-            throw new StoreIdDownloadFailedException( e );
-        }
-        catch ( ExecutionException e )
+        catch ( CatchUpClientException | NoKnownAddressesException e )
         {
             throw new StoreIdDownloadFailedException( e );
         }

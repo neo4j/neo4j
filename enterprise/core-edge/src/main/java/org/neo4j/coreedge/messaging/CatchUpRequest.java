@@ -17,24 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.storecopy;
+package org.neo4j.coreedge.messaging;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import org.neo4j.coreedge.catchup.RequestMessageType;
 
-import java.util.List;
-
-import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.coreedge.messaging.marshalling.storeid.StoreIdMarshal;
-
-public class GetStoreIdResponseDecoder extends MessageToMessageDecoder<ByteBuf>
+public interface CatchUpRequest extends Message
 {
-    @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
-    {
-        StoreId storeId = StoreIdMarshal.unmarshal( new NetworkReadableClosableChannelNetty4( msg ) );
-        out.add( new GetStoreIdResponse( storeId ) );
-    }
+    RequestMessageType messageType();
 }
