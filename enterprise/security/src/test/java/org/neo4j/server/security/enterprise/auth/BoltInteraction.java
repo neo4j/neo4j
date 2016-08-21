@@ -43,9 +43,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -69,7 +66,7 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
 
     EnterpriseAuthManager authManager;
 
-    public BoltInteraction( Neo4jWithSocket server ) throws Throwable
+    public BoltInteraction( Neo4jWithSocket server ) throws IOException
     {
         this.server = server;
         GraphDatabaseFacade db = (GraphDatabaseFacade) server.graphDatabaseService();
@@ -165,11 +162,6 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
         }
         subjects.clear();
         server.graphDatabaseService().shutdown();
-        Path IMPERMANENT_DB_ROLES_PATH = Paths.get( "target/test-data/impermanent-db/data/dbms/roles" );
-        if ( Files.exists( IMPERMANENT_DB_ROLES_PATH ) )
-        {
-            Files.delete( IMPERMANENT_DB_ROLES_PATH );
-        }
     }
 
     @Override

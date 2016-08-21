@@ -991,7 +991,6 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 
     private TransportConnection startBoltSession( String username, String password ) throws Exception
     {
-        System.out.println( "AuthProceduresTestLogic.startBoltSession" );
         TransportConnection connection = new SocketConnection();
         HostnamePort address = new HostnamePort( "localhost:7687" );
         Map<String,Object> authToken = map( "principal", username, "credentials", password, "scheme", "basic" );

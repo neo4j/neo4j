@@ -354,6 +354,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     {
         // ensure we have a tx and create a context (the tx is gonna get closed by the Cypher result)
         InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        return execute( transaction, query, parameters );
+    }
+
+    // This version of execute is only needed for internal testing of LOAD CSV PERIODIC COMMIT. Can be refactored?
+    public Result execute( InternalTransaction transaction, String query, Map<String,Object> parameters )
+            throws QueryExecutionException
+    {
         TransactionalContext transactionalContext =
                 new Neo4jTransactionalContext( spi.queryService(), transaction, spi.currentStatement(), locker );
         return spi.executeQuery( query, parameters, QueryEngineProvider.embeddedSession( transactionalContext ) );

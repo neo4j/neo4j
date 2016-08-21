@@ -26,7 +26,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -83,10 +82,10 @@ class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAut
     public String executeQuery( EnterpriseAuthSubject subject, String call, Map<String,Object> params,
             Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
     {
-        try ( Transaction tx = db.beginTransaction( KernelTransaction.Type.explicit, subject ) )
+        try ( InternalTransaction tx = db.beginTransaction( KernelTransaction.Type.implicit, subject ) )
         {
             Map<String,Object> p = (params == null) ? Collections.emptyMap() : params;
-            resultConsumer.accept( db.execute( call, p ) );
+            resultConsumer.accept( db.execute( tx, call, p ) );
             tx.success();
             return "";
         }
