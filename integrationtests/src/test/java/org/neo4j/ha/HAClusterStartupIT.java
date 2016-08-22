@@ -217,7 +217,7 @@ public class HAClusterStartupIT
         ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
         try
         {
-            cluster.await( allSeesAllAsAvailable(), 120 );
+            cluster.await( allSeesAllAsAvailable(), 180 );
         }
         finally
         {
