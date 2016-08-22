@@ -497,13 +497,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
   private object buildPipeExpressions extends Rewriter {
     private val instance = bottomUp(Rewriter.lift {
-      case compilerAst.NestedPlanExpression(patternPlan, pattern) =>
-        val pos = pattern.position
+      case expr@compilerAst.NestedPlanExpression(patternPlan, expression) =>
         val pipe = recurse(patternPlan)
-        val path = ast.EveryPath(pattern.pattern.element)
-        val step: PathStep = projectNamedPaths.patternPartPathExpression(path)
-        val pathExpression: PathExpression = ast.PathExpression(step)(pos)
-        val result = compilerAst.NestedPipeExpression(pipe, pathExpression)(pos)
+        val result = compilerAst.NestedPipeExpression(pipe, expression)(expr.position)
         result
     })
 

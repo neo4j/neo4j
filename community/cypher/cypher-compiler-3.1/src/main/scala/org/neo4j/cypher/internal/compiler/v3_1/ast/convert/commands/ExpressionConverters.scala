@@ -283,7 +283,7 @@ object ExpressionConverters {
     case e: ast.SingleIterablePredicate => commands.SingleInCollection(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
     case e: ast.ReduceExpression => commandexpressions.ReduceFunction(toCommandExpression(e.list), e.variable.name, toCommandExpression(e.expression), e.accumulator.name, toCommandExpression(e.init))
     case e: ast.PathExpression => toCommandProjectedPath(e)
-    case e: NestedPipeExpression => commandexpressions.NestedPipeExpression(e.pipe, toCommandProjectedPath(e.path))
+    case e: NestedPipeExpression => commandexpressions.NestedPipeExpression(e.pipe, toCommandExpression(e.projection))
     case e: ast.GetDegree => getDegree(e)
     case e: PrefixSeekRangeWrapper => commandexpressions.PrefixSeekRangeExpression(e.range.map(toCommandExpression))
     case e: InequalitySeekRangeWrapper => InequalitySeekRangeExpression(e.range.mapBounds(toCommandExpression))

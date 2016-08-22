@@ -103,7 +103,8 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
       new Answer[(LogicalPlan, PatternExpression)] {
         override def answer(invocation: InvocationOnMock): (LogicalPlan, PatternExpression) = {
           val expr = invocation.getArguments()(1).asInstanceOf[PatternExpression]
-          (dummyPlan, expr)
+          val (namedExpr, _) = PatternExpressionPatternElementNamer(expr)
+          (dummyPlan, namedExpr)
         }
       })
     strategy
