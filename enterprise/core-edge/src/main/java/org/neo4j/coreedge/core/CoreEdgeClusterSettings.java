@@ -223,4 +223,8 @@ public class CoreEdgeClusterSettings
     @Description( "Edge server 'call home' frequency"  )
     public static final Setting<Long> edge_refresh_rate =
             setting( "core_edge.edge_refresh_rate", DURATION, "5s", min(5_000L) );
+
+    @Description( "Retry rate for catch up operations"  )
+    public static final Setting<Long> catch_up_retry_rate =
+            setting( "core_edge.catch_up_retry_rate", DURATION, "5s", min(5_000L) );
 }

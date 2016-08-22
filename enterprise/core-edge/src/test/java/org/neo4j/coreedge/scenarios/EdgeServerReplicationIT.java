@@ -132,8 +132,6 @@ public class EdgeServerReplicationIT
             ThrowingSupplier<Boolean,Exception> availability = () -> edgeClusterMember.database().isAvailable( 0 );
             assertEventually( "edge server becomes available", availability, is( true ), 10, SECONDS );
         }
-
-        Thread.sleep( 20_000 );
     }
 
     @Test

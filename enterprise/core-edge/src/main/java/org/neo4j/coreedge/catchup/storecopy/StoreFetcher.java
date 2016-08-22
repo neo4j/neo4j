@@ -42,11 +42,13 @@ public class StoreFetcher
     private StoreCopyClient storeCopyClient;
     private TxPullClient txPullClient;
     private TransactionLogCatchUpFactory transactionLogFactory;
+    private long retryInterval;
 
     public StoreFetcher( LogProvider logProvider,
                          FileSystemAbstraction fs, PageCache pageCache,
                          StoreCopyClient storeCopyClient, TxPullClient txPullClient,
-                         TransactionLogCatchUpFactory transactionLogFactory )
+                         TransactionLogCatchUpFactory transactionLogFactory,
+                         long retryInterval )
     {
         this.logProvider = logProvider;
         this.storeCopyClient = storeCopyClient;
@@ -54,6 +56,7 @@ public class StoreFetcher
         this.fs = fs;
         this.pageCache = pageCache;
         this.transactionLogFactory = transactionLogFactory;
+        this.retryInterval = retryInterval;
         log = logProvider.getLog( getClass() );
     }
 
@@ -112,6 +115,15 @@ public class StoreFetcher
             catch ( StoreIdDownloadFailedException e )
             {
                 log.info( "Attempt %d to get store id from %s failed.", attempts, from );
+            }
+            try
+            {
+                Thread.sleep( retryInterval );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+                throw new StoreIdDownloadFailedException( e );
             }
         }
         throw new StoreIdDownloadFailedException( String.format( "Failed to get store id from %s after %d attempts",
