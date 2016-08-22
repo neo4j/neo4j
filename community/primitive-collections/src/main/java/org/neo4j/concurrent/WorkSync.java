@@ -21,7 +21,8 @@ package org.neo4j.concurrent;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Turns multi-threaded unary work into single-threaded stack work.
@@ -47,7 +48,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
     private final Material material;
     private final AtomicReference<WorkUnit<Material,W>> stack;
     private final WorkUnit<Material,W> stackEnd;
-    private final ReentrantLock lock;
+    private final AtomicReference<Thread> lock;
 
     /**
      * Create a new WorkSync that will synchronize the application of work to
@@ -58,9 +59,9 @@ public class WorkSync<Material, W extends Work<Material,W>>
     public WorkSync( Material material )
     {
         this.material = material;
-        this.stackEnd = new WorkUnit<>( null );
+        this.stackEnd = new WorkUnit<>( null, null, null );
         this.stack = new AtomicReference<>( stackEnd );
-        this.lock = new ReentrantLock();
+        this.lock = new AtomicReference<Thread>();
     }
 
     /**
@@ -71,7 +72,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
     public void apply( W work )
     {
         // Schedule our work on the stack.
-        WorkUnit<Material,W> unit = new WorkUnit<>( work );
+        WorkUnit<Material,W> unit = new WorkUnit<Material,W>( work, Thread.currentThread(), stackEnd );
         unit.next = stack.getAndSet( unit ); // benign race, see reverse()
 
         // Try grabbing the lock to do all the work, until our work unit
@@ -103,7 +104,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
                 wasInterrupted = true;
             }
         }
-        while ( !unit.done );
+        while ( !unit.isDone() );
 
         if ( wasInterrupted )
         {
@@ -113,12 +114,33 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
     private boolean tryLock( int tryCount, WorkUnit<Material,W> unit ) throws InterruptedException
     {
-        return lock.tryLock( tryCount < 10? 0 : 10, TimeUnit.MILLISECONDS );
+        if ( lock.compareAndSet( null, Thread.currentThread() ) )
+        {
+            // Got the lock!
+            return true;
+        }
+
+        // Did not get the lock, spend some time until our work has aither been completed,
+        // or we get the lock.
+        if ( tryCount < 10 )
+        {
+            // todo Thread.onSpinWait() ?
+            Thread.yield();
+        }
+        else
+        {
+            unit.park( 10, TimeUnit.MILLISECONDS );
+        }
+        return false;
     }
 
     private void unlock()
     {
-        lock.unlock();
+        if ( lock.getAndSet( null ) != Thread.currentThread() )
+        {
+            throw new IllegalMonitorStateException(
+                    "WorkSync accidentally released a lock not owned by the current thread" );
+        }
     }
 
     private void doSynchronizedWork()
@@ -168,29 +190,127 @@ public class WorkSync<Material, W extends Work<Material,W>>
             {
                 result = result.combine( batch.work );
             }
-            batch = batch.next;
+
+            do
+            {
+                batch = batch.next;
+            }
+            while ( batch.isCancelled() );
         }
         return result;
     }
 
     private void markAsDone( WorkUnit<Material,W> batch )
     {
+        // We will mark the first work unit as the successor - the thread in charge of unparking
+        // the other blocked threads - before we begin marking the units as done.
+        // This way, if the successor wakes up before we finish marking the units as done, it will
+        // know that it should wait and complete its task. In fact, it may trail our done-marking
+        // process and unpark threads in parallel.
+        batch.setAsSuccessor();
+        WorkUnit<Material,W> successor = batch;
         while ( batch != stackEnd )
         {
-            batch.done = true;
+            batch.complete();
             batch = batch.next;
         }
     }
 
-    private static class WorkUnit<Material, W extends Work<Material,W>>
+    private static class WorkUnit<Material, W extends Work<Material,W>> extends AtomicInteger
     {
-        final W work;
-        volatile WorkUnit<Material,W> next;
-        volatile boolean done;
+        static final int STATE_QUEUED = 0;
+        static final int STATE_PARKED = 1;
+        static final int STATE_DONE = 2;
+        static final int STATE_CANCELLED = 3;
 
-        private WorkUnit( W work )
+        final W work;
+        final WorkUnit<Material,W> stackEnd;
+        final Thread owner;
+        volatile WorkUnit<Material,W> next;
+        volatile boolean successor;
+
+        private WorkUnit( W work, Thread owner, WorkUnit<Material,W> stackEnd )
         {
             this.work = work;
+            this.owner = owner;
+            this.stackEnd = stackEnd;
+        }
+
+        void park( long time, TimeUnit unit )
+        {
+            if ( compareAndSet( STATE_QUEUED, STATE_PARKED ) )
+            {
+                LockSupport.parkNanos( unit.toNanos( time ) );
+                compareAndSet( STATE_PARKED, STATE_QUEUED );
+            }
+            if ( successor )
+            {
+                // It's our job to go through all the 'next' references, and unpark all the threads
+                // for the work units that are marked as done.
+                // If we encounter a unit that isn't marked as done, then we have raced with the
+                // done-marking, and we just spin until we observe the done flag. This is pretty
+                // unlikely, since unparking a thread is pretty expensive on most platforms.
+                // We also spin on null 'next' references, in the unlikely event that our thread
+                // yet observed the complete enqueueing of work units prior to ours.
+                wakeUpAsSuccessor();
+            }
+        }
+
+        private void wakeUpAsSuccessor()
+        {
+            WorkUnit<Material,W> t, n;
+            do
+            {
+                n = next;
+            }
+            while ( n == null );
+
+            do
+            {
+                boolean canUnparkNext;
+                do
+                {
+                    canUnparkNext = n.isDone();
+                }
+                while ( !canUnparkNext );
+                n.unpark();
+                do
+                {
+                    t = n.next;
+                }
+                while ( t == null );
+                n = t;
+            }
+            while ( n != stackEnd );
+        }
+
+        boolean isDone()
+        {
+            return get() == STATE_DONE;
+        }
+
+        boolean isCancelled()
+        {
+            return get() == STATE_CANCELLED;
+        }
+
+        void complete()
+        {
+            int previousState = getAndSet( STATE_DONE );
+            if ( successor && previousState == STATE_PARKED )
+            {
+                unpark();
+            }
+        }
+
+        void setAsSuccessor()
+        {
+            successor = true;
+        }
+
+        void unpark()
+        {
+            LockSupport.unpark( owner );
         }
     }
 }
