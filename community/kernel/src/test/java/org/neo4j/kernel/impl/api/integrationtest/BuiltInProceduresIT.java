@@ -24,11 +24,14 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AccessMode.Static;
 
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -103,7 +106,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
                 equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)"} ),
-                equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?)"} ),
+                equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)"} ),
                 equalTo( new Object[]{"db.awaitIndex", "db.awaitIndex(label :: STRING?, property :: STRING?, " +
                         "timeOutSeconds :: INTEGER?) :: VOID"} ),
                 equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)"} ),
@@ -147,5 +150,35 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"Neo4j Kernel", singletonList( "dev" ),
                 "community"} ) ) );
+    }
+
+    @Test
+    public void listAllIndexes() throws Throwable
+    {
+        // Given
+        SchemaWriteOperations ops = schemaWriteOperationsInNewTransaction();
+        int labelId1 = ops.labelGetOrCreateForName( "Person" );
+        int labelId2 = ops.labelGetOrCreateForName( "Age" );
+        int propertyKeyId = ops.propertyKeyGetOrCreateForName( "foo" );
+        ops.indexCreate( labelId1, propertyKeyId );
+        ops.uniquePropertyConstraintCreate( labelId2, propertyKeyId );
+        commit();
+
+        //let indexes come online
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
+            tx.success();
+        }
+
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                readOperationsInNewTransaction().procedureCallRead( procedureName( "db", "indexes" ), new Object[0] );
+
+        // Then
+        assertThat( stream.next(), equalTo( new Object[]{"INDEX ON :Age(foo)", "ONLINE",
+                "node_unique_property"} ) );
+        assertThat( stream.next(), equalTo( new Object[]{"INDEX ON :Person(foo)", "ONLINE",
+                "node_label_property"} ) );
     }
 }

@@ -204,6 +204,6 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest {
 
     // Then
     result.toList should equal(
-      List(Map("description" -> "INDEX ON :A(prop)", "state" -> "ONLINE")))
+      List(Map("description" -> "INDEX ON :A(prop)", "state" -> "ONLINE", "type" -> "node_label_property")))
   }
 }
