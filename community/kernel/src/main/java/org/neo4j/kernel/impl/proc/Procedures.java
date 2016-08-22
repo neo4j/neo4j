@@ -66,7 +66,16 @@ public class Procedures extends LifecycleAdapter
      */
     public void register( CallableProcedure proc ) throws ProcedureException
     {
-        registry.register( proc );
+        register( proc, false );
+    }
+
+    /**
+     * Register a new procedure. This method must not be called concurrently with {@link #get(ProcedureSignature.ProcedureName)}.
+     * @param proc the procedure.
+     */
+    public void register( CallableProcedure proc, boolean overrideCurrentImplementation ) throws ProcedureException
+    {
+        registry.register( proc, overrideCurrentImplementation );
     }
 
     /**
@@ -75,9 +84,18 @@ public class Procedures extends LifecycleAdapter
      */
     public void register( Class<?> proc ) throws KernelException
     {
+        register( proc, false );
+    }
+
+    /**
+     * Register a new procedure defined with annotations on a java class.
+     * @param proc the procedure class
+     */
+    public void register( Class<?> proc, boolean overrideCurrentImplementation ) throws KernelException
+    {
         for ( CallableProcedure procedure : compiler.compile( proc ) )
         {
-            register( procedure );
+            register( procedure, overrideCurrentImplementation );
         }
     }
 

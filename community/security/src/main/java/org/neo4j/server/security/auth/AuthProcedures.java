@@ -38,7 +38,7 @@ public class AuthProcedures
     @Context
     public AuthSubject authSubject;
 
-    @Procedure( name = "dbms.communityAuth.createUser", mode = DBMS )
+    @Procedure( name = "dbms.createUser", mode = DBMS )
     public void createUser( @Name( "username" ) String username, @Name( "password" ) String password,
             @Name( "requirePasswordChange" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
@@ -47,7 +47,7 @@ public class AuthProcedures
         subject.getAuthManager().newUser( username, password, requirePasswordChange );
     }
 
-    @Procedure( name = "dbms.communityAuth.deleteUser", mode = DBMS )
+    @Procedure( name = "dbms.deleteUser", mode = DBMS )
     public void deleteUser( @Name( "username" ) String username ) throws InvalidArgumentsException, IOException
     {
         BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
@@ -64,7 +64,7 @@ public class AuthProcedures
         authSubject.setPassword( password );
     }
 
-    @Procedure( name = "dbms.communityAuth.showCurrentUser", mode = DBMS )
+    @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
     {
         BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
@@ -74,7 +74,7 @@ public class AuthProcedures
             ) );
     }
 
-    @Procedure( name = "dbms.communityAuth.listUsers", mode = DBMS )
+    @Procedure( name = "dbms.listUsers", mode = DBMS )
     public Stream<UserResult> listUsers() throws InvalidArgumentsException, IOException
     {
         BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
