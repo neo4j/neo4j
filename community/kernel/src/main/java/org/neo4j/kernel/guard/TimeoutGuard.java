@@ -20,7 +20,6 @@
 package org.neo4j.kernel.guard;
 
 import java.time.Clock;
-import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -40,37 +39,27 @@ public class TimeoutGuard implements Guard
     @Override
     public void check( KernelStatement statement )
     {
-        check( maxStatementCompletionTimeSupplier( statement ), "Statement timeout." );
+        check( getMaxStatementCompletionTime( statement ), "Statement timeout." );
         check( statement.getTransaction() );
     }
 
     private void check (KernelTransactionImplementation transaction)
     {
-        check( maxTransactionCompletionTimeSupplier( transaction ), "Transaction timeout." );
+        check( getMaxTransactionCompletionTime( transaction ), "Transaction timeout." );
     }
 
-    private void check( Supplier<Long> completionTimeSupplier, String timeoutDescription )
+    private void check( long maxCompletionTime, String timeoutDescription )
     {
         long now = clock.millis();
-        long completionTime = completionTimeSupplier.get();
-        if ( completionTime < now )
+        if ( maxCompletionTime < now )
         {
-            final long overtime = now - completionTime;
+            final long overtime = now - maxCompletionTime;
             String message = timeoutDescription + " (Overtime: " + overtime + " ms).";
             log.warn( message );
             throw new GuardTimeoutException(message, overtime );
         }
     }
 
-    private static Supplier<Long> maxTransactionCompletionTimeSupplier( KernelTransactionImplementation transaction )
-    {
-        return () -> getMaxTransactionCompletionTime( transaction );
-    }
-
-    private static Supplier<Long> maxStatementCompletionTimeSupplier( KernelStatement statement )
-    {
-        return () -> getMaxStatementCompletionTime( statement );
-    }
 
     private static long getMaxStatementCompletionTime( KernelStatement statement )
     {
