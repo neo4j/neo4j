@@ -19,9 +19,10 @@
  */
 package org.neo4j.concurrent;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -60,59 +61,69 @@ public class WorkSync<Material, W extends Work<Material,W>>
     {
         this.material = material;
         this.stackEnd = new WorkUnit<>( null, null, null );
+        this.stackEnd.complete();
         this.stack = new AtomicReference<>( stackEnd );
-        this.lock = new AtomicReference<Thread>();
+        this.lock = new AtomicReference<>();
     }
 
     /**
      * Apply the given work to the material in a thread-safe way, possibly by
      * combining it with other work.
      * @param work The work to be done.
+     * @throws ExecutionException if this thread ends up performing the piled up work,
+     * and any work unit in the pile throws an exception. Thus the current thread is not
+     * gauranteed to observe any exception its unit of work might throw, since the
+     * exception will be thrown in whichever thread that ends up actually performing the work.
      */
-    public void apply( W work )
+    public void apply( W work ) throws ExecutionException
     {
         // Schedule our work on the stack.
-        WorkUnit<Material,W> unit = new WorkUnit<Material,W>( work, Thread.currentThread(), stackEnd );
-        unit.next = stack.getAndSet( unit ); // benign race, see reverse()
+        WorkUnit<Material,W> unit = enqueueWork( work );
 
         // Try grabbing the lock to do all the work, until our work unit
         // has been completed.
-        boolean wasInterrupted = false;
         int tryCount = 0;
         do
         {
             tryCount++;
-            try
+            Throwable failure = tryDoWork( unit, tryCount, true );
+            if ( failure != null )
             {
-                if ( tryLock( tryCount, unit ) )
-                {
-                    try
-                    {
-                        doSynchronizedWork();
-                    }
-                    finally
-                    {
-                        unlock();
-                    }
-                }
-            }
-            catch ( InterruptedException e )
-            {
-                // We can't stop now, because our work has already been
-                // scheduled. So instead we're just going to reset the
-                // interruption status when we're done.
-                wasInterrupted = true;
+                throw new ExecutionException( failure );
             }
         }
         while ( !unit.isDone() );
-
-        if ( wasInterrupted )
-        {
-            Thread.currentThread().interrupt();
-        }
     }
 
-    private boolean tryLock( int tryCount, WorkUnit<Material,W> unit ) throws InterruptedException
+    private WorkUnit<Material,W> enqueueWork( W work )
+    {
+        WorkUnit<Material,W> unit = new WorkUnit<>( work, Thread.currentThread(), stackEnd );
+        unit.next = stack.getAndSet( unit ); // benign race, see reverse()
+        return unit;
+    }
+
+    private Throwable tryDoWork( WorkUnit<Material,W> unit, int tryCount, boolean otherwisePark )
+    {
+        if ( tryLock( tryCount, unit, otherwisePark ) )
+        {
+            try
+            {
+                return doSynchronizedWork();
+            }
+            finally
+            {
+                unlock();
+                WorkUnit<Material,W> nextBatch = stack.get();
+                if ( !nextBatch.isDone() )
+                {
+                    nextBatch.unpark();
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean tryLock( int tryCount, WorkUnit<Material,W> unit, boolean otherwisePark )
     {
         if ( lock.compareAndSet( null, Thread.currentThread() ) )
         {
@@ -122,14 +133,17 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
         // Did not get the lock, spend some time until our work has aither been completed,
         // or we get the lock.
-        if ( tryCount < 10 )
+        if ( otherwisePark )
         {
-            // todo Thread.onSpinWait() ?
-            Thread.yield();
-        }
-        else
-        {
-            unit.park( 10, TimeUnit.MILLISECONDS );
+            if ( tryCount < 1000 )
+            {
+                // todo Thread.onSpinWait() ?
+                Thread.yield();
+            }
+            else
+            {
+                unit.park( 10, TimeUnit.MILLISECONDS );
+            }
         }
         return false;
     }
@@ -143,17 +157,26 @@ public class WorkSync<Material, W extends Work<Material,W>>
         }
     }
 
-    private void doSynchronizedWork()
+    private Throwable doSynchronizedWork()
     {
         WorkUnit<Material,W> batch = reverse( stack.getAndSet( stackEnd ) );
         W combinedWork = combine( batch );
+        Throwable failure = null;
 
         if ( combinedWork != null )
         {
-            combinedWork.apply( material );
+            try
+            {
+                combinedWork.apply( material );
+            }
+            catch ( Throwable throwable )
+            {
+                failure = throwable;
+            }
         }
 
         markAsDone( batch );
+        return failure;
     }
 
     private WorkUnit<Material,W> reverse( WorkUnit<Material,W> batch )
@@ -208,7 +231,6 @@ public class WorkSync<Material, W extends Work<Material,W>>
         // know that it should wait and complete its task. In fact, it may trail our done-marking
         // process and unpark threads in parallel.
         batch.setAsSuccessor();
-        WorkUnit<Material,W> successor = batch;
         while ( batch != stackEnd )
         {
             batch.complete();
@@ -218,16 +240,16 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
     private static class WorkUnit<Material, W extends Work<Material,W>> extends AtomicInteger
     {
-        static final int STATE_QUEUED = 0;
-        static final int STATE_PARKED = 1;
-        static final int STATE_DONE = 2;
-        static final int STATE_CANCELLED = 3;
+        private static final int STATE_QUEUED = 0;
+        private static final int STATE_PARKED = 1;
+        private static final int STATE_DONE = 2;
+        private static final int STATE_CANCELLED = 3;
 
-        final W work;
-        final WorkUnit<Material,W> stackEnd;
-        final Thread owner;
-        volatile WorkUnit<Material,W> next;
-        volatile boolean successor;
+        private final W work;
+        private final WorkUnit<Material,W> stackEnd;
+        private final Thread owner;
+        private volatile WorkUnit<Material,W> next;
+        private volatile boolean successor;
 
         private WorkUnit( W work, Thread owner, WorkUnit<Material,W> stackEnd )
         {
@@ -284,16 +306,6 @@ public class WorkSync<Material, W extends Work<Material,W>>
             while ( n != stackEnd );
         }
 
-        boolean isDone()
-        {
-            return get() == STATE_DONE;
-        }
-
-        boolean isCancelled()
-        {
-            return get() == STATE_CANCELLED;
-        }
-
         void complete()
         {
             int previousState = getAndSet( STATE_DONE );
@@ -311,6 +323,31 @@ public class WorkSync<Material, W extends Work<Material,W>>
         void unpark()
         {
             LockSupport.unpark( owner );
+        }
+
+        boolean isDone()
+        {
+            return get() == STATE_DONE;
+        }
+
+        boolean isCancelled()
+        {
+            return get() == STATE_CANCELLED;
+        }
+
+        boolean cancel()
+        {
+            int state;
+            do
+            {
+                state = get();
+                if ( state == STATE_DONE )
+                {
+                    return false;
+                }
+            }
+            while ( !compareAndSet( state, STATE_CANCELLED ) );
+            return true;
         }
     }
 }

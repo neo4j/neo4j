@@ -86,7 +86,7 @@ public class WorkSyncTest
         }
     }
 
-    private class RunnableWork implements Runnable
+    private class RunnableWork implements Callable<Void>
     {
         private final AddWork addWork;
 
@@ -96,9 +96,10 @@ public class WorkSyncTest
         }
 
         @Override
-        public void run()
+        public Void call() throws Exception
         {
             sync.apply( addWork );
+            return null;
         }
     }
 
@@ -149,7 +150,7 @@ public class WorkSyncTest
         ExecutorService executor = Executors.newFixedThreadPool( 64 );
         for ( int i = 0; i < 1000; i++ )
         {
-            executor.execute( new RunnableWork( new AddWork( 1 )) );
+            executor.submit( new RunnableWork( new AddWork( 1 )) );
         }
         executor.shutdown();
         assertTrue( executor.awaitTermination( 2, TimeUnit.SECONDS ) );
@@ -195,6 +196,11 @@ public class WorkSyncTest
         }
         catch ( ExecutionException exception )
         {
+            // Outermost ExecutionException from the ExecutorService
+            assertThat( exception.getCause(), instanceOf( ExecutionException.class ) );
+
+            // Inner ExecutionException from the WorkSync
+            exception = (ExecutionException) exception.getCause();
             assertThat( exception.getCause(), instanceOf( IllegalStateException.class ) );
         }
 

@@ -84,7 +84,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         return transactionApplier;
     }
 
-    private void applyIndexUpdates()
+    private void applyIndexUpdates() throws Exception
     {
         if ( indexUpdates != null && indexUpdates.hasUpdates() )
         {
@@ -210,7 +210,14 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 // In that scenario the index would be created, populated and then fed the [this time duplicate]
                 // update for the node created before the index. The most straight forward solution is to
                 // apply pending index updates up to this point in this batch before index schema changes occur.
-                applyIndexUpdates();
+                try
+                {
+                    applyIndexUpdates();
+                }
+                catch ( Exception e )
+                {
+                    throw new IOException( "Failed to flush index updates prior to applying schema change", e );
+                }
 
                 switch ( command.getMode() )
                 {
