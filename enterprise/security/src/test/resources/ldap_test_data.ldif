@@ -45,23 +45,23 @@ gidnumber: 504
 objectclass: posixGroup
 objectclass: top
 
-# Entry 6: cn=architect,ou=groups,dc=example,dc=com
-dn: cn=architect,ou=groups,dc=example,dc=com
-cn: architect
+# Entry 6: cn=readWriteSchema,ou=groups,dc=example,dc=com
+dn: cn=readWriteSchema,ou=groups,dc=example,dc=com
+cn: readWriteSchema
 gidnumber: 502
 objectclass: posixGroup
 objectclass: top
 
-# Entry 7: cn=publisher,ou=groups,dc=example,dc=com
-dn: cn=publisher,ou=groups,dc=example,dc=com
-cn: publisher
+# Entry 7: cn=readWrite,ou=groups,dc=example,dc=com
+dn: cn=readWrite,ou=groups,dc=example,dc=com
+cn: readWrite
 gidnumber: 501
 objectclass: posixGroup
 objectclass: top
 
-# Entry 8: cn=reader,ou=groups,dc=example,dc=com
-dn: cn=reader,ou=groups,dc=example,dc=com
-cn: reader
+# Entry 8: cn=read,ou=groups,dc=example,dc=com
+dn: cn=read,ou=groups,dc=example,dc=com
+cn: read
 gidnumber: 500
 objectclass: posixGroup
 objectclass: top

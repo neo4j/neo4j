@@ -401,15 +401,15 @@ public class MultiRealmAuthManagerTest
         setMockAuthenticationStrategyResult( "morpheus", "abc123", AuthenticationResult.SUCCESS );
 
         userManager.newUser( "trinity", "abc123", false );
-        userManager.newRole( "architect", "trinity" );
+        userManager.newRole( "readWriteSchema", "trinity" );
         setMockAuthenticationStrategyResult( "trinity", "abc123", AuthenticationResult.SUCCESS );
 
         userManager.newUser( "tank", "abc123", false );
-        userManager.newRole( "publisher", "tank" );
+        userManager.newRole( "readWrite", "tank" );
         setMockAuthenticationStrategyResult( "tank", "abc123", AuthenticationResult.SUCCESS );
 
         userManager.newUser( "neo", "abc123", false );
-        userManager.newRole( "reader", "neo" );
+        userManager.newRole( "read", "neo" );
         setMockAuthenticationStrategyResult( "neo", "abc123", AuthenticationResult.SUCCESS );
 
         userManager.newUser( "smith", "abc123", false );
@@ -455,7 +455,7 @@ public class MultiRealmAuthManagerTest
     }
 
     @Test
-    public void userWithArchitectRoleShouldHaveCorrectPermissions() throws Throwable
+    public void userWithReadWriteSchemaRoleShouldHaveCorrectPermissions() throws Throwable
     {
         // Given
         createTestUsers();
@@ -471,7 +471,7 @@ public class MultiRealmAuthManagerTest
     }
 
     @Test
-    public void userWithPublisherRoleShouldHaveCorrectPermissions() throws Throwable
+    public void userWithReadWriteRoleShouldHaveCorrectPermissions() throws Throwable
     {
         // Given
         createTestUsers();
@@ -487,7 +487,7 @@ public class MultiRealmAuthManagerTest
     }
 
     @Test
-    public void userWithReaderRoleShouldHaveCorrectPermissions() throws Throwable
+    public void userWithReadRoleShouldHaveCorrectPermissions() throws Throwable
     {
         // Given
         createTestUsers();

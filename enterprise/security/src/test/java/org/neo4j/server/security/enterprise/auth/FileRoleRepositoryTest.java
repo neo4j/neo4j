@@ -274,7 +274,7 @@ public class FileRoleRepositoryTest
     {
         // Given
         Files.createDirectories( roleFile.getParent() );
-        Files.write( roleFile, UTF8.encode( "admin:neo4j\n" + "reader:\n" ) );
+        Files.write( roleFile, UTF8.encode( "admin:neo4j\n" + "read:\n" ) );
 
         // When
         FileRoleRepository roles = new FileRoleRepository( roleFile, NullLogProvider.getInstance() );
@@ -284,7 +284,7 @@ public class FileRoleRepositoryTest
         assertTrue( "neo4j should be assigned to 'admin'", role.users().contains( "neo4j" ) );
         assertTrue( "only one admin should exist", role.users().size() == 1 );
 
-        role = roles.getRoleByName( "reader" );
-        assertTrue( "no users should be assigned to 'reader'", role.users().isEmpty() );
+        role = roles.getRoleByName( "read" );
+        assertTrue( "no users should be assigned to 'read'", role.users().isEmpty() );
     }
 }

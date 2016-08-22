@@ -70,7 +70,7 @@ public class EnterpriseAuthenticationDocIT extends AuthenticationDocIT
         assertThat( "Should have 4 predefined roles", data.size(), equalTo( 4 ) );
         Stream<String> values = data.findValues( "row" ).stream().map( row -> row.get(0).asText() );
         assertThat( "Expected specific roles", values.collect( Collectors.toList()),
-                hasItems( "admin", "architect", "publisher", "reader") );
+                hasItems( "admin", "readWriteSchema", "readWrite", "read") );
 
     }
 }

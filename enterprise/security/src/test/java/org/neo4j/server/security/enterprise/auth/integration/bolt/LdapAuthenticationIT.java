@@ -142,7 +142,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
             settings.put( SecuritySettings.ldap_authorization_user_search_base, "dc=example,dc=com" );
             settings.put( SecuritySettings.ldap_authorization_user_search_filter, "(&(objectClass=*)(uid={0}))" );
             settings.put( SecuritySettings.ldap_authorization_group_membership_attribute_names, "gidnumber" );
-            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "500=reader;501=publisher;502=architect;503=admin" );
+            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "500=read;501=readWrite;502=readWriteSchema;503=admin" );
         };
     }
 
@@ -212,24 +212,24 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
 
     @Test
     @ApplyLdifFiles( "ldap_test_data.ldif" )
-    public void shouldBeAbleToLoginAndAuthorizeReaderWithLdapOnly() throws Throwable
+    public void shouldBeAbleToLoginAndAuthorizeReadUserWithLdapOnly() throws Throwable
     {
         // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
 
         // Then
-        testAuthWithReaderUser();
+        testAuthWithReadUser();
     }
 
     @Test
     @ApplyLdifFiles( "ldap_test_data.ldif" )
-    public void shouldBeAbleToLoginAndAuthorizePublisherWithLdapOnly() throws Throwable
+    public void shouldBeAbleToLoginAndAuthorizeReadWriteUserWithLdapOnly() throws Throwable
     {
         // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
 
         // Then
-        testAuthWithPublisherUser();
+        testAuthWithReadWriteUser();
     }
 
     @Test
@@ -253,14 +253,14 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         } ) );
 
         // Then
-        // User 'neo' has reader role by default, but since we are not passing a group-to-role mapping
+        // User 'neo' has 'read' role by default, but since we are not passing a group-to-role mapping
         // he should get no permissions
         testAuthWithNoPermissionUser( "neo" );
     }
 
     @Test
     @ApplyLdifFiles( "ldap_test_data.ldif" )
-    public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContext() throws Throwable
+    public void shouldBeAbleToLoginAndAuthorizeReadUserWithUserLdapContext() throws Throwable
     {
         // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
@@ -268,12 +268,12 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         } ) );
 
         // Then
-        testAuthWithReaderUser();
+        testAuthWithReadUser();
     }
 
     @Test
     @ApplyLdifFiles( "ldap_test_data.ldif" )
-    public void shouldBeAbleToLoginAndAuthorizePublisherWithUserLdapContext() throws Throwable
+    public void shouldBeAbleToLoginAndAuthorizeReadWriteUserWithUserLdapContext() throws Throwable
     {
         // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
@@ -281,7 +281,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         } ) );
 
         // Then
-        testAuthWithPublisherUser();
+        testAuthWithReadWriteUser();
     }
 
     @Test
@@ -308,7 +308,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         } ) );
 
         // Then
-        // User 'neo' has reader role by default, but since we are not passing a group-to-role mapping
+        // User 'neo' has 'read' role by default, but since we are not passing a group-to-role mapping
         // he should get no permissions
         testAuthWithNoPermissionUser( "neo" );
     }
@@ -327,14 +327,14 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
 
         // Then
         //--------------------------
-        // First login as the admin user 'neo4j' and create the internal user 'neo' with role 'reader'
-        testCreateReaderUser();
+        // First login as the admin user 'neo4j' and create the internal user 'neo' with role 'read'
+        testCreateReadUser();
 
         //--------------------------
         // Then login user 'neo' with LDAP and test that internal authorization gives correct permission
         reconnect();
 
-        testAuthWithReaderUser();
+        testAuthWithReadUser();
     }
 
     @Before
@@ -361,20 +361,20 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         this.client = cf.newInstance();
     }
 
-    private void testCreateReaderUser() throws Exception
+    private void testCreateReadUser() throws Exception
     {
         assertAuth( "neo4j", "abc123" );
 
         // NOTE: The default user 'neo4j' has password change required, so we have to first change it
         client.send( TransportTestUtil.chunk(
                 run( "CALL dbms.changeUserPassword('neo4j', '123') CALL dbms.createUser( 'neo', 'invalid', false ) " +
-                     "CALL dbms.addRoleToUser( 'neo', 'reader' ) RETURN 0" ),
+                     "CALL dbms.addRoleToUser( 'neo', 'read' ) RETURN 0" ),
                 pullAll() ) );
 
         assertThat( client, eventuallyReceives( msgSuccess() ) );
     }
 
-    private void testAuthWithReaderUser() throws Exception
+    private void testAuthWithReadUser() throws Exception
     {
         // When
         assertAuth( "neo", "abc123" );
@@ -398,7 +398,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
                         String.format( "Write operations are not allowed for 'neo'." ) ) ) );
     }
 
-    private void testAuthWithPublisherUser() throws Exception
+    private void testAuthWithReadWriteUser() throws Exception
     {
         // When
         assertAuth( "tank", "abc123" );

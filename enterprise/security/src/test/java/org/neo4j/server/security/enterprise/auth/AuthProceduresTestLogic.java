@@ -44,9 +44,9 @@ import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSION_DENIED;
 import static org.neo4j.server.security.enterprise.auth.InternalFlatFileRealm.IS_SUSPENDED;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
-import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
-import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
-import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
+import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READ_WRITE_SCHEMA;
+import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READ_WRITE;
+import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READ;
 
 public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 {
@@ -404,7 +404,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
                     e.getMessage().contains( "User 'noneSubject' does not exist" ) );
         }
 
-        userManager.addRoleToUser( "readSubject", PUBLISHER );
+        userManager.addRoleToUser( "readSubject", READ_WRITE );
         assertEmpty( adminSubject, "CALL dbms.deleteUser('readSubject')" );
         try
         {
@@ -416,8 +416,8 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
             assertTrue( "User readSubject should not exist",
                     e.getMessage().contains( "User 'readSubject' does not exist" ) );
         }
-        assertFalse( userManager.getUsernamesForRole( READER ).contains( "readSubject" ) );
-        assertFalse( userManager.getUsernamesForRole( PUBLISHER ).contains( "readSubject" ) );
+        assertFalse( userManager.getUsernamesForRole( READ ).contains( "readSubject" ) );
+        assertFalse( userManager.getUsernamesForRole( READ_WRITE ).contains( "readSubject" ) );
     }
 
     @Test
@@ -569,23 +569,23 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldAddRoleToUser() throws Exception
     {
-        assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
-        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('readSubject', '" + PUBLISHER + "')" );
-        assertTrue( "Should have role publisher", userHasRole( "readSubject", PUBLISHER ) );
+        assertFalse( "Should not have role 'readWrite'", userHasRole( "readSubject", READ_WRITE ) );
+        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('readSubject', '" + READ_WRITE + "')" );
+        assertTrue( "Should have role 'readWrite'", userHasRole( "readSubject", READ_WRITE ) );
     }
 
     @Test
     public void shouldAddRetainUserInRole() throws Exception
     {
-        assertTrue( "Should have role reader", userHasRole( "readSubject", READER ) );
-        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('readSubject', '" + READER + "')" );
-        assertTrue( "Should have still have role reader", userHasRole( "readSubject", READER ) );
+        assertTrue( "Should have role 'read'", userHasRole( "readSubject", READ ) );
+        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('readSubject', '" + READ + "')" );
+        assertTrue( "Should have still have role 'read'", userHasRole( "readSubject", READ ) );
     }
 
     @Test
     public void shouldFailToAddNonExistentUserToRole() throws Exception
     {
-        testFailAddRoleToUser( adminSubject, "Olivia", PUBLISHER, "User 'Olivia' does not exist" );
+        testFailAddRoleToUser( adminSubject, "Olivia", READ_WRITE, "User 'Olivia' does not exist" );
         testFailAddRoleToUser( adminSubject, "Olivia", "thisRoleDoesNotExist", "User 'Olivia' does not exist" );
         testFailAddRoleToUser( adminSubject, "Olivia", "", "Role name contains illegal characters" );
     }
@@ -601,12 +601,12 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldFailToAddRoleToUserIfNotAdmin() throws Exception
     {
-        testFailAddRoleToUser( pwdSubject, "readSubject", PUBLISHER, CHANGE_PWD_ERR_MSG );
-        testFailAddRoleToUser( readSubject, "readSubject", PUBLISHER, PERMISSION_DENIED );
-        testFailAddRoleToUser( writeSubject, "readSubject", PUBLISHER, PERMISSION_DENIED );
+        testFailAddRoleToUser( pwdSubject, "readSubject", READ_WRITE, CHANGE_PWD_ERR_MSG );
+        testFailAddRoleToUser( readSubject, "readSubject", READ_WRITE, PERMISSION_DENIED );
+        testFailAddRoleToUser( writeSubject, "readSubject", READ_WRITE, PERMISSION_DENIED );
 
-        testFailAddRoleToUser( schemaSubject, "readSubject", PUBLISHER, PERMISSION_DENIED );
-        testFailAddRoleToUser( schemaSubject, "Olivia", PUBLISHER, PERMISSION_DENIED );
+        testFailAddRoleToUser( schemaSubject, "readSubject", READ_WRITE, PERMISSION_DENIED );
+        testFailAddRoleToUser( schemaSubject, "Olivia", READ_WRITE, PERMISSION_DENIED );
         testFailAddRoleToUser( schemaSubject, "Olivia", "thisRoleDoesNotExist", PERMISSION_DENIED );
     }
 
@@ -615,22 +615,22 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldRemoveRoleFromUser() throws Exception
     {
-        assertEmpty( adminSubject, "CALL dbms.removeRoleFromUser('readSubject', '" + READER + "')" );
-        assertFalse( "Should not have role reader", userHasRole( "readSubject", READER ) );
+        assertEmpty( adminSubject, "CALL dbms.removeRoleFromUser('readSubject', '" + READ + "')" );
+        assertFalse( "Should not have role 'read'", userHasRole( "readSubject", READ ) );
     }
 
     @Test
     public void shouldKeepUserOutOfRole() throws Exception
     {
-        assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
-        assertEmpty( adminSubject, "CALL dbms.removeRoleFromUser('readSubject', '" + PUBLISHER + "')" );
-        assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
+        assertFalse( "Should not have role 'readWrite'", userHasRole( "readSubject", READ_WRITE ) );
+        assertEmpty( adminSubject, "CALL dbms.removeRoleFromUser('readSubject', '" + READ_WRITE + "')" );
+        assertFalse( "Should not have role 'readWrite'", userHasRole( "readSubject", READ_WRITE ) );
     }
 
     @Test
     public void shouldFailToRemoveNonExistentUserFromRole() throws Exception
     {
-        testFailRemoveRoleFromUser( adminSubject, "Olivia", PUBLISHER, "User 'Olivia' does not exist" );
+        testFailRemoveRoleFromUser( adminSubject, "Olivia", READ_WRITE, "User 'Olivia' does not exist" );
         testFailRemoveRoleFromUser( adminSubject, "Olivia", "thisRoleDoesNotExist", "User 'Olivia' does not exist" );
         testFailRemoveRoleFromUser( adminSubject, "Olivia", "", "Role name contains illegal characters" );
         testFailRemoveRoleFromUser( adminSubject, "", "", "User name contains illegal characters" );
@@ -647,12 +647,12 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldFailToRemoveRoleFromUserIfNotAdmin() throws Exception
     {
-        testFailRemoveRoleFromUser( pwdSubject, "readSubject", PUBLISHER,CHANGE_PWD_ERR_MSG );
-        testFailRemoveRoleFromUser( readSubject, "readSubject", PUBLISHER, PERMISSION_DENIED );
-        testFailRemoveRoleFromUser( writeSubject, "readSubject", PUBLISHER, PERMISSION_DENIED );
+        testFailRemoveRoleFromUser( pwdSubject, "readSubject", READ_WRITE,CHANGE_PWD_ERR_MSG );
+        testFailRemoveRoleFromUser( readSubject, "readSubject", READ_WRITE, PERMISSION_DENIED );
+        testFailRemoveRoleFromUser( writeSubject, "readSubject", READ_WRITE, PERMISSION_DENIED );
 
-        testFailRemoveRoleFromUser( schemaSubject, "readSubject", READER, PERMISSION_DENIED );
-        testFailRemoveRoleFromUser( schemaSubject, "Olivia", READER, PERMISSION_DENIED );
+        testFailRemoveRoleFromUser( schemaSubject, "readSubject", READ, PERMISSION_DENIED );
+        testFailRemoveRoleFromUser( schemaSubject, "Olivia", READ, PERMISSION_DENIED );
         testFailRemoveRoleFromUser( schemaSubject, "Olivia", "thisRoleDoesNotExist", PERMISSION_DENIED );
     }
 
@@ -668,16 +668,16 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldAllowAddingAndRemovingUserFromMultipleRoles() throws Exception
     {
-        assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
-        assertFalse( "Should not have role architect", userHasRole( "readSubject", ARCHITECT ) );
-        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('readSubject', '" + PUBLISHER + "')" );
-        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('readSubject', '" + ARCHITECT + "')" );
-        assertTrue( "Should have role publisher", userHasRole( "readSubject", PUBLISHER ) );
-        assertTrue( "Should have role architect", userHasRole( "readSubject", ARCHITECT ) );
-        assertEmpty( adminSubject, "CALL dbms.removeRoleFromUser('readSubject', '" + PUBLISHER + "')" );
-        assertEmpty( adminSubject, "CALL dbms.removeRoleFromUser('readSubject', '" + ARCHITECT + "')" );
-        assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
-        assertFalse( "Should not have role architect", userHasRole( "readSubject", ARCHITECT ) );
+        assertFalse( "Should not have role 'readWrite'", userHasRole( "readSubject", READ_WRITE ) );
+        assertFalse( "Should not have role 'readWriteSchema'", userHasRole( "readSubject", READ_WRITE_SCHEMA ) );
+        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('readSubject', '" + READ_WRITE + "')" );
+        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('readSubject', '" + READ_WRITE_SCHEMA + "')" );
+        assertTrue( "Should have role 'readWrite'", userHasRole( "readSubject", READ_WRITE ) );
+        assertTrue( "Should have role 'readWriteSchema'", userHasRole( "readSubject", READ_WRITE_SCHEMA ) );
+        assertEmpty( adminSubject, "CALL dbms.removeRoleFromUser('readSubject', '" + READ_WRITE + "')" );
+        assertEmpty( adminSubject, "CALL dbms.removeRoleFromUser('readSubject', '" + READ_WRITE_SCHEMA + "')" );
+        assertFalse( "Should not have role 'readWrite'", userHasRole( "readSubject", READ_WRITE ) );
+        assertFalse( "Should not have role 'readWriteSchema'", userHasRole( "readSubject", READ_WRITE_SCHEMA ) );
     }
 
     //---------- list users -----------
@@ -694,14 +694,14 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     {
         Map<String, Object> expected = map(
                 "adminSubject", listOf( ADMIN ),
-                "readSubject", listOf( READER ),
-                "schemaSubject", listOf( ARCHITECT ),
-                "writeSubject", listOf( READER, PUBLISHER ),
+                "readSubject", listOf( READ ),
+                "schemaSubject", listOf( READ_WRITE_SCHEMA ),
+                "writeSubject", listOf( READ, READ_WRITE ),
                 "pwdSubject", listOf( ),
                 "noneSubject", listOf( ),
                 "neo4j", listOf( ADMIN )
         );
-        userManager.addRoleToUser( "writeSubject", READER );
+        userManager.addRoleToUser( "writeSubject", READ );
         assertSuccess( adminSubject, "CALL dbms.listUsers()",
                 r -> assertKeyIsMap( r, "username", "roles", expected ) );
     }
@@ -727,16 +727,16 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldShowCurrentUser() throws Exception
     {
-        userManager.addRoleToUser( "writeSubject", READER );
+        userManager.addRoleToUser( "writeSubject", READ );
         assertSuccess( adminSubject, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles", map( "adminSubject", listOf( ADMIN ) ) ) );
         assertSuccess( readSubject, "CALL dbms.showCurrentUser()",
-                r -> assertKeyIsMap( r, "username", "roles", map( "readSubject", listOf( READER ) ) ) );
+                r -> assertKeyIsMap( r, "username", "roles", map( "readSubject", listOf( READ ) ) ) );
         assertSuccess( schemaSubject, "CALL dbms.showCurrentUser()",
-                r -> assertKeyIsMap( r, "username", "roles", map( "schemaSubject", listOf( ARCHITECT ) ) ) );
+                r -> assertKeyIsMap( r, "username", "roles", map( "schemaSubject", listOf( READ_WRITE_SCHEMA ) ) ) );
         assertSuccess( writeSubject, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles",
-                        map( "writeSubject", listOf( READER, PUBLISHER ) ) ) );
+                        map( "writeSubject", listOf( READ, READ_WRITE ) ) ) );
         assertSuccess( noneSubject, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles", map( "noneSubject", listOf() ) ) );
     }
@@ -764,9 +764,9 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     {
         Map<String,Object> expected = map(
                 ADMIN, listOf( "adminSubject", "neo4j" ),
-                READER, listOf( "readSubject" ),
-                ARCHITECT, listOf( "schemaSubject" ),
-                PUBLISHER, listOf( "writeSubject" ),
+                READ, listOf( "readSubject" ),
+                READ_WRITE_SCHEMA, listOf( "schemaSubject" ),
+                READ_WRITE, listOf( "writeSubject" ),
                 "empty", listOf()
         );
         assertSuccess( adminSubject, "CALL dbms.listRoles()",
@@ -790,7 +790,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertSuccess( adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", ADMIN ) );
         assertSuccess( adminSubject, "CALL dbms.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
-                r -> assertKeyIs( r, "roles", READER ) );
+                r -> assertKeyIs( r, "roles", READ ) );
     }
 
     @Test
@@ -815,7 +815,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertSuccess( adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", ADMIN ) );
         assertSuccess( readSubject, "CALL dbms.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
-                r -> assertKeyIs( r, "roles", READER ) );
+                r -> assertKeyIs( r, "roles", READ ) );
     }
 
     @Test
@@ -890,7 +890,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertPasswordChangeWhenPasswordChangeRequired( pwdSubject, "321" );
 
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
-        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('Henrik', '" + ARCHITECT + "')" );
+        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('Henrik', '" + READ_WRITE_SCHEMA + "')" );
         S henrik = neo.login( "Henrik", "bar" );
         neo.assertPasswordChangeRequired( henrik );
         testFailRead( henrik, 3, pwdReqErrMsg( READ_OPS_NOT_ALLOWED ) );
@@ -920,7 +920,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     }
 
     @Test
-    public void shouldSetCorrectReaderPermissions() throws Exception
+    public void shouldSetCorrectReadPermissions() throws Exception
     {
         testSuccessfulRead( readSubject, 3 );
         testFailWrite( readSubject );
@@ -930,7 +930,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     }
 
     @Test
-    public void shouldSetCorrectPublisherPermissions() throws Exception
+    public void shouldSetCorrectReadWritePermissions() throws Exception
     {
         testSuccessfulRead( writeSubject, 3 );
         testSuccessfulWrite( writeSubject );
@@ -962,7 +962,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldSetCorrectMultiRolePermissions() throws Exception
     {
-        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('schemaSubject', '" + READER + "')" );
+        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('schemaSubject', '" + READ + "')" );
 
         testSuccessfulRead( schemaSubject, 3 );
         testSuccessfulWrite( schemaSubject );
