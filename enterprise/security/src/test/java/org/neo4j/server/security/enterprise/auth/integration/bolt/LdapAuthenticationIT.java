@@ -368,7 +368,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         // NOTE: The default user 'neo4j' has password change required, so we have to first change it
         client.send( TransportTestUtil.chunk(
                 run( "CALL dbms.changeUserPassword('neo4j', '123') CALL dbms.createUser( 'neo', 'invalid', false ) " +
-                     "CALL dbms.addUserToRole( 'neo', 'reader' ) RETURN 0" ),
+                     "CALL dbms.addRoleToUser( 'neo', 'reader' ) RETURN 0" ),
                 pullAll() ) );
 
         assertThat( client, eventuallyReceives( msgSuccess() ) );

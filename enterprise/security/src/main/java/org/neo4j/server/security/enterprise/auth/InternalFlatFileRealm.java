@@ -164,7 +164,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
             {
                 if ( getAllUsernames().contains( "neo4j" ) )
                 {
-                    addUserToRole( "neo4j", PredefinedRolesBuilder.ADMIN );
+                    addRoleToUser( "neo4j", PredefinedRolesBuilder.ADMIN );
                 }
             }
         }
@@ -362,7 +362,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    public void addUserToRole( String username, String roleName ) throws IOException, InvalidArgumentsException
+    public void addRoleToUser( String username, String roleName ) throws IOException, InvalidArgumentsException
     {
         checkValidityOfUsernameAndRoleName( username, roleName );
 
@@ -378,14 +378,14 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
             catch ( ConcurrentModificationException e )
             {
                 // Try again
-                addUserToRole( username, roleName );
+                addRoleToUser( username, roleName );
             }
         }
         clearCachedAuthorizationInfoForUser( username );
     }
 
     @Override
-    public void removeUserFromRole( String username, String roleName ) throws IOException, InvalidArgumentsException
+    public void removeRoleFromUser( String username, String roleName ) throws IOException, InvalidArgumentsException
     {
         checkValidityOfUsernameAndRoleName( username, roleName );
 
@@ -402,7 +402,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
             catch ( ConcurrentModificationException e )
             {
                 // Try again
-                removeUserFromRole( username, roleName );
+                removeRoleFromUser( username, roleName );
             }
         }
         clearCachedAuthorizationInfoForUser( username );

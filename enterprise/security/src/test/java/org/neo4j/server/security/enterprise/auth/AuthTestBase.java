@@ -105,10 +105,10 @@ abstract class AuthTestBase<S>
         userManager.newUser( "writeSubject", "abc", false );
         userManager.newUser( "readSubject", "123", false );
         // Currently admin role is created by default
-        userManager.addUserToRole( "adminSubject", ADMIN );
-        userManager.addUserToRole( "schemaSubject", ARCHITECT );
-        userManager.addUserToRole( "writeSubject", PUBLISHER );
-        userManager.addUserToRole( "readSubject", READER );
+        userManager.addRoleToUser( "adminSubject", ADMIN );
+        userManager.addRoleToUser( "schemaSubject", ARCHITECT );
+        userManager.addRoleToUser( "writeSubject", PUBLISHER );
+        userManager.addRoleToUser( "readSubject", READER );
         userManager.newRole( EMPTY_ROLE );
         noneSubject = neo.login( "noneSubject", "abc" );
         pwdSubject = neo.login( "pwdSubject", "abc" );
@@ -184,14 +184,14 @@ abstract class AuthTestBase<S>
         assertFail( subject, "CALL dbms.createUser('', 'foo', false)", errMsg );
     }
 
-    void testFailAddUserToRole( S subject, String username, String role, String errMsg )
+    void testFailAddRoleToUser( S subject, String username, String role, String errMsg )
     {
-        assertFail( subject, "CALL dbms.addUserToRole('" + username + "', '" + role + "')", errMsg );
+        assertFail( subject, "CALL dbms.addRoleToUser('" + username + "', '" + role + "')", errMsg );
     }
 
-    void testFailRemoveUserFromRole( S subject, String username, String role, String errMsg )
+    void testFailRemoveRoleFromUser( S subject, String username, String role, String errMsg )
     {
-        assertFail( subject, "CALL dbms.removeUserFromRole('" + username + "', '" + role + "')", errMsg );
+        assertFail( subject, "CALL dbms.removeRoleFromUser('" + username + "', '" + role + "')", errMsg );
     }
 
     void testFailDeleteUser( S subject, String username, String errMsg )
