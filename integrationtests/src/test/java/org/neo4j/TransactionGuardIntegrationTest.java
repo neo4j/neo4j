@@ -19,6 +19,7 @@
  */
 package org.neo4j;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -65,16 +66,20 @@ public class TransactionGuardIntegrationTest
 {
     @Rule
     public CleanupRule cleanupRule = new CleanupRule();
+    private FakeClock clock;
+    private GraphDatabaseAPI database;
+
+    @Before
+    public void setUp()
+    {
+        clock = new FakeClock();
+        Map<Setting<?>,String> configMap = getSettingsMap();
+        database = startCustomDatabase( clock, configMap );
+    }
 
     @Test
     public void terminateLongRunningTransaction()
     {
-        FakeClock clock = new FakeClock();
-        Map<Setting<?>,String> configMap = MapUtil.genericMap(
-                GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE,
-                GraphDatabaseSettings.transaction_timeout, "2s",
-                GraphDatabaseSettings.statement_timeout, "100s" );
-        GraphDatabaseAPI database = startCustomDatabase( clock, configMap );
         try ( Transaction transaction = database.beginTx() )
         {
             clock.forward( 3, TimeUnit.SECONDS );
@@ -93,12 +98,6 @@ public class TransactionGuardIntegrationTest
     @Test
     public void terminateLongRunningQueryTransaction()
     {
-        FakeClock clock = new FakeClock();
-        Map<Setting<?>,String> configMap = MapUtil.genericMap(
-                GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE,
-                GraphDatabaseSettings.transaction_timeout, "2s",
-                GraphDatabaseSettings.statement_timeout, "100s" );
-        GraphDatabaseAPI database = startCustomDatabase( clock, configMap );
         try ( Transaction transaction = database.beginTx() )
         {
             clock.forward( 3, TimeUnit.SECONDS );
@@ -117,12 +116,6 @@ public class TransactionGuardIntegrationTest
     @Test
     public void terminateLongRunningShellQuery() throws Exception
     {
-        FakeClock clock = new FakeClock();
-        Map<Setting<?>,String> configMap = MapUtil.genericMap(
-                GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE,
-                GraphDatabaseSettings.transaction_timeout, "2s",
-                GraphDatabaseSettings.statement_timeout, "100s" );
-        GraphDatabaseAPI database = startCustomDatabase( clock, configMap );
         GraphDatabaseShellServer shellServer = getGraphDatabaseShellServer( database );
         try
         {
@@ -140,6 +133,14 @@ public class TransactionGuardIntegrationTest
         }
 
         assertDatabaseDoesNotHaveNodes( database );
+    }
+
+    private Map<Setting<?>,String> getSettingsMap()
+    {
+        return MapUtil.genericMap(
+                GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE,
+                GraphDatabaseSettings.transaction_timeout, "2s",
+                GraphDatabaseSettings.statement_timeout, "100s" );
     }
 
     private Response execute( GraphDatabaseShellServer shellServer,
