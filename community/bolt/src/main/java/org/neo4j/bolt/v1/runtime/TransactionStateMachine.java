@@ -279,20 +279,7 @@ public class TransactionStateMachine implements StatementProcessor
     private static Result executeQuery( MutableTransactionState ctx, SPI spi, String statement,
                                         Map<String, Object> params ) throws QueryExecutionKernelException
     {
-        try
-        {
-            return spi.executeQuery( ctx.querySource, ctx.authSubject, statement, params );
-        }
-        catch ( AuthorizationViolationException e )
-        {
-            // TODO: Make lower level of the stack aware of expired credentials so that it can throw the correct
-            // exception instead of translating it here.
-            /*if ( ctx.credentialsExpired )
-            {
-                throw new CredentialsExpiredException();
-            }*/
-            throw e;
-        }
+        return spi.executeQuery( ctx.querySource, ctx.authSubject, statement, params );
     }
 
     static class MutableTransactionState
