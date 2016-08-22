@@ -24,27 +24,39 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.guard.GuardTimeoutException;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.database.LifecycleManagingDatabase;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.shell.InterruptSignalHandler;
 import org.neo4j.shell.Response;
 import org.neo4j.shell.ShellException;
@@ -54,13 +66,18 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
+import org.neo4j.test.server.HTTP;
 import org.neo4j.time.FakeClock;
 
+import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
 
 public class TransactionGuardIntegrationTest
 {
@@ -135,12 +152,86 @@ public class TransactionGuardIntegrationTest
         assertDatabaseDoesNotHaveNodes( database );
     }
 
+    @Test
+    public void terminateLongRunningRestQuery() throws Exception
+    {
+        CommunityNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        String transactionEndPoint = HTTP.POST( transactionUri(neoServer), singletonList( map( "statement", "create (n)" ) ) ).location();
+
+        clock.forward( 3, TimeUnit.SECONDS );
+        HTTP.Response commitResponse = HTTP.POST( transactionEndPoint + "/commit" );
+        assertEquals( "Transaction should be already closed and not found.", 404, commitResponse.status() );
+
+        assertEquals( "Transaction should be forcefully closed.", TransactionNotFound.code().serialize(),
+                commitResponse.get( "errors" ).findValue( "code" ).asText());
+        assertDatabaseDoesNotHaveNodes( database );
+    }
+
+    @Test
+    public void terminateLongRunningDriverQuery() throws Exception
+    {
+        CommunityNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+
+        org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost", driverConfig );
+              Session session = driver.session() )
+        {
+            org.neo4j.driver.v1.Transaction transaction = session.beginTransaction();
+            transaction.run( "create (n)" ).consume();
+            transaction.success();
+            clock.forward( 3, TimeUnit.SECONDS );
+            try
+            {
+                transaction.run( "create (n)" ).consume();
+                fail("Transaction should be already terminated by execution guard.");
+            }
+            catch ( Exception expected )
+            {
+                // ignored
+            }
+        }
+        assertDatabaseDoesNotHaveNodes( database );
+    }
+
+    private org.neo4j.driver.v1.Config getDriverConfig()
+    {
+        return org.neo4j.driver.v1.Config.build()
+                .withEncryptionLevel( org.neo4j.driver.v1.Config.EncryptionLevel.NONE )
+                .toConfig();
+    }
+
+    private CommunityNeoServer startNeoServer( GraphDatabaseFacade database ) throws IOException
+    {
+        GuardingServerBuilder serverBuilder = new GuardingServerBuilder( database );
+        GraphDatabaseSettings.BoltConnector boltConnector = boltConnector( "0" );
+        serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
+                .withProperty( boltConnector.enabled.name(), "true" )
+                .withProperty( boltConnector.encryption_level.name(), GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name())
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" );
+        CommunityNeoServer neoServer = serverBuilder.build();
+        cleanupRule.add( neoServer );
+        neoServer.start();
+        return neoServer;
+    }
+
     private Map<Setting<?>,String> getSettingsMap()
     {
+        GraphDatabaseSettings.BoltConnector boltConnector = boltConnector( "0" );
         return MapUtil.genericMap(
+                boltConnector.type, "BOLT",
+                boltConnector.enabled, "true",
+                boltConnector.encryption_level, GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name(),
                 GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE,
                 GraphDatabaseSettings.transaction_timeout, "2s",
+                GraphDatabaseSettings.auth_enabled, "false",
                 GraphDatabaseSettings.statement_timeout, "100s" );
+    }
+
+
+    private String transactionUri(CommunityNeoServer neoServer)
+    {
+        return neoServer.baseUri().toString() + "db/data/transaction";
     }
 
     private Response execute( GraphDatabaseShellServer shellServer,
@@ -180,6 +271,37 @@ public class TransactionGuardIntegrationTest
                         .newImpermanentDatabase( configMap );
         cleanupRule.add( database );
         return database;
+    }
+
+    private class GuardingServerBuilder extends CommunityServerBuilder
+    {
+
+        private GraphDatabaseFacade graphDatabaseFacade;
+        final LifecycleManagingDatabase.GraphFactory PRECREATED_FACADE_FACTORY =
+                ( config, dependencies ) -> graphDatabaseFacade;
+
+        protected GuardingServerBuilder( GraphDatabaseFacade graphDatabaseAPI )
+        {
+            super( NullLogProvider.getInstance() );
+            this.graphDatabaseFacade = graphDatabaseAPI;
+        }
+
+        @Override
+        protected CommunityNeoServer build( Optional<File> configFile, Config config,
+                GraphDatabaseFacadeFactory.Dependencies dependencies )
+        {
+            return new GuardTestServer( config, dependencies, NullLogProvider.getInstance() );
+        }
+
+        private class GuardTestServer extends CommunityNeoServer
+        {
+            GuardTestServer( Config config,
+                    GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
+            {
+                super( config, LifecycleManagingDatabase.lifecycleManagingDatabase( PRECREATED_FACADE_FACTORY ),
+                        dependencies, logProvider );
+            }
+        }
     }
 
     private class GuardTestGraphDatabaseFactory extends TestGraphDatabaseFactory

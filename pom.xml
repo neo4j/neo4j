@@ -477,6 +477,12 @@
       </dependency>
       <!-- testing -->
       <dependency>
+        <groupId>org.neo4j.driver</groupId>
+        <artifactId>neo4j-java-driver</artifactId>
+        <version>1.0.4</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
         <version>4.3.4</version>
