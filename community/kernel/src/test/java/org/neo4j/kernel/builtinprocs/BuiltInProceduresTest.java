@@ -155,6 +155,21 @@ public class BuiltInProceduresTest
     }
 
     @Test
+    public void shouldEscapeLabelNameContainingColons() throws Throwable
+    {
+        // Given
+        givenUniqueConstraint( "FOO:BAR", "x.y" );
+        givenNodePropExistenceConstraint( "FOO:BAR", "x.y" );
+
+        // When/Then
+        List<Object[]> call = call( "db.constraints" );
+        assertThat( call,
+                contains(
+                        record( "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT `foo:bar`.x.y IS UNIQUE" ),
+                        record( "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT exists(`foo:bar`.x.y)" ) ) );
+    }
+
+    @Test
     public void shouldListCorrectBuiltinProcedures() throws Throwable
     {
         // When/Then

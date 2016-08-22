@@ -47,7 +47,7 @@ public class NodePropertyExistenceConstraint extends NodePropertyConstraint
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        String labelName = tokenNameLookup.labelGetName( labelId );
+        String labelName = labelName( tokenNameLookup );
         String boundIdentifier = labelName.toLowerCase();
         return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT exists(%s.%s)",
                 boundIdentifier, labelName, boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
