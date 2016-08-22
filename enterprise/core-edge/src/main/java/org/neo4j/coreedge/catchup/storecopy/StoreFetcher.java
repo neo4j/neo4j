@@ -101,6 +101,20 @@ public class StoreFetcher
 
     public StoreId storeId( MemberId from ) throws StoreIdDownloadFailedException
     {
-        return storeCopyClient.fetchStoreId( from );
+        int attempts = 0;
+        while ( attempts++ < 5 )
+        {
+            log.info( "Attempt %d to get store id from %s.", attempts, from );
+            try
+            {
+                return storeCopyClient.fetchStoreId( from );
+            }
+            catch ( StoreIdDownloadFailedException e )
+            {
+                log.info( "Attempt %d to get store id from %s failed.", attempts, from );
+            }
+        }
+        throw new StoreIdDownloadFailedException( String.format( "Failed to get store id from %s after %d attempts",
+                from, attempts - 1 ) );
     }
 }

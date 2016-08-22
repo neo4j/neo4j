@@ -25,4 +25,9 @@ public class StoreIdDownloadFailedException extends Exception
     {
         super( cause );
     }
+
+    public StoreIdDownloadFailedException( String message )
+    {
+        super( message );
+    }
 }
