@@ -27,11 +27,14 @@ import org.neo4j.coreedge.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.coreedge.catchup.tx.TxPullClient;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static java.lang.String.format;
 
 public class StoreFetcher
 {
@@ -102,19 +105,27 @@ public class StoreFetcher
         }
     }
 
-    public StoreId storeId( MemberId from ) throws StoreIdDownloadFailedException
+    public StoreId storeId( MemberId from ) throws StoreCatchUpFailedException
+    {
+        int maximumRetries = 5;
+        String operation = format( "get store id from %s", from );
+        return retry(client -> client.fetchStoreId( from ), operation, maximumRetries, retryInterval);
+    }
+
+    private <T> T  retry( ThrowingFunction<StoreCopyClient, T, StoreCatchUpFailedException> function,
+                          String operation, int maxRetries, long retryInterval ) throws StoreCatchUpFailedException
     {
         int attempts = 0;
-        while ( attempts++ < 5 )
+        while ( attempts++ < maxRetries )
         {
-            log.info( "Attempt %d to get store id from %s.", attempts, from );
+            log.info( "Attempt %d to %s.", attempts, operation );
             try
             {
-                return storeCopyClient.fetchStoreId( from );
+                return function.apply(storeCopyClient);
             }
-            catch ( StoreIdDownloadFailedException e )
+            catch ( StoreCatchUpFailedException e )
             {
-                log.info( "Attempt %d to get store id from %s failed.", attempts, from );
+                log.info( "Attempt %d to %s failed.", attempts, operation );
             }
             try
             {
@@ -123,10 +134,11 @@ public class StoreFetcher
             catch ( InterruptedException e )
             {
                 Thread.interrupted();
-                throw new StoreIdDownloadFailedException( e );
+                throw new StoreCatchUpFailedException( e );
             }
         }
-        throw new StoreIdDownloadFailedException( String.format( "Failed to get store id from %s after %d attempts",
-                from, attempts - 1 ) );
+
+        throw new StoreCatchUpFailedException( format( "Failed to %s after %d attempts", operation, attempts - 1 ) );
     }
+
 }

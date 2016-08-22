@@ -85,7 +85,7 @@ public class StoreCopyClient
         }
     }
 
-    StoreId fetchStoreId( MemberId from ) throws StoreIdDownloadFailedException
+    StoreId fetchStoreId( MemberId from ) throws StoreCatchUpFailedException
     {
         try
         {
@@ -102,7 +102,7 @@ public class StoreCopyClient
         }
         catch ( CatchUpClientException | NoKnownAddressesException e )
         {
-            throw new StoreIdDownloadFailedException( e );
+            throw new StoreCatchUpFailedException( e );
         }
     }
 }
