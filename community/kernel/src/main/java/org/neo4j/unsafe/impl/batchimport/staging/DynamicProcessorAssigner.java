@@ -66,11 +66,6 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
     public void check( StageExecution[] executions )
     {
         int permits = availableProcessors - countActiveProcessors( executions );
-        if ( permits <= 0 )
-        {
-            return;
-        }
-
         for ( StageExecution execution : executions )
         {
             if ( execution.stillExecuting() )
@@ -81,7 +76,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
                     permits -= assignProcessorsToPotentialBottleNeck( execution, permits );
                 }
                 // Be a little more conservative removing processors from too fast steps
-                if ( removeProcessorFromPotentialIdleStep( execution ) )
+                if ( permits == 0 && removeProcessorFromPotentialIdleStep( execution ) )
                 {
                     permits++;
                 }

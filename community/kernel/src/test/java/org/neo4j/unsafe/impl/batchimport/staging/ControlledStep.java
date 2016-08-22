@@ -31,8 +31,6 @@ import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
-import static org.junit.Assert.assertTrue;
-
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 
@@ -82,7 +80,8 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
 
     public ControlledStep<T> setProcessors( int numberOfProcessors )
     {
-        assertTrue( numberOfProcessors <= maxProcessors );
+        // We don't have to assert max processors here since importer will not count every processor
+        // equally. A step being very idle (due to being very very fast) counts as almost nothing.
         this.numberOfProcessors = numberOfProcessors;
         processors( numberOfProcessors-numberOfProcessors );
         return this;
