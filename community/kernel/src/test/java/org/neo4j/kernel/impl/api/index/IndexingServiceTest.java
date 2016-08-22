@@ -91,6 +91,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.DoubleLatch;
 
 import static java.lang.System.currentTimeMillis;
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -867,7 +868,7 @@ public class IndexingServiceTest
         // then
         assertEquals( FAILED, indexing.getIndexProxy( 1 ).getState() );
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
-        assertThat( storedFailure(), containsString( "java.io.IOException: Expected failure\n\tat " ) );
+        assertThat( storedFailure(), containsString( format( "java.io.IOException: Expected failure%n\tat " ) ) );
         logProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
                 "Failed to populate index: [:TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]]" ),
                 causedBy( exception ) ) );
@@ -902,7 +903,7 @@ public class IndexingServiceTest
         // then
         assertEquals( FAILED, indexing.getIndexProxy( 1 ).getState() );
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
-        assertThat( storedFailure(), containsString( "java.io.IOException: Expected failure\n\tat " ) );
+        assertThat( storedFailure(), containsString( format( "java.io.IOException: Expected failure%n\tat " ) ) );
         logProvider.assertAtLeastOnce( inLog( IndexPopulationJob.class ).error( equalTo(
                 "Failed to populate index: [:TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]]" ),
                 causedBy( exception ) ) );
