@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
-import java.time.Clock;
-
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -42,8 +40,7 @@ public class KernelStatementTest
         when( transaction.getReasonIfTerminated() ).thenReturn( Status.Transaction.Terminated );
         when( transaction.mode() ).thenReturn( AccessMode.Static.FULL );
 
-        KernelStatement statement = new KernelStatement(
-            transaction, null, null, mock( StorageStatement.class ), null, Clock.systemUTC(), 1L );
+        KernelStatement statement = new KernelStatement( transaction, null, null, mock( StorageStatement.class ), null );
         statement.acquire();
 
         statement.readOperations().nodeExists( 0 );
@@ -55,7 +52,7 @@ public class KernelStatementTest
         // given
         StorageStatement storeStatement = mock( StorageStatement.class );
         KernelStatement statement = new KernelStatement( mock( KernelTransactionImplementation.class ),
-                null, null, storeStatement, new Procedures(), Clock.systemUTC(), 1L );
+                null, null, storeStatement, new Procedures() );
         statement.acquire();
 
         // when

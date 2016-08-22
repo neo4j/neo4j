@@ -186,7 +186,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             Clock clock,
             TransactionTracer tracer,
             StorageEngine storageEngine,
-            boolean txTerminationAwareLocks, long statementTimeout )
+            boolean txTerminationAwareLocks )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -202,7 +202,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clock = clock;
         this.tracer = tracer;
         this.storageStatement = storeLayer.newStatement();
-        this.currentStatement = new KernelStatement( this, this, operations, storageStatement, procedures, clock, statementTimeout );
+        this.currentStatement = new KernelStatement( this, this, operations, storageStatement, procedures );
         this.txTerminationAwareLocks = txTerminationAwareLocks;
     }
 

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import java.time.Clock;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Function;
@@ -74,7 +73,7 @@ public class LockingStatementOperationsTest
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private final TxState txState = new TxState();
     private final KernelStatement state = new KernelStatement( transaction, new SimpleTxStateHolder( txState ),
-            null, mock( StorageStatement.class ), new Procedures(), Clock.systemUTC(), 1L );
+            null, mock( StorageStatement.class ), new Procedures() );
     private final SchemaStateOperations schemaStateOps;
 
     public LockingStatementOperationsTest()

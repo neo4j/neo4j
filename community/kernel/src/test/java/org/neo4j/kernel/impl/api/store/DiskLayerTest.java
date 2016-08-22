@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.store;
 import org.junit.After;
 import org.junit.Before;
 
-import java.time.Clock;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -69,8 +68,7 @@ public abstract class DiskLayerTest
         db = (GraphDatabaseAPI) createGraphDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         this.disk = resolver.resolveDependency( StorageEngine.class ).storeReadLayer();
-        this.state = new KernelStatement( null, null, null, disk.newStatement(), new Procedures(), Clock.systemUTC(),
-                1L );
+        this.state = new KernelStatement( null, null, null, disk.newStatement(), new Procedures() );
     }
 
     protected GraphDatabaseService createGraphDatabase()

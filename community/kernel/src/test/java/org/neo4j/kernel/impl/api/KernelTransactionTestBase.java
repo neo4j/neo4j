@@ -68,8 +68,6 @@ public class KernelTransactionTestBase
     protected final FakeClock clock = new FakeClock();
     protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
     private final long defaultTransactionTimeoutMillis = GraphDatabaseSettings.transaction_timeout.from( Config.defaults() );
-    protected static final long DEFAULT_STATEMENT_TIMEOUT = 1000L;
-
 
     @Before
     public void before()
@@ -123,7 +121,7 @@ public class KernelTransactionTestBase
     {
         return new KernelTransactionImplementation( null, schemaWriteGuard, hooks, null, null, headerInformationFactory,
                 commitProcess, transactionMonitor, legacyIndexStateSupplier, txPool, clock, TransactionTracer.NULL,
-                storageEngine, txTerminationAwareLocks, DEFAULT_STATEMENT_TIMEOUT );
+                storageEngine, txTerminationAwareLocks );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

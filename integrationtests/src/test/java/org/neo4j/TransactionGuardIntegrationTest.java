@@ -224,8 +224,7 @@ public class TransactionGuardIntegrationTest
                 boltConnector.encryption_level, GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name(),
                 GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE,
                 GraphDatabaseSettings.transaction_timeout, "2s",
-                GraphDatabaseSettings.auth_enabled, "false",
-                GraphDatabaseSettings.statement_timeout, "100s" );
+                GraphDatabaseSettings.auth_enabled, "false" );
     }
 
 

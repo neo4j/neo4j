@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.time.Clock;
-
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -61,24 +59,18 @@ public class KernelStatement implements TxStateHolder, Statement
 {
     private final TxStateHolder txStateHolder;
     private final StorageStatement storeStatement;
-    private Clock clock;
     private final KernelTransactionImplementation transaction;
     private final OperationsFacade facade;
     private StatementLocks statementLocks;
     private int referenceCount;
-    private long startTimeMillis;
-    private long timeoutMillis;
 
     public KernelStatement( KernelTransactionImplementation transaction,
             TxStateHolder txStateHolder,
-            StatementOperationParts operations, StorageStatement storeStatement, Procedures procedures, Clock clock,
-            Long timeoutMillis )
+            StatementOperationParts operations, StorageStatement storeStatement, Procedures procedures )
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
         this.storeStatement = storeStatement;
-        this.clock = clock;
-        this.timeoutMillis = timeoutMillis;
         this.facade = new OperationsFacade( transaction, this, operations, procedures );
     }
 
@@ -182,7 +174,6 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         if ( referenceCount++ == 0 )
         {
-            startTimeMillis = clock.millis();
             storeStatement.acquire();
         }
     }
@@ -205,16 +196,6 @@ public class KernelStatement implements TxStateHolder, Statement
     public StorageStatement getStoreStatement()
     {
         return storeStatement;
-    }
-
-    public long startTime()
-    {
-        return startTimeMillis;
-    }
-
-    public long timeout()
-    {
-        return timeoutMillis;
     }
 
     public KernelTransactionImplementation getTransaction()

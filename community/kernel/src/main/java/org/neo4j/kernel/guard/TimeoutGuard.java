@@ -39,7 +39,6 @@ public class TimeoutGuard implements Guard
     @Override
     public void check( KernelStatement statement )
     {
-        check( getMaxStatementCompletionTime( statement ), "Statement timeout." );
         check( statement.getTransaction() );
     }
 
@@ -58,12 +57,6 @@ public class TimeoutGuard implements Guard
             log.warn( message );
             throw new GuardTimeoutException(message, overtime );
         }
-    }
-
-
-    private static long getMaxStatementCompletionTime( KernelStatement statement )
-    {
-        return statement.startTime() + statement.timeout();
     }
 
     private static long getMaxTransactionCompletionTime( KernelTransactionImplementation transaction )
