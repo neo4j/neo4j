@@ -89,8 +89,8 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
         // Assert input is ok
         if ( !existingUser.name().equals( updatedUser.name() ) )
         {
-            throw new IllegalArgumentException( "Updated user '" + updatedUser.name() + "' has a different name than " +
-                    "existing '" + existingUser.name() + "'." );
+            throw new IllegalArgumentException( "The attempt to update the role from '" + existingUser.name() +
+                    "' to '" + updatedUser.name() + "' failed. Changing a roles name is not allowed." );
         }
 
         synchronized (this)

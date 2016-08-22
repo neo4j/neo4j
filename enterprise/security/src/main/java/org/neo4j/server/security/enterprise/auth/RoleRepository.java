@@ -22,6 +22,7 @@ package org.neo4j.server.security.enterprise.auth;
 import java.io.IOException;
 import java.util.Set;
 
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
@@ -49,7 +50,8 @@ public interface RoleRepository extends Lifecycle
      * @param updatedRole the updated role object
      * @throws ConcurrentModificationException if the existingRole does not match the current state in the repository
      */
-    void update( RoleRecord existingRole, RoleRecord updatedRole ) throws ConcurrentModificationException, IOException;
+    void update( RoleRecord existingRole, RoleRecord updatedRole )
+            throws ConcurrentModificationException, IOException;
 
     /**
      * Deletes a role.
@@ -64,7 +66,8 @@ public interface RoleRepository extends Lifecycle
     /** Utility for API consumers to tell if #create() will accept a given role name */
     boolean isValidRoleName( String roleName );
 
-    void removeUserFromAllRoles( String username ) throws ConcurrentModificationException, IOException;
+    void removeUserFromAllRoles( String username )
+            throws ConcurrentModificationException, IOException;
 
     Set<String> getAllRoleNames();
 }
