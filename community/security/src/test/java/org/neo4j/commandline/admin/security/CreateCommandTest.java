@@ -60,7 +60,7 @@ public class CreateCommandTest extends CommandTestBase
         catch ( CommandFailed e )
         {
             // Expect failure message
-            assertThat( e.getMessage(), containsString( "The specified user already exists" ) );
+            assertThat( e.getMessage(), containsString( "The specified user 'another' already exists" ) );
         }
     }
 
