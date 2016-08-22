@@ -98,8 +98,9 @@ public class Cluster
         ExecutorService executor = Executors.newCachedThreadPool( new NamedThreadFactory( "cluster-starter" ) );
         try
         {
+            CompletionService<EdgeGraphDatabase> edgeGraphDatabaseCompletionService = startEdgeMembers( executor );
             startCoreMembers( executor );
-            startEdgeMembers( executor );
+            waitForEdgeServers( edgeGraphDatabaseCompletionService );
         }
         finally
         {
@@ -107,16 +108,12 @@ public class Cluster
         }
     }
 
-    public void startCoreMembers() throws InterruptedException, ExecutionException
+    private void waitForEdgeServers( CompletionService<EdgeGraphDatabase> edgeGraphDatabaseCompletionService ) throws
+            InterruptedException, ExecutionException
     {
-        ExecutorService executor = Executors.newCachedThreadPool( new NamedThreadFactory( "cluster-starter" ) );
-        try
+        for ( int i = 0; i < edgeMembers.size(); i++ )
         {
-            startCoreMembers( executor );
-        }
-        finally
-        {
-            executor.shutdown();
+            edgeGraphDatabaseCompletionService.take().get();
         }
     }
 
@@ -428,7 +425,7 @@ public class Cluster
         }
     }
 
-    private void startEdgeMembers( ExecutorService executor ) throws InterruptedException, ExecutionException
+    private CompletionService<EdgeGraphDatabase> startEdgeMembers( ExecutorService executor ) throws InterruptedException, ExecutionException
     {
         CompletionService<EdgeGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
 
@@ -440,11 +437,7 @@ public class Cluster
                 return edgeClusterMember.database();
             } );
         }
-
-        for ( int i = 0; i < edgeMembers.size(); i++ )
-        {
-            ecs.take().get();
-        }
+        return ecs;
     }
 
     private void createEdgeMembers( int noOfEdgeMembers,
