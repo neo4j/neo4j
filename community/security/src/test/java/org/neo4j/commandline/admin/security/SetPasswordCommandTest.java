@@ -127,5 +127,4 @@ public class SetPasswordCommandTest extends CommandTestBase
         // Then - the new user no longer requires a password change
         assertUserDoesNotRequirePasswordChange( "another" );
     }
-
 }
