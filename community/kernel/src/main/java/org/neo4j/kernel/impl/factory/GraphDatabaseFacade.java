@@ -149,7 +149,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode );
 
         /**
-         * Begin a new kernel transaction with specified timeout.
+         * Begin a new kernel transaction with specified timeout in milliseconds.
          * If a transaction is already associated to the current context
          * (meaning, non-null is returned from {@link #currentTransaction()}), this should fail.
          *

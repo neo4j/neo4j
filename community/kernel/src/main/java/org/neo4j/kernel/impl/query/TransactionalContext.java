@@ -51,6 +51,10 @@ public interface TransactionalContext
 
     Statement statement();
 
+    /**
+     * Check that current context satisfy current execution guard.
+     * In case if guard criteria is not satisfied {@link org.neo4j.kernel.guard.GuardException} will be thrown.
+     */
     void check();
 
     TxStateHolder stateView();

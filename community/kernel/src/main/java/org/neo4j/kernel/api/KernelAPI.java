@@ -46,11 +46,11 @@ public interface KernelAPI
 
     /**
      * Creates and returns a new {@link KernelTransaction} capable of modifying the
-     * underlying graph.
+     * underlying graph with custom timeout in milliseconds.
      *
      * @param type the type of the new transaction: implicit (internally created) or explicit (created by the user)
      * @param accessMode transaction access mode
-     * @param timeout transaction timeout
+     * @param timeout transaction timeout in millisiseconds
      */
     KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout )
             throws TransactionFailureException;

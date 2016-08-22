@@ -42,7 +42,6 @@ import static org.mockito.Mockito.mock;
 public class TimeoutGuardTest extends KernelTransactionTestBase
 {
 
-    private static final long STATEMENT_TEST_TIMEOUT = 1000L;
     private AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
     @Before
@@ -69,24 +68,7 @@ public class TimeoutGuardTest extends KernelTransactionTestBase
     }
 
     @Test
-    public void detectTimedStatement()
-    {
-        long transactionTimeout = 100000L;
-        long overtime = 5L;
-        TimeoutGuard timeoutGuard = buildGuard( logProvider );
-        initClock();
-
-        KernelStatement kernelStatement = getKernelStatement( transactionTimeout );
-        clock.forward( STATEMENT_TEST_TIMEOUT + overtime, TimeUnit.MILLISECONDS );
-        String message = "Statement timeout. (Overtime: 5 ms).";
-
-        check( timeoutGuard, kernelStatement, overtime, message );
-
-        logProvider.assertContainsMessageContaining( message );
-    }
-
-    @Test
-    public void allowToProceedWhenStatementAndTransactionTimeoutNotReached()
+    public void allowToProceedWhenTransactionTimeoutNotReached()
     {
         long transactionTimeout = 100000L;
         long overtime = 5L;

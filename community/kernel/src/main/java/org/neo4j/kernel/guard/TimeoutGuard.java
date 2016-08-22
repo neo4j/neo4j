@@ -25,6 +25,10 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.logging.Log;
 
+/**
+ * Guard that checks kernel transaction for timeout.
+ * As soon as transaction timeout time reached {@link GuardTimeoutException } will be thrown.
+ */
 public class TimeoutGuard implements Guard
 {
     private final Log log;

@@ -37,13 +37,32 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 public interface GraphDatabaseQueryService
 {
     DependencyResolver getDependencyResolver();
-    Node createNode();
-    Node createNode( Label... labels );
-    Node getNodeById(long id);
-    Relationship getRelationshipById(long id);
 
+    Node createNode();
+
+    Node createNode( Label... labels );
+
+    Node getNodeById( long id );
+
+    Relationship getRelationshipById( long id );
+
+    /**
+     * Begin new internal transaction with with default timeout.
+     *
+     * @param type transaction type
+     * @param accessMode transaction access mode
+     * @return internal transaction
+     */
     InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode );
 
+    /**
+     * Begin new internal transaction with specified timeout in milliseconds.
+     *
+     * @param type transaction type
+     * @param accessMode transaction access mode
+     * @param timeout transaction timeout in milliseconds
+     * @return internal transaction
+     */
     InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout );
 
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
