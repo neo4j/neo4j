@@ -393,7 +393,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         // Would prefer something more robust here, but could not get it to work
         // This test might turn flaky if committing the initial lines takes longer than 100 ms
         // Ideally we would be polling for the correct number of nodes, given some timeout
-        Thread.sleep( 100 );
+        Thread.sleep( 200 );
 
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         assertEmpty( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + PUBLISHER + "')" );
@@ -404,10 +404,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
 
         assertSuccess( henrik, "MATCH (n) RETURN n.name as name",
                 r -> {
-                    //assertKeyIs( r, "name", "node0", "node1", "node2", "line1", "line2" ) <- this is wanted, but flaky
-                    List<Object> res = getObjectsAsList( r, "name" );
-                    assertThat( res.size(), greaterThan( 3 ) );
-                    assertThat( res.size(), lessThan( 7 ) );
+                    assertKeyIs( r, "name", "node0", "node1", "node2", "line1", "line2" );
                 } );
     }
 
