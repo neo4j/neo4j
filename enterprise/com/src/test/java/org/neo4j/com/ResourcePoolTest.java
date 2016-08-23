@@ -31,13 +31,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.FakeClock;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class ResourcePoolTest
 {
-
     private static final int TIMEOUT_MILLIS = 100;
     private static final int TIMEOUT_EXCEED_MILLIS = TIMEOUT_MILLIS + 10;
 
@@ -255,7 +256,7 @@ public class ResourcePoolTest
         // only the excess from the maximum size down to after peek usage size must have been disposed
         // +1 that was used to trigger exceed timeout check
         assertEquals( afterPeekPoolSize, pool.unusedSize() );
-        assertEquals( poolMaxSize - afterPeekPoolSize + 1, stateMonitor.disposed.get() );
+        assertThat( stateMonitor.disposed.get(), greaterThanOrEqualTo( poolMaxSize - afterPeekPoolSize + 1 )  );
     }
 
     @Test
