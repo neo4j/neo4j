@@ -29,7 +29,6 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -174,7 +173,7 @@ public class PlatformModule
         // Anyways please fix this.
         dataSourceManager = dependencies.satisfyDependency( new DataSourceManager() );
 
-        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK, logging.getInternalLog(
+        availabilityGuard = new AvailabilityGuard( java.time.Clock.systemUTC(), logging.getInternalLog(
                 AvailabilityGuard.class ) );
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );

@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel;
 
+import java.time.Clock;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
@@ -275,7 +275,7 @@ public class AvailabilityGuard
             return availability;
         }
 
-        long timeout = clock.currentTimeMillis() + millis;
+        long timeout = clock.millis() + millis;
         do
         {
             try
@@ -288,7 +288,7 @@ public class AvailabilityGuard
                 break;
             }
             availability = availability();
-        } while ( availability == Availability.UNAVAILABLE && clock.currentTimeMillis() < timeout );
+        } while ( availability == Availability.UNAVAILABLE && clock.millis() < timeout );
 
         return availability;
     }

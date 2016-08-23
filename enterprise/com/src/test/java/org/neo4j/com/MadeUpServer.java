@@ -23,6 +23,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 
 import java.io.IOException;
+import java.time.Clock;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
@@ -31,7 +32,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 {
@@ -70,7 +70,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
             }
         }, NullLogProvider.getInstance(), FRAME_LENGTH,
                 new ProtocolVersion( applicationProtocolVersion, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
-                txVerifier, SYSTEM_CLOCK, new Monitors().newMonitor( ByteCounterMonitor.class ),
+                txVerifier, Clock.systemUTC(), new Monitors().newMonitor( ByteCounterMonitor.class ),
                 new Monitors().newMonitor( RequestMonitor.class ));
         this.internalProtocolVersion = internalProtocolVersion;
     }

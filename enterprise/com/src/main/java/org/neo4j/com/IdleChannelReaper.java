@@ -21,10 +21,10 @@ package org.neo4j.com;
 
 import org.jboss.netty.channel.Channel;
 
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -56,11 +56,11 @@ public class IdleChannelReaper implements Runnable
         Request previous = connectedChannels.get( channel );
         if ( previous != null )
         {
-            previous.lastTimeHeardOf = clock.currentTimeMillis();
+            previous.lastTimeHeardOf = clock.millis();
         }
         else
         {
-            connectedChannels.put( channel, new Request( requestContext, clock.currentTimeMillis() ) );
+            connectedChannels.put( channel, new Request( requestContext, clock.millis() ) );
         }
     }
 
@@ -77,7 +77,7 @@ public class IdleChannelReaper implements Runnable
             return false;
         }
 
-        request.lastTimeHeardOf = clock.currentTimeMillis();
+        request.lastTimeHeardOf = clock.millis();
         return true;
     }
 
@@ -87,7 +87,7 @@ public class IdleChannelReaper implements Runnable
         for ( Map.Entry<Channel,Request> entry : connectedChannels.entrySet() )
         {
             Channel channel = entry.getKey();
-            long age = clock.currentTimeMillis() - entry.getValue().lastTimeHeardOf;
+            long age = clock.millis() - entry.getValue().lastTimeHeardOf;
             if ( age > thresholdMillis )
             {
                 msgLog.info( "Found a silent channel " + entry + ", " + age );
