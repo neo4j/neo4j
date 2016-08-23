@@ -22,9 +22,10 @@ package org.neo4j.server.database;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
@@ -57,9 +58,9 @@ public class CypherExecutor extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        this.executionEngine = (ExecutionEngine) database.getGraph().getDependencyResolver()
-                .resolveDependency( QueryExecutionEngine.class );
-        this.service = executionEngine.queryService();
+        DependencyResolver dependencyResolver = database.getGraph().getDependencyResolver();
+        this.executionEngine = (ExecutionEngine) dependencyResolver.resolveDependency( QueryExecutionEngine.class );
+        this.service = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
         this.txBridge = service.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 

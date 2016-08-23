@@ -24,6 +24,7 @@ import java.rmi.RemoteException;
 import java.text.MessageFormat;
 import java.util.Map;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -172,9 +173,14 @@ public class Start extends TransactionProvidingApp
     {
         if ( this.engine == null )
         {
-            this.engine = getServer().getDb().getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
+            this.engine = getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
         }
         return this.engine;
+    }
+
+    private DependencyResolver getDependencyResolver()
+    {
+        return getServer().getDb().getDependencyResolver();
     }
 
     protected long now()
@@ -184,10 +190,10 @@ public class Start extends TransactionProvidingApp
 
     private QuerySession shellSession( Session session )
     {
-        GraphDatabaseQueryService graph = this.engine.queryService();
+        DependencyResolver dependencyResolver = getDependencyResolver();
+        GraphDatabaseQueryService graph = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
         InternalTransaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
-        Statement statement =
-                graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get();
+        Statement statement = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
         Neo4jTransactionalContext context =
                 new Neo4jTransactionalContext( graph, transaction, statement, new PropertyContainerLocker() );
         return new ShellQuerySession( session, context );

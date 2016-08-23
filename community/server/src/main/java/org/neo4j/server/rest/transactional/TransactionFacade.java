@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.LogProvider;
@@ -55,12 +56,14 @@ public class TransactionFacade
     private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
     private final LogProvider logProvider;
+    private GraphDatabaseQueryService queryService;
 
     public TransactionFacade( TransitionalPeriodTransactionMessContainer kernel, QueryExecutionEngine engine,
-                              TransactionRegistry registry, LogProvider logProvider )
+            GraphDatabaseQueryService queryService, TransactionRegistry registry, LogProvider logProvider )
     {
         this.kernel = kernel;
         this.engine = engine;
+        this.queryService = queryService;
         this.registry = registry;
         this.logProvider = logProvider;
     }
@@ -68,7 +71,7 @@ public class TransactionFacade
     public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction, AccessMode mode )
             throws TransactionLifecycleException
     {
-        return new TransactionHandle( kernel, engine, registry, uriScheme, implicitTransaction, mode, logProvider );
+        return new TransactionHandle( kernel, engine, queryService, registry, uriScheme, implicitTransaction, mode, logProvider );
     }
 
     public TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException

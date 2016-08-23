@@ -230,10 +230,8 @@ public class DataSourceModule
             {
                 if ( engine == null )
                 {
-                    engine = QueryEngineProvider.initialize( platformModule.graphDatabaseFacade,
+                    engine = QueryEngineProvider.initialize( deps, platformModule.graphDatabaseFacade,
                             dependencies.executionEngines() );
-
-                    deps.satisfyDependency( engine );
                 }
 
                 queryExecutor.set( engine );

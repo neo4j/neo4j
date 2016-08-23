@@ -20,6 +20,8 @@
 
 package org.neo4j.bolt.v1.runtime.cypher;
 
+import java.util.Map;
+
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -32,8 +34,6 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QuerySession;
 
-import java.util.Map;
-
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
@@ -43,21 +43,23 @@ public class CypherStatementRunner implements StatementRunner
 
     private final QueryExecutionEngine queryExecutionEngine;
     private final ThreadToStatementContextBridge txBridge;
+    private GraphDatabaseQueryService queryService;
 
-    public CypherStatementRunner( QueryExecutionEngine queryExecutionEngine, ThreadToStatementContextBridge txBridge )
+    public CypherStatementRunner( QueryExecutionEngine queryExecutionEngine, ThreadToStatementContextBridge txBridge,
+            GraphDatabaseQueryService queryService )
     {
         this.queryExecutionEngine = queryExecutionEngine;
         this.txBridge = txBridge;
+        this.queryService = queryService;
     }
 
     @Override
     public Result run( final String querySource, final AuthSubject authSubject, final String statement, final Map<String, Object> params )
             throws KernelException
     {
-        GraphDatabaseQueryService service = queryExecutionEngine.queryService();
-        InternalTransaction transaction = service.beginTransaction( implicit, authSubject );
+        InternalTransaction transaction = queryService.beginTransaction( implicit, authSubject );
         Neo4jTransactionalContext transactionalContext =
-                new Neo4jTransactionalContext( service, transaction, txBridge.get(), locker );
+                new Neo4jTransactionalContext( queryService, transaction, txBridge.get(), locker );
         QuerySession session = new BoltQuerySession( transactionalContext, querySource );
         return queryExecutionEngine.executeQuery( statement, params, session );
     }

@@ -139,7 +139,7 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public GraphDatabaseQueryService queryService()
     {
-        return dataSource.queryExecutor.get().queryService();
+        return platform.dependencies.resolveDependency( GraphDatabaseQueryService.class );
     }
 
     @Override
