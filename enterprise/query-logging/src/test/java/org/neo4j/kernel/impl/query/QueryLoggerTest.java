@@ -40,13 +40,13 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class QueryLoggerTest
 {
-    public static final String SESSION_1_NAME = "{session one}";
-    public static final String SESSION_2_NAME = "{session two}";
-    public static final String SESSION_3_NAME = "{session three}";
-    public static final String QUERY_1 = "MATCH (n) RETURN n";
-    public static final String QUERY_2 = "MATCH (a)--(b) RETURN b.name";
-    public static final String QUERY_3 = "MATCH (c)-[:FOO]->(d) RETURN d.size";
-    public static final String QUERY_4 = "MATCH (n) WHERE n.age IN {ages} RETURN n";
+    private static final String SESSION_1_NAME = "{session one}";
+    private static final String SESSION_2_NAME = "{session two}";
+    private static final String SESSION_3_NAME = "{session three}";
+    private static final String QUERY_1 = "MATCH (n) RETURN n";
+    private static final String QUERY_2 = "MATCH (a)--(b) RETURN b.name";
+    private static final String QUERY_3 = "MATCH (c)-[:FOO]->(d) RETURN d.size";
+    private static final String QUERY_4 = "MATCH (n) WHERE n.age IN {ages} RETURN n";
 
     @Test
     public void shouldLogQuerySlowerThanThreshold() throws Exception

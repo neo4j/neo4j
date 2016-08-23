@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +31,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
@@ -58,14 +58,13 @@ public class QueryLoggerIT
     public final EphemeralFileSystemRule fileSystem = new EphemeralFileSystemRule();
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private AssertableLogProvider inMemoryLog;
     private GraphDatabaseBuilder databaseBuilder;
-    public static final String QUERY = "CREATE (n:Foo{bar:\"baz\"})";
+    private static final String QUERY = "CREATE (n:Foo {bar: 'baz'})";
 
     @Before
     public void setUp()
     {
-        inMemoryLog = new AssertableLogProvider();
+        AssertableLogProvider inMemoryLog = new AssertableLogProvider();
         databaseBuilder = new TestGraphDatabaseFactory().setFileSystem( fileSystem.get() )
                 .setInternalLogProvider( inMemoryLog )
                 .newImpermanentDatabaseBuilder( testDirectory.graphDbDir() );
