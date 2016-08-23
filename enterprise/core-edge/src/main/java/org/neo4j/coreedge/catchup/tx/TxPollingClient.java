@@ -32,6 +32,7 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -47,6 +48,7 @@ import static org.neo4j.coreedge.catchup.tx.TxPollingClient.Timeouts.TX_PULLER_T
 public class TxPollingClient extends LifecycleAdapter
 {
     private final Supplier<StoreId> localDatabase;
+    private PullRequestMonitor pullRequestMonitor;
 
     enum Timeouts implements TimeoutName
     {
@@ -67,7 +69,7 @@ public class TxPollingClient extends LifecycleAdapter
     public TxPollingClient( LogProvider logProvider, Supplier<StoreId> localDatabase,
                             CatchUpClient catchUpClient, CoreMemberSelectionStrategy connectionStrategy,
                             RenewableTimeoutService timeoutService, long txPullIntervalMillis,
-                            BatchingTxApplier applier )
+                            BatchingTxApplier applier, Monitors monitors )
     {
         this.localDatabase = localDatabase;
         this.log = logProvider.getLog( getClass() );
@@ -76,6 +78,7 @@ public class TxPollingClient extends LifecycleAdapter
         this.timeoutService = timeoutService;
         this.txPullIntervalMillis = txPullIntervalMillis;
         this.applier = applier;
+        this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 
     @Override
@@ -99,6 +102,7 @@ public class TxPollingClient extends LifecycleAdapter
         try
         {
             transactionServer = connectionStrategy.coreMember();
+            pullRequestMonitor.txPullRequest( applier.lastAppliedTxId() );
             TxPullRequest txPullRequest = new TxPullRequest( applier.lastAppliedTxId(), localDatabase.get() );
             catchUpClient.makeBlockingRequest( transactionServer, txPullRequest, 30, TimeUnit.SECONDS,
                     new CatchUpResponseAdaptor<Long>() {

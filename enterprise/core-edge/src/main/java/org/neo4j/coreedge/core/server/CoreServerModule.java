@@ -114,7 +114,7 @@ public class CoreServerModule
         CatchUpClient catchUpClient = life.add( new CatchUpClient( discoveryService, logProvider, Clock.systemUTC() ) );
 
         StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
-                new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient ),
+                new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),
                 new TransactionLogCatchUpFactory() );
 
         CoreStateApplier coreStateApplier = new CoreStateApplier( logProvider );

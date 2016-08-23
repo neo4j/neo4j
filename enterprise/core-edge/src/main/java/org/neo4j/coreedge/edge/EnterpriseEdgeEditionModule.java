@@ -220,7 +220,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         TxPollingClient txPuller = new TxPollingClient( logProvider,
                 localDatabase, catchUpClient, new ConnectToRandomCoreMember( discoveryService ),
-                txPullerTimeoutService, config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier );
+                txPullerTimeoutService, config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier,
+                platformModule.monitors );
 
         txPulling.add( batchingTxApplier );
         txPulling.add( txApplyJob );
@@ -229,7 +230,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         StoreFetcher storeFetcher = new StoreFetcher( platformModule.logging.getInternalLogProvider(),
                 new DefaultFileSystemAbstraction(), platformModule.pageCache,
-                new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient ),
+                new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),
                 new TransactionLogCatchUpFactory() );
 
         life.add( new EdgeStartupProcess( storeFetcher,

@@ -29,16 +29,19 @@ import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TxPullClient
 {
     private final CatchUpClient catchUpClient;
+    private PullRequestMonitor pullRequestMonitor;
 
-    public TxPullClient( CatchUpClient catchUpClient )
+    public TxPullClient( CatchUpClient catchUpClient, Monitors monitors )
     {
         this.catchUpClient = catchUpClient;
+        this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 
     public long pullTransactions( MemberId from, StoreId storeId, long startTxId, TxPullResponseListener
@@ -47,6 +50,7 @@ public class TxPullClient
     {
         try
         {
+            pullRequestMonitor.txPullRequest( startTxId );
             return catchUpClient.makeBlockingRequest( from, new TxPullRequest( startTxId, storeId ), 30, SECONDS,
                     new CatchUpResponseAdaptor<Long>()
                     {
