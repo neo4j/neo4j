@@ -94,6 +94,7 @@ public class TransactionConstraintsIT
     public void afterwards() throws Throwable
     {
         cluster.repairAll();
+        cluster.await( allSeesAllAsAvailable() );
     }
 
     private static final String PROPERTY_KEY = "name";
@@ -391,43 +392,6 @@ public class TransactionConstraintsIT
 
             createNode( instance, PROPERTY_VALUE + String.valueOf( i ), LABEL );
             i++;
-        }
-    }
-
-    @Ignore( "Known issue where locks acquired from Transaction#acquireXXXLock() methods doesn't get properly released when calling Lock#release() method" )
-    @Test
-    public void manuallyAcquireAndReleaseTransactionLock() throws Exception
-    {
-        // GIVEN
-        // -- a slave acquiring a lock on an ubiquitous node
-        HighlyAvailableGraphDatabase master = cluster.getMaster();
-        OtherThreadExecutor<HighlyAvailableGraphDatabase> masterWorker = new OtherThreadExecutor<>( "master worker", master );
-        final Node node = createNode( master, PROPERTY_VALUE );
-        cluster.sync();
-        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        try ( Transaction slaveTx = slave.beginTx() )
-        {
-            Lock lock = slaveTx.acquireWriteLock( slave.getNodeById( node.getId() ) );
-
-            // WHEN
-            // -- the lock is manually released (tx still running)
-            lock.release();
-
-            // THEN
-            // -- that entity should be able to be locked from another member
-            Transaction masterTx = masterWorker.execute( new BeginTx() );
-            masterWorker.execute( new AcquireWriteLock( masterTx, new Callable<Node>()
-            {
-                @Override
-                public Node call() throws Exception
-                {
-                    return node;
-                }
-            } ), 1, SECONDS );
-        }
-        finally
-        {
-            masterWorker.close();
         }
     }
 

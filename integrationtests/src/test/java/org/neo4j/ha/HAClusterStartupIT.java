@@ -20,263 +20,219 @@
 package org.neo4j.ha;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.test.ha.ClusterRule;
 
+import static org.junit.Assert.assertNotNull;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
+@RunWith( Enclosed.class )
 public class HAClusterStartupIT
 {
-    public final @Rule TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
-    private ClusterManager clusterManager;
-    private ClusterManager.ManagedCluster cluster;
-    private HighlyAvailableGraphDatabase master;
-    private HighlyAvailableGraphDatabase slave1;
-    private HighlyAvailableGraphDatabase slave2;
-
-    @Before
-    public void instantiateClusterManager()
+    public static class SimpleCluster
     {
-        clusterManager = new ClusterManager.Builder( dir.directory() ).build();
-    }
+        @Rule
+        public final ClusterRule clusterRule = new ClusterRule( getClass() );
+        private HighlyAvailableGraphDatabase oldMaster;
+        private HighlyAvailableGraphDatabase oldSlave1;
+        private HighlyAvailableGraphDatabase oldSlave2;
 
-    @Before
-    public void setup() throws Throwable
-    {
-        // setup a cluster with some data and entries in log files in fully functional and shutdown state
-        clusterManager.start();
-
-        cluster = clusterManager.getDefaultCluster();
-        try
+        @Before
+        public void setup() throws Throwable
         {
-            cluster.await( allSeesAllAsAvailable() );
+            // setup a cluster with some data and entries in log files in fully functional and shutdown state
+            ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
 
-            master = cluster.getMaster();
-            try ( Transaction tx = master.beginTx() )
+            try
             {
-                master.createNode();
-                tx.success();
+                cluster.await( allSeesAllAsAvailable() );
+
+                oldMaster = cluster.getMaster();
+                createSomeData( oldMaster );
+                cluster.sync();
+
+                oldSlave1 = cluster.getAnySlave();
+                oldSlave2 = cluster.getAnySlave( oldSlave1 );
             }
-            cluster.sync();
+            finally
+            {
+                clusterRule.shutdownCluster();
+            }
 
-            slave1 = cluster.getAnySlave();
-            slave2 = cluster.getAnySlave( slave1 );
+            assertAllStoreConsistent( cluster );
         }
-        finally
+
+        @Test
+        public void aSlaveWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
         {
-            clusterManager.safeShutdown();
+            // WHEN removing all the files in graphdb on the slave and restarting the cluster
+            deleteAllFilesOn( oldSlave1 );
+
+            // THEN the cluster should work
+            restartingTheClusterShouldWork( clusterRule );
         }
 
-        assertAllStoreConsistent();
+        @Test
+        public void bothSlavesWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
+        {
+            // WHEN removing all the files in graphdb on both slaves and restarting the cluster
+            deleteAllFilesOn( oldSlave1 );
+            deleteAllFilesOn( oldSlave2 );
+
+            // THEN the cluster should work
+            restartingTheClusterShouldWork( clusterRule );
+        }
+
+        @Test
+        public void theMasterWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
+        {
+            // WHEN removing all the files in graphdb on the db that was master and restarting the cluster
+            deleteAllFilesOn( oldMaster );
+
+            // THEN the cluster should work
+            restartingTheClusterShouldWork( clusterRule );
+        }
+
+        @Test
+        public void aSlaveWithoutLogicalLogFilesShouldBeAbleToJoinACluster() throws Throwable
+        {
+            // WHEN removing all logical log files in graphdb on the slave and restarting the cluster
+            deleteAllLogsOn( oldSlave1 );
+
+            // THEN the cluster should work
+            restartingTheClusterShouldWork( clusterRule );
+        }
+
+        @Test
+        public void bothSlaveWithoutLogicalLogFilesShouldBeAbleToJoinACluster() throws Throwable
+        {
+            // WHEN removing all logical log files in graphdb on the slave and restarting the cluster
+            deleteAllLogsOn( oldSlave1 );
+            deleteAllLogsOn( oldSlave2 );
+
+            // THEN the cluster should work
+            restartingTheClusterShouldWork( clusterRule );
+        }
     }
 
-    @Test
-    public void aSlaveWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
+    public static class ClusterWithSeed
     {
-        // GIVEN a cluster with some data and entry in log files
+        @ClassRule
+        public static final TargetDirectory.TestDirectory directory =
+                TargetDirectory.testDirForTest( ClusterWithSeed.class );
+        @Rule
+        public final ClusterRule clusterRule = new ClusterRule( getClass() ).withProvider( clusterOfSize( 3 ) )
+                .withSeedDir( dbWithOutLogs( directory ) );
 
-
-        // WHEN removing all the files in graphdb on the slave and restarting the cluster
-        deleteAllFilesOn( slave1 );
-
-        clusterManager.start();
-
-        // THEN the cluster should work
-        cluster = clusterManager.getDefaultCluster();
-        try
+        @Test
+        public void aClusterShouldStartAndRunWhenSeededWithAStoreHavingNoLogicalLogFiles() throws Throwable
         {
-            cluster.await( allSeesAllAsAvailable() );
-        }
-        finally
-        {
-            clusterManager.safeShutdown();
+            // WHEN removing all logical log files in graphdb on the slave and restarting a new cluster
+            // THEN the new cluster should work
+            restartingTheClusterShouldWork( clusterRule );
         }
 
-        assertAllStoreConsistent();
+        private static File dbWithOutLogs( TargetDirectory.TestDirectory directory )
+        {
+            File seedDir;
+            try
+            {
+                seedDir = directory.cleanDirectory( "seed" );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+
+            GraphDatabaseService db = null;
+            try
+            {
+                db = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( seedDir );
+                createSomeData( db );
+            }
+            finally
+            {
+                if ( db != null )
+                {
+                    db.shutdown();
+                }
+            }
+
+            deleteAllLogsOn( seedDir );
+
+            return seedDir;
+        }
     }
 
-    @Test
-    public void bothSlavesWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
+    private static void createSomeData( GraphDatabaseService oldMaster )
     {
-        // GIVEN a cluster with some data and entry in log files
-
-
-        // WHEN removing all the files in graphdb on both slaves and restarting the cluster
-        deleteAllFilesOn( slave1 );
-        deleteAllFilesOn( slave2 );
-
-        clusterManager.start();
-
-        // THEN the cluster should work
-        cluster = clusterManager.getDefaultCluster();
-        try
+        try ( Transaction tx = oldMaster.beginTx() )
         {
-            cluster.await( allSeesAllAsAvailable() );
+            oldMaster.createNode();
+            tx.success();
         }
-        finally
-        {
-            clusterManager.safeShutdown();
-        }
-
-        assertAllStoreConsistent();
     }
 
-    @Test
-    public void theMasterWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
+    private static void deleteAllFilesOn( HighlyAvailableGraphDatabase instance ) throws IOException
     {
-        // GIVEN a cluster with some data and entry in log files
-
-
-        // WHEN removing all the files in graphdb on the db that was master and restarting the cluster
-        deleteAllFilesOn( master );
-
-        clusterManager.start();
-
-        // THEN the cluster should work
-        cluster = clusterManager.getDefaultCluster();
-        try
-        {
-            cluster.await( allSeesAllAsAvailable(), 120 );
-        }
-        finally
-        {
-            clusterManager.safeShutdown();
-        }
-
-        assertAllStoreConsistent();
+        FileUtils.deleteRecursively( instance.getStoreDirectory() );
     }
 
-    @Test
-    public void aSlaveWithoutLogicalLogFilesShouldBeAbleToJoinACluster() throws Throwable
+    private static void deleteAllLogsOn( HighlyAvailableGraphDatabase instance )
     {
-        // GIVEN a cluster with some data and entry in log files
-
-        // WHEN removing all logical log files in graphdb on the slave and restarting the cluster
-        deleteAllLogsOn( slave1 );
-
-        clusterManager.start();
-
-        // THEN the cluster should work
-        cluster = clusterManager.getDefaultCluster();
-        try
-        {
-            cluster.await( allSeesAllAsAvailable() );
-        }
-        finally
-        {
-            clusterManager.safeShutdown();
-        }
-
-        assertAllStoreConsistent();
+        deleteAllLogsOn( instance.getStoreDirectory() );
     }
 
-    @Test
-    public void bothSlaveWithoutLogicalLogFilesShouldBeAbleToJoinACluster() throws Throwable
+    private static void deleteAllLogsOn( File storeDirectory )
     {
-        // GIVEN a cluster with some data and entry in log files
-
-        // WHEN removing all logical log files in graphdb on the slave and restarting the cluster
-        deleteAllLogsOn( slave1 );
-        deleteAllLogsOn( slave2 );
-
-        clusterManager.start();
-
-        // THEN the cluster should work
-        cluster = clusterManager.getDefaultCluster();
-        try
-        {
-            cluster.await( allSeesAllAsAvailable() );
-        }
-        finally
-        {
-            clusterManager.safeShutdown();
-        }
-
-        assertAllStoreConsistent();
-    }
-
-    @Test
-    public void aClusterShouldStartAndRunWhenSeededWithAStoreHavingNoLogicalLogFiles() throws Throwable
-    {
-        // GIVEN a cluster with some data and entry in log files
-
-        // WHEN removing all logical log files in graphdb on the slave and restarting a new cluster
-        File seedDir = deleteAllLogsOn( slave1 );
-
-        File newDir = new File( dir.directory(), "new" );
-        FileUtils.deleteRecursively( newDir );
-        ClusterManager newClusterManager = new ClusterManager.Builder( newDir )
-                .withProvider( clusterOfSize( 3 ) ).withSeedDir( seedDir ).build();
-
-        newClusterManager.start();
-
-        // THEN the new cluster should work
-        ClusterManager.ManagedCluster newCluster = newClusterManager.getDefaultCluster();
-        HighlyAvailableGraphDatabase newMaster;
-        HighlyAvailableGraphDatabase newSlave1;
-        HighlyAvailableGraphDatabase newSlave2;
-        try
-        {
-            newCluster.await( allSeesAllAsAvailable() );
-            newMaster = newCluster.getMaster();
-            newSlave1 = newCluster.getAnySlave();
-            newSlave2 = newCluster.getAnySlave( newSlave1 );
-        }
-        finally
-        {
-            newClusterManager.safeShutdown();
-        }
-
-        assertAllStoreConsistent( newMaster, newSlave1, newSlave2 );
-
-        assertConsistentStore( new File( newMaster.getStoreDir() ) );
-        assertConsistentStore( new File( newSlave1.getStoreDir() ) );
-        assertConsistentStore( new File( newSlave2.getStoreDir() ) );
-    }
-
-    private void deleteAllFilesOn( HighlyAvailableGraphDatabase instance ) throws IOException
-    {
-        FileUtils.deleteRecursively( new File( instance.getStoreDir() ) );
-    }
-
-    private File deleteAllLogsOn( HighlyAvailableGraphDatabase instance )
-    {
-        File instanceDir = new File( instance.getStoreDir() );
-        for ( File file : instanceDir.listFiles( new LogFiles.LogicalLogFilenameFilter() ) )
+        File[] files = storeDirectory.listFiles( new LogFiles.LogicalLogFilenameFilter() );
+        assertNotNull( files );
+        for ( File file : files )
         {
             FileUtils.deleteFile( file );
         }
-        return instanceDir;
     }
 
-    private void assertAllStoreConsistent() throws ConsistencyCheckIncompleteException, IOException
+    private static void restartingTheClusterShouldWork( ClusterRule clusterRule ) throws Exception
     {
-        assertAllStoreConsistent( master, slave1, slave2 );
+        ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
+        try
+        {
+            cluster.await( allSeesAllAsAvailable(), 180 );
+        }
+        finally
+        {
+            clusterRule.shutdownCluster();
+        }
+
+        assertAllStoreConsistent( cluster );
     }
 
-    private void assertAllStoreConsistent( HighlyAvailableGraphDatabase master,
-                                           HighlyAvailableGraphDatabase... slaves )
+    private static void assertAllStoreConsistent( ClusterManager.ManagedCluster cluster )
             throws ConsistencyCheckIncompleteException, IOException
     {
-        assertConsistentStore( new File( master.getStoreDir() ) );
-
-        for ( HighlyAvailableGraphDatabase slave : slaves )
+        for ( HighlyAvailableGraphDatabase slave : cluster.getAllMembers() )
         {
-            assertConsistentStore( new File( slave.getStoreDir() ) );
+            assertConsistentStore( slave.getStoreDirectory() );
         }
     }
 }
