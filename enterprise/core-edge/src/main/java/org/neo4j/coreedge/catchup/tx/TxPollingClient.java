@@ -102,8 +102,9 @@ public class TxPollingClient extends LifecycleAdapter
         try
         {
             transactionServer = connectionStrategy.coreMember();
-            pullRequestMonitor.txPullRequest( applier.lastAppliedTxId() );
-            TxPullRequest txPullRequest = new TxPullRequest( applier.lastAppliedTxId(), localDatabase.get() );
+            long lastAppliedTxId = applier.lastAppliedTxId();
+            pullRequestMonitor.txPullRequest( lastAppliedTxId );
+            TxPullRequest txPullRequest = new TxPullRequest( lastAppliedTxId, localDatabase.get() );
             catchUpClient.makeBlockingRequest( transactionServer, txPullRequest, 30, TimeUnit.SECONDS,
                     new CatchUpResponseAdaptor<Long>() {
                         @Override

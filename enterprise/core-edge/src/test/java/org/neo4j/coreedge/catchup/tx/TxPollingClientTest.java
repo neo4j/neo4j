@@ -63,7 +63,7 @@ public class TxPollingClientTest
 
     private final TxPollingClient txPuller = new TxPollingClient( NullLogProvider.getInstance(), () -> storeId,
             catchUpClient, serverSelection,
-            timeoutService, txPullTimeoutMillis, txApplier, mock(Monitors.class) );
+            timeoutService, txPullTimeoutMillis, txApplier, new Monitors() );
 
     @Before
     public void before() throws Throwable
