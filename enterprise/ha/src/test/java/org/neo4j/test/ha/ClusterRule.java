@@ -186,7 +186,11 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     {
         if ( cluster == null )
         {
-            clusterManager = clusterManagerBuilder.withRootDirectory( storeDirectory ).build();
+            if ( clusterManager == null )
+            {
+                clusterManager = clusterManagerBuilder.withRootDirectory( storeDirectory ).build();
+            }
+
             try
             {
                 clusterManager.start();
@@ -226,9 +230,15 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     @Override
     protected void after()
     {
+        shutdownCluster();
+    }
+
+    public void shutdownCluster()
+    {
         if ( clusterManager != null )
         {
             clusterManager.safeShutdown();
+            cluster = null;
         }
     }
 
