@@ -24,6 +24,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -187,7 +191,7 @@ public class AuthProceduresIT
     //---------- utility -----------
 
     @Before
-    public void setup() throws InvalidAuthTokenException
+    public void setup() throws InvalidAuthTokenException, IOException
     {
         fs = new EphemeralFileSystemAbstraction();
         db = (GraphDatabaseAPI) createGraphDatabase( fs );
@@ -202,9 +206,9 @@ public class AuthProceduresIT
         fs.shutdown();
     }
 
-    protected GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs )
+    private GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs ) throws IOException
     {
-
+        removePreviousAuthFile();
         Map<Setting<?>, String> settings = new HashMap<>();
         settings.put( GraphDatabaseSettings.auth_enabled, "true" );
         settings.put( GraphDatabaseSettings.auth_manager, "basic-auth-manager" );
@@ -218,7 +222,16 @@ public class AuthProceduresIT
         return graphDatabaseFactory.newGraphDatabase();
     }
 
-    protected BasicAuthSubject login( String username, String password ) throws InvalidAuthTokenException
+    private void removePreviousAuthFile() throws IOException
+    {
+        Path file = Paths.get( "target/test-data/impermanent-db/data/dbms/auth" );
+        if ( Files.exists( file ) )
+        {
+            Files.delete( file );
+        }
+    }
+
+    private BasicAuthSubject login( String username, String password ) throws InvalidAuthTokenException
     {
         return authManager.login( SecurityTestUtils.authToken( username, password ) );
     }
