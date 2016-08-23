@@ -188,7 +188,7 @@ public class StoreCopyClient
         // Request store files and transactions that will need recovery
         monitor.startReceivingStoreFiles();
         try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator(
-                new ToFileStoreWriter( tempStore, monitor ) ) ) )
+                new ToFileStoreWriter( tempStore, monitor, pageCache ) ) ) )
         {
             monitor.finishReceivingStoreFiles();
             // Update highest archived log id
