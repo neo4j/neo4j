@@ -956,6 +956,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public long nodeCreate()
     {
         statement.assertOpen();
+        System.out.println( Thread.currentThread().getName() + ": Creating node using " + this );
         return dataWrite().nodeCreate( statement );
     }
 

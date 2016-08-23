@@ -132,6 +132,7 @@ public class SectionedCharBuffer
     public void readFrom( Reader reader, int max ) throws IOException
     {
         int read = reader.read( buffer, pivot, min( max, pivot ) );
+        System.out.println(Thread.currentThread() + " read " + read + " bytes ");
         if ( read == -1 )
         {   // we reached the end
             front = pivot;

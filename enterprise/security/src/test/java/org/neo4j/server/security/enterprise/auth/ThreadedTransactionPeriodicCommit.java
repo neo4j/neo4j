@@ -48,19 +48,20 @@ public class ThreadedTransactionPeriodicCommit<S>
         this.neo = neo;
     }
 
-    void execute( ThreadingRule threading, S subject )
+    void execute( ThreadingRule threading, S subject, int nLines )
     {
-        NamedFunction<S, Throwable> servCsv =
-                new NamedFunction<S,Throwable>("serv-csv")
+        NamedFunction<Integer, Throwable> servCsv =
+                new NamedFunction<Integer,Throwable>("serv-csv")
                 {
                     @Override
-                    public Throwable apply( S s ) throws RuntimeException
+                    public Throwable apply( Integer n ) throws RuntimeException
                     {
                         try
                         {
                             ServerSocket serverSocket = new ServerSocket( csvHttpPort );
                             Socket clientSocket = serverSocket.accept();
                             PrintWriter out = new PrintWriter( clientSocket.getOutputStream(), true );
+                            System.out.println(Thread.currentThread().getName()+": Starting to write lines to socket");
 
                             // Start sending our reply, using the HTTP 1.1 protocol
                             out.print( "HTTP/1.1 200 \r\n" ); // Version & status code
@@ -68,19 +69,16 @@ public class ThreadedTransactionPeriodicCommit<S>
                             out.print( "Connection: close\r\n" ); // Will close stream
                             out.print( "\r\n" ); // End of headers
 
-                            out.print( "line" );
-                            out.print(      "1\r\n" );
-                            out.print( "line" );
-                            out.print(      "2\r\n" );
-                            out.print( "line" );
-                            out.print(      "3\r\n" );
+                            for ( int i = 0; i < n-1; i++ )
+                            {
+                                out.print( "line " + i + "\r\n" );
+                            }
 
                             out.flush();
 
                             barrier.reached();
 
-                            out.print( "line" );
-                            out.print(      "4\r\n" );
+                            out.print( "line " + (n-1) +"\r\n" );
 
                             out.close();
 
@@ -104,6 +102,7 @@ public class ThreadedTransactionPeriodicCommit<S>
                     {
                         try
                         {
+                            System.out.println(Thread.currentThread().getName()+": Starting periodic commit load csv");
                             return neo.executeQuery(
                                     subject,
                                     "USING PERIODIC COMMIT 1 " +
@@ -119,7 +118,7 @@ public class ThreadedTransactionPeriodicCommit<S>
                     }
                 };
 
-        servCsvResult = threading.execute( servCsv, subject );
+        servCsvResult = threading.execute( servCsv, nLines );
         loadCsvResult = threading.execute( loadCsv, subject );
     }
 
@@ -140,8 +139,11 @@ public class ThreadedTransactionPeriodicCommit<S>
 
     private String join() throws ExecutionException, InterruptedException
     {
+        System.out.println(Thread.currentThread().getName()+": Releasing barrier so more lines can come");
         barrier.release();
+        System.out.println(Thread.currentThread().getName()+": Waiting for csv writer to finish");
         servCsvResult.get();
+        System.out.println(Thread.currentThread().getName()+": Waiting for csv reader to finish");
         return loadCsvResult.get();
     }
 }

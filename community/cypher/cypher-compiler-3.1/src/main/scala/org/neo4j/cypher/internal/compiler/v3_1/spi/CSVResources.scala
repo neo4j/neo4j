@@ -98,6 +98,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
       def next(): Array[String] = {
         if (!hasNext) Iterator.empty.next()
         val row = nextRow
+        println(s"${Thread.currentThread().getName}: serving row '${ row.mkString(",")}'")
         nextRow = readNextRow
         row
       }
