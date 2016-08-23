@@ -21,6 +21,7 @@ package org.neo4j.kernel.builtinprocs;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -41,6 +42,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.procedure.Procedure.Mode.READ;
 
 public class BuiltInProcedures
@@ -73,15 +75,29 @@ public class BuiltInProcedures
         ReadOperations operations = tx.acquireStatement().readOperations();
         TokenNameLookup tokens = new StatementTokenNameLookup( operations );
 
-        List<IndexDescriptor> indexes = asList( operations.indexesGetAll() );
-        indexes.sort( ( a, b ) -> a.userDescription( tokens ).compareTo( b.userDescription( tokens ) ) );
+        List<IndexDescriptor> indexes =
+                asList( operations.indexesGetAll() );
+
+        Set<IndexDescriptor> uniqueIndexes = asSet( operations.uniqueIndexesGetAll() );
+        indexes.addAll( uniqueIndexes );
+        indexes.sort( (a,b) -> a.userDescription(tokens).compareTo( b.userDescription(tokens) ) );
+
         ArrayList<IndexResult> result = new ArrayList<>();
         for ( IndexDescriptor index : indexes )
         {
             try
             {
+                String type;
+                if (uniqueIndexes.contains( index ))
+                {
+                    type = IndexType.NODE_UNIQUE_PROPERTY.typeName();
+                }
+                else {
+                    type = IndexType.NODE_LABEL_PROPERTY.typeName();
+                }
+
                 result.add( new IndexResult( "INDEX ON " + index.userDescription( tokens ),
-                        operations.indexGetState( index ).toString() ) );
+                        operations.indexGetState( index ).toString(), type ) );
             }
             catch ( IndexNotFoundKernelException e )
             {
@@ -156,11 +172,13 @@ public class BuiltInProcedures
     {
         public final String description;
         public final String state;
+        public final String type;
 
-        private IndexResult( String description, String state )
+        private IndexResult( String description, String state, String type )
         {
             this.description = description;
             this.state = state;
+            this.type = type;
         }
     }
 
@@ -183,6 +201,26 @@ public class BuiltInProcedures
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
+        }
+    }
+
+    //When we have decided on what to call different indexes
+    //this should probably be moved to some more central place
+    private enum IndexType
+    {
+        NODE_LABEL_PROPERTY( "node_label_property" ),
+        NODE_UNIQUE_PROPERTY( "node_unique_property" );
+
+        private final String typeName;
+
+        IndexType( String typeName )
+        {
+            this.typeName = typeName;
+        }
+
+        public String typeName()
+        {
+            return typeName;
         }
     }
 }
