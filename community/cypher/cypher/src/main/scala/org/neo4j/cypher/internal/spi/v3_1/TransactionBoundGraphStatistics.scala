@@ -65,10 +65,22 @@ object TransactionBoundGraphStatistics {
       }
 
     def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-      Cardinality(operations.countsForNodeWithoutTxState(labelId))
+      atLeastOne(operations.countsForNodeWithoutTxState(labelId))
 
     def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-      Cardinality(operations.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
+      atLeastOne(operations.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
+
+    /**
+      * Due to the way cardinality calculations work, zero is a bit dangerous, as it cancels out
+      * any cost that it multiplies with. To avoid this pitfall, we determine that the least count
+      * available is one, not zero.
+      */
+    private def atLeastOne(count: Double): Cardinality = {
+      if (count < 1)
+        Cardinality.SINGLE
+      else
+        Cardinality(count)
+    }
   }
 }
 

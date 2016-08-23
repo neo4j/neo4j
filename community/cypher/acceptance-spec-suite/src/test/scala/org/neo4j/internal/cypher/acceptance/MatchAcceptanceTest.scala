@@ -320,7 +320,7 @@ return p""")
   }
 
   test("should not fail if asking for a non existent node id with WHERE") {
-    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n) where id(n) in [0,1] return n").toList
+    executeWithAllPlanners("match (n) where id(n) in [0,1] return n").toList
     // should not throw an exception
   }
 

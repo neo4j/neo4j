@@ -191,8 +191,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
     throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
   }
 
-  private val txBridge = queryService.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-
   private def getOrCreateFromSchemaState[V](operations: ReadOperations, creator: => V) = {
     val javaCreator = new java.util.function.Function[ExecutionEngine, V]() {
       def apply(key: ExecutionEngine) = creator
