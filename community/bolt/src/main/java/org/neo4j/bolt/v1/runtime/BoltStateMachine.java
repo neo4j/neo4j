@@ -326,6 +326,8 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                             {
                                 machine.ctx.onMetadata( "credentials_expired", true );
                             }
+                            machine.ctx.onMetadata( "neo4j_version", machine.spi.version() );
+
                             machine.spi.udcRegisterClient( userAgent );
                             if ( authToken.containsKey( PRINCIPAL ) )
                             {
@@ -437,6 +439,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                             machine.ctx.statementProcessor.streamResult( recordStream -> {
                                 machine.ctx.responseHandler.onRecords( recordStream, true );
                             } );
+
                             return READY;
                         }
                         catch ( Throwable e )
@@ -769,6 +772,8 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         TransactionStateMachine.SPI transactionSpi();
 
         void onTerminate( BoltStateMachine machine );
+
+        String version();
     }
 
     private static class NullStatementProcessor implements StatementProcessor

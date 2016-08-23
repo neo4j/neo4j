@@ -24,9 +24,10 @@ Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credenti
   63 72 65 64  65 6E 74 69  61 6C 73 86  73 65 63 72
   65 74 00 00
 
-Server: SUCCESS {}
+Server: SUCCESS { "neo4j_version": "3.1.0" }
 
-  00 03 b1 70  a0 00 00
+  00 17 B1 70  A1 8D 6E 65  6F 34 6A 5F  76 65 72 73
+  69 6F 6E 85  33 2E 31 2E  30 00 00
 
 Client: RUN "RETURN 1 AS num" {}
 
@@ -79,9 +80,10 @@ Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credenti
   63 72 65 64  65 6E 74 69  61 6C 73 86  73 65 63 72
   65 74 00 00
 
-Server: SUCCESS {}
+Server: SUCCESS { "neo4j_version": "3.1.0" }
 
-  00 03 b1 70  a0 00 00
+  00 17 B1 70  A1 8D 6E 65  6F 34 6A 5F  76 65 72 73
+  69 6F 6E 85  33 2E 31 2E  30 00 00
 
 # Batch of messages
 Client: RUN "RETURN 1 AS num" {}
@@ -159,9 +161,10 @@ Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credenti
   63 72 65 64  65 6E 74 69  61 6C 73 86  73 65 63 72
   65 74 00 00
 
-Server: SUCCESS {}
+Server: SUCCESS { "neo4j_version": "3.1.0" }
 
-  00 03 b1 70  a0 00 00
+  00 17 B1 70  A1 8D 6E 65  6F 34 6A 5F  76 65 72 73
+  69 6F 6E 85  33 2E 31 2E  30 00 00
 
 # Message with syntax error
 Client: RUN "This will cause a syntax error" {}
@@ -249,9 +252,10 @@ Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credenti
   63 72 65 64  65 6E 74 69  61 6C 73 86  73 65 63 72
   65 74 00 00
 
-Server: SUCCESS {}
+Server: SUCCESS { "neo4j_version": "3.1.0" }
 
-  00 03 b1 70  a0 00 00
+  00 17 B1 70  A1 8D 6E 65  6F 34 6A 5F  76 65 72 73
+  69 6F 6E 85  33 2E 31 2E  30 00 00
 
 
 # We explicitly create a transaction
@@ -354,9 +358,10 @@ Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credenti
   63 72 65 64  65 6E 74 69  61 6C 73 86  73 65 63 72
   65 74 00 00
 
-Server: SUCCESS {}
+Server: SUCCESS { "neo4j_version": "3.1.0" }
 
-  00 03 b1 70  a0 00 00
+  00 17 B1 70  A1 8D 6E 65  6F 34 6A 5F  76 65 72 73
+  69 6F 6E 85  33 2E 31 2E  30 00 00
 
 # Running a read-only statement will not return any statistics
 Client: RUN "RETURN 1 AS num" {}
@@ -436,9 +441,10 @@ Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credenti
   63 72 65 64  65 6E 74 69  61 6C 73 86  73 65 63 72
   65 74 00 00
 
-Server: SUCCESS {}
+Server: SUCCESS { "neo4j_version": "3.1.0" }
 
-  00 03 b1 70  a0 00 00
+  00 17 B1 70  A1 8D 6E 65  6F 34 6A 5F  76 65 72 73
+  69 6F 6E 85  33 2E 31 2E  30 00 00
 
 # Explaining the query will not execute it, so it returns an empty result and the query plan
 Client: RUN "EXPLAIN RETURN 1 AS num" {}
@@ -617,9 +623,10 @@ Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credenti
   63 72 65 64  65 6E 74 69  61 6C 73 86  73 65 63 72
   65 74 00 00
 
-Server: SUCCESS {}
+Server: SUCCESS { "neo4j_version": "3.1.0" }
 
-  00 03 B1 70  A0 00 00
+  00 17 B1 70  A1 8D 6E 65  6F 34 6A 5F  76 65 72 73
+  69 6F 6E 85  33 2E 31 2E  30 00 00
 
 # Sending a statement that would result in notifications
 Client: RUN "EXPLAIN MATCH (n), (m) RETURN n, m" {}
@@ -776,9 +783,10 @@ Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credenti
   63 72 65 64  65 6E 74 69  61 6C 73 86  73 65 63 72
   65 74 00 00
 
-Server: SUCCESS {}
+Server: SUCCESS { "neo4j_version": "3.1.0" }
 
-  00 03 b1 70  a0 00 00
+  00 17 B1 70  A1 8D 6E 65  6F 34 6A 5F  76 65 72 73
+  69 6F 6E 85  33 2E 31 2E  30 00 00
 
 # Batch of messages
 Client: RUN "RETURN 1 AS num" {}

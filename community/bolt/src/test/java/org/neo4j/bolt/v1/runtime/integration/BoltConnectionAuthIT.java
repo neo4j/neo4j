@@ -21,9 +21,11 @@ package org.neo4j.bolt.v1.runtime.integration;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.internal.Version;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
@@ -57,6 +59,25 @@ public class BoltConnectionAuthIT
         // Then
         assertThat( recorder.nextResponse(), succeededWithMetadata( "credentials_expired", true ) );
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Security.CredentialsExpired ) );
+    }
+
+    @Test
+    public void shouldGiveKernelVersionOnInit() throws Throwable
+    {
+        // Given it is important for client applications to programmatically
+        // identify expired credentials as the cause of not being authenticated
+        BoltStateMachine machine = env.newMachine( "test" );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        String version = Version.getKernel().getReleaseVersion();
+        // When
+        machine.init( USER_AGENT, map(
+                "scheme", "basic",
+                "principal", "neo4j",
+                "credentials", "neo4j" ), recorder );
+        machine.run( "CREATE ()", map(), recorder );
+
+        // Then
+        assertThat( recorder.nextResponse(), succeededWithMetadata( "neo4j_version", version ) );
     }
 
     @Test

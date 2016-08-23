@@ -35,16 +35,17 @@ import java.util.function.Consumer;
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.messaging.message.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
@@ -78,6 +79,7 @@ public class AuthenticationIT
     public HostnamePort address;
 
     protected TransportConnection client;
+    private final String version = Version.getKernel().getReleaseVersion();
 
     @Parameterized.Parameters
     public static Collection<Object[]> transports()
@@ -113,7 +115,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "neo4j_version", version)) ) );
     }
 
     @Test
@@ -235,7 +237,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
+        assertThat( client, eventuallyReceives( msgSuccess(map( "credentials_expired", true , "neo4j_version", version)) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -279,7 +281,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "neo4j_version", version)) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -310,7 +312,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "neo4j_version", version) ) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -334,7 +336,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "neo4j_version", version) ) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -358,7 +360,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "neo4j_version", version)) ) );
 
         // When
         client.send( TransportTestUtil.chunk(

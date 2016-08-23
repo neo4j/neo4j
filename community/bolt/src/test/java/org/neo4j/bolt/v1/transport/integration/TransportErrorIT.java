@@ -25,6 +25,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
@@ -32,14 +36,14 @@ import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.HostnamePort;
 
-import java.util.Arrays;
-import java.util.Collection;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.*;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.acceptedVersions;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 
 @RunWith( Parameterized.class )
 public class TransportErrorIT
