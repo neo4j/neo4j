@@ -21,12 +21,13 @@ package org.neo4j.coreedge.core.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Clock;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.ReplicationModule;
+import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
-import org.neo4j.coreedge.catchup.CoreToCoreClient;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyClient;
@@ -54,7 +55,6 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.messaging.LoggingInbound;
-import org.neo4j.coreedge.messaging.NonBlockingChannels;
 import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
 import org.neo4j.coreedge.messaging.routing.NotMyselfSelectionStrategy;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -111,26 +111,15 @@ public class CoreServerModule
         LoggingInbound<RaftMessages.StoreIdAwareMessage> loggingRaftInbound =
                 new LoggingInbound<>( raftServer, messageLogger, myself );
 
-        NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
-
-        CoreToCoreClient.ChannelInitializer channelInitializer =
-                new CoreToCoreClient.ChannelInitializer( logProvider, nonBlockingChannels );
-
-        int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
-        long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );
-
-        CoreToCoreClient coreToCoreClient = life.add(
-                new CoreToCoreClient( logProvider, channelInitializer, platformModule.monitors, maxQueueSize,
-                        discoveryService, logThresholdMillis ) );
-        channelInitializer.setOwner( coreToCoreClient );
+        CatchUpClient catchUpClient = life.add( new CatchUpClient( discoveryService, logProvider, Clock.systemUTC() ) );
 
         StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
-                new StoreCopyClient( coreToCoreClient ), new TxPullClient( coreToCoreClient ),
+                new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),
                 new TransactionLogCatchUpFactory() );
 
         CoreStateApplier coreStateApplier = new CoreStateApplier( logProvider );
         CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher,
-                coreToCoreClient, logProvider );
+                catchUpClient, logProvider );
 
         NotMyselfSelectionStrategy someoneElse = new NotMyselfSelectionStrategy( discoveryService, myself );
 

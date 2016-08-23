@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.backup.OnlineBackupSettings;
+import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
-import org.neo4j.coreedge.catchup.storecopy.EdgeToCoreClient;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyClient;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
@@ -42,7 +42,6 @@ import org.neo4j.coreedge.core.state.machines.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.discovery.procedures.EdgeRoleProcedure;
-import org.neo4j.coreedge.messaging.NonBlockingChannels;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.routing.ConnectToRandomCoreMember;
 import org.neo4j.graphdb.DependencyResolver;
@@ -191,15 +190,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 edgeRefreshRate );
         life.add( dependencies.satisfyDependency( discoveryService ) );
 
-        NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
-        EdgeToCoreClient.ChannelInitializer channelInitializer = new EdgeToCoreClient.ChannelInitializer(
-                logProvider, nonBlockingChannels );
-        int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
-        long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );
-        EdgeToCoreClient edgeToCoreClient = life.add( new EdgeToCoreClient( logProvider,
-                channelInitializer, platformModule.monitors, maxQueueSize, discoveryService,
-                logThresholdMillis ) );
-        channelInitializer.setOwner( edgeToCoreClient );
+        Clock clock = Clock.systemUTC();
+        CatchUpClient catchUpClient = life.add( new CatchUpClient( discoveryService, logProvider, clock ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -215,7 +207,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         ContinuousJob txApplyJob = new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group(
                 "tx-applier", NEW_THREAD ), batchingTxApplier );
 
-        DelayedRenewableTimeoutService txPullerTimeoutService = new DelayedRenewableTimeoutService( Clock.systemUTC()
+        DelayedRenewableTimeoutService txPullerTimeoutService = new DelayedRenewableTimeoutService( clock
                 , logProvider );
 
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
@@ -227,8 +219,9 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 databaseHealthSupplier, logProvider );
 
         TxPollingClient txPuller = new TxPollingClient( logProvider,
-                localDatabase, edgeToCoreClient, new ConnectToRandomCoreMember( discoveryService ),
-                txPullerTimeoutService, config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier );
+                localDatabase, catchUpClient, new ConnectToRandomCoreMember( discoveryService ),
+                txPullerTimeoutService, config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier,
+                platformModule.monitors );
 
         txPulling.add( batchingTxApplier );
         txPulling.add( txApplyJob );
@@ -237,7 +230,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         StoreFetcher storeFetcher = new StoreFetcher( platformModule.logging.getInternalLogProvider(),
                 new DefaultFileSystemAbstraction(), platformModule.pageCache,
-                new StoreCopyClient( edgeToCoreClient ), new TxPullClient( edgeToCoreClient ),
+                new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),
                 new TransactionLogCatchUpFactory() );
 
         life.add( new EdgeStartupProcess( storeFetcher,

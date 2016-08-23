@@ -125,7 +125,7 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
                         pipeline.addLast( new LengthFieldPrepender( 4 ) );
 
-                        pipeline.addLast( new VersionDecoder(logProvider ) );
+                        pipeline.addLast( new VersionDecoder( logProvider ) );
                         pipeline.addLast( new VersionPrepender() );
 
                         pipeline.addLast( new ResponseMessageTypeEncoder() );
@@ -163,7 +163,7 @@ public class CatchupServer extends LifecycleAdapter
         decoderDispatcher.register( State.TX_PULL, new TxPullRequestDecoder() );
         decoderDispatcher.register( State.GET_STORE, new SimpleRequestDecoder( GetStoreRequest::new ) );
         decoderDispatcher.register( State.GET_STORE_ID, new SimpleRequestDecoder( GetStoreIdRequest::new ) );
-        decoderDispatcher.register( State.GET_RAFT_STATE, new SimpleRequestDecoder( CoreSnapshotRequest::new) );
+        decoderDispatcher.register( State.GET_CORE_SNAPSHOT, new SimpleRequestDecoder( CoreSnapshotRequest::new) );
         return decoderDispatcher;
     }
 

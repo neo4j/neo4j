@@ -24,7 +24,7 @@ import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.io.OutputStream;
 
-class FileContent implements AutoCloseable
+public class FileContent implements AutoCloseable
 {
     private final ByteBuf msg;
 

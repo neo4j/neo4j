@@ -22,30 +22,24 @@ package org.neo4j.coreedge.catchup.storecopy;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import org.neo4j.coreedge.catchup.CatchUpResponseHandler;
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 
-class GetStoreIdResponseHandler extends SimpleChannelInboundHandler<GetStoreIdResponse>
+public class GetStoreIdResponseHandler extends SimpleChannelInboundHandler<GetStoreIdResponse>
 {
-    private final StoreIdReceiver storeIdReceiver;
+    private final CatchUpResponseHandler handler;
     private final CatchupClientProtocol protocol;
 
-    GetStoreIdResponseHandler( CatchupClientProtocol protocol, StoreIdReceiver storeIdReceiver )
+    public GetStoreIdResponseHandler( CatchupClientProtocol protocol, CatchUpResponseHandler handler )
     {
         this.protocol = protocol;
-        this.storeIdReceiver = storeIdReceiver;
+        this.handler = handler;
     }
 
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, final GetStoreIdResponse msg ) throws Exception
     {
-        if ( protocol.isExpecting( CatchupClientProtocol.State.STORE_ID ) )
-        {
-            storeIdReceiver.onStoreIdReceived( msg.storeId() );
-            protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
-        }
-        else
-        {
-            ctx.fireChannelRead( msg );
-        }
+        handler.onGetStoreIdResponse( msg );
+        protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
     }
 }

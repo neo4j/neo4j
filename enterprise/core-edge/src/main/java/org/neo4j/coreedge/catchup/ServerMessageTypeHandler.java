@@ -58,9 +58,9 @@ class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
             {
                 protocol.expect( CatchupServerProtocol.State.GET_STORE_ID );
             }
-            else if ( requestMessageType.equals( RequestMessageType.RAFT_STATE ) )
+            else if ( requestMessageType.equals( RequestMessageType.CORE_SNAPSHOT ) )
             {
-                protocol.expect( CatchupServerProtocol.State.GET_RAFT_STATE );
+                protocol.expect( CatchupServerProtocol.State.GET_CORE_SNAPSHOT );
             }
             else
             {

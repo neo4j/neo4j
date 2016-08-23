@@ -25,7 +25,7 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
 
-class GetStoreIdRequestEncoder extends MessageToMessageEncoder<GetStoreIdRequest>
+public class GetStoreIdRequestEncoder extends MessageToMessageEncoder<GetStoreIdRequest>
 {
     @Override
     protected void encode( ChannelHandlerContext ctx, GetStoreIdRequest msg, List<Object> out ) throws Exception

@@ -19,16 +19,21 @@
  */
 package org.neo4j.coreedge.catchup.tx;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
-import org.neo4j.coreedge.catchup.CoreClient;
+import org.neo4j.coreedge.catchup.CatchUpClient;
+import org.neo4j.coreedge.catchup.CatchUpResponseCallback;
 import org.neo4j.coreedge.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
@@ -39,12 +44,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.coreedge.catchup.tx.TxPollingClient.Timeouts.TX_PULLER_TIMEOUT;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TxPollingClientTest
 {
-    private final CoreClient coreClient = mock( CoreClient.class );
+    private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
     private final CoreMemberSelectionStrategy serverSelection = mock( CoreMemberSelectionStrategy.class );
     private final MemberId coreMemberId = mock( MemberId.class );
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
@@ -56,8 +62,8 @@ public class TxPollingClientTest
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
 
     private final TxPollingClient txPuller = new TxPollingClient( NullLogProvider.getInstance(), () -> storeId,
-            coreClient, serverSelection,
-            timeoutService, txPullTimeoutMillis, txApplier );
+            catchUpClient, serverSelection,
+            timeoutService, txPullTimeoutMillis, txApplier, mock(Monitors.class) );
 
     @Before
     public void before() throws Throwable
@@ -78,7 +84,8 @@ public class TxPollingClientTest
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( coreClient ).pollForTransactions( any( MemberId.class ), eq( storeId ), eq( lastAppliedTxId ) );
+        verify( catchUpClient ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+                anyLong(), any( TimeUnit.class ), any( CatchUpResponseCallback.class ) );
     }
 
     @Test
@@ -91,20 +98,24 @@ public class TxPollingClientTest
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( coreClient, never() ).pollForTransactions( any( MemberId.class ), eq( storeId ), anyLong() );
+        verify( catchUpClient, never() ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+                anyLong(), any( TimeUnit.class ), any( CatchUpResponseCallback.class ) );
     }
 
     @Test
     public void shouldResetTxReceivedTimeoutOnTxReceived() throws Throwable
     {
-        // given
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
-        // when
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
-        txPuller.onTxReceived( new TxPullResponse( storeId, mock( CommittedTransactionRepresentation.class ) ) );
+        ArgumentCaptor<CatchUpResponseCallback> captor = ArgumentCaptor.forClass( CatchUpResponseCallback.class );
 
-        // then
+        verify( catchUpClient ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+                anyLong(), any( TimeUnit.class ), captor.capture() );
+
+        captor.getValue().onTxPullResponse( null, new TxPullResponse( storeId,
+                mock( CommittedTransactionRepresentation.class ) ) );
+
         verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ), times( 2 ) ).renew();
     }
 

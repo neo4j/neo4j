@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import org.neo4j.coreedge.identity.StoreId;
 
-class GetStoreIdResponse
+public class GetStoreIdResponse
 {
     private final StoreId storeId;
 

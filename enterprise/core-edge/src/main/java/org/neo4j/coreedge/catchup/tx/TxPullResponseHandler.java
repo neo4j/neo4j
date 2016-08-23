@@ -22,18 +22,19 @@ package org.neo4j.coreedge.catchup.tx;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import org.neo4j.coreedge.catchup.CatchUpResponseHandler;
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 
 public class TxPullResponseHandler extends SimpleChannelInboundHandler<TxPullResponse>
 {
     private final CatchupClientProtocol protocol;
-    private final TxPullResponseListener listener;
+    private final CatchUpResponseHandler handler;
 
     public TxPullResponseHandler( CatchupClientProtocol protocol,
-                                  TxPullResponseListener listener )
+                                  CatchUpResponseHandler handler )
     {
         this.protocol = protocol;
-        this.listener = listener;
+        this.handler = handler;
     }
 
     @Override
@@ -41,7 +42,7 @@ public class TxPullResponseHandler extends SimpleChannelInboundHandler<TxPullRes
     {
         if ( protocol.isExpecting( CatchupClientProtocol.State.TX_PULL_RESPONSE ) )
         {
-            listener.onTxReceived( msg );
+            handler.onTxPullResponse( msg );
             protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
         }
         else

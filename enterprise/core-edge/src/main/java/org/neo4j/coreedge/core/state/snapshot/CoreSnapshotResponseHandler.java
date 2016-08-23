@@ -22,14 +22,15 @@ package org.neo4j.coreedge.core.state.snapshot;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import org.neo4j.coreedge.catchup.CatchUpResponseHandler;
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 
 public class CoreSnapshotResponseHandler extends SimpleChannelInboundHandler<CoreSnapshot>
 {
     private final CatchupClientProtocol protocol;
-    private final CoreSnapshotListener listener;
+    private final CatchUpResponseHandler listener;
 
-    public CoreSnapshotResponseHandler( CatchupClientProtocol protocol, CoreSnapshotListener listener )
+    public CoreSnapshotResponseHandler( CatchupClientProtocol protocol, CatchUpResponseHandler listener )
     {
         this.protocol = protocol;
         this.listener = listener;
@@ -40,7 +41,7 @@ public class CoreSnapshotResponseHandler extends SimpleChannelInboundHandler<Cor
     {
         if ( protocol.isExpecting( CatchupClientProtocol.State.CORE_SNAPSHOT ) )
         {
-            listener.onSnapshotReceived( coreSnapshot );
+            listener.onCoreSnapshot( coreSnapshot );
             protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
         }
         else
