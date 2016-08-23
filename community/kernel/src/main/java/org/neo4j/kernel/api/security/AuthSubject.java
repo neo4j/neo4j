@@ -86,6 +86,12 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
+        public AuthorizationViolationException onViolation( String msg )
+        {
+            return new AuthorizationViolationException( msg );
+        }
+
+        @Override
         public String name()
         {
             return "<anonymous>";
@@ -119,6 +125,12 @@ public interface AuthSubject extends AccessMode
         public boolean overrideOriginalMode()
         {
             return false;
+        }
+
+        @Override
+        public AuthorizationViolationException onViolation( String msg )
+        {
+            return new AuthorizationViolationException( msg );
         }
 
         @Override

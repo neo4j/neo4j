@@ -76,13 +76,10 @@ public class BasicAuthentication implements Authentication
         {
             AuthSubject authSubject = authManager.login( authToken );
 
-            boolean credentialsExpired = false;
             switch ( authSubject.getAuthenticationResult() )
             {
             case SUCCESS:
-                break;
             case PASSWORD_CHANGE_REQUIRED:
-                credentialsExpired = true;
                 break;
             case TOO_MANY_ATTEMPTS:
                 throw new AuthenticationException( Status.Security.AuthenticationRateLimit );
@@ -91,7 +88,7 @@ public class BasicAuthentication implements Authentication
                 throw new AuthenticationException( Status.Security.Unauthorized );
             }
 
-            return new BasicAuthenticationResult( authSubject, credentialsExpired );
+            return new BasicAuthenticationResult( authSubject );
         }
         catch ( InvalidAuthTokenException e )
         {
@@ -116,7 +113,7 @@ public class BasicAuthentication implements Authentication
                 throw new AuthenticationException( Status.Security.Unauthorized );
             }
 
-            return new BasicAuthenticationResult( authSubject, false );
+            return new BasicAuthenticationResult( authSubject );
         }
         catch ( AuthorizationViolationException | InvalidArgumentsException | InvalidAuthTokenException e )
         {

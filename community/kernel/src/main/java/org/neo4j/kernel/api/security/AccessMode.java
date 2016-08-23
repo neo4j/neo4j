@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.security;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.exceptions.Status;
+
 /** Controls the capabilities of a KernelTransaction. */
 public interface AccessMode
 {
@@ -50,6 +53,57 @@ public interface AccessMode
                     {
                         return false;
                     }
+
+                    @Override
+                    public AuthorizationViolationException onViolation( String msg )
+                    {
+                        return new AuthorizationViolationException( msg );
+                    }
+                },
+
+        /** No reading or writing allowed because of expired credentials. */
+        CREDENTIALS_EXPIRED
+                {
+                    @Override
+                    public boolean allowsReads()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean allowsWrites()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean allowsSchemaWrites()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean overrideOriginalMode()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public AuthorizationViolationException onViolation( String msg )
+                    {
+                        return new AuthorizationViolationException( String.format(
+                                msg + "%n%nThe credentials you provided were valid, but must be " +
+                                        "changed before you can " +
+                                        "use this instance. If this is the first time you are using Neo4j, this is to " +
+                                        "ensure you are not using the default credentials in production. If you are not " +
+                                        "using default credentials, you are getting this message because an administrator " +
+                                        "requires a password change.%n" +
+                                        "Changing your password is easy to do via the Neo4j Browser.%n" +
+                                        "If you are connecting via a shell or programmatically via a driver, " +
+                                        "just issue a `CALL dbms.changePassword('new password')` statement in the current " +
+                                        "session, and then restart your driver with the new password configured." ),
+                                Status.Security.CredentialsExpired );
+                    }
                 },
 
         /** Allows reading data and schema, but not writing. */
@@ -77,6 +131,12 @@ public interface AccessMode
                     public boolean overrideOriginalMode()
                     {
                         return false;
+                    }
+
+                    @Override
+                    public AuthorizationViolationException onViolation( String msg )
+                    {
+                        return new AuthorizationViolationException( msg );
                     }
                 },
 
@@ -106,6 +166,12 @@ public interface AccessMode
                     {
                         return false;
                     }
+
+                    @Override
+                    public AuthorizationViolationException onViolation( String msg )
+                    {
+                        return new AuthorizationViolationException( msg );
+                    }
                 },
 
         /** Allows reading and writing data, but not schema. */
@@ -134,6 +200,12 @@ public interface AccessMode
                     {
                         return false;
                     }
+
+                    @Override
+                    public AuthorizationViolationException onViolation( String msg )
+                    {
+                        return new AuthorizationViolationException( msg );
+                    }
                 },
 
         /** Allows all operations. */
@@ -161,6 +233,12 @@ public interface AccessMode
                     public boolean overrideOriginalMode()
                     {
                         return false;
+                    }
+
+                    @Override
+                    public AuthorizationViolationException onViolation( String msg )
+                    {
+                        return new AuthorizationViolationException( msg );
                     }
                 },
 
@@ -194,6 +272,12 @@ public interface AccessMode
             {
                 return true;
             }
+
+            @Override
+            public AuthorizationViolationException onViolation( String msg )
+            {
+                return new AuthorizationViolationException( msg );
+            }
         },
 
         }
@@ -202,5 +286,6 @@ public interface AccessMode
     boolean allowsWrites();
     boolean allowsSchemaWrites();
     boolean overrideOriginalMode();
+    AuthorizationViolationException onViolation( String msg );
     String name();
 }

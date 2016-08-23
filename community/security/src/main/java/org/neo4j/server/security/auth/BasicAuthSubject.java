@@ -21,10 +21,13 @@ package org.neo4j.server.security.auth;
 
 import java.io.IOException;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+
+import static org.neo4j.kernel.api.security.AuthenticationResult.*;
 
 public class BasicAuthSubject implements AuthSubject
 {
@@ -48,13 +51,16 @@ public class BasicAuthSubject implements AuthSubject
         this.user = user;
         this.authenticationResult = authenticationResult;
 
-        if ( authenticationResult == AuthenticationResult.SUCCESS )
+        switch ( authenticationResult )
         {
-            accessMode = AccessMode.Static.FULL;
-        }
-        else
-        {
-            accessMode = AccessMode.Static.NONE;
+        case SUCCESS:
+            accessMode = Static.FULL;
+            break;
+        case PASSWORD_CHANGE_REQUIRED:
+            accessMode = Static.CREDENTIALS_EXPIRED;
+            break;
+        default:
+            accessMode = Static.NONE;
         }
     }
 
@@ -62,7 +68,7 @@ public class BasicAuthSubject implements AuthSubject
     public void logout()
     {
         user = null;
-        authenticationResult = AuthenticationResult.FAILURE;
+        authenticationResult = FAILURE;
     }
 
     @Override
@@ -84,9 +90,9 @@ public class BasicAuthSubject implements AuthSubject
         authManager.setPassword( this, user.name(), password );
 
         // Make user authenticated if successful
-        if ( authenticationResult == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
+        if ( authenticationResult == PASSWORD_CHANGE_REQUIRED )
         {
-            authenticationResult = AuthenticationResult.SUCCESS;
+            authenticationResult = SUCCESS;
             accessMode = AccessMode.Static.FULL;
         }
     }
@@ -118,6 +124,12 @@ public class BasicAuthSubject implements AuthSubject
     public boolean overrideOriginalMode()
     {
         return false;
+    }
+
+    @Override
+    public AuthorizationViolationException onViolation( String msg )
+    {
+        return accessMode.onViolation( msg );
     }
 
     @Override

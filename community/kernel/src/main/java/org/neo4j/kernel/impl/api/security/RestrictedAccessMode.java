@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.security;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AccessMode;
 
 public class RestrictedAccessMode implements AccessMode
@@ -57,6 +58,12 @@ public class RestrictedAccessMode implements AccessMode
     public boolean overrideOriginalMode()
     {
         return false;
+    }
+
+    @Override
+    public AuthorizationViolationException onViolation( String msg )
+    {
+        return restrictedMode.onViolation( msg );
     }
 
     @Override

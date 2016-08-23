@@ -24,12 +24,10 @@ import org.neo4j.kernel.api.security.AuthSubject;
 public class BasicAuthenticationResult implements AuthenticationResult
 {
     private AuthSubject authSubject;
-    private boolean credentialsExpired;
 
-    public BasicAuthenticationResult( AuthSubject authSubject, boolean credentialsExpired )
+    public BasicAuthenticationResult( AuthSubject authSubject )
     {
         this.authSubject = authSubject;
-        this.credentialsExpired = credentialsExpired;
     }
 
     @Override
@@ -41,6 +39,7 @@ public class BasicAuthenticationResult implements AuthenticationResult
     @Override
     public boolean credentialsExpired()
     {
-        return credentialsExpired;
+        return authSubject.getAuthenticationResult() == org.neo4j.kernel.api.security.AuthenticationResult
+                .PASSWORD_CHANGE_REQUIRED;
     }
 }

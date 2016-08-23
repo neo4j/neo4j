@@ -279,36 +279,13 @@ public class TransactionStateMachine implements StatementProcessor
     private static Result executeQuery( MutableTransactionState ctx, SPI spi, String statement,
                                         Map<String, Object> params ) throws QueryExecutionKernelException
     {
-        try
-        {
-            return spi.executeQuery( ctx.querySource, ctx.authSubject, statement, params );
-        }
-        catch ( AuthorizationViolationException e )
-        {
-            // TODO: Make lower level of the stack aware of expired credentials so that it can throw the correct
-            // exception instead of translating it here.
-            if ( ctx.credentialsExpired )
-            {
-                throw new CredentialsExpiredException();
-            }
-            throw e;
-        }
+        return spi.executeQuery( ctx.querySource, ctx.authSubject, statement, params );
     }
 
     static class MutableTransactionState
     {
         /** The current session auth state to be used for starting transactions */
         final AuthSubject authSubject;
-
-        /**
-         * If the current user has provided valid but needs-to-be-changed credentials,
-         * this flag gets set. This is not awesome - it'd be better to have a special
-         * access mode for this state, that would help disambiguate from being unauthenticated
-         * as well. A further note towards adding a special AccessMode is that
-         * we need to set things up to change access mode anyway whenever the user changes
-         * credentials or is upgraded. As it is now, a new session needs to be created.
-         */
-        final boolean credentialsExpired;
 
         /** The current transaction, if present */
         KernelTransaction currentTransaction;
@@ -331,7 +308,6 @@ public class TransactionStateMachine implements StatementProcessor
         private MutableTransactionState( AuthenticationResult authenticationResult )
         {
             this.authSubject = authenticationResult.getAuthSubject();
-            this.credentialsExpired = authenticationResult.credentialsExpired();
         }
     }
 
