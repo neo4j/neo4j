@@ -22,7 +22,6 @@ package org.neo4j.ha;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -55,7 +54,6 @@ import org.neo4j.test.rule.dump.DumpProcessInformationRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -94,6 +92,7 @@ public class TransactionConstraintsIT
         if ( cluster != null )
         {
             cluster.repairAll();
+            cluster.await( allSeesAllAsAvailable() );
         }
     }
 
@@ -379,43 +378,6 @@ public class TransactionConstraintsIT
 
             createNode( instance, PROPERTY_VALUE + String.valueOf( i ), LABEL );
             i++;
-        }
-    }
-
-    @Ignore( "Known issue where locks acquired from Transaction#acquireXXXLock() methods doesn't get properly released when calling Lock#release() method" )
-    @Test
-    public void manuallyAcquireAndReleaseTransactionLock() throws Exception
-    {
-        // GIVEN
-        // -- a slave acquiring a lock on an ubiquitous node
-        HighlyAvailableGraphDatabase master = cluster.getMaster();
-        OtherThreadExecutor<HighlyAvailableGraphDatabase> masterWorker = new OtherThreadExecutor<>( "master worker", master );
-        final Node node = createNode( master, PROPERTY_VALUE );
-        cluster.sync();
-        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        try ( Transaction slaveTx = slave.beginTx() )
-        {
-            Lock lock = slaveTx.acquireWriteLock( slave.getNodeById( node.getId() ) );
-
-            // WHEN
-            // -- the lock is manually released (tx still running)
-            lock.release();
-
-            // THEN
-            // -- that entity should be able to be locked from another member
-            Transaction masterTx = masterWorker.execute( new BeginTx() );
-            masterWorker.execute( new AcquireWriteLock( masterTx, new Callable<Node>()
-            {
-                @Override
-                public Node call() throws Exception
-                {
-                    return node;
-                }
-            } ), 1, SECONDS );
-        }
-        finally
-        {
-            masterWorker.close();
         }
     }
 
