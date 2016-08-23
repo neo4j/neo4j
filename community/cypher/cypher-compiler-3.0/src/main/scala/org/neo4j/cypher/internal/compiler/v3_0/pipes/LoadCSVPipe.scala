@@ -62,7 +62,7 @@ case class LoadCSVPipe(source: Pipe,
   //Uses an ArrayBackedMap to store header-to-values mapping
   private class IteratorWithHeaders(headers: Seq[String], context: ExecutionContext, inner: Iterator[Array[String]]) extends Iterator[ExecutionContext] {
     private val internalMap = new ArrayBackedMap[String, String](headers.zipWithIndex.toMap)
-    private var nextContext: ExecutionContext = null
+    private var nextContext: ExecutionContext = _
     private var needsUpdate = true
 
     override def hasNext: Boolean = {

@@ -275,7 +275,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
 
   test("counts relationships with type, any direction and labeled destination node without using count store") {
     // Given
-    withRelationshipsModel(expectedLogicalPlan = "NodeByLabelScan",
+    withRelationshipsModel(expectedLogicalPlan = "AllNodesScan",
 
       // When
       query = "MATCH ()-[r:KNOWS]-(:User) RETURN count(r)", f = { result =>
