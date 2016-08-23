@@ -94,6 +94,7 @@ public class TransactionConstraintsIT
     public void afterwards() throws Throwable
     {
         cluster.repairAll();
+        cluster.await( allSeesAllAsAvailable() );
     }
 
     private static final String PROPERTY_KEY = "name";
