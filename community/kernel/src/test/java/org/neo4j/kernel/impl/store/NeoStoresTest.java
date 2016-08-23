@@ -327,7 +327,7 @@ public class NeoStoresTest
         {
             nodeIds[i] = nextId( Node.class );
             transaction.nodeDoCreate( nodeIds[i] );
-            nodeAddProperty( nodeIds[i], index( "nisse" ), new Integer( 10 - i ) );
+            nodeAddProperty( nodeIds[i], index( "nisse" ), 10 - i );
         }
         for ( int i = 0; i < 2; i++ )
         {
@@ -338,17 +338,7 @@ public class NeoStoresTest
         startTx();
         for ( int i = 0; i < 3; i += 2 )
         {
-            try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
-                    .acquireSingleNodeCursor( nodeIds[i] ) )
-            {
-                nodeCursor.next();
-                PrimitiveLongIterator relationships = nodeCursor.get().getRelationships( Direction.BOTH );
-                while ( relationships.hasNext() )
-                {
-                    relDelete( relationships.next() );
-                }
-            }
-
+            deleteRelationships( nodeIds[i] );
             transaction.nodeDoDelete( nodeIds[i] );
         }
         commitTx();
@@ -385,7 +375,7 @@ public class NeoStoresTest
         {
             nodeIds[i] = nextId( Node.class );
             transaction.nodeDoCreate( nodeIds[i] );
-            nodeAddProperty( nodeIds[i], index( "nisse" ), new Integer( 10 - i ) );
+            nodeAddProperty( nodeIds[i], index( "nisse" ), 10 - i );
         }
         for ( int i = 0; i < 2; i++ )
         {
@@ -398,18 +388,7 @@ public class NeoStoresTest
         startTx();
         for ( int i = 0; i < 3; i++ )
         {
-            try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
-                    .acquireSingleNodeCursor(
-                            nodeIds[i] ) )
-            {
-                nodeCursor.next();
-                PrimitiveLongIterator relationships = nodeCursor.get().getRelationships( Direction.BOTH );
-                while ( relationships.hasNext() )
-                {
-                    relDelete( relationships.next() );
-                }
-            }
-
+            deleteRelationships( nodeIds[i] );
             transaction.nodeDoDelete( nodeIds[i] );
         }
         commitTx();
@@ -470,12 +449,12 @@ public class NeoStoresTest
         long nodeId = nextId( Node.class );
         transaction.nodeDoCreate( nodeId );
         pStore.nextId();
-        DefinedProperty prop = nodeAddProperty( nodeId, index( "nisse" ), new Integer( 10 ) );
+        DefinedProperty prop = nodeAddProperty( nodeId, index( "nisse" ), 10 );
         commitTx();
         ds.stop();
         initializeStores( storeDir, stringMap() );
         startTx();
-        DefinedProperty prop2 = nodeAddProperty( nodeId, prop.propertyKeyId(), new Integer( 5 ) );
+        DefinedProperty prop2 = nodeAddProperty( nodeId, prop.propertyKeyId(), 5 );
         transaction.nodeDoRemoveProperty( nodeId, prop2 );
         transaction.nodeDoDelete( nodeId );
         commitTx();
@@ -862,7 +841,7 @@ public class NeoStoresTest
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( 1, data.value() );
-                nodeAddProperty( node, prop2.propertyKeyId(), new Integer( -1 ) );
+                nodeAddProperty( node, prop2.propertyKeyId(), -1 );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
@@ -878,11 +857,17 @@ public class NeoStoresTest
             count++;
         }
         assertEquals( 3, count );
-        count = 0;
 
-        try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
-                .acquireSingleNodeCursor(
-                        node ) )
+        count = validateAndCountRelationships( node, rel1, rel2, relType1, relType2 );
+        assertEquals( 2, count );
+    }
+
+    private int validateAndCountRelationships( long node, long rel1, long rel2, int relType1, int relType2 )
+            throws IOException
+    {
+        int count = 0;
+        try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
+              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
         {
             nodeCursor.next();
 
@@ -910,19 +895,12 @@ public class NeoStoresTest
                 }
             }
         }
-        assertEquals( 2, count );
+        return count;
     }
 
     private PropertyReceiver<DefinedProperty> newPropertyReceiver( final ArrayMap<Integer,Pair<DefinedProperty,Long>> props )
     {
-        return new PropertyReceiver<DefinedProperty>()
-        {
-            @Override
-            public void receive( DefinedProperty property, long propertyRecordId )
-            {
-                props.put( property.propertyKeyId(), Pair.of( property, propertyRecordId ) );
-            }
-        };
+        return ( property, propertyRecordId ) -> props.put( property.propertyKeyId(), Pair.of( property, propertyRecordId ) );
     }
 
     private void validateNodeRel2( final long node, DefinedProperty prop1,
@@ -952,7 +930,7 @@ public class NeoStoresTest
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( 2, data.value() );
-                nodeAddProperty( node, prop2.propertyKeyId(), new Integer( -2 ) );
+                nodeAddProperty( node, prop2.propertyKeyId(), -2 );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
@@ -970,9 +948,8 @@ public class NeoStoresTest
         assertEquals( 3, count );
         count = 0;
 
-        try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
-                .acquireSingleNodeCursor(
-                        node ) )
+        try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
+              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
         {
             nodeCursor.next();
 
@@ -1039,7 +1016,7 @@ public class NeoStoresTest
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( 1, data.value() );
-                relAddProperty( rel, prop2.propertyKeyId(), new Integer( -1 ) );
+                relAddProperty( rel, prop2.propertyKeyId(), -1 );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
@@ -1105,7 +1082,7 @@ public class NeoStoresTest
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( 2, data.value() );
-                relAddProperty( rel, prop2.propertyKeyId(), new Integer( -2 ) );
+                relAddProperty( rel, prop2.propertyKeyId(), -2 );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
@@ -1268,10 +1245,9 @@ public class NeoStoresTest
 
     private void assertHasRelationships( long node )
     {
-        try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
-                .acquireSingleNodeCursor(
 
-                        node ) )
+        try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
+              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
         {
             nodeCursor.next();
             PrimitiveLongIterator rels = nodeCursor.get().getRelationships( Direction.BOTH );
@@ -1383,6 +1359,20 @@ public class NeoStoresTest
                 {
                     assertFalse( relationship.next() );
                 }
+            }
+        }
+    }
+
+    private void deleteRelationships( long nodeId ) throws Exception
+    {
+        try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
+              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId ) )
+        {
+            nodeCursor.next();
+            PrimitiveLongIterator relationships = nodeCursor.get().getRelationships( Direction.BOTH );
+            while ( relationships.hasNext() )
+            {
+                relDelete( relationships.next() );
             }
         }
     }

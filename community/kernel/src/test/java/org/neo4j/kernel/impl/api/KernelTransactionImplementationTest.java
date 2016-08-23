@@ -90,8 +90,10 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         };
         Consumer<KernelTransaction> writeTxInitializer = tx ->
         {
-            KernelStatement statement = (KernelStatement) tx.acquireStatement();
-            statement.txState().nodeDoCreate( 42 );
+            try ( KernelStatement statement = (KernelStatement) tx.acquireStatement() )
+            {
+                statement.txState().nodeDoCreate( 42 );
+            }
         };
         return Arrays.asList(
                 new Object[]{readTxInitializer, false, "read"},

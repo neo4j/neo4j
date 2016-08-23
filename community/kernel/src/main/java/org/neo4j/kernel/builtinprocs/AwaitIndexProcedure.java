@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -34,13 +35,15 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 
 import static java.lang.String.format;
 
-public class AwaitIndexProcedure
+public class AwaitIndexProcedure implements AutoCloseable
 {
     private final ReadOperations operations;
+    private Statement statement;
 
     public AwaitIndexProcedure( KernelTransaction tx )
     {
-        operations = tx.acquireStatement().readOperations();
+        statement = tx.acquireStatement();
+        operations = statement.readOperations();
     }
 
     public void execute( String labelName, String propertyKeyName, long timeout, TimeUnit timeoutUnits )
@@ -138,5 +141,14 @@ public class AwaitIndexProcedure
     private String formatIndex( String labelName, String propertyKeyName )
     {
         return format( ":%s(%s)", labelName, propertyKeyName );
+    }
+
+    @Override
+    public void close()
+    {
+        if ( statement != null )
+        {
+            statement.close();
+        }
     }
 }
