@@ -94,6 +94,7 @@ public class Neo4jWithSocket implements TestRule
         {
             gdb.shutdown();
         }
+        Neo4jWithSocket.cleanupTemporaryTestFiles();
         Map<Setting<?>,String> settings = configure( overrideSettingsFunction );
         gdb = graphDatabaseFactory.newImpermanentDatabase( settings );
     }

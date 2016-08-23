@@ -77,7 +77,6 @@ public class BoltConnectionManagementIT
     @Before
     public void setup() throws Exception
     {
-        Neo4jWithSocket.cleanupTemporaryTestFiles();
         this.admin = cf.newInstance();
         this.user = cf.newInstance();
 
@@ -96,7 +95,6 @@ public class BoltConnectionManagementIT
         {
             user.disconnect();
         }
-        Neo4jWithSocket.cleanupTemporaryTestFiles();
     }
 
     @Rule
@@ -126,8 +124,6 @@ public class BoltConnectionManagementIT
 
     protected TransportConnection admin;
     protected TransportConnection user;
-
-    private static String SESSION_TERMINATED_MSG = "The session is no longer available, possibly due to termination.";
 
     @Parameterized.Parameters
     public static Collection<Object[]> transports()
@@ -330,6 +326,7 @@ public class BoltConnectionManagementIT
 
         // Then
         verifyConnectionHasTerminated( conn1 );
+        verifyConnectionHasTerminated( conn2 );
     }
 
     private static void assertFailTerminateConnectionForUser( TransportConnection client, String username ) throws Exception
