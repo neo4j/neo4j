@@ -813,4 +813,11 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
 
     a [ParameterWrongTypeException] should be thrownBy executeWithAllPlanners(query)
   }
+
+  test("toString should defer type checking until runtime") {
+    executeWithAllPlanners("""unwind ["male","female",null] as gen
+                             |return coalesce(tostring(gen),"x") as result """.stripMargin)
+    executeWithAllPlanners("""unwind ["male","female",null] as gen
+                             |return tostring(coalesce(gen,"x")) as result """.stripMargin)
+  }
 }
