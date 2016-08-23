@@ -23,18 +23,29 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
+import java.util.Optional;
+
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.StoreType;
+
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.neo4j.kernel.impl.store.StoreType.isStoreType;
 
 public class ToFileStoreWriter implements StoreWriter
 {
     private final File basePath;
     private final StoreCopyClient.Monitor monitor;
+    private final PageCache pageCache;
 
-    public ToFileStoreWriter( File graphDbStoreDir, StoreCopyClient.Monitor monitor )
+    public ToFileStoreWriter( File graphDbStoreDir, StoreCopyClient.Monitor monitor, PageCache pageCache )
     {
         this.basePath = graphDbStoreDir;
         this.monitor = monitor;
+        this.pageCache = pageCache;
     }
 
     @Override
@@ -47,22 +58,31 @@ public class ToFileStoreWriter implements StoreWriter
             File file = new File( basePath, path );
 
             file.getParentFile().mkdirs();
+            String filename = file.getName();
+            final Optional<StoreType> storeType = isStoreType( filename );
+            final Optional<PagedFile> existingMapping = pageCache.getExistingMapping( file );
+
             monitor.startReceivingStoreFile( file );
-            try ( RandomAccessFile randomAccessFile = new RandomAccessFile( file, "rw" ) )
+            try
             {
-                long totalWritten = 0;
-                if ( hasData )
+                if ( existingMapping.isPresent() )
                 {
-                    FileChannel channel = randomAccessFile.getChannel();
-                    while ( data.read( temporaryBuffer ) >= 0 )
+                    try ( PagedFile pagedFile = existingMapping.get() )
                     {
-                        temporaryBuffer.flip();
-                        totalWritten += temporaryBuffer.limit();
-                        channel.write( temporaryBuffer );
-                        temporaryBuffer.clear();
+                        return writeDataThroughPageCache( file, data, temporaryBuffer, hasData, pagedFile );
                     }
                 }
-                return totalWritten;
+                else if ( storeType.isPresent() && storeType.get().isRecordStore() )
+                {
+                    try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), CREATE, WRITE ) )
+                    {
+                        return writeDataThroughPageCache( file, data, temporaryBuffer, hasData, pagedFile );
+                    }
+                }
+                else
+                {
+                    return writeDataThroughFileSystem( file, data, temporaryBuffer, hasData );
+                }
             }
             finally
             {
@@ -73,6 +93,41 @@ public class ToFileStoreWriter implements StoreWriter
         {
             throw new IOException( t );
         }
+    }
+
+    private long writeDataThroughFileSystem( File file, ReadableByteChannel data, ByteBuffer temporaryBuffer,
+            boolean hasData ) throws IOException
+    {
+        try ( RandomAccessFile randomAccessFile = new RandomAccessFile( file, "rw" ) )
+        {
+            return writeData( data, temporaryBuffer, hasData, randomAccessFile.getChannel() );
+        }
+    }
+
+    private long writeDataThroughPageCache( File file, ReadableByteChannel data, ByteBuffer temporaryBuffer,
+            boolean hasData, PagedFile pagedFile ) throws IOException
+    {
+        try ( WritableByteChannel channel = pagedFile.openWritableByteChannel() )
+        {
+            return writeData( data, temporaryBuffer, hasData, channel );
+        }
+    }
+
+    private long writeData( ReadableByteChannel data, ByteBuffer temporaryBuffer, boolean hasData,
+            WritableByteChannel channel ) throws IOException
+    {
+        long totalWritten = 0;
+        if ( hasData )
+        {
+            while ( data.read( temporaryBuffer ) >= 0 )
+            {
+                temporaryBuffer.flip();
+                totalWritten += temporaryBuffer.limit();
+                channel.write( temporaryBuffer );
+                temporaryBuffer.clear();
+            }
+        }
+        return totalWritten;
     }
 
     @Override
