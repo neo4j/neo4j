@@ -162,7 +162,7 @@ public class StoreCopyServer
                     File file = files.next().file();
 
                     // Read from paged file if mapping exists. Otherwise read through file system.
-                    final Optional<PagedFile> optionalPagedFile = pageCache.tryMappedPagedFile( file );
+                    final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( file );
                     try ( ReadableByteChannel fileChannel = optionalPagedFile.isPresent() ?
                                                             optionalPagedFile.get().openReadableByteChannel() :
                                                             fileSystem.open( file, "r" ) )

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -227,15 +228,34 @@ public enum StoreType
      */
     public static StoreType typeOf( String storeFileName )
     {
+        final Optional<StoreType> optional = isStoreType( storeFileName );
+        if ( optional.isPresent() )
+        {
+            return optional.get();
+        }
+        else
+        {
+            throw new IllegalArgumentException( "No enum constant for " + storeFileName + " file." );
+        }
+    }
+
+    /**
+     * Determine if a file name corresponds to any store type.
+     *
+     * @param fileName - name of the file to check for corresponding store type
+     * @return {@link Optional} wrapping store type, or empty optional if no store type corresponds to file name
+     */
+    public static Optional<StoreType> isStoreType( String fileName )
+    {
         StoreType[] values = StoreType.values();
         for ( StoreType value : values )
         {
-            if ( value.getStoreName().equals( storeFileName ) ||
-                    storeFileName.equals( MetaDataStore.DEFAULT_NAME + value.getStoreName() ) )
+            if ( value.getStoreName().equals( fileName ) ||
+                 fileName.equals( MetaDataStore.DEFAULT_NAME + value.getStoreName() ) )
             {
-                return value;
+                return Optional.of( value );
             }
         }
-        throw new IllegalArgumentException( "No enum constant for " + storeFileName + " file." );
+        return Optional.empty();
     }
 }
