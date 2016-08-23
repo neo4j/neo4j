@@ -19,6 +19,9 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import java.time.Clock;
+import java.util.Map;
+
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v1.runtime.cypher.CypherAdapterStream;
@@ -36,9 +39,12 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 
+<<<<<<< 2634dcf2b1658795dbaa2bface704f4a332c6e53
 import java.time.Duration;
 import java.util.Map;
 
+=======
+>>>>>>> Include `result-consumed-after` in response to PULL_ALL
 public class TransactionStateMachine implements StatementProcessor
 {
     private static final String BEGIN = "BEGIN";
@@ -49,10 +55,10 @@ public class TransactionStateMachine implements StatementProcessor
     final MutableTransactionState ctx;
     State state = State.AUTO_COMMIT;
 
-    TransactionStateMachine( SPI spi, AuthenticationResult authenticationResult )
+    TransactionStateMachine( SPI spi, AuthenticationResult authenticationResult, Clock clock )
     {
         this.spi = spi;
-        ctx = new MutableTransactionState( authenticationResult );
+        ctx = new MutableTransactionState( authenticationResult, clock );
     }
 
     public State state()
@@ -177,7 +183,7 @@ public class TransactionStateMachine implements StatementProcessor
 
                             ctx.currentTransaction = spi.beginTransaction( ctx.authSubject );
 
-                            ctx.currentResult = new CypherAdapterStream( result );
+                            ctx.currentResult = new CypherAdapterStream( result, ctx.clock );
                             return AUTO_COMMIT;
                         }
                         else
@@ -186,7 +192,7 @@ public class TransactionStateMachine implements StatementProcessor
 
                             Result result = executeQuery( ctx, spi, statement, params );
 
-                            ctx.currentResult = new CypherAdapterStream( result );
+                            ctx.currentResult = new CypherAdapterStream( result, ctx.clock );
                             return AUTO_COMMIT;
                         }
                     }
@@ -246,7 +252,7 @@ public class TransactionStateMachine implements StatementProcessor
                         {
                             Result result = executeQuery( ctx, spi, statement, params );
 
-                            ctx.currentResult = new CypherAdapterStream( result );
+                            ctx.currentResult = new CypherAdapterStream( result, ctx.clock );
                             return EXPLICIT_TRANSACTION;
                         }
                     }
@@ -309,6 +315,8 @@ public class TransactionStateMachine implements StatementProcessor
         /** The current pending result, if present */
         BoltResult currentResult;
 
+        final Clock clock;
+
         /** A re-usable statement metadata instance that always represents the currently running statement */
         private final StatementMetadata currentStatementMetadata = new StatementMetadata()
         {
@@ -321,8 +329,9 @@ public class TransactionStateMachine implements StatementProcessor
 
         String querySource;
 
-        private MutableTransactionState( AuthenticationResult authenticationResult )
+        private MutableTransactionState( AuthenticationResult authenticationResult, Clock clock )
         {
+            this.clock = clock;
             this.authSubject = authenticationResult.getAuthSubject();
         }
     }

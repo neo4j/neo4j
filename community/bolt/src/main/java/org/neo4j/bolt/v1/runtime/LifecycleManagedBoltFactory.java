@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v1.runtime;
 
 import java.util.function.Supplier;
+import java.time.Clock;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.v1.runtime.cypher.CypherStatementRunner;
@@ -98,6 +99,6 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
                 queryExecutionEngine, statementRunner, transactionIdStore );
         BoltStateMachine.SPI boltSPI = new BoltStateMachineSPI( connectionDescriptor, usageData,
                 logging, authentication, connectionTracker, transactionSPI );
-        return new BoltStateMachine( boltSPI, onClose );
+        return new BoltStateMachine( boltSPI, onClose, Clock.systemUTC() );
     }
 }

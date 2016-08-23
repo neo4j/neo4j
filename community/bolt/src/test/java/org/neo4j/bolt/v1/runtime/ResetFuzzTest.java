@@ -19,15 +19,16 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.junit.After;
+import org.junit.Test;
+
 import java.io.IOException;
+import java.time.Clock;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.junit.After;
-import org.junit.Test;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
@@ -49,10 +50,8 @@ import org.neo4j.logging.NullLog;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
@@ -75,7 +74,7 @@ public class ResetFuzzTest
     /** We track the number of un-closed transactions, and fail if we ever leak one */
     private final AtomicLong liveTransactions = new AtomicLong();
     private final Neo4jJobScheduler scheduler = life.add(new Neo4jJobScheduler());
-    private final BoltStateMachine machine = new BoltStateMachine( new FuzzStubSPI(), null );
+    private final BoltStateMachine machine = new BoltStateMachine( new FuzzStubSPI(), null, Clock.systemUTC() );
     private final ThreadedWorkerFactory sessions =
             new ThreadedWorkerFactory( ( enc, closer ) -> machine, scheduler, NullLogService.getInstance() );
 

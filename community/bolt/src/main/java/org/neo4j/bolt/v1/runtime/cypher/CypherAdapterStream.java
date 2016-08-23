@@ -19,6 +19,12 @@
  */
 package org.neo4j.bolt.v1.runtime.cypher;
 
+import java.time.Clock;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
@@ -29,22 +35,19 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 public class CypherAdapterStream extends BoltResult
 {
     private final Result delegate;
     private final String[] fieldNames;
     private CypherAdapterRecord currentRecord;
+    private final Clock clock;
 
-    public CypherAdapterStream( Result delegate )
+    public CypherAdapterStream( Result delegate, Clock clock )
     {
         this.delegate = delegate;
         this.fieldNames = delegate.columns().toArray( new String[delegate.columns().size()] );
         this.currentRecord = new CypherAdapterRecord( fieldNames );
+        this.clock = clock;
     }
 
     @Override
@@ -62,11 +65,12 @@ public class CypherAdapterStream extends BoltResult
     @Override
     public void accept( final Visitor visitor ) throws Exception
     {
+        long start = clock.millis();
         delegate.accept( row -> {
             visitor.visit( currentRecord.reset( row ) );
             return true;
         } );
-
+        visitor.addMetadata( "result-consumed-after", clock.millis() - start );
         QueryExecutionType qt = delegate.getQueryExecutionType();
         visitor.addMetadata( "type", queryTypeCode( qt.queryType() ) );
 
