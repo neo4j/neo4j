@@ -67,10 +67,12 @@ public abstract class QueryEngineProvider extends Service
         final Thread thread = Thread.currentThread();
         return new QuerySession( transactionalContext )
         {
+            private final String username = transactionalContext.accessMode().name();
+
             @Override
             public String toString()
             {
-                return format( "embedded-session\tthread\t%s", thread.getName() );
+                return format( "embedded-session\tthread\t%s\t%s", thread.getName(), username );
             }
         };
     }

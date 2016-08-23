@@ -199,20 +199,22 @@ public class Start extends TransactionProvidingApp
         return new ShellQuerySession( session, context );
     }
 
-    private static class ShellQuerySession extends QuerySession
+    static class ShellQuerySession extends QuerySession
     {
         private final Session session;
+        private final String username;
 
         ShellQuerySession( Session session, TransactionalContext transactionalContext )
         {
             super( transactionalContext );
+            this.username = transactionalContext.accessMode().name();
             this.session = session;
         }
 
         @Override
         public String toString()
         {
-            return String.format( "shell-session\tshell\t%s", session.getId() );
+            return String.format( "shell-session\tshell\t%s\t%s", session.getId(), username );
         }
     }
 }

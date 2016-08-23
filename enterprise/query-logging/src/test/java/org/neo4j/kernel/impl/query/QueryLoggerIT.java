@@ -46,10 +46,14 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.kernel.api.security.AccessMode.Static.FULL;
+import static org.neo4j.kernel.impl.query.QueryEngineProvider.embeddedSession;
 
 public class QueryLoggerIT
 {
@@ -85,7 +89,8 @@ public class QueryLoggerIT
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ), endsWith( String.format( " ms: %s - %s",
-                QueryEngineProvider.embeddedSession( null ), QUERY ) ) );
+                embeddedSession( new FakeTransactionalContext( FULL ) ), QUERY ) ) );
+        assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
     }
 
     @Test
@@ -113,7 +118,8 @@ public class QueryLoggerIT
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ), endsWith( String.format(
                 " ms: %s - %s - {props: {name: Roland, position: Gunslinger, followers: [Jake, Eddie, Susannah]}}",
-                QueryEngineProvider.embeddedSession( null ), query) ) );
+                embeddedSession( new FakeTransactionalContext( FULL ) ), query) ) );
+        assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
     }
 
     @Test
@@ -135,7 +141,8 @@ public class QueryLoggerIT
         assertThat( logLines.get( 0 ),
                 endsWith( String.format(
                         " ms: %s - %s - {ids: [0, 1, 2]}",
-                        QueryEngineProvider.embeddedSession( null ), query) ) );
+                        embeddedSession( new FakeTransactionalContext( FULL ) ), query) ) );
+        assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
     }
 
     @Test
