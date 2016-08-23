@@ -28,7 +28,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
-import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_PROCESS;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
 /**
@@ -37,29 +36,29 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
  */
 public class RelationshipStage extends Stage
 {
-    private ParallelizeByNodeIdStep parallelizer;
+    private AssignRelationshipIdBatchStep idAssigner;
 
     public RelationshipStage( String topic, Configuration config, IoMonitor writeMonitor,
             InputIterator<InputRelationship> relationships, IdMapper idMapper, BatchingNeoStores neoStore,
             NodeRelationshipCache cache, EntityStoreUpdaterStep.Monitor storeUpdateMonitor,
             long firstRelationshipId )
     {
-        super( "Relationships" + topic, config, ORDER_SEND_DOWNSTREAM | ORDER_PROCESS );
+        super( "Relationships" + topic, config, ORDER_SEND_DOWNSTREAM );
         add( new InputIteratorBatcherStep<>( control(), config, relationships, InputRelationship.class ) );
 
         RelationshipStore relationshipStore = neoStore.getRelationshipStore();
         PropertyStore propertyStore = neoStore.getPropertyStore();
+        add( idAssigner = new AssignRelationshipIdBatchStep( control(), config, firstRelationshipId ) );
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
+        add( new RelationshipRecordPreparationStep( control(), config, neoStore.getRelationshipTypeRepository() ) );
         add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
-        add( parallelizer = new ParallelizeByNodeIdStep( control(), config, firstRelationshipId ) );
-        add( new RelationshipEncoderStep( control(), config,
-                neoStore.getRelationshipTypeRepository(), cache ) );
-        add( new EntityStoreUpdaterStep<>( control(), config,
-                relationshipStore, propertyStore, writeMonitor, storeUpdateMonitor ) );
+        add( new RelationshipEncoderStep( control(), config, cache ) );
+        add( new EntityStoreUpdaterStep<>( control(), config, relationshipStore, propertyStore, writeMonitor,
+                storeUpdateMonitor ) );
     }
 
     public long getNextRelationshipId()
     {
-        return parallelizer.getNextRelationshipId();
+        return idAssigner.getNextRelationshipId();
     }
 }

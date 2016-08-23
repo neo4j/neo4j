@@ -25,6 +25,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
+import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
+
 /**
  * Stage for counting groups per node, populates {@link RelationshipGroupCache}.
  */
@@ -35,7 +37,7 @@ public class CountGroupsStage extends Stage
     {
         super( "Count groups", config );
 
-        add( new ReadRecordsStep<>( control(), config, store, RecordIdIteration.allIn( store ) ) );
+        add( new ReadRecordsStep<>( control(), config, store, allIn( store, config ) ) );
         add( new CountGroupsStep( control(), config, groupCache ) );
     }
 }

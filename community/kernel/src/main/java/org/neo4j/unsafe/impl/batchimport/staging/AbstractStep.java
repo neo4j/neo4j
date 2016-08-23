@@ -159,6 +159,7 @@ public abstract class AbstractStep<T> implements Step<T>
     @Override
     public void setDownstream( Step<?> downstream )
     {
+        assert downstream != this;
         this.downstream = downstream;
     }
 

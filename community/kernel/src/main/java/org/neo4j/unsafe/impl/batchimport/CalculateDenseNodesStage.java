@@ -55,8 +55,7 @@ public class CalculateDenseNodesStage extends Stage
         add( typer = new RelationshipTypeCheckerStep( control(), config, neoStores.getRelationshipTypeRepository() ) );
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
         add( new CalculateRelationshipsStep( control(), config, neoStores.getRelationshipStore() ) );
-        add( new CalculateDenseNodePrepareStep( control(), config, badCollector ) );
-        add( new CalculateDenseNodesStep( control(), config, cache ) );
+        add( new CalculateDenseNodesStep( control(), config, cache, badCollector ) );
     }
 
     /*

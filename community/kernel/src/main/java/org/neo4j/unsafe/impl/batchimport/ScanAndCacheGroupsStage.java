@@ -25,7 +25,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
-import static org.neo4j.unsafe.impl.batchimport.RecordIdIteration.allInReversed;
+import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allInReversed;
 
 public class ScanAndCacheGroupsStage extends Stage
 {
@@ -33,7 +33,7 @@ public class ScanAndCacheGroupsStage extends Stage
             RelationshipGroupCache cache )
     {
         super( "Gather", config );
-        add( new ReadRecordsStep<>( control(), config, store, allInReversed( store ) ) );
+        add( new ReadRecordsStep<>( control(), config, store, allInReversed( store, config ) ) );
         add( new CacheGroupsStep( control(), config, cache ) );
     }
 }

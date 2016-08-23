@@ -34,7 +34,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Monitors {@link StageExecution executions} and makes changes as the execution goes:
  * <ul>
  * <li>Figures out roughly how many CPUs (henceforth called processors) are busy processing batches.
- * The most busy step will have its {@link Step#numberOfProcessors() processors} counted as 1 processor each, all other
+ * The most busy step will have its {@link Step#processors(int) processors} counted as 1 processor each, all other
  * will take into consideration how idle the CPUs executing each step is, counted as less than one.</li>
  * <li>Constantly figures out bottleneck steps and assigns more processors those.</li>
  * <li>Constantly figures out if there are steps that are way faster than the second fastest step and

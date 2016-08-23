@@ -44,11 +44,6 @@ public interface Step<T> extends Parallelizable, AutoCloseable
     int ORDER_SEND_DOWNSTREAM = 0x1;
 
     /**
-     * Whether or not actual processing of batches are ordered by ticket number.
-     */
-    int ORDER_PROCESS = 0x2;
-
-    /**
      * Starts the processing in this step, such that calls to {@link #receive(long, Object)} can be accepted.
      *
      * @param orderingGuarantees which ordering guarantees that will be upheld.

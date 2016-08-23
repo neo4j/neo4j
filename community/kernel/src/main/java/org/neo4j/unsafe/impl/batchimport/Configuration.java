@@ -80,6 +80,11 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         private final Configuration defaults;
         private final Config config;
 
+        public Overridden( Configuration defaults )
+        {
+            this( defaults, Config.empty() );
+        }
+
         public Overridden( Configuration defaults, Config config )
         {
             super( defaults );
@@ -109,5 +114,17 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         {
             return defaults.movingAverageSize();
         }
+    }
+
+    public static Configuration withBatchSize( Configuration config, int batchSize )
+    {
+        return new Overridden( config )
+        {
+            @Override
+            public int batchSize()
+            {
+                return batchSize;
+            }
+        };
     }
 }
