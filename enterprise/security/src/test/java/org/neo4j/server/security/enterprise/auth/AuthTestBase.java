@@ -50,9 +50,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.procedure.Procedure.Mode.WRITE;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
-import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
-import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
-import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
+import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READ_WRITE_SCHEMA;
+import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READ_WRITE;
+import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READ;
 
 abstract class AuthTestBase<S>
 {
@@ -83,7 +83,7 @@ abstract class AuthTestBase<S>
 
     String[] initialUsers = { "adminSubject", "readSubject", "schemaSubject",
         "writeSubject", "pwdSubject", "noneSubject", "neo4j" };
-    String[] initialRoles = { ADMIN, ARCHITECT, PUBLISHER, READER, EMPTY_ROLE };
+    String[] initialRoles = { ADMIN, READ_WRITE_SCHEMA, READ_WRITE, READ, EMPTY_ROLE };
 
     protected EnterpriseUserManager userManager;
 
@@ -105,10 +105,10 @@ abstract class AuthTestBase<S>
         userManager.newUser( "writeSubject", "abc", false );
         userManager.newUser( "readSubject", "123", false );
         // Currently admin role is created by default
-        userManager.addUserToRole( "adminSubject", ADMIN );
-        userManager.addUserToRole( "schemaSubject", ARCHITECT );
-        userManager.addUserToRole( "writeSubject", PUBLISHER );
-        userManager.addUserToRole( "readSubject", READER );
+        userManager.addRoleToUser( "adminSubject", ADMIN );
+        userManager.addRoleToUser( "schemaSubject", READ_WRITE_SCHEMA );
+        userManager.addRoleToUser( "writeSubject", READ_WRITE );
+        userManager.addRoleToUser( "readSubject", READ );
         userManager.newRole( EMPTY_ROLE );
         noneSubject = neo.login( "noneSubject", "abc" );
         pwdSubject = neo.login( "pwdSubject", "abc" );
@@ -184,14 +184,14 @@ abstract class AuthTestBase<S>
         assertFail( subject, "CALL dbms.createUser('', 'foo', false)", errMsg );
     }
 
-    void testFailAddUserToRole( S subject, String username, String role, String errMsg )
+    void testFailAddRoleToUser( S subject, String username, String role, String errMsg )
     {
-        assertFail( subject, "CALL dbms.addUserToRole('" + username + "', '" + role + "')", errMsg );
+        assertFail( subject, "CALL dbms.addRoleToUser('" + username + "', '" + role + "')", errMsg );
     }
 
-    void testFailRemoveUserFromRole( S subject, String username, String role, String errMsg )
+    void testFailRemoveRoleFromUser( S subject, String username, String role, String errMsg )
     {
-        assertFail( subject, "CALL dbms.removeUserFromRole('" + username + "', '" + role + "')", errMsg );
+        assertFail( subject, "CALL dbms.removeRoleFromUser('" + username + "', '" + role + "')", errMsg );
     }
 
     void testFailDeleteUser( S subject, String username, String errMsg )

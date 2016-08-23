@@ -28,9 +28,9 @@ import java.util.Map;
 public class PredefinedRolesBuilder implements RolesBuilder
 {
     public static final String ADMIN = "admin";
-    public static final String ARCHITECT = "architect";
-    public static final String PUBLISHER = "publisher";
-    public static final String READER = "reader";
+    public static final String READ_WRITE_SCHEMA = "readWriteSchema";
+    public static final String READ_WRITE = "readWrite";
+    public static final String READ = "read";
 
     public static final Map<String,SimpleRole> roles = staticBuildRoles();
 
@@ -42,18 +42,18 @@ public class PredefinedRolesBuilder implements RolesBuilder
         admin.add( new WildcardPermission( "*" ) );
         roles.put( ADMIN, admin );
 
-        SimpleRole architect = new SimpleRole( ARCHITECT );
-        architect.add( new WildcardPermission( "schema:*" ) );
-        architect.add( new WildcardPermission( "data:*" ) );
-        roles.put( ARCHITECT, architect );
+        SimpleRole readWriteSchema = new SimpleRole( READ_WRITE_SCHEMA );
+        readWriteSchema.add( new WildcardPermission( "schema:*" ) );
+        readWriteSchema.add( new WildcardPermission( "data:*" ) );
+        roles.put( READ_WRITE_SCHEMA, readWriteSchema );
 
-        SimpleRole publisher = new SimpleRole( PUBLISHER );
-        publisher.add( new WildcardPermission( "data:*" ) );
-        roles.put( PUBLISHER, publisher );
+        SimpleRole readWrite = new SimpleRole( READ_WRITE );
+        readWrite.add( new WildcardPermission( "data:*" ) );
+        roles.put( READ_WRITE, readWrite );
 
-        SimpleRole reader = new SimpleRole( READER );
-        reader.add( new WildcardPermission( "data:read" ) );
-        roles.put( READER, reader );
+        SimpleRole read = new SimpleRole( READ );
+        read.add( new WildcardPermission( "data:read" ) );
+        roles.put( READ, read );
 
         return roles;
     }

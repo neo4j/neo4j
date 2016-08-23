@@ -86,16 +86,16 @@ public class AuthProcedures
         }
     }
 
-    @Procedure( name = "dbms.addUserToRole", mode = DBMS )
-    public void addUserToRole( @Name( "username" ) String username, @Name( "roleName" ) String roleName )
+    @Procedure( name = "dbms.addRoleToUser", mode = DBMS )
+    public void addRoleToUser( @Name( "username" ) String username, @Name( "roleName" ) String roleName )
             throws IOException, InvalidArgumentsException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-        adminSubject.getUserManager().addUserToRole( username, roleName );
+        adminSubject.getUserManager().addRoleToUser( username, roleName );
     }
 
-    @Procedure( name = "dbms.removeUserFromRole", mode = DBMS )
-    public void removeUserFromRole( @Name( "username" ) String username, @Name( "roleName" ) String roleName )
+    @Procedure( name = "dbms.removeRoleFromUser", mode = DBMS )
+    public void removeRoleFromUser( @Name( "username" ) String username, @Name( "roleName" ) String roleName )
             throws InvalidArgumentsException, IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
@@ -103,7 +103,7 @@ public class AuthProcedures
         {
             throw new InvalidArgumentsException( "Removing yourself from the admin role is not allowed!" );
         }
-        adminSubject.getUserManager().removeUserFromRole( username, roleName );
+        adminSubject.getUserManager().removeRoleFromUser( username, roleName );
     }
 
     @Procedure( name = "dbms.deleteUser", mode = DBMS )

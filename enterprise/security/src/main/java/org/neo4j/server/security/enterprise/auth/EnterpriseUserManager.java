@@ -49,7 +49,7 @@ public interface EnterpriseUserManager extends UserManager
      * @throws InvalidArgumentsException if the role does not exist
      * @throws IOException
      */
-    void addUserToRole( String username, String roleName ) throws IOException, InvalidArgumentsException;
+    void addRoleToUser( String username, String roleName ) throws IOException, InvalidArgumentsException;
 
     /**
      * Remove a user from a role.
@@ -59,7 +59,7 @@ public interface EnterpriseUserManager extends UserManager
      * @throws InvalidArgumentsException if the username or the role does not exist
      * @throws IOException
      */
-    void removeUserFromRole( String username, String roleName ) throws IOException, InvalidArgumentsException;
+    void removeRoleFromUser( String username, String roleName ) throws IOException, InvalidArgumentsException;
 
     Set<String> getAllRoleNames();
 
