@@ -32,6 +32,8 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
+import static java.lang.String.format;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -689,6 +691,40 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertFalse( "Should not have role architect", userHasRole( "readSubject", ARCHITECT ) );
     }
 
+    //---------- create role -----------
+
+    @Test
+    public void shouldCreateRole() throws Exception
+    {
+        assertEmpty( adminSubject, "CALL dbms.createRole('new_role')" );
+        userManager.getRole( "new_role" );
+    }
+
+    @Test
+    public void shouldNotCreateRoleIfInvalidRoleName() throws Exception
+    {
+        assertFail( adminSubject, "CALL dbms.createRole('')", "Role name contains illegal characters" );
+        assertFail( adminSubject, "CALL dbms.createRole('&%ss!')", "Role name contains illegal characters" );
+        assertFail( adminSubject, "CALL dbms.createRole('åäöø')", "Role name contains illegal characters" );
+    }
+
+    @Test
+    public void shouldNotCreateExistingRole() throws Exception
+    {
+        assertFail( adminSubject, format( "CALL dbms.createRole('%s')", ARCHITECT), "The specified role already exists" );
+        assertEmpty( adminSubject, "CALL dbms.createRole('new_role')" );
+        assertFail( adminSubject, "CALL dbms.createRole('new_role')", "The specified role already exists" );
+    }
+
+    @Test
+    public void shouldNotAllowNonAdminCreateRole() throws Exception
+    {
+        testFailCreateRole( pwdSubject, CHANGE_PWD_ERR_MSG );
+        testFailCreateRole( readSubject, PERMISSION_DENIED );
+        testFailCreateRole( writeSubject, PERMISSION_DENIED );
+        testFailCreateRole( schemaSubject, PERMISSION_DENIED );
+    }
+
     //---------- list users -----------
 
     @Test
@@ -988,7 +1024,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         userThread.execute( threading, subject );
         userThread.barrier.await();
 
-        assertEmpty( adminSubject, "CALL " + String.format(procedure, neo.nameOf( subject ) ) );
+        assertEmpty( adminSubject, "CALL " + format(procedure, neo.nameOf( subject ) ) );
 
         assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );

@@ -184,6 +184,13 @@ abstract class AuthTestBase<S>
         assertFail( subject, "CALL dbms.security.createUser('', 'foo', false)", errMsg );
     }
 
+    void testFailCreateRole( S subject, String errMsg )
+    {
+        assertFail( subject, "CALL dbms.createRole('RealAdmins')", errMsg );
+        assertFail( subject, "CALL dbms.createRole('RealAdmins')", errMsg );
+        assertFail( subject, "CALL dbms.createRole('RealAdmins')", errMsg );
+    }
+
     void testFailAddRoleToUser( S subject, String role, String username, String errMsg )
     {
         assertFail( subject, "CALL dbms.security.addRoleToUser('" + role + "', '" + username + "')", errMsg );
