@@ -56,6 +56,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 {
     private final String id = UUID.randomUUID().toString();
     private final Runnable onClose;
+    private final Clock clock;
 
     State state = State.CONNECTED;
 
@@ -67,6 +68,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         this.spi = spi;
         this.ctx = new MutableConnectionState( spi, clock );
         this.onClose = onClose;
+        this.clock = clock;
     }
 
     public State state()
@@ -181,10 +183,12 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     public void run( String statement, Map<String, Object> params, BoltResponseHandler handler )
             throws BoltConnectionFatality
     {
+        long start = clock.millis();
         before( handler );
         try
         {
             state = state.run( this, statement, params );
+            handler.addMetadata( "result-available-after", clock.millis() - start );
         }
         finally
         {

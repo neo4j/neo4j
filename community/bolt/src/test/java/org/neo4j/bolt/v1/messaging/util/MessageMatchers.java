@@ -23,6 +23,14 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageRecorder;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
@@ -44,13 +52,6 @@ import org.neo4j.bolt.v1.transport.integration.TestNotification;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -125,6 +126,26 @@ public class MessageMatchers
             {
                 assertThat( t, instanceOf( SuccessMessage.class ) );
                 assertThat( ((SuccessMessage) t).meta(), equalTo( metadata ) );
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "SUCCESS" );
+            }
+        };
+    }
+
+    public static Matcher<ResponseMessage> msgSuccess( final Matcher<Map<? extends String,?>> matcher )
+    {
+        return new TypeSafeMatcher<ResponseMessage>()
+        {
+            @Override
+            protected boolean matchesSafely( ResponseMessage t )
+            {
+                assertThat( t, instanceOf( SuccessMessage.class ) );
+                assertThat( ((SuccessMessage) t).meta(), matcher );
                 return true;
             }
 
