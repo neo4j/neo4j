@@ -72,20 +72,18 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
     private Set<MemberId> additionalReplicationMembers = new HashSet<>();
 
     public RaftMembershipManager( SendToMyself sendToMyself, RaftGroup.Builder<MemberId> memberSetBuilder,
-                                  ReadableRaftLog raftLog, LogProvider logProvider, int expectedClusterSize,
-                                  long electionTimeout,  Clock clock, long catchupTimeout,
-                                  StateStorage<RaftMembershipState> membershipStorage )
+            ReadableRaftLog raftLog, LogProvider logProvider, int expectedClusterSize, long electionTimeout,
+            Clock clock, long catchupTimeout, StateStorage<RaftMembershipState> membershipStorage )
     {
         this.sendToMyself = sendToMyself;
         this.memberSetBuilder = memberSetBuilder;
         this.raftLog = raftLog;
         this.expectedClusterSize = expectedClusterSize;
         this.storage = membershipStorage;
-
         this.log = logProvider.getLog( getClass() );
-        this.membershipChanger = new RaftMembershipChanger( raftLog, clock,
-                electionTimeout, logProvider, catchupTimeout, this );
-            }
+        this.membershipChanger =
+                new RaftMembershipChanger( raftLog, clock, electionTimeout, logProvider, catchupTimeout, this );
+    }
 
     public void setRecoverFromIndexSupplier( LongSupplier recoverFromIndexSupplier )
     {
