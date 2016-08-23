@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.cardinality
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Selectivity
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{Predicate, Selections}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
@@ -142,5 +142,16 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
       val actual = calculator(StartsWith(Property(Variable("a") _, propKey) _, StringLiteral(prefix)(InputPosition.NONE)) _)
       assert( actual.factor === selectivity +- selectivity * 0.000000000000001)
     }
+  }
+
+  test("should default to single cardinality for HasLabels with previously unknown label") {
+    val stats = mock[GraphStatistics]
+    when(stats.nodesWithLabelCardinality(None)).thenReturn(Cardinality(10))
+    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
+    implicit val semanticTable = SemanticTable()
+    implicit val selections = mock[Selections]
+
+    val expr = HasLabels(null, Seq(LabelName("Foo")(pos)))(pos)
+    calculator(expr) should equal(Selectivity(1.0 / 10.0))
   }
 }

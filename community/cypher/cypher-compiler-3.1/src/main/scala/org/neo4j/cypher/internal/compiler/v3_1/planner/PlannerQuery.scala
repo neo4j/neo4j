@@ -34,7 +34,7 @@ object PeriodicCommit {
     periodicCommitHint.map(hint => new PeriodicCommit(hint.size.map(_.value)))
 }
 
-case class PeriodicCommit(val batchSize: Option[Long])
+case class PeriodicCommit(batchSize: Option[Long])
 
 case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
                                horizon: QueryHorizon = QueryProjection.empty,
