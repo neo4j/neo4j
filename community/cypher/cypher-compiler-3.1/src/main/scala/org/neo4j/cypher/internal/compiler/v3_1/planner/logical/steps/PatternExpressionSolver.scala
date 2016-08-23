@@ -87,14 +87,14 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
   def apply(source: LogicalPlan, projectionsMap: Map[String, Expression])
            (implicit context: LogicalPlanningContext): (LogicalPlan, Map[String, Expression]) = {
     val newProjections = Map.newBuilder[String, Expression]
-    val patternSolver = solvePatternExpressions(source.availableSymbols, context, pathStepBuilder)
+    val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, context, pathStepBuilder)
     val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, context, pathStepBuilder)
 
     val plan = projectionsMap.foldLeft(source) {
 
       // RETURN (a)-->() as X - The top-level expression is a pattern expression
       case (planAcc, (key, expression: PatternExpression)) =>
-        val (newPlan, newExpression) = patternSolver.solveUsingRollUpApply(planAcc, expression, Some(key))
+        val (newPlan, newExpression) = patternExpressionSolver.solveUsingRollUpApply(planAcc, expression, Some(key))
         newProjections += (key -> newExpression)
         newPlan
 
@@ -107,7 +107,9 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
       // Any other expression, that might contain an inner PatternExpression
       case (planAcc, (key, inExpression)) =>
         val expression = solveUsingGetDegree(inExpression)
-        val (newPlan, newExpression) = patternSolver.rewriteInnerExpressions(planAcc, expression)
+        val (firstStepPlan, firstStepExpression) = patternExpressionSolver.rewriteInnerExpressions(planAcc, expression)
+        val (newPlan, newExpression) = patternComprehensionSolver.rewriteInnerExpressions(firstStepPlan, firstStepExpression)
+
         newProjections += (key -> newExpression)
         newPlan
     }
@@ -176,7 +178,7 @@ object PatternExpressionSolver {
       extractQG = extractQG,
       createPlannerContext = createPlannerContext,
       projectionCreator = createProjectionToCollect,
-      lastDitch = Rewriter.lift{ case x => x })
+      lastDitch = patternExpressionRewriter(availableSymbols, context))
   }
 }
 

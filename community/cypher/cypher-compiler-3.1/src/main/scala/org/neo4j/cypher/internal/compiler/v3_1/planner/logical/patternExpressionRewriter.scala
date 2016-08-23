@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{IdentityMap, Rewriter, ast, topDown}
 
 /*
-Rewrite pattern expressions to nested plan expressions by planning them using the given context.
+Rewrite pattern expressions and pattern comprehensions to nested plan expressions by planning them using the given context.
 This is only done for expressions that have not already been unnested
  */
 case class patternExpressionRewriter(planArguments: Set[IdName], context: LogicalPlanningContext) extends Rewriter {
@@ -72,6 +72,26 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
             val pathExpression: PathExpression = ast.PathExpression(step)(expr.position)
 
             val rewrittenExpression = NestedPlanExpression(plan, pathExpression)(uniqueNamedExpr.position)
+            acc.updated(expr, rewrittenExpression)
+          }
+
+          (newAcc, Some(identity))
+
+      // replace pattern comprehension
+      // the contained pattern expression for no further processing
+      // by this tree fold
+      case expr@PatternComprehension(namedPath, pattern, predicate, projection) =>
+        acc =>
+          assert(namedPath.isEmpty, "Named paths in pattern comprehensions should have been rewritten away already")
+          // only process pattern expressions that were not contained in previously seen nested plans
+          val newAcc = if (acc.contains(expr)) {
+            acc
+          } else {
+            val arguments = planArguments ++ scopeMap(expr)
+            val (plan, namedExpr) = context.strategy.planPatternComprehension(arguments, expr)(context)
+            val uniqueNamedExpr = namedExpr.copy()(expr.position)
+
+            val rewrittenExpression = NestedPlanExpression(plan, projection)(uniqueNamedExpr.position)
             acc.updated(expr, rewrittenExpression)
           }
 
