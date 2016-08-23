@@ -1,7 +1,7 @@
 [[cypher-compatibility]]
 = Compatibility
 
-Cypher is not a static language. New versions introduces new features and sometimes old features get dropped.
+Cypher is not a static language. New versions introduce new features and sometimes old features get dropped.
 Older versions of the language can still be accessed if required.
 There are two ways to select which version to use in queries.
 
