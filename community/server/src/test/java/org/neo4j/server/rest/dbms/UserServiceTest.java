@@ -338,7 +338,7 @@ public class UserServiceTest
         String json = new String( (byte[]) response.getEntity() );
         assertNotNull( json );
         assertThat( json, containsString( "\"code\" : \"Neo.ClientError.Security.InvalidArguments\"" ) );
-        assertThat( json, containsString( "\"message\" : \"Password cannot be empty.\"" ) );
+        assertThat( json, containsString( "\"message\" : \"A password cannot be empty.\"" ) );
     }
 
     @Test

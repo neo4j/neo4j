@@ -45,7 +45,7 @@ import static org.neo4j.procedure.Procedure.Mode.DBMS;
 
 public class AuthProcedures
 {
-    public static final String PERMISSION_DENIED = "Permission denied";
+    public static final String PERMISSION_DENIED = "Permission denied.";
 
     @Context
     public AuthSubject authSubject;
@@ -101,7 +101,8 @@ public class AuthProcedures
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         if ( adminSubject.doesUsernameMatch( username ) && roleName.equals( PredefinedRolesBuilder.ADMIN ) )
         {
-            throw new InvalidArgumentsException( "Removing yourself from the admin role is not allowed!" );
+            throw new InvalidArgumentsException( "Removing yourself (user '" + username +
+                    "') from the admin role is not allowed." );
         }
         adminSubject.getUserManager().removeUserFromRole( username, roleName );
     }
@@ -112,7 +113,8 @@ public class AuthProcedures
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         if ( adminSubject.doesUsernameMatch( username ) )
         {
-            throw new InvalidArgumentsException( "Deleting yourself is not allowed!" );
+            throw new InvalidArgumentsException( "Deleting yourself (user '" + username +
+                    "') is not allowed." );
         }
         adminSubject.getUserManager().deleteUser( username );
         terminateTransactionsForValidUser( username );
@@ -125,7 +127,8 @@ public class AuthProcedures
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         if ( adminSubject.doesUsernameMatch( username ) )
         {
-            throw new InvalidArgumentsException( "Suspending yourself is not allowed!" );
+            throw new InvalidArgumentsException( "Suspending yourself (user '" + username +
+                    "') is not allowed." );
         }
         adminSubject.getUserManager().suspendUser( username );
         terminateTransactionsForValidUser( username );
@@ -138,7 +141,8 @@ public class AuthProcedures
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         if ( adminSubject.doesUsernameMatch( username ) )
         {
-            throw new InvalidArgumentsException( "Activating yourself is not allowed!" );
+            throw new InvalidArgumentsException( "Activating yourself (user '" + username +
+                    "') is not allowed." );
         }
         adminSubject.getUserManager().activateUser( username );
     }

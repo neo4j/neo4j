@@ -222,7 +222,7 @@ public class UsersCommandIT extends CommandTestBase
         // Given default state (only default user)
 
         // When running 'create' with correct parameters, expect error
-        assertFailedSubCommand( "create", args("neo4j", "abc"), "The specified user already exists" );
+        assertFailedSubCommand( "create", args("neo4j", "abc"), "The specified user 'neo4j' already exists" );
     }
 
     @Test
@@ -233,7 +233,7 @@ public class UsersCommandIT extends CommandTestBase
         assertUserRequiresPasswordChange( "another" );
 
         // When running 'create' with correct parameters, expect correct output
-        assertFailedSubCommand( "create", args("another", "abc"), "The specified user already exists" );
+        assertFailedSubCommand( "create", args("another", "abc"), "The specified user 'another' already exists" );
 
         // And the user still requires password change
         assertUserRequiresPasswordChange( "another" );

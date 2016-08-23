@@ -63,7 +63,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
             {
                 if ( other.name().equals( user.name() ) )
                 {
-                    throw new InvalidArgumentsException( "The specified user already exists" );
+                    throw new InvalidArgumentsException( "The specified user '" + user.name() + "' already exists." );
                 }
             }
 
@@ -89,7 +89,8 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
         // Assert input is ok
         if ( !existingUser.name().equals( updatedUser.name() ) )
         {
-            throw new InvalidArgumentsException( "updated user has a different name" );
+            throw new IllegalArgumentException( "The attempt to update the role from '" + existingUser.name() +
+                    "' to '" + updatedUser.name() + "' failed. Changing a roles name is not allowed." );
         }
 
         synchronized (this)

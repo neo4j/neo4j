@@ -278,7 +278,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         // For REST we may need to connect HttpSessionListener.sessionDestroyed with logout
         if ( user.hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) )
         {
-            throw new DisabledAccountException( "User '" + user.name() + "' is suspended" );
+            throw new DisabledAccountException( "User '" + user.name() + "' is suspended." );
         }
 
         if ( user.passwordChangeRequired() )
@@ -297,22 +297,6 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     int numberOfRoles()
     {
         return roleRepository.numberOfRoles();
-    }
-
-    @Override
-    public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
-            InvalidArgumentsException
-    {
-        EnterpriseAuthSubject enterpriseAuthSubject = EnterpriseAuthSubject.castOrFail( authSubject );
-
-        if ( !enterpriseAuthSubject.doesUsernameMatch( username ) )
-        {
-            throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
-        }
-
-        setUserPassword( username, password );
-
-        clearCacheForUser( username );
     }
 
     @Override
@@ -465,6 +449,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
             // try again
             setUserPassword( username, password );
         }
+
+        clearCacheForUser( username );
     }
 
     @Override
@@ -520,10 +506,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     @Override
     public Set<String> getRoleNamesForUser( String username ) throws InvalidArgumentsException
     {
-        if ( userRepository.getUserByName( username ) == null )
-        {
-            throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
-        }
+        getUser( username );
         return roleRepository.getRoleNamesByUsername( username );
     }
 
@@ -561,19 +544,29 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
     private void assertValidUsername( String name ) throws InvalidArgumentsException
     {
+        if ( name.isEmpty() )
+        {
+            throw new InvalidArgumentsException( "The provided user name is empty." );
+        }
         if ( !userRepository.isValidUsername( name ) )
         {
             throw new InvalidArgumentsException(
-                    "User name contains illegal characters. Please use simple ascii characters and numbers." );
+                    "User name '" + name +
+                    "' contains illegal characters. Use simple ascii characters and numbers." );
         }
     }
 
     private void assertValidRoleName( String name ) throws InvalidArgumentsException
     {
+        if ( name.isEmpty() )
+        {
+            throw new InvalidArgumentsException( "The provided role name is empty." );
+        }
         if ( !roleRepository.isValidRoleName( name ) )
         {
             throw new InvalidArgumentsException(
-                    "Role name contains illegal characters. Please use simple ascii characters and numbers." );
+                    "Role name '" + name +
+                    "' contains illegal characters. Use simple ascii characters and numbers." );
         }
     }
 

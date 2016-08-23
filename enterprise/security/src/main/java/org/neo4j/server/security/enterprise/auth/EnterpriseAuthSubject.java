@@ -66,7 +66,7 @@ public class EnterpriseAuthSubject implements AuthSubject
     @Override
     public void setPassword( String password ) throws IOException, InvalidArgumentsException
     {
-        getUserManager().setPassword( this, (String) shiroSubject.getPrincipal(), password );
+        getUserManager().setUserPassword( (String) shiroSubject.getPrincipal(), password );
 
         // Make user authenticated if successful
         if ( getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )

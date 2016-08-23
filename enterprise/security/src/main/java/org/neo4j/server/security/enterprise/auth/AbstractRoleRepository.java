@@ -75,7 +75,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
             {
                 if ( other.name().equals( role.name() ) )
                 {
-                    throw new IllegalArgumentException( "The specified role already exists" );
+                    throw new IllegalArgumentException( "The specified role '" + role.name() + "' already exists." );
                 }
             }
 
@@ -96,7 +96,8 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
         // Assert input is ok
         if ( !existingRole.name().equals( updatedRole.name() ) )
         {
-            throw new IllegalArgumentException( "updated role has a different name" );
+            throw new IllegalArgumentException( "The attempt to update the role from '" + existingRole.name() +
+                    "' to '" + updatedRole.name() + "' failed. Changing a roles name is not allowed." );
         }
 
         synchronized ( this )
@@ -184,7 +185,8 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public synchronized void removeUserFromAllRoles( String username ) throws ConcurrentModificationException, IOException
+    public synchronized void removeUserFromAllRoles( String username )
+            throws ConcurrentModificationException, IOException
     {
         Set<String> roles = rolesByUsername.get( username );
         if ( roles != null )

@@ -22,9 +22,14 @@ package org.neo4j.server.security.enterprise.auth;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
+
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.*;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
@@ -388,7 +393,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         // Would prefer something more robust here, but could not get it to work
         // This test might turn flaky if committing the initial lines takes longer than 100 ms
         // Ideally we would be polling for the correct number of nodes, given some timeout
-        Thread.sleep( 100 );
+        Thread.sleep( 200 );
 
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         assertEmpty( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + PUBLISHER + "')" );
@@ -398,7 +403,9 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         testFailWrite( henrik );
 
         assertSuccess( henrik, "MATCH (n) RETURN n.name as name",
-                r -> assertKeyIs( r, "name", "node0", "node1", "node2", "line1", "line2" ) );
+                r -> {
+                    assertKeyIs( r, "name", "node0", "node1", "node2", "line1", "line2" );
+                } );
     }
 
     //---------- User suspension -----------

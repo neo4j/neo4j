@@ -206,7 +206,7 @@ public class FileUserRepositoryTest
             users.update( user, updatedUser );
             fail( "expected exception not thrown" );
         }
-        catch ( InvalidArgumentsException e )
+        catch ( IllegalArgumentException e )
         {
             // Then continue
         }
