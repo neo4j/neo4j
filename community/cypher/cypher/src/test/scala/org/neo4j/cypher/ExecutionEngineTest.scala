@@ -1045,14 +1045,14 @@ order by a.COL1""")
 
     // WHEN
     eengine.execute(s"match (n:Person) return n").toList
-    planningListener.planRequests.toSeq should equal(Seq(
+    planningListener.planRequests should equal(Seq(
       s"match (n:Person) return n"
     ))
-    (0 until 150).foreach { _ => createLabeledNode("Person") }
+    (0 until 350).foreach { _ => createLabeledNode("Person") }
     eengine.execute(s"match (n:Person) return n").toList
 
     //THEN
-    planningListener.planRequests.toSeq should equal (Seq(
+    planningListener.planRequests should equal (Seq(
       s"match (n:Person) return n",
       s"match (n:Person) return n"
     ))
