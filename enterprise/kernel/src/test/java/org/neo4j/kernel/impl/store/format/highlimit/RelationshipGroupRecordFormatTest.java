@@ -66,13 +66,13 @@ public class RelationshipGroupRecordFormatTest
     {
         RelationshipGroupRecord source = new RelationshipGroupRecord( 1 );
         RelationshipGroupRecord target = new RelationshipGroupRecord( 1 );
-        source.initialize( true, 0, randomFixedReference(), randomFixedReference(),
+        source.initialize( true, randomType(), randomFixedReference(), randomFixedReference(),
                 randomFixedReference(), randomFixedReference(), randomFixedReference());
 
         writeReadRecord( source, target );
 
         assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
-        verifySameReferences( source, target);
+        verifySame( source, target);
     }
 
     @Test
@@ -98,13 +98,13 @@ public class RelationshipGroupRecordFormatTest
     {
         RelationshipGroupRecord source = new RelationshipGroupRecord( 1 );
         RelationshipGroupRecord target = new RelationshipGroupRecord( 1 );
-        source.initialize( true, 0, randomFixedReference(), randomFixedReference(),
+        source.initialize( true, randomType(), randomFixedReference(), randomFixedReference(),
                 randomFixedReference(), randomFixedReference(), randomFixedReference());
 
         writeReadRecord( source, target, RelationshipGroupRecordFormat.FIXED_FORMAT_RECORD_SIZE - 1 );
 
         assertFalse( "Record should use variable length reference if format record is too small.", target.isUseFixedReferences() );
-        verifySameReferences( source, target);
+        verifySame( source, target);
     }
 
     @Test
@@ -112,56 +112,13 @@ public class RelationshipGroupRecordFormatTest
     {
         RelationshipGroupRecord source = new RelationshipGroupRecord( 1 );
         RelationshipGroupRecord target = new RelationshipGroupRecord( 1 );
-        source.initialize( true, 0, randomFixedReference(), randomFixedReference(),
+        source.initialize( true, randomType(), randomFixedReference(), randomFixedReference(),
                 randomFixedReference(), randomFixedReference(), randomFixedReference());
 
         writeReadRecord( source, target, RelationshipGroupRecordFormat.FIXED_FORMAT_RECORD_SIZE );
 
         assertTrue( "Record should use fixed reference if can fit in format record.", target.isUseFixedReferences() );
-        verifySameReferences( source, target);
-    }
-
-    @Test
-    public void readSingleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
-    {
-        RelationshipGroupRecord oldFormatRecord = new RelationshipGroupRecord( 1 );
-        RelationshipGroupRecord newFormatRecord = new RelationshipGroupRecord( 1 );
-        oldFormatRecord.initialize( true, 0, randomFixedReference(), randomFixedReference(),
-                randomFixedReference(), randomFixedReference(), randomFixedReference());
-
-        writeRecordWithOldFormat( oldFormatRecord );
-
-        assertFalse( "This should be single unit record.", oldFormatRecord.hasSecondaryUnitId() );
-        assertFalse( "Old format is not aware about fixed references.", oldFormatRecord.isUseFixedReferences() );
-
-        recordFormat.read( newFormatRecord, pageCursor, RecordLoad.NORMAL, RelationshipGroupRecordFormat.RECORD_SIZE );
-        verifySameReferences( oldFormatRecord, newFormatRecord );
-    }
-
-    @Test
-    public void readDoubleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
-    {
-        RelationshipGroupRecord oldFormatRecord = new RelationshipGroupRecord( 0 );
-        RelationshipGroupRecord newFormatRecord = new RelationshipGroupRecord( 0 );
-        oldFormatRecord.initialize( true, 0, bigReference(), bigReference(),
-                bigReference(), bigReference(), bigReference());
-
-        writeRecordWithOldFormat( oldFormatRecord );
-
-        assertTrue( "This should be double unit record.", oldFormatRecord.hasSecondaryUnitId() );
-        assertFalse( "Old format is not aware about fixed references.", oldFormatRecord.isUseFixedReferences() );
-
-        recordFormat.read( newFormatRecord, pageCursor, RecordLoad.NORMAL, RelationshipGroupRecordFormat.RECORD_SIZE );
-        verifySameReferences( oldFormatRecord, newFormatRecord );
-    }
-
-    private void writeRecordWithOldFormat( RelationshipGroupRecord oldFormatRecord ) throws IOException
-    {
-        int oldRecordSize = RelationshipGroupRecordFormatV3_0_0.RECORD_SIZE;
-        RelationshipGroupRecordFormatV3_0_0 recordFormatV30 = new RelationshipGroupRecordFormatV3_0_0();
-        recordFormatV30.prepare( oldFormatRecord, oldRecordSize, idSequence );
-        recordFormatV30.write( oldFormatRecord, pageCursor, oldRecordSize );
-        pageCursor.setOffset( 0 );
+        verifySame( source, target);
     }
 
     private void verifyRecordsWithPoisonedReference( RelationshipGroupRecord source, RelationshipGroupRecord target,
@@ -188,7 +145,7 @@ public class RelationshipGroupRecordFormatTest
             {
                 assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
             }
-            verifySameReferences( source, target );
+            verifySame( source, target );
             Collections.rotate( references, 1 );
         }
     }
@@ -204,8 +161,9 @@ public class RelationshipGroupRecordFormatTest
         return references;
     }
 
-    private void verifySameReferences( RelationshipGroupRecord recordA, RelationshipGroupRecord recordB )
+    private void verifySame( RelationshipGroupRecord recordA, RelationshipGroupRecord recordB )
     {
+        assertEquals( "Types should be equal.", recordA.getType(), recordB.getType() );
         assertEquals( "First In references should be equal.", recordA.getFirstIn(), recordB.getFirstIn() );
         assertEquals( "First Loop references should be equal.", recordA.getFirstLoop(), recordB.getFirstLoop() );
         assertEquals( "First Out references should be equal.", recordA.getFirstOut(), recordB.getFirstOut() );
@@ -228,14 +186,14 @@ public class RelationshipGroupRecordFormatTest
         recordFormat.read( target, pageCursor, RecordLoad.NORMAL, recordSize );
     }
 
+    private int randomType()
+    {
+        return (int) randomReference( 1L << 24 );
+    }
+
     private long randomFixedReference()
     {
         return randomReference( 1L << (Integer.SIZE + 1) );
-    }
-
-    private long bigReference()
-    {
-        return 1L << 57;
     }
 
     private long randomReference( long maxValue )

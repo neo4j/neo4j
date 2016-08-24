@@ -52,10 +52,12 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
  */
 class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<RelationshipGroupRecord>
 {
+    private static final int TYPE_BYTES = 3;
+
     static final int RECORD_SIZE = 32;
     static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +
                                                 Byte.BYTES /* modifiers */ +
-                                                Short.BYTES /* type */ +
+                                                TYPE_BYTES /* type */ +
                                                 Integer.BYTES /* next */ +
                                                 Integer.BYTES /* first out */ +
                                                 Integer.BYTES /* first in */ +
@@ -65,14 +67,14 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     private static final int HAS_OUTGOING_BIT = 0b0000_1000;
     private static final int HAS_INCOMING_BIT = 0b0001_0000;
     private static final int HAS_LOOP_BIT     = 0b0010_0000;
-    private static final int HAS_NEXT_BIT     = 0b0100_0000;
 
+    private static final int HAS_NEXT_BIT     = 0b0100_0000;
     private static final int NEXT_RECORD_BIT = 0b0000_0001;
     private static final int FIRST_OUT_BIT = 0b0000_0010;
     private static final int FIRST_IN_BIT = 0b0000_0100;
     private static final int FIRST_LOOP_BIT = 0b0000_1000;
-    private static final int OWNING_NODE_BIT = 0b0001_0000;
 
+    private static final int OWNING_NODE_BIT = 0b0001_0000;
     private static final long ONE_BIT_OVERFLOW_BIT_MASK = 0xFFFF_FFFE_0000_0000L;
     private static final long HIGH_DWORD_LAST_BIT_MASK = 0x100000000L;
 
@@ -104,8 +106,10 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
         }
         else
         {
+            int typeLowWord = cursor.getShort() & 0xFFFF;
+            int type = (((cursor.getByte() & 0xFF) << Short.SIZE) | typeLowWord);
             record.initialize( inUse,
-                    cursor.getShort() & 0xFFFF,
+                    type,
                     decodeCompressedReference( cursor, headerByte, HAS_OUTGOING_BIT, NULL ),
                     decodeCompressedReference( cursor, headerByte, HAS_INCOMING_BIT, NULL ),
                     decodeCompressedReference( cursor, headerByte, HAS_LOOP_BIT, NULL ),
@@ -128,12 +132,12 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     @Override
     protected int requiredDataLength( RelationshipGroupRecord record )
     {
-        return  2 + // type
-                length( record.getFirstOut(), NULL ) +
-                length( record.getFirstIn(), NULL ) +
-                length( record.getFirstLoop(), NULL ) +
-                length( record.getOwningNode() ) +
-                length( record.getNext(), NULL );
+        return TYPE_BYTES + // type
+               length( record.getFirstOut(), NULL ) +
+               length( record.getFirstIn(), NULL ) +
+               length( record.getFirstLoop(), NULL ) +
+               length( record.getOwningNode() ) +
+               length( record.getNext(), NULL );
     }
 
     @Override
@@ -147,7 +151,10 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
         }
         else
         {
-            cursor.putShort( (short) record.getType() );
+            int type = record.getType();
+            cursor.putShort( (short) type );
+            cursor.putByte( (byte) (type >>> Short.SIZE) );
+
             encode( cursor, record.getFirstOut(), NULL );
             encode( cursor, record.getFirstIn(), NULL );
             encode( cursor, record.getFirstLoop(), NULL );
@@ -181,7 +188,8 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
         // [   x,    ] high owner bits
         long modifiers = cursor.getByte();
 
-        int type = cursor.getShort() & 0xFFFF;
+        int typeLowWord = cursor.getShort() & 0xFFFF;
+        int type = (((cursor.getByte() & 0xFF) << Short.SIZE) | typeLowWord);
 
         long nextLowBits = cursor.getInt() & 0xFFFFFFFFL;
         long firstOutLowBits = cursor.getInt() & 0xFFFFFFFFL;
@@ -218,7 +226,10 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
         // [   x,    ] high owner bits
         cursor.putByte( (byte) (nextMod | firstOutMod | firstInMod | firstLoopMod | owningNodeMod) );
 
-        cursor.putShort( (short) record.getType() );
+        int type = record.getType();
+        cursor.putShort( (short) type );
+        cursor.putByte( (byte) (type >> Short.SIZE) );
+
         cursor.putInt( (int) record.getNext() );
         cursor.putInt( (int) record.getFirstOut() );
         cursor.putInt( (int) record.getFirstIn() );
