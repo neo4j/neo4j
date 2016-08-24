@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -114,11 +115,16 @@ class SessionRule implements TestRule
 
     BoltStateMachine newMachine( String connectionDescriptor )
     {
+        return newMachine( connectionDescriptor, Clock.systemUTC() );
+    }
+
+    BoltStateMachine newMachine( String connectionDescriptor, Clock clock )
+    {
         if ( boltFactory == null )
         {
             throw new IllegalStateException( "Cannot access test environment before test is running." );
         }
-        BoltStateMachine connection = boltFactory.newMachine( connectionDescriptor, () -> {} );
+        BoltStateMachine connection = boltFactory.newMachine( connectionDescriptor, () -> {}, clock );
         runningMachines.add( connection );
         return connection;
     }

@@ -91,7 +91,7 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
     }
 
     @Override
-    public BoltStateMachine newMachine( String connectionDescriptor, Runnable onClose )
+    public BoltStateMachine newMachine( String connectionDescriptor, Runnable onClose, Clock clock )
     {
         final CypherStatementRunner statementRunner = new CypherStatementRunner( queryExecutionEngine, txBridge,
                 queryService );

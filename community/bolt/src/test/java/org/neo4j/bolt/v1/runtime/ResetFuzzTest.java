@@ -76,7 +76,7 @@ public class ResetFuzzTest
     private final Neo4jJobScheduler scheduler = life.add(new Neo4jJobScheduler());
     private final BoltStateMachine machine = new BoltStateMachine( new FuzzStubSPI(), null, Clock.systemUTC() );
     private final ThreadedWorkerFactory sessions =
-            new ThreadedWorkerFactory( ( enc, closer ) -> machine, scheduler, NullLogService.getInstance() );
+            new ThreadedWorkerFactory( ( enc, closer, clock ) -> machine, scheduler, NullLogService.getInstance() );
 
     private final List<List<RequestMessage>> sequences = asList(
             asList( run( "test", map() ), discardAll() ),
