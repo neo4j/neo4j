@@ -22,27 +22,54 @@ package org.neo4j.time;
 import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * This class consists of {@code static} utility methods for operating
+ * on clocks. These utilities include factory methods for different type of clocks.
+ */
 public class Clocks
 {
     private static final Clock SYSTEM_CLOCK = Clock.systemUTC();
 
+    private Clocks()
+    {
+        // non-instantiable
+    }
+
+    /**
+     * Returns system clock.
+     * @return system clock
+     */
     public static Clock systemClock()
     {
         return SYSTEM_CLOCK;
     }
 
-    public static Clock nanoClock()
+    /**
+     * Returns clock that allow to get current nanos.
+     * @return clock with nano time support
+     */
+    public static SystemNanoClock nanoClock()
     {
-        return new SystemNanoClock();
+        return SystemNanoClock.INSTANCE;
     }
 
+    /**
+     * Return new fake clock instance.
+     * @return fake clock
+     */
     public static FakeClock fakeClock()
     {
-        return fakeClock();
+        return new FakeClock();
     }
 
-    public static FakeClock fakeClock( long delta, TimeUnit unit )
+    /**
+     * Return new fake clock instance.
+     * @param initialTime initial fake clock time
+     * @param unit initialTime fake clock time unit
+     * @return fake clock
+     */
+    public static FakeClock fakeClock( long initialTime, TimeUnit unit )
     {
-        return new FakeClock( delta, unit );
+        return new FakeClock( initialTime, unit );
     }
 }

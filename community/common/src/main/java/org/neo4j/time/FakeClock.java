@@ -30,15 +30,15 @@ import java.util.concurrent.TimeUnit;
  */
 public class FakeClock extends SystemNanoClock
 {
-    private long nanos = 0;
+    private long nanoTime = 0;
 
     FakeClock()
     {
     }
 
-    FakeClock( long delta, TimeUnit unit )
+    FakeClock( long initialTime, TimeUnit unit )
     {
-        forward( delta, unit );
+        forward( initialTime, unit );
     }
 
     @Override
@@ -56,18 +56,18 @@ public class FakeClock extends SystemNanoClock
     @Override
     public Instant instant()
     {
-        return Instant.ofEpochMilli( TimeUnit.NANOSECONDS.toMillis( nanos ) );
+        return Instant.ofEpochMilli( TimeUnit.NANOSECONDS.toMillis( nanoTime ) );
     }
 
     @Override
     public long nanos()
     {
-        return nanos;
+        return nanoTime;
     }
 
     public FakeClock forward( long delta, TimeUnit unit )
     {
-        nanos += unit.toNanos( delta );
+        nanoTime += unit.toNanos( delta );
         return this;
     }
 }

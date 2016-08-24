@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
 public class DefaultTransactionTracer implements TransactionTracer, LogRotationMonitor
@@ -155,7 +156,7 @@ public class DefaultTransactionTracer implements TransactionTracer, LogRotationM
 
     public DefaultTransactionTracer( Monitor monitor, JobScheduler jobScheduler )
     {
-        this( SystemNanoClock.INSTANCE, monitor, jobScheduler );
+        this( Clocks.nanoClock(), monitor, jobScheduler );
     }
 
     public DefaultTransactionTracer( SystemNanoClock clock, Monitor monitor, JobScheduler jobScheduler )
