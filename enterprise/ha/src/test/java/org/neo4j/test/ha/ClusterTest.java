@@ -208,29 +208,6 @@ public class ClusterTest
         }
     }
 
-    @Test @Ignore("JH: Ignored for by CG in March 2013, needs revisit. I added @ignore instead of commenting out to list this in static analysis.")
-    public void testArbiterStartsFirstAndThenTwoInstancesJoin() throws Throwable
-    {
-        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "testCluster" ) )
-                .withProvider( clusterWithAdditionalArbiters( 2, 1 ) ).build();
-        try
-        {
-            clusterManager.start();
-            clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
-
-            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
-            try ( Transaction tx = master.beginTx() )
-            {
-                master.createNode();
-                tx.success();
-            }
-        }
-        finally
-        {
-            clusterManager.safeShutdown();
-        }
-    }
-
     @Test
     public void testInstancesWithConflictingClusterPorts() throws Throwable
     {
