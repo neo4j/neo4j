@@ -57,7 +57,6 @@ public class ToFileStoreWriter implements StoreWriter
             temporaryBuffer.clear();
             File file = new File( basePath, path );
 
-            file.getParentFile().mkdirs();
             String filename = file.getName();
             final Optional<StoreType> storeType = isStoreType( filename );
             final Optional<PagedFile> existingMapping = pageCache.getExistingMapping( file );
@@ -69,18 +68,19 @@ public class ToFileStoreWriter implements StoreWriter
                 {
                     try ( PagedFile pagedFile = existingMapping.get() )
                     {
-                        return writeDataThroughPageCache( file, data, temporaryBuffer, hasData, pagedFile );
+                        return writeDataThroughPageCache( pagedFile, data, temporaryBuffer, hasData );
                     }
                 }
-                else if ( storeType.isPresent() && storeType.get().isRecordStore() )
+                if ( storeType.isPresent() && storeType.get().isRecordStore() )
                 {
                     try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), CREATE, WRITE ) )
                     {
-                        return writeDataThroughPageCache( file, data, temporaryBuffer, hasData, pagedFile );
+                        return writeDataThroughPageCache( pagedFile, data, temporaryBuffer, hasData );
                     }
                 }
                 else
                 {
+                    file.getParentFile().mkdirs();
                     return writeDataThroughFileSystem( file, data, temporaryBuffer, hasData );
                 }
             }
@@ -104,8 +104,8 @@ public class ToFileStoreWriter implements StoreWriter
         }
     }
 
-    private long writeDataThroughPageCache( File file, ReadableByteChannel data, ByteBuffer temporaryBuffer,
-            boolean hasData, PagedFile pagedFile ) throws IOException
+    private long writeDataThroughPageCache( PagedFile pagedFile, ReadableByteChannel data, ByteBuffer temporaryBuffer,
+            boolean hasData ) throws IOException
     {
         try ( WritableByteChannel channel = pagedFile.openWritableByteChannel() )
         {
@@ -116,14 +116,22 @@ public class ToFileStoreWriter implements StoreWriter
     private long writeData( ReadableByteChannel data, ByteBuffer temporaryBuffer, boolean hasData,
             WritableByteChannel channel ) throws IOException
     {
+        long totalToWrite = 0;
         long totalWritten = 0;
         if ( hasData )
         {
             while ( data.read( temporaryBuffer ) >= 0 )
             {
                 temporaryBuffer.flip();
-                totalWritten += temporaryBuffer.limit();
-                channel.write( temporaryBuffer );
+                totalToWrite += temporaryBuffer.limit();
+                int bytesWritten;
+                while ( (totalWritten += (bytesWritten = channel.write( temporaryBuffer ))) < totalToWrite )
+                {
+                    if ( bytesWritten < 0 )
+                    {
+                        throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
+                    }
+                }
                 temporaryBuffer.clear();
             }
         }
