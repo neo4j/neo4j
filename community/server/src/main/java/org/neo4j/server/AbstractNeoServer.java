@@ -83,6 +83,7 @@ import org.neo4j.server.web.AsyncRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
+import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
 import static java.lang.Math.round;
@@ -227,14 +228,14 @@ public abstract class AbstractNeoServer implements NeoServer
     protected DatabaseActions createDatabaseActions()
     {
         return new DatabaseActions(
-                new LeaseManager( Clock.systemUTC() ),
+                new LeaseManager( Clocks.systemClock() ),
                 config.get( ServerSettings.script_sandboxing_enabled ), database.getGraph() );
     }
 
     private TransactionFacade createTransactionalActions()
     {
         final long timeoutMillis = getTransactionTimeoutMillis();
-        final Clock clock = Clock.systemUTC();
+        final Clock clock = Clocks.systemClock();
 
         transactionRegistry =
             new TransactionHandleRegistry( clock, timeoutMillis, logProvider );

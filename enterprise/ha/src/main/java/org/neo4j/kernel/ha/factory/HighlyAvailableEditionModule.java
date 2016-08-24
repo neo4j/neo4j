@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.net.URI;
-import java.time.Clock;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -164,6 +163,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -517,7 +517,7 @@ public class HighlyAvailableEditionModule
 
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
-        eligibleForIdReuse = new HaIdReuseEligibility( members, Clock.systemUTC(), idReuseSafeZone );
+        eligibleForIdReuse = new HaIdReuseEligibility( members, Clocks.systemClock(), idReuseSafeZone );
 
         registerRecovery( platformModule.databaseInfo, dependencies, logging );
 

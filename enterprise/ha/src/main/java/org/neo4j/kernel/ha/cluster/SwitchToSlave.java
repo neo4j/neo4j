@@ -84,6 +84,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
@@ -253,7 +254,7 @@ public class SwitchToSlave
 
         // Wait a short while for current transactions to stop first, just to be nice.
         // We can't wait forever since switching to our designated role is quite important.
-        Clock clock = Clock.systemUTC();
+        Clock clock = Clocks.systemClock();
         long deadline = clock.millis() + config.get( HaSettings.internal_state_switch_timeout );
         while ( transactionCounters.getNumberOfActiveTransactions() > 0 && clock.millis() < deadline )
         {

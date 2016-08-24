@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.io.File;
-import java.time.Clock;
 
 import org.neo4j.coreedge.core.consensus.ReplicatedInteger;
 import org.neo4j.coreedge.core.consensus.log.DummyRaftableContentSerializer;
@@ -32,13 +31,14 @@ import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
+import org.neo4j.time.Clocks;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class SegmentedRaftLogCursorIT
 {
@@ -64,7 +64,8 @@ public class SegmentedRaftLogCursorIT
 
         SegmentedRaftLog newRaftLog =
                 new SegmentedRaftLog( fileSystem, directory, rotateAtSize, new DummyRaftableContentSerializer(),
-                        NullLogProvider.getInstance(), pruneStrategy, 8, Clock.systemUTC(), new OnDemandJobScheduler() );
+                        getInstance(), pruneStrategy, 8, Clocks.systemClock(),
+                        new OnDemandJobScheduler() );
 
         life.add( newRaftLog );
         life.init();

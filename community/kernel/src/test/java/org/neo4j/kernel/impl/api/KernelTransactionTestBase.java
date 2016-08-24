@@ -49,6 +49,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.mockito.Matchers.any;
@@ -73,7 +74,7 @@ public class KernelTransactionTestBase
     protected final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
     protected final TransactionHeaderInformationFactory headerInformationFactory =  mock( TransactionHeaderInformationFactory.class );
     protected final SchemaWriteGuard schemaWriteGuard = mock( SchemaWriteGuard.class );
-    protected final FakeClock clock = new FakeClock();
+    protected final FakeClock clock = Clocks.fakeClock();
     protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
 
     @Before

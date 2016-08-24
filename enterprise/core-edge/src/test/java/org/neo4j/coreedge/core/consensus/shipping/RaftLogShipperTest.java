@@ -43,6 +43,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.matchers.Matchers;
+import org.neo4j.time.Clocks;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -82,7 +83,7 @@ public class RaftLogShipperTest
         // defaults
         outbound = new OutboundMessageCollector();
         raftLog = new InMemoryRaftLog();
-        clock = Clock.systemUTC();
+        clock = Clocks.systemClock();
         leader = member( 0 );
         follower = member( 1 );
         leaderTerm = 0;

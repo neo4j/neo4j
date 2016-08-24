@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.time.Clocks;
+
 public abstract class ResourcePool<R>
 {
     public interface Monitor<R>
@@ -113,7 +115,7 @@ public abstract class ResourcePool<R>
 
     protected ResourcePool( int minSize )
     {
-        this( minSize, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL, Clock.systemUTC() ),
+        this( minSize, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL, Clocks.systemClock() ),
                 new Monitor.Adapter<>() );
     }
 

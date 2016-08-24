@@ -36,13 +36,14 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.time.Clocks;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.tracing.TransactionTracer.NULL;
 
 public class KernelTransactionFactory
 {
@@ -83,8 +84,8 @@ public class KernelTransactionFactory
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                 mock( Supplier.class ),
                 mock( Pool.class ),
-                java.time.Clock.systemUTC(),
-                TransactionTracer.NULL,
+                Clocks.systemClock(),
+                NULL,
                 storageEngine );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );

@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.kernel.AvailabilityGuard.UnavailableException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
+import org.neo4j.time.Clocks;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsString;
@@ -44,13 +45,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
+import static org.neo4j.logging.NullLog.getInstance;
 
 public class AvailabilityGuardTest
 {
     private static final AvailabilityGuard.AvailabilityRequirement REQUIREMENT_1 = availabilityRequirement( "Requirement 1" );
     private static final AvailabilityGuard.AvailabilityRequirement REQUIREMENT_2 = availabilityRequirement( "Requirement 2" );
 
-    private Clock clock = Clock.systemUTC();
+    private Clock clock = Clocks.systemClock();
 
     @Test
     public void logOnAvailabilityChange() throws Exception
@@ -315,7 +317,7 @@ public class AvailabilityGuardTest
     public void shouldExplainBlockersOnCheckAvailable() throws Exception
     {
         // GIVEN
-        AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clock.systemUTC(), NullLog.getInstance() );
+        AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), getInstance() );
         // At this point it should be available
         availabilityGuard.checkAvailable();
 

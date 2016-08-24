@@ -41,6 +41,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
+import org.neo4j.time.Clocks;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
@@ -111,7 +112,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                     closable = rotatingSupplier;
                 }
 
-                QueryLogger logger = new QueryLogger( Clock.systemUTC(), log, thresholdMillis, logQueryParameters );
+                QueryLogger logger = new QueryLogger( Clocks.systemClock(), log, thresholdMillis, logQueryParameters );
                 monitoring.addMonitorListener( logger );
             }
 

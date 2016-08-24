@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 public class RotationTimerFactoryTest
@@ -48,7 +49,7 @@ public class RotationTimerFactoryTest
         Assert.assertNotSame( "Factory should construct different timers", timer, anotherTimer );
 
         // WHEN
-        FakeClock fakeClock = new FakeClock();
+        FakeClock fakeClock = Clocks.fakeClock();
         RotationTimerFactory fakeTimerFactory = new RotationTimerFactory( fakeClock, 1000);
         RotationTimerFactory.RotationTimer fakeTimer = fakeTimerFactory.createTimer();
         fakeClock.forward( 1001, TimeUnit.MILLISECONDS );

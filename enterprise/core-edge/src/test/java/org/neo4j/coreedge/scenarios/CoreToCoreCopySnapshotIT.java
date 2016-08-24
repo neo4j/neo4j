@@ -37,8 +37,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
+import org.neo4j.time.Clocks;
 
-import static java.time.Clock.systemUTC;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_frequency;
@@ -121,7 +121,7 @@ public class CoreToCoreCopySnapshotIT
         coreParams.put( raft_log_pruning_strategy.name(), "keep_none" );
         coreParams.put( raft_log_pruning_frequency.name(), "100ms" );
         int numberOfTransactions = 100;
-        Timeout timeout = new Timeout( systemUTC(), 60, SECONDS );
+        Timeout timeout = new Timeout( Clocks.systemClock(), 60, SECONDS );
 
         // start the cluster
         Cluster cluster = clusterRule.withSharedCoreParams( coreParams ).startCluster();

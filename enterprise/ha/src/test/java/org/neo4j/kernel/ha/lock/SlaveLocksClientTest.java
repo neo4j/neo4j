@@ -44,9 +44,8 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.time.FakeClock;
+import org.neo4j.time.Clocks;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -64,6 +63,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.logging.NullLog.getInstance;
 
 public class SlaveLocksClientTest
 {
@@ -78,7 +78,7 @@ public class SlaveLocksClientTest
     public void setUp() throws Exception
     {
         master = mock( Master.class );
-        availabilityGuard = new AvailabilityGuard( new FakeClock(), NullLog.getInstance() );
+        availabilityGuard = new AvailabilityGuard( Clocks.fakeClock(), getInstance() );
 
         lockManager = new CommunityLockManger();
         local = spy( lockManager.newClient() );

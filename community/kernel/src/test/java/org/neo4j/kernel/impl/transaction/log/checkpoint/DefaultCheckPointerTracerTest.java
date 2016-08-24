@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointerTracer.Monitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.test.OnDemandJobScheduler;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertEquals;
@@ -37,7 +38,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class DefaultCheckPointerTracerTest
 {
-    private final FakeClock clock = new FakeClock();
+    private final FakeClock clock = Clocks.fakeClock();
     private final Monitor monitor = mock( Monitor.class );
     private final OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
 

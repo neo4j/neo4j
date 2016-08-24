@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.logging.Log;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.mockito.Matchers.anyString;
@@ -40,7 +41,7 @@ public class UnknownAddressMonitorTest
     {
         // given
         Log log = mock( Log.class );
-        UnknownAddressMonitor logger = new UnknownAddressMonitor( log, new FakeClock(), 10000 );
+        UnknownAddressMonitor logger = new UnknownAddressMonitor( log, Clocks.fakeClock(), 10000 );
 
         // when
         logger.logAttemptToSendToMemberWithNoKnownAddress( member( 0 ) );
@@ -54,7 +55,7 @@ public class UnknownAddressMonitorTest
     {
         // given
         Log log = mock( Log.class );
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         UnknownAddressMonitor logger = new UnknownAddressMonitor( log, clock, 10000 );
 
         // when
@@ -71,7 +72,7 @@ public class UnknownAddressMonitorTest
     {
         // given
         Log log = mock( Log.class );
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         UnknownAddressMonitor logger = new UnknownAddressMonitor( log, clock, 10000 );
 
         // when

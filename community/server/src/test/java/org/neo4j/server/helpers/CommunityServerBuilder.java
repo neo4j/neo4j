@@ -51,6 +51,7 @@ import org.neo4j.server.preflight.PreflightTask;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.time.Clocks;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
@@ -311,7 +312,7 @@ public class CommunityServerBuilder
 
     protected DatabaseActions createDatabaseActionsObject( Database database, Config config )
     {
-        Clock clockToUse = (clock != null) ? clock : Clock.systemUTC();
+        Clock clockToUse = (clock != null) ? clock : Clocks.systemClock();
 
         return new DatabaseActions(
                 new LeaseManager( clockToUse ),

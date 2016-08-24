@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.test.Race;
+import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.ThreadLocalRandom.current;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -52,7 +53,7 @@ public class DelayedBufferTest
         final int size = 1_000;
         final long bufferTime = 3;
         VerifyingConsumer consumer = new VerifyingConsumer( size );
-        final Clock clock = Clock.systemUTC();
+        final Clock clock = Clocks.systemClock();
         Supplier<Long> chunkThreshold = clock::millis;
         Predicate<Long> safeThreshold = time -> clock.millis() - bufferTime >= time;
         final DelayedBuffer<Long> buffer = new DelayedBuffer<>( chunkThreshold, safeThreshold, 10, consumer );

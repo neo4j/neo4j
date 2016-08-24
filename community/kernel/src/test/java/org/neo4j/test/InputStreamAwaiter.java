@@ -25,6 +25,8 @@ import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.time.Clocks;
+
 
 public class InputStreamAwaiter
 {
@@ -34,7 +36,7 @@ public class InputStreamAwaiter
 
     public InputStreamAwaiter( InputStream input )
     {
-        this( Clock.systemUTC(), input );
+        this( Clocks.systemClock(), input );
     }
 
     public InputStreamAwaiter( Clock clock, InputStream input )

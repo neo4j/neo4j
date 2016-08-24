@@ -27,14 +27,13 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.time.Clock;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.Clocks;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -44,8 +43,10 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.com.Protocol.DEFAULT_FRAME_LENGTH;
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class ServerTest
 {
@@ -130,10 +131,10 @@ public class ServerTest
         Server.Configuration conf = mock( Server.Configuration.class );
         when( conf.getServerAddress() ).thenReturn( new HostnamePort( "aa", -1667 ) );
         Server<Object,Object> server = new Server<Object,Object>( null, conf,
-                NullLogProvider.getInstance(),
-                Protocol.DEFAULT_FRAME_LENGTH,
+                getInstance(),
+                DEFAULT_FRAME_LENGTH,
                 new ProtocolVersion( ((byte) 0), ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
-                checksumVerifier, Clock.systemUTC(),
+                checksumVerifier, Clocks.systemClock(),
                 mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ) )
         {
             @Override

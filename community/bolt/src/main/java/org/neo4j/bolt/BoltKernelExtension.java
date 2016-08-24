@@ -27,7 +27,6 @@ import org.bouncycastle.operator.OperatorCreationException;
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +72,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
 import static java.lang.String.format;
@@ -158,7 +158,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 new LifecycleManagedBoltFactory( api, dependencies.usageData(), logService, dependencies.txBridge(),
                         authentication, dependencies.sessionTracker() ) );
         ThreadedWorkerFactory threadedSessions = new ThreadedWorkerFactory( boltConnectionManagerFactory, scheduler, logService );
-        WorkerFactory workerFactory = new MonitoredWorkerFactory( dependencies.monitors(), threadedSessions, Clock.systemUTC() );
+        WorkerFactory workerFactory = new MonitoredWorkerFactory( dependencies.monitors(), threadedSessions,
+                Clocks.systemClock() );
 
         List<ProtocolInitializer> connectors = config
                 .view( enumerate( GraphDatabaseSettings.Connector.class ) )

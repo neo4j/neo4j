@@ -21,6 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.time.Clock;
 
+import org.neo4j.time.Clocks;
+
 /**
  * {@link ExecutionMonitor} that wraps several other monitors. Each wrapper monitor can still specify
  * individual poll frequencies and this {@link MultiExecutionMonitor} will make that happen.
@@ -33,7 +35,7 @@ public class MultiExecutionMonitor implements ExecutionMonitor
 
     public MultiExecutionMonitor( ExecutionMonitor... monitors )
     {
-        this( Clock.systemUTC(), monitors );
+        this( Clocks.systemClock(), monitors );
     }
 
     public MultiExecutionMonitor( Clock clock, ExecutionMonitor... monitors )

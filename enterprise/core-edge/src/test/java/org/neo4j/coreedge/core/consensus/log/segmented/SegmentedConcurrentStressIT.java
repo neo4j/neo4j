@@ -24,19 +24,20 @@ import java.io.File;
 import org.neo4j.coreedge.core.consensus.log.ConcurrentStressIT;
 import org.neo4j.coreedge.core.consensus.log.DummyRaftableContentSerializer;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
-import org.neo4j.time.FakeClock;
+import org.neo4j.time.Clocks;
 
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class SegmentedConcurrentStressIT extends ConcurrentStressIT<SegmentedRaftLog>
 {
     @Override
     public SegmentedRaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable
     {
-        SegmentedRaftLog raftLog = new SegmentedRaftLog( fsa, dir, 8 * 1024 * 1024, new DummyRaftableContentSerializer(), NullLogProvider.getInstance(),
-                raft_log_pruning_strategy.getDefaultValue(), 8, new FakeClock(), new OnDemandJobScheduler() );
+        SegmentedRaftLog raftLog = new SegmentedRaftLog( fsa, dir, 8 * 1024 * 1024,
+                new DummyRaftableContentSerializer(), getInstance(),
+                raft_log_pruning_strategy.getDefaultValue(), 8, Clocks.fakeClock(), new OnDemandJobScheduler() );
         raftLog.start();
         return raftLog;
     }

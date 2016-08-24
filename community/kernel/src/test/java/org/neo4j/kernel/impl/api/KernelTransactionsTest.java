@@ -64,6 +64,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.Race;
+import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -86,6 +87,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
 
 public class KernelTransactionsTest
 {
@@ -441,14 +443,14 @@ public class KernelTransactionsTest
         if ( testKernelTransactions )
         {
             return new TestKernelTransactions( statementLocksFactory, null, null, null,
-                    TransactionHeaderInformationFactory.DEFAULT,
+                    DEFAULT,
                     commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                    tracers, storageEngine, new Procedures(), transactionIdStore, Clock.systemUTC() );
+                    tracers, storageEngine, new Procedures(), transactionIdStore, Clocks.systemClock() );
         }
         return new KernelTransactions( statementLocksFactory,
-                null, null, null, TransactionHeaderInformationFactory.DEFAULT,
+                null, null, null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                tracers, storageEngine, new Procedures(), transactionIdStore, Clock.systemUTC() );
+                tracers, storageEngine, new Procedures(), transactionIdStore, Clocks.systemClock() );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )

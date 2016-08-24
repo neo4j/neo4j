@@ -20,17 +20,17 @@
 package org.neo4j.coreedge.core.consensus.log.segmented;
 
 import java.io.File;
-import java.time.Clock;
 
 import org.neo4j.coreedge.core.consensus.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogVerificationIT;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
+import org.neo4j.time.Clocks;
 
 import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class SegmentedRaftLogVerificationIT extends RaftLogVerificationIT
 {
@@ -46,8 +46,9 @@ public class SegmentedRaftLogVerificationIT extends RaftLogVerificationIT
         int readerPoolSize = 8;
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fsa, directory, rotateAtSizeBytes,
-                new DummyRaftableContentSerializer(), NullLogProvider.getInstance(),
-                raft_log_pruning_strategy.getDefaultValue(), readerPoolSize, Clock.systemUTC(), new OnDemandJobScheduler() );
+                new DummyRaftableContentSerializer(), getInstance(),
+                raft_log_pruning_strategy.getDefaultValue(), readerPoolSize, Clocks.systemClock(),
+                new OnDemandJobScheduler() );
 
         newRaftLog.init();
         newRaftLog.start();

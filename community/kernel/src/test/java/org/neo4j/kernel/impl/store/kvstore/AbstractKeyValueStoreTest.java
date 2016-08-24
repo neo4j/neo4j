@@ -27,7 +27,6 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.time.Clock;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.test.rule.Resources;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -483,7 +483,7 @@ public class AbstractKeyValueStoreTest
         private Store( long rotationTimeout, HeaderField<?>... headerFields )
         {
             super( resourceManager.fileSystem(), resourceManager.pageCache(), resourceManager.testPath(), null,
-                    new RotationTimerFactory( Clock.systemUTC(), rotationTimeout ), 16, 16, headerFields );
+                    new RotationTimerFactory( Clocks.systemClock(), rotationTimeout ), 16, 16, headerFields );
             this.headerFields = headerFields;
             setEntryUpdaterInitializer( new DataInitializer<EntryUpdater<String>>()
             {

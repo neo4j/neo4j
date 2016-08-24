@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.QueryLogger;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.sameInstance;
@@ -53,7 +54,7 @@ public class QueryLoggerTest
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
         QuerySession session = session( SESSION_1_NAME );
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFaceClock();
         QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
 
         // when
@@ -73,7 +74,7 @@ public class QueryLoggerTest
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
         QuerySession session = session( SESSION_1_NAME );
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFaceClock();
         QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
 
         // when
@@ -93,7 +94,7 @@ public class QueryLoggerTest
         QuerySession session1 = session( SESSION_1_NAME );
         QuerySession session2 = session( SESSION_2_NAME );
         QuerySession session3 = session( SESSION_3_NAME );
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFaceClock();
         QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
 
         // when
@@ -122,7 +123,7 @@ public class QueryLoggerTest
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
         QuerySession session = session( SESSION_1_NAME );
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFaceClock();
         QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
         RuntimeException failure = new RuntimeException();
 
@@ -144,7 +145,7 @@ public class QueryLoggerTest
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
         QuerySession session = session( SESSION_1_NAME );
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFaceClock();
         QueryLogger queryLogger = queryLoggerWithParams( logProvider, clock );
 
         // when
@@ -166,7 +167,7 @@ public class QueryLoggerTest
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
         QuerySession session = session( SESSION_1_NAME );
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFaceClock();
         QueryLogger queryLogger = queryLoggerWithParams( logProvider, clock );
         RuntimeException failure = new RuntimeException();
 
@@ -183,6 +184,11 @@ public class QueryLoggerTest
                         is( "1 ms: {session one} - MATCH (n) WHERE n.age IN {ages} RETURN n - {ages: [41, 42, 43]}" ),
                         sameInstance( failure ) )
         );
+    }
+
+    private FakeClock getFaceClock()
+    {
+        return Clocks.fakeClock();
     }
 
     private QueryLogger queryLoggerWithoutParams( LogProvider logProvider, Clock clock )

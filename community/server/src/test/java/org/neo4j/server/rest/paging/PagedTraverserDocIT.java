@@ -50,6 +50,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.containsString;
@@ -86,7 +87,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     @BeforeClass
     public static void setupServer() throws Exception
     {
-        clock = new FakeClock();
+        clock = Clocks.fakeClock();
         server = CommunityServerBuilder.server()
                 .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
                 .withClock( clock )

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-import org.neo4j.time.FakeClock
+import org.neo4j.time.Clocks
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite {
 
@@ -90,7 +90,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
     }
   }
 
-  private val builder = new PipeExecutionPlanBuilder(new FakeClock, mock[Monitors], factory)
+  private val builder = new PipeExecutionPlanBuilder(Clocks.fakeClock(), mock[Monitors], factory)
   private implicit val planContext = mock[PlanContext]
   private implicit val pipeContext = mock[PipeExecutionBuilderContext]
 

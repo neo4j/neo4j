@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -78,7 +79,7 @@ public class ResourcePoolTest
     @Test
     public void shouldTimeoutGracefully() throws InterruptedException
     {
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFakeClocks();
 
         ResourcePool.CheckStrategy timeStrategy = new ResourcePool.CheckStrategy.TimeoutCheckStrategy( TIMEOUT_MILLIS, clock );
 
@@ -99,7 +100,7 @@ public class ResourcePoolTest
     {
         // GIVEN
         StatefulMonitor stateMonitor = new StatefulMonitor();
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFakeClocks();
         final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, 5 );
 
         // WHEN
@@ -116,7 +117,7 @@ public class ResourcePoolTest
     {
         // GIVEN
         StatefulMonitor stateMonitor = new StatefulMonitor();
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFakeClocks();
         final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, 5 );
 
         // WHEN
@@ -137,7 +138,7 @@ public class ResourcePoolTest
         final int poolMaxSize = 10;
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFakeClocks();
         final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, poolMinSize );
 
         // when
@@ -163,7 +164,7 @@ public class ResourcePoolTest
         final int poolMinSize = 1;
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFakeClocks();
         final ResourcePool<Something> pool = getResourcePool( stateMonitor, clock, poolMinSize );
 
         // when
@@ -192,7 +193,7 @@ public class ResourcePoolTest
         final int poolMaxSize = 200;
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFakeClocks();
         final SomethingResourcePool pool = getResourcePool( stateMonitor, clock, poolMinSize );
 
         acquireResourcesAndExceedTimeout( pool, clock, poolMaxSize );
@@ -225,7 +226,7 @@ public class ResourcePoolTest
         final int afterPeekPoolSize = 90;
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFakeClocks();
         final SomethingResourcePool pool = getResourcePool( stateMonitor, clock, poolMinSize );
 
         acquireResourcesAndExceedTimeout( pool, clock, poolMaxSize );
@@ -268,7 +269,7 @@ public class ResourcePoolTest
         final int poolMaxSize = 200;
 
         StatefulMonitor stateMonitor = new StatefulMonitor();
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFakeClocks();
         final SomethingResourcePool pool = getResourcePool( stateMonitor, clock, poolMinSize );
 
         acquireResourcesAndExceedTimeout( pool, clock, poolMaxSize );
@@ -315,6 +316,11 @@ public class ResourcePoolTest
     private void exceedTimeout( FakeClock clock )
     {
         clock.forward( TIMEOUT_EXCEED_MILLIS, TimeUnit.MILLISECONDS );
+    }
+
+    private FakeClock getFakeClocks()
+    {
+        return Clocks.fakeClock();
     }
 
     private void acquireResourcesAndExceedTimeout( ResourcePool<Something> pool,

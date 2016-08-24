@@ -34,7 +34,7 @@ import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-import org.neo4j.time.FakeClock;
+import org.neo4j.time.Clocks;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -67,7 +67,7 @@ public class SegmentFileTest
     private final RaftLogEntry entry4 = new RaftLogEntry( 33, valueOf( "contentD" ) );
     private final int version = 0;
 
-    private ReaderPool readerPool = spy( new ReaderPool( 0, logProvider, fileNames, fsRule.get(), new FakeClock() ) );
+    private ReaderPool readerPool = spy( new ReaderPool( 0, logProvider, fileNames, fsRule.get(), Clocks.fakeClock() ) );
 
     @Before
     public void before()

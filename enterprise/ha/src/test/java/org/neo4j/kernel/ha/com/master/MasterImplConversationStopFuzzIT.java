@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.time.Clock;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -64,6 +63,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.test.rule.VerboseTimeout;
+import org.neo4j.time.Clocks;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -485,7 +485,7 @@ public class MasterImplConversationStopFuzzIT
         protected TimedRepository<RequestContext,Conversation> createConversationStore()
         {
             conversationStore = new TimedRepository<>( getConversationFactory(), getConversationReaper(),
-                    1, Clock.systemUTC() );
+                    1, Clocks.systemClock() );
             return conversationStore;
         }
     }

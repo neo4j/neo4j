@@ -27,13 +27,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.time.Clock;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsString;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -214,19 +215,19 @@ public class CappedLoggerTest
     @Test( expected = IllegalArgumentException.class )
     public void mustThrowOnZeroTimeLimit() throws Exception
     {
-        logger.setTimeLimit( 0, TimeUnit.MILLISECONDS, Clock.systemUTC() );
+        logger.setTimeLimit( 0, MILLISECONDS, Clocks.systemClock() );
     }
 
     @Test( expected = IllegalArgumentException.class )
     public void mustThrowOnNegativeTimeLimit() throws Exception
     {
-        logger.setTimeLimit( -1, TimeUnit.MILLISECONDS, Clock.systemUTC() );
+        logger.setTimeLimit( -1, MILLISECONDS, Clocks.systemClock() );
     }
 
     @Test( expected = IllegalArgumentException.class )
     public void mustThrowOnNullTimeUnit() throws Exception
     {
-        logger.setTimeLimit( 10, null, Clock.systemUTC() );
+        logger.setTimeLimit( 10, null, Clocks.systemClock() );
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -239,7 +240,7 @@ public class CappedLoggerTest
     public void mustAllowConfigurationChaining() throws Exception
     {
         logger.setCountLimit( 1 )
-              .setTimeLimit( 10, TimeUnit.MILLISECONDS, Clock.systemUTC() )
+              .setTimeLimit( 10, MILLISECONDS, Clocks.systemClock() )
               .setDuplicateFilterEnabled( true )
               .unsetCountLimit()
               .unsetTimeLimit()
@@ -287,7 +288,7 @@ public class CappedLoggerTest
     @Test
     public void mustNotLogMessagesWithinConfiguredTimeLimit() throws Exception
     {
-        FakeClock clock = new FakeClock( 1000, TimeUnit.MILLISECONDS );
+        FakeClock clock = getDefaultFakeClock();
         logger.setTimeLimit( 1, TimeUnit.MILLISECONDS, clock );
         logMethod.log( logger, "### AAA ###", null );
         logMethod.log( logger, "### BBB ###", null );
@@ -302,7 +303,7 @@ public class CappedLoggerTest
     @Test
     public void unsettingTimeLimitMustLetMessagesThrough() throws Exception
     {
-        FakeClock clock = new FakeClock( 1000, TimeUnit.MILLISECONDS );
+        FakeClock clock = getDefaultFakeClock();
         logger.setTimeLimit( 1, TimeUnit.MILLISECONDS, clock );
         logMethod.log( logger, "### AAA ###", null );
         logMethod.log( logger, "### BBB ###", null );
@@ -322,7 +323,7 @@ public class CappedLoggerTest
     @Test
     public void mustLogAfterResetWithTimeLimit() throws Exception
     {
-        FakeClock clock = new FakeClock( 1000, TimeUnit.MILLISECONDS );
+        FakeClock clock = getDefaultFakeClock();
         logger.setTimeLimit( 1, TimeUnit.MILLISECONDS, clock );
         logMethod.log( logger, "### AAA ###", null );
         logMethod.log( logger, "### BBB ###", null );
@@ -337,7 +338,7 @@ public class CappedLoggerTest
     @Test
     public void mustOnlyLogMessagesThatPassBothLimits() throws Exception
     {
-        FakeClock clock = new FakeClock( 1000, TimeUnit.MILLISECONDS );
+        FakeClock clock = getDefaultFakeClock();
         logger.setCountLimit( 2 );
         logger.setTimeLimit( 1, TimeUnit.MILLISECONDS, clock );
         logMethod.log( logger, "### AAA ###", null );
@@ -462,5 +463,10 @@ public class CappedLoggerTest
         default:
             throw new RuntimeException( "Unknown log name" );
         }
+    }
+
+    private FakeClock getDefaultFakeClock()
+    {
+        return Clocks.fakeClock( 1000, TimeUnit.MILLISECONDS );
     }
 }

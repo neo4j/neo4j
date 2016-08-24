@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.core.state;
 
 import java.io.File;
-import java.time.Clock;
 
 import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
@@ -33,6 +32,9 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.Clocks;
+
+import static java.lang.Thread.sleep;
 
 public class ClusteringModule
 {
@@ -51,7 +53,8 @@ public class ClusteringModule
                 CLUSTER_ID_NAME, new ClusterId.Marshal(), logProvider );
 
         topologyService = discoveryServiceFactory.coreTopologyService( config, myself, logProvider );
-        BindingService bindingService = new BindingService( clusterIdStorage, topologyService, logProvider, Clock.systemUTC(), () -> Thread.sleep( 100 ), 60000 );
+        BindingService bindingService = new BindingService( clusterIdStorage, topologyService, logProvider,
+                Clocks.systemClock(), () -> sleep( 100 ), 60000 );
 
         life.add( topologyService );
         life.add( bindingService );

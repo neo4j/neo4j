@@ -20,54 +20,29 @@
 package org.neo4j.time;
 
 import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.concurrent.TimeUnit;
 
-/**
- * A {@link java.time.Clock} that is manually controlled.
- */
-public class FakeClock extends SystemNanoClock
+public class Clocks
 {
-    private long nanos = 0;
+    private static final Clock SYSTEM_CLOCK = Clock.systemUTC();
 
-    FakeClock()
+    public static Clock systemClock()
     {
+        return SYSTEM_CLOCK;
     }
 
-    FakeClock( long delta, TimeUnit unit )
+    public static Clock nanoClock()
     {
-        forward( delta, unit );
+        return new SystemNanoClock();
     }
 
-    @Override
-    public ZoneId getZone()
+    public static FakeClock fakeClock()
     {
-        return ZoneOffset.UTC;
+        return fakeClock();
     }
 
-    @Override
-    public Clock withZone( ZoneId zone )
+    public static FakeClock fakeClock( long delta, TimeUnit unit )
     {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Instant instant()
-    {
-        return Instant.ofEpochMilli( TimeUnit.NANOSECONDS.toMillis( nanos ) );
-    }
-
-    @Override
-    public long nanos()
-    {
-        return nanos;
-    }
-
-    public FakeClock forward( long delta, TimeUnit unit )
-    {
-        nanos += unit.toNanos( delta );
-        return this;
+        return new FakeClock( delta, unit );
     }
 }

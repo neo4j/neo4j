@@ -54,8 +54,12 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.Clocks;
 
-import static java.time.Clock.systemUTC;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.catchup_batch_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.join_catch_up_timeout;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.log_shipping_max_lag;
+import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 
 public class ConsensusModule
 {
@@ -122,19 +126,19 @@ public class ConsensusModule
         SendToMyself leaderOnlyReplicator = new SendToMyself( myself, outbound );
 
         raftMembershipManager = new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
-               expectedClusterSize, electionTimeout, systemUTC(),
-               config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage
+                expectedClusterSize, electionTimeout, Clocks.systemClock(),
+                config.get( join_catch_up_timeout ), raftMembershipStorage
         );
 
         life.add( raftMembershipManager );
 
         RaftLogShippingManager logShipping =
-                new RaftLogShippingManager( outbound, logProvider, raftLog, systemUTC(),
+                new RaftLogShippingManager( outbound, logProvider, raftLog, Clocks.systemClock(),
                         myself, raftMembershipManager, electionTimeout,
-                        config.get( CoreEdgeClusterSettings.catchup_batch_size ),
-                        config.get( CoreEdgeClusterSettings.log_shipping_max_lag ), inFlightMap );
+                        config.get( catchup_batch_size ),
+                        config.get( log_shipping_max_lag ), inFlightMap );
 
-        raftTimeoutService = new DelayedRenewableTimeoutService( systemUTC(), logProvider );
+        raftTimeoutService = new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
 
         raftMachine =
                 new RaftMachine( myself, termState, voteState, raftLog, electionTimeout,
@@ -167,12 +171,12 @@ public class ConsensusModule
 
                 return life.add( new SegmentedRaftLog(
                         fileSystem,
-                        new File( clusterStateDirectory, RaftLog.PHYSICAL_LOG_DIRECTORY_NAME ),
+                        new File( clusterStateDirectory, PHYSICAL_LOG_DIRECTORY_NAME ),
                         rotateAtSize,
                         marshal,
                         logProvider,
                         pruningStrategyConfig,
-                        readerPoolSize, systemUTC(), scheduler ) );
+                        readerPoolSize, Clocks.systemClock(), scheduler ) );
             }
             default:
                 throw new IllegalStateException( "Unknown raft log implementation: " + raftLogImplementation );

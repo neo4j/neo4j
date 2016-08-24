@@ -27,6 +27,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -47,7 +48,7 @@ public class TransactionHandleRegistryTest
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), 0, logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         // when
@@ -64,7 +65,7 @@ public class TransactionHandleRegistryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), 0, logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         long id = registry.begin( handle );
@@ -83,7 +84,7 @@ public class TransactionHandleRegistryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), 0, logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         long id = registry.begin( handle );
@@ -110,7 +111,7 @@ public class TransactionHandleRegistryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), 0, logProvider );
 
         long madeUpTransactionId = 1337;
 
@@ -133,7 +134,7 @@ public class TransactionHandleRegistryTest
     public void transactionsShouldBeEvictedWhenUnusedLongerThanTimeout() throws Exception
     {
         // Given
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         AssertableLogProvider logProvider = new AssertableLogProvider();
         TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, 0, logProvider );
         TransactionHandle oldTx = mock( TransactionHandle.class );
@@ -175,7 +176,7 @@ public class TransactionHandleRegistryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         int timeoutLength = 123;
 
         TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider );
@@ -203,7 +204,7 @@ public class TransactionHandleRegistryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         int timeoutLength = 123;
 
         TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider );
@@ -225,7 +226,7 @@ public class TransactionHandleRegistryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         int timeoutLength = 123;
 
         TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider );
@@ -248,7 +249,7 @@ public class TransactionHandleRegistryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         int timeoutLength = 123;
 
         TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider );

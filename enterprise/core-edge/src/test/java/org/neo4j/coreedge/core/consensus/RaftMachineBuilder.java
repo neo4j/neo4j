@@ -29,22 +29,25 @@ import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.coreedge.core.consensus.membership.RaftGroup;
 import org.neo4j.coreedge.core.consensus.membership.RaftMembershipManager;
-import org.neo4j.coreedge.messaging.Inbound;
-import org.neo4j.coreedge.messaging.Outbound;
+import org.neo4j.coreedge.core.consensus.membership.RaftMembershipState;
 import org.neo4j.coreedge.core.consensus.outcome.ConsensusOutcome;
-import org.neo4j.coreedge.core.replication.SendToMyself;
 import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.shipping.RaftLogShippingManager;
-import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
-import org.neo4j.coreedge.core.state.storage.StateStorage;
-import org.neo4j.coreedge.core.consensus.membership.RaftMembershipState;
 import org.neo4j.coreedge.core.consensus.term.TermState;
 import org.neo4j.coreedge.core.consensus.vote.VoteState;
+import org.neo4j.coreedge.core.replication.SendToMyself;
+import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
+import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.Inbound;
+import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.Clocks;
+
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class RaftMachineBuilder
 {
@@ -56,8 +59,8 @@ public class RaftMachineBuilder
     private StateStorage<TermState> termState = new InMemoryStateStorage<>( new TermState() );
     private StateStorage<VoteState> voteState = new InMemoryStateStorage<>( new VoteState() );
     private RaftLog raftLog = new InMemoryRaftLog();
-    private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clock.systemUTC(),
-            NullLogProvider.getInstance() );
+    private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clocks.systemClock(),
+            getInstance() );
 
     private Inbound<RaftMessages.RaftMessage> inbound = handler -> {
     };
@@ -76,7 +79,7 @@ public class RaftMachineBuilder
             };
 
     private LogProvider logProvider = NullLogProvider.getInstance();
-    private Clock clock = Clock.systemUTC();
+    private Clock clock = Clocks.systemClock();
 
     private long electionTimeout = 500;
     private long heartbeatInterval = 150;

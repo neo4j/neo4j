@@ -23,6 +23,7 @@ import java.time.Clock;
 
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
@@ -79,7 +80,7 @@ public class DatabaseAvailability implements Lifecycle
 
     private void awaitTransactionsClosedWithinTimeout()
     {
-        Clock clock = Clock.systemUTC();
+        Clock clock = Clocks.systemClock();
         long deadline = clock.millis() + awaitActiveTransactionDeadlineMillis;
         while ( transactionMonitor.getNumberOfActiveTransactions() > 0 && clock.millis() < deadline )
         {

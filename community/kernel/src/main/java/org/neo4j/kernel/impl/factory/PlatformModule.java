@@ -60,6 +60,7 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -173,7 +174,7 @@ public class PlatformModule
         // Anyways please fix this.
         dataSourceManager = dependencies.satisfyDependency( new DataSourceManager() );
 
-        availabilityGuard = new AvailabilityGuard( java.time.Clock.systemUTC(), logging.getInternalLog(
+        availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), logging.getInternalLog(
                 AvailabilityGuard.class ) );
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );

@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -45,7 +46,7 @@ public class ReaderPoolTest
     private final File base = new File( "base" );
     private final FileNames fileNames = new FileNames( base );
     private final EphemeralFileSystemAbstraction fsa = spy( new EphemeralFileSystemAbstraction() );
-    private final FakeClock clock = new FakeClock();
+    private final FakeClock clock = Clocks.fakeClock();
 
     private ReaderPool pool = new ReaderPool( 2, getInstance(), fileNames, fsa, clock );
 

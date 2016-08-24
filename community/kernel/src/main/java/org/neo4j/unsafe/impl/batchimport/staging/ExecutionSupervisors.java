@@ -19,8 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.time.Clock;
-
+import org.neo4j.time.Clocks;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
 import static java.lang.Math.min;
@@ -70,7 +69,7 @@ public class ExecutionSupervisors
      */
     public static void superviseExecution( ExecutionMonitor monitor, Configuration config, Stage... stages )
     {
-        ExecutionSupervisor supervisor = new ExecutionSupervisor( Clock.systemUTC(), monitor );
+        ExecutionSupervisor supervisor = new ExecutionSupervisor( Clocks.systemClock(), monitor );
         try
         {
             StageExecution[] executions = new StageExecution[stages.length];

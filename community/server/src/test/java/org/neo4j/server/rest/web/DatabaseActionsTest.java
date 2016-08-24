@@ -66,7 +66,7 @@ import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.time.FakeClock;
+import org.neo4j.time.Clocks;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -103,7 +103,7 @@ public class DatabaseActionsTest
         graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase( graph );
         graphdbHelper = new GraphDbHelper( database );
-        actions = new TransactionWrappedDatabaseActions( new LeaseManager( new FakeClock() ), database.getGraph() );
+        actions = new TransactionWrappedDatabaseActions( new LeaseManager( Clocks.fakeClock() ), database.getGraph() );
     }
 
     @AfterClass

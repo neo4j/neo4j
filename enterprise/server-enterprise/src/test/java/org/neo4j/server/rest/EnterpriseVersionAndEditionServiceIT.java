@@ -35,6 +35,7 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.management.VersionAndEditionService;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -60,7 +61,7 @@ public class EnterpriseVersionAndEditionServiceIT extends ExclusiveServerTestBas
     @BeforeClass
     public static void setupServer() throws Exception
     {
-        clock = new FakeClock();
+        clock = Clocks.fakeClock();
         server = EnterpriseServerBuilder.server()
                 .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
                 .withClock( clock )

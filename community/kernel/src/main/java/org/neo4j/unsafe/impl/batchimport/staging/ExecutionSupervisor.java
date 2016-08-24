@@ -21,6 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.time.Clock;
 
+import org.neo4j.time.Clocks;
+
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Thread.sleep;
@@ -42,7 +44,7 @@ public class ExecutionSupervisor
 
     public ExecutionSupervisor( ExecutionMonitor monitor )
     {
-        this( Clock.systemUTC(), monitor );
+        this( Clocks.systemClock(), monitor );
     }
 
     /**

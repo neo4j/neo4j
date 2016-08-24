@@ -19,19 +19,19 @@
  */
 package org.neo4j.coreedge.messaging;
 
-import java.time.Clock;
 import java.util.Collection;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.core.consensus.RaftMessages.RaftMessage;
+import org.neo4j.coreedge.core.consensus.RaftMessages.StoreIdAwareMessage;
 import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
+import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.address.UnknownAddressMonitor;
-import org.neo4j.coreedge.core.consensus.RaftMessages.RaftMessage;
-import org.neo4j.coreedge.core.consensus.RaftMessages.StoreIdAwareMessage;
-import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.Clocks;
 
 import static java.util.stream.Collectors.toList;
 
@@ -49,7 +49,7 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
         this.outbound = outbound;
         this.localDatabase = localDatabase;
         this.unknownAddressMonitor = new UnknownAddressMonitor(
-                logProvider.getLog( this.getClass() ), Clock.systemUTC(), logThresholdMillis );
+                logProvider.getLog( this.getClass() ), Clocks.systemClock(), logThresholdMillis );
     }
 
     @Override

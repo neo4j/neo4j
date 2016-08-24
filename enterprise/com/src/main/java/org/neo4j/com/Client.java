@@ -36,7 +36,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.time.Clock;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -52,6 +51,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
@@ -196,7 +196,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         bootstrap.setPipelineFactory( this );
 
         channelPool = new ResourcePool<ChannelContext>( maxUnusedChannels,
-                new ResourcePool.CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL, Clock.systemUTC() ),
+                new ResourcePool.CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL, Clocks.systemClock() ),
                 new LoggingResourcePoolMonitor( msgLog ) )
         {
             @Override

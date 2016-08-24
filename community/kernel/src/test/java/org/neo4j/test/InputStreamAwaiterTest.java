@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.fail;
@@ -37,7 +38,7 @@ public class InputStreamAwaiterTest
     public void shouldWaitForALineWithoutBlocking() throws Exception
     {
         // given
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFakeClock();
         InputStream inputStream = spy( new MockInputStream( new Ticker( clock, 5, TimeUnit.MILLISECONDS ),
                                                             lines( "important message" ) ) );
         InputStreamAwaiter awaiter = new InputStreamAwaiter( clock, inputStream );
@@ -50,7 +51,7 @@ public class InputStreamAwaiterTest
     public void shouldTimeoutWhenDifferentContentProvided() throws Exception
     {
         // given
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFakeClock();
         InputStream inputStream = spy( new MockInputStream( new Ticker( clock, 1, TimeUnit.SECONDS ),
                                                             lines( "different content" ),
                                                             lines( "different message" ) ) );
@@ -73,7 +74,7 @@ public class InputStreamAwaiterTest
     public void shouldTimeoutWhenNoContentProvided() throws Exception
     {
         // given
-        FakeClock clock = new FakeClock();
+        FakeClock clock = getFakeClock();
         InputStream inputStream = spy( new MockInputStream( new Ticker( clock, 1, TimeUnit.SECONDS ) ) );
         InputStreamAwaiter awaiter = new InputStreamAwaiter( clock, inputStream );
 
@@ -98,6 +99,11 @@ public class InputStreamAwaiterTest
             result.append( line ).append( System.lineSeparator() );
         }
         return result.toString();
+    }
+
+    private FakeClock getFakeClock()
+    {
+        return Clocks.fakeClock();
     }
 
     private class Ticker
