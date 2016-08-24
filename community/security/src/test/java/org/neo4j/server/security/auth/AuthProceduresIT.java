@@ -83,7 +83,7 @@ public class AuthProceduresIT
     @Test
     public void shouldNotChangeOwnPasswordIfNewPasswordInvalid() throws Exception
     {
-        assertFail( admin, "CALL dbms.changePassword( '' )", "Password cannot be empty." );
+        assertFail( admin, "CALL dbms.changePassword( '' )", "A password cannot be empty." );
         assertFail( admin, "CALL dbms.changePassword( 'neo4j' )", "Old password and new password cannot be the same." );
     }
 
@@ -115,15 +115,15 @@ public class AuthProceduresIT
     @Test
     public void shouldNotCreateUserIfInvalidPassword() throws Exception
     {
-        assertFail( admin, "CALL dbms.createUser('andres', '', true)", "Password cannot be empty." );
+        assertFail( admin, "CALL dbms.createUser('andres', '', true)", "A password cannot be empty." );
     }
 
     @Test
     public void shouldNotCreateExistingUser() throws Exception
     {
         assertFail( admin, "CALL dbms.createUser('neo4j', '1234', true)",
-                "The specified user already exists" );
-        assertFail( admin, "CALL dbms.createUser('neo4j', '', true)", "Password cannot be empty." );
+                "The specified user 'neo4j' already exists" );
+        assertFail( admin, "CALL dbms.createUser('neo4j', '', true)", "A password cannot be empty." );
     }
 
     //---------- delete user -----------
