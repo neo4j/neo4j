@@ -263,6 +263,8 @@ public class ProcedureSignature
         private final List<FieldSignature> inputSignature = new LinkedList<>();
         private List<FieldSignature> outputSignature = new LinkedList<>();
         private Mode mode = Mode.READ_ONLY;
+        private Optional<String> deprecated = Optional.empty();
+        private Optional<String> description = Optional.empty();
 
         public Builder( String[] namespace, String name )
         {
@@ -272,6 +274,18 @@ public class ProcedureSignature
         public Builder mode( Mode mode )
         {
             this.mode = mode;
+            return this;
+        }
+
+        public Builder description(String description)
+        {
+            this.description = Optional.of( description );
+            return this;
+        }
+
+        public Builder deprecatedBy(String deprecated)
+        {
+            this.deprecated = Optional.of( deprecated );
             return this;
         }
 
@@ -297,7 +311,7 @@ public class ProcedureSignature
 
         public ProcedureSignature build()
         {
-            return new ProcedureSignature(name, inputSignature, outputSignature, mode, null, null );
+            return new ProcedureSignature(name, inputSignature, outputSignature, mode, deprecated, description );
         }
     }
 

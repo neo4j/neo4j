@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
 import org.neo4j.logging.Log;
+import org.neo4j.procedure.Description;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 
@@ -112,6 +113,7 @@ public class ReflectiveProcedureCompiler
         List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
         ProcedureSignature.Mode mode = ProcedureSignature.Mode.READ_ONLY;
+        Optional<String> description = description( method );
         Procedure procedure = method.getAnnotation( Procedure.class );
         if ( procedure.mode().equals( Procedure.Mode.DBMS ) )
         {
@@ -149,10 +151,23 @@ public class ReflectiveProcedureCompiler
             log.warn( "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
             deprecated = Optional.of( deprecatedBy );
         }
-        ProcedureSignature signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode,
-                deprecated );
+
+        ProcedureSignature signature =
+                new ProcedureSignature( procName, inputSignature, outputMapper.signature(),
+                        mode, deprecated, description );
 
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
+    }
+
+    private Optional<String> description(Method method)
+    {
+        if (method.isAnnotationPresent( Description.class ))
+        {
+            return Optional.of( method.getAnnotation( Description.class ).value() );
+        }
+        else {
+            return Optional.empty();
+        }
     }
 
     private MethodHandle constructor( Class<?> procDefinition ) throws ProcedureException
