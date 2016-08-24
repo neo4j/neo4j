@@ -19,11 +19,10 @@
  */
 package org.neo4j.ha;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
@@ -34,8 +33,8 @@ import static org.junit.Assert.assertThat;
 
 public class TestClusterIndexDeletion
 {
-    @ClassRule
-    public static ClusterRule clusterRule = new ClusterRule( TestClusterIndexDeletion.class )
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withSharedSetting( HaSettings.ha_server, ":6001-6005" )
             .withSharedSetting( HaSettings.tx_push_factor, "2" );
 
@@ -43,7 +42,7 @@ public class TestClusterIndexDeletion
     public void givenClusterWithCreatedIndexWhenDeleteIndexOnMasterThenIndexIsDeletedOnSlave() throws Throwable
     {
         ManagedCluster cluster = clusterRule.startCluster();
-        GraphDatabaseAPI master = cluster.getMaster();
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
         try ( Transaction tx = master.beginTx() )
         {
             master.index().forNodes( "Test" );

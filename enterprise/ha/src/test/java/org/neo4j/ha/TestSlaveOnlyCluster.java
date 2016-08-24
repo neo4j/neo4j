@@ -19,7 +19,7 @@
  */
 package org.neo4j.ha;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -42,13 +42,12 @@ import org.neo4j.test.ha.ClusterRule;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 
 public class TestSlaveOnlyCluster
 {
-    @ClassRule
-    public static ClusterRule clusterRule = new ClusterRule( TestSlaveOnlyCluster.class )
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withInstanceSetting( HaSettings.slave_only, new IntFunction<String>()
             {
                 @Override

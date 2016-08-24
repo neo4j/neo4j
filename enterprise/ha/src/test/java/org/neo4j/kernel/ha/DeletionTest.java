@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Relationship;
@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertNotNull;
-
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
@@ -54,9 +53,8 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
  */
 public class DeletionTest
 {
-    @ClassRule
-    public static ClusterRule clusterRule = new ClusterRule( DeletionTest.class )
-            .withProvider( clusterOfSize( 2 ) );
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() ).withProvider( clusterOfSize( 2 ) );
 
     /**
      * The problem would manifest even if the transaction was performed on the Master, it would then occur when the

@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicLabel;
@@ -51,8 +52,8 @@ public class HaCountsIT
     private static final String PROPERTY_NAME = "prop";
     private static final String PROPERTY_VALUE = "value";
 
-    @ClassRule
-    public static ClusterRule clusterRule = new ClusterRule( DeletionTest.class );
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
 
     private ManagedCluster cluster;
     private HighlyAvailableGraphDatabase master;

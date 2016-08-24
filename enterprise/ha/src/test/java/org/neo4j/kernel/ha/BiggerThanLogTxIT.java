@@ -20,7 +20,7 @@
 package org.neo4j.kernel.ha;
 
 import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -36,7 +36,6 @@ import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
 
@@ -44,13 +43,13 @@ public class BiggerThanLogTxIT
 {
     private static final String ROTATION_THRESHOLD = "1M";
 
-    @ClassRule
-    public static ClusterRule clusterRule = new ClusterRule( BiggerThanLogTxIT.class )
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withSharedSetting( GraphDatabaseSettings.logical_log_rotation_threshold, ROTATION_THRESHOLD );
 
     protected ClusterManager.ManagedCluster cluster;
 
-    protected TransactionTemplate template = new TransactionTemplate().retries( 10 ).backoff( 3, TimeUnit.SECONDS );
+    private TransactionTemplate template = new TransactionTemplate().retries( 10 ).backoff( 3, TimeUnit.SECONDS );
 
     @Before
     public void setup() throws Exception

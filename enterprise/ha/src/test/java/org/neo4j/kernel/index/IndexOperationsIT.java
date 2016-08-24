@@ -20,7 +20,7 @@
 package org.neo4j.kernel.index;
 
 import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -48,8 +48,8 @@ import static org.junit.Assert.assertTrue;
 
 public class IndexOperationsIT
 {
-    @ClassRule
-    public static ClusterRule clusterRule = new ClusterRule( IndexOperationsIT.class );
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
 
     protected ClusterManager.ManagedCluster cluster;
 
@@ -212,7 +212,7 @@ public class IndexOperationsIT
         private final String key;
         private final String value;
 
-        public PutIfAbsent( long node, String key, String value )
+        PutIfAbsent( long node, String key, String value )
         {
             this.node = node;
             this.key = key;

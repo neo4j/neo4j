@@ -19,7 +19,7 @@
  */
 package org.neo4j.test.ha;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
@@ -29,14 +29,13 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 
@@ -45,8 +44,8 @@ import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
  */
 public class ReadOnlySlaveTest
 {
-    @ClassRule
-    public static final ClusterRule clusterRule = new ClusterRule( ReadOnlySlaveTest.class )
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withSharedSetting( tx_push_factor, "2" )
             .withInstanceSetting( read_only, new IntFunction<String>()
             {
