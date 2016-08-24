@@ -86,7 +86,7 @@ public class ImportCommand implements AdminCommand
         try
         {
             parsedArgs.interpretOption( "mode", Converters.<String>mandatory(), s -> s,
-                    Validators.inList( new String[] { "database" } ) );
+                    Validators.inList( new String[]{"database"} ) );
             database = parsedArgs.interpretOption( "database", Converters.<String>mandatory(), s -> s );
             from = parsedArgs.interpretOption( "from", Converters.<File>mandatory(), Converters.toFile(),
                     Validators.CONTAINS_EXISTING_DATABASE );
@@ -122,9 +122,8 @@ public class ImportCommand implements AdminCommand
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
     {
         ConfigLoader configLoader = new ConfigLoader( settings() );
-        Config config = configLoader.loadConfig(
-                Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ));
+        Config config = configLoader.loadConfig( Optional.of( homeDir.toFile() ),
+                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
 
         return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
     }
