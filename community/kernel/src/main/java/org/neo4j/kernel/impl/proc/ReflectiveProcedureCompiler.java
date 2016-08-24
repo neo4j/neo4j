@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
+import org.neo4j.logging.Log;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 
@@ -55,12 +56,14 @@ public class ReflectiveProcedureCompiler
     private final OutputMappers outputMappers;
     private final MethodSignatureCompiler inputSignatureDeterminer;
     private final FieldInjections fieldInjections;
+    private final Log log;
 
-    public ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry components )
+    public ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry components, Log log )
     {
         inputSignatureDeterminer = new MethodSignatureCompiler(typeMappers);
         outputMappers = new OutputMappers( typeMappers );
         this.fieldInjections = new FieldInjections( components );
+        this.log = log;
     }
 
     public List<CallableProcedure> compile( Class<?> procDefinition ) throws KernelException
@@ -134,7 +137,15 @@ public class ReflectiveProcedureCompiler
             }
         }
 
-        ProcedureSignature signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode );
+        boolean deprecated = method.getAnnotation( Deprecated.class ) != null;
+        String deprecatedBy = procedure.deprecatedBy();
+        if ( !deprecated && !deprecatedBy.equals( ProcedureSignature.NOT_DEPRECATED ) )
+        {
+            deprecated = true;
+            log.warn( "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
+        }
+        ProcedureSignature signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode,
+                deprecated, deprecatedBy );
 
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }

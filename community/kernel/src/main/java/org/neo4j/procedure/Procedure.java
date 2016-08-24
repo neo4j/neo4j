@@ -133,6 +133,12 @@ public @interface Procedure
      */
     Mode mode() default Mode.DEFAULT;
 
+    /**
+     * When deprecating a procedure it is useful to indicate a possible
+     * replacement procedure that clients might show in warnings
+     */
+    String deprecatedBy() default "";
+
     enum Mode
     {
         READ, WRITE, SCHEMA, DBMS, DEFAULT

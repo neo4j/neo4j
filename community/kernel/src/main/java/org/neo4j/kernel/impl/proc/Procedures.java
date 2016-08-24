@@ -43,7 +43,7 @@ public class Procedures extends LifecycleAdapter
     private final ProcedureRegistry registry = new ProcedureRegistry();
     private final TypeMappers typeMappers = new TypeMappers();
     private final ComponentRegistry components = new ComponentRegistry();
-    private final ReflectiveProcedureCompiler compiler = new ReflectiveProcedureCompiler(typeMappers, components);
+    private final ReflectiveProcedureCompiler compiler;
     private final ThrowingConsumer<Procedures, ProcedureException> builtin;
     private final File pluginDir;
     private final Log log;
@@ -58,6 +58,7 @@ public class Procedures extends LifecycleAdapter
         this.builtin = builtin;
         this.pluginDir = pluginDir;
         this.log = log;
+        this.compiler = new ReflectiveProcedureCompiler(typeMappers, components, log);
     }
 
     /**

@@ -30,6 +30,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 
@@ -126,6 +127,6 @@ public class ResourceInjectionTest
     {
         ComponentRegistry components = new ComponentRegistry();
         components.register( MyAwesomeAPI.class, (ctx) -> new MyAwesomeAPI() );
-        return new ReflectiveProcedureCompiler( new TypeMappers(), components ).compile( clazz );
+        return new ReflectiveProcedureCompiler( new TypeMappers(), components, NullLog.getInstance() ).compile( clazz );
     }
 }

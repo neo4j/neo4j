@@ -156,6 +156,9 @@ public class ProcedureSignature
     private final List<FieldSignature> inputSignature;
     private final List<FieldSignature> outputSignature;
     private final Mode mode;
+    private final boolean deprecated;
+    private final String deprecatedBy;
+    public static final String NOT_DEPRECATED = "";
 
     /**
      * The procedure mode affects how the procedure will execute, and which capabilities
@@ -174,14 +177,26 @@ public class ProcedureSignature
     }
 
     public ProcedureSignature( ProcedureName name,
-                               List<FieldSignature> inputSignature,
-                               List<FieldSignature> outputSignature,
-                               Mode mode )
+            List<FieldSignature> inputSignature,
+            List<FieldSignature> outputSignature,
+            Mode mode,
+            boolean deprecated,
+            String deprecatedBy )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
         this.outputSignature = outputSignature == VOID ? outputSignature : unmodifiableList( outputSignature );
         this.mode = mode;
+        this.deprecated = deprecated;
+        this.deprecatedBy = deprecatedBy;
+    }
+
+    public ProcedureSignature( ProcedureName name,
+            List<FieldSignature> inputSignature,
+            List<FieldSignature> outputSignature,
+            Mode mode)
+    {
+        this(name, inputSignature, outputSignature, mode, false, NOT_DEPRECATED);
     }
 
     public ProcedureSignature( ProcedureName name )
@@ -195,6 +210,16 @@ public class ProcedureSignature
     }
 
     public Mode mode() { return mode; }
+
+    public String deprecatedBy()
+    {
+        return deprecatedBy;
+    }
+
+    public boolean isDeprecated()
+    {
+        return deprecated;
+    }
 
     public List<FieldSignature> inputSignature()
     {
