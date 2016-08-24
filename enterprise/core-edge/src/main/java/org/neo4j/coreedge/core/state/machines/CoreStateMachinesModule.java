@@ -111,7 +111,7 @@ public class CoreStateMachinesModule
         ReplicatedIdAllocationStateMachine idAllocationStateMachine =
                 new ReplicatedIdAllocationStateMachine( idAllocationState );
 
-        int allocationChunk = 1024; // TODO: AllocationChunk should be configurable and per type.
+        int allocationChunk  = config.get( CoreEdgeClusterSettings.allocation_chunk_size );
         ReplicatedIdRangeAcquirer idRangeAcquirer =
                 new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine, allocationChunk, myself,
                         logProvider );
