@@ -58,7 +58,14 @@ public class AuthProcedures
         subject.getAuthManager().deleteUser( username );
     }
 
+    @Deprecated
     @Procedure( name = "dbms.changePassword", mode = DBMS )
+    public void changePasswordDeprecated( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
+    {
+        authSubject.setPassword( password );
+    }
+
+    @Procedure( name = "dbms.security.changePassword", mode = DBMS )
     public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
         authSubject.setPassword( password );

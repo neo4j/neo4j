@@ -57,7 +57,7 @@ public class EnterpriseAuthenticationDocIT extends AuthenticationDocIT
         String method = "POST";
         String path = "db/data/transaction/commit";
         HTTP.RawPayload payload = HTTP.RawPayload.quotedJson(
-                "{'statements':[{'statement':'CALL dbms.listRoles()'}]}" );
+                "{'statements':[{'statement':'CALL dbms.security.listRoles()'}]}" );
         HTTP.Response response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) )
                 .request( method, server.baseUri().resolve( path ).toString(), payload );
 

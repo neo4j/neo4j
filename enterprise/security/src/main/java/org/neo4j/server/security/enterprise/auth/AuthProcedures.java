@@ -56,7 +56,7 @@ public class AuthProcedures
     @Context
     public KernelTransaction tx;
 
-    @Procedure( name = "dbms.createUser", mode = DBMS )
+    @Procedure( name = "dbms.security.createUser", mode = DBMS )
     public void createUser( @Name( "username" ) String username, @Name( "password" ) String password,
             @Name( "requirePasswordChange" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
@@ -65,7 +65,7 @@ public class AuthProcedures
         adminSubject.getUserManager().newUser( username, password, requirePasswordChange );
     }
 
-    @Procedure( name = "dbms.changeUserPassword", mode = DBMS )
+    @Procedure( name = "dbms.security.changeUserPassword", mode = DBMS )
     public void changeUserPassword( @Name( "username" ) String username, @Name( "newPassword" ) String newPassword )
             throws InvalidArgumentsException, IOException
     {
@@ -86,7 +86,7 @@ public class AuthProcedures
         }
     }
 
-    @Procedure( name = "dbms.addRoleToUser", mode = DBMS )
+    @Procedure( name = "dbms.security.addRoleToUser", mode = DBMS )
     public void addRoleToUser(@Name( "roleName" ) String roleName, @Name( "username" ) String username )
             throws IOException, InvalidArgumentsException
     {
@@ -94,7 +94,7 @@ public class AuthProcedures
         adminSubject.getUserManager().addRoleToUser( roleName, username );
     }
 
-    @Procedure( name = "dbms.removeRoleFromUser", mode = DBMS )
+    @Procedure( name = "dbms.security.removeRoleFromUser", mode = DBMS )
     public void removeRoleFromUser( @Name( "roleName" ) String roleName, @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
     {
@@ -107,7 +107,7 @@ public class AuthProcedures
         adminSubject.getUserManager().removeRoleFromUser( roleName, username );
     }
 
-    @Procedure( name = "dbms.deleteUser", mode = DBMS )
+    @Procedure( name = "dbms.security.deleteUser", mode = DBMS )
     public void deleteUser( @Name( "username" ) String username ) throws InvalidArgumentsException, IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
@@ -121,7 +121,7 @@ public class AuthProcedures
         terminateConnectionsForValidUser( username );
     }
 
-    @Procedure( name = "dbms.suspendUser", mode = DBMS )
+    @Procedure( name = "dbms.security.suspendUser", mode = DBMS )
     public void suspendUser( @Name( "username" ) String username ) throws IOException, InvalidArgumentsException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
@@ -135,7 +135,7 @@ public class AuthProcedures
         terminateConnectionsForValidUser( username );
     }
 
-    @Procedure( name = "dbms.activateUser", mode = DBMS )
+    @Procedure( name = "dbms.security.activateUser", mode = DBMS )
     public void activateUser( @Name( "username" ) String username ) throws IOException, InvalidArgumentsException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
@@ -147,7 +147,7 @@ public class AuthProcedures
         adminSubject.getUserManager().activateUser( username );
     }
 
-    @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
+    @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
     {
         EnterpriseAuthSubject enterpriseSubject = EnterpriseAuthSubject.castOrFail( authSubject );
@@ -157,7 +157,7 @@ public class AuthProcedures
                 userManager.getUser( enterpriseSubject.name() ).getFlags() ) );
     }
 
-    @Procedure( name = "dbms.listUsers", mode = DBMS )
+    @Procedure( name = "dbms.security.listUsers", mode = DBMS )
     public Stream<UserResult> listUsers() throws InvalidArgumentsException, IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
@@ -172,7 +172,7 @@ public class AuthProcedures
         return results.stream();
     }
 
-    @Procedure( name = "dbms.listRoles", mode = DBMS )
+    @Procedure( name = "dbms.security.listRoles", mode = DBMS )
     public Stream<RoleResult> listRoles() throws InvalidArgumentsException, IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
@@ -186,7 +186,7 @@ public class AuthProcedures
         return results.stream();
     }
 
-    @Procedure( name = "dbms.listRolesForUser", mode = DBMS )
+    @Procedure( name = "dbms.security.listRolesForUser", mode = DBMS )
     public Stream<StringResult> listRolesForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
     {
@@ -194,7 +194,7 @@ public class AuthProcedures
         return subject.getUserManager().getRoleNamesForUser( username ).stream().map( StringResult::new );
     }
 
-    @Procedure( name = "dbms.listUsersForRole", mode = DBMS )
+    @Procedure( name = "dbms.security.listUsersForRole", mode = DBMS )
     public Stream<StringResult> listUsersForRole( @Name( "roleName" ) String roleName )
             throws InvalidArgumentsException, IOException
     {
@@ -202,7 +202,7 @@ public class AuthProcedures
         return adminSubject.getUserManager().getUsernamesForRole( roleName ).stream().map( StringResult::new );
     }
 
-    @Procedure( name = "dbms.listTransactions", mode = DBMS )
+    @Procedure( name = "dbms.security.listTransactions", mode = DBMS )
     public Stream<TransactionResult> listTransactions()
             throws InvalidArgumentsException, IOException
     {
@@ -215,7 +215,7 @@ public class AuthProcedures
                 );
     }
 
-    @Procedure( name = "dbms.terminateTransactionsForUser", mode = DBMS )
+    @Procedure( name = "dbms.security.terminateTransactionsForUser", mode = DBMS )
     public Stream<TransactionTerminationResult> terminateTransactionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
     {
@@ -224,7 +224,7 @@ public class AuthProcedures
         return terminateTransactionsForValidUser( username );
     }
 
-    @Procedure( name = "dbms.listConnections", mode = DBMS )
+    @Procedure( name = "dbms.security.listConnections", mode = DBMS )
     public Stream<ConnectionResult> listConnections()
     {
         ensureAdminAuthSubject();
@@ -237,7 +237,7 @@ public class AuthProcedures
                 );
     }
 
-    @Procedure( name = "dbms.terminateConnectionsForUser", mode = DBMS )
+    @Procedure( name = "dbms.security.terminateConnectionsForUser", mode = DBMS )
     public Stream<ConnectionResult> terminateConnectionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException
     {

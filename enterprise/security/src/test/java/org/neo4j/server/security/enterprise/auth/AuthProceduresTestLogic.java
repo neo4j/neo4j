@@ -62,7 +62,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldChangeOwnPassword() throws Throwable
     {
-        assertEmpty( readSubject, "CALL dbms.changePassword( '321' )" );
+        assertEmpty( readSubject, "CALL dbms.security.changePassword( '321' )" );
         neo.updateAuthToken( readSubject, "readSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
         neo.assertAuthenticated( readSubject );
         testSuccessfulRead( readSubject, 3 );
@@ -72,7 +72,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldChangeOwnPasswordEvenIfHasNoAuthorization() throws Throwable
     {
         neo.assertAuthenticated( noneSubject );
-        assertEmpty( noneSubject, "CALL dbms.changePassword( '321' )" );
+        assertEmpty( noneSubject, "CALL dbms.security.changePassword( '321' )" );
         neo.updateAuthToken( noneSubject, "noneSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
         neo.assertAuthenticated( noneSubject );
     }
@@ -90,17 +90,17 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldListSelfTransaction()
     {
-        assertSuccess( adminSubject, "CALL dbms.listTransactions()",
+        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
             r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
     }
 
     @Test
     public void shouldNotListTransactionsIfNotAdmin()
     {
-        assertFail( noneSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
-        assertFail( readSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
-        assertFail( writeSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
-        assertFail( schemaSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
+        assertFail( noneSubject, "CALL dbms.security.listTransactions()", PERMISSION_DENIED );
+        assertFail( readSubject, "CALL dbms.security.listTransactions()", PERMISSION_DENIED );
+        assertFail( writeSubject, "CALL dbms.security.listTransactions()", PERMISSION_DENIED );
+        assertFail( schemaSubject, "CALL dbms.security.listTransactions()", PERMISSION_DENIED );
     }
 
     @Test
@@ -113,7 +113,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         write1.barrier.await();
         write2.barrier.await();
 
-        assertSuccess( adminSubject, "CALL dbms.listTransactions()",
+        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r -> assertKeyIsMap( r, "username", "activeTransactions",
                         map( "adminSubject", "1", "writeSubject", "2" ) ) );
 
@@ -130,10 +130,10 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         write.execute( threading, writeSubject );
         write.barrier.await();
 
-        assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'writeSubject' )",
+        assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )",
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "writeSubject", "1" ) ) );
 
-        assertSuccess( adminSubject, "CALL dbms.listTransactions()",
+        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
 
         write.closeAndAssertTransactionTermination();
@@ -153,10 +153,10 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         schema.barrier.await();
         write.barrier.await();
 
-        assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'schemaSubject' )",
+        assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'schemaSubject' )",
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "schemaSubject", "1" ) ) );
 
-        assertSuccess( adminSubject, "CALL dbms.listTransactions()",
+        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r ->  assertKeyIsMap( r, "username", "activeTransactions",
                         map( "adminSubject", "1", "writeSubject", "1" ) ) );
 
@@ -179,10 +179,10 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         schema1.barrier.await();
         schema2.barrier.await();
 
-        assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'schemaSubject' )",
+        assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'schemaSubject' )",
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "schemaSubject", "2" ) ) );
 
-        assertSuccess( adminSubject, "CALL dbms.listTransactions()",
+        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r ->  assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
 
         schema1.closeAndAssertTransactionTermination();
@@ -194,9 +194,9 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldNotTerminateTerminationTransaction() throws InterruptedException, ExecutionException
     {
-        assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'adminSubject' )",
+        assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'adminSubject' )",
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "adminSubject", "0" ) ) );
-        assertSuccess( readSubject, "CALL dbms.terminateTransactionsForUser( 'readSubject' )",
+        assertSuccess( readSubject, "CALL dbms.security.terminateTransactionsForUser( 'readSubject' )",
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "readSubject", "0" ) ) );
     }
 
@@ -219,7 +219,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         create.barrier.await();
 
         String subjectName = neo.nameOf( subject );
-        assertSuccess( subject, "CALL dbms.terminateTransactionsForUser( '" + subjectName + "' )",
+        assertSuccess( subject, "CALL dbms.security.terminateTransactionsForUser( '" + subjectName + "' )",
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( subjectName, "1" ) ) );
 
         create.closeAndAssertTransactionTermination();
@@ -230,8 +230,8 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldNotTerminateTransactionsIfNonExistentUser() throws InterruptedException, ExecutionException
     {
-        assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( 'Petra' )", "User 'Petra' does not exist" );
-        assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( '' )", "User '' does not exist" );
+        assertFail( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'Petra' )", "User 'Petra' does not exist" );
+        assertFail( adminSubject, "CALL dbms.security.terminateTransactionsForUser( '' )", "User '' does not exist" );
     }
 
     @Test
@@ -241,12 +241,12 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         write.execute( threading, writeSubject );
         write.barrier.await();
 
-        assertFail( noneSubject, "CALL dbms.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
-        assertFail( pwdSubject, "CALL dbms.terminateTransactionsForUser( 'writeSubject' )", CHANGE_PWD_ERR_MSG );
-        assertFail( readSubject, "CALL dbms.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
-        assertFail( schemaSubject, "CALL dbms.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
+        assertFail( noneSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
+        assertFail( pwdSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )", CHANGE_PWD_ERR_MSG );
+        assertFail( readSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
+        assertFail( schemaSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
 
-        assertSuccess( adminSubject, "CALL dbms.listTransactions()",
+        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r -> assertKeyIs( r, "username", "adminSubject", "writeSubject" ) );
 
         write.closeAndAssertSuccess();
@@ -261,7 +261,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldChangeUserPassword() throws Throwable
     {
-        assertEmpty( adminSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
+        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '321' )" );
         // TODO: uncomment and fix
         // testUnAuthenticated( readSubject );
 
@@ -273,21 +273,21 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldNotChangeUserPasswordIfNotAdmin() throws Exception
     {
-        assertFail( schemaSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )", PERMISSION_DENIED );
-        assertFail( schemaSubject, "CALL dbms.changeUserPassword( 'jake', '321' )", PERMISSION_DENIED );
-        assertFail( schemaSubject, "CALL dbms.changeUserPassword( 'readSubject', '' )", PERMISSION_DENIED );
+        assertFail( schemaSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '321' )", PERMISSION_DENIED );
+        assertFail( schemaSubject, "CALL dbms.security.changeUserPassword( 'jake', '321' )", PERMISSION_DENIED );
+        assertFail( schemaSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '' )", PERMISSION_DENIED );
     }
 
     // Should change own password for non-admin or admin subject
     @Test
     public void shouldChangeUserPasswordIfSameUser() throws Throwable
     {
-        assertEmpty( readSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
+        assertEmpty( readSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '321' )" );
         neo.updateAuthToken( readSubject, "readSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
         neo.assertAuthenticated( readSubject );
         testSuccessfulRead( readSubject, 3 );
 
-        assertEmpty( adminSubject, "CALL dbms.changeUserPassword( 'adminSubject', 'cba' )" );
+        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'adminSubject', 'cba' )" );
         neo.updateAuthToken( adminSubject, "adminSubject", "cba" ); // Because RESTSubject caches an auth token that is sent with every request
         neo.assertAuthenticated( adminSubject );
         testSuccessfulRead( adminSubject, 3 );
@@ -297,10 +297,10 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldFailToChangeUserPasswordIfSameUserButInvalidPassword() throws Exception
     {
-        assertFail( readSubject, "CALL dbms.changeUserPassword( 'readSubject', '123' )",
+        assertFail( readSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '123' )",
                 "Old password and new password cannot be the same." );
 
-        assertFail( adminSubject, "CALL dbms.changeUserPassword( 'adminSubject', 'abc' )",
+        assertFail( adminSubject, "CALL dbms.security.changeUserPassword( 'adminSubject', 'abc' )",
                 "Old password and new password cannot be the same." );
     }
 
@@ -308,7 +308,8 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldNotChangeUserPasswordIfNonExistentUser() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.changeUserPassword( 'jake', '321' )", "User 'jake' does not exist." );
+        assertFail( adminSubject, "CALL dbms.security.changeUserPassword( 'jake', '321' )",
+                "User 'jake' does not exist." );
     }
 
     // Should fail nicely to change password for admin subject and empty password
@@ -323,27 +324,27 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldNotChangeUserPasswordIfSamePassword() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.changeUserPassword( 'readSubject', '123' )",
+        assertFail( adminSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '123' )",
                 "Old password and new password cannot be the same." );
     }
 
     @Test
     public void shouldTerminateTransactionsOnChangeUserPassword() throws Throwable
     {
-        shouldTerminateTransactionsForUser( writeSubject, "dbms.changeUserPassword( '%s', 'newPassword' )" );
+        shouldTerminateTransactionsForUser( writeSubject, "dbms.security.changeUserPassword( '%s', 'newPassword' )" );
     }
 
     @Test
     public void shouldTerminateConnectionsOnChangeUserPassword() throws Exception
     {
         TransportConnection conn = startBoltSession( "writeSubject", "abc" );
-        assertSuccess( adminSubject, "CALL dbms.listConnections() YIELD username, connectionCount " +
+        assertSuccess( adminSubject, "CALL dbms.security.listConnections() YIELD username, connectionCount " +
                         "WITH username, connectionCount WHERE username = 'writeSubject' RETURN username, connectionCount",
                 r -> assertKeyIsMap( r, "username", "connectionCount", map( "writeSubject", IS_BOLT ? "2" : "1" ) ) );
 
-        assertEmpty( adminSubject, "CALL dbms.changeUserPassword( 'writeSubject', 'newPassword' )" );
+        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'writeSubject', 'newPassword' )" );
 
-        assertEmpty( adminSubject, "CALL dbms.listConnections() YIELD username, connectionCount " +
+        assertEmpty( adminSubject, "CALL dbms.security.listConnections() YIELD username, connectionCount " +
                         "WITH username, connectionCount WHERE username = 'writeSubject' RETURN username, connectionCount");
         conn.disconnect();
     }
@@ -353,32 +354,34 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldCreateUser() throws Exception
     {
-        assertEmpty( adminSubject, "CALL dbms.createUser('craig', '1234', true)" );
+        assertEmpty( adminSubject, "CALL dbms.security.createUser('craig', '1234', true)" );
         userManager.getUser( "craig" );
     }
 
     @Test
     public void shouldNotCreateUserIfInvalidUsername() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.createUser('', '1234', true)", "The provided user name is empty." );
-        assertFail( adminSubject, "CALL dbms.createUser('&%ss!', '1234', true)",
+        assertFail( adminSubject, "CALL dbms.security.createUser('', '1234', true)",
+                "The provided user name is empty." );
+        assertFail( adminSubject, "CALL dbms.security.createUser('&%ss!', '1234', true)",
                 "User name '&%ss!' contains illegal characters." );
-        assertFail( adminSubject, "CALL dbms.createUser('&%ss!', '', true)",
+        assertFail( adminSubject, "CALL dbms.security.createUser('&%ss!', '', true)",
                 "User name '&%ss!' contains illegal characters." );
     }
 
     @Test
     public void shouldNotCreateUserIfInvalidPassword() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.createUser('craig', '', true)", "A password cannot be empty." );
+        assertFail( adminSubject, "CALL dbms.security.createUser('craig', '', true)", "A password cannot be empty." );
     }
 
     @Test
     public void shouldNotCreateExistingUser() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.createUser('readSubject', '1234', true)",
+        assertFail( adminSubject, "CALL dbms.security.createUser('readSubject', '1234', true)",
                 "The specified user 'readSubject' already exists" );
-        assertFail( adminSubject, "CALL dbms.createUser('readSubject', '', true)", "A password cannot be empty." );
+        assertFail( adminSubject, "CALL dbms.security.createUser('readSubject', '', true)",
+                "A password cannot be empty." );
     }
 
     @Test
@@ -395,7 +398,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldDeleteUser() throws Exception
     {
-        assertEmpty( adminSubject, "CALL dbms.deleteUser('noneSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.deleteUser('noneSubject')" );
         try
         {
             userManager.getUser( "noneSubject" );
@@ -408,7 +411,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         }
 
         userManager.addRoleToUser( PUBLISHER, "readSubject" );
-        assertEmpty( adminSubject, "CALL dbms.deleteUser('readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.deleteUser('readSubject')" );
         try
         {
             userManager.getUser( "readSubject" );
@@ -451,20 +454,20 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldTerminateTransactionsOnUserDeletion() throws Throwable
     {
-        shouldTerminateTransactionsForUser( writeSubject, "dbms.deleteUser( '%s' )" );
+        shouldTerminateTransactionsForUser( writeSubject, "dbms.security.deleteUser( '%s' )" );
     }
 
     @Test
     public void shouldTerminateConnectionsOnUserDeletion() throws Exception
     {
         TransportConnection conn = startBoltSession( "writeSubject", "abc" );
-        assertSuccess( adminSubject, "CALL dbms.listConnections() YIELD username, connectionCount " +
+        assertSuccess( adminSubject, "CALL dbms.security.listConnections() YIELD username, connectionCount " +
                         "WITH username, connectionCount WHERE username = 'writeSubject' RETURN username, connectionCount",
                 r -> assertKeyIsMap( r, "username", "connectionCount", map( "writeSubject", IS_BOLT ? "2" : "1" ) ) );
 
-        assertEmpty( adminSubject, "CALL dbms.deleteUser( 'writeSubject' )" );
+        assertEmpty( adminSubject, "CALL dbms.security.deleteUser( 'writeSubject' )" );
 
-        assertEmpty( adminSubject, "CALL dbms.listConnections() YIELD username, connectionCount " +
+        assertEmpty( adminSubject, "CALL dbms.security.listConnections() YIELD username, connectionCount " +
                 "WITH username, connectionCount WHERE username = 'writeSubject' RETURN username, connectionCount");
         conn.disconnect();
     }
@@ -474,56 +477,56 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldSuspendUser() throws Exception
     {
-        assertEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.suspendUser('readSubject')" );
         assertTrue( userManager.getUser( "readSubject" ).hasFlag( IS_SUSPENDED ) );
     }
 
     @Test
     public void shouldSuspendSuspendedUser() throws Exception
     {
-        assertEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
-        assertEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.suspendUser('readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.suspendUser('readSubject')" );
         assertTrue( userManager.getUser( "readSubject" ).hasFlag( IS_SUSPENDED ) );
     }
 
     @Test
     public void shouldFailToSuspendNonExistentUser() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.suspendUser('Craig')", "User 'Craig' does not exist." );
+        assertFail( adminSubject, "CALL dbms.security.suspendUser('Craig')", "User 'Craig' does not exist." );
     }
 
     @Test
     public void shouldFailToSuspendIfNotAdmin() throws Exception
     {
-        assertFail( schemaSubject, "CALL dbms.suspendUser('readSubject')", PERMISSION_DENIED );
-        assertFail( schemaSubject, "CALL dbms.suspendUser('Craig')", PERMISSION_DENIED );
-        assertFail( schemaSubject, "CALL dbms.suspendUser('')", PERMISSION_DENIED );
+        assertFail( schemaSubject, "CALL dbms.security.suspendUser('readSubject')", PERMISSION_DENIED );
+        assertFail( schemaSubject, "CALL dbms.security.suspendUser('Craig')", PERMISSION_DENIED );
+        assertFail( schemaSubject, "CALL dbms.security.suspendUser('')", PERMISSION_DENIED );
     }
 
     @Test
     public void shouldFailToSuspendYourself() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.suspendUser('adminSubject')",
+        assertFail( adminSubject, "CALL dbms.security.suspendUser('adminSubject')",
                 "Suspending yourself (user 'adminSubject') is not allowed." );
     }
 
     @Test
     public void shouldTerminateTransactionsOnUserSuspension() throws Throwable
     {
-        shouldTerminateTransactionsForUser( writeSubject, "dbms.suspendUser( '%s' )" );
+        shouldTerminateTransactionsForUser( writeSubject, "dbms.security.suspendUser( '%s' )" );
     }
 
     @Test
     public void shouldTerminateConnectionsOnUserSuspension() throws Exception
     {
         TransportConnection conn = startBoltSession( "writeSubject", "abc" );
-        assertSuccess( adminSubject, "CALL dbms.listConnections() YIELD username, connectionCount " +
+        assertSuccess( adminSubject, "CALL dbms.security.listConnections() YIELD username, connectionCount " +
                         "WITH username, connectionCount WHERE username = 'writeSubject' RETURN username, connectionCount",
                 r -> assertKeyIsMap( r, "username", "connectionCount", map( "writeSubject", IS_BOLT ? "2" : "1" ) ) );
 
-        assertEmpty( adminSubject, "CALL dbms.suspendUser( 'writeSubject' )" );
+        assertEmpty( adminSubject, "CALL dbms.security.suspendUser( 'writeSubject' )" );
 
-        assertEmpty( adminSubject, "CALL dbms.listConnections() YIELD username, connectionCount " +
+        assertEmpty( adminSubject, "CALL dbms.security.listConnections() YIELD username, connectionCount " +
                 "WITH username, connectionCount WHERE username = 'writeSubject' RETURN username, connectionCount");
         conn.disconnect();
     }
@@ -534,7 +537,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldActivateUser() throws Exception
     {
         userManager.suspendUser( "readSubject" );
-        assertEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.activateUser('readSubject')" );
         assertFalse( userManager.getUser( "readSubject" ).hasFlag( IS_SUSPENDED ) );
     }
 
@@ -542,30 +545,30 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldActivateActiveUser() throws Exception
     {
         userManager.suspendUser( "readSubject" );
-        assertEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
-        assertEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.activateUser('readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.activateUser('readSubject')" );
         assertFalse( userManager.getUser( "readSubject" ).hasFlag( IS_SUSPENDED ) );
     }
 
     @Test
     public void shouldFailToActivateNonExistentUser() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.activateUser('Craig')", "User 'Craig' does not exist." );
+        assertFail( adminSubject, "CALL dbms.security.activateUser('Craig')", "User 'Craig' does not exist." );
     }
 
     @Test
     public void shouldFailToActivateIfNotAdmin() throws Exception
     {
         userManager.suspendUser( "readSubject" );
-        assertFail( schemaSubject, "CALL dbms.activateUser('readSubject')", PERMISSION_DENIED );
-        assertFail( schemaSubject, "CALL dbms.activateUser('Craig')", PERMISSION_DENIED );
-        assertFail( schemaSubject, "CALL dbms.activateUser('')", PERMISSION_DENIED );
+        assertFail( schemaSubject, "CALL dbms.security.activateUser('readSubject')", PERMISSION_DENIED );
+        assertFail( schemaSubject, "CALL dbms.security.activateUser('Craig')", PERMISSION_DENIED );
+        assertFail( schemaSubject, "CALL dbms.security.activateUser('')", PERMISSION_DENIED );
     }
 
     @Test
     public void shouldFailToActivateYourself() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.activateUser('adminSubject')",
+        assertFail( adminSubject, "CALL dbms.security.activateUser('adminSubject')",
                 "Activating yourself (user 'adminSubject') is not allowed." );
     }
 
@@ -575,7 +578,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldAddRoleToUser() throws Exception
     {
         assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
-        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('" + PUBLISHER + "', 'readSubject' )" );
+        assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + PUBLISHER + "', 'readSubject' )" );
         assertTrue( "Should have role publisher", userHasRole( "readSubject", PUBLISHER ) );
     }
 
@@ -583,7 +586,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldAddRetainUserInRole() throws Exception
     {
         assertTrue( "Should have role reader", userHasRole( "readSubject", READER ) );
-        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('" + READER + "', 'readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'readSubject')" );
         assertTrue( "Should have still have role reader", userHasRole( "readSubject", READER ) );
     }
 
@@ -620,7 +623,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldRemoveRoleFromUser() throws Exception
     {
-        assertEmpty( adminSubject, "CALL dbms.removeRoleFromUser('" + READER + "', 'readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('" + READER + "', 'readSubject')" );
         assertFalse( "Should not have role reader", userHasRole( "readSubject", READER ) );
     }
 
@@ -628,7 +631,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldKeepUserOutOfRole() throws Exception
     {
         assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
-        assertEmpty( adminSubject, "CALL dbms.removeRoleFromUser('" + PUBLISHER + "', 'readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('" + PUBLISHER + "', 'readSubject')" );
         assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
     }
 
@@ -665,7 +668,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldFailToRemoveYourselfFromAdminRole() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.removeRoleFromUser('" + ADMIN + "', 'adminSubject')",
+        assertFail( adminSubject, "CALL dbms.security.removeRoleFromUser('" + ADMIN + "', 'adminSubject')",
                 "Removing yourself (user 'adminSubject') from the admin role is not allowed." );
     }
 
@@ -676,12 +679,12 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     {
         assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
         assertFalse( "Should not have role architect", userHasRole( "readSubject", ARCHITECT ) );
-        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('" + PUBLISHER + "', 'readSubject')" );
-        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('" + ARCHITECT + "', 'readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + PUBLISHER + "', 'readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + ARCHITECT + "', 'readSubject')" );
         assertTrue( "Should have role publisher", userHasRole( "readSubject", PUBLISHER ) );
         assertTrue( "Should have role architect", userHasRole( "readSubject", ARCHITECT ) );
-        assertEmpty( adminSubject, "CALL dbms.removeRoleFromUser('" + PUBLISHER + "', 'readSubject')" );
-        assertEmpty( adminSubject, "CALL dbms.removeRoleFromUser('" + ARCHITECT + "', 'readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('" + PUBLISHER + "', 'readSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('" + ARCHITECT + "', 'readSubject')" );
         assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
         assertFalse( "Should not have role architect", userHasRole( "readSubject", ARCHITECT ) );
     }
@@ -691,7 +694,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldListUsers() throws Exception
     {
-        assertSuccess( adminSubject, "CALL dbms.listUsers() YIELD username",
+        assertSuccess( adminSubject, "CALL dbms.security.listUsers() YIELD username",
                 r -> assertKeyIs( r, "username", initialUsers ) );
     }
 
@@ -708,7 +711,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
                 "neo4j", listOf( ADMIN )
         );
         userManager.addRoleToUser( READER, "writeSubject" );
-        assertSuccess( adminSubject, "CALL dbms.listUsers()",
+        assertSuccess( adminSubject, "CALL dbms.security.listUsers()",
                 r -> assertKeyIsMap( r, "username", "roles", expected ) );
     }
 
@@ -726,7 +729,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         );
         userManager.suspendUser( "writeSubject" );
         userManager.suspendUser( "pwdSubject" );
-        assertSuccess( adminSubject, "CALL dbms.listUsers()",
+        assertSuccess( adminSubject, "CALL dbms.security.listUsers()",
                 r -> assertKeyIsMap( r, "username", "flags", expected ) );
     }
 
@@ -734,16 +737,16 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldShowCurrentUser() throws Exception
     {
         userManager.addRoleToUser( READER, "writeSubject" );
-        assertSuccess( adminSubject, "CALL dbms.showCurrentUser()",
+        assertSuccess( adminSubject, "CALL dbms.security.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles", map( "adminSubject", listOf( ADMIN ) ) ) );
-        assertSuccess( readSubject, "CALL dbms.showCurrentUser()",
+        assertSuccess( readSubject, "CALL dbms.security.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles", map( "readSubject", listOf( READER ) ) ) );
-        assertSuccess( schemaSubject, "CALL dbms.showCurrentUser()",
+        assertSuccess( schemaSubject, "CALL dbms.security.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles", map( "schemaSubject", listOf( ARCHITECT ) ) ) );
-        assertSuccess( writeSubject, "CALL dbms.showCurrentUser()",
+        assertSuccess( writeSubject, "CALL dbms.security.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles",
                         map( "writeSubject", listOf( READER, PUBLISHER ) ) ) );
-        assertSuccess( noneSubject, "CALL dbms.showCurrentUser()",
+        assertSuccess( noneSubject, "CALL dbms.security.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles", map( "noneSubject", listOf() ) ) );
     }
 
@@ -761,7 +764,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldListRoles() throws Exception
     {
-        assertSuccess( adminSubject, "CALL dbms.listRoles() YIELD role",
+        assertSuccess( adminSubject, "CALL dbms.security.listRoles() YIELD role",
                 r -> assertKeyIs( r, "role", initialRoles ) );
     }
 
@@ -775,7 +778,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
                 PUBLISHER, listOf( "writeSubject" ),
                 "empty", listOf()
         );
-        assertSuccess( adminSubject, "CALL dbms.listRoles()",
+        assertSuccess( adminSubject, "CALL dbms.security.listRoles()",
                 r -> assertKeyIsMap( r, "role", "users", expected ) );
     }
 
@@ -793,34 +796,34 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldListRolesForUser() throws Exception
     {
-        assertSuccess( adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
+        assertSuccess( adminSubject, "CALL dbms.security.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", ADMIN ) );
-        assertSuccess( adminSubject, "CALL dbms.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
+        assertSuccess( adminSubject, "CALL dbms.security.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", READER ) );
     }
 
     @Test
     public void shouldListNoRolesForUserWithNoRoles() throws Exception
     {
-        assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
-        assertEmpty( adminSubject, "CALL dbms.listRolesForUser('Henrik') YIELD value as roles RETURN roles" );
+        assertEmpty( adminSubject, "CALL dbms.security.createUser('Henrik', 'bar', false)" );
+        assertEmpty( adminSubject, "CALL dbms.security.listRolesForUser('Henrik') YIELD value as roles RETURN roles" );
     }
 
     @Test
     public void shouldNotListRolesForNonExistentUser() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.listRolesForUser('Petra') YIELD value as roles RETURN roles",
+        assertFail( adminSubject, "CALL dbms.security.listRolesForUser('Petra') YIELD value as roles RETURN roles",
                 "User 'Petra' does not exist." );
-        assertFail( adminSubject, "CALL dbms.listRolesForUser('') YIELD value as roles RETURN roles",
+        assertFail( adminSubject, "CALL dbms.security.listRolesForUser('') YIELD value as roles RETURN roles",
                 "User '' does not exist." );
     }
 
     @Test
     public void shouldListOwnRolesRoles() throws Exception
     {
-        assertSuccess( adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
+        assertSuccess( adminSubject, "CALL dbms.security.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", ADMIN ) );
-        assertSuccess( readSubject, "CALL dbms.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
+        assertSuccess( readSubject, "CALL dbms.security.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", READER ) );
     }
 
@@ -838,22 +841,22 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldListUsersForRole() throws Exception
     {
-        assertSuccess( adminSubject, "CALL dbms.listUsersForRole('admin') YIELD value as users RETURN users",
+        assertSuccess( adminSubject, "CALL dbms.security.listUsersForRole('admin') YIELD value as users RETURN users",
                 r -> assertKeyIs( r, "users", "adminSubject", "neo4j" ) );
     }
 
     @Test
     public void shouldListNoUsersForRoleWithNoUsers() throws Exception
     {
-        assertEmpty( adminSubject, "CALL dbms.listUsersForRole('empty') YIELD value as users RETURN users" );
+        assertEmpty( adminSubject, "CALL dbms.security.listUsersForRole('empty') YIELD value as users RETURN users" );
     }
 
     @Test
     public void shouldNotListUsersForNonExistentRole() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.listUsersForRole('poodle') YIELD value as users RETURN users",
+        assertFail( adminSubject, "CALL dbms.security.listUsersForRole('poodle') YIELD value as users RETURN users",
                 "Role 'poodle' does not exist." );
-        assertFail( adminSubject, "CALL dbms.listUsersForRole('') YIELD value as users RETURN users",
+        assertFail( adminSubject, "CALL dbms.security.listUsersForRole('') YIELD value as users RETURN users",
                 "Role '' does not exist." );
     }
 
@@ -881,10 +884,10 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertFail( unknownUser, "CREATE INDEX ON :Node(number)", "" );
 
         unknownUser = neo.login( "Batman", "Matban" );
-        assertFail( unknownUser, "CALL dbms.changePassword( '321' )", "" );
+        assertFail( unknownUser, "CALL dbms.security.changePassword( '321' )", "" );
 
         unknownUser = neo.login( "Batman", "Matban" );
-        assertFail( unknownUser, "CALL dbms.createUser('Henrik', 'bar', true)", "" );
+        assertFail( unknownUser, "CALL dbms.security.createUser('Henrik', 'bar', true)", "" );
     }
 
     @Test
@@ -895,8 +898,8 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         testFailSchema( pwdSubject, pwdReqErrMsg( SCHEMA_OPS_NOT_ALLOWED ) );
         assertPasswordChangeWhenPasswordChangeRequired( pwdSubject, "321" );
 
-        assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
-        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('" + ARCHITECT + "', 'Henrik')" );
+        assertEmpty( adminSubject, "CALL dbms.security.createUser('Henrik', 'bar', true)" );
+        assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + ARCHITECT + "', 'Henrik')" );
         S henrik = neo.login( "Henrik", "bar" );
         neo.assertPasswordChangeRequired( henrik );
         testFailRead( henrik, 3, pwdReqErrMsg( READ_OPS_NOT_ALLOWED ) );
@@ -904,14 +907,14 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         testFailSchema( henrik, pwdReqErrMsg( SCHEMA_OPS_NOT_ALLOWED ) );
         assertPasswordChangeWhenPasswordChangeRequired( henrik, "321" );
 
-        assertEmpty( adminSubject, "CALL dbms.createUser('Olivia', 'bar', true)" );
-        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('" + ADMIN + "', 'Olivia')" );
+        assertEmpty( adminSubject, "CALL dbms.security.createUser('Olivia', 'bar', true)" );
+        assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + ADMIN + "', 'Olivia')" );
         S olivia = neo.login( "Olivia", "bar" );
         neo.assertPasswordChangeRequired( olivia );
         testFailRead( olivia, 3, pwdReqErrMsg( READ_OPS_NOT_ALLOWED ) );
         testFailWrite( olivia, pwdReqErrMsg( WRITE_OPS_NOT_ALLOWED ) );
         testFailSchema( olivia, pwdReqErrMsg( SCHEMA_OPS_NOT_ALLOWED ) );
-        assertFail( olivia, "CALL dbms.createUser('OliviasFriend', 'bar', false)", CHANGE_PWD_ERR_MSG );
+        assertFail( olivia, "CALL dbms.security.createUser('OliviasFriend', 'bar', false)", CHANGE_PWD_ERR_MSG );
         assertPasswordChangeWhenPasswordChangeRequired( olivia, "321" );
     }
 
@@ -922,7 +925,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         testFailWrite( noneSubject );
         testFailSchema( noneSubject );
         testFailCreateUser( noneSubject, PERMISSION_DENIED );
-        assertEmpty( noneSubject, "CALL dbms.changePassword( '321' )" );
+        assertEmpty( noneSubject, "CALL dbms.security.changePassword( '321' )" );
     }
 
     @Test
@@ -932,7 +935,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         testFailWrite( readSubject );
         testFailSchema( readSubject );
         testFailCreateUser( readSubject, PERMISSION_DENIED );
-        assertEmpty( readSubject, "CALL dbms.changePassword( '321' )" );
+        assertEmpty( readSubject, "CALL dbms.security.changePassword( '321' )" );
     }
 
     @Test
@@ -942,7 +945,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         testSuccessfulWrite( writeSubject );
         testFailSchema( writeSubject );
         testFailCreateUser( writeSubject, PERMISSION_DENIED );
-        assertEmpty( writeSubject, "CALL dbms.changePassword( '321' )" );
+        assertEmpty( writeSubject, "CALL dbms.security.changePassword( '321' )" );
     }
 
     @Test
@@ -952,7 +955,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         testSuccessfulWrite( schemaSubject );
         testSuccessfulSchema( schemaSubject );
         testFailCreateUser( schemaSubject, PERMISSION_DENIED );
-        assertEmpty( schemaSubject, "CALL dbms.changePassword( '321' )" );
+        assertEmpty( schemaSubject, "CALL dbms.security.changePassword( '321' )" );
     }
 
     @Test
@@ -961,20 +964,20 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         testSuccessfulRead( adminSubject, 3 );
         testSuccessfulWrite( adminSubject );
         testSuccessfulSchema( adminSubject );
-        assertEmpty( adminSubject, "CALL dbms.createUser('Olivia', 'bar', true)" );
-        assertEmpty( adminSubject, "CALL dbms.changePassword( '321' )" );
+        assertEmpty( adminSubject, "CALL dbms.security.createUser('Olivia', 'bar', true)" );
+        assertEmpty( adminSubject, "CALL dbms.security.changePassword( '321' )" );
     }
 
     @Test
     public void shouldSetCorrectMultiRolePermissions() throws Exception
     {
-        assertEmpty( adminSubject, "CALL dbms.addRoleToUser('" + READER + "', 'schemaSubject')" );
+        assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'schemaSubject')" );
 
         testSuccessfulRead( schemaSubject, 3 );
         testSuccessfulWrite( schemaSubject );
         testSuccessfulSchema( schemaSubject );
         testFailCreateUser( schemaSubject, PERMISSION_DENIED );
-        assertEmpty( schemaSubject, "CALL dbms.changePassword( '321' )" );
+        assertEmpty( schemaSubject, "CALL dbms.security.changePassword( '321' )" );
     }
 
     // --------------------- helpers -----------------------
@@ -987,7 +990,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 
         assertEmpty( adminSubject, "CALL " + String.format(procedure, neo.nameOf( subject ) ) );
 
-        assertSuccess( adminSubject, "CALL dbms.listTransactions()",
+        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
 
         userThread.closeAndAssertTransactionTermination();
