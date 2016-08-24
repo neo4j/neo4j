@@ -41,35 +41,36 @@ public abstract class AbstractComponentSwitcher<T> implements ComponentSwitcher
 
     protected abstract T getSlaveImpl();
 
-    @Override
-    public void switchToMaster()
+    protected T getPendingImpl()
     {
-        shutdownCurrent();
-        T component = getMasterImpl();
-        updateDelegate( component );
+        return null;
     }
 
     @Override
-    public void switchToSlave()
+    public final void switchToMaster()
     {
-        shutdownCurrent();
-        T component = getSlaveImpl();
-        updateDelegate( component );
+        updateDelegate( getMasterImpl() );
     }
 
     @Override
-    public void switchToPending()
+    public final void switchToSlave()
     {
-        shutdownCurrent();
+        updateDelegate( getSlaveImpl() );
     }
 
-    protected void shutdownCurrent()
+    @Override
+    public final void switchToPending()
     {
-        updateDelegate( null );
+        updateDelegate( getPendingImpl() );
     }
 
     private void updateDelegate( T newValue )
     {
-        delegate.setDelegate( newValue );
+        T oldDelegate = delegate.setDelegate( newValue );
+        shutdownDelegate( oldDelegate );
+    }
+
+    protected void shutdownDelegate( T oldDelegate )
+    {
     }
 }
