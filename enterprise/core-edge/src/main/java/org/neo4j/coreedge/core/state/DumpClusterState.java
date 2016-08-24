@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.consensus.membership.RaftMembershipState;
 import org.neo4j.coreedge.core.consensus.term.TermState;
 import org.neo4j.coreedge.core.consensus.vote.VoteState;
@@ -36,6 +37,7 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.MemberId.Marshal;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 
@@ -105,8 +107,10 @@ public class DumpClusterState
 
     private void dumpState( String name, StateMarshal<?> marshal ) throws IOException
     {
-        DurableStateStorage<?> storage = new DurableStateStorage<>(
-                fs, clusterStateDirectory, name, marshal, 1024, NullLogProvider.getInstance() );
+        int rotationSize = Config.defaults().get( CoreEdgeClusterSettings.replicated_lock_token_state_size );
+        DurableStateStorage<?> storage =
+                new DurableStateStorage<>( fs, clusterStateDirectory, name, marshal, rotationSize,
+                        NullLogProvider.getInstance() );
 
         if ( storage.exists() )
         {

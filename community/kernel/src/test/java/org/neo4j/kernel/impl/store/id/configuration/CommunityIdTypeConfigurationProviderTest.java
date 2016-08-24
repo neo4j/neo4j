@@ -64,7 +64,7 @@ public class CommunityIdTypeConfigurationProviderTest
         IdTypeConfigurationProvider provider = createIdTypeProvider();
         IdTypeConfiguration typeConfiguration = provider.getIdTypeConfiguration( reusableType );
         assertTrue( typeConfiguration.allowAggressiveReuse() );
-        assertEquals( IdTypeConfiguration.AGGRESIVE_GRAB_SIZE, typeConfiguration.getGrabSize() );
+        assertEquals( IdTypeConfiguration.AGGRESSIVE_GRAB_SIZE, typeConfiguration.getGrabSize() );
     }
 
     private IdTypeConfigurationProvider createIdTypeProvider()

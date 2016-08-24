@@ -67,7 +67,8 @@ public class ClusterSeed
 
     public String getConversionId()
     {
-        ByteBuffer buffer = ByteBuffer.allocate( 88 );
+        int bytesNeeded = 88;
+        ByteBuffer buffer = ByteBuffer.allocate( bytesNeeded );
 
         buffer.putLong( lastTxId );
 

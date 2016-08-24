@@ -223,4 +223,8 @@ public class CoreEdgeClusterSettings
     @Description( "Edge server 'call home' frequency"  )
     public static final Setting<Long> edge_refresh_rate =
             setting( "core_edge.edge_refresh_rate", DURATION, "5s", min(5_000L) );
+
+    @Description( "Id range allocation chunk size"  )
+    public static final Setting<Integer> allocation_chunk_size =
+            setting( "core_edge.allocation_chunk_size", INTEGER, "1024" );
 }
