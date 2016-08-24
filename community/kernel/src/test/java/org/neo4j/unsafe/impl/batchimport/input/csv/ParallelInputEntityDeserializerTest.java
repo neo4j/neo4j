@@ -28,7 +28,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Function;
 
 import org.neo4j.csv.reader.CharReadable;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -69,14 +68,14 @@ public class ParallelInputEntityDeserializerTest
         Groups groups = new Groups();
         Set<Thread> observedProcessingThreads = new CopyOnWriteArraySet<>();
         int threads = 4;
-        DeserializerFactory<InputNode> deserializerFactory = (chunk,header,decorator) ->
+        DeserializerFactory<InputNode> deserializerFactory = (chunk,header) ->
         {
             observedProcessingThreads.add( Thread.currentThread() );
             // Make sure there will be 4 different processing threads doing this
             while ( observedProcessingThreads.size() < threads );
             return new InputEntityDeserializer<>( header, chunk, config.delimiter(),
-                    new InputNodeDeserialization( chunk, header, groups, idType.idsAreExternal() ), decorator,
-                    Validators.<InputNode>emptyValidator(), badCollector );
+                    new InputNodeDeserialization( chunk, header, groups, idType.idsAreExternal() ),
+                    badCollector );
         };
         try ( ParallelInputEntityDeserializer<InputNode> deserializer = new ParallelInputEntityDeserializer<>( data,
                 defaultFormatNodeFileHeader(), config, idType, threads, deserializerFactory, InputNode.class ) )

@@ -83,7 +83,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
             // Initialize the processing logic for parsing the data in the first chunk, as well as in all other chunk
             processing = new TicketedProcessing<>( "Parallel input parser", maxProcessors, (seeker, header) ->
             {
-                InputEntityDeserializer<ENTITY> chunkDeserializer = factory.create( seeker, header, data.decorator() );
+                InputEntityDeserializer<ENTITY> chunkDeserializer = factory.create( seeker, header );
                 chunkDeserializer.initialize();
                 List<ENTITY> entities = new ArrayList<>();
                 while ( chunkDeserializer.hasNext() )
