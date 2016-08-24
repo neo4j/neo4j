@@ -72,9 +72,14 @@ public class EdgeStartupProcess implements Lifecycle
         MemberId memberId = findCoreMemberToCopyFrom();
         if ( localDatabase.isEmpty() )
         {
+            log.info( "Local database is empty, attempting to replace with copy from core server %s", memberId );
+            log.info( "Stopping local database before copy." );
             localDatabase.stop();
+            log.info( "Finding store id of core server %s", memberId );
             StoreId storeId = storeFetcher.storeId( memberId );
+            log.info( "Copying store from core server %s", memberId );
             localDatabase.bringUpToDateOrReplaceStoreFrom( memberId, storeId, storeFetcher );
+            log.info( "Restarting local database after copy.", memberId );
             localDatabase.start();
         }
         else
@@ -92,7 +97,7 @@ public class EdgeStartupProcess implements Lifecycle
             try
             {
                 MemberId memberId = connectionStrategy.coreMember();
-                log.info( "Server starting, connecting to core server at %s", memberId.toString() );
+                log.info( "Server starting, connecting to core server %s", memberId );
                 return memberId;
             }
             catch ( CoreMemberSelectionException ex )

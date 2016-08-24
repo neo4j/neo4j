@@ -115,7 +115,7 @@ public class CoreServerModule
 
         StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),
-                new TransactionLogCatchUpFactory() );
+                new TransactionLogCatchUpFactory(), config.get( CoreEdgeClusterSettings.catch_up_retry_rate ) );
 
         CoreStateApplier coreStateApplier = new CoreStateApplier( logProvider );
         CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher,

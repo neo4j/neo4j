@@ -165,7 +165,7 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
     }
 
     public void ensureSameStoreId( MemberId memberId, StoreFetcher storeFetcher )
-            throws StoreIdDownloadFailedException
+            throws StoreCatchUpFailedException
     {
         StoreId localStoreId = storeId();
         StoreId remoteStoreId = storeFetcher.storeId( memberId );

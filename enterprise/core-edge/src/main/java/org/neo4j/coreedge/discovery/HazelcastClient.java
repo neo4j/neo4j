@@ -90,8 +90,6 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
         String uuid = hazelcastInstance.getLocalEndpoint().getUuid();
         String address = boltAddress.toString();
 
-        log.debug( "Adding edge server into cluster (%s -> %s)", uuid, address  );
-
         return hazelcastInstance.getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
                 .put( uuid, address, edgeTimeToLiveTimeout, MILLISECONDS );
     }
@@ -109,7 +107,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
             }
             catch ( HazelcastClientNotActiveException | HazelcastInstanceNotActiveException e )
             {
-                log.info( "Unable to shutdown Hazelcast", e );
+                log.debug( "Unable to cleanly shutdown Hazelcast - ", e.getMessage() );
             }
         }
 

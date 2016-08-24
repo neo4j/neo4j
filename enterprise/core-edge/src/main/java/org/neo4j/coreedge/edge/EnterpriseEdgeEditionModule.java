@@ -231,7 +231,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         StoreFetcher storeFetcher = new StoreFetcher( platformModule.logging.getInternalLogProvider(),
                 new DefaultFileSystemAbstraction(), platformModule.pageCache,
                 new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),
-                new TransactionLogCatchUpFactory() );
+                new TransactionLogCatchUpFactory(), config.get( CoreEdgeClusterSettings.catch_up_retry_rate ) );
 
         life.add( new EdgeStartupProcess( storeFetcher,
                 localDatabase,

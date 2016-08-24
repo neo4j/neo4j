@@ -136,7 +136,8 @@ class HazelcastClusterTopology
         }
         catch ( InterruptedException | ExecutionException e )
         {
-            log.info( "Unable to complete operation with distributed discovery service.", e );
+            log.info( "Unable to determine edge servers. Continuing assuming no edge servers present." );
+            log.debug( "Unable to complete operation with distributed discovery service.", e );
             return emptySet();
         }
 

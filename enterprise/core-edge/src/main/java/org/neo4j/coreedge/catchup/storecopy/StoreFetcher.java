@@ -27,11 +27,14 @@ import org.neo4j.coreedge.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.coreedge.catchup.tx.TxPullClient;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static java.lang.String.format;
 
 public class StoreFetcher
 {
@@ -42,11 +45,13 @@ public class StoreFetcher
     private StoreCopyClient storeCopyClient;
     private TxPullClient txPullClient;
     private TransactionLogCatchUpFactory transactionLogFactory;
+    private long retryInterval;
 
     public StoreFetcher( LogProvider logProvider,
                          FileSystemAbstraction fs, PageCache pageCache,
                          StoreCopyClient storeCopyClient, TxPullClient txPullClient,
-                         TransactionLogCatchUpFactory transactionLogFactory )
+                         TransactionLogCatchUpFactory transactionLogFactory,
+                         long retryInterval )
     {
         this.logProvider = logProvider;
         this.storeCopyClient = storeCopyClient;
@@ -54,6 +59,7 @@ public class StoreFetcher
         this.fs = fs;
         this.pageCache = pageCache;
         this.transactionLogFactory = transactionLogFactory;
+        this.retryInterval = retryInterval;
         log = logProvider.getLog( getClass() );
     }
 
@@ -99,8 +105,40 @@ public class StoreFetcher
         }
     }
 
-    public StoreId storeId( MemberId from ) throws StoreIdDownloadFailedException
+    public StoreId storeId( MemberId from ) throws StoreCatchUpFailedException
     {
-        return storeCopyClient.fetchStoreId( from );
+        int maximumRetries = 5;
+        String operation = format( "get store id from %s", from );
+        return retry(client -> client.fetchStoreId( from ), operation, maximumRetries, retryInterval);
     }
+
+    private <T> T  retry( ThrowingFunction<StoreCopyClient, T, StoreCatchUpFailedException> function,
+                          String operation, int maxRetries, long retryInterval ) throws StoreCatchUpFailedException
+    {
+        int attempts = 0;
+        while ( attempts++ < maxRetries )
+        {
+            log.info( "Attempt %d to %s.", attempts, operation );
+            try
+            {
+                return function.apply(storeCopyClient);
+            }
+            catch ( StoreCatchUpFailedException e )
+            {
+                log.info( "Attempt %d to %s failed.", attempts, operation );
+            }
+            try
+            {
+                Thread.sleep( retryInterval );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+                throw new StoreCatchUpFailedException( e );
+            }
+        }
+
+        throw new StoreCatchUpFailedException( format( "Failed to %s after %d attempts", operation, attempts - 1 ) );
+    }
+
 }

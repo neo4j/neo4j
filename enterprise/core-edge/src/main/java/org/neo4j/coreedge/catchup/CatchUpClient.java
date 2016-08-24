@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.catchup;
 
+import java.nio.channels.ClosedChannelException;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,6 +46,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 public class CatchUpClient extends LifecycleAdapter
@@ -86,8 +88,7 @@ public class CatchUpClient extends LifecycleAdapter
             }
         } );
 
-        channel.setResponseHandler( responseHandler, future );
-        channel.send( request );
+        channel.send( request, responseHandler, future );
 
         return TimeoutLoop.waitForCompletion( future, channel::millisSinceLastResponse, inactivityTimeout, timeUnit );
     }
@@ -111,7 +112,7 @@ public class CatchUpClient extends LifecycleAdapter
         CatchUpChannel channel = idleChannels.remove( catchUpAddress );
         if ( channel == null )
         {
-            channel = new CatchUpChannel( catchUpAddress );
+            channel = new CatchUpChannel( memberId, catchUpAddress );
         }
         activeChannels.add( channel );
         return channel;
@@ -120,11 +121,13 @@ public class CatchUpClient extends LifecycleAdapter
     private class CatchUpChannel
     {
         private final TrackingResponseHandler handler;
+        private final MemberId memberId;
         private final AdvertisedSocketAddress destination;
         private Channel nettyChannel;
 
-        CatchUpChannel( AdvertisedSocketAddress destination )
+        CatchUpChannel( MemberId memberId, AdvertisedSocketAddress destination )
         {
+            this.memberId = memberId;
             this.destination = destination;
             handler = new TrackingResponseHandler( new CatchUpResponseAdaptor(), clock );
             Bootstrap bootstrap = new Bootstrap()
@@ -143,16 +146,34 @@ public class CatchUpClient extends LifecycleAdapter
             nettyChannel = channelFuture.awaitUninterruptibly().channel();
         }
 
-        void setResponseHandler( CatchUpResponseCallback responseHandler,
-                                 CompletableFuture<?> requestOutcomeSignal )
+        void send( CatchUpRequest request,
+                   CatchUpResponseCallback responseHandler,
+                   CompletableFuture<?> requestOutcomeSignal )
         {
             handler.setResponseHandler( responseHandler, requestOutcomeSignal );
+
+            ChannelFuture write = nettyChannel.write( request.messageType() );
+            write.addListener( future ->
+            {
+                if ( !future.isSuccess() )
+                {
+                    logFailureToSendMessage( future.cause() );
+                    requestOutcomeSignal.completeExceptionally( future.cause() );
+                }
+            } );
+            nettyChannel.writeAndFlush( request );
         }
 
-        void send( CatchUpRequest request )
+        private void logFailureToSendMessage( Throwable cause )
         {
-            nettyChannel.write( request.messageType() );
-            nettyChannel.writeAndFlush( request );
+            if ( cause instanceof ClosedChannelException )
+            {
+                log.warn( format( "Failed to send message to %s/%s", memberId, destination ) );
+            }
+            else
+            {
+                log.warn( format( "Failed to send message to %s/%s", memberId, destination ), cause );
+            }
         }
 
         long millisSinceLastResponse()

@@ -98,7 +98,7 @@ public class TxPollingClient extends LifecycleAdapter
             return;
         }
 
-        MemberId transactionServer;
+        MemberId transactionServer = null;
         try
         {
             transactionServer = connectionStrategy.coreMember();
@@ -124,7 +124,18 @@ public class TxPollingClient extends LifecycleAdapter
         }
         catch ( Exception e )
         {
-            log.warn( "Tx pull attempt failed, will retry at the next regularly scheduled polling attempt.", e );
+            if ( transactionServer != null )
+            {
+                log.warn(
+                        "Tx pull attempt to %s failed, will retry at the next regularly scheduled polling attempt - %s.",
+                        transactionServer, e.getMessage() );
+            }
+            else
+            {
+
+                log.warn( "Tx pull attempt failed, will retry at the next regularly scheduled polling attempt - %s.",
+                        e.getMessage() );
+            }
         }
     }
 }

@@ -19,14 +19,14 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
-public class StoreIdDownloadFailedException extends Exception
+public class StoreCatchUpFailedException extends Exception
 {
-    public StoreIdDownloadFailedException( Throwable cause )
+    StoreCatchUpFailedException( Throwable cause )
     {
         super( cause );
     }
 
-    public StoreIdDownloadFailedException( String message )
+    StoreCatchUpFailedException( String message )
     {
         super( message );
     }
