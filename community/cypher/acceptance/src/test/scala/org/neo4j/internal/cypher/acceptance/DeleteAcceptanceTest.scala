@@ -321,5 +321,17 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     updateWithBothPlannersAndCompatibilityMode(s"EXPLAIN $query")
   }
 
+  //https://github.com/neo4j/neo4j-java-driver/issues/212
+  test("should handle bidirectional match and relationship types") {
+    // GIVEN
+    val relId = relate(createNode(), createNode(), "T").getId
+
+    // WHEN
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH ()-[r:T]-() WHERE ID(r) = {id} DELETE r", "id" -> relId)
+
+    // THEN
+    assertStats(result, relationshipsDeleted = 1)
+  }
+
   override def timeLimit: Span = 10 seconds
 }

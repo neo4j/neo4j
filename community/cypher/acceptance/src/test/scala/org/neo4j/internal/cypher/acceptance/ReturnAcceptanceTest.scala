@@ -52,14 +52,6 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers w
     an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
   }
 
-  test("returning the type of deleted relationships should throw exception") {
-    relate(createNode(), createNode(), "T")
-
-    val query = "MATCH ()-[r:T]->() DELETE r RETURN type(r)"
-
-    an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
-  }
-
   test("should choke on an invalid unicode literal") {
     val query = "RETURN '\\uH' AS a"
 
