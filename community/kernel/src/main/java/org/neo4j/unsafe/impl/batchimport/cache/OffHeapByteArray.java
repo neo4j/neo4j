@@ -164,6 +164,23 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         UnsafeUtil.putLong( address( index, offset ), value );
     }
 
+    @Override
+    public int get3ByteInt( long index, int offset )
+    {
+        long address = address( index, offset );
+        int lowWord = UnsafeUtil.getShort( address ) & 0xFFFF;
+        byte highByte = UnsafeUtil.getByte( address + Short.BYTES );
+        return lowWord | (highByte << Short.SIZE);
+    }
+
+    @Override
+    public void set3ByteInt( long index, int offset, int value )
+    {
+        long address = address( index, offset );
+        UnsafeUtil.putShort( address, (short) value );
+        UnsafeUtil.putByte( address + Short.BYTES, (byte) (value >>> Short.SIZE) );
+    }
+
     private long address( long index, int offset )
     {
         return address + (rebase( index ) * itemSize) + offset;

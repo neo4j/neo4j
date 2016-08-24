@@ -169,7 +169,7 @@ public class RelationshipGroupCacheTest
         int[] types = new int[count];
         for ( int i = 0; i < count; i++ )
         {
-            types[i] = i;
+            types[i] = i + Short.MAX_VALUE ;
         }
 
         for ( int i = 0; i < 10; i++ )

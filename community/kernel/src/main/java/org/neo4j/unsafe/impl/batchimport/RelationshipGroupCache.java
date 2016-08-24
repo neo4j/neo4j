@@ -47,7 +47,7 @@ import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
  */
 public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>, AutoCloseable
 {
-    public static final int GROUP_ENTRY_SIZE = 1/*header*/ + 2/*type*/ + 6/*relationship id*/*3/*all directions*/;
+    public static final int GROUP_ENTRY_SIZE = 1/*header*/ + 3/*type*/ + 6/*relationship id*/*3/*all directions*/;
 
     private final ByteArray groupCountCache;
     private final ByteArray cache;
@@ -160,10 +160,10 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
 
         // Put the group at this index
         cache.setByte( index, 0, (byte) 1 );
-        cache.setShort( index, 1, (short) groupRecord.getType() );
-        cache.set6ByteLong( index, 1 + 2, groupRecord.getFirstOut() );
-        cache.set6ByteLong( index, 1 + 2 + 6, groupRecord.getFirstIn() );
-        cache.set6ByteLong( index, 1 + 2 + 6 + 6, groupRecord.getFirstLoop() );
+        cache.set3ByteInt( index, 1, groupRecord.getType() );
+        cache.set6ByteLong( index, 1 + 3, groupRecord.getFirstOut() );
+        cache.set6ByteLong( index, 1 + 3 + 6, groupRecord.getFirstIn() );
+        cache.set6ByteLong( index, 1 + 3 + 6 + 6, groupRecord.getFirstLoop() );
         return true;
     }
 
@@ -183,7 +183,8 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
 
             if ( desiredIndex == -1 )
             {
-                int existingType = cache.getShort( candidateIndex, 1 ) & 0xFFFF;
+                // ?? do we need mask here?
+                int existingType = cache.get3ByteInt( candidateIndex, 1 ) & 0xFFFFFF;
                 if ( existingType == type )
                 {
                     throw new IllegalStateException( "Tried to put multiple groups with same type " + type );
@@ -255,10 +256,11 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
                     {
                         // Here we have an alive group
                         group = new RelationshipGroupRecord( -1 ).initialize( true,
-                                cache.getShort( cursor, 1 ) & 0xFFFF,
-                                cache.get6ByteLong( cursor, 1 + 2 ),
-                                cache.get6ByteLong( cursor, 1 + 2 + 6 ),
-                                cache.get6ByteLong( cursor, 1 + 2 + 6 + 6 ),
+                                //do we need mask here?
+                                cache.get3ByteInt( cursor, 1 ) & 0xFFFFFF,
+                                cache.get6ByteLong( cursor, 1 + 3 ),
+                                cache.get6ByteLong( cursor, 1 + 3 + 6 ),
+                                cache.get6ByteLong( cursor, 1 + 3 + 6 + 6 ),
                                 nodeId,
                                 // Special: we want to convey information about how many groups are coming
                                 // after this one so that chains can be ordered accordingly in the store

@@ -153,4 +153,24 @@ public interface ByteArray extends NumberArray<ByteArray>
      * @param value the long value to set at the given offset at the given array index.
      */
     void setLong( long index, int offset, long value );
+
+    /**
+     * Gets a part of an item, at the given {@code index}. An item in this array can consist of
+     * multiple values. This call will get a 3-byte int at the given {@code offset}.
+     *
+     * @param index array index to get.
+     * @param offset offset into this index to get the value from.
+     * @return the 3-byte int at the given offset at the given array index.
+     */
+    int get3ByteInt( long index, int offset );
+
+    /**
+     * Sets a part of an item, at the given {@code index}. An item in this array can consist of
+     * multiple values. This call will set a 3-byte int at the given {@code offset}.
+     *
+     * @param index array index to get.
+     * @param offset offset into this index to set the value for.
+     * @param value the 3-byte int value to set at the given offset at the given array index.
+     */
+    void set3ByteInt( long index, int offset, int value );
 }
