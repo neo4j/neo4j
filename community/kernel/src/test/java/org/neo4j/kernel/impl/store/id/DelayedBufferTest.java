@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.id;
 
 import org.junit.Test;
 
+import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
@@ -29,7 +30,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.helpers.Clock;
 import org.neo4j.test.Race;
 
 import static java.util.concurrent.ThreadLocalRandom.current;
@@ -52,9 +52,9 @@ public class DelayedBufferTest
         final int size = 1_000;
         final long bufferTime = 3;
         VerifyingConsumer consumer = new VerifyingConsumer( size );
-        final Clock clock = Clock.SYSTEM_CLOCK;
-        Supplier<Long> chunkThreshold = clock::currentTimeMillis;
-        Predicate<Long> safeThreshold = time -> clock.currentTimeMillis() - bufferTime >= time;
+        final Clock clock = Clock.systemUTC();
+        Supplier<Long> chunkThreshold = clock::millis;
+        Predicate<Long> safeThreshold = time -> clock.millis() - bufferTime >= time;
         final DelayedBuffer<Long> buffer = new DelayedBuffer<>( chunkThreshold, safeThreshold, 10, consumer );
         MaintenanceThread maintenance = new MaintenanceThread( buffer, 5 );
         Race adders = new Race();
@@ -102,22 +102,8 @@ public class DelayedBufferTest
         VerifyingConsumer consumer = new VerifyingConsumer( 30 );
         final AtomicLong txOpened = new AtomicLong();
         final AtomicLong txClosed = new AtomicLong();
-        Supplier<Long> chunkThreshold = new Supplier<Long>()
-        {
-            @Override
-            public Long get()
-            {
-                return txOpened.get();
-            }
-        };
-        Predicate<Long> safeThreshold = new Predicate<Long>()
-        {
-            @Override
-            public boolean test( Long value )
-            {
-                return txClosed.get() >= value;
-            }
-        };
+        Supplier<Long> chunkThreshold = txOpened::get;
+        Predicate<Long> safeThreshold = value -> txClosed.get() >= value;
         DelayedBuffer<Long> buffer = new DelayedBuffer<>( chunkThreshold, safeThreshold, 100, consumer );
 
         // Transaction spans like these:
@@ -210,14 +196,7 @@ public class DelayedBufferTest
         // GIVEN
         Consumer<long[]> consumer = mock( Consumer.class );
         final AtomicBoolean safeThreshold = new AtomicBoolean( false );
-        DelayedBuffer<Long> buffer = new DelayedBuffer<>( singleton( 0L ), new Predicate<Long>()
-        {
-            @Override
-            public boolean test( Long t )
-            {
-                return safeThreshold.get();
-            }
-        }, 10, consumer );
+        DelayedBuffer<Long> buffer = new DelayedBuffer<>( singleton( 0L ), t -> safeThreshold.get(), 10, consumer );
         // three chunks
         buffer.offer( 0 );
         buffer.maintenance();

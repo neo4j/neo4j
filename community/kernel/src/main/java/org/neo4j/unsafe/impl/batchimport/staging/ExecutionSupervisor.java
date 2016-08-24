@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.neo4j.helpers.Clock;
+import java.time.Clock;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -42,7 +42,7 @@ public class ExecutionSupervisor
 
     public ExecutionSupervisor( ExecutionMonitor monitor )
     {
-        this( Clock.SYSTEM_CLOCK, monitor );
+        this( Clock.systemUTC(), monitor );
     }
 
     /**
@@ -69,7 +69,7 @@ public class ExecutionSupervisor
 
     private long currentTimeMillis()
     {
-        return clock.currentTimeMillis();
+        return clock.millis();
     }
 
     private boolean anyStillExecuting( StageExecution[] executions )
