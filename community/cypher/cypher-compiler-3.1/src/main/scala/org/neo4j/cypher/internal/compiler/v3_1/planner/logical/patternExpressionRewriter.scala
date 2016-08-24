@@ -78,8 +78,6 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
           (newAcc, Some(identity))
 
       // replace pattern comprehension
-      // the contained pattern expression for no further processing
-      // by this tree fold
       case expr@PatternComprehension(namedPath, pattern, predicate, projection) =>
         acc =>
           assert(namedPath.isEmpty, "Named paths in pattern comprehensions should have been rewritten away already")

@@ -175,7 +175,7 @@ case class PatternComprehension(namedPath: Option[Variable], pattern: Relationsh
       self.specifyType(outerTypes)
     }
 
-  override def variables: Set[Variable] = pattern.element.allVariables ++ namedPath.toSet
+  override def variables: Set[Variable] = namedPath.toSet
 }
 
 sealed trait IterablePredicateExpression extends FilteringExpression {
