@@ -384,7 +384,7 @@ public class ImportTool
                 logService,
                 ExecutionMonitors.defaultVisible(),
                 dbConfig );
-        printOverview( storeDir, nodesFiles, relationshipsFiles );
+        printOverview( storeDir, nodesFiles, relationshipsFiles, configuration );
         success = false;
         try
         {
@@ -437,16 +437,18 @@ public class ImportTool
     }
 
     private static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,
-            Collection<Option<File[]>> relationshipsFiles )
+            Collection<Option<File[]>> relationshipsFiles,
+            org.neo4j.unsafe.impl.batchimport.Configuration configuration )
     {
         System.out.println( "Neo4j version: " + Version.getKernel().getReleaseVersion() );
         System.out.println( "Importing the contents of these files into " + storeDir + ":" );
         printInputFiles( "Nodes", nodesFiles );
         printInputFiles( "Relationships", relationshipsFiles );
         System.out.println();
-        System.out.println( "Available memory:" );
+        System.out.println( "Available resources:" );
         printIndented( "Free machine memory: " + bytes( OsBeanUtil.getFreePhysicalMemory() ) );
         printIndented( "Max heap memory : " + bytes( Runtime.getRuntime().maxMemory() ) );
+        printIndented( "Processors: " + configuration.maxNumberOfProcessors() );
         System.out.println();
     }
 

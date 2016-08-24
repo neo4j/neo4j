@@ -56,7 +56,10 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.Math.max;
+import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+
+import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -182,7 +185,7 @@ public class ParallelBatchImporter implements BatchImporter
                     calculateDenseNodesStage.getRelationshipTypes( 100 ) );
 
             // Release this potentially really big piece of cached data
-            long memoryWeCanHoldForCertain = totalMemoryUsageOf( idMapper, nodeRelationshipCache );
+            long peakMemoryUsage = totalMemoryUsageOf( idMapper, nodeRelationshipCache );
             long highNodeId = nodeRelationshipCache.getHighNodeId();
             idMapper.close();
             idMapper = null;
@@ -190,7 +193,7 @@ public class ParallelBatchImporter implements BatchImporter
             nodeRelationshipCache = null;
 
             new RelationshipGroupDefragmenter( config, executionMonitor ).run(
-                    max( max( memoryWeCanHoldForCertain, highNodeId * 4 ), mebiBytes( 1 ) ), neoStore, highNodeId );
+                    max( max( peakMemoryUsage, highNodeId * 4 ), mebiBytes( 1 ) ), neoStore, highNodeId );
 
             // Stage 6 -- count nodes per label and labels per node
             nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
@@ -204,7 +207,11 @@ public class ParallelBatchImporter implements BatchImporter
 
             // We're done, do some final logging about it
             long totalTimeMillis = currentTimeMillis() - startTime;
-            executionMonitor.done( totalTimeMillis, storeUpdateMonitor.toString() );
+            executionMonitor.done( totalTimeMillis,
+                    format( "%n" ) +
+                    storeUpdateMonitor.toString() +
+                    format( "%n" ) +
+                    "Peak memory usage: " + bytes( peakMemoryUsage ) );
             log.info( "Import completed, took " + Format.duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
             hasBadEntries = badCollector.badEntries() > 0;
             if ( hasBadEntries )
