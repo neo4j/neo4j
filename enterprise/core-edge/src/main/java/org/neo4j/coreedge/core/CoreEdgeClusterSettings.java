@@ -80,7 +80,7 @@ public class CoreEdgeClusterSettings
     public static final Setting<Long> join_catch_up_timeout =
             setting( "core_edge.join_catch_up_timeout", DURATION, "10m" );
 
-    @Description("Leader election timeout")
+    @Description("The time limit which a new leader election will occur if no messages are received.")
     public static final Setting<Long> leader_election_timeout =
             setting( "core_edge.leader_election_timeout", DURATION, "500ms" );
 
@@ -110,7 +110,7 @@ public class CoreEdgeClusterSettings
     public static final Setting<Long> leader_lock_token_timeout =
             setting( "core_edge.leader_lock_token_timeout", DURATION, "1s" );
 
-    @Description("Expected size of core cluster")
+    @Description("Expected number of Core machines in the cluster")
     public static final Setting<Integer> expected_core_cluster_size =
             setting( "core_edge.expected_core_cluster_size", INTEGER, "3" );
 
@@ -176,7 +176,7 @@ public class CoreEdgeClusterSettings
     public static final Setting<Integer> state_machine_flush_window_size =
             setting( "core_edge.state_machine_flush_window_size", INTEGER, "100" );
 
-    @Description("The maximum number of operations to be bacthed during applications of operations in the state machines")
+    @Description("The maximum number of operations to be batched during applications of operations in the state machines")
     public static Setting<Integer> state_machine_apply_max_batch_size =
             setting( "core_edge.state_machine_apply_max_batch_size", INTEGER, "16" );
 
