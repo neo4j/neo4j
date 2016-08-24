@@ -229,14 +229,8 @@ public enum StoreType
     public static StoreType typeOf( String storeFileName )
     {
         final Optional<StoreType> optional = isStoreType( storeFileName );
-        if ( optional.isPresent() )
-        {
-            return optional.get();
-        }
-        else
-        {
-            throw new IllegalArgumentException( "No enum constant for " + storeFileName + " file." );
-        }
+        return optional.orElseThrow(
+                () -> new IllegalArgumentException( "No enum constant for " + storeFileName + " file." ) );
     }
 
     /**
