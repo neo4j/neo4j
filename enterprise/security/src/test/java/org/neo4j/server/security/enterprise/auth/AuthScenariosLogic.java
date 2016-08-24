@@ -426,13 +426,18 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
 
     private long pollNumNodes()
     {
-        Transaction tx = neo.getGraph().beginTx();
-        Statement statement = neo.getGraph().getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class ).get();
-        long nodeCount = statement.readOperations().countsForNode( -1 );
-
-        tx.success();
-        tx.close();
+        long nodeCount = 0;
+        try ( Transaction tx = neo.getGraph().beginTx() )
+        {
+            Statement statement =
+                    neo.getGraph().getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get();
+            nodeCount = statement.readOperations().countsForNode( -1 );
+            tx.success();
+        }
+        catch (Throwable t)
+        {
+            // do nothing, test will timeout eventually
+        }
         return nodeCount;
     }
 
