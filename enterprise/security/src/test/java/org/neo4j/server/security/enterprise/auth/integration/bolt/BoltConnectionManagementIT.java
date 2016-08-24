@@ -383,7 +383,7 @@ public class BoltConnectionManagementIT
         // Then
         assertThat( client, eventuallyReceives(
                 msgSuccess( allOf( hasEntry(is("fields"), equalTo(asList( "username", "connectionCount" ) )),
-                        hasKey( "result-available-after" ) ) )
+                        hasKey( "result_available_after" ) ) )
         ) );
 
         for ( int i = 0; i < n; i++ )

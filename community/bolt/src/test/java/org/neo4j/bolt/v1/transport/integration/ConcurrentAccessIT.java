@@ -158,20 +158,20 @@ public class ConcurrentAccessIT
                 client.send( createAndRollback );
                 assertThat( client, eventuallyReceives(
                         msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
-                                hasKey( "result-available-after" ) ) ),
+                                hasKey( "result_available_after" ) ) ),
                         msgSuccess(),
                         msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
-                                hasKey( "result-available-after" ) ) ),
+                                hasKey( "result_available_after" ) ) ),
                         msgSuccess(),
                         msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
-                                hasKey( "result-available-after" ) ) ),
+                                hasKey( "result_available_after" ) ) ),
                         msgSuccess() ) );
 
                 // Verify no visible data
                 client.send( matchAll );
                 assertThat( client, eventuallyReceives(
                         msgSuccess(allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
-                                hasKey( "result-available-after" ) ) ),
+                                hasKey( "result_available_after" ) ) ),
                         msgSuccess() ) );
 
             }

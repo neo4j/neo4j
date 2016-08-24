@@ -141,7 +141,7 @@ public class TransportSessionIT
                 msgSuccess(),
                 msgSuccess(
                         allOf( hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) ),
-                                hasKey( "result-available-after" ) ) ),
+                                hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( equalTo( 1L ), equalTo( 1L ) ) ),
                 msgRecord( eqRecord( equalTo( 2L ), equalTo( 4L ) ) ),
                 msgRecord( eqRecord( equalTo( 3L ), equalTo( 9L ) ) ),
@@ -163,7 +163,7 @@ public class TransportSessionIT
         assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) ),
-                        hasKey( "result-available-after" ) ) ),
+                        hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( equalTo( 2L ) ) ),
                 msgSuccess() ) );
 
@@ -175,7 +175,7 @@ public class TransportSessionIT
         // Then
         assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) ),
-                        hasKey( "result-available-after" ) ) ),
+                        hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( Matchers.equalTo( "Test" ) ) ),
                 msgSuccess()
         ) );
@@ -197,7 +197,7 @@ public class TransportSessionIT
         assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(  allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
-                        hasKey( "result-available-after" ) ) )));
+                        hasKey( "result_available_after" ) ) )));
 
         //
         //Record(0x71) {
@@ -228,7 +228,7 @@ public class TransportSessionIT
         assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) ),
-                        hasKey( "result-available-after" ) ) ) ) );
+                        hasKey( "result_available_after" ) ) ) ) );
 
         //
         //Record(0x71) {
@@ -282,7 +282,7 @@ public class TransportSessionIT
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( 1L ) ) ),
                 msgSuccess( allOf( hasEntry( is( "type" ), equalTo(  "r" ) ),
-                        hasKey( "result-consumed-after" ) ) ) ) );
+                        hasKey( "result_consumed_after" ) ) ) ) );
     }
 
     @Test
@@ -328,7 +328,7 @@ public class TransportSessionIT
         assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) ),
-                        hasKey( "result-available-after" ) )),
+                        hasKey( "result_available_after" ) )),
                 msgRecord(eqRecord( nullValue() )),
                 msgFailure( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt")) );
     }
@@ -358,7 +358,7 @@ public class TransportSessionIT
         assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(  allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n.binary" ) ) ),
-                        hasKey( "result-available-after" ) ) ),
+                        hasKey( "result_available_after" ) ) ),
                 msgRecord(eqRecord( nullValue() )),
                 msgFailure( Status.Request.Invalid, "Byte array is not yet supported in Bolt")) );
     }

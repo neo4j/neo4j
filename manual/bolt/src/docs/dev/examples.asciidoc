@@ -33,11 +33,11 @@ Client: RUN "RETURN 1 AS num" {}
   00 13 b2 10  8f 52 45 54  55 52 4e 20  31 20 41 53
   20 6e 75 6d  a0 00 00
 
-Server: SUCCESS { "fields": ["num"], "result-available-after": 12 }
+Server: SUCCESS { "fields": ["num"], "result_available_after": 12 }
 
   00 28 B1 70  A2 86 66 69  65 6C 64 73  91 83 6E 75
-  6D D0 16 72  65 73 75 6C  74 2D 61 76  61 69 6C 61
-  62 6C 65 2D  61 66 74 65  72 0C 00 00
+  6D D0 16 72  65 73 75 6C  74 5F 61 76  61 69 6C 61
+  62 6C 65 5F  61 66 74 65  72 0C 00 00
 
 Client: PULL_ALL
 
@@ -47,10 +47,10 @@ Server: RECORD [1]
 
   00 04 b1 71  91 01 00 00
 
-Server: SUCCESS { "type": "r", "result-consumed-after": 12 }
+Server: SUCCESS { "type": "r", "result_consumed_after": 12 }
 
  00 22 B1 70  A2 84 74 79  70 65 81 72  D0 15 72 65
- 73 75 6C 74  2D 63 6F 6E  73 75 6D 65  64 2D 61 66
+ 73 75 6C 74  5F 63 6F 6E  73 75 6D 65  64 5F 61 66
  74 65 72 0C  00 00
 
 ----
@@ -103,37 +103,37 @@ Client: PULL_ALL
   00 02 B0 3F  00 00
 
 # Server responses
-Server: SUCCESS { "fields": ["num"], "result-available-after": 12 }
+Server: SUCCESS { "fields": ["num"], "result_available_after": 12 }
 
   00 28 B1 70  A2 86 66 69  65 6C 64 73  91 83 6E 75
-  6D D0 16 72  65 73 75 6C  74 2D 61 76  61 69 6C 61
-  62 6C 65 2D  61 66 74 65  72 0C 00 00
+  6D D0 16 72  65 73 75 6C  74 5F 61 76  61 69 6C 61
+  62 6C 65 5F  61 66 74 65  72 0C 00 00
 
 Server: RECORD [1]
 
   00 04 b1 71  91 01 00 00
 
-Server: SUCCESS { "type": "r", "result-consumed-after": 12 }
+Server: SUCCESS { "type": "r", "result_consumed_after": 12 }
 
-  00 22 B1 70  A2 84 74 79  70 65 81 72  D0 15 72 65
-  73 75 6C 74  2D 63 6F 6E  73 75 6D 65  64 2D 61 66
-  74 65 72 0C  00 00
+ 00 22 B1 70  A2 84 74 79  70 65 81 72  D0 15 72 65
+ 73 75 6C 74  5F 63 6F 6E  73 75 6D 65  64 5F 61 66
+ 74 65 72 0C  00 00
 
-Server: SUCCESS { "fields": ["num"], "result-available-after": 12 }
+Server: SUCCESS { "fields": ["num"], "result_available_after": 12 }
 
   00 28 B1 70  A2 86 66 69  65 6C 64 73  91 83 6E 75
-  6D D0 16 72  65 73 75 6C  74 2D 61 76  61 69 6C 61
-  62 6C 65 2D  61 66 74 65  72 0C 00 00
+  6D D0 16 72  65 73 75 6C  74 5F 61 76  61 69 6C 61
+  62 6C 65 5F  61 66 74 65  72 0C 00 00
 
 Server: RECORD [1]
 
   00 04 b1 71  91 01 00 00
 
-Server: SUCCESS { "type": "r", "result-consumed-after": 12 }
+Server: SUCCESS { "type": "r", "result_consumed_after": 12 }
 
-  00 22 B1 70  A2 84 74 79  70 65 81 72  D0 15 72 65
-  73 75 6C 74  2D 63 6F 6E  73 75 6D 65  64 2D 61 66
-  74 65 72 0C  00 00
+ 00 22 B1 70  A2 84 74 79  70 65 81 72  D0 15 72 65
+ 73 75 6C 74  5F 63 6F 6E  73 75 6D 65  64 5F 61 66
+ 74 65 72 0C  00 00
 
 ----
 
@@ -215,11 +215,11 @@ Client: RUN "RETURN 1 AS num" {}
   00 13 b2 10  8f 52 45 54  55 52 4e 20  31 20 41 53
   20 6e 75 6d  a0 00 00
 
-Server: SUCCESS { "fields": ["num"], "result-available-after": 12 }
+Server: SUCCESS { "fields": ["num"], "result_available_after": 12 }
 
   00 28 B1 70  A2 86 66 69  65 6C 64 73  91 83 6E 75
-  6D D0 16 72  65 73 75 6C  74 2D 61 76  61 69 6C 61
-  62 6C 65 2D  61 66 74 65  72 0C 00 00
+  6D D0 16 72  65 73 75 6C  74 5F 61 76  61 69 6C 61
+  62 6C 65 5F  61 66 74 65  72 0C 00 00
 ----
 
 [[bolt-examples-ack-failure]]
@@ -263,10 +263,10 @@ Client: PULL_ALL
 
   00 02 B0 3F  00 00
 
-Server: SUCCESS { "fields": [], "result-available-after": 12 }
+Server: SUCCESS { "fields": [], "result_available_after": 12 }
 
   00 24 B1 70  A2 86 66 69  65 6C 64 73  90 D0 16 72
-  65 73 75 6C  74 2D 61 76  61 69 6C 61  62 6C 65 2D
+  65 73 75 6C  74 5F 61 76  61 69 6C 61  62 6C 65 5F
   61 66 74 65  72 0C 00 00
 
 Server: SUCCESS {}
@@ -325,10 +325,10 @@ Client: RUN "ROLLBACK" {}
 
   00 0C B2 10  88 52 4F 4C  4C 42 41 43  4B A0 00 00
 
-Server: SUCCESS { "fields": [], "result-available-after": 12 }
+Server: SUCCESS { "fields": [], "result_available_after": 12 }
 
   00 24 B1 70  A2 86 66 69  65 6C 64 73  90 D0 16 72
-  65 73 75 6C  74 2D 61 76  61 69 6C 61  62 6C 65 2D
+  65 73 75 6C  74 5F 61 76  61 69 6C 61  62 6C 65 5F
   61 66 74 65  72 0C 00 00
 ----
 
@@ -364,11 +364,11 @@ Client: RUN "RETURN 1 AS num" {}
   00 13 B2 10  8F 52 45 54  55 52 4E 20  31 20 41 53
   20 6E 75 6D  A0 00 00
 
-Server: SUCCESS { "fields": ["num"], "result-available-after": 12 }
+Server: SUCCESS { "fields": ["num"], "result_available_after": 12 }
 
   00 28 B1 70  A2 86 66 69  65 6C 64 73  91 83 6E 75
-  6D D0 16 72  65 73 75 6C  74 2D 61 76  61 69 6C 61
-  62 6C 65 2D  61 66 74 65  72 0C 00 00
+  6D D0 16 72  65 73 75 6C  74 5F 61 76  61 69 6C 61
+  62 6C 65 5F  61 66 74 65  72 0C 00 00
 
 Client: PULL_ALL
 
@@ -378,10 +378,10 @@ Server: RECORD [1]
 
   00 04 b1 71  91 01 00 00
 
-Server: SUCCESS { "type": "r", "result-consumed-after": 12 }
+Server: SUCCESS { "type": "r", "result_consumed_after": 12 }
 
  00 22 B1 70  A2 84 74 79  70 65 81 72  D0 15 72 65
- 73 75 6C 74  2D 63 6F 6E  73 75 6D 65  64 2D 61 66
+ 73 75 6C 74  5F 63 6F 6E  73 75 6D 65  64 5F 61 66
  74 65 72 0C  00 00
 
 # Updating queries will return statistics that summarize all executed updates
@@ -390,10 +390,10 @@ Client: RUN "CREATE ()" {}
   00 0D B2 10  89 43 52 45  41 54 45 20  28 29 A0 00
   00
 
-Server: SUCCESS { "fields": [], "result-available-after": 12 }
+Server: SUCCESS { "fields": [], "result_available_after": 12 }
 
   00 24 B1 70  A2 86 66 69  65 6C 64 73  90 D0 16 72
-  65 73 75 6C  74 2D 61 76  61 69 6C 61  62 6C 65 2D
+  65 73 75 6C  74 5F 61 76  61 69 6C 61  62 6C 65 5F
   61 66 74 65  72 0C 00 00
 
 Client: PULL_ALL
@@ -403,13 +403,13 @@ Client: PULL_ALL
 Server: SUCCESS {
           "type": "w",
           "stats": { "nodes-created": 1 },
-          "result-consumed-after": 12
+          "result_consumed_after": 12
         }
 
   00 38 B1 70  A3 84 74 79  70 65 81 77  85 73 74 61
   74 73 A1 8D  6E 6F 64 65  73 2D 63 72  65 61 74 65
-  64 01 D0 15  72 65 73 75  6C 74 2D 63  6F 6E 73 75
-  6D 65 64 2D  61 66 74 65  72 0C 00 00
+  64 01 D0 15  72 65 73 75  6C 74 5F 63  6F 6E 73 75
+  6D 65 64 5F  61 66 74 65  72 0C 00 00
 
 ----
 
@@ -446,10 +446,10 @@ Client: RUN "EXPLAIN RETURN 1 AS num" {}
   00 1C B2 10  D0 17 45 58  50 4C 41 49  4E 20 52 45
   54 55 52 4E  20 31 20 41  53 20 6E 75  6D A0 00 00
 
-Server: SUCCESS { "fields": [], "result-available-after": 12 }
+Server: SUCCESS { "fields": [], "result_available_after": 12 }
 
   00 24 B1 70  A2 86 66 69  65 6C 64 73  90 D0 16 72
-  65 73 75 6C  74 2D 61 76  61 69 6C 61  62 6C 65 2D
+  65 73 75 6C  74 5F 61 76  61 69 6C 61  62 6C 65 5F
   61 66 74 65  72 0C 00 00
 
 Client: PULL_ALL
@@ -458,7 +458,7 @@ Client: PULL_ALL
 
 Server: SUCCESS {
           "type": "r",
-          "result-consumed-after": 12,
+          "result_consumed_after": 12,
           "plan": {
             "args": {
               "runtime-impl": "INTERPRETED",
@@ -483,7 +483,7 @@ Server: SUCCESS {
         }
 
   01 57 B1 70  A3 84 74 79  70 65 81 72  D0 15 72 65
-  73 75 6C 74  2D 63 6F 6E  73 75 6D 65  64 2D 61 66
+  73 75 6C 74  5F 63 6F 6E  73 75 6D 65  64 5F 61 66
   74 65 72 0C  84 70 6C 61  6E A4 84 61  72 67 73 A7
   8C 72 75 6E  74 69 6D 65  2D 69 6D 70  6C 8B 49 4E
   54 45 52 50  52 45 54 45  44 8C 70 6C  61 6E 6E 65
@@ -513,11 +513,11 @@ Client: RUN "PROFILE RETURN 1 AS num" {}
   00 1C B2 10  D0 17 50 52  4F 46 49 4C  45 20 52 45
   54 55 52 4E  20 31 20 41  53 20 6E 75  6D A0 00 00
 
-Server: SUCCESS { "fields": ["num"], "result-available-after": 12 }
+Server: SUCCESS { "fields": ["num"], "result_available_after": 12 }
 
-  00 28 B1 70  A2 86 66 69  65 6C 64 73  91 83 6E 75
-  6D D0 16 72  65 73 75 6C  74 2D 61 76  61 69 6C 61
-  62 6C 65 2D  61 66 74 65  72 0C 00 00
+   00 28 B1 70  A2 86 66 69  65 6C 64 73  91 83 6E 75
+   6D D0 16 72  65 73 75 6C  74 5F 61 76  61 69 6C 61
+   62 6C 65 5F  61 66 74 65  72 0C 00 00
 
 Client: PULL_ALL
 
@@ -531,7 +531,7 @@ Server: RECORD [1]
 # additional 'DbHits' and 'Rows' metrics in the plan description:
 Server: SUCCESS {
           "type": "r",
-          "result-consumed-after": 12,
+          "result_consumed_after": 12,
           "profile": {
             "args": {
               "planner-impl": "IDP",
@@ -567,7 +567,7 @@ Server: SUCCESS {
         }
 
   01 92 B1 70  A3 84 74 79  70 65 81 72  D0 15 72 65
-  73 75 6C 74  2D 63 6F 6E  73 75 6D 65  64 2D 61 66
+  73 75 6C 74  5F 63 6F 6E  73 75 6D 65  64 5F 61 66
   74 65 72 0C  87 70 72 6F  66 69 6C 65  A6 84 61 72
   67 73 A9 8C  70 6C 61 6E  6E 65 72 2D  69 6D 70 6C
   83 49 44 50  88 4B 65 79  4E 61 6D 65  73 83 6E 75
@@ -627,10 +627,10 @@ Client: RUN "EXPLAIN MATCH (n), (m) RETURN n, m" {}
   54 43 48 20  28 6E 29 2C  20 28 6D 29  20 52 45 54
   55 52 4E 20  6E 2C 20 6D  A0 00 00
 
-Server: SUCCESS { "fields": [], "result-available-after": 12 }
+Server: SUCCESS { "fields": [], "result_available_after": 12 }
 
   00 24 B1 70  A2 86 66 69  65 6C 64 73  90 D0 16 72
-  65 73 75 6C  74 2D 61 76  61 69 6C 61  62 6C 65 2D
+  65 73 75 6C  74 5F 61 76  61 69 6C 61  62 6C 65 5F
   61 66 74 65  72 0C 00 00
 
 Client: PULL_ALL
@@ -640,7 +640,7 @@ Client: PULL_ALL
 # Notifications are included in the response and each of them consists of `code`, `title` and `description`. A notification might also include `position` to indicate where the notification arises if it is applicable.
 Server: SUCCESS {
           "type": "r",
-          "result-consumed-after": 12,
+          "result_consumed_after": 12,
           "plan": {
             "args": {
               "runtime-impl": "INTERPRETED",
@@ -682,7 +682,7 @@ Server: SUCCESS {
         }
 
   04 66 B1 70  A4 84 74 79  70 65 81 72  D0 15 72 65
-  73 75 6C 74  2D 63 6F 6E  73 75 6D 65  64 2D 61 66
+  73 75 6C 74  5F 63 6F 6E  73 75 6D 65  64 5F 61 66
   74 65 72 0C  84 70 6C 61  6E A4 84 61  72 67 73 A7
   8C 72 75 6E  74 69 6D 65  2D 69 6D 70  6C 8B 49 4E
   54 45 52 50  52 45 54 45  44 8C 70 6C  61 6E 6E 65
@@ -787,11 +787,11 @@ Client: RUN "RETURN 1 AS num" {}
   20 6e 75 6d  a0 00 00
 
 # Server responses
-Server: SUCCESS { "fields": ["num"], "result-available-after": 12 }
+Server: SUCCESS { "fields": ["num"], "result_available_after": 12 }
 
   00 28 B1 70  A2 86 66 69  65 6C 64 73  91 83 6E 75
-  6D D0 16 72  65 73 75 6C  74 2D 61 76  61 69 6C 61
-  62 6C 65 2D  61 66 74 65  72 0C 00 00
+  6D D0 16 72  65 73 75 6C  74 5F 61 76  61 69 6C 61
+  62 6C 65 5F  61 66 74 65  72 0C 00 00
 
 Client: RESET {}
 

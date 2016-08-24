@@ -70,7 +70,7 @@ public class CypherAdapterStream extends BoltResult
             visitor.visit( currentRecord.reset( row ) );
             return true;
         } );
-        visitor.addMetadata( "result-consumed-after", clock.millis() - start );
+        visitor.addMetadata( "result_consumed_after", clock.millis() - start );
         QueryExecutionType qt = delegate.getQueryExecutionType();
         visitor.addMetadata( "type", queryTypeCode( qt.queryType() ) );
 

@@ -90,7 +90,7 @@ public class BoltQueryLoggingIT
         {
             // Send RUN "RETURN 1 AS num" {}
             send( dataOut, "00 13 b2 10  8f 52 45 54  55 52 4e 20  31 20 41 53 20 6e 75 6d  a0 00 00" );
-            // Receive SUCCESS { "fields": ["num"], "result-available-after": X }
+            // Receive SUCCESS { "fields": ["num"], "result_available_after": X }
             //non-deterministic so just ignore it here
             skip( dataIn );
 
@@ -100,7 +100,7 @@ public class BoltQueryLoggingIT
             send( dataOut, "00 02 B0 3F  00 00" );
             // Receive RECORD[1]
             receive( dataIn, "00 04 b1 71  91 01 00 00" );
-            // Receive SUCCESS { "type": "r", "result-consumed-after": Y }
+            // Receive SUCCESS { "type": "r", "result_consumed_after": Y }
             //non-deterministic so just ignore it here
             skip( dataIn );
         }

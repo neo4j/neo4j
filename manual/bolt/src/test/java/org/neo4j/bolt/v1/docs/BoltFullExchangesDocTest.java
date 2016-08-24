@@ -203,13 +203,13 @@ public class BoltFullExchangesDocTest
         {
             SuccessMessage successMessage = (SuccessMessage) responseMessage;
             Map<String,Object> meta = new HashMap<>( successMessage.meta() );
-            if ( meta.containsKey( "result-available-after" ) )
+            if ( meta.containsKey( "result_available_after" ) )
             {
-                meta.put( "result-available-after", DEFAULT_TIME );
+                meta.put( "result_available_after", DEFAULT_TIME );
             }
-            if ( meta.containsKey( "result-consumed-after" ) )
+            if ( meta.containsKey( "result_consumed_after" ) )
             {
-                meta.put( "result-consumed-after", DEFAULT_TIME );
+                meta.put( "result_consumed_after", DEFAULT_TIME );
             }
 
             return new SuccessMessage( meta );

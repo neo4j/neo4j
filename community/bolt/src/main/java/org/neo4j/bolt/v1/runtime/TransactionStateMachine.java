@@ -39,12 +39,8 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 
-<<<<<<< 2634dcf2b1658795dbaa2bface704f4a332c6e53
 import java.time.Duration;
-import java.util.Map;
 
-=======
->>>>>>> Include `result-consumed-after` in response to PULL_ALL
 public class TransactionStateMachine implements StatementProcessor
 {
     private static final String BEGIN = "BEGIN";

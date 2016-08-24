@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -95,7 +96,7 @@ public class CypherAdapterStreamTest
                 "labels-added", 10,
                 "labels-removed", 11
         ) ) );
-        assertThat(meta.get("result-consumed-after"), equalTo(1337L));
+        assertThat(meta.get("result_consumed_after"), equalTo(1337L));
     }
 
     @Test
@@ -109,8 +110,8 @@ public class CypherAdapterStreamTest
         when( result.getQueryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
         when( result.getExecutionPlanDescription() ).thenReturn(
-                plan("Join", map( "arg1", 1 ), asList( "id1" ),
-                plan("Scan", map( "arg2", 1 ), asList("id2")) ) );
+                plan("Join", map( "arg1", 1 ), singletonList( "id1" ),
+                plan("Scan", map( "arg2", 1 ), singletonList("id2")) ) );
 
         CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
 
@@ -132,8 +133,8 @@ public class CypherAdapterStreamTest
         when( result.getQueryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
         when( result.getExecutionPlanDescription() ).thenReturn(
-                plan( "Join", map( "arg1", 1 ), 2, 1, asList( "id1" ),
-                        plan( "Scan", map( "arg2", 1 ), 2, 1, asList( "id2" ) ) ) );
+                plan( "Join", map( "arg1", 1 ), 2, 1, singletonList( "id1" ),
+                        plan( "Scan", map( "arg2", 1 ), 2, 1, singletonList( "id2" ) ) ) );
 
         CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
 

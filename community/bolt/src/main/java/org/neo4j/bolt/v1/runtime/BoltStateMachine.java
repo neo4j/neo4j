@@ -188,7 +188,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         try
         {
             state = state.run( this, statement, params );
-            handler.addMetadata( "result-available-after", clock.millis() - start );
+            handler.onMetadata( "result_available_after", clock.millis() - start );
         }
         finally
         {
