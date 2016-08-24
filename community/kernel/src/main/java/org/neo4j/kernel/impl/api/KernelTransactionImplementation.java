@@ -210,7 +210,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation initialize(
             long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type, AccessMode accessMode )
     {
-        //System.out.println(Thread.currentThread().getName() + ": Initializing" + this);
         this.type = type;
         this.statementLocks = statementLocks;
         this.terminationReason = null;
@@ -437,7 +436,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public long closeTransaction() throws TransactionFailureException
     {
-        //System.out.println(Thread.currentThread().getName() + ": Closing " + this);
         assertTransactionOpen();
         assertTransactionNotClosing();
         closeCurrentStatementIfAny();
@@ -448,7 +446,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 rollback();
                 failOnNonExplicitRollbackIfNeeded();
-                System.out.println(Thread.currentThread().getName() + ": Rollback " + super.toString());
                 return ROLLBACK;
             }
             else
@@ -508,7 +505,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private long commit() throws TransactionFailureException
     {
-        //System.out.println(Thread.currentThread().getName() + ": Committing " + this);
         boolean success = false;
         long txId = READ_ONLY;
 
@@ -663,7 +659,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         finally
         {
             transactionMonitor.transactionFinished( true, hasTxStateWithChanges() );
-            System.out.println(Thread.currentThread().getName() + ": Committed " + super.toString());
         }
     }
 

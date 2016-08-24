@@ -22,13 +22,8 @@ package org.neo4j.server.security.enterprise.auth;
 import org.junit.Rule;
 import org.junit.Test;
 
-<<<<<<< dbcc0ba120527f20c902dcb0197569906153cac8
-import java.util.List;
-
-=======
 
 import org.neo4j.graphdb.Transaction;
->>>>>>> Hopeful fix of flaky AuthScenariosLogic.roleManagement6
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -37,10 +32,8 @@ import org.neo4j.test.rule.concurrent.ThreadingRule;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
-<<<<<<< dbcc0ba120527f20c902dcb0197569906153cac8
-=======
+
 import static org.junit.Assert.fail;
->>>>>>> Hopeful fix of flaky AuthScenariosLogic.roleManagement6
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.*;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
@@ -404,13 +397,10 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
 
         ThreadedTransactionPeriodicCommit<S> perCommit = new ThreadedTransactionPeriodicCommit<>( neo );
         perCommit.execute( threading, henrik, ROWS_IN_CSV );
-        System.out.println(Thread.currentThread().getName()+": Waiting for first set of lines");
         perCommit.barrier.await();
 
         long nodeCount = INITIAL_NUM_NODES;
         while(nodeCount <= INITIAL_NUM_NODES) {
-            System.out.println(Thread.currentThread().getName()+": Only have "+nodeCount +
-                    " nodes, waiting and trying again" );
             if (System.currentTimeMillis() - t0 > LOAD_TIMEOUT_MILLIS )
             {
                 fail("No nodes added from LOAD CSV within " + LOAD_TIMEOUT_MILLIS / 1000 +" seconds");
@@ -419,11 +409,8 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
             nodeCount = pollNumNodes();
         }
 
-        System.out.println(Thread.currentThread().getName()+": Changing permissions");
-
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         assertEmpty( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + PUBLISHER + "')" );
-        System.out.println(Thread.currentThread().getName()+": Permissions changed");
 
         perCommit.closeAndAssertError( "Write operations are not allowed for 'Henrik'." );
 
