@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -34,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.configuration.Config;
@@ -157,8 +157,8 @@ public class TransactionPropagator implements Lifecycle
         this.log = log;
         this.slaves = slaves;
         this.pusher = pusher;
-        slaveCommitFailureLogger = new CappedLogger( log ).setTimeLimit( 5, TimeUnit.SECONDS, Clock.SYSTEM_CLOCK );
-        pushedToTooFewSlaveLogger = new CappedLogger( log ).setTimeLimit( 5, TimeUnit.SECONDS, Clock.SYSTEM_CLOCK );
+        slaveCommitFailureLogger = new CappedLogger( log ).setTimeLimit( 5, TimeUnit.SECONDS, Clock.systemUTC() );
+        pushedToTooFewSlaveLogger = new CappedLogger( log ).setTimeLimit( 5, TimeUnit.SECONDS, Clock.systemUTC() );
     }
 
     @Override

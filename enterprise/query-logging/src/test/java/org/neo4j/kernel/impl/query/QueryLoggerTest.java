@@ -21,17 +21,17 @@ package org.neo4j.kernel.impl.query;
 
 import org.junit.Test;
 
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.QueryLogger;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;

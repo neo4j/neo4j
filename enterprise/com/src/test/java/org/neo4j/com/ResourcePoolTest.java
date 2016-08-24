@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.helpers.FakeClock;
+import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -82,7 +82,7 @@ public class ResourcePoolTest
 
         ResourcePool.CheckStrategy timeStrategy = new ResourcePool.CheckStrategy.TimeoutCheckStrategy( TIMEOUT_MILLIS, clock );
 
-        while ( clock.currentTimeMillis() <= TIMEOUT_MILLIS )
+        while ( clock.millis() <= TIMEOUT_MILLIS )
         {
             assertFalse( timeStrategy.shouldCheck() );
             clock.forward( 10, TimeUnit.MILLISECONDS );

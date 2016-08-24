@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.junit.Test;
 
-import org.neo4j.helpers.FakeClock;
+import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertFalse;

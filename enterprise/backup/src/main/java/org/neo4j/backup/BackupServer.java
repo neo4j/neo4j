@@ -22,6 +22,8 @@ package org.neo4j.backup;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 
+import java.time.Clock;
+
 import org.neo4j.backup.BackupClient.BackupRequestType;
 import org.neo4j.com.ChunkingChannelBuffer;
 import org.neo4j.com.Client;
@@ -35,8 +37,6 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
-
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 class BackupServer extends Server<TheBackupInterface,Object>
 {
@@ -54,7 +54,7 @@ class BackupServer extends Server<TheBackupInterface,Object>
     {
         super( requestTarget, newBackupConfig( FRAME_LENGTH, server ), logProvider, FRAME_LENGTH,
                 new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
-                TxChecksumVerifier.ALWAYS_MATCH, SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
+                TxChecksumVerifier.ALWAYS_MATCH, Clock.systemUTC(), byteCounterMonitor, requestMonitor );
     }
 
     @Override

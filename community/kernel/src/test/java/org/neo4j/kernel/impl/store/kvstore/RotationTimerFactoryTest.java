@@ -22,10 +22,12 @@ package org.neo4j.kernel.impl.store.kvstore;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.FakeClock;
-import org.neo4j.helpers.FrozenClock;
+import org.neo4j.time.FakeClock;
 
 public class RotationTimerFactoryTest
 {
@@ -33,10 +35,10 @@ public class RotationTimerFactoryTest
     public void testTimer() throws Exception
     {
         // GIVEN
-        FrozenClock clock = new FrozenClock( 10000, TimeUnit.MILLISECONDS );
+        Clock fixedClock = Clock.fixed( Instant.ofEpochMilli( 10000 ), ZoneOffset.UTC );
 
         // WHEN
-        RotationTimerFactory timerFactory = new RotationTimerFactory( clock, 1000);
+        RotationTimerFactory timerFactory = new RotationTimerFactory( fixedClock, 1000);
         RotationTimerFactory.RotationTimer timer = timerFactory.createTimer();
         RotationTimerFactory.RotationTimer anotherTimer = timerFactory.createTimer();
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.time.Clock;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -28,7 +29,6 @@ import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -256,7 +256,7 @@ public class KernelTransactions extends LifecycleAdapter
     @Override
     public KernelTransactionsSnapshot get()
     {
-        return new KernelTransactionsSnapshot( activeTransactions(), clock.currentTimeMillis() );
+        return new KernelTransactionsSnapshot( activeTransactions(), clock.millis() );
     }
 
     /**

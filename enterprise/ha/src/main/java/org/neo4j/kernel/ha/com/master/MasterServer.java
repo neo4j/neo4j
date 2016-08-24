@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import java.time.Clock;
+
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
@@ -31,8 +33,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChanne
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
-
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
@@ -50,7 +50,7 @@ public class MasterServer extends Server<Master, Void>
                          LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
         super( requestTarget, config, logProvider, FRAME_LENGTH, MasterClient214.PROTOCOL_VERSION, txVerifier,
-                SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
+                Clock.systemUTC(), byteCounterMonitor, requestMonitor );
         this.conversationManager = conversationManager;
         this.requestTypes = new HaRequestType210( entryReader );
     }

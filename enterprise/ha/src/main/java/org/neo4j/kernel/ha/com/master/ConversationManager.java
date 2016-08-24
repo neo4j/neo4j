@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import java.time.Clock;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Consumer;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.cluster.ConversationSPI;
@@ -127,7 +127,7 @@ public class ConversationManager extends LifecycleAdapter
 
     public Set<RequestContext> getActiveContexts()
     {
-        return conversations != null ? conversations.keys() : Collections.<RequestContext>emptySet() ;
+        return conversations != null ? conversations.keys() : Collections.emptySet() ;
     }
 
     /**
@@ -153,7 +153,7 @@ public class ConversationManager extends LifecycleAdapter
     protected TimedRepository<RequestContext,Conversation> createConversationStore()
     {
         return new TimedRepository<>( getConversationFactory(), getConversationReaper(),
-                config.get( HaSettings.lock_read_timeout ) + lockTimeoutAddition, Clock.SYSTEM_CLOCK );
+                config.get( HaSettings.lock_read_timeout ) + lockTimeoutAddition, Clock.systemUTC()  );
     }
 
     protected Consumer<Conversation> getConversationReaper()

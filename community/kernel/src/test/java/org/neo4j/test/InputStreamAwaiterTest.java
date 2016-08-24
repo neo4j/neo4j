@@ -26,7 +26,7 @@ import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.helpers.FakeClock;
+import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.spy;
@@ -38,7 +38,7 @@ public class InputStreamAwaiterTest
     {
         // given
         FakeClock clock = new FakeClock();
-        InputStream inputStream = spy( new MockInputStream( clock.progressor( 5, TimeUnit.MILLISECONDS ),
+        InputStream inputStream = spy( new MockInputStream( new Ticker( clock, 5, TimeUnit.MILLISECONDS ),
                                                             lines( "important message" ) ) );
         InputStreamAwaiter awaiter = new InputStreamAwaiter( clock, inputStream );
 
@@ -51,7 +51,7 @@ public class InputStreamAwaiterTest
     {
         // given
         FakeClock clock = new FakeClock();
-        InputStream inputStream = spy( new MockInputStream( clock.progressor( 1, TimeUnit.SECONDS ),
+        InputStream inputStream = spy( new MockInputStream( new Ticker( clock, 1, TimeUnit.SECONDS ),
                                                             lines( "different content" ),
                                                             lines( "different message" ) ) );
         InputStreamAwaiter awaiter = new InputStreamAwaiter( clock, inputStream );
@@ -74,7 +74,7 @@ public class InputStreamAwaiterTest
     {
         // given
         FakeClock clock = new FakeClock();
-        InputStream inputStream = spy( new MockInputStream( clock.progressor( 1, TimeUnit.SECONDS ) ) );
+        InputStream inputStream = spy( new MockInputStream( new Ticker( clock, 1, TimeUnit.SECONDS ) ) );
         InputStreamAwaiter awaiter = new InputStreamAwaiter( clock, inputStream );
 
         // when
@@ -100,15 +100,34 @@ public class InputStreamAwaiterTest
         return result.toString();
     }
 
+    private class Ticker
+    {
+        private FakeClock clock;
+        private long duration;
+        private TimeUnit timeUnit;
+
+        Ticker( FakeClock clock, long duration, TimeUnit timeUnit )
+        {
+            this.clock = clock;
+            this.duration = duration;
+            this.timeUnit = timeUnit;
+        }
+
+        void tick()
+        {
+            clock.forward( duration, timeUnit );
+        }
+    }
+
     private static class MockInputStream extends InputStream
     {
+        private final Ticker ticker;
         private final byte[][] chunks;
-        private final FakeClock.Progressor progressor;
         private int chunk = 0;
 
-        MockInputStream( FakeClock.Progressor progressor, String... chunks )
+        MockInputStream( Ticker ticker, String... chunks )
         {
-            this.progressor = progressor;
+            this.ticker = ticker;
             this.chunks = new byte[chunks.length][];
             for ( int i = 0; i < chunks.length; i++ )
             {
@@ -119,7 +138,7 @@ public class InputStreamAwaiterTest
         @Override
         public int available() throws IOException
         {
-            progressor.tick();
+            ticker.tick();
             if ( chunk >= chunks.length )
             {
                 return 0;

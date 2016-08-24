@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.query;
 import java.io.Closeable;
 import java.io.File;
 import java.io.OutputStream;
+import java.time.Clock;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Strings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -111,7 +111,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                     closable = rotatingSupplier;
                 }
 
-                QueryLogger logger = new QueryLogger( Clock.SYSTEM_CLOCK, log, thresholdMillis, logQueryParameters );
+                QueryLogger logger = new QueryLogger( Clock.systemUTC(), log, thresholdMillis, logQueryParameters );
                 monitoring.addMonitorListener( logger );
             }
 
@@ -150,7 +150,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         @Override
         public void startQueryExecution( QuerySession session, String query, Map<String,Object> parameters )
         {
-            long startTime = clock.currentTimeMillis();
+            long startTime = clock.millis();
             Object oldTime = session.put( START_TIME, startTime );
             Object oldQuery = session.put( QUERY_STRING, query );
             if ( logQueryParameters )
@@ -171,7 +171,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             Long startTime = session.remove( START_TIME );
             if ( startTime != null )
             {
-                long time = clock.currentTimeMillis() - startTime;
+                long time = clock.millis() - startTime;
                 logFailure( time, session, query, failure );
             }
         }
@@ -183,7 +183,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             Long startTime = session.remove( START_TIME );
             if ( startTime != null )
             {
-                long time = clock.currentTimeMillis() - startTime;
+                long time = clock.millis() - startTime;
                 if ( time >= thresholdMillis )
                 {
                     logSuccess( time, session, query );

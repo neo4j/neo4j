@@ -19,14 +19,15 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.junit.Test;
+
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
+import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNotEquals;
@@ -148,7 +149,7 @@ public class TransactionHandleRegistryTest
         registry.release( txId2, newTx );
 
         // When
-        registry.rollbackSuspendedTransactionsIdleSince( clock.currentTimeMillis() - 1000 );
+        registry.rollbackSuspendedTransactionsIdleSince( clock.millis() - 1000 );
 
         // Then
         assertThat( registry.acquire( txId2 ), equalTo( newTx ) );
@@ -186,7 +187,7 @@ public class TransactionHandleRegistryTest
         long timesOutAt = registry.release( id, handle );
 
         // Then
-        assertThat( timesOutAt, equalTo( clock.currentTimeMillis() + timeoutLength ) );
+        assertThat( timesOutAt, equalTo( clock.millis() + timeoutLength ) );
 
         // And when
         clock.forward( 1337, TimeUnit.MILLISECONDS );
@@ -194,7 +195,7 @@ public class TransactionHandleRegistryTest
         timesOutAt = registry.release( id, handle );
 
         // Then
-        assertThat( timesOutAt, equalTo( clock.currentTimeMillis() + timeoutLength ) );
+        assertThat( timesOutAt, equalTo( clock.millis() + timeoutLength ) );
     }
 
     @Test

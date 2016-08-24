@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -28,7 +29,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -215,7 +215,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.terminationReason = null;
         this.closing = closed = failure = success = beforeHookInvoked = false;
         this.writeState = TransactionWriteState.NONE;
-        this.startTimeMillis = clock.currentTimeMillis();
+        this.startTimeMillis = clock.millis();
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.lastTransactionTimestampWhenStarted = lastTimeStamp;
         this.transactionEvent = tracer.beginTransaction();
@@ -564,7 +564,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     PhysicalTransactionRepresentation transactionRepresentation =
                             new PhysicalTransactionRepresentation( extractedCommands );
                     TransactionHeaderInformation headerInformation = headerInformationFactory.create();
-                    long timeCommitted = clock.currentTimeMillis();
+                    long timeCommitted = clock.millis();
                     transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
                             headerInformation.getMasterId(),
                             headerInformation.getAuthorId(),

@@ -19,9 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import java.time.Clock;
 import java.util.concurrent.TimeUnit;
-
-import org.neo4j.helpers.Clock;
 
 /**
  * Gets notified now and then about {@link StageExecution}, where statistics can be read and displayed,
@@ -70,13 +69,13 @@ public interface ExecutionMonitor
 
         public Adapter( long time, TimeUnit unit )
         {
-            this( Clock.SYSTEM_CLOCK, time, unit );
+            this( Clock.systemUTC(), time, unit );
         }
 
         @Override
         public long nextCheckTime()
         {
-            return clock.currentTimeMillis() + intervalMillis;
+            return clock.millis() + intervalMillis;
         }
 
         @Override

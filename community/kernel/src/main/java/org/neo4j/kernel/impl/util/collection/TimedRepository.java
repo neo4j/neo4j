@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import java.time.Clock;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -26,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.Clock;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
@@ -59,7 +59,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         public Entry( VALUE value )
         {
             this.value = value;
-            this.latestActivityTimestamp = clock.currentTimeMillis();
+            this.latestActivityTimestamp = clock.millis();
         }
 
         public boolean acquire()
@@ -74,7 +74,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
          */
         public boolean release()
         {
-            latestActivityTimestamp = clock.currentTimeMillis();
+            latestActivityTimestamp = clock.millis();
             return state.compareAndSet( IN_USE, IDLE );
         }
 
@@ -195,7 +195,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
     @Override
     public void run()
     {
-        long maxAllowedAge = clock.currentTimeMillis() - timeout;
+        long maxAllowedAge = clock.millis() - timeout;
         for ( KEY key : keys() )
         {
             Entry entry = repo.get( key );

@@ -24,10 +24,10 @@ import org.junit.Test;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointerTracer.Monitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.test.OnDemandJobScheduler;
+import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;

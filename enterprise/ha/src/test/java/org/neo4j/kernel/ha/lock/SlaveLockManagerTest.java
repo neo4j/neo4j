@@ -22,7 +22,8 @@ package org.neo4j.kernel.ha.lock;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.helpers.Clock;
+import java.time.Clock;
+
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -52,7 +53,7 @@ public class SlaveLockManagerTest
     {
         requestContextFactory = new RequestContextFactory( 1, singleton( mock( TransactionIdStore.class ) ) );
         master = mock( Master.class );
-        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK, NullLog.getInstance() );
+        availabilityGuard = new AvailabilityGuard( Clock.systemUTC(), NullLog.getInstance() );
     }
 
     @Test

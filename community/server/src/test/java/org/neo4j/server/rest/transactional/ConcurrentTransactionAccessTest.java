@@ -22,9 +22,9 @@ package org.neo4j.server.rest.transactional;
 import org.junit.Test;
 
 import java.net.URI;
+import java.time.Clock;
 import javax.servlet.http.HttpServletRequest;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AccessMode;

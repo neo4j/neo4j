@@ -358,7 +358,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldUseStartTimeAndTxIdFromWhenStartingTxAsHeader() throws Exception
     {
         // GIVEN a transaction starting at one point in time
-        long startingTime = clock.currentTimeMillis();
+        long startingTime = clock.millis();
         when( legacyIndexState.hasChanges() ).thenReturn( true );
         doAnswer( invocation ->
         {

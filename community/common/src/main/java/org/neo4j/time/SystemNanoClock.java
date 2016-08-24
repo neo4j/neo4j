@@ -23,22 +23,14 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.concurrent.TimeUnit;
 
-/**
- * A {@link java.time.Clock} that is manually controlled.
- */
-public class FakeClock extends SystemNanoClock
+public class SystemNanoClock extends Clock
 {
-    private long nanos = 0;
+    public static final SystemNanoClock INSTANCE = new SystemNanoClock();
 
-    public FakeClock()
+    protected SystemNanoClock()
     {
-    }
-
-    public FakeClock( long delta, TimeUnit unit )
-    {
-        forward( delta, unit );
+        // please use shared instance
     }
 
     @Override
@@ -50,24 +42,17 @@ public class FakeClock extends SystemNanoClock
     @Override
     public Clock withZone( ZoneId zone )
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( "Zone update is not supported." );
     }
 
     @Override
     public Instant instant()
     {
-        return Instant.ofEpochMilli( TimeUnit.NANOSECONDS.toMillis( nanos ) );
+        return Instant.now();
     }
 
-    @Override
     public long nanos()
     {
-        return nanos;
-    }
-
-    public FakeClock forward( long delta, TimeUnit unit )
-    {
-        nanos += unit.toNanos( delta );
-        return this;
+        return System.nanoTime();
     }
 }

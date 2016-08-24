@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -30,7 +31,6 @@ import java.util.Properties;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
@@ -52,7 +52,6 @@ import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.configuration.ServerSettings.httpConnector;
@@ -312,7 +311,7 @@ public class CommunityServerBuilder
 
     protected DatabaseActions createDatabaseActionsObject( Database database, Config config )
     {
-        Clock clockToUse = (clock != null) ? clock : SYSTEM_CLOCK;
+        Clock clockToUse = (clock != null) ? clock : Clock.systemUTC();
 
         return new DatabaseActions(
                 new LeaseManager( clockToUse ),

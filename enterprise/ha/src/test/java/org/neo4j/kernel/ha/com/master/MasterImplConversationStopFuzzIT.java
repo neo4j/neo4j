@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.time.Clock;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,7 +43,6 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.ConversationSPI;
@@ -485,7 +485,7 @@ public class MasterImplConversationStopFuzzIT
         protected TimedRepository<RequestContext,Conversation> createConversationStore()
         {
             conversationStore = new TimedRepository<>( getConversationFactory(), getConversationReaper(),
-                    1, Clock.SYSTEM_CLOCK );
+                    1, Clock.systemUTC() );
             return conversationStore;
         }
     }

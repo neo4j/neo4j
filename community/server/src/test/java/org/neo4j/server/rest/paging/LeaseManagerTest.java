@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.FakeClock;
+import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;

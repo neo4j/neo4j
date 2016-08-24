@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.FakeClock;
+import org.neo4j.time.FakeClock;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

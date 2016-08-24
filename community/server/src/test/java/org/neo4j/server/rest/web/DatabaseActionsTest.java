@@ -46,7 +46,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
@@ -67,6 +66,7 @@ import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.time.FakeClock;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -138,7 +138,7 @@ public class DatabaseActionsTest
     @Test
     public void createdNodeShouldBeInDatabase() throws Exception
     {
-        NodeRepresentation noderep = actions.createNode( Collections.<String, Object>emptyMap() );
+        NodeRepresentation noderep = actions.createNode( Collections.emptyMap() );
 
         try (Transaction tx = database.getGraph().beginTx())
         {
@@ -158,7 +158,7 @@ public class DatabaseActionsTest
             PropertyValueException, NodeNotFoundException
     {
         long nodeId = graphdbHelper.createNode();
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "baz", 17 );
         actions.setAllNodeProperties( nodeId, properties );
@@ -174,7 +174,7 @@ public class DatabaseActionsTest
     public void shouldFailOnTryingToStoreMixedArraysAsAProperty() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         Object[] dodgyArray = new Object[3];
         dodgyArray[0] = 0;
         dodgyArray[1] = 1;
@@ -198,7 +198,7 @@ public class DatabaseActionsTest
             tx.success();
         }
 
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "baz", 17 );
         actions.setAllNodeProperties( nodeId, properties );
@@ -215,7 +215,7 @@ public class DatabaseActionsTest
     {
 
         long nodeId;
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "neo", "Thomas A. Anderson" );
         properties.put( "number", 15L );
@@ -257,7 +257,7 @@ public class DatabaseActionsTest
     @Test
     public void shouldBeAbleToSetPropertyOnNode() throws Exception
     {
-        long nodeId = createNode( Collections.<String, Object>emptyMap() );
+        long nodeId = createNode( Collections.emptyMap() );
         String key = "foo";
         Object value = "bar";
         actions.setNodeProperty( nodeId, key, value );
@@ -295,7 +295,7 @@ public class DatabaseActionsTest
     @Test
     public void shouldBeAbleToRemoveNodeProperties() throws Exception
     {
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "number", 15 );
         long nodeId = createNode( properties );
@@ -316,14 +316,14 @@ public class DatabaseActionsTest
     {
         int relationshipCount = graphdbHelper.getNumberOfRelationships();
         actions.createRelationship( graphdbHelper.createNode(), graphdbHelper.createNode(), "LOVES",
-                Collections.<String, Object>emptyMap() );
+                Collections.emptyMap() );
         assertEquals( relationshipCount + 1, graphdbHelper.getNumberOfRelationships() );
     }
 
     @Test
     public void shouldStoreSuppliedPropertiesWhenCreatingRelationship() throws Exception
     {
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "string", "value" );
         properties.put( "integer", 17 );
         long relId = actions.createRelationship( graphdbHelper.createNode(), graphdbHelper.createNode(), "LOVES",
@@ -382,7 +382,7 @@ public class DatabaseActionsTest
     @Test
     public void shouldBeAbleToRemoveNodeProperty() throws Exception
     {
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "number", 15 );
         long nodeId = createNode( properties );
@@ -400,7 +400,7 @@ public class DatabaseActionsTest
     @Test
     public void shouldReturnTrueIfNodePropertyRemoved() throws Exception
     {
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "number", 15 );
         long nodeId = createNode( properties );
@@ -410,7 +410,7 @@ public class DatabaseActionsTest
     @Test(expected = NoSuchPropertyException.class)
     public void shouldReturnFalseIfNodePropertyNotRemoved() throws Exception
     {
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "number", 15 );
         long nodeId = createNode( properties );
@@ -429,7 +429,7 @@ public class DatabaseActionsTest
     {
 
         long relationshipId;
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "neo", "Thomas A. Anderson" );
         properties.put( "number", 15L );
@@ -456,7 +456,7 @@ public class DatabaseActionsTest
     @Test
     public void shouldBeAbleToRetrieveASinglePropertyFromARelationship() throws Exception
     {
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "neo", "Thomas A. Anderson" );
         properties.put( "number", 15L );
@@ -500,12 +500,12 @@ public class DatabaseActionsTest
         {
             verifyRelReps( 3,
                     actions.getNodeRelationships( nodeId, RelationshipDirection.all,
-                            Collections.<String>emptyList() ) );
+                            Collections.emptyList() ) );
             verifyRelReps( 1,
-                    actions.getNodeRelationships( nodeId, RelationshipDirection.in, Collections.<String>emptyList() ) );
+                    actions.getNodeRelationships( nodeId, RelationshipDirection.in, Collections.emptyList() ) );
             verifyRelReps( 2,
                     actions.getNodeRelationships( nodeId, RelationshipDirection.out,
-                            Collections.<String>emptyList() ) );
+                            Collections.emptyList() ) );
 
             verifyRelReps( 3,
                     actions.getNodeRelationships( nodeId, RelationshipDirection.all, Arrays.asList( "LIKES",
@@ -542,13 +542,13 @@ public class DatabaseActionsTest
         {
             verifyRelReps( 0,
                     actions.getNodeRelationships( nodeId, RelationshipDirection.all,
-                            Collections.<String>emptyList() ) );
+                            Collections.emptyList() ) );
             verifyRelReps( 0,
                     actions.getNodeRelationships( nodeId, RelationshipDirection.in,
-                            Collections.<String>emptyList() ) );
+                            Collections.emptyList() ) );
             verifyRelReps( 0,
                     actions.getNodeRelationships( nodeId, RelationshipDirection.out,
-                            Collections.<String>emptyList() ) );
+                            Collections.emptyList() ) );
         }
     }
 
@@ -1036,7 +1036,7 @@ public class DatabaseActionsTest
                     nodes[1],
                     MapUtil.map( "max_depth", 2, "algorithm", "shortestPath", "relationships",
                             MapUtil.map( "type", "to", "direction", "out" ) ) ) );
-            assertPaths( 1, nodes, 2, Arrays.<Object>asList( path ) );
+            assertPaths( 1, nodes, 2, Arrays.asList( path ) );
 
             // /path {single: false} (has no effect)
             path = serialize( actions.findSinglePath(
@@ -1044,7 +1044,7 @@ public class DatabaseActionsTest
                     nodes[1],
                     MapUtil.map( "max_depth", 2, "algorithm", "shortestPath", "relationships",
                             MapUtil.map( "type", "to", "direction", "out" ), "single", false ) ) );
-            assertPaths( 1, nodes, 2, Arrays.<Object>asList( path ) );
+            assertPaths( 1, nodes, 2, Arrays.asList( path ) );
         }
     }
 
@@ -1068,7 +1068,7 @@ public class DatabaseActionsTest
                     nodes[1],
                     map( "algorithm", "dijkstra", "cost_property", "cost", "relationships",
                             map( "type", "to", "direction", "out" ) ) ) );
-            assertPaths( 1, nodes, 6, Arrays.<Object>asList( path ) );
+            assertPaths( 1, nodes, 6, Arrays.asList( path ) );
             assertEquals( 6.0d, path.get( "weight" ) );
         }
     }
@@ -1094,7 +1094,7 @@ public class DatabaseActionsTest
                     nodes[1],
                     map( "algorithm", "dijkstra", "cost_property", "cost", "default_cost", 1, "relationships",
                             map( "type", "to", "direction", "out" ) ) ) );
-            assertPaths( 1, nodes, 6, Arrays.<Object>asList( path ) );
+            assertPaths( 1, nodes, 6, Arrays.asList( path ) );
             assertEquals( 6.0d, path.get( "weight" ) );
         }
     }

@@ -19,10 +19,11 @@
  */
 package org.neo4j.server.rest.paging;
 
+import org.junit.Test;
+
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
-import org.neo4j.helpers.FakeClock;
+import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;

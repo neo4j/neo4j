@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -50,6 +49,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.time.FakeClock;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollectionOf;

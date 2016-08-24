@@ -28,7 +28,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.util.concurrent.Callable;
 
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
@@ -36,6 +35,7 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.management.VersionAndEditionService;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
+import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;

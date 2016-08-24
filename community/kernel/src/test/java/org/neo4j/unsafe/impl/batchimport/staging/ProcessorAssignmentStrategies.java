@@ -19,13 +19,13 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 
 import static java.lang.String.format;
@@ -41,7 +41,7 @@ public class ProcessorAssignmentStrategies
      */
     public static ExecutionMonitor eagerRandomSaturation( final int availableProcessor )
     {
-        return new AbstractAssigner( Clock.SYSTEM_CLOCK, 10, TimeUnit.SECONDS )
+        return new AbstractAssigner( Clock.systemUTC(), 10, TimeUnit.SECONDS )
         {
             @Override
             public void start( StageExecution[] executions )
@@ -82,7 +82,7 @@ public class ProcessorAssignmentStrategies
      */
     public static ExecutionMonitor randomSaturationOverTime( final int availableProcessor )
     {
-        return new AbstractAssigner( Clock.SYSTEM_CLOCK, 100, TimeUnit.MILLISECONDS )
+        return new AbstractAssigner( Clock.systemUTC(), 100, TimeUnit.MILLISECONDS )
         {
             private int processors = availableProcessor;
 

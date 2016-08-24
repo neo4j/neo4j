@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.store.counts;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Clock;
 import java.util.Optional;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -115,7 +115,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
                 log.error( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
                         headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
             }
-        }, new RotationTimerFactory( Clock.SYSTEM_CLOCK,
+        }, new RotationTimerFactory( Clock.systemUTC(),
                 config.get( GraphDatabaseSettings.counts_store_rotation_timeout ) ), 16, 16, HEADER_FIELDS );
     }
 

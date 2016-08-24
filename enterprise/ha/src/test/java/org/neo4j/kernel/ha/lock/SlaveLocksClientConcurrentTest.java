@@ -28,6 +28,7 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.time.Clock;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -78,7 +78,7 @@ public class SlaveLocksClientConcurrentTest
         master = mock( Master.class, new LockedOnMasterAnswer() );
         lockManager = new ForsetiLockManager( ResourceTypes.values() );
         requestContextFactory = mock( RequestContextFactory.class );
-        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK, mock( Log.class ) );
+        availabilityGuard = new AvailabilityGuard( Clock.systemUTC(), mock( Log.class ) );
 
         when( requestContextFactory.newRequestContext( Mockito.anyInt() ) )
                 .thenReturn( RequestContext.anonymous( 1 ) );

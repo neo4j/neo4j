@@ -30,7 +30,6 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.database.Database;
@@ -41,6 +40,7 @@ import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
+import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;

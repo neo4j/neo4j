@@ -27,12 +27,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsString;
@@ -214,19 +214,19 @@ public class CappedLoggerTest
     @Test( expected = IllegalArgumentException.class )
     public void mustThrowOnZeroTimeLimit() throws Exception
     {
-        logger.setTimeLimit( 0, TimeUnit.MILLISECONDS, Clock.SYSTEM_CLOCK );
+        logger.setTimeLimit( 0, TimeUnit.MILLISECONDS, Clock.systemUTC() );
     }
 
     @Test( expected = IllegalArgumentException.class )
     public void mustThrowOnNegativeTimeLimit() throws Exception
     {
-        logger.setTimeLimit( -1, TimeUnit.MILLISECONDS, Clock.SYSTEM_CLOCK );
+        logger.setTimeLimit( -1, TimeUnit.MILLISECONDS, Clock.systemUTC() );
     }
 
     @Test( expected = IllegalArgumentException.class )
     public void mustThrowOnNullTimeUnit() throws Exception
     {
-        logger.setTimeLimit( 10, null, Clock.SYSTEM_CLOCK );
+        logger.setTimeLimit( 10, null, Clock.systemUTC() );
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -239,7 +239,7 @@ public class CappedLoggerTest
     public void mustAllowConfigurationChaining() throws Exception
     {
         logger.setCountLimit( 1 )
-              .setTimeLimit( 10, TimeUnit.MILLISECONDS, Clock.SYSTEM_CLOCK )
+              .setTimeLimit( 10, TimeUnit.MILLISECONDS, Clock.systemUTC() )
               .setDuplicateFilterEnabled( true )
               .unsetCountLimit()
               .unsetTimeLimit()

@@ -36,7 +36,6 @@ import javax.ws.rs.core.MediaType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.Database;
@@ -51,6 +50,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
