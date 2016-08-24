@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
+import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -92,9 +92,9 @@ public class LogPruneStrategyFactory
             case "entries": // txs and entries are synonyms
                 return new EntryCountThreshold( thresholdValue );
             case "hours":
-                return new EntryTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.HOURS, thresholdValue );
+                return new EntryTimespanThreshold( Clock.systemUTC(), TimeUnit.HOURS, thresholdValue );
             case "days":
-                return new EntryTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.DAYS, thresholdValue );
+                return new EntryTimespanThreshold( Clock.systemUTC(), TimeUnit.DAYS, thresholdValue );
             default:
                 throw new IllegalArgumentException( "Invalid log pruning configuration value '" + originalConfigValue +
                         "'. Invalid type '" + value.type + "', valid are files, size, txs, entries, hours, days." );
