@@ -67,6 +67,7 @@ public class Cluster
 {
     private static final int DEFAULT_TIMEOUT_MS = 15_000;
     private static final int DEFAULT_BACKOFF_MS = 100;
+    public final int defaultClusterSize = 3;
 
     private final File parentDir;
     private final DiscoveryServiceFactory discoveryServiceFactory;
@@ -124,15 +125,15 @@ public class Cluster
         return edgeMembers.get( memberId );
     }
 
-    public CoreClusterMember addCoreMemberWithId( int memberId, int intendedClusterSize )
+    public CoreClusterMember addCoreMemberWithId( int memberId )
     {
-        return addCoreMemberWithId( memberId, intendedClusterSize, stringMap(), emptyMap(), StandardV3_0.NAME );
+        return addCoreMemberWithId( memberId, stringMap(), emptyMap(), StandardV3_0.NAME );
     }
 
-    public CoreClusterMember addCoreMemberWithIdAndInitialMembers( int memberId, int intendedClusterSize, List<AdvertisedSocketAddress>
-            initialMembers )
+    public CoreClusterMember addCoreMemberWithIdAndInitialMembers( int memberId,
+            List<AdvertisedSocketAddress> initialMembers )
     {
-        CoreClusterMember coreClusterMember = new  CoreClusterMember( memberId, intendedClusterSize, initialMembers,
+        CoreClusterMember coreClusterMember = new  CoreClusterMember( memberId, defaultClusterSize, initialMembers,
                 discoveryServiceFactory, StandardV3_0.NAME, parentDir,
                 emptyMap(), emptyMap() );
         coreMembers.put( memberId, coreClusterMember );
@@ -296,11 +297,10 @@ public class Cluster
         return leaderTx( op );
     }
 
-    private CoreClusterMember addCoreMemberWithId( int memberId, int intendedClusterSize,
-            Map<String,String> extraParams, Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
+    private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams, Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
         List<AdvertisedSocketAddress> advertisedAddress = buildAddresses( coreMembers.keySet() );
-        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, intendedClusterSize, advertisedAddress,
+        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, defaultClusterSize, advertisedAddress,
                 discoveryServiceFactory, recordFormat, parentDir,
                 extraParams, instanceExtraParams );
         coreMembers.put( memberId, coreClusterMember );

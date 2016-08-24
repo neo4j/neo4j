@@ -23,9 +23,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
-import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.coreedge.ClusterRule;
@@ -73,7 +73,7 @@ public class CoreReplicationIT
     public void shouldReplicateTransactionToCoreMemberAddedAfterInitialStartUp() throws Exception
     {
         // given
-        cluster.addCoreMemberWithId( 3, 4 ).start();
+        cluster.addCoreMemberWithId( 3 ).start();
 
         cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
@@ -82,7 +82,7 @@ public class CoreReplicationIT
         } );
 
         // when
-        cluster.addCoreMemberWithId( 4, 5 ).start();
+        cluster.addCoreMemberWithId( 4 ).start();
         CoreClusterMember last = cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
@@ -131,8 +131,8 @@ public class CoreReplicationIT
             } );
         }
 
-        cluster.addCoreMemberWithId( 3, 4 ).start();
-        cluster.addCoreMemberWithId( 4, 5 ).start();
+        cluster.addCoreMemberWithId( 3 ).start();
+        cluster.addCoreMemberWithId( 4 ).start();
 
         // then
         assertEquals( 15, countNodes( last ) );
@@ -150,7 +150,7 @@ public class CoreReplicationIT
         } );
 
         cluster.removeCoreMemberWithMemberId( 0 );
-        CoreClusterMember replacement = cluster.addCoreMemberWithId( 0, 3 );
+        CoreClusterMember replacement = cluster.addCoreMemberWithId( 0 );
         replacement.start();
 
         CoreClusterMember leader = cluster.coreTx( ( db, tx ) -> {

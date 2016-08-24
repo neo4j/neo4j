@@ -19,18 +19,18 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.coreedge.discovery.Cluster;
@@ -48,10 +48,8 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.equalTo;
-
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.security.AccessMode.Static.READ;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -146,8 +144,8 @@ public class ClusterOverviewIT
         Cluster cluster = clusterRule.startCluster();
 
         // when
-        cluster.addCoreMemberWithId( 3, 4 ).start();
-        cluster.addCoreMemberWithId( 4, 5 ).start();
+        cluster.addCoreMemberWithId( 3 ).start();
+        cluster.addCoreMemberWithId( 4 ).start();
 
         Matcher<List<MemberInfo>> expected = allOf(
                 containsAddress( "127.0.0.1:8000" ), containsAddress( "127.0.0.1:8001" ), containsAddress( "127.0.0.1:8002" ),

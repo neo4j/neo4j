@@ -26,9 +26,9 @@ import org.junit.Test;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.CoreGraphDatabase;
+import org.neo4j.coreedge.core.consensus.roles.Role;
+import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.coreedge.ClusterRule;
 
@@ -66,7 +66,7 @@ public class ClusterFormationIT
         assertEquals( 2, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
-        cluster.addCoreMemberWithId( 4, 3 ).start();
+        cluster.addCoreMemberWithId( 4 ).start();
 
         // then
         assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
@@ -100,7 +100,7 @@ public class ClusterFormationIT
         assertEquals( 2, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
-        cluster.addCoreMemberWithId( 4, 3 ).start();
+        cluster.addCoreMemberWithId( 4 ).start();
 
         // then
         assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
@@ -124,7 +124,7 @@ public class ClusterFormationIT
         // when
         cluster.removeCoreMemberWithMemberId( 1 );
 
-        cluster.addCoreMemberWithId( 3, 3 ).start();
+        cluster.addCoreMemberWithId( 3 ).start();
         cluster.shutdown();
 
         cluster.start();

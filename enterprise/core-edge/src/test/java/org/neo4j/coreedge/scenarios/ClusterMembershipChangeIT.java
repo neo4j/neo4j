@@ -58,9 +58,9 @@ public class ClusterMembershipChangeIT
         List<AdvertisedSocketAddress> onlyServerZero = singletonList( Cluster.socketAddressForServer( 0 ) );
 
         // then
-        cluster.addCoreMemberWithIdAndInitialMembers( 3, 3, onlyServerZero ).start();
-        cluster.addCoreMemberWithIdAndInitialMembers( 4, 3, onlyServerZero ).start();
-        cluster.addCoreMemberWithIdAndInitialMembers( 5, 3, onlyServerZero ).start();
+        cluster.addCoreMemberWithIdAndInitialMembers( 3, onlyServerZero ).start();
+        cluster.addCoreMemberWithIdAndInitialMembers( 4, onlyServerZero ).start();
+        cluster.addCoreMemberWithIdAndInitialMembers( 5, onlyServerZero ).start();
 
         cluster.removeCoreMemberWithMemberId( 0 );
         cluster.removeCoreMemberWithMemberId( 1 );
