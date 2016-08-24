@@ -20,13 +20,12 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthenticationResult;
@@ -36,11 +35,12 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
-class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSubject>
+public class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSubject>
 {
     private GraphDatabaseFacade db;
     private MultiRealmAuthManager manager;
@@ -48,15 +48,19 @@ class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAut
 
     NeoShallowEmbeddedInteraction() throws Throwable
     {
-        Map<Setting<?>, String> settings = new HashMap<>();
-        settings.put( boltConnector( "0" ).enabled, "true" );
-        settings.put( boltConnector( "0" ).encryption_level, OPTIONAL.name() );
-        settings.put( BoltKernelExtension.Settings.tls_key_file, NeoInteractionLevel.tempPath( "key", ".key" ) );
-        settings.put( BoltKernelExtension.Settings.tls_certificate_file, NeoInteractionLevel.tempPath( "cert", ".cert" ) );
-        settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-        settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
+        this(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabaseBuilder());
+    }
 
-        db = (GraphDatabaseFacade) new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase( settings );
+    public NeoShallowEmbeddedInteraction( GraphDatabaseBuilder builder ) throws Throwable
+    {
+        builder.setConfig( boltConnector( "0" ).enabled, "true" );
+        builder.setConfig( boltConnector( "0" ).encryption_level, OPTIONAL.name() );
+        builder.setConfig( BoltKernelExtension.Settings.tls_key_file, NeoInteractionLevel.tempPath( "key", ".key" ) );
+        builder.setConfig( BoltKernelExtension.Settings.tls_certificate_file, NeoInteractionLevel.tempPath( "cert", ".cert" ) );
+        builder.setConfig( GraphDatabaseSettings.auth_enabled, "true" );
+        builder.setConfig( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
+
+        db = (GraphDatabaseFacade) builder.newGraphDatabase();
         manager = db.getDependencyResolver().resolveDependency( MultiRealmAuthManager.class );
         manager.init();
         manager.start();

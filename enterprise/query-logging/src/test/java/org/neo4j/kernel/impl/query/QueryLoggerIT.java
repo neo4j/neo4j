@@ -37,17 +37,21 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.server.security.enterprise.auth.EnterpriseAuthSubject;
+import org.neo4j.server.security.enterprise.auth.NeoShallowEmbeddedInteraction;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -69,9 +73,44 @@ public class QueryLoggerIT
     public void setUp()
     {
         AssertableLogProvider inMemoryLog = new AssertableLogProvider();
-        databaseBuilder = new TestGraphDatabaseFactory().setFileSystem( fileSystem.get() )
+        databaseBuilder = new TestEnterpriseGraphDatabaseFactory().setFileSystem( fileSystem.get() )
                 .setInternalLogProvider( inMemoryLog )
                 .newImpermanentDatabaseBuilder( testDirectory.graphDbDir() );
+    }
+
+    @Test
+    public void shouldLogCustomUserName() throws Throwable
+    {
+        final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
+        final File logFilename = new File( logsDirectory, "query.log" );
+        // turn on query logging
+        databaseBuilder.setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() );
+        databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE );
+        NeoShallowEmbeddedInteraction db = new NeoShallowEmbeddedInteraction( databaseBuilder );
+
+        // create users
+        db.getManager().newUser( "mats", "neo4j", false );
+        db.getManager().newUser( "andres", "neo4j", false );
+        db.getManager().addUserToRole( "mats", "architect" );
+        db.getManager().addUserToRole( "andres", "reader" );
+
+        EnterpriseAuthSubject mats = db.login( "mats", "neo4j" );
+
+        // run query
+        db.executeQuery( mats, "UNWIND range(0, 10) AS i CREATE (:Foo {p: i})", Collections.emptyMap(), ResourceIterator::close );
+        db.executeQuery( mats, "CREATE (:Label)", Collections.emptyMap(), ResourceIterator::close );
+
+        // switch user, run query
+        EnterpriseAuthSubject andres = db.login( "andres", "neo4j" );
+        db.executeQuery( andres, "MATCH (n:Label) RETURN n", Collections.emptyMap(), ResourceIterator::close );
+
+        // THEN
+        List<String> logLines = readAllLines( logFilename );
+
+        assertThat( logLines, hasSize( 3 ) );
+        assertThat( logLines.get( 0 ), containsString( "mats" ) );
+        assertThat( logLines.get( 1 ), containsString( "mats" ) );
+        assertThat( logLines.get( 2 ), containsString( "andres" ) );
     }
 
     @Test
