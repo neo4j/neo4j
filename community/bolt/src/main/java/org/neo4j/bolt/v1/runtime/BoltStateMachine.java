@@ -326,7 +326,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                             {
                                 machine.ctx.onMetadata( "credentials_expired", true );
                             }
-                            machine.ctx.onMetadata( "neo4j_version", machine.spi.version() );
+                            machine.ctx.onMetadata( "server", machine.spi.version() );
 
                             machine.spi.udcRegisterClient( userAgent );
                             if ( authToken.containsKey( PRINCIPAL ) )

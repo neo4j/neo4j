@@ -62,7 +62,7 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.receiveO
 public class BoltFullExchangesDocTest
 {
     private static final long DEFAULT_TIME = 12L;
-    private static final String VERSION = "3.1.0";
+    private static final String VERSION = "Neo4j/3.1.0";
 
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( settings -> {
@@ -213,9 +213,9 @@ public class BoltFullExchangesDocTest
             {
                 meta.put( "result_consumed_after", DEFAULT_TIME );
             }
-            if ( meta.containsKey( "neo4j_version" ) )
+            if ( meta.containsKey( "server" ) )
             {
-                meta.put( "neo4j_version", VERSION );
+                meta.put( "server", VERSION );
             }
 
             return new SuccessMessage( meta );

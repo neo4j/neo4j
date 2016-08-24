@@ -79,7 +79,7 @@ public class AuthenticationIT
     public HostnamePort address;
 
     protected TransportConnection client;
-    private final String version = Version.getKernel().getReleaseVersion();
+    private final String version = "Neo4j/" + Version.getKernel().getReleaseVersion();
 
     @Parameterized.Parameters
     public static Collection<Object[]> transports()
@@ -115,7 +115,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "neo4j_version", version)) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "server", version)) ) );
     }
 
     @Test
@@ -147,7 +147,7 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
-                String.format( "The value associated with the key `principal` must be a String but was: ArrayList") ) ) );
+                "The value associated with the key `principal` must be a String but was: ArrayList" ) ) );
     }
 
     @Test
@@ -163,7 +163,7 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
-                String.format( "The value associated with the key `credentials` must be a String but was: null") ) ) );
+                "The value associated with the key `credentials` must be a String but was: null" ) ) );
     }
 
     @Test
@@ -237,7 +237,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess(map( "credentials_expired", true , "neo4j_version", version)) ) );
+        assertThat( client, eventuallyReceives( msgSuccess(map( "credentials_expired", true , "server", version)) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -281,7 +281,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "neo4j_version", version)) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "server", version)) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -312,7 +312,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "neo4j_version", version) ) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "server", version) ) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -336,7 +336,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "neo4j_version", version) ) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "server", version) ) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -360,7 +360,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "neo4j_version", version)) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "server", version)) ) );
 
         // When
         client.send( TransportTestUtil.chunk(

@@ -68,7 +68,7 @@ public class BoltConnectionAuthIT
         // identify expired credentials as the cause of not being authenticated
         BoltStateMachine machine = env.newMachine( "test" );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        String version = Version.getKernel().getReleaseVersion();
+        String version = "Neo4j/" + Version.getKernel().getReleaseVersion();
         // When
         machine.init( USER_AGENT, map(
                 "scheme", "basic",
@@ -77,7 +77,7 @@ public class BoltConnectionAuthIT
         machine.run( "CREATE ()", map(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeededWithMetadata( "neo4j_version", version ) );
+        assertThat( recorder.nextResponse(), succeededWithMetadata( "server", version ) );
     }
 
     @Test
