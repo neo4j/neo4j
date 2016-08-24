@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.proc;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -157,6 +156,7 @@ public class ProcedureSignature
     private final List<FieldSignature> outputSignature;
     private final Mode mode;
     private final Optional<String> deprecated;
+    private final Optional<String> description;
 
     /**
      * The procedure mode affects how the procedure will execute, and which capabilities
@@ -178,26 +178,15 @@ public class ProcedureSignature
             List<FieldSignature> inputSignature,
             List<FieldSignature> outputSignature,
             Mode mode,
-            Optional<String> deprecated)
+            Optional<String> deprecated,
+            Optional<String> description )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
         this.outputSignature = outputSignature == VOID ? outputSignature : unmodifiableList( outputSignature );
         this.mode = mode;
         this.deprecated = deprecated;
-    }
-
-    public ProcedureSignature( ProcedureName name,
-            List<FieldSignature> inputSignature,
-            List<FieldSignature> outputSignature,
-            Mode mode)
-    {
-        this( name, inputSignature, outputSignature, mode, Optional.empty() );
-    }
-
-    public ProcedureSignature( ProcedureName name )
-    {
-        this( name, Collections.emptyList(), Collections.emptyList(), Mode.READ_ONLY );
+        this.description = description;
     }
 
     public ProcedureName name()
@@ -225,6 +214,11 @@ public class ProcedureSignature
     public boolean isVoid()
     {
         return outputSignature == VOID;
+    }
+
+    public Optional<String> description()
+    {
+        return description;
     }
 
     @Override
@@ -303,7 +297,7 @@ public class ProcedureSignature
 
         public ProcedureSignature build()
         {
-            return new ProcedureSignature(name, inputSignature, outputSignature, mode );
+            return new ProcedureSignature(name, inputSignature, outputSignature, mode, null, null );
         }
     }
 
