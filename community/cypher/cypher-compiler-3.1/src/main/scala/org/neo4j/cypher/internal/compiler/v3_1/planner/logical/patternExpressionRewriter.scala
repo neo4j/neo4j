@@ -78,7 +78,7 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
           (newAcc, Some(identity))
 
       // replace pattern comprehension
-      case expr@PatternComprehension(namedPath, pattern, predicate, projection) =>
+      case expr@PatternComprehension(namedPath, pattern, predicate, projection, _) =>
         acc =>
           assert(namedPath.isEmpty, "Named paths in pattern comprehensions should have been rewritten away already")
           // only process pattern expressions that were not contained in previously seen nested plans

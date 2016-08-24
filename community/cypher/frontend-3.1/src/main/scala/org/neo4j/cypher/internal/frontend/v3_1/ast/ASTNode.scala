@@ -30,6 +30,8 @@ trait ASTNode
 
   self =>
 
+  def recordCurrentScope: SemanticCheck = s => SemanticCheckResult.success(s.recordCurrentScope(this))
+
   def position: InputPosition
 
   def dup(children: Seq[AnyRef]): this.type =

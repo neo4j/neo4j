@@ -134,16 +134,16 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
         NodePattern(Some(varFor("k")), Seq.empty, None)_
       )_
     )_
-    val expr: Expression = PatternComprehension(
+    val expr = PatternComprehension(
       namedPath = None,
       pattern = pat,
       predicate = None,
       projection = varFor("k")
-    )_
+    )(pos)
 
-    expr.dependencies should equal(Set(varFor("n"), varFor("k")))
+    expr.withOuterScope(Set(varFor("n"), varFor("k"))).dependencies should equal(Set(varFor("n"), varFor("k")))
+    expr.withOuterScope(Set.empty).dependencies should equal(Set.empty)
   }
-
 
   test("should compute inputs of composite expressions") {
     val identA = varFor("a")

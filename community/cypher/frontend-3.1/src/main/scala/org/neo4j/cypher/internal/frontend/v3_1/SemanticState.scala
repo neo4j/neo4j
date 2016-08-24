@@ -260,7 +260,7 @@ case class SemanticState(currentScope: ScopeLocation,
       typeTable = typeTable.updated(variable, ExpressionTypeInfo(types))
     )
 
-  def noteCurrentScope(astNode: ast.ASTNode): SemanticState =
+  def recordCurrentScope(astNode: ast.ASTNode): SemanticState =
     copy(recordedScopes = recordedScopes.updated(astNode, currentScope.scope))
 
   def scope(astNode: ast.ASTNode): Option[Scope] =

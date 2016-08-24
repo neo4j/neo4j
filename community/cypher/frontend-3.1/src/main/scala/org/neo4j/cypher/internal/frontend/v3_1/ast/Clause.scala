@@ -29,8 +29,6 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
   def name: String
 
-  def noteCurrentScope: SemanticCheck = s => SemanticCheckResult.success(s.noteCurrentScope(this))
-
   def returnColumns: List[String] =
     throw new InternalException("This clause is not allowed as a last clause and hence does not declare return columns")
 }
@@ -82,7 +80,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
       where.semanticCheck chain
       checkHints chain
       checkForCartesianProducts chain
-      noteCurrentScope
+    recordCurrentScope
 
   private def uniqueHints: SemanticCheck = {
     val errors = hints.groupBy(_.variables.toSeq).collect {
@@ -333,7 +331,7 @@ case class UnresolvedCall(procedureNamespace: ProcedureNamespace,
 }
 
 sealed trait HorizonClause extends Clause with SemanticChecking {
-  override def semanticCheck = noteCurrentScope
+  override def semanticCheck = recordCurrentScope
   def semanticCheckContinuation(previousScope: Scope): SemanticCheck
 }
 
