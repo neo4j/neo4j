@@ -26,8 +26,8 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
+import static java.lang.Integer.min;
 import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -93,15 +93,15 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
         if ( bottleNeck.other() > 1.0f &&
              batchesPassedSinceLastChange( bottleNeckStep, doneBatches ) >= config.movingAverageSize() )
         {
+            // Assign 1/10th of the remaining permits. This will have processors being assigned more
+            // aggressively in the beginning of the run
             int optimalProcessorIncrement = min( max( 1, (int) bottleNeck.other().floatValue() - 1 ), permits );
-            for ( int i = 0; i < optimalProcessorIncrement; i++ )
+            int before = bottleNeckStep.processors( 0 );
+            int after = bottleNeckStep.processors( max( optimalProcessorIncrement, permits / 10 ) );
+            if ( after > before )
             {
-                int before = bottleNeckStep.processors( 0 );
-                if ( bottleNeckStep.processors( 1 ) > before )
-                {
-                    lastChangedProcessors.put( bottleNeckStep, doneBatches );
-                    usedPermits++;
-                }
+                lastChangedProcessors.put( bottleNeckStep, doneBatches );
+                usedPermits -= (after-before);
             }
         }
         return usedPermits;
