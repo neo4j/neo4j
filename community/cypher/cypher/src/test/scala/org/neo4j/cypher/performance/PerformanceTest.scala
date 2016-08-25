@@ -66,7 +66,7 @@ class PerformanceTest extends CypherFunSuite {
     val t0: Double = System.nanoTime
 
     val result = db.execute("start a=node({root}) match a-->b-->c, b-->d return a,count(*)",
-      Collections.singletonMap("root", startPoints))
+      Collections.singletonMap("root", startPoints), 0)
     result.resultAsString()
     result.close()
 

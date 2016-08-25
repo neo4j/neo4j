@@ -367,10 +367,23 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
+    public Result execute( String query, long timeout ) throws QueryExecutionException
+    {
+        return execute( query, Collections.emptyMap(), timeout );
+    }
+
+    @Override
     public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
     {
         // ensure we have a tx and create a context (the tx is gonna get closed by the Cypher result)
         InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        return execute( transaction, query, parameters );
+    }
+
+    @Override
+    public Result execute( String query, Map<String,Object> parameters, long timeout ) throws QueryExecutionException
+    {
+        InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL, timeout );
         return execute( transaction, query, parameters );
     }
 

@@ -48,7 +48,10 @@ public class TimeoutGuard implements Guard
 
     private void check( KernelTransactionImplementation transaction )
     {
-        check( getMaxTransactionCompletionTime( transaction ), "Transaction timeout." );
+        if ( transaction.timeout() > 0 )
+        {
+            check( getMaxTransactionCompletionTime( transaction ), "Transaction timeout." );
+        }
     }
 
     private void check( long maxCompletionTime, String timeoutDescription )

@@ -22,12 +22,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Map;
-
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.guard.EmptyGuard;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.guard.TimeoutGuard;
 import org.neo4j.kernel.impl.api.GuardingStatementOperations;
@@ -37,9 +32,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.CleanupRule;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
 public class GuardIT
 {
@@ -47,9 +40,9 @@ public class GuardIT
     public CleanupRule cleanupRule = new CleanupRule();
 
     @Test
-    public void timeoutGuardUsedWhenGuardEnabled() throws Exception
+    public void useTimeoutGuard() throws Exception
     {
-        GraphDatabaseAPI database = startDataBase( getEnabledGuardConfigMap() );
+        GraphDatabaseAPI database = startDataBase();
 
         DependencyResolver dependencyResolver = database.getDependencyResolver();
         Guard guard = dependencyResolver.resolveDependency( Guard.class );
@@ -57,19 +50,9 @@ public class GuardIT
     }
 
     @Test
-    public void emptyGuardUsedWhenGuardDisabled() throws Exception
+    public void includeGuardingOperationLayer() throws Exception
     {
-        GraphDatabaseAPI database = startDataBase( getDisabledGuardConfigMap() );
-
-        DependencyResolver dependencyResolver = database.getDependencyResolver();
-        Guard guard = dependencyResolver.resolveDependency( Guard.class );
-        assertThat( guard, instanceOf( EmptyGuard.class ) );
-    }
-
-    @Test
-    public void includeGuardingOperationLayerWhenGuardEnabled() throws Exception
-    {
-        GraphDatabaseAPI database = startDataBase( getEnabledGuardConfigMap() );
+        GraphDatabaseAPI database = startDataBase();
 
         DependencyResolver dependencyResolver = database.getDependencyResolver();
         StatementOperationParts operationParts =
@@ -78,33 +61,11 @@ public class GuardIT
         assertThat( operationParts.entityWriteOperations(), instanceOf( GuardingStatementOperations.class ) );
     }
 
-    @Test
-    public void noGuardingOperationLayerWhenGuardDisabled() throws Exception
-    {
-        GraphDatabaseAPI database = startDataBase( getDisabledGuardConfigMap() );
-
-        DependencyResolver dependencyResolver = database.getDependencyResolver();
-        StatementOperationParts operationParts =
-                dependencyResolver.resolveDependency( StatementOperationParts.class );
-        assertThat( operationParts.entityReadOperations(), not( instanceOf( GuardingStatementOperations.class ) ) );
-        assertThat( operationParts.entityWriteOperations(), not( instanceOf( GuardingStatementOperations.class ) ) );
-    }
-
-    private GraphDatabaseAPI startDataBase( Map<Setting<?>,String> disabledGuardConfigMap )
+    private GraphDatabaseAPI startDataBase()
     {
         GraphDatabaseAPI database =
-                (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( disabledGuardConfigMap );
+                (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         cleanupRule.add( database );
         return database;
-    }
-
-    private Map<Setting<?>,String> getEnabledGuardConfigMap()
-    {
-        return genericMap( GraphDatabaseSettings.transaction_timeout, "60s" );
-    }
-
-    private Map<Setting<?>,String> getDisabledGuardConfigMap()
-    {
-        return genericMap( GraphDatabaseSettings.transaction_timeout, "0" );
     }
 }

@@ -24,7 +24,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -51,14 +50,12 @@ public class CypherExecutor extends LifecycleAdapter
     private ThreadToStatementContextBridge txBridge;
 
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
-    private final boolean guardEnabled;
     private final Log log;
 
     public CypherExecutor( Database database, Config config, LogProvider logProvider )
     {
         this.database = database;
         log = logProvider.getLog( getClass() );
-        guardEnabled = config.get( GraphDatabaseSettings.transaction_timeout ) > 0;
     }
 
     public ExecutionEngine getExecutionEngine()
@@ -93,15 +90,8 @@ public class CypherExecutor extends LifecycleAdapter
 
     private InternalTransaction getInternalTransaction( HttpServletRequest request )
     {
-        if ( guardEnabled )
-        {
-            long customTimeout = getTransactionTimeLimit( request );
-            if ( customTimeout > 0 )
-            {
-                return beginCustomTransaction( customTimeout );
-            }
-        }
-        return beginDefaultTransaction();
+        long customTimeout = getTransactionTimeLimit( request );
+        return customTimeout > 0 ? beginCustomTransaction( customTimeout ) : beginDefaultTransaction();
     }
 
     private InternalTransaction beginCustomTransaction( long customTimeout )

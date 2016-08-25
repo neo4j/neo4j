@@ -130,9 +130,21 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
+    public Result execute( String query, long timeout ) throws QueryExecutionException
+    {
+        return getGraphDatabaseAPI().execute( query, timeout );
+    }
+
+    @Override
     public Result execute( String query, Map<String, Object> parameters ) throws QueryExecutionException
     {
         return getGraphDatabaseAPI().execute( query, parameters );
+    }
+
+    @Override
+    public Result execute( String query, Map<String,Object> parameters, long timeout ) throws QueryExecutionException
+    {
+        return getGraphDatabaseAPI().execute( query, parameters, timeout );
     }
 
     @Override

@@ -48,7 +48,6 @@ import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.guard.EmptyGuard;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.guard.TimeoutGuard;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
@@ -159,7 +158,7 @@ public class DataSourceModule
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
 
         Clock clock = getClock();
-        Guard guard = createGuard( deps, config, clock, logging );
+        Guard guard = createGuard( deps, clock, logging );
 
         kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 
@@ -355,11 +354,9 @@ public class DataSourceModule
         };
     }
 
-    private Guard createGuard( Dependencies deps, Config config, Clock clock, LogService logging )
+    private Guard createGuard( Dependencies deps, Clock clock, LogService logging )
     {
-        long configuredTimeout = config.get( GraphDatabaseSettings.transaction_timeout );
-        boolean isTimeoutConfigured = configuredTimeout > 0;
-        Guard guard = isTimeoutConfigured ? createTimeoutGuard( clock, logging ) : EmptyGuard.EMPTY_GUARD;
+        TimeoutGuard guard = createTimeoutGuard( clock, logging );
         deps.satisfyDependency( guard );
         return guard;
     }

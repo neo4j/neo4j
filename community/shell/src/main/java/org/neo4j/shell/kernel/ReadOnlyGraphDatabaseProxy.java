@@ -31,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
@@ -116,7 +117,19 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
+    public Result execute( String query, long timeout ) throws QueryExecutionException
+    {
+        return execute( query, Collections.emptyMap(), timeout );
+    }
+
+    @Override
     public Result execute( String query, Map<String, Object> parameters )
+    {
+        return readOnly();
+    }
+
+    @Override
+    public Result execute( String query, Map<String,Object> parameters, long timeout ) throws QueryExecutionException
     {
         return readOnly();
     }

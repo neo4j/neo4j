@@ -249,6 +249,7 @@ public interface GraphDatabaseService
      * Please ensure that any returned {@link ResourceIterable} is closed correctly and as soon as possible
      * inside your transaction to avoid potential blocking of write operations.
      *
+     * @param timeout transaction timeout
      * @return a new transaction instance
      */
     Transaction beginTx( long timeout );
@@ -266,6 +267,19 @@ public interface GraphDatabaseService
 
     /**
      * Executes a query and returns an iterable that contains the result set.
+     * If query will not gonna be able to complete within specified timeout time interval it will be terminated.
+     *
+     * This method is the same as {@link #execute(String, java.util.Map)} with an empty parameters-map.
+     *
+     * @param query The query to execute
+     * @param timeout The maximum time interval within which query should be completed.
+     * @return A {@link org.neo4j.graphdb.Result} that contains the result set.
+     * @throws QueryExecutionException If the Query contains errors
+     */
+    Result execute( String query, long timeout ) throws QueryExecutionException;
+
+    /**
+     * Executes a query and returns an iterable that contains the result set.
      *
      * @param query      The query to execute
      * @param parameters Parameters for the query
@@ -273,6 +287,18 @@ public interface GraphDatabaseService
      * @throws QueryExecutionException If the Query contains errors
      */
     Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException;
+
+    /**
+     * Executes a query and returns an iterable that contains the result set.
+     * If query will not gonna be able to complete within specified timeout time interval it will be terminated.
+     *
+     * @param query      The query to execute
+     * @param parameters Parameters for the query
+     * @param timeout The maximum time interval within which query should be completed.
+     * @return A {@link org.neo4j.graphdb.Result} that contains the result set
+     * @throws QueryExecutionException If the Query contains errors
+     */
+    Result execute( String query, Map<String,Object> parameters, long timeout ) throws QueryExecutionException;
 
     /**
      * Registers {@code handler} as a handler for transaction events which
