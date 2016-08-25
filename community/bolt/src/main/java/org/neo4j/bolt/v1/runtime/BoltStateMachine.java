@@ -28,7 +28,7 @@ import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.cypher.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.cypher.StatementProcessor;
-import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -52,7 +52,7 @@ import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
  * (i.e. a message sent out of sequence) will result in an immediate failure
  * response and a closed connection.
  */
-public class BoltStateMachine implements ManagedBoltStateMachine
+public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 {
     private final String id = UUID.randomUUID().toString();
     private final Runnable onClose;
@@ -320,7 +320,7 @@ public class BoltStateMachine implements ManagedBoltStateMachine
                             machine.ctx.init( authResult );
                             if ( authResult.credentialsExpired() )
                             {
-                                machine.ctx.addMetadata( "credentials_expired", true );
+                                machine.ctx.onMetadata( "credentials_expired", true );
                             }
                             machine.spi.udcRegisterClient( userAgent );
                             if ( authToken.containsKey( PRINCIPAL ) )
@@ -365,7 +365,7 @@ public class BoltStateMachine implements ManagedBoltStateMachine
                         try
                         {
                             StatementMetadata statementMetadata = machine.ctx.statementProcessor.run( statement, params );
-                            machine.ctx.addMetadata( "fields", statementMetadata.fieldNames() );
+                            machine.ctx.onMetadata( "fields", statementMetadata.fieldNames() );
                             return STREAMING;
                         }
                         catch ( Throwable e )
@@ -431,7 +431,7 @@ public class BoltStateMachine implements ManagedBoltStateMachine
                         try
                         {
                             machine.ctx.statementProcessor.streamResult( recordStream -> {
-                                machine.ctx.responseHandler.addRecords( recordStream );
+                                machine.ctx.responseHandler.onRecords( recordStream, true );
                             } );
                             return READY;
                         }
@@ -448,7 +448,7 @@ public class BoltStateMachine implements ManagedBoltStateMachine
                         try
                         {
                             machine.ctx.statementProcessor.streamResult( recordStream -> {
-                                // discard records
+                                machine.ctx.responseHandler.onRecords( recordStream, false );
                             } );
 
                             return READY;
@@ -702,20 +702,20 @@ public class BoltStateMachine implements ManagedBoltStateMachine
             }
         }
 
-        public void addRecords( RecordStream record ) throws Exception
+        public void onRecords( BoltResult result, boolean pull ) throws Exception
         {
             if ( responseHandler != null )
             {
-                responseHandler.addRecords( record );
+                responseHandler.onRecords( result, pull );
             }
         }
 
         @Override
-        public void addMetadata( String key, Object value )
+        public void onMetadata( String key, Object value )
         {
             if ( responseHandler != null )
             {
-                responseHandler.addMetadata( key, value );
+                responseHandler.onMetadata( key, value );
             }
         }
 
@@ -774,7 +774,7 @@ public class BoltStateMachine implements ManagedBoltStateMachine
         }
 
         @Override
-        public void streamResult( ThrowingConsumer<RecordStream, Exception> resultConsumer ) throws Exception
+        public void streamResult( ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception
         {
             throw new UnsupportedOperationException( "Unable to stream any results." );
         }

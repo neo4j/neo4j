@@ -22,13 +22,24 @@ package org.neo4j.bolt.testing;
 
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 
 /**
  * Used by tests when the response for a request is not relevant.
  */
 public class NullResponseHandler implements BoltResponseHandler
 {
+    private static final NullResponseHandler INSTANCE = new NullResponseHandler();
+
+    public static NullResponseHandler nullResponseHandler()
+    {
+        return INSTANCE;
+    }
+
+    private NullResponseHandler()
+    {
+    }
+
     @Override
     public void onStart()
     {
@@ -36,13 +47,13 @@ public class NullResponseHandler implements BoltResponseHandler
     }
 
     @Override
-    public void addRecords( RecordStream record ) throws Exception
+    public void onRecords( BoltResult result, boolean pull ) throws Exception
     {
         // this page intentionally left blank
     }
 
     @Override
-    public void addMetadata( String key, Object value )
+    public void onMetadata( String key, Object value )
     {
         // this page intentionally left blank
     }

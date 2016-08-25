@@ -20,7 +20,7 @@
 
 package org.neo4j.bolt.v1.runtime.cypher;
 
-import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -31,7 +31,7 @@ public interface StatementProcessor
 {
     StatementMetadata run( String statement, Map<String, Object> params ) throws KernelException;
 
-    void streamResult( ThrowingConsumer<RecordStream, Exception> resultConsumer ) throws Exception;
+    void streamResult( ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception;
 
     void reset() throws TransactionFailureException;
 

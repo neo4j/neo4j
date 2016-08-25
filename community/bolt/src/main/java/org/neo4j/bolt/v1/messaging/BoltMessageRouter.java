@@ -24,7 +24,7 @@ import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.Record;
-import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.logging.Log;
 
 import java.io.IOException;
@@ -51,7 +51,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     {
         this.initHandler = new InitHandler( output, onEachCompletedRequest, log );
         this.runHandler = new RunHandler( output, onEachCompletedRequest, log );
-        this.pullAllHandler = new PullAllHandler( output, onEachCompletedRequest, log );
+        this.pullAllHandler = new ResultHandler( output, onEachCompletedRequest, log );
         this.defaultHandler = new MessageProcessingHandler( output, onEachCompletedRequest, log );
 
         this.worker = worker;
@@ -139,7 +139,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
         }
 
         @Override
-        public void addRecords( RecordStream records ) throws Exception
+        public void onRecords( BoltResult result, boolean pull ) throws Exception
         {
             // Overridden if records are returned, therefore
             // should fail if called but not overridden.
@@ -147,7 +147,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
         }
 
         @Override
-        public void addMetadata( String key, Object value )
+        public void onMetadata( String key, Object value )
         {
             metadata.put( key, value );
         }
@@ -224,23 +224,25 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
         }
 
     }
-
-    private static class PullAllHandler extends MessageProcessingHandler
+    private static class ResultHandler extends MessageProcessingHandler
     {
-        PullAllHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, Log log )
+        ResultHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, Log log )
         {
             super( handler, onCompleted, log );
         }
 
         @Override
-        public void addRecords( RecordStream stream ) throws Exception
+        public void onRecords( final BoltResult result, final boolean pull ) throws Exception
         {
-            stream.accept( new RecordStream.Visitor()
+            result.accept( new BoltResult.Visitor()
             {
                 @Override
                 public void visit( Record record ) throws Exception
                 {
-                    handler.onRecord( record );
+                    if ( pull )
+                    {
+                        handler.onRecord( record );
+                    }
                 }
 
                 @Override

@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 
 /**
  * Callback for handling the result of requests. For a given session, callbacks will be invoked serially,
@@ -31,9 +31,9 @@ public interface BoltResponseHandler
     /** Called exactly once, before the request is processed by the Session State Machine */
     void onStart();
 
-    void addRecords( RecordStream records ) throws Exception;
+    void onRecords( BoltResult result, boolean pull ) throws Exception;
 
-    void addMetadata( String key, Object value );
+    void onMetadata( String key, Object value );
 
     /** Called when the state machine ignores an operation, because it is waiting for an error to be acknowledged */
     void markIgnored();

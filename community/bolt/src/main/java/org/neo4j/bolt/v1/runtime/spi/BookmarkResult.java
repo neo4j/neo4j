@@ -17,13 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime.cypher;
+package org.neo4j.bolt.v1.runtime.spi;
 
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 
-interface VersionTracker
+public class BookmarkResult extends BoltResult
 {
-    void assertUpToDate() throws TransactionFailureException;
+    private final Bookmark bookmark;
 
-    void updateVersion( long version );
+    public BookmarkResult( Bookmark bookmark )
+    {
+        this.bookmark = bookmark;
+    }
+
+    @Override
+    public String[] fieldNames()
+    {
+        return new String[0];
+    }
+
+    @Override
+    public void accept( Visitor visitor ) throws Exception
+    {
+        visitor.addMetadata( "bookmark", bookmark.toString() );
+    }
+
+    @Override
+    public void close()
+    {
+
+    }
 }

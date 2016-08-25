@@ -81,8 +81,9 @@ public class RecordedBoltResponse
         assertArrayEquals( records.get( index ).fields(), values );
     }
 
-    public Object[] records()
+    public Record[] records()
     {
-        return records.toArray();
+        Record[] recordArray = new Record[records.size()];
+        return records.toArray( recordArray );
     }
 }

@@ -86,7 +86,10 @@ class SessionRule implements TestRule
                 {
                     try
                     {
-                        runningMachines.forEach( BoltStateMachine::close );
+                        if ( runningMachines != null )
+                        {
+                            runningMachines.forEach( BoltStateMachine::close );
+                        }
                     }
                     catch ( Throwable e ) { e.printStackTrace(); }
 

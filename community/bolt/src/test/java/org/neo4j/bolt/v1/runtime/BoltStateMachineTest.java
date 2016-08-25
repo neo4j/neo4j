@@ -23,7 +23,7 @@ package org.neo4j.bolt.v1.runtime;
 import org.junit.Test;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.NullResponseHandler;
-import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -41,6 +41,7 @@ import static org.neo4j.bolt.testing.BoltMatchers.isClosed;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyOneResponse;
 import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
+import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.CONNECTED;
 import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.FAILED;
 import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.READY;
@@ -80,7 +81,7 @@ public class BoltStateMachineTest
         machine.state = FAILED;
 
         // When RESET occurs
-        machine.reset( new NullResponseHandler() );
+        machine.reset( nullResponseHandler() );
 
         // Then the transaction should have been rolled back...
         assertThat( machine, hasNoTransaction() );
@@ -127,7 +128,7 @@ public class BoltStateMachineTest
         final BoltStateMachine machine = newMachineWithTransaction( READY );
 
         // ...and an open result
-        machine.run( "RETURN 1", emptyMap(), new NullResponseHandler() );
+        machine.run( "RETURN 1", emptyMap(), nullResponseHandler() );
 
         // Then
         assertThat( machine, canReset() );
@@ -140,7 +141,7 @@ public class BoltStateMachineTest
         final BoltStateMachine machine = newMachine( READY );
 
         // ...and an open result
-        machine.run( "RETURN 1", emptyMap(), new NullResponseHandler() );
+        machine.run( "RETURN 1", emptyMap(), nullResponseHandler() );
 
         // Then
         assertThat( machine, canReset() );
@@ -166,7 +167,7 @@ public class BoltStateMachineTest
         final BoltStateMachine machine = newMachine( FAILED );
 
         // When
-        machine.run( "ROLLBACK", emptyMap(), new NullResponseHandler() );
+        machine.run( "ROLLBACK", emptyMap(), nullResponseHandler() );
 
         // Then
         assertThat( machine, inState( FAILED ) );
@@ -179,7 +180,7 @@ public class BoltStateMachineTest
         final BoltStateMachine machine = newMachine( FAILED );
 
         // When
-        machine.ackFailure( new NullResponseHandler() );
+        machine.ackFailure( nullResponseHandler() );
 
         // Then
         assertThat( machine, inState( READY ) );
@@ -195,7 +196,7 @@ public class BoltStateMachineTest
         machine.state = FAILED;
 
         // When the failure is acknowledged
-        machine.ackFailure( new NullResponseHandler() );
+        machine.ackFailure( nullResponseHandler() );
 
         // Then the transaction should still be open
         assertThat( machine, hasTransaction() );
@@ -213,7 +214,7 @@ public class BoltStateMachineTest
 
         // When and interrupt and reset occurs
         machine.interrupt();
-        machine.reset( new NullResponseHandler() );
+        machine.reset( nullResponseHandler() );
 
         // Then the machine should remain closed
         assertThat( machine, isClosed() );
@@ -278,13 +279,13 @@ public class BoltStateMachineTest
         BoltStateMachine machine = newMachine( READY );
 
         // ...and a result ready to be retrieved...
-        machine.run( "RETURN 1", null, new NullResponseHandler() );
+        machine.run( "RETURN 1", null, nullResponseHandler() );
 
         // ...and a handler guaranteed to break
         BoltResponseRecorder recorder = new BoltResponseRecorder()
         {
             @Override
-            public void addRecords( RecordStream recordStream ) throws Exception
+            public void onRecords( BoltResult result, boolean pull ) throws Exception
             {
                 throw new RuntimeException( "I've been expecting you, Mr Bond." );
             }
@@ -307,8 +308,8 @@ public class BoltStateMachineTest
         BoltStateMachine machine = newMachine( READY );
 
         // Given there is a running transaction
-        machine.run( "BEGIN", EMPTY_PARAMS, new NullResponseHandler() );
-        machine.discardAll( new NullResponseHandler() );
+        machine.run( "BEGIN", EMPTY_PARAMS, nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
 
         // And given that transaction will fail to roll back
         TransactionStateMachine txMachine = (TransactionStateMachine) machine.ctx.statementProcessor;
@@ -316,8 +317,8 @@ public class BoltStateMachineTest
                 when( txMachine.ctx.currentTransaction ).close();
 
         // When
-        machine.run( "ROLLBACK", EMPTY_PARAMS, new NullResponseHandler() );
-        machine.discardAll( new NullResponseHandler() );
+        machine.run( "ROLLBACK", EMPTY_PARAMS, nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
 
         // Then
         assertThat( machine, inState( FAILED ) );
@@ -330,13 +331,13 @@ public class BoltStateMachineTest
         BoltStateMachine machine = newMachine( FAILED );
 
         // Then no RUN...
-        machine.run( "RETURN 1", EMPTY_PARAMS, new NullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
         assertThat( machine, inState( FAILED ) );
         // ...DISCARD_ALL...
-        machine.discardAll( new NullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
         assertThat( machine, inState( FAILED ) );
         // ...or PULL_ALL should be possible
-        machine.pullAll( new NullResponseHandler() );
+        machine.pullAll( nullResponseHandler() );
         assertThat( machine, inState( FAILED ) );
     }
 
@@ -371,7 +372,7 @@ public class BoltStateMachineTest
         // When
         try
         {
-            machine.run( "RETURN 1", null, new NullResponseHandler() );
+            machine.run( "RETURN 1", null, nullResponseHandler() );
             fail( "Failed to fail fatally" );
         }
 

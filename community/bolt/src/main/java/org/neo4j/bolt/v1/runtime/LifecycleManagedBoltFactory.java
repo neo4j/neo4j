@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import java.util.function.Supplier;
+
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.v1.runtime.cypher.CypherStatementRunner;
 import org.neo4j.graphdb.DependencyResolver;
@@ -27,6 +29,7 @@ import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -44,6 +47,7 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
 
     private QueryExecutionEngine queryExecutionEngine;
     private GraphDatabaseQueryService queryService;
+    private TransactionIdStore transactionIdStore;
 
     public LifecycleManagedBoltFactory( GraphDatabaseAPI gds, UsageData usageData, LogService logging,
             ThreadToStatementContextBridge txBridge, Authentication authentication,
@@ -69,6 +73,7 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
         DependencyResolver dependencyResolver = gds.getDependencyResolver();
         queryExecutionEngine = dependencyResolver.resolveDependency( QueryExecutionEngine.class );
         queryService = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
+        transactionIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
         life.start();
     }
 
@@ -89,8 +94,10 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
     {
         final CypherStatementRunner statementRunner = new CypherStatementRunner( queryExecutionEngine, txBridge,
                 queryService );
-        BoltStateMachine.SPI spi = new BoltStateMachineSPI( connectionDescriptor, usageData, gds,
-                queryExecutionEngine, logging, authentication, txBridge, statementRunner, connectionTracker );
-        return new BoltStateMachine( spi, onClose );
+        TransactionStateMachine.SPI transactionSPI = new TransactionStateMachineSPI( gds, txBridge,
+                queryExecutionEngine, statementRunner, transactionIdStore );
+        BoltStateMachine.SPI boltSPI = new BoltStateMachineSPI( connectionDescriptor, usageData,
+                logging, authentication, connectionTracker, transactionSPI );
+        return new BoltStateMachine( boltSPI, onClose );
     }
 }

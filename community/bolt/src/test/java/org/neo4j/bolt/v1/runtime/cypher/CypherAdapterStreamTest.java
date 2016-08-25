@@ -21,10 +21,9 @@ package org.neo4j.bolt.v1.runtime.cypher;
 
 import org.junit.Test;
 import org.neo4j.bolt.v1.runtime.spi.Record;
-import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
-import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
@@ -171,7 +170,7 @@ public class CypherAdapterStreamTest
     private Map<String,Object> metadataOf( CypherAdapterStream stream ) throws Exception
     {
         final Map<String, Object> meta = new HashMap<>();
-        stream.accept( new RecordStream.Visitor()
+        stream.accept( new BoltResult.Visitor()
         {
             @Override
             public void visit( Record record ) throws Exception

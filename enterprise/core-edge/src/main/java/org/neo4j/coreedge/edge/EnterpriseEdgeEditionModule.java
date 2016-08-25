@@ -223,6 +223,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 txPullerTimeoutService, config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier,
                 platformModule.monitors );
 
+        dependencies.satisfyDependencies( txPuller );
+
         txPulling.add( batchingTxApplier );
         txPulling.add( txApplyJob );
         txPulling.add( txPuller );

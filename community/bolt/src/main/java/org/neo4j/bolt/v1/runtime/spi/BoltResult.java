@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.bolt.v1.runtime.spi;
 
 /**
@@ -25,17 +26,17 @@ package org.neo4j.bolt.v1.runtime.spi;
  * Streams contains nominally uniform records meaning each record has the same set of named fields.
  * However, the contents of these fields may vary by both type and value and may be null.
  */
-public interface RecordStream extends AutoCloseable
+public abstract class BoltResult implements AutoCloseable
 {
     /** Positional names for all fields in every record of this stream. */
-    String[] fieldNames();
+    public abstract String[] fieldNames();
 
-    void accept( Visitor visitor ) throws Exception;
+    public abstract void accept( Visitor visitor ) throws Exception;
 
     @Override
-    void close();
+    public abstract void close();
 
-    interface Visitor
+    public interface Visitor
     {
         void visit( Record record ) throws Exception;
 
@@ -45,7 +46,7 @@ public interface RecordStream extends AutoCloseable
         void addMetadata( String key, Object value );
     }
 
-    RecordStream EMPTY = new RecordStream()
+    public static final BoltResult EMPTY = new BoltResult()
     {
         private final String[] nothing = new String[0];
 

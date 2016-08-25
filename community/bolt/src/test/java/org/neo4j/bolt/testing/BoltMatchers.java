@@ -27,11 +27,18 @@ import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.cypher.StatementProcessor;
+import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.kernel.api.exceptions.Status;
 
+import java.util.Arrays;
+import java.util.regex.Pattern;
+
 import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
@@ -77,7 +84,49 @@ public class BoltMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendValue( SUCCESS ).appendText( format( " with metadata %s=%s", key, value.toString() ) );
+                description.appendValue( SUCCESS ).appendText( format( " with metadata %s = %s", key, value.toString() ) );
+            }
+        };
+    }
+
+    public static Matcher<RecordedBoltResponse> succeededWithRecord( final Object... values )
+    {
+        return new BaseMatcher<RecordedBoltResponse>()
+        {
+            @Override
+            public boolean matches( final Object item )
+            {
+                final RecordedBoltResponse response = (RecordedBoltResponse) item;
+                Record[] records = response.records();
+                return response.message() == SUCCESS &&
+                        Arrays.equals( records[0].fields(), values );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendValue( SUCCESS ).appendText( format( " with record %s", values ) );
+            }
+        };
+    }
+
+    public static Matcher<RecordedBoltResponse> succeededWithMetadata( final String key, final Pattern pattern )
+    {
+        return new BaseMatcher<RecordedBoltResponse>()
+        {
+            @Override
+            public boolean matches( final Object item )
+            {
+                final RecordedBoltResponse response = (RecordedBoltResponse) item;
+                return response.message() == SUCCESS &&
+                        response.hasMetadata( key ) &&
+                        pattern.matcher( response.metadata( key ).toString() ).matches();
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendValue( SUCCESS ).appendText( format( " with metadata %s ~ %s", key, pattern.toString() ) );
             }
         };
     }
