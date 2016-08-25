@@ -193,7 +193,7 @@ trait CompatibilityFor3_1 {
       def plan(transactionalContext: TransactionalContextWrapperv3_1, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor3_1.runSafely {
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext))
         val syntacticQuery = preparedSyntacticQueryForV_3_1.get
-        val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, planContext, Some(preParsedQuery.offset), tracer)
+        val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext, Some(preParsedQuery.offset), tracer)
 
         // Log notifications/warnings from planning
         planImpl.notifications(planContext).foreach(notificationLogger += _)
@@ -401,7 +401,9 @@ case class ExecutionResultWrapperFor3_1(inner: InternalExecutionResult, planner:
     case ExhaustiveShortestPathForbiddenNotification(pos) =>
       NotificationCode.EXHAUSTIVE_SHORTEST_PATH.notification(pos.asInputPosition)
     case DeprecatedFunctionNotification(pos, oldName, newName) =>
-      NotificationCode.DEPRECATED_FUNCTION.notification(pos.asInputPosition, NotificationDetail.Factory.functionName(oldName, newName))
+      NotificationCode.DEPRECATED_FUNCTION.notification(pos.asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
+    case DeprecatedProcedureNotification(pos, oldName, newName) =>
+      NotificationCode.DEPRECATED_PROCEDURE.notification(pos.asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor3_1.runSafely {

@@ -156,6 +156,7 @@ public class ProcedureSignature
     private final List<FieldSignature> inputSignature;
     private final List<FieldSignature> outputSignature;
     private final Mode mode;
+    private final Optional<String> deprecated;
 
     /**
      * The procedure mode affects how the procedure will execute, and which capabilities
@@ -174,14 +175,24 @@ public class ProcedureSignature
     }
 
     public ProcedureSignature( ProcedureName name,
-                               List<FieldSignature> inputSignature,
-                               List<FieldSignature> outputSignature,
-                               Mode mode )
+            List<FieldSignature> inputSignature,
+            List<FieldSignature> outputSignature,
+            Mode mode,
+            Optional<String> deprecated)
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
         this.outputSignature = outputSignature == VOID ? outputSignature : unmodifiableList( outputSignature );
         this.mode = mode;
+        this.deprecated = deprecated;
+    }
+
+    public ProcedureSignature( ProcedureName name,
+            List<FieldSignature> inputSignature,
+            List<FieldSignature> outputSignature,
+            Mode mode)
+    {
+        this( name, inputSignature, outputSignature, mode, Optional.empty() );
     }
 
     public ProcedureSignature( ProcedureName name )
@@ -195,6 +206,11 @@ public class ProcedureSignature
     }
 
     public Mode mode() { return mode; }
+
+    public Optional<String> deprecated()
+    {
+        return deprecated;
+    }
 
     public List<FieldSignature> inputSignature()
     {

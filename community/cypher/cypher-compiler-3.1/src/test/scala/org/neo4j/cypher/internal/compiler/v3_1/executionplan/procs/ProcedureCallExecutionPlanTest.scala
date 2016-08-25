@@ -35,7 +35,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   test("should be able to call procedure with single argument") {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature, Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          publicTypeConverter = identity
+                                          notifications = Set.empty, publicTypeConverter = identity
     )
 
     // When
@@ -49,7 +49,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     // Given
     val proc = ProcedureCallExecutionPlan(writeSignature,
                                           Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          publicTypeConverter = identity
+                                          notifications = Set.empty, publicTypeConverter = identity
     )
 
     // When
@@ -63,7 +63,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature,
                                           Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          publicTypeConverter = identity
+                                          notifications = Set.empty, publicTypeConverter = identity
     )
 
     // When
@@ -85,6 +85,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     QualifiedProcedureName(IndexedSeq.empty, "foo"),
     IndexedSeq(FieldSignature("a", symbols.CTInteger)),
     Some(IndexedSeq(FieldSignature("b", symbols.CTInteger))),
+    None,
     ProcedureReadOnlyAccess
   )
 
@@ -92,6 +93,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     QualifiedProcedureName(Seq.empty, "foo"),
     IndexedSeq(FieldSignature("a", symbols.CTInteger)),
     Some(IndexedSeq(FieldSignature("b", symbols.CTInteger))),
+    None,
     ProcedureReadWriteAccess
   )
 

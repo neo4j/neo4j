@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 case class ProcedureSignature(name: QualifiedProcedureName,
                               inputSignature: IndexedSeq[FieldSignature],
                               outputSignature: Option[IndexedSeq[FieldSignature]],
+                              deprecationInfo: Option[String],
                               accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess) {
 
   def outputFields = outputSignature.getOrElse(Seq.empty)
@@ -38,7 +39,7 @@ object QualifiedProcedureName {
 }
 
 case class QualifiedProcedureName(namespace: Seq[String], name: String) {
-  override def toString = s"""${namespace.mkString(".")}.$name"""
+  override def toString = (namespace :+ name).mkString(".")
 }
 
 case class CypherValue(value: AnyRef, cypherType: CypherType)

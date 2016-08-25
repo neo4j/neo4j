@@ -35,6 +35,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.CARTESIAN_PRODUCT;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.JOIN_HINT_UNFULFILLABLE;
+import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE;
 
 public class NotificationCodeTest
 {
@@ -87,5 +88,31 @@ public class NotificationCodeTest
             equalTo( "The hinted join was not planned. This could happen because no generated plan contained the join key, " +
                      "please try using a different join key or restructure your query. " +
                      "(hinted join key identifiers are: n, node2)" ) );
+    }
+
+    @Test
+    public void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE() {
+        NotificationDetail identifierDetail = NotificationDetail.Factory.deprecatedName("oldName", "newName");
+        Notification notification = DEPRECATED_PROCEDURE.notification( InputPosition.empty, identifierDetail );
+
+        assertThat( notification.getTitle(), equalTo( "This feature is deprecated and will be removed in future versions." ) );
+        assertThat( notification.getSeverity(), equalTo( SeverityLevel.WARNING ) );
+        assertThat( notification.getCode(), equalTo( "Neo.ClientNotification.Statement.FeatureDeprecationWarning" ) );
+        assertThat( notification.getPosition(), equalTo( InputPosition.empty ) );
+        assertThat( notification.getDescription(),
+                equalTo( "The query used a deprecated procedure. ('oldName' has been replaced by 'newName')" ) );
+    }
+
+    @Test
+    public void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE_with_no_newName() {
+        NotificationDetail identifierDetail = NotificationDetail.Factory.deprecatedName("oldName", "");
+        Notification notification = DEPRECATED_PROCEDURE.notification( InputPosition.empty, identifierDetail );
+
+        assertThat( notification.getTitle(), equalTo( "This feature is deprecated and will be removed in future versions." ) );
+        assertThat( notification.getSeverity(), equalTo( SeverityLevel.WARNING ) );
+        assertThat( notification.getCode(), equalTo( "Neo.ClientNotification.Statement.FeatureDeprecationWarning" ) );
+        assertThat( notification.getPosition(), equalTo( InputPosition.empty ) );
+        assertThat( notification.getDescription(),
+                equalTo( "The query used a deprecated procedure. ('oldName' is no longer supported)" ) );
     }
 }

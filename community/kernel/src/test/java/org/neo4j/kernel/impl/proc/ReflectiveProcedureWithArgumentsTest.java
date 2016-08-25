@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
@@ -212,6 +213,6 @@ public class ReflectiveProcedureWithArgumentsTest
 
     private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
-        return new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry() ).compile( clazz );
+        return new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), NullLog.getInstance() ).compile( clazz );
     }
 }

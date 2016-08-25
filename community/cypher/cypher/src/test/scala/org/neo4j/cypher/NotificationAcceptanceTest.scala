@@ -21,8 +21,28 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_1.notification._
+import org.neo4j.kernel.impl.proc.Procedures
+import org.neo4j.procedure.Procedure
 
 class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
+  override def initTest(): Unit = {
+    super.initTest()
+    val procedures = this.graph.getDependencyResolver.resolveDependency(classOf[Procedures])
+    procedures.register(classOf[NotificationAcceptanceTest.TestProcedures])
+  }
+
+  test("Warn on deprecated standalone procedure calls") {
+    val result = innerExecute("explain CALL oldProc()")
+
+    result.notifications.toList should equal(List(DeprecatedProcedureNotification(InputPosition(0, 1, 1), "oldProc", "newProc")))
+  }
+
+  test("Warn on deprecated in-query procedure calls") {
+    val result = innerExecute("explain CALL oldProc() RETURN 1")
+
+    result.notifications.toList should equal(List(DeprecatedProcedureNotification(InputPosition(0, 1, 1), "oldProc", "newProc")))
+  }
 
   test("Warn for cartesian product") {
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("explain match (a)-->(b), (c)-->(d) return *")
@@ -482,4 +502,17 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     result.notifications should contain(DeprecatedFunctionNotification(InputPosition(25, 1, 26), "rels", "relationships"))
   }
+}
+
+object NotificationAcceptanceTest {
+
+  class TestProcedures {
+    @Procedure("newProc")
+    def newProc: Unit = {}
+
+    @Deprecated
+    @Procedure(name = "oldProc", deprecatedBy = "newProc")
+    def oldProc: Unit = {}
+  }
+
 }
