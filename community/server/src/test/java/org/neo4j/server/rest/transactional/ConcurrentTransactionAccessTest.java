@@ -25,6 +25,7 @@ import java.net.URI;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.helpers.Clock;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.logging.NullLogProvider;
@@ -47,9 +48,10 @@ public class ConcurrentTransactionAccessTest
         TransactionRegistry registry =
                 new TransactionHandleRegistry( mock( Clock.class), 0, NullLogProvider.getInstance() );
         TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
+        GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
         when(kernel.newTransaction( any( KernelTransaction.Type.class ), any( AccessMode.class ) ) )
                 .thenReturn( mock(TransitionalTxManagementKernelTransaction.class) );
-        TransactionFacade actions = new TransactionFacade( kernel, null, registry, NullLogProvider.getInstance() );
+        TransactionFacade actions = new TransactionFacade( kernel, null, queryService, registry, NullLogProvider.getInstance() );
 
         final TransactionHandle transactionHandle = actions.newTransactionHandle( new DisgustingUriScheme(), true, AccessMode.Static.FULL );
 

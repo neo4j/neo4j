@@ -19,6 +19,10 @@
  */
 package org.neo4j.server;
 
+import com.sun.jersey.api.core.HttpContext;
+import org.apache.commons.configuration.Configuration;
+import org.bouncycastle.operator.OperatorCreationException;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -32,10 +36,6 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.servlet.Filter;
 
-import com.sun.jersey.api.core.HttpContext;
-import org.apache.commons.configuration.Configuration;
-import org.bouncycastle.operator.OperatorCreationException;
-
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
 import org.neo4j.bolt.security.ssl.KeyStoreInformation;
@@ -45,6 +45,7 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.RunCarefully;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
@@ -88,11 +89,14 @@ import org.neo4j.udc.UsageData;
 import static java.lang.Math.round;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTimeout;
-import static org.neo4j.server.configuration.ServerSettings.*;
+import static org.neo4j.server.configuration.ServerSettings.HttpConnector;
+import static org.neo4j.server.configuration.ServerSettings.httpConnector;
+import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
+import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;
+import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_size;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
 
@@ -245,10 +249,11 @@ public abstract class AbstractNeoServer implements NeoServer
             transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );
         }, runEvery, MILLISECONDS );
 
+        DependencyResolver dependencyResolver = database.getGraph().getDependencyResolver();
         return new TransactionFacade(
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
-                database.getGraph().getDependencyResolver().resolveDependency( QueryExecutionEngine.class ),
-                transactionRegistry, logProvider
+                dependencyResolver.resolveDependency( QueryExecutionEngine.class ),
+                dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ), transactionRegistry, logProvider
         );
     }
 

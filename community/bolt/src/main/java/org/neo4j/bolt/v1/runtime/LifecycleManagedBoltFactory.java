@@ -21,7 +21,8 @@ package org.neo4j.bolt.v1.runtime;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.v1.runtime.cypher.CypherStatementRunner;
-import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -39,14 +40,14 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
     private final LogService logging;
     private final Authentication authentication;
     private final BoltConnectionTracker connectionTracker;
-    private final NeoStoreDataSource neoStoreDataSource;
     private final ThreadToStatementContextBridge txBridge;
 
     private QueryExecutionEngine queryExecutionEngine;
+    private GraphDatabaseQueryService queryService;
 
     public LifecycleManagedBoltFactory( GraphDatabaseAPI gds, UsageData usageData, LogService logging,
-                                        ThreadToStatementContextBridge txBridge, Authentication authentication,
-                                        NeoStoreDataSource neoStoreDataSource, BoltConnectionTracker connectionTracker)
+            ThreadToStatementContextBridge txBridge, Authentication authentication,
+            BoltConnectionTracker connectionTracker )
     {
         this.gds = gds;
         this.usageData = usageData;
@@ -54,7 +55,6 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
         this.txBridge = txBridge;
         this.authentication = authentication;
         this.connectionTracker = connectionTracker;
-        this.neoStoreDataSource = neoStoreDataSource;
     }
 
     @Override
@@ -66,7 +66,9 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
     @Override
     public void start() throws Throwable
     {
-        this.queryExecutionEngine = gds.getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
+        DependencyResolver dependencyResolver = gds.getDependencyResolver();
+        queryExecutionEngine = dependencyResolver.resolveDependency( QueryExecutionEngine.class );
+        queryService = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
         life.start();
     }
 
@@ -85,7 +87,8 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
     @Override
     public BoltStateMachine newMachine( String connectionDescriptor, Runnable onClose )
     {
-        final CypherStatementRunner statementRunner = new CypherStatementRunner( queryExecutionEngine, txBridge );
+        final CypherStatementRunner statementRunner = new CypherStatementRunner( queryExecutionEngine, txBridge,
+                queryService );
         BoltStateMachine.SPI spi = new BoltStateMachineSPI( connectionDescriptor, usageData, gds,
                 queryExecutionEngine, logging, authentication, txBridge, statementRunner, connectionTracker );
         return new BoltStateMachine( spi, onClose );

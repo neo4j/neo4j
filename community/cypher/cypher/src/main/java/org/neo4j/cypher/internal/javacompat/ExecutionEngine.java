@@ -51,12 +51,6 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     @Override
-    public GraphDatabaseQueryService queryService()
-    {
-        return inner.queryService();
-    }
-
-    @Override
     public Result executeQuery( String query, Map<String, Object> parameters, QuerySession querySession ) throws
             QueryExecutionKernelException
     {

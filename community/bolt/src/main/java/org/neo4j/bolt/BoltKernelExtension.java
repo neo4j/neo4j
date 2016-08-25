@@ -23,6 +23,16 @@ import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.bouncycastle.operator.OperatorCreationException;
+
+import java.io.File;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.time.Clock;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.security.ssl.Certificates;
@@ -33,11 +43,11 @@ import org.neo4j.bolt.transport.Netty4LogBridge;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
+import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
+import org.neo4j.bolt.v1.runtime.LifecycleManagedBoltFactory;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
-import org.neo4j.bolt.v1.runtime.BoltFactory;
-import org.neo4j.bolt.v1.runtime.LifecycleManagedBoltFactory;
 import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -65,20 +75,13 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
 
-import java.io.File;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.time.Clock;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiFunction;
-
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
-import static org.neo4j.kernel.configuration.Settings.*;
+import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.derivedSetting;
+import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 
 /**
@@ -153,7 +156,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         BoltFactory boltConnectionManagerFactory = life.add(
                 new LifecycleManagedBoltFactory( api, dependencies.usageData(), logService, dependencies.txBridge(),
-                        authentication, dependencies.dataSource(), dependencies.sessionTracker() ) );
+                        authentication, dependencies.sessionTracker() ) );
         ThreadedWorkerFactory threadedSessions = new ThreadedWorkerFactory( boltConnectionManagerFactory, scheduler, logService );
         WorkerFactory workerFactory = new MonitoredWorkerFactory( dependencies.monitors(), threadedSessions, Clock.systemUTC() );
 

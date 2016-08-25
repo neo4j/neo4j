@@ -30,6 +30,7 @@ import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -76,13 +77,15 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final Log log;
     private final long id;
     private TransitionalTxManagementKernelTransaction context;
+    private GraphDatabaseQueryService queryService;
 
     TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine,
-            TransactionRegistry registry, TransactionUriScheme uriScheme, boolean implicitTransaction, AccessMode mode,
-            LogProvider logProvider )
+            GraphDatabaseQueryService queryService, TransactionRegistry registry, TransactionUriScheme uriScheme,
+            boolean implicitTransaction, AccessMode mode, LogProvider logProvider )
     {
         this.txManagerFacade = txManagerFacade;
         this.engine = engine;
+        this.queryService = queryService;
         this.registry = registry;
         this.uriScheme = uriScheme;
         this.type = implicitTransaction ? Type.implicit : Type.explicit;
@@ -311,7 +314,7 @@ public class TransactionHandle implements TransactionTerminationHandle
                     }
 
                     hasPrevious = true;
-                    QuerySession querySession = txManagerFacade.create( engine.queryService(), type, mode, request );
+                    QuerySession querySession = txManagerFacade.create( queryService, type, mode, request );
                     Result result = safelyExecute( statement, hasPeriodicCommit, querySession );
                     output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                     output.notifications( result.getNotifications() );

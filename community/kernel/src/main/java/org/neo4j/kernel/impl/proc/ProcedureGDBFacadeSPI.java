@@ -186,7 +186,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     @Override
     public GraphDatabaseQueryService queryService()
     {
-        return queryExecutor.get().queryService();
+        return resolver.resolveDependency( GraphDatabaseQueryService.class );
     }
 
     @Override

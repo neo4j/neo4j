@@ -19,6 +19,10 @@
  */
 package org.neo4j.bolt.v1.runtime.integration;
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -26,10 +30,6 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
@@ -39,7 +39,6 @@ import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
@@ -77,8 +76,7 @@ class SessionRule implements TestRule
                         resolver.resolveDependency( AuthManager.class ), logService );
                 boltFactory = new LifecycleManagedBoltFactory( gdb, new UsageData( null ), logService,
                                 resolver.resolveDependency( ThreadToStatementContextBridge.class ),
-                                authentication, resolver.resolveDependency( NeoStoreDataSource.class ),
-                                BoltConnectionTracker.NOOP );
+                                authentication, BoltConnectionTracker.NOOP );
                 boltFactory.start();
                 try
                 {
