@@ -20,6 +20,7 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.realm.Realm;
+import org.slf4j.impl.StaticLoggerBinder;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -55,6 +56,8 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     @Override
     public AuthManager newInstance( Config config, LogProvider logProvider )
     {
+        StaticLoggerBinder.setNeo4jLogProvider( logProvider );
+
         List<Realm> realms = new ArrayList<>( 2 );
 
         // We always create the internal realm as it is our only UserManager implementation
