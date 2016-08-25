@@ -33,7 +33,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final long txReuseCount;
     private final long lastTransactionIdWhenStarted;
     private final long lastTransactionTimestampWhenStarted;
-    private final long localStartTime;
+    private final long startTime;
     private final KernelTransactionImplementation tx;
 
     KernelTransactionImplementationHandle( KernelTransactionImplementation tx )
@@ -41,7 +41,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.txReuseCount = tx.getReuseCount();
         this.lastTransactionIdWhenStarted = tx.lastTransactionIdWhenStarted();
         this.lastTransactionTimestampWhenStarted = tx.lastTransactionTimestampWhenStarted();
-        this.localStartTime = tx.localStartTime();
+        this.startTime = tx.startTime();
         this.tx = tx;
     }
 
@@ -58,9 +58,9 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
-    public long localStartTime()
+    public long startTime()
     {
-        return localStartTime;
+        return startTime;
     }
 
     @Override

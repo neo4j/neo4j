@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.locks.Lock;
@@ -27,7 +28,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -155,6 +155,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private boolean failure, success;
     private volatile Status terminationReason;
     private long startTimeMillis;
+    private long timeoutMillis;
     private long lastTransactionIdWhenStarted;
     private volatile long lastTransactionTimestampWhenStarted;
     private TransactionEvent transactionEvent;
@@ -173,19 +174,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Lock terminationReleaseLock = new ReentrantLock();
 
     public KernelTransactionImplementation( StatementOperationParts operations,
-                                            SchemaWriteGuard schemaWriteGuard,
-                                            TransactionHooks hooks,
-                                            ConstraintIndexCreator constraintIndexCreator,
-                                            Procedures procedures,
-                                            TransactionHeaderInformationFactory headerInformationFactory,
-                                            TransactionCommitProcess commitProcess,
-                                            TransactionMonitor transactionMonitor,
-                                            Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier,
-                                            Pool<KernelTransactionImplementation> pool,
-                                            Clock clock,
-                                            TransactionTracer tracer,
-                                            StorageEngine storageEngine,
-                                            boolean txTerminationAwareLocks )
+            SchemaWriteGuard schemaWriteGuard,
+            TransactionHooks hooks,
+            ConstraintIndexCreator constraintIndexCreator,
+            Procedures procedures,
+            TransactionHeaderInformationFactory headerInformationFactory,
+            TransactionCommitProcess commitProcess,
+            TransactionMonitor transactionMonitor,
+            Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier,
+            Pool<KernelTransactionImplementation> pool,
+            Clock clock,
+            TransactionTracer tracer,
+            StorageEngine storageEngine,
+            boolean txTerminationAwareLocks )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -209,14 +210,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
     public KernelTransactionImplementation initialize(
-            long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type, AccessMode accessMode )
+            long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type, AccessMode
+            accessMode, long transactionTimeout )
     {
         this.type = type;
         this.statementLocks = statementLocks;
+        this.timeoutMillis = transactionTimeout;
         this.terminationReason = null;
         this.closing = closed = failure = success = beforeHookInvoked = false;
         this.writeState = TransactionWriteState.NONE;
-        this.startTimeMillis = clock.currentTimeMillis();
+        this.startTimeMillis = clock.millis();
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.lastTransactionTimestampWhenStarted = lastTimeStamp;
         this.transactionEvent = tracer.beginTransaction();
@@ -234,9 +237,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public long localStartTime()
+    public long startTime()
     {
         return startTimeMillis;
+    }
+
+    @Override
+    public long timeout()
+    {
+        return timeoutMillis;
     }
 
     @Override
@@ -564,7 +573,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     PhysicalTransactionRepresentation transactionRepresentation =
                             new PhysicalTransactionRepresentation( extractedCommands );
                     TransactionHeaderInformation headerInformation = headerInformationFactory.create();
-                    long timeCommitted = clock.currentTimeMillis();
+                    long timeCommitted = clock.millis();
                     transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
                             headerInformation.getMasterId(),
                             headerInformation.getAuthorId(),

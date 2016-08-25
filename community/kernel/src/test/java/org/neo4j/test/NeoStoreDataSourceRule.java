@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import java.io.File;
+import java.time.Clock;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -115,7 +116,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ),
                 mock( Procedures.class ),
-                IOLimiter.unlimited() );
+                IOLimiter.unlimited(), Clock.systemUTC() );
 
         return dataSource;
     }

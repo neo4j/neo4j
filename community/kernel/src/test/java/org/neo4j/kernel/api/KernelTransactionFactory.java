@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api;
 
+import java.time.Clock;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -84,13 +84,13 @@ public class KernelTransactionFactory
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                 mock( Supplier.class ),
                 mock( Pool.class ),
-                Clock.SYSTEM_CLOCK,
+                Clock.systemUTC(),
                 TransactionTracer.NULL,
                 storageEngine, false );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 
-        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, accessMode );
+        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, accessMode, 0L );
 
         return new Instances( transaction, storageEngine, storeReadLayer, storageStatement );
     }

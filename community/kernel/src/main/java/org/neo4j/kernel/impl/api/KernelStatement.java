@@ -197,4 +197,9 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         return storeStatement;
     }
+
+    public KernelTransactionImplementation getTransaction()
+    {
+        return transaction;
+    }
 }

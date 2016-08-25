@@ -17,48 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.time;
+package org.neo4j.kernel.guard;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.util.concurrent.TimeUnit;
+import org.neo4j.kernel.impl.api.KernelStatement;
 
-/**
- * A {@link java.time.Clock} that is manually controlled.
- */
-public class FakeClock extends Clock
+public class EmptyGuard implements Guard
 {
-    private long millis = 0;
+    public static final EmptyGuard EMPTY_GUARD = new EmptyGuard();
 
-    @Override
-    public ZoneId getZone()
+    private EmptyGuard()
     {
-        return ZoneOffset.UTC;
     }
 
     @Override
-    public Clock withZone( ZoneId zone )
+    public void check( KernelStatement statement )
     {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Instant instant()
-    {
-        return Instant.ofEpochMilli( millis );
-    }
-
-    @Override
-    public long millis()
-    {
-        return millis;
-    }
-
-    public FakeClock forward( long delta, TimeUnit unit )
-    {
-        millis += unit.toMillis( delta );
-        return this;
+        // empty
     }
 }

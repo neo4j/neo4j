@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +35,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
+import org.neo4j.kernel.guard.EmptyGuard;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
@@ -293,6 +294,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final ConstraintSemantics constraintSemantics;
     private final Procedures procedures;
     private final IOLimiter ioLimiter;
+    private final Clock clock;
 
     private Dependencies dependencies;
     private LifeSupport life;
@@ -341,7 +343,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             Monitors monitors,
             Tracers tracers,
             Procedures procedures,
-            IOLimiter ioLimiter )
+            IOLimiter ioLimiter,
+            Clock clock )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -373,6 +376,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.tracers = tracers;
         this.procedures = procedures;
         this.ioLimiter = ioLimiter;
+        this.clock = clock;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -473,7 +477,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     dependencies.resolveDependency( IndexingService.class ),
                     storageEngine.storeReadLayer(),
                     updateableSchemaState, dependencies.resolveDependency( LabelScanStore.class ),
-                    storageEngine, indexConfigStore, transactionIdStore );
+                    storageEngine, indexConfigStore, transactionIdStore, clock );
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
             this.storageEngine = storageEngine;
@@ -661,7 +665,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         long timeMillisThreshold = config.get( GraphDatabaseSettings.check_point_interval_time );
         TimeCheckPointThreshold timeCheckPointThreshold =
-                new TimeCheckPointThreshold( timeMillisThreshold, Clock.SYSTEM_CLOCK );
+                new TimeCheckPointThreshold( timeMillisThreshold, clock );
 
         CheckPointThreshold threshold =
                 CheckPointThresholds.or( countCommittedTransactionThreshold, timeCheckPointThreshold );
@@ -766,12 +770,12 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     private KernelModule buildKernel( TransactionAppender appender,
-                                      IndexingService indexingService,
-                                      StoreReadLayer storeLayer,
-                                      UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
-                                      StorageEngine storageEngine,
-                                      IndexConfigStore indexConfigStore,
-                                      TransactionIdStore transactionIdStore ) throws KernelException, IOException
+            IndexingService indexingService,
+            StoreReadLayer storeLayer,
+            UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
+            StorageEngine storageEngine,
+            IndexConfigStore indexConfigStore,
+            TransactionIdStore transactionIdStore, Clock clock ) throws KernelException, IOException
     {
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine,
                 config );
@@ -796,9 +800,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
                 constraintIndexCreator, statementOperations, schemaWriteGuard, transactionHeaderInformationFactory,
                 transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor,
-                life, tracers, storageEngine, procedures, transactionIdStore, config, Clock.SYSTEM_CLOCK ) );
+                life, tracers, storageEngine, procedures, transactionIdStore, config, clock ) );
 
-        final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures );
+        final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
+                config );
 
         kernel.registerTransactionHook( transactionEventHandlers );
 
@@ -1003,7 +1008,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
                 lockingContext, null, null, null );
         // + Guard
-        if ( guard != null )
+        if ( !EmptyGuard.EMPTY_GUARD.equals( guard ) )
         {
             GuardingStatementOperations guardingOperations = new GuardingStatementOperations(
                     parts.entityWriteOperations(), parts.entityReadOperations(), guard );

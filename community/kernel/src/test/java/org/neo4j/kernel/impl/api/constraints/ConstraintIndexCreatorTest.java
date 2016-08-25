@@ -163,105 +163,15 @@ public class ConstraintIndexCreatorTest
         @Override
         public KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode )
         {
-            return new KernelTransaction()
-            {
-                @Override
-                public void success()
-                {
-                }
+            return new StubKernelTransaction();
+        }
 
-                @Override
-                public void failure()
-                {
-                }
-
-                @Override
-                public void close() throws TransactionFailureException
-                {
-                }
-
-                @Override
-                public Statement acquireStatement()
-                {
-                    return remember( mockedState() );
-                }
-
-                private Statement remember( KernelStatement mockedState )
-                {
-                    statements.add( mockedState );
-                    return mockedState;
-                }
-
-                @Override
-                public boolean isOpen()
-                {
-                    return true;
-                }
-
-                @Override
-                public AccessMode mode()
-                {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public Status getReasonIfTerminated()
-                {
-                    return null;
-                }
-
-                @Override
-                public void markForTermination( Status reason )
-                {
-                }
-
-                @Override
-                public long lastTransactionTimestampWhenStarted()
-                {
-                    return 0;
-                }
-
-                @Override
-                public void registerCloseListener( CloseListener listener )
-                {
-                }
-
-                @Override
-                public Type transactionType()
-                {
-                    return null;
-                }
-
-                @Override
-                public long getTransactionId()
-                {
-                    return -1;
-                }
-
-                @Override
-                public long getCommitTime()
-                {
-                    return -1;
-                }
-
-                @Override
-                public Revertable restrict( AccessMode read )
-                {
-                    return null;
-                }
-
-                @Override
-                public long lastTransactionIdWhenStarted()
-                {
-                    return 0;
-                }
-
-                @Override
-                public long localStartTime()
-                {
-                    return 0;
-                }
-            };
+        @Override
+        public KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode,
+                long timeout )
+                throws TransactionFailureException
+        {
+            return new StubKernelTransaction(timeout);
         }
 
         @Override
@@ -280,6 +190,123 @@ public class ConstraintIndexCreatorTest
         public void registerProcedure( CallableProcedure signature )
         {
             throw new UnsupportedOperationException();
+        }
+
+        private class StubKernelTransaction implements KernelTransaction
+        {
+            private long timeout = 0;
+
+            public StubKernelTransaction()
+            {
+            }
+
+            public StubKernelTransaction( long timeout )
+            {
+                this.timeout = timeout;
+            }
+
+            @Override
+            public void success()
+            {
+            }
+
+            @Override
+            public void failure()
+            {
+            }
+
+            @Override
+            public void close() throws TransactionFailureException
+            {
+            }
+
+            @Override
+            public Statement acquireStatement()
+            {
+                return remember( mockedState() );
+            }
+
+            private Statement remember( KernelStatement mockedState )
+            {
+                statements.add( mockedState );
+                return mockedState;
+            }
+
+            @Override
+            public boolean isOpen()
+            {
+                return true;
+            }
+
+            @Override
+            public AccessMode mode()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Status getReasonIfTerminated()
+            {
+                return null;
+            }
+
+            @Override
+            public void markForTermination( Status reason )
+            {
+            }
+
+            @Override
+            public long lastTransactionTimestampWhenStarted()
+            {
+                return 0;
+            }
+
+            @Override
+            public void registerCloseListener( CloseListener listener )
+            {
+            }
+
+            @Override
+            public Type transactionType()
+            {
+                return null;
+            }
+
+            @Override
+            public long getTransactionId()
+            {
+                return -1;
+            }
+
+            @Override
+            public long getCommitTime()
+            {
+                return -1;
+            }
+
+            @Override
+            public Revertable restrict( AccessMode read )
+            {
+                return null;
+            }
+
+            @Override
+            public long lastTransactionIdWhenStarted()
+            {
+                return 0;
+            }
+
+            @Override
+            public long startTime()
+            {
+                return 0;
+            }
+
+            @Override
+            public long timeout()
+            {
+                return timeout;
+            }
         }
     }
 }

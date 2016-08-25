@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.management.console;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Collections;
 import javax.servlet.http.HttpServletRequest;
 
@@ -47,9 +49,9 @@ public class CypherSession implements ScriptSession
     @Override
     public Pair<String, String> evaluate( String script )
     {
-        if ( script.trim().equals( "" ) )
+        if ( StringUtils.EMPTY.equals( script.trim() ) )
         {
-            return Pair.of( "", null );
+            return Pair.of( StringUtils.EMPTY, null );
         }
 
         String resultString;
@@ -57,7 +59,7 @@ public class CypherSession implements ScriptSession
         {
             QuerySession querySession = cypherExecutor.createSession( request );
             ExecutionEngine engine = cypherExecutor.getExecutionEngine();
-            Result result = engine.executeQuery( script, Collections.<String,Object>emptyMap(), querySession );
+            Result result = engine.executeQuery( script, Collections.emptyMap(), querySession );
             resultString = result.resultAsString();
         }
         catch ( SyntaxException error )

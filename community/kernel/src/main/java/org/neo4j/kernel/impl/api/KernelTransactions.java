@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.time.Clock;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -29,7 +30,6 @@ import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -161,7 +161,7 @@ public class KernelTransactions extends LifecycleAdapter
         }
     };
 
-    public KernelTransaction newInstance( KernelTransaction.Type type, AccessMode accessMode )
+    public KernelTransaction newInstance( KernelTransaction.Type type, AccessMode accessMode, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
         newTransactionsLock.readLock().lock();
@@ -172,7 +172,7 @@ public class KernelTransactions extends LifecycleAdapter
             KernelTransactionImplementation tx = localTxPool.acquire();
             StatementLocks statementLocks = statementLocksFactory.newInstance();
             tx.initialize( lastCommittedTransaction.transactionId(),
-                    lastCommittedTransaction.commitTimestamp(), statementLocks, type, accessMode );
+                    lastCommittedTransaction.commitTimestamp(), statementLocks, type, accessMode, timeout );
             return tx;
         }
         finally
@@ -266,7 +266,7 @@ public class KernelTransactions extends LifecycleAdapter
     @Override
     public KernelTransactionsSnapshot get()
     {
-        return new KernelTransactionsSnapshot( activeTransactions(), clock.currentTimeMillis() );
+        return new KernelTransactionsSnapshot( activeTransactions(), clock.millis() );
     }
 
     /**

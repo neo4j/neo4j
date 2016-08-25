@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.query;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 
@@ -50,6 +50,12 @@ public interface TransactionalContext
     GraphDatabaseQueryService graph();
 
     Statement statement();
+
+    /**
+     * Check that current context satisfy current execution guard.
+     * In case if guard criteria is not satisfied {@link org.neo4j.kernel.guard.GuardException} will be thrown.
+     */
+    void check();
 
     TxStateHolder stateView();
 
