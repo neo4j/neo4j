@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.core.state.machines.id;
 
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.coreedge.core.replication.Replicator;
@@ -39,18 +40,18 @@ public class ReplicatedIdRangeAcquirer
     private final Replicator replicator;
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine;
 
-    private final int allocationChunk;
+    private final Map<IdType,Integer> allocationSizes;
 
     private final MemberId me;
     private final Log log;
 
     public ReplicatedIdRangeAcquirer(
             Replicator replicator, ReplicatedIdAllocationStateMachine idAllocationStateMachine,
-            int allocationChunk, MemberId me, LogProvider logProvider )
+            Map<IdType, Integer> allocationSizes, MemberId me, LogProvider logProvider )
     {
         this.replicator = replicator;
         this.idAllocationStateMachine = idAllocationStateMachine;
-        this.allocationChunk = allocationChunk;
+        this.allocationSizes = allocationSizes;
         this.me = me;
         this.log = logProvider.getLog( getClass() );
     }
@@ -61,11 +62,11 @@ public class ReplicatedIdRangeAcquirer
         {
             long firstUnallocated = idAllocationStateMachine.firstUnallocated( idType );
             ReplicatedIdAllocationRequest idAllocationRequest =
-                    new ReplicatedIdAllocationRequest( me, idType, firstUnallocated, allocationChunk );
+                    new ReplicatedIdAllocationRequest( me, idType, firstUnallocated, allocationSizes.get( idType ) );
 
             if ( replicateIdAllocationRequest( idType, idAllocationRequest ) )
             {
-                IdRange idRange = new IdRange( EMPTY_LONG_ARRAY, firstUnallocated, allocationChunk );
+                IdRange idRange = new IdRange( EMPTY_LONG_ARRAY, firstUnallocated, allocationSizes.get( idType ) );
                 return new IdAllocation( idRange, -1, 0 );
             }
             else

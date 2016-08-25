@@ -21,6 +21,8 @@ package org.neo4j.coreedge.core.state.machines;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
@@ -58,6 +60,7 @@ import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -111,9 +114,13 @@ public class CoreStateMachinesModule
         ReplicatedIdAllocationStateMachine idAllocationStateMachine =
                 new ReplicatedIdAllocationStateMachine( idAllocationState );
 
-        int allocationChunk  = config.get( CoreEdgeClusterSettings.allocation_chunk_size );
+        Map<IdType,Integer> allocationSizes = new HashMap<>( IdType.values().length );
+        for ( IdType idType : IdType.values() )
+        {
+            allocationSizes.put( idType, 1024 ); //just as an example. should get from settings.
+        }
         ReplicatedIdRangeAcquirer idRangeAcquirer =
-                new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine, allocationChunk, myself,
+                new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine, allocationSizes, myself,
                         logProvider );
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
