@@ -26,13 +26,10 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
@@ -70,8 +67,7 @@ public class CypherExecutorTest
     @Test
     public void startDefaultTransaction() throws Throwable
     {
-        Config config = getConfiguredGuardConfig();
-        CypherExecutor cypherExecutor = new CypherExecutor( database, config, logProvider );
+        CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
         cypherExecutor.createSession( request );
@@ -86,8 +82,7 @@ public class CypherExecutorTest
         when( request.getHeader( CypherExecutor.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( String.valueOf( CUSTOM_TRANSACTION_TIMEOUT ) );
 
-        Config config = getConfiguredGuardConfig();
-        CypherExecutor cypherExecutor = new CypherExecutor( database, config, logProvider );
+        CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
         cypherExecutor.createSession( request );
@@ -103,8 +98,7 @@ public class CypherExecutorTest
         when( request.getHeader( CypherExecutor.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( "not a number" );
 
-        Config config = getConfiguredGuardConfig();
-        CypherExecutor cypherExecutor = new CypherExecutor( database, config, logProvider );
+        CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
         cypherExecutor.createSession( request );
@@ -120,8 +114,7 @@ public class CypherExecutorTest
         when( request.getHeader( CypherExecutor.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( "-2" );
 
-        Config config = getConfiguredGuardConfig();
-        CypherExecutor cypherExecutor = new CypherExecutor( database, config, logProvider );
+        CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
         cypherExecutor.createSession( request );
@@ -136,7 +129,7 @@ public class CypherExecutorTest
         when( request.getHeader( CypherExecutor.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( String.valueOf( CUSTOM_TRANSACTION_TIMEOUT ) );
 
-        CypherExecutor cypherExecutor = new CypherExecutor( database, Config.defaults(), logProvider );
+        CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
         cypherExecutor.createSession( request );
@@ -148,11 +141,6 @@ public class CypherExecutorTest
     private void initLogProvider()
     {
         logProvider = new AssertableLogProvider( true );
-    }
-
-    private Config getConfiguredGuardConfig()
-    {
-        return new Config( MapUtil.stringMap( GraphDatabaseSettings.transaction_timeout.name(), "60s" ) );
     }
 
     private void setUpMocks()

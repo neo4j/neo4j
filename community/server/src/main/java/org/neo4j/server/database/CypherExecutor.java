@@ -27,7 +27,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
@@ -52,7 +51,7 @@ public class CypherExecutor extends LifecycleAdapter
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
     private final Log log;
 
-    public CypherExecutor( Database database, Config config, LogProvider logProvider )
+    public CypherExecutor( Database database, LogProvider logProvider )
     {
         this.database = database;
         log = logProvider.getLog( getClass() );

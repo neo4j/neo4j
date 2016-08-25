@@ -67,6 +67,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.server.HTTP;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.Collections.singletonList;
@@ -84,19 +85,17 @@ public class TransactionGuardIntegrationTest
     @Rule
     public CleanupRule cleanupRule = new CleanupRule();
     private FakeClock clock;
-    private GraphDatabaseAPI database;
 
     @Before
     public void setUp()
     {
-        clock = new FakeClock();
-        Map<Setting<?>,String> configMap = getSettingsMap();
-        database = startCustomDatabase( clock, configMap );
+        clock = Clocks.fakeClock();
     }
 
     @Test
     public void terminateLongRunningTransaction()
     {
+        GraphDatabaseAPI database = startDatabaseWithTimeout();
         try ( Transaction transaction = database.beginTx() )
         {
             clock.forward( 3, TimeUnit.SECONDS );
@@ -113,8 +112,34 @@ public class TransactionGuardIntegrationTest
     }
 
     @Test
+    public void terminateTransactionWithCustomTimeoutWithoutConfiguredDefault()
+    {
+        GraphDatabaseAPI database = startDatabaseWithoutTimeout();
+        try ( Transaction transaction = database.beginTx( TimeUnit.SECONDS.toMillis( 27 ) ) )
+        {
+            clock.forward( 26, TimeUnit.SECONDS );
+            database.createNode();
+            transaction.failure();
+        }
+
+        try ( Transaction transaction = database.beginTx( TimeUnit.SECONDS.toMillis( 27 ) ) )
+        {
+            clock.forward( 28, TimeUnit.SECONDS );
+            database.createNode();
+            fail( "Transaction should be already terminated." );
+        }
+        catch ( GuardTimeoutException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Transaction timeout." ) );
+        }
+
+        assertDatabaseDoesNotHaveNodes( database );
+    }
+
+    @Test
     public void terminateLongRunningQueryTransaction()
     {
+        GraphDatabaseAPI database = startDatabaseWithTimeout();
         try ( Transaction transaction = database.beginTx() )
         {
             clock.forward( 3, TimeUnit.SECONDS );
@@ -131,8 +156,35 @@ public class TransactionGuardIntegrationTest
     }
 
     @Test
+    public void terminateLongRunningQueryWithCustomTimeoutWithoutConfiguredDefault()
+    {
+        GraphDatabaseAPI database = startDatabaseWithoutTimeout();
+        try ( Transaction transaction = database.beginTx( TimeUnit.SECONDS.toMillis( 5 ) ) )
+        {
+            clock.forward( 4, TimeUnit.SECONDS );
+            database.execute( "create (n)" );
+            transaction.failure();
+        }
+
+        try ( Transaction transaction = database.beginTx( TimeUnit.SECONDS.toMillis( 6 ) ) )
+        {
+            clock.forward( 7, TimeUnit.SECONDS );
+            transaction.success();
+            database.execute( "create (n)" );
+            fail( "Transaction should be already terminated." );
+        }
+        catch ( GuardTimeoutException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Transaction timeout." ) );
+        }
+
+        assertDatabaseDoesNotHaveNodes( database );
+    }
+
+    @Test
     public void terminateLongRunningShellQuery() throws Exception
     {
+        GraphDatabaseAPI database = startDatabaseWithTimeout();
         GraphDatabaseShellServer shellServer = getGraphDatabaseShellServer( database );
         try
         {
@@ -155,6 +207,7 @@ public class TransactionGuardIntegrationTest
     @Test
     public void terminateLongRunningRestQuery() throws Exception
     {
+        GraphDatabaseAPI database = startDatabaseWithTimeout();
         CommunityNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
         String transactionEndPoint = HTTP.POST( transactionUri(neoServer), singletonList( map( "statement", "create (n)" ) ) ).location();
 
@@ -170,6 +223,7 @@ public class TransactionGuardIntegrationTest
     @Test
     public void terminateLongRunningDriverQuery() throws Exception
     {
+        GraphDatabaseAPI database = startDatabaseWithTimeout();
         CommunityNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
 
         org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
@@ -194,6 +248,18 @@ public class TransactionGuardIntegrationTest
         assertDatabaseDoesNotHaveNodes( database );
     }
 
+    protected GraphDatabaseAPI startDatabaseWithTimeout()
+    {
+        Map<Setting<?>,String> configMap = getSettingsWithTransactionTimeout();
+        return startCustomDatabase( clock, configMap );
+    }
+
+    protected GraphDatabaseAPI startDatabaseWithoutTimeout()
+    {
+        Map<Setting<?>,String> configMap = getSettingsWithTransactionTimeout();
+        return startCustomDatabase( clock, configMap );
+    }
+
     private org.neo4j.driver.v1.Config getDriverConfig()
     {
         return org.neo4j.driver.v1.Config.build()
@@ -215,14 +281,20 @@ public class TransactionGuardIntegrationTest
         return neoServer;
     }
 
-    private Map<Setting<?>,String> getSettingsMap()
+    private Map<Setting<?>,String> getSettingsWithTransactionTimeout()
+    {
+        Map<Setting<?>,String> settingMap = getSettingsWithoutTransactionTimeout();
+        settingMap.put( GraphDatabaseSettings.transaction_timeout, "2s" );
+        return settingMap;
+    }
+
+    private Map<Setting<?>,String> getSettingsWithoutTransactionTimeout()
     {
         GraphDatabaseSettings.BoltConnector boltConnector = boltConnector( "0" );
         return MapUtil.genericMap(
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
                 boltConnector.encryption_level, GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name(),
-                GraphDatabaseSettings.transaction_timeout, "2s",
                 GraphDatabaseSettings.auth_enabled, "false" );
     }
 
@@ -272,7 +344,6 @@ public class TransactionGuardIntegrationTest
 
     private class GuardingServerBuilder extends CommunityServerBuilder
     {
-
         private GraphDatabaseFacade graphDatabaseFacade;
         final LifecycleManagingDatabase.GraphFactory PRECREATED_FACADE_FACTORY =
                 ( config, dependencies ) -> graphDatabaseFacade;
@@ -335,14 +406,14 @@ public class TransactionGuardIntegrationTest
         protected DataSourceModule createDataSource( Dependencies dependencies,
                 PlatformModule platformModule, EditionModule editionModule )
         {
-            return new GuardDataSourceModule( dependencies, platformModule, editionModule, clock );
+            return new GuardDataSourceModule( dependencies, platformModule, editionModule );
         }
 
         private class GuardDataSourceModule extends DataSourceModule
         {
 
             GuardDataSourceModule( GraphDatabaseFacadeFactory.Dependencies dependencies,
-                    PlatformModule platformModule, EditionModule editionModule, Clock clock )
+                    PlatformModule platformModule, EditionModule editionModule )
             {
                 super( dependencies, platformModule, editionModule );
             }
