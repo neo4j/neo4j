@@ -26,7 +26,7 @@ case class ProcedureSignature(name: QualifiedProcedureName,
                               inputSignature: IndexedSeq[FieldSignature],
                               outputSignature: Option[IndexedSeq[FieldSignature]],
                               deprecationInfo: Option[String],
-                              accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess) {
+                              accessMode: ProcedureAccessMode) {
 
   def outputFields = outputSignature.getOrElse(Seq.empty)
 
@@ -47,7 +47,7 @@ case class FieldSignature(name: String, typ: CypherType, default: Option[CypherV
 
 sealed trait ProcedureAccessMode
 
-case object ProcedureReadOnlyAccess extends ProcedureAccessMode
-case object ProcedureReadWriteAccess extends ProcedureAccessMode
-case object ProcedureSchemaWriteAccess extends ProcedureAccessMode
-case object ProcedureDbmsAccess extends ProcedureAccessMode
+case class ProcedureReadOnlyAccess(allowed: String) extends ProcedureAccessMode
+case class ProcedureReadWriteAccess(allowed: String) extends ProcedureAccessMode
+case class ProcedureSchemaWriteAccess(allowed: String) extends ProcedureAccessMode
+case class ProcedureDbmsAccess(allowed: String) extends ProcedureAccessMode

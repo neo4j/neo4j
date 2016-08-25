@@ -39,6 +39,8 @@ public interface AuthSubject extends AccessMode
      */
     void setPassword( String password ) throws IOException, InvalidArgumentsException;
 
+    boolean hasRole( String roleName ) throws InvalidArgumentsException;
+
     /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
      */
@@ -59,6 +61,12 @@ public interface AuthSubject extends AccessMode
         public void setPassword( String password ) throws IOException, InvalidArgumentsException
         {
             throw new AuthorizationViolationException( "Anonymous cannot change password" );
+        }
+
+        @Override
+        public boolean hasRole( String roleName )
+        {
+            return false;
         }
 
         @Override
@@ -153,6 +161,12 @@ public interface AuthSubject extends AccessMode
         @Override
         public void setPassword( String password ) throws IOException, InvalidArgumentsException
         {
+        }
+
+        @Override
+        public boolean hasRole( String roleName )
+        {
+            return true;
         }
     };
 }

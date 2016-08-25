@@ -27,17 +27,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
+
+import static java.util.stream.Collectors.toList;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.either;
@@ -135,7 +137,7 @@ abstract class AuthTestBase<S>
 
     protected List<String> listOf( String... values )
     {
-        return Stream.of( values ).collect( Collectors.toList() );
+        return Stream.of( values ).collect( toList() );
     }
 
     //------------- Helper functions---------------
@@ -143,7 +145,7 @@ abstract class AuthTestBase<S>
     void testSuccessfulRead( S subject, int count )
     {
         assertSuccess( subject, "MATCH (n) RETURN count(n) as count", r -> {
-            List<Object> result = r.stream().map( s -> s.get( "count" ) ).collect( Collectors.toList() );
+            List<Object> result = r.stream().map( s -> s.get( "count" ) ).collect( toList() );
             assertThat( result.size(), equalTo( 1 ) );
             assertThat( String.valueOf( result.get( 0 ) ), equalTo( String.valueOf( count ) ) );
         } );
@@ -247,6 +249,23 @@ abstract class AuthTestBase<S>
                 errMsg );
     }
 
+    void testFailTestProcs( S subject )
+    {
+        assertFail( subject, "CALL test.allowedProcedure1()", READ_OPS_NOT_ALLOWED );
+        assertFail( subject, "CALL test.allowedProcedure2()", WRITE_OPS_NOT_ALLOWED );
+        assertFail( subject, "CALL test.allowedProcedure3()", SCHEMA_OPS_NOT_ALLOWED );
+    }
+
+    void testSuccessfulTestProcs( S subject )
+    {
+        assertSuccess( subject, "CALL test.allowedProcedure1()",
+                r -> assertKeyIs( r, "value", "foo" ) );
+        assertSuccess( subject, "CALL test.allowedProcedure2()",
+                r -> assertKeyIs( r, "value", "a" ) );
+        assertSuccess( subject, "CALL test.allowedProcedure3()",
+                r -> assertKeyIs( r, "value", "OK" ) );
+    }
+
     void testSessionKilled( S subject )
     {
         if ( IS_BOLT )
@@ -323,7 +342,7 @@ abstract class AuthTestBase<S>
 
     List<Object> getObjectsAsList( ResourceIterator<Map<String, Object>> r, String key )
     {
-        return r.stream().map( s -> s.get( key ) ).collect( Collectors.toList() );
+        return r.stream().map( s -> s.get( key ) ).collect( toList() );
     }
 
     void assertKeyIs( ResourceIterator<Map<String, Object>> r, String key, String... items )
@@ -340,7 +359,7 @@ abstract class AuthTestBase<S>
 
     protected void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
     {
-        List<Map<String, Object>> result = r.stream().collect( Collectors.toList() );
+        List<Map<String, Object>> result = r.stream().collect( toList() );
 
         assertEquals( "Results for should have size " + expected.size() + " but was " + result.size(),
                 expected.size(), result.size() );
@@ -397,11 +416,32 @@ abstract class AuthTestBase<S>
             return Stream.of( new CountResult( nNodes ) );
         }
 
+        @Procedure( name = "test.allowedProcedure1", allowed = "role1", mode = Procedure.Mode.READ )
+        public Stream<AuthProcedures.StringResult> allowedProcedure1()
+        {
+            db.execute( "MATCH (:Foo) RETURN 'foo' AS foo" );
+            return Stream.of( new AuthProcedures.StringResult( "foo" ) );
+        }
+
+        @Procedure( name = "test.allowedProcedure2", allowed = "role1", mode = Procedure.Mode.WRITE )
+        public Stream<AuthProcedures.StringResult> allowedProcedure2()
+        {
+            db.execute( "CREATE (:VeryUniqueLabel {prop: 'a'})" );
+            return db.execute( "MATCH (n:VeryUniqueLabel) RETURN n.prop AS a LIMIT 1" ).stream()
+                    .map( r -> new AuthProcedures.StringResult( (String) r.get( "a" ) ) );
+        }
+
+        @Procedure( name = "test.allowedProcedure3", allowed = "role1", mode = Procedure.Mode.SCHEMA )
+        public Stream<AuthProcedures.StringResult> allowedProcedure3()
+        {
+            db.execute( "CREATE INDEX ON :VeryUniqueLabel(prop)" );
+            return Stream.of( new AuthProcedures.StringResult( "OK" ) );
+        }
+
         @Procedure( name = "test.createNode", mode = WRITE )
         public void createNode()
         {
             db.createNode();
-            return;
         }
     }
 }

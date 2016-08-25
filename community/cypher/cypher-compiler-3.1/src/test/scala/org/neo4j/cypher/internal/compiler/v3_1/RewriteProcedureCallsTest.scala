@@ -32,7 +32,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
   val qualifiedName = QualifiedProcedureName(ns.parts, name.name)
   val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
   val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
-  val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess)
+  val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess(""))
   val lookup: (QualifiedProcedureName) => ProcedureSignature = _ => signature
 
   test("should resolve standalone procedure calls") {

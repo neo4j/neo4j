@@ -208,6 +208,7 @@ public interface KernelTransaction extends AutoCloseable
 
     Revertable restrict( AccessMode mode );
 
+    @FunctionalInterface
     interface Revertable extends AutoCloseable
     {
         @Override

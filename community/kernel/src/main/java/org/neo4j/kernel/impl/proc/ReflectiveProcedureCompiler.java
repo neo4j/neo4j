@@ -154,7 +154,7 @@ public class ReflectiveProcedureCompiler
 
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(),
-                        mode, deprecated, description );
+                        mode, deprecated, procedure.allowed(), description );
 
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }

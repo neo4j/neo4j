@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, Relati
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.security.{AccessMode, AuthSubject}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
@@ -583,26 +584,55 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
-  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
-    callProcedure(name, args, transactionalContext.statement.readOperations().procedureCallRead)
+  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) = {
+    val revertable = transactionalContext.accessMode match {
+      case a: AuthSubject if a.hasRole(allowed) =>
+        Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_READ))
+      case _ => None
+    }
+    callProcedure(name, args, transactionalContext.statement.readOperations().procedureCallRead, revertable.foreach(_.close))
+  }
 
-  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
-    callProcedure(name, args, transactionalContext.statement.dataWriteOperations().procedureCallWrite)
+  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) = {
+    val revertable = transactionalContext.accessMode match {
+      case a: AuthSubject if a.hasRole(allowed) =>
+        Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_WRITE))
+      case _ => None
+    }
+    callProcedure(name, args, transactionalContext.statement.dataWriteOperations().procedureCallWrite,
+                  revertable.foreach(_.close))
+  }
 
-  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
-    callProcedure(name, args, transactionalContext.statement.schemaWriteOperations().procedureCallSchema)
 
-  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
-    callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_, _))
+  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) = {
+    val revertable = transactionalContext.accessMode match {
+      case a: AuthSubject if a.hasRole(allowed) =>
+        Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_SCHEMA))
+      case _ => None
+    }
+    callProcedure(name, args, transactionalContext.statement.schemaWriteOperations().procedureCallSchema, revertable.foreach(_.close))
+  }
+
+  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) = {
+    callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_, _), ())
+  }
 
   private def callProcedure(name: QualifiedProcedureName, args: Seq[Any],
-                            call: (proc.ProcedureSignature.ProcedureName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]) = {
+                            call: (proc.ProcedureSignature.ProcedureName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException],
+                            onClose: => Unit) = {
     val kn = new proc.ProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
     val read: RawIterator[Array[AnyRef], ProcedureException] = call(kn, toArray)
     new scala.Iterator[Array[AnyRef]] {
-      override def hasNext: Boolean = read.hasNext
-      override def next(): Array[AnyRef] = read.next
+      override def hasNext: Boolean = {
+        val has = read.hasNext
+        if (!has) onClose
+        has
+      }
+      override def next(): Array[AnyRef] = {
+        if (!hasNext) Iterator.empty.next
+        read.next
+      }
     }
   }
 

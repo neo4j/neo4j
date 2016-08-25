@@ -434,11 +434,52 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
             nodeCount = statement.readOperations().countsForNode( -1 );
             tx.success();
         }
-        catch (Throwable t)
+        catch ( Throwable t )
         {
             // do nothing, test will timeout eventually
         }
         return nodeCount;
+    }
+
+    /*
+     * Procedure 'test.allowedProcedure1' with READ mode and 'allowed = role1' is loaded.
+     * Procedure 'test.allowedProcedure2' with WRITE mode and 'allowed = role1' is loaded.
+     * Procedure 'test.allowedProcedure3' with SCHEMA mode and 'allowed = role1' is loaded.
+     * Procedure 'test.allowedProcedure4' with DBMS mode and 'allowed = role1' is loaded.
+     * Admin creates a new user 'mats'.
+     * 'mats' logs in.
+     * 'mats' executes the procedures, access denied.
+     * Admin creates 'role1'.
+     * 'mats' executes the procedures, access denied.
+     * Admin adds role 'role1' to 'mats'.
+     * 'mats' executes the procedures successfully.
+     * Admin removes the role 'role1'.
+     * 'mats' executes the procedures, access denied.
+     * Admin creates the role 'role1' again (new).
+     * 'mats' executes the procedures, access denied.
+     * Admin adds role 'architect' to 'mats'.
+     * 'mats' executes the procedures successfully.
+     * Admin adds 'role1' to 'mats'.
+     * 'mats' executes the procedures successfully.
+     */
+    @Test
+    public void customRoleWithProcedureAccess() throws Exception
+    {
+        assertEmpty( adminSubject, "CALL dbms.security.createUser('mats', 'neo4j', false)" );
+        S mats = neo.login( "mats", "neo4j" );
+        testFailTestProcs( mats );
+        assertEmpty( adminSubject, "CALL dbms.security.createRole('role1')" );
+        testFailTestProcs( mats );
+        assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('role1', 'mats')" );
+        testSuccessfulTestProcs( mats );
+        assertEmpty( adminSubject, "CALL dbms.security.deleteRole('role1')" );
+        testFailTestProcs( mats );
+        assertEmpty( adminSubject, "CALL dbms.security.createRole('role1')" );
+        testFailTestProcs( mats );
+        assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('architect', 'mats')" );
+        testSuccessfulTestProcs( mats );
+        assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('role1', 'mats')" );
+        testSuccessfulTestProcs( mats );
     }
 
     //---------- User suspension -----------

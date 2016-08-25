@@ -25,31 +25,33 @@ import scala.collection.mutable.ArrayBuffer
 
 object ProcedureCallMode {
   def fromAccessMode(mode: ProcedureAccessMode): ProcedureCallMode = mode match {
-    case ProcedureReadOnlyAccess => LazyReadOnlyCallMode
-    case ProcedureReadWriteAccess => EagerReadWriteCallMode
-    case ProcedureSchemaWriteAccess => SchemaWriteCallMode
-    case ProcedureDbmsAccess => DbmsCallMode
+    case ProcedureReadOnlyAccess(overrides) => LazyReadOnlyCallMode(overrides)
+    case ProcedureReadWriteAccess(overrides) => EagerReadWriteCallMode(overrides)
+    case ProcedureSchemaWriteAccess(overrides) => SchemaWriteCallMode(overrides)
+    case ProcedureDbmsAccess(overrides) => DbmsCallMode(overrides)
   }
 }
 sealed trait ProcedureCallMode {
   val queryType: InternalQueryType
 
   def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+
+  val allowed: String
 }
 
-case object LazyReadOnlyCallMode extends ProcedureCallMode {
+case class LazyReadOnlyCallMode(allowed: String) extends ProcedureCallMode {
   override val queryType: InternalQueryType = READ_ONLY
 
   override def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
-    ctx.callReadOnlyProcedure(name, args)
+    ctx.callReadOnlyProcedure(name, args, allowed)
 }
 
-case object EagerReadWriteCallMode extends ProcedureCallMode {
+case class EagerReadWriteCallMode(allowed: String) extends ProcedureCallMode {
   override val queryType: InternalQueryType = READ_WRITE
 
   override def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
     val builder = ArrayBuffer.newBuilder[Array[AnyRef]]
-    val iterator = ctx.callReadWriteProcedure(name, args)
+    val iterator = ctx.callReadWriteProcedure(name, args, allowed)
     while (iterator.hasNext) {
       builder += iterator.next()
     }
@@ -57,12 +59,12 @@ case object EagerReadWriteCallMode extends ProcedureCallMode {
   }
 }
 
-case object SchemaWriteCallMode extends ProcedureCallMode {
+case class SchemaWriteCallMode(allowed: String) extends ProcedureCallMode {
   override val queryType: InternalQueryType = SCHEMA_WRITE
 
   override def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
     val builder = ArrayBuffer.newBuilder[Array[AnyRef]]
-    val iterator = ctx.callSchemaWriteProcedure(name, args)
+    val iterator = ctx.callSchemaWriteProcedure(name, args, allowed)
     while (iterator.hasNext) {
       builder += iterator.next()
     }
@@ -70,12 +72,12 @@ case object SchemaWriteCallMode extends ProcedureCallMode {
   }
 }
 
-case object DbmsCallMode extends ProcedureCallMode {
+case class DbmsCallMode(allowed: String) extends ProcedureCallMode {
   override val queryType: InternalQueryType = DBMS
 
   override def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
     val builder = ArrayBuffer.newBuilder[Array[AnyRef]]
-    val iterator = ctx.callDbmsProcedure(name, args)
+    val iterator = ctx.callDbmsProcedure(name, args, allowed)
     while (iterator.hasNext) {
       builder += iterator.next()
     }

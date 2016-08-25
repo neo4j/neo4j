@@ -280,6 +280,84 @@ public interface AccessMode
             }
         },
 
+        /**
+         * Allows writing data, as well as reading data and schema.
+         * NOTE: This is a special mode that will override the original access mode when put as a temporary restriction
+         * on a transaction, potentially elevating the access mode to give write access to a transaction that did not
+         * have write access before.
+         */
+        OVERRIDE_WRITE
+        {
+            @Override
+            public boolean allowsReads()
+            {
+                return true;
+            }
+
+            @Override
+            public boolean allowsWrites()
+            {
+                return true;
+            }
+
+            @Override
+            public boolean allowsSchemaWrites()
+            {
+                return false;
+            }
+
+            @Override
+            public boolean overrideOriginalMode()
+            {
+                return true;
+            }
+
+            @Override
+            public AuthorizationViolationException onViolation( String msg )
+            {
+                return new AuthorizationViolationException( msg );
+            }
+        },
+
+        /**
+         * Allows writing and reading data and schema.
+         * NOTE: This is a special mode that will override the original access mode when put as a temporary restriction
+         * on a transaction, potentially elevating the access mode to give schema access to a transaction that did not
+         * have schema access before.
+         */
+        OVERRIDE_SCHEMA
+        {
+            @Override
+            public boolean allowsReads()
+            {
+                return true;
+            }
+
+            @Override
+            public boolean allowsWrites()
+            {
+                return true;
+            }
+
+            @Override
+            public boolean allowsSchemaWrites()
+            {
+                return true;
+            }
+
+            @Override
+            public boolean overrideOriginalMode()
+            {
+                return true;
+            }
+
+            @Override
+            public AuthorizationViolationException onViolation( String msg )
+            {
+                return new AuthorizationViolationException( msg );
+            }
+        },
+
         }
 
     boolean allowsReads();

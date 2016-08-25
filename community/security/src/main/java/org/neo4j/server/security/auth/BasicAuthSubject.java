@@ -97,6 +97,12 @@ public class BasicAuthSubject implements AuthSubject
         }
     }
 
+    @Override
+    public boolean hasRole( String roleName )
+    {
+        return false;
+    }
+
     public BasicAuthManager getAuthManager()
     {
         return authManager;

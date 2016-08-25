@@ -75,6 +75,12 @@ public class EnterpriseAuthSubject implements AuthSubject
         }
     }
 
+    @Override
+    public boolean hasRole( String roleName ) throws InvalidArgumentsException
+    {
+        return getUserManager().getRoleNamesForUser( name() ).contains( roleName );
+    }
+
     public EnterpriseUserManager getUserManager()
     {
         return authManager.getUserManager();
