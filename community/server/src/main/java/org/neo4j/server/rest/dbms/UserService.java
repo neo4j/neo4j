@@ -122,7 +122,7 @@ public class UserService
 
         try
         {
-            userManager.setUserPassword( username, newPassword );
+            userManager.setUserPassword( username, newPassword, false );
         }
         catch ( IOException e )
         {

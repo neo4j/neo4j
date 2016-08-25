@@ -66,13 +66,13 @@ public class AuthProcedures
     @Procedure( name = "dbms.changePassword", mode = DBMS, deprecatedBy = "dbms.security.changePassword" )
     public void changePasswordDeprecated( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
-        authSubject.setPassword( password );
+        authSubject.setPassword( password, false );
     }
 
     @Procedure( name = "dbms.security.changePassword", mode = DBMS )
     public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
-        authSubject.setPassword( password );
+        authSubject.setPassword( password, false );
     }
 
     @Procedure( name = "dbms.showCurrentUser", mode = DBMS )

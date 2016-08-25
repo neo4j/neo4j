@@ -236,7 +236,7 @@ public class MultiRealmAuthManagerTest
         userManager.suspendUser( "jake" );
 
         // When
-        userManager.activateUser( "jake" );
+        userManager.activateUser( "jake", false );
         setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // Then
@@ -272,7 +272,7 @@ public class MultiRealmAuthManagerTest
         when( authStrategy.authenticate( user, "abc123" ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         // When
-        userManager.activateUser( "jake" );
+        userManager.activateUser( "jake", false );
         setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // Then
@@ -308,7 +308,7 @@ public class MultiRealmAuthManagerTest
         // When
         try
         {
-            userManager.activateUser( "jake" );
+            userManager.activateUser( "jake", false );
             fail( "Should throw exception on activating unknown user" );
         }
         catch ( InvalidArgumentsException e )
@@ -326,7 +326,7 @@ public class MultiRealmAuthManagerTest
         manager.start();
 
         // When
-        userManager.setUserPassword( "jake", "hello, world!" );
+        userManager.setUserPassword( "jake", "hello, world!", false );
 
         // Then
         User user = userManager.getUser( "jake" );
@@ -346,7 +346,7 @@ public class MultiRealmAuthManagerTest
         AuthSubject authSubject = manager.login( authToken( "neo", "abc123" ) );
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
 
-        authSubject.setPassword( "hello, world!" );
+        authSubject.setPassword( "hello, world!", false );
         setMockAuthenticationStrategyResult( "neo", "hello, world!", AuthenticationResult.SUCCESS );
 
         // Then
@@ -385,7 +385,7 @@ public class MultiRealmAuthManagerTest
         // When
         try
         {
-            userManager.setUserPassword( "unknown", "hello, world!" );
+            userManager.setUserPassword( "unknown", "hello, world!", false );
             fail( "exception expected" );
         }
         catch ( InvalidArgumentsException e )
@@ -426,7 +426,7 @@ public class MultiRealmAuthManagerTest
 
         // When
         AuthSubject subject = manager.login( authToken( "neo4j", "neo4j" ) );
-        userManager.setUserPassword( "neo4j", "1234" );
+        userManager.setUserPassword( "neo4j", "1234", false );
         subject.logout();
 
         setMockAuthenticationStrategyResult( "neo4j", "1234", AuthenticationResult.SUCCESS );

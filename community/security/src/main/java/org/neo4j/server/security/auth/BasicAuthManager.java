@@ -109,8 +109,8 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     }
 
     @Override
-    public User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException,
-            InvalidArgumentsException
+    public User newUser( String username, String initialPassword, boolean requirePasswordChange )
+            throws IOException, InvalidArgumentsException
     {
         assertValidUsername( username );
 
@@ -144,8 +144,8 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
         return user;
     }
 
-    public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
-            InvalidArgumentsException
+    public void setPassword( AuthSubject authSubject, String username, String password, boolean requirePasswordChange )
+            throws IOException, InvalidArgumentsException
     {
         BasicAuthSubject basicAuthSubject = BasicAuthSubject.castOrFail( authSubject );
 
@@ -154,12 +154,12 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }
 
-        setUserPassword( username, password );
+        setUserPassword( username, password, requirePasswordChange );
     }
 
     @Override
-    public void setUserPassword( String username, String password ) throws IOException,
-            InvalidArgumentsException
+    public void setUserPassword( String username, String password, boolean requirePasswordChange )
+            throws IOException, InvalidArgumentsException
     {
         User existingUser = getUser( username );
 
@@ -180,7 +180,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
         } catch ( ConcurrentModificationException e )
         {
             // try again
-            setUserPassword( username, password );
+            setUserPassword( username, password, requirePasswordChange );
         }
     }
 

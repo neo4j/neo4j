@@ -46,8 +46,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
@@ -428,7 +426,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    public void setUserPassword( String username, String password ) throws IOException, InvalidArgumentsException
+    public void setUserPassword( String username, String password, boolean requirePasswordChange )
+            throws IOException, InvalidArgumentsException
     {
         User existingUser = getUser( username );
 
@@ -443,13 +442,13 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         {
             User updatedUser = existingUser.augment()
                     .withCredentials( Credential.forPassword( password ) )
-                    .withRequiredPasswordChange( false )
+                    .withRequiredPasswordChange( requirePasswordChange )
                     .build();
             userRepository.update( existingUser, updatedUser );
         } catch ( ConcurrentModificationException e )
         {
             // try again
-            setUserPassword( username, password );
+            setUserPassword( username, password, requirePasswordChange );
         }
 
         clearCacheForUser( username );
@@ -478,14 +477,18 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    public void activateUser( String username ) throws IOException, InvalidArgumentsException
+    public void activateUser( String username, boolean requirePasswordChange )
+            throws IOException, InvalidArgumentsException
     {
         // This method is not synchronized as it only modifies the UserRepository, which is synchronized in itself
         // If user is modified between getUserByName and update, we get ConcurrentModificationException and try again
         User user = getUser( username );
         if ( user.hasFlag( IS_SUSPENDED ) )
         {
-            User activatedUser = user.augment().withoutFlag( IS_SUSPENDED ).build();
+            User activatedUser = user.augment()
+                    .withoutFlag( IS_SUSPENDED )
+                    .withRequiredPasswordChange( requirePasswordChange )
+                    .build();
             try
             {
                 userRepository.update( user, activatedUser );
@@ -493,7 +496,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
             catch ( ConcurrentModificationException e )
             {
                 // Try again
-                activateUser( username );
+                activateUser( username, requirePasswordChange );
             }
         }
         clearCacheForUser( username );

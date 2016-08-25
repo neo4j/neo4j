@@ -26,14 +26,15 @@ import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 
 public interface UserManager
 {
-    User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException,
-            InvalidArgumentsException;
+    User newUser( String username, String initialPassword, boolean requirePasswordChange )
+            throws IOException, InvalidArgumentsException;
 
     boolean deleteUser( String username ) throws IOException, InvalidArgumentsException;
 
     User getUser( String username ) throws InvalidArgumentsException;
 
-    void setUserPassword( String username, String password ) throws IOException, InvalidArgumentsException;
+    void setUserPassword( String username, String password, boolean requirePasswordChange )
+            throws IOException, InvalidArgumentsException;
 
     Set<String> getAllUsernames();
 }

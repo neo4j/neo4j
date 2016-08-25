@@ -503,7 +503,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.security.suspendUser('Henrik')" );
         S subject = neo.login( "Henrik", "bar" );
         neo.assertInitFailed( subject );
-        assertEmpty( adminSubject, "CALL dbms.security.activateUser('Henrik')" );
+        assertEmpty( adminSubject, "CALL dbms.security.activateUser('Henrik', false)" );
         subject = neo.login( "Henrik", "bar" );
         neo.assertAuthenticated( subject );
     }
@@ -666,7 +666,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         S subject = neo.login( "Henrik", "abc" );
         neo.assertAuthenticated( subject );
         testSuccessfulRead( subject, 3 );
-        assertEmpty( subject, "CALL dbms.security.changeUserPassword('Henrik', '123')" );
+        assertEmpty( subject, "CALL dbms.security.changeUserPassword('Henrik', '123', false)" );
         neo.updateAuthToken( subject, "Henrik", "123" ); // Because RESTSubject caches an auth token that is sent with every request
         testSuccessfulRead( subject, 3 );
         neo.logout( subject );
@@ -697,7 +697,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         S subject = neo.login( "Henrik", "abc" );
         neo.assertAuthenticated( subject );
         testSuccessfulRead( subject, 3 );
-        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword('Henrik', '123')" );
+        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword('Henrik', '123', false)" );
         neo.logout( subject );
         subject = neo.login( "Henrik", "abc" );
         neo.assertInitFailed( subject );

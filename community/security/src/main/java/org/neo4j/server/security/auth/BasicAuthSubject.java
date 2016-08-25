@@ -81,13 +81,15 @@ public class BasicAuthSubject implements AuthSubject
      * Sets a new password for the BasicAuthSubject.
      *
      * @param password The new password
+     * @param requirePasswordChange
      * @throws IOException If the new user credentials cannot be stored on disk.
      * @throws InvalidArgumentsException If password is invalid, e.g. if the new password is the same as the current.
      */
     @Override
-    public void setPassword( String password ) throws IOException, InvalidArgumentsException
+    public void setPassword( String password, boolean requirePasswordChange )
+            throws IOException, InvalidArgumentsException
     {
-        authManager.setPassword( this, user.name(), password );
+        authManager.setPassword( this, user.name(), password, requirePasswordChange );
 
         // Make user authenticated if successful
         if ( authenticationResult == PASSWORD_CHANGE_REQUIRED )

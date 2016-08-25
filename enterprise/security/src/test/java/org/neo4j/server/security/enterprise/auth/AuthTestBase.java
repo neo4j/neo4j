@@ -259,11 +259,25 @@ abstract class AuthTestBase<S>
 
     void assertPasswordChangeWhenPasswordChangeRequired( S subject, String newPassword )
     {
-        // TODO: REST doesn't allow changing your own password via procedure if you're in PASSWORD_CHANGE_REQUIRED mode
-        if ( IS_EMBEDDED ) assertEmpty( subject, "CALL dbms.security.changePassword( '" + newPassword + "' )" );
-        else assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( '" + neo.nameOf( subject ) + "', '" +
-                newPassword + "' )" );
-        // remove above if-else ASAP
+        StringBuilder builder = new StringBuilder(128);
+        S subjectToUse;
+
+        // remove if-else ASAP
+        if ( IS_EMBEDDED ) {
+            subjectToUse = subject;
+            builder.append("CALL dbms.security.changePassword('");
+            builder.append( newPassword );
+            builder.append("')" );
+        } else {
+            subjectToUse = adminSubject;
+            builder.append("CALL dbms.security.changeUserPassword('");
+            builder.append( neo.nameOf( subject ) );
+            builder.append( "', '" );
+            builder.append( newPassword );
+            builder.append( "', false)" );
+        }
+
+        assertEmpty( subjectToUse, builder.toString() );
     }
 
     void assertFail( S subject, String call, String partOfErrorMsg )

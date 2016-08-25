@@ -22,6 +22,7 @@ package org.neo4j.commandline.admin.security;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.commandline.admin.AdminCommand;
@@ -98,6 +99,7 @@ public class UsersCommand implements AdminCommand
         String command = parsedArgs.orphans().size() > 0 ? parsedArgs.orphans().get( 0 ) : null;
         String username = parsedArgs.orphans().size() > 1 ? parsedArgs.orphans().get( 1 ) : null;
         String password = parsedArgs.orphans().size() > 2 ? parsedArgs.orphans().get( 2 ) : null;
+        boolean requiresPasswordChange = !hasFlagWithValue( parsedArgs, "requires-password-change", "false" );
 
         try
         {
@@ -112,7 +114,7 @@ public class UsersCommand implements AdminCommand
                     throw new IncorrectUsage(
                             "Missing arguments: 'users set-password' expects username and password arguments" );
                 }
-                setPassword( username, password );
+                setPassword( username, password, requiresPasswordChange );
                 break;
             case "create":
                 if ( username == null || password == null )
@@ -120,15 +122,12 @@ public class UsersCommand implements AdminCommand
                     throw new IncorrectUsage(
                             "Missing arguments: 'users create' expects username and password arguments" );
                 }
-                boolean requiresPasswordChange = !parsedArgs.asMap().containsKey( "requires-password-change" ) || (
-                        parsedArgs.asMap().get( "requires-password-change" ).toLowerCase().equals( "true" ));
                 createUser( username, password, requiresPasswordChange );
                 break;
             case "delete":
                 if ( username == null )
                 {
-                    throw new IncorrectUsage(
-                            "Missing arguments: 'users delete' expects username argument" );
+                    throw new IncorrectUsage( "Missing arguments: 'users delete' expects username argument" );
                 }
                 deleteUser( username );
                 break;
@@ -149,6 +148,12 @@ public class UsersCommand implements AdminCommand
             throw new CommandFailed( "Failed run 'users " + command + "' on '" + username + "': " + t.getMessage(),
                     new RuntimeException( t.getMessage() ) );
         }
+    }
+
+    private boolean hasFlagWithValue( Args parsedArgs, String key, String expectedValue )
+    {
+        Map<String,String> argsMap = parsedArgs.asMap();
+        return argsMap.containsKey( key ) && (argsMap.get( key ).trim().toLowerCase().equals( expectedValue ));
     }
 
     private void listUsers( String contains ) throws Throwable
@@ -185,10 +190,10 @@ public class UsersCommand implements AdminCommand
         }
     }
 
-    private void setPassword( String username, String password ) throws Throwable
+    private void setPassword( String username, String password, boolean requirePasswordChange ) throws Throwable
     {
         BasicAuthManager authManager = getAuthManager();
-        authManager.setUserPassword( username, password );
+        authManager.setUserPassword( username, password, requirePasswordChange );
         outsideWorld.stdOutLine( "Changed password for user '" + username + "'" );
     }
 
