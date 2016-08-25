@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.query;
 
 import java.util.Map;
-
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -32,6 +31,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -44,6 +44,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final KernelTransaction.Type transactionType;
     private final AccessMode mode;
     private final DbmsOperations.Factory dbmsOperationsFactory;
+    private final Guard guard;
 
     private InternalTransaction transaction;
     private Statement statement;
@@ -69,14 +70,15 @@ public class Neo4jTransactionalContext implements TransactionalContext
             initialStatement.queryRegistration().startQueryExecution( queryText, queryParameters ),
             locker,
             graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ),
-            graph.getDependencyResolver().resolveDependency( DbmsOperations.Factory.class )
+            graph.getDependencyResolver().resolveDependency( DbmsOperations.Factory.class ),
+            graph.getDependencyResolver().resolveDependency( Guard.class )
         );
     }
 
     public Neo4jTransactionalContext( GraphDatabaseQueryService graph, InternalTransaction initialTransaction,
             KernelTransaction.Type transactionType, AccessMode transactionMode, Statement initialStatement, ExecutingQuery executingQuery,
             PropertyContainerLocker locker, ThreadToStatementContextBridge txBridge,
-            DbmsOperations.Factory dbmsOperationsFactory )
+            DbmsOperations.Factory dbmsOperationsFactory, Guard guard )
     {
         this.graph = graph;
         this.transaction = initialTransaction;
@@ -87,6 +89,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.locker = locker;
         this.txBridge = txBridge;
         this.dbmsOperationsFactory = dbmsOperationsFactory;
+        this.guard = guard;
     }
 
     @Override
@@ -219,6 +222,12 @@ public class Neo4jTransactionalContext implements TransactionalContext
     public Statement statement()
     {
         return statement;
+    }
+
+    @Override
+    public void check()
+    {
+        guard.check( (KernelStatement) statement );
     }
 
     @Override

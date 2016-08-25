@@ -311,7 +311,13 @@ public class AwaitIndexProcedureTest
         }
 
         @Override
-        public long localStartTime()
+        public long startTime()
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public long timeout()
         {
             throw new UnsupportedOperationException( "not implemented" );
         }

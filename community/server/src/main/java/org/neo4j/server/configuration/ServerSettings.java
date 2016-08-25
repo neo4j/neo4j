@@ -46,7 +46,6 @@ import static org.neo4j.kernel.configuration.Settings.EMPTY;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
@@ -141,11 +140,6 @@ public interface ServerSettings
             "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ),
             range( 1, JettyThreadCalculator.MAX_THREADS ) );
 
-    @Description("If execution time limiting is enabled in the database, this configures the maximum request execution time.")
-    @Internal
-    Setting<Long> webserver_limit_execution_time =
-            setting( "unsupported.dbms.executiontime_limit.time", DURATION, NO_DEFAULT );
-
     @Internal
     Setting<List<String>> console_module_engines = setting(
             "unsupported.dbms.console_module.engines", STRING_LIST, "SHELL" );
@@ -237,7 +231,7 @@ public interface ServerSettings
     @Description("Path of the lib directory")
     Setting<File> lib_directory = pathSetting( "dbms.directories.lib", "lib" );
 
-    @Description("Timeout for idle transactions in the REST endpoint")
+    @Description("Timeout for idle transactions in the REST endpoint.")
     Setting<Long> transaction_timeout = setting( "dbms.transaction_timeout", DURATION, "60s" );
 
     @Internal

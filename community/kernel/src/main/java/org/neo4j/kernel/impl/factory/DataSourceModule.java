@@ -48,7 +48,9 @@ import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.guard.EmptyGuard;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.guard.TimeoutGuard;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
@@ -72,6 +74,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -120,7 +123,7 @@ public class DataSourceModule
     public DataSourceModule( final GraphDatabaseFacadeFactory.Dependencies dependencies,
             final PlatformModule platformModule, EditionModule editionModule )
     {
-        final org.neo4j.kernel.impl.util.Dependencies deps = platformModule.dependencies;
+        final Dependencies deps = platformModule.dependencies;
         Config config = platformModule.config;
         LogService logging = platformModule.logging;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
@@ -155,9 +158,8 @@ public class DataSourceModule
 
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
 
-        Boolean isGuardEnabled = config.get( GraphDatabaseSettings.execution_guard_enabled );
-        Guard guard =
-                isGuardEnabled ? deps.satisfyDependency( new Guard( logging.getInternalLog( Guard.class ) ) ) : null;
+        Clock clock = getClock();
+        Guard guard = createGuard( deps, config, clock, logging );
 
         kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 
@@ -211,7 +213,8 @@ public class DataSourceModule
                 platformModule.monitors,
                 platformModule.tracers,
                 procedures,
-                editionModule.ioLimiter ) );
+                editionModule.ioLimiter,
+                clock) );
 
         dataSourceManager.register( neoStoreDataSource );
 
@@ -252,6 +255,11 @@ public class DataSourceModule
 
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
+    }
+
+    protected Clock getClock()
+    {
+        return Clock.systemUTC();
     }
 
     protected RelationshipProxy.RelationshipActions createRelationshipActions(
@@ -347,6 +355,19 @@ public class DataSourceModule
         };
     }
 
+    private Guard createGuard( Dependencies deps, Config config, Clock clock, LogService logging )
+    {
+        Boolean isGuardEnabled = config.get( GraphDatabaseSettings.execution_guard_enabled );
+        Guard guard = isGuardEnabled ? createTimeoutGuard( clock, logging ) : EmptyGuard.EMPTY_GUARD;
+        deps.satisfyDependency( guard );
+        return guard;
+    }
+
+    private TimeoutGuard createTimeoutGuard( Clock clock, LogService logging )
+    {
+        return new TimeoutGuard( clock, logging.getInternalLog( TimeoutGuard.class ) );
+    }
+
     private Procedures setupProcedures( PlatformModule platform, EditionModule editionModule )
     {
         File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
@@ -419,7 +440,7 @@ public class DataSourceModule
         private final AvailabilityGuard availabilityGuard;
         private final long timeout;
 
-        public StartupWaiter( AvailabilityGuard availabilityGuard, long timeout )
+        StartupWaiter( AvailabilityGuard availabilityGuard, long timeout )
         {
             this.availabilityGuard = availabilityGuard;
             this.timeout = timeout;

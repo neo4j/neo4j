@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import java.time.Clock;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
@@ -90,7 +91,7 @@ public class KernelTransactionFactory
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 
-        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, accessMode );
+        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, accessMode, 0L );
 
         return new Instances( transaction, storageEngine, storeReadLayer, storageStatement );
     }

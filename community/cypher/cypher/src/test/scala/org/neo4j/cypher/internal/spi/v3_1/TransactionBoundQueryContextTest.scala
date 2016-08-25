@@ -72,7 +72,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     when(outerTx.failure()).thenThrow(new AssertionError("Shouldn't be called"))
     val tc = new Neo4jTransactionalContext(graph, outerTx, KernelTransaction.Type.`implicit`, AccessMode.Static.FULL,
-      statement, null, locker, null, null)
+      statement, null, locker, null, null, null)
     val transactionalContext = new TransactionalContextWrapperv3_1(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN

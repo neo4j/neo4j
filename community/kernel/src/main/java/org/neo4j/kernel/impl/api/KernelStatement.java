@@ -236,4 +236,9 @@ public class KernelStatement implements TxStateHolder, Statement
         storeStatement.release();
         executingQueryList = ExecutingQueryList.EMPTY;
     }
+
+    public KernelTransactionImplementation getTransaction()
+    {
+        return transaction;
+    }
 }

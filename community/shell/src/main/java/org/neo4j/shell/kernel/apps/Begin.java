@@ -35,6 +35,8 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 @Service.Implementation(App.class)
 public class Begin extends NonTransactionProvidingApp
 {
+    private static final String TRANSACTION = "TRANSACTION";
+
     @Override
     public String getDescription()
     {
@@ -82,8 +84,6 @@ public class Begin extends NonTransactionProvidingApp
         return Continuation.INPUT_COMPLETE;
     }
 
-    private static String TRANSACTION = "TRANSACTION";
-
     private boolean acceptableText( String line )
     {
         if ( line == null || line.length() > TRANSACTION.length() )
@@ -91,8 +91,7 @@ public class Begin extends NonTransactionProvidingApp
             return false;
         }
 
-        String substring = TRANSACTION.substring( 0, line.length() );
-        return substring.equals( line.toUpperCase() );
+        return TRANSACTION.startsWith( line.toUpperCase() );
     }
 
     public static KernelTransaction currentTransaction( GraphDatabaseShellServer server )

@@ -165,6 +165,10 @@
       </exclusions>
     </dependency>
     <dependency>
+      <groupId>org.neo4j.driver</groupId>
+      <artifactId>neo4j-java-driver</artifactId>
+    </dependency>
+    <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-core</artifactId>
         <scope>test</scope>

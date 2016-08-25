@@ -152,7 +152,7 @@ public class KernelTransactions extends LifecycleAdapter
         }
     };
 
-    public KernelTransaction newInstance( KernelTransaction.Type type, AccessMode accessMode )
+    public KernelTransaction newInstance( KernelTransaction.Type type, AccessMode accessMode, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
         newTransactionsLock.readLock().lock();
@@ -163,7 +163,7 @@ public class KernelTransactions extends LifecycleAdapter
             KernelTransactionImplementation tx = localTxPool.acquire();
             StatementLocks statementLocks = statementLocksFactory.newInstance();
             tx.initialize( lastCommittedTransaction.transactionId(),
-                    lastCommittedTransaction.commitTimestamp(), statementLocks, type, accessMode );
+                    lastCommittedTransaction.commitTimestamp(), statementLocks, type, accessMode, timeout );
             return tx;
         }
         finally

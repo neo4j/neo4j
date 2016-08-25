@@ -21,11 +21,17 @@ package org.neo4j.kernel.guard;
 
 import org.neo4j.kernel.impl.api.KernelStatement;
 
-/**
- * Guard that check entities for compatibility with some kind of guard criteria.
- * As soon as entity do not satisfy that criteria {@link GuardException } will be thrown.
- */
-public interface Guard
+public class EmptyGuard implements Guard
 {
-    void check( KernelStatement statement );
+    public static final EmptyGuard EMPTY_GUARD = new EmptyGuard();
+
+    private EmptyGuard()
+    {
+    }
+
+    @Override
+    public void check( KernelStatement statement )
+    {
+        // empty
+    }
 }

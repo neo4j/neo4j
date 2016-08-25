@@ -171,7 +171,13 @@ public interface KernelTransaction extends AutoCloseable
      * @return start time of this transaction, i.e. basically {@link System#currentTimeMillis()} when user called
      * {@link Kernel#newTransaction(Type, AccessMode)}.
      */
-    long localStartTime();
+    long startTime();
+
+    /**
+     * Timeout for transaction.
+     * @return transaction timeout
+     */
+    long timeout();
 
     /**
      * Register a {@link CloseListener} to be invoked after commit, but before transaction events "after" hooks
