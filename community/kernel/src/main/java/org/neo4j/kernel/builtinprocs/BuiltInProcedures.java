@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
@@ -50,18 +51,21 @@ public class BuiltInProcedures
     @Context
     public KernelTransaction tx;
 
+    @Description("List all labels in the database.")
     @Procedure(name = "db.labels", mode = READ)
     public Stream<LabelResult> listLabels()
     {
         return TokenAccess.LABELS.inUse( tx.acquireStatement() ).map( LabelResult::new ).stream();
     }
 
+    @Description( "List all property keys in the database." )
     @Procedure(name = "db.propertyKeys", mode = READ)
     public Stream<PropertyKeyResult> listPropertyKeys()
     {
         return TokenAccess.PROPERTY_KEYS.inUse( tx.acquireStatement() ).map( PropertyKeyResult::new ).stream();
     }
 
+    @Description( "List all relationship types in the database." )
     @Procedure(name = "db.relationshipTypes", mode = READ)
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
@@ -69,6 +73,7 @@ public class BuiltInProcedures
                 .map( RelationshipTypeResult::new ).stream();
     }
 
+    @Description( "List all indexes in the database." )
     @Procedure(name = "db.indexes", mode = READ)
     public Stream<IndexResult> listIndexes() throws ProcedureException
     {
@@ -108,6 +113,7 @@ public class BuiltInProcedures
         return result.stream();
     }
 
+    @Description( "Await indexes in the database to come online." )
     @Procedure(name = "db.awaitIndex", mode = READ)
     public void awaitIndex( @Name("label") String labelName,
                             @Name("property") String propertyKeyName,
@@ -116,6 +122,7 @@ public class BuiltInProcedures
         new AwaitIndexProcedure( tx ).execute( labelName, propertyKeyName, timeout, TimeUnit.SECONDS );
     }
 
+    @Description( "List all constraints in the database." )
     @Procedure(name = "db.constraints", mode = READ)
     public Stream<ConstraintResult> listConstraints()
     {
@@ -129,6 +136,7 @@ public class BuiltInProcedures
                 .map( ConstraintResult::new );
     }
 
+    @Description( "List all procedures in the DBMS." )
     @Procedure(name = "dbms.procedures", mode = READ)
     public Stream<ProcedureResult> listProcedures()
     {
