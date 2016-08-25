@@ -22,36 +22,36 @@ package org.neo4j.kernel.impl.api.security;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AccessMode;
 
-public class RestrictedAccessMode implements AccessMode
+public class OverriddenAccessMode implements AccessMode
 {
     private final AccessMode originalMode;
-    private final AccessMode restrictedMode;
+    private final AccessMode overriddenMode;
 
-    public RestrictedAccessMode( AccessMode originalMode, AccessMode restrictedMode )
+    public OverriddenAccessMode( AccessMode originalMode, AccessMode overriddenMode )
     {
         this.originalMode = originalMode;
-        this.restrictedMode = restrictedMode;
+        this.overriddenMode = overriddenMode;
     }
 
     @Override
     public boolean allowsReads()
     {
-        return restrictedMode.allowsReads() &&
-               (restrictedMode.overrideOriginalMode() || originalMode.allowsReads());
+        return overriddenMode.allowsReads() &&
+               (overriddenMode.overrideOriginalMode() || originalMode.allowsReads());
     }
 
     @Override
     public boolean allowsWrites()
     {
-        return restrictedMode.allowsWrites() &&
-               (restrictedMode.overrideOriginalMode() || originalMode.allowsWrites());
+        return overriddenMode.allowsWrites() &&
+               (overriddenMode.overrideOriginalMode() || originalMode.allowsWrites());
     }
 
     @Override
     public boolean allowsSchemaWrites()
     {
-        return restrictedMode.allowsSchemaWrites() &&
-               (restrictedMode.overrideOriginalMode() || originalMode.allowsSchemaWrites());
+        return overriddenMode.allowsSchemaWrites() &&
+               (overriddenMode.overrideOriginalMode() || originalMode.allowsSchemaWrites());
     }
 
     @Override
@@ -63,19 +63,19 @@ public class RestrictedAccessMode implements AccessMode
     @Override
     public AuthorizationViolationException onViolation( String msg )
     {
-        return restrictedMode.onViolation( msg );
+        return overriddenMode.onViolation( msg );
     }
 
     @Override
     public String name()
     {
-        if ( restrictedMode.overrideOriginalMode() )
+        if ( overriddenMode.overrideOriginalMode() )
         {
-            return originalMode.name() + " overridden by " + restrictedMode.name();
+            return originalMode.name() + " overridden by " + overriddenMode.name();
         }
         else
         {
-            return originalMode.name() + " restricted to " + restrictedMode.name();
+            return originalMode.name() + " restricted to " + overriddenMode.name();
         }
     }
 }
