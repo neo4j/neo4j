@@ -224,7 +224,63 @@ public class CoreEdgeClusterSettings
     public static final Setting<Long> edge_refresh_rate =
             setting( "core_edge.edge_refresh_rate", DURATION, "5s", min(5_000L) );
 
-    @Description( "Id range allocation chunk size"  )
-    public static final Setting<Integer> allocation_chunk_size =
-            setting( "core_edge.allocation_chunk_size", INTEGER, "1024" );
+    @Description( "NODE ID Allocation Space Size" )
+    public static final Setting<Integer> node_id_allocation_size =
+            setting( "core_edge.node_id_allocation_size", INTEGER, "1024" );
+
+    @Description( "RELATIONSHIP ID Allocation Space Size" )
+    public static final Setting<Integer> relationship_id_allocation_size =
+            setting( "core_edge.relationship_id_allocation_size", INTEGER, "1024" );
+
+    @Description( "PROPERTY ID Allocation Space Size" )
+    public static final Setting<Integer> property_id_allocation_size =
+            setting( "core_edge.property_id_allocation_size", INTEGER, "1024" );
+
+    @Description( "STRING_BLOCK ID Allocation Space Size" )
+    public static final Setting<Integer> string_block_id_allocation_size =
+            setting( "core_edge.string_block_id_allocation_size", INTEGER, "1024" );
+
+    @Description( "ARRAY_BLOCK ID Allocation Space Size" )
+    public static final Setting<Integer> array_block_id_allocation_size =
+            setting( "core_edge.array_block_id_allocation_size", INTEGER, "1024" );
+
+    @Description( "PROPERTY_KEY_TOKEN ID Allocation Space Size" )
+    public static final Setting<Integer> property_key_token_id_allocation_size =
+            setting( "core_edge.property_key_token_id_allocation_size", INTEGER, "32" );
+
+    @Description( "PROPERTY_KEY_TOKEN_NAME ID Allocation Space Size" )
+    public static final Setting<Integer> property_key_token_name_id_allocation_size =
+            setting( "core_edge.property_key_token_name_id_allocation_size", INTEGER, "1024" );
+
+    @Description( "RELATIONSHIP_TYPE_TOKEN ID Allocation Space Size" )
+    public static final Setting<Integer> relationship_type_token_id_allocation_size =
+            setting( "core_edge.relationship_type_token_id_allocation_size", INTEGER, "32" );
+
+    @Description( "RELATIONSHIP_TYPE_TOKEN_NAME ID Allocation Space Size" )
+    public static final Setting<Integer> relationship_type_token_name_id_allocation_size =
+            setting( "core_edge.relationship_type_token_name_id_allocation_size", INTEGER, "1024" );
+
+    @Description( "LABEL_TOKEN ID Allocation Space Size" )
+    public static final Setting<Integer> label_token_id_allocation_size =
+            setting( "core_edge.label_token_id_allocation_size", INTEGER, "32" );
+
+    @Description( "LABEL_TOKEN_NAME ID Allocation Space Size" )
+    public static final Setting<Integer> label_token_name_id_allocation_size =
+            setting( "core_edge.label_token_name_id_allocation_size", INTEGER, "1024" );
+
+    @Description( "NEOSTORE_BLOCK ID Allocation Space Size" )
+    public static final Setting<Integer> neostore_block_id_allocation_size =
+            setting( "core_edge.neostore_block_id_allocation_size", INTEGER, "1024" );
+
+    @Description( "SCHEMA ID Allocation Space Size" )
+    public static final Setting<Integer> schema_id_allocation_size =
+            setting( "core_edge.schema_id_allocation_size", INTEGER, "1024" );
+
+    @Description( "NODE_LABELS ID Allocation Space Size" )
+    public static final Setting<Integer> node_labels_id_allocation_size =
+            setting( "core_edge.node_labels_id_allocation_size", INTEGER, "1024" );
+
+    @Description( "RELATIONSHIP_GROUP ID Allocation Space Size" )
+    public static final Setting<Integer> relationship_group_id_allocation_size =
+            setting( "core_edge.relationship_group_id_allocation_size", INTEGER, "1024" );
 }
