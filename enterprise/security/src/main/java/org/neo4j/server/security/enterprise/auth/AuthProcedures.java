@@ -209,6 +209,13 @@ public class AuthProcedures
         ensureAdminAuthSubject().getUserManager().newRole( roleName );
     }
 
+    @Procedure( name = "dbms.security.deleteRole", mode = DBMS)
+    public void deleteRole( @Name( "roleName" ) String roleName )
+        throws InvalidArgumentsException, IOException
+    {
+        ensureAdminAuthSubject().getUserManager().deleteRole( roleName );
+    }
+
     @Procedure( name = "dbms.security.listTransactions", mode = DBMS )
     public Stream<TransactionResult> listTransactions()
             throws InvalidArgumentsException, IOException

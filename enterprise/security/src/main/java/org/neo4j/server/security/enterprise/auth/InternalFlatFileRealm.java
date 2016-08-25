@@ -46,8 +46,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
@@ -58,6 +56,8 @@ import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
+
+import static java.lang.String.format;
 
 /**
  * Shiro realm wrapping FileUserRepository and FileRoleRepository
@@ -335,6 +335,28 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
+    public boolean deleteRole( String roleName ) throws IOException, InvalidArgumentsException
+    {
+        assertNotPredefinedRoleName( roleName );
+
+        boolean result = false;
+        synchronized ( this )
+        {
+            RoleRecord role = getRole( roleName );  // asserts role name exists
+            if ( roleRepository.delete( role ) )
+            {
+                result = true;
+            }
+            else
+            {
+                // We should not get here, but if we do the assert will fail and give a nice error msg
+                getRole( roleName );
+            }
+        }
+        return result;
+    }
+
+    @Override
     public RoleRecord getRole( String roleName ) throws InvalidArgumentsException
     {
         RoleRecord role = roleRepository.getRoleByName( roleName );
@@ -563,6 +585,15 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
             throw new InvalidArgumentsException(
                     "Role name '" + name +
                     "' contains illegal characters. Use simple ascii characters and numbers." );
+        }
+    }
+
+    private void assertNotPredefinedRoleName( String roleName ) throws InvalidArgumentsException
+    {
+        if ( PredefinedRolesBuilder.roles.keySet().contains( roleName ) )
+        {
+            throw new InvalidArgumentsException(
+                    format( "'%s' is a predefined role and can not be deleted.", roleName ) );
         }
     }
 

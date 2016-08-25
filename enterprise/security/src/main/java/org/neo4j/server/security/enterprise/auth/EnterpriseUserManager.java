@@ -33,6 +33,8 @@ public interface EnterpriseUserManager extends UserManager
 
     RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException;
 
+    boolean deleteRole( String roleName ) throws IOException, InvalidArgumentsException;
+
     RoleRecord getRole( String roleName ) throws InvalidArgumentsException;
 
     /**

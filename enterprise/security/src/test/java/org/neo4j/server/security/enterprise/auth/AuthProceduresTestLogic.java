@@ -35,6 +35,9 @@ import org.neo4j.test.rule.concurrent.ThreadingRule;
 import static java.lang.String.format;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -723,6 +726,58 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         testFailCreateRole( readSubject, PERMISSION_DENIED );
         testFailCreateRole( writeSubject, PERMISSION_DENIED );
         testFailCreateRole( schemaSubject, PERMISSION_DENIED );
+    }
+
+    //---------- delete role -----------
+
+    @Test
+    public void shouldThrowIfTryingToDeletePredefinedRole() throws Exception
+    {
+        testFailDeleteRole( adminSubject, ADMIN,
+                format( "'%s' is a predefined role and can not be deleted.", ADMIN ) );
+        testFailDeleteRole( adminSubject, ARCHITECT,
+                format( "'%s' is a predefined role and can not be deleted.", ARCHITECT ) );
+        testFailDeleteRole( adminSubject, PUBLISHER,
+                format( "'%s' is a predefined role and can not be deleted.", PUBLISHER ) );
+        testFailDeleteRole( adminSubject, READER,
+                format( "'%s' is a predefined role and can not be deleted.", READER ) );
+    }
+
+    @Test
+    public void shouldThrowIfNonAdminTryingToDeleteRole() throws Exception
+    {
+        assertEmpty( adminSubject, format("CALL dbms.createRole('%s')", "new_role" ) );
+        testFailDeleteRole( schemaSubject, "new_role", PERMISSION_DENIED);
+        testFailDeleteRole( writeSubject, "new_role", PERMISSION_DENIED);
+        testFailDeleteRole( readSubject, "new_role", PERMISSION_DENIED);
+        testFailDeleteRole( noneSubject, "new_role", PERMISSION_DENIED);
+    }
+
+    @Test
+    public void shouldThrowIfDeletingNonExistentRole()
+    {
+        testFailDeleteRole( adminSubject, "nonExistent", "foo" );
+    }
+
+    @Test
+    public void shouldDeleteRole() throws Exception
+    {
+        assertEmpty( adminSubject, format("CALL dbms.createRole('%s')", "new_role") );
+        assertEmpty( adminSubject, format("CALL dbms.deleteRole('%s')", "new_role") );
+
+        assertThat( userManager.getAllRoleNames(), not( contains( "new_role" ) ) );
+    }
+
+    @Test
+    public void deletingRoleAssignedToSelfShouldWork() throws Exception
+    {
+        assertEmpty( adminSubject, format( "CALL dbms.createRole('%s')", "new_role" ) );
+        assertEmpty( adminSubject, format( "CALL dbms.addUserToRole('%s', '%s')", "adminSubject", "new_role" ) );
+        assertThat( userManager.getRoleNamesForUser( "adminSubject" ), hasItem( "new_role" ) );
+
+        assertEmpty( this.adminSubject, format( "CALL dbms.deleteRole('%s')", "new_role" ) );
+        assertThat( userManager.getRoleNamesForUser( "adminSubject" ), not( hasItem( "new_role" ) ) );
+        assertThat( userManager.getAllRoleNames(), not( contains( "new_role" ) ) );
     }
 
     //---------- list users -----------

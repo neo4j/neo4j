@@ -206,6 +206,11 @@ abstract class AuthTestBase<S>
         assertFail( subject, "CALL dbms.security.deleteUser('" + username + "')", errMsg );
     }
 
+    void testFailDeleteRole( S subject, String roleName, String errMsg )
+    {
+        assertFail( subject, "CALL dbms.deleteRole('" + roleName + "')", errMsg );
+    }
+
     void testSuccessfulListUsers( S subject, String[] users )
     {
         assertSuccess( subject, "CALL dbms.security.listUsers() YIELD username",
