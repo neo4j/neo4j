@@ -58,7 +58,7 @@ public class CypherExecutor extends LifecycleAdapter
     {
         this.database = database;
         log = logProvider.getLog( getClass() );
-        guardEnabled = config.get( GraphDatabaseSettings.execution_guard_enabled );
+        guardEnabled = config.get( GraphDatabaseSettings.transaction_timeout ) > 0;
     }
 
     public ExecutionEngine getExecutionEngine()

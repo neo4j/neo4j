@@ -27,7 +27,6 @@ import java.util.Map;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.guard.EmptyGuard;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.guard.TimeoutGuard;
@@ -101,11 +100,11 @@ public class GuardIT
 
     private Map<Setting<?>,String> getEnabledGuardConfigMap()
     {
-        return genericMap( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE );
+        return genericMap( GraphDatabaseSettings.transaction_timeout, "60s" );
     }
 
     private Map<Setting<?>,String> getDisabledGuardConfigMap()
     {
-        return genericMap( GraphDatabaseSettings.execution_guard_enabled, Settings.FALSE );
+        return genericMap( GraphDatabaseSettings.transaction_timeout, "0" );
     }
 }

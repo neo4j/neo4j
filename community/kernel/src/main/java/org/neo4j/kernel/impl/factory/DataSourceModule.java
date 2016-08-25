@@ -357,8 +357,9 @@ public class DataSourceModule
 
     private Guard createGuard( Dependencies deps, Config config, Clock clock, LogService logging )
     {
-        Boolean isGuardEnabled = config.get( GraphDatabaseSettings.execution_guard_enabled );
-        Guard guard = isGuardEnabled ? createTimeoutGuard( clock, logging ) : EmptyGuard.EMPTY_GUARD;
+        long configuredTimeout = config.get( GraphDatabaseSettings.transaction_timeout );
+        boolean isTimeoutConfigured = configuredTimeout > 0;
+        Guard guard = isTimeoutConfigured ? createTimeoutGuard( clock, logging ) : EmptyGuard.EMPTY_GUARD;
         deps.satisfyDependency( guard );
         return guard;
     }

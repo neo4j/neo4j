@@ -43,7 +43,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.guard.GuardTimeoutException;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
@@ -223,7 +222,6 @@ public class TransactionGuardIntegrationTest
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
                 boltConnector.encryption_level, GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name(),
-                GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE,
                 GraphDatabaseSettings.transaction_timeout, "2s",
                 GraphDatabaseSettings.auth_enabled, "false" );
     }

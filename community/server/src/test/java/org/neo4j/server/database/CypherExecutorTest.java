@@ -70,7 +70,7 @@ public class CypherExecutorTest
     @Test
     public void startDefaultTransaction() throws Throwable
     {
-        Config config = getGuardEnabledConfig();
+        Config config = getConfiguredGuardConfig();
         CypherExecutor cypherExecutor = new CypherExecutor( database, config, logProvider );
         cypherExecutor.start();
 
@@ -86,7 +86,7 @@ public class CypherExecutorTest
         when( request.getHeader( CypherExecutor.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( String.valueOf( CUSTOM_TRANSACTION_TIMEOUT ) );
 
-        Config config = getGuardEnabledConfig();
+        Config config = getConfiguredGuardConfig();
         CypherExecutor cypherExecutor = new CypherExecutor( database, config, logProvider );
         cypherExecutor.start();
 
@@ -103,7 +103,7 @@ public class CypherExecutorTest
         when( request.getHeader( CypherExecutor.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( "not a number" );
 
-        Config config = getGuardEnabledConfig();
+        Config config = getConfiguredGuardConfig();
         CypherExecutor cypherExecutor = new CypherExecutor( database, config, logProvider );
         cypherExecutor.start();
 
@@ -120,7 +120,7 @@ public class CypherExecutorTest
         when( request.getHeader( CypherExecutor.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( "-2" );
 
-        Config config = getGuardEnabledConfig();
+        Config config = getConfiguredGuardConfig();
         CypherExecutor cypherExecutor = new CypherExecutor( database, config, logProvider );
         cypherExecutor.start();
 
@@ -150,9 +150,9 @@ public class CypherExecutorTest
         logProvider = new AssertableLogProvider( true );
     }
 
-    private Config getGuardEnabledConfig()
+    private Config getConfiguredGuardConfig()
     {
-        return new Config( MapUtil.stringMap( GraphDatabaseSettings.execution_guard_enabled.name(), "true" ) );
+        return new Config( MapUtil.stringMap( GraphDatabaseSettings.transaction_timeout.name(), "60s" ) );
     }
 
     private void setUpMocks()
