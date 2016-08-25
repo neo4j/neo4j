@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase.{AST_REWRITE, PARSING, SEMANTIC_CHECK}
+import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.replaceAliasedFunctionInvocations.aliases
 import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses, replaceAliasedFunctionInvocations}
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.CodeStructure
@@ -31,10 +32,10 @@ import org.neo4j.cypher.internal.compiler.v3_1.helpers.closing
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{ProcedureSignature, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{FunctionInvocation, FunctionName, Statement}
-import org.neo4j.cypher.internal.frontend.v3_1.notification.{DeprecatedFunctionNotification, InternalNotification}
+import org.neo4j.cypher.internal.frontend.v3_1.notification.{DeprecatedProcedureNotification, DeprecatedFunctionNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, SemanticTable, inSequence}
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -160,14 +161,14 @@ case class CypherCompiler(parser: CypherParser,
   def planQuery(queryText: String, context: PlanContext, notificationLogger: InternalNotificationLogger,
                 plannerName: String = "",
                 offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) = {
-    planPreparedQuery(prepareSyntacticQuery(queryText, queryText, notificationLogger, plannerName), context, offset, CompilationPhaseTracer.NO_TRACING)
+    planPreparedQuery(prepareSyntacticQuery(queryText, queryText, notificationLogger, plannerName), notificationLogger, context, offset, CompilationPhaseTracer.NO_TRACING)
   }
 
-  def planPreparedQuery(syntacticQuery: PreparedQuerySyntax,
+  def planPreparedQuery(syntacticQuery: PreparedQuerySyntax, notificationLogger: InternalNotificationLogger,
                         context: PlanContext,
                         offset: Option[InputPosition] = None,
                         tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
-    val semanticQuery = prepareSemanticQuery(syntacticQuery, context, offset, tracer)
+    val semanticQuery = prepareSemanticQuery(syntacticQuery, notificationLogger, context, offset, tracer)
     val cache = provideCache(cacheAccessor, cacheMonitor, context)
     val (executionPlan, _) = cache.getOrElseUpdate(syntacticQuery.statement, syntacticQuery.queryText,
       _.isStale (context.txIdProvider, context.statistics),
@@ -204,7 +205,7 @@ case class CypherCompiler(parser: CypherParser,
     PreparedQuerySyntax(rewrittenStatement, queryText, offset, extractedParams)(notificationLogger, plannerName, postConditions)
   }
 
-  def prepareSemanticQuery(syntacticQuery: PreparedQuerySyntax,
+  def prepareSemanticQuery(syntacticQuery: PreparedQuerySyntax, notificationLogger: InternalNotificationLogger,
                            context: PlanContext,
                            offset: Option[InputPosition] = None,
                            tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuerySemantics = {
@@ -212,6 +213,9 @@ case class CypherCompiler(parser: CypherParser,
     val queryText = syntacticQuery.queryText
 
     val rewrittenSyntacticQuery = syntacticQuery.rewrite(rewriteProcedureCalls(context.procedureSignature))
+
+    val procedureDeprecations = procedureDeprecationNotifications(rewrittenSyntacticQuery.statement)
+    procedureDeprecations.foreach(notificationLogger.log)
 
     val mkException = new SyntaxExceptionCreator(queryText, offset)
     val postRewriteSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
@@ -227,6 +231,12 @@ case class CypherCompiler(parser: CypherParser,
     statement.treeFold(Set.empty[InternalNotification]) {
       case f@FunctionInvocation(FunctionName(name), _, _) if aliases.get(name).nonEmpty =>
         (seq) => (seq + DeprecatedFunctionNotification(f.position, name, aliases(name)), None)
+    }
+
+  private def procedureDeprecationNotifications(statement: Statement): Set[InternalNotification] =
+    statement.treeFold(Set.empty[InternalNotification]) {
+      case f@ResolvedCall(ProcedureSignature(name, _, _, Some(deprecatedBy), _), _, _, _, _) =>
+        (seq) => (seq + DeprecatedProcedureNotification(f.position, name.toString, deprecatedBy), None)
     }
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],

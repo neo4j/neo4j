@@ -45,7 +45,7 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
         val mkException = new SyntaxExceptionCreator(inputQuery.queryText, inputQuery.offset)
         errors.foreach { error => throw mkException(error.msg, error.position) }
 
-        ProcedureCallExecutionPlan(signature, args, resolved.callResultTypes, resolved.callResultIndices, publicTypeConverter)
+        ProcedureCallExecutionPlan(signature, args, resolved.callResultTypes, resolved.callResultIndices, inputQuery.notificationLogger.notifications, publicTypeConverter)
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       case CreateUniquePropertyConstraint(node, label, prop) =>

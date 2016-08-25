@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Id, NoChildren, 
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, PlanContext, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionContext, ExecutionMode, ExplainExecutionResult, ExplainMode, ProcedurePlannerName, ProcedureRuntimeName, TaskCloser, _}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_1.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 
 /**
@@ -45,7 +46,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       argExprs: Seq[Expression],
                                       resultSymbols: Seq[(String, CypherType)],
-                                      resultIndices: Seq[(Int, String)],
+                                      resultIndices: Seq[(Int, String)], notifications: Set[InternalNotification],
                                       publicTypeConverter: Any => Any)
   extends ExecutionPlan {
 
@@ -60,7 +61,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
 
     planType match {
       case NormalMode => createNormalExecutionResult(ctx, taskCloser, input, planType)
-      case ExplainMode => createExplainedExecutionResult(ctx, taskCloser, input)
+      case ExplainMode => createExplainedExecutionResult(ctx, taskCloser, input, notifications)
       case ProfileMode => createProfiledExecutionResult(ctx, taskCloser, input, planType)
     }
   }
@@ -73,11 +74,12 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input, resultIndices, descriptionGenerator, planType)
   }
 
-  private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any]) = {
+  private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any],
+                                             notifications: Set[InternalNotification]) = {
     // close all statements
     taskCloser.close(success = true)
     val columns = signature.outputSignature.map(_.seq.map(_.name).toList).getOrElse(List.empty)
-    new ExplainExecutionResult(columns, createNormalPlan, READ_ONLY, Set.empty)
+    new ExplainExecutionResult(columns, createNormalPlan, READ_ONLY, notifications)
   }
 
   private def createProfiledExecutionResult(ctx: QueryContext, taskCloser: TaskCloser,
