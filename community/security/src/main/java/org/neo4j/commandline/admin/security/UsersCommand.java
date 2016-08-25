@@ -61,9 +61,9 @@ public class UsersCommand implements AdminCommand
         public String description()
         {
             return "Runs several possible sub-commands for managing the native users repository: 'list', 'create', " +
-                   "'delete' and 'set-password'. When creating a new user --requires-password-change=true will set " +
-                   "that requirement. Passing a username to the 'list' command will do a case-insensitive substring " +
-                   "search.";
+                   "'delete' and 'set-password'. When creating a new user, it is created with a requirement to " +
+                   "change password on first login. Use the option --requires-password-change=false to disable this. " +
+                   "Passing a username to the 'list' command will do a case-insensitive substring search.";
         }
 
         @Override
@@ -120,7 +120,7 @@ public class UsersCommand implements AdminCommand
                     throw new IncorrectUsage(
                             "Missing arguments: 'users create' expects username and password arguments" );
                 }
-                boolean requiresPasswordChange = parsedArgs.asMap().containsKey( "requires-password-change" ) && (
+                boolean requiresPasswordChange = !parsedArgs.asMap().containsKey( "requires-password-change" ) || (
                         parsedArgs.asMap().get( "requires-password-change" ).toLowerCase().equals( "true" ));
                 createUser( username, password, requiresPasswordChange );
                 break;

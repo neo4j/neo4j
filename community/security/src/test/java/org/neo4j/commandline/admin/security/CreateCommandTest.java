@@ -81,7 +81,7 @@ public class CreateCommandTest extends CommandTestBase
         verify( out, times( 1 ) ).stdOutLine( anyString() );
 
         // And does not require password change
-        assertUserDoesNotRequirePasswordChange( "another" );
+        assertUserRequiresPasswordChange( "another" );
     }
 
     @Test
