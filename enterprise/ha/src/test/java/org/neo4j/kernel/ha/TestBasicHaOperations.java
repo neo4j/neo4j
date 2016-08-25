@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha;
 
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.logging.Level;
@@ -40,8 +41,8 @@ public class TestBasicHaOperations
 {
     @ClassRule
     public static LoggerRule logger = new LoggerRule( Level.OFF );
-    @ClassRule
-    public static ClusterRule clusterRule = new ClusterRule( TestBasicHaOperations.class )
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withSharedSetting( HaSettings.tx_push_factor, "2" );
 
     @Test

@@ -20,7 +20,6 @@
 package org.neo4j.ha;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -28,6 +27,7 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,7 +38,6 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
@@ -135,12 +134,9 @@ public class HAClusterStartupIT
 
     public static class ClusterWithSeed
     {
-        @ClassRule
-        public static final TestDirectory directory = TestDirectory.testDirectory( ClusterWithSeed.class );
-
         @Rule
         public final ClusterRule clusterRule = new ClusterRule( getClass() ).withCluster( clusterOfSize( 3 ) )
-                .withSeedDir( dbWithOutLogs( directory ) );
+                .withSeedDir( dbWithOutLogs() );
 
         @Test
         public void aClusterShouldStartAndRunWhenSeededWithAStoreHavingNoLogicalLogFiles() throws Throwable
@@ -150,9 +146,18 @@ public class HAClusterStartupIT
             restartingTheClusterShouldWork( clusterRule );
         }
 
-        private static File dbWithOutLogs( TestDirectory directory )
+        private static File dbWithOutLogs()
         {
-            File seedDir = directory.cleanDirectory( "seed" );
+            File seedDir;
+            try
+            {
+                seedDir = Files.createTempDirectory( "seed-database" ).toFile();
+                seedDir.deleteOnExit();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
 
             GraphDatabaseService db = null;
             try

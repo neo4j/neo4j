@@ -19,7 +19,7 @@
  */
 package org.neo4j.test.ha;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
@@ -43,8 +43,8 @@ import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
  */
 public class ReadOnlySlaveTest
 {
-    @ClassRule
-    public static final ClusterRule clusterRule = new ClusterRule( ReadOnlySlaveTest.class )
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withSharedSetting( tx_push_factor, "2" )
             .withInstanceSetting( read_only, oneBasedServerId -> oneBasedServerId == 2 ? Settings.TRUE : null );
 

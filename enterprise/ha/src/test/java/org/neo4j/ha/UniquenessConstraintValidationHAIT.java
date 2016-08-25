@@ -19,7 +19,6 @@
  */
 package org.neo4j.ha;
 
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -48,8 +47,8 @@ public class UniquenessConstraintValidationHAIT
 
     @Rule
     public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
-    @ClassRule
-    public static final ClusterRule clusterRule = new ClusterRule( UniquenessConstraintValidationHAIT.class )
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withInitialDataset( uniquenessConstraint( LABEL, PROPERTY_KEY ) );
 
     @Test

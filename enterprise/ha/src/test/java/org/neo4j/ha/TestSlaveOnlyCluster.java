@@ -19,7 +19,7 @@
  */
 package org.neo4j.ha;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -45,10 +45,11 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 
 public class TestSlaveOnlyCluster
 {
-    @ClassRule
-    public static ClusterRule clusterRule = new ClusterRule( TestSlaveOnlyCluster.class )
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( TestSlaveOnlyCluster.class )
             .withInstanceSetting( HaSettings.slave_only,
                     value -> value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE );
+
     private static final String PROPERTY = "foo";
     private static final String VALUE = "bar";
 

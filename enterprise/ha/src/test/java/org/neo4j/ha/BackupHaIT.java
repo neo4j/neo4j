@@ -19,8 +19,7 @@
  */
 package org.neo4j.ha;
 
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -42,17 +41,17 @@ import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetEx
 
 public class BackupHaIT
 {
-    @ClassRule
-    public static ClusterRule clusterRule = new ClusterRule( BackupHaIT.class )
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withSharedSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
             .withInstanceSetting( OnlineBackupSettings.online_backup_server, serverId -> (":" + (4444 + serverId)) );
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    private static File backupPath;
+    private File backupPath;
 
-    @BeforeClass
-    public static void setup() throws Exception
+    @Before
+    public void setup() throws Exception
     {
         backupPath = clusterRule.cleanDirectory( "backup-db" );
         createSomeData( clusterRule.startCluster().getMaster() );
