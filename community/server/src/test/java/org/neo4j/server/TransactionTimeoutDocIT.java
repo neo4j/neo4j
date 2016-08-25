@@ -19,11 +19,11 @@
  */
 package org.neo4j.server;
 
-import java.util.List;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -50,7 +50,7 @@ public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
     public void shouldHonorReallyLowSessionTimeout() throws Exception
     {
         // Given
-        server = server().withProperty( ServerSettings.transaction_timeout.name(), "1" ).build();
+        server = server().withProperty( ServerSettings.transaction_idle_timeout.name(), "1" ).build();
         server.start();
 
         String tx = HTTP.POST( txURI(), asList( map( "statement", "CREATE (n)" ) ) ).location();
@@ -62,7 +62,7 @@ public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
         // Then
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get( "errors" );
-        assertThat( (String) errors.get( 0 ).get( "code" ), equalTo( TransactionNotFound.code().serialize() ) );
+        assertThat( errors.get( 0 ).get( "code" ), equalTo( TransactionNotFound.code().serialize() ) );
     }
 
     private String txURI()

@@ -45,8 +45,9 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.guard.GuardTimeoutException;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -63,9 +64,9 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
+import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.time.FakeClock;
 
@@ -227,7 +228,6 @@ public class TransactionGuardIntegrationTest
                 GraphDatabaseSettings.auth_enabled, "false" );
     }
 
-
     private String transactionUri(CommunityNeoServer neoServer)
     {
         return neoServer.baseUri().toString() + "db/data/transaction";
@@ -306,9 +306,9 @@ public class TransactionGuardIntegrationTest
     private class GuardTestGraphDatabaseFactory extends TestGraphDatabaseFactory
     {
 
-        private CommunityFacadeFactory customFacadeFactory;
+        private GraphDatabaseFacadeFactory customFacadeFactory;
 
-        GuardTestGraphDatabaseFactory( CommunityFacadeFactory customFacadeFactory )
+        GuardTestGraphDatabaseFactory( GraphDatabaseFacadeFactory customFacadeFactory )
         {
             this.customFacadeFactory = customFacadeFactory;
         }
@@ -322,13 +322,14 @@ public class TransactionGuardIntegrationTest
         }
     }
 
-    private class GuardCommunityFacadeFactory extends CommunityFacadeFactory
+    private class GuardCommunityFacadeFactory extends GraphDatabaseFacadeFactory
     {
 
         private Clock clock;
 
         GuardCommunityFacadeFactory( Clock clock )
         {
+            super( DatabaseInfo.COMMUNITY, CommunityEditionModule::new);
             this.clock = clock;
         }
 

@@ -232,7 +232,7 @@ public interface ServerSettings
     Setting<File> lib_directory = pathSetting( "dbms.directories.lib", "lib" );
 
     @Description("Timeout for idle transactions in the REST endpoint.")
-    Setting<Long> transaction_timeout = setting( "dbms.transaction_timeout", DURATION, "60s" );
+    Setting<Long> transaction_idle_timeout = setting( "dbms.rest.transaction.idle_timeout", DURATION, "60s" );
 
     @Internal
     Setting<URI> rest_api_path = setting( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, "/db/data" );

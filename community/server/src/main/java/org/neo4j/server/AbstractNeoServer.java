@@ -265,7 +265,7 @@ public abstract class AbstractNeoServer implements NeoServer
      */
     private long getTransactionTimeoutMillis()
     {
-        final long timeout = config.get( ServerSettings.transaction_timeout );
+        final long timeout = config.get( ServerSettings.transaction_idle_timeout );
         return Math.max( timeout, MINIMUM_TIMEOUT + ROUNDING_SECOND );
     }
 

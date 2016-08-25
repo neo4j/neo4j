@@ -238,6 +238,22 @@ public interface GraphDatabaseService
     Transaction beginTx();
 
     /**
+     * Starts a new {@link Transaction transaction} with custom timeout and associates it with the current thread.
+     * Timeout will be taken into account <b>only</b> when execution guard is enabled.
+     * <p>
+     * <em>All database operations must be wrapped in a transaction.</em>
+     * <p>
+     * If you attempt to access the graph outside of a transaction, those operations will throw
+     * {@link NotInTransactionException}.
+     * <p>
+     * Please ensure that any returned {@link ResourceIterable} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @return a new transaction instance
+     */
+    Transaction beginTx( long timeout );
+
+    /**
      * Executes a query and returns an iterable that contains the result set.
      *
      * This method is the same as {@link #execute(String, java.util.Map)} with an empty parameters-map.

@@ -343,6 +343,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL );
     }
 
+    @Override
+    public Transaction beginTx( long timeout )
+    {
+        return beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL, timeout );
+    }
+
     public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
     {
         return beginTransaction( () -> spi.beginTransaction( type, accessMode ) );

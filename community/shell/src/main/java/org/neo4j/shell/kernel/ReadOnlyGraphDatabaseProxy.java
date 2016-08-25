@@ -59,8 +59,8 @@ import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDatabaseAPI, IndexManager
 {
@@ -104,9 +104,15 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
+    public Transaction beginTx( long timeout )
+    {
+        return actual.beginTx( timeout );
+    }
+
+    @Override
     public Result execute( String query )
     {
-        return execute( query, Collections.<String, Object>emptyMap() );
+        return execute( query, Collections.emptyMap() );
     }
 
     @Override
