@@ -105,20 +105,20 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)"} ),
-                equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)"} ),
+                equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)", ""} ),
+                equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)", ""} ),
                 equalTo( new Object[]{"db.awaitIndex", "db.awaitIndex(label :: STRING?, property :: STRING?, " +
-                        "timeOutSeconds :: INTEGER?) :: VOID"} ),
-                equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)"} ),
-                equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)"} ),
+                        "timeOutSeconds :: INTEGER?) :: VOID", ""} ),
+                equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)", ""} ),
+                equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)", ""} ),
                 equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: " +
-                        "STRING?)"} ),
+                        "STRING?)", ""} ),
                 equalTo( new Object[]{"dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: " +
-                        "STRING?)"} ),
+                        "STRING?, description :: STRING?)", ""} ),
                 equalTo( new Object[]{"dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF" +
-                        " STRING?, edition :: STRING?)"} ),
+                        " STRING?, edition :: STRING?)", ""} ),
                 equalTo( new Object[]{"dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, " +
-                        "description :: STRING?, attributes :: MAP?)"} )
+                        "description :: STRING?, attributes :: MAP?)", ""} )
         ) );
     }
 

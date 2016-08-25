@@ -196,11 +196,13 @@ public class BuiltInProcedures
     {
         public final String name;
         public final String signature;
+        public final String description;
 
         private ProcedureResult( ProcedureSignature signature )
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
+            this.description = signature.description().orElse( "" );
         }
     }
 

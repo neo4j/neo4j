@@ -153,15 +153,15 @@ public class BuiltInProceduresTest
     {
         // When/Then
         assertThat( call( "dbms.procedures" ), contains(
-            record( "db.awaitIndex", "db.awaitIndex(label :: STRING?, property :: STRING?, timeOutSeconds :: INTEGER?) :: VOID" ),
-            record( "db.constraints", "db.constraints() :: (description :: STRING?)" ),
-            record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)" ),
-            record( "db.labels", "db.labels() :: (label :: STRING?)" ),
-            record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)" ),
-            record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)" ),
-            record( "dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)" ),
-            record( "dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: STRING?)" ),
-            record( "dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)")
+            record( "db.awaitIndex", "db.awaitIndex(label :: STRING?, property :: STRING?, timeOutSeconds :: INTEGER?) :: VOID", "" ),
+            record( "db.constraints", "db.constraints() :: (description :: STRING?)", "" ),
+            record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)", "" ),
+            record( "db.labels", "db.labels() :: (label :: STRING?)", "" ),
+            record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)", "" ),
+            record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)", "" ),
+            record( "dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)", "" ),
+            record( "dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: STRING?, description :: STRING?)", "" ),
+            record( "dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)", "")
         ) );
     }
 
