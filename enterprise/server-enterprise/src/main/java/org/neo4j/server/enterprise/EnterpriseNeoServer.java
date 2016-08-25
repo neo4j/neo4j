@@ -43,7 +43,6 @@ import org.neo4j.metrics.source.server.ServerThreadViewSetter;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
-import org.neo4j.server.enterprise.modules.JMXManagementModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.DatabaseRoleInfoServerModule;
 import org.neo4j.server.rest.MasterInfoService;
@@ -161,8 +160,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
     @Override
     protected Iterable<ServerModule> createServerModules()
     {
-        return mix( asList( new DatabaseRoleInfoServerModule( webServer, getConfig(), logProvider ),
-                new JMXManagementModule( this ) ), super.createServerModules() );
+        return mix( asList( new DatabaseRoleInfoServerModule( webServer, getConfig(), logProvider ) ),  super.createServerModules() );
     }
 
     @Override
