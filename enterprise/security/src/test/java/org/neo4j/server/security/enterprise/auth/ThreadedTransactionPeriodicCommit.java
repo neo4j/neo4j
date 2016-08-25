@@ -48,13 +48,13 @@ public class ThreadedTransactionPeriodicCommit<S>
         this.neo = neo;
     }
 
-    void execute( ThreadingRule threading, S subject )
+    void execute( ThreadingRule threading, S subject, int nLines )
     {
-        NamedFunction<S, Throwable> servCsv =
-                new NamedFunction<S,Throwable>("serv-csv")
+        NamedFunction<Integer, Throwable> servCsv =
+                new NamedFunction<Integer,Throwable>("serv-csv")
                 {
                     @Override
-                    public Throwable apply( S s ) throws RuntimeException
+                    public Throwable apply( Integer n ) throws RuntimeException
                     {
                         try
                         {
@@ -68,19 +68,16 @@ public class ThreadedTransactionPeriodicCommit<S>
                             out.print( "Connection: close\r\n" ); // Will close stream
                             out.print( "\r\n" ); // End of headers
 
-                            out.print( "line" );
-                            out.print(      "1\r\n" );
-                            out.print( "line" );
-                            out.print(      "2\r\n" );
-                            out.print( "line" );
-                            out.print(      "3\r\n" );
+                            for ( int i = 0; i < n-1; i++ )
+                            {
+                                out.print( "line " + i + "\r\n" );
+                            }
 
                             out.flush();
 
                             barrier.reached();
 
-                            out.print( "line" );
-                            out.print(      "4\r\n" );
+                            out.print( "line " + (n-1) +"\r\n" );
 
                             out.close();
 
@@ -119,7 +116,7 @@ public class ThreadedTransactionPeriodicCommit<S>
                     }
                 };
 
-        servCsvResult = threading.execute( servCsv, subject );
+        servCsvResult = threading.execute( servCsv, nLines );
         loadCsvResult = threading.execute( loadCsv, subject );
     }
 
