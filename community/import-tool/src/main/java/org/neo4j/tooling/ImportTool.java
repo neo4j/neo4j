@@ -37,6 +37,7 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
@@ -44,6 +45,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
@@ -71,7 +73,9 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
+import static java.lang.Math.toIntExact;
 import static java.nio.charset.Charset.defaultCharset;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
@@ -194,7 +198,10 @@ public class ImportTool
                         + "Examples of supported config are:\n"
                         + GraphDatabaseSettings.dense_node_threshold.name() + "\n"
                         + GraphDatabaseSettings.string_block_size.name() + "\n"
-                        + GraphDatabaseSettings.array_block_size.name() );
+                        + GraphDatabaseSettings.array_block_size.name() ),
+        PAGE_SIZE( "page-size", Format.bytes( org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT.pageSize() ),
+                "<page size in bytes",
+                "Page size in bytes, or e.g. 4M or 8k" );
 
         private final String key;
         private final Object defaultValue;
@@ -319,6 +326,7 @@ public class ImportTool
         boolean skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns;
         Config dbConfig;
         OutputStream badOutput = null;
+        int pageSize = -1;
         org.neo4j.unsafe.impl.batchimport.Configuration configuration = null;
 
         boolean success = false;
@@ -351,7 +359,9 @@ public class ImportTool
 
             dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.<File>optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
-            configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig );
+            pageSize = toIntExact( Settings.parseLongWithUnit( args.get( Options.PAGE_SIZE.key(),
+                    String.valueOf( org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT.pageSize() ) ) ) );
+            configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, pageSize );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
@@ -497,7 +507,7 @@ public class ImportTool
     }
 
     private static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
-            final boolean defaultSettingsSuitableForTests, final Config dbConfig )
+            final boolean defaultSettingsSuitableForTests, final Config dbConfig, int pageSize )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
         {
@@ -517,6 +527,12 @@ public class ImportTool
             public int denseNodeThreshold()
             {
                 return dbConfig.get( GraphDatabaseSettings.dense_node_threshold );
+            }
+
+            @Override
+            public int pageSize()
+            {
+                return pageSize;
             }
         };
     }
