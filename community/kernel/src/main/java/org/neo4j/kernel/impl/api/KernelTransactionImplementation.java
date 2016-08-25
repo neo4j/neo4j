@@ -763,7 +763,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public Revertable restrict( AccessMode mode )
+    public Revertable overrideWith( AccessMode mode )
     {
         AccessMode oldMode = this.accessMode;
         this.accessMode = new OverriddenAccessMode( oldMode, mode );

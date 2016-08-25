@@ -340,7 +340,7 @@ public class AwaitIndexProcedureTest
         }
 
         @Override
-        public Revertable restrict( AccessMode mode )
+        public Revertable overrideWith( AccessMode mode )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
