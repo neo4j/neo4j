@@ -19,7 +19,7 @@
  */
 package jmx;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.URI;
@@ -64,22 +64,11 @@ import static org.neo4j.test.ha.ClusterRule.stringWithIntBase;
 
 public class HaBeanIT
 {
-    @ClassRule
-    public static final ClusterRule clusterRule = new ClusterRule( HaBeanIT.class )
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withInstanceSetting( setting( "jmx.port", STRING, (String) null ), intBase( 9912 ) )
             .withInstanceSetting( HaSettings.ha_server, stringWithIntBase( ":", 1136 ) )
             .withInstanceSetting( GraphDatabaseSettings.forced_kernel_id, stringWithIntBase( "kernel", 0 ) );
-
-    public Neo4jManager beans( HighlyAvailableGraphDatabase db )
-    {
-        return new Neo4jManager( db.getDependencyResolver().resolveDependency( JmxKernelExtension
-                .class ).getSingleManagementBean( Kernel.class ) );
-    }
-
-    public HighAvailability ha( HighlyAvailableGraphDatabase db )
-    {
-        return beans( db ).getHighAvailabilityBean();
-    }
 
     @Test
     public void canGetHaBean() throws Throwable
@@ -296,11 +285,20 @@ public class HaBeanIT
         }
     }
 
-    public static URI getUriForScheme( final String scheme, Iterable<URI> uris )
+    private Neo4jManager beans( HighlyAvailableGraphDatabase db )
     {
-        return firstOrNull( filter( item -> {
-            return item.getScheme().equals( scheme );
-        }, uris ) );
+        return new Neo4jManager( db.getDependencyResolver().resolveDependency( JmxKernelExtension
+                .class ).getSingleManagementBean( Kernel.class ) );
+    }
+
+    private HighAvailability ha( HighlyAvailableGraphDatabase db )
+    {
+        return beans( db ).getHighAvailabilityBean();
+    }
+
+    private static URI getUriForScheme( final String scheme, Iterable<URI> uris )
+    {
+        return firstOrNull( filter( item ->  item.getScheme().equals( scheme ), uris ) );
     }
 
     private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster ) throws Exception

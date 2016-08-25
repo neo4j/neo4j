@@ -21,7 +21,6 @@ package org.neo4j.ha;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -40,7 +39,6 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -58,6 +56,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
@@ -66,10 +65,11 @@ public class TransactionConstraintsIT
 {
     private static final int SLAVE_ONLY_ID = 1;
 
-    @ClassRule
-    public static final ClusterRule clusterRule = new ClusterRule( TransactionConstraintsIT.class )
-            .withSharedSetting( HaSettings.pull_interval, "0" )
-            .withInstanceSetting( HaSettings.slave_only,  (serverId) -> serverId == SLAVE_ONLY_ID ? "true" : "false" );
+    @Rule
+    public final ClusterRule clusterRule =
+            new ClusterRule( getClass() ).withSharedSetting( HaSettings.pull_interval, "0" )
+                    .withInstanceSetting( HaSettings.slave_only,
+                            ( serverId ) -> serverId == SLAVE_ONLY_ID ? "true" : "false" );
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -160,7 +160,7 @@ public class TransactionConstraintsIT
 
     private HighlyAvailableGraphDatabase getSlaveOnlySlave()
     {
-        HighlyAvailableGraphDatabase db = Iterables.first( cluster.getAllMembers() );
+        HighlyAvailableGraphDatabase db = first( cluster.getAllMembers() );
         assertEquals( SLAVE_ONLY_ID, cluster.getServerId( db ).toIntegerIndex() );
         assertFalse( db.isMaster() );
         return db;
@@ -251,7 +251,7 @@ public class TransactionConstraintsIT
         deleteNode( cluster.getMaster(), node.getId() );
 
         // WHEN
-        try (Transaction slaveTransaction = aSlave.beginTx())
+        try ( Transaction slaveTransaction = aSlave.beginTx() )
         {
             node.setProperty( "name", "test" );
             fail( "Shouldn't be able to modify a node deleted on master" );
@@ -276,7 +276,8 @@ public class TransactionConstraintsIT
         deadlockDetectionBetween( cluster.getAnySlave(), cluster.getMaster() );
     }
 
-    private void deadlockDetectionBetween( HighlyAvailableGraphDatabase slave1, final HighlyAvailableGraphDatabase slave2 ) throws Exception
+    private void deadlockDetectionBetween( HighlyAvailableGraphDatabase slave1,
+            final HighlyAvailableGraphDatabase slave2 ) throws Exception
     {
         // GIVEN
         // -- two members acquiring a read lock on the same entity
@@ -293,8 +294,9 @@ public class TransactionConstraintsIT
         tx1.acquireReadLock( commonNode );
         thread2.execute( new AcquireReadLockOnReferenceNode( tx2, commonNode ) );
         // -- and one of them wanting (and awaiting) to upgrade its read lock to a write lock
-        Future<Lock> writeLockFuture = thread2.executeDontWait( state -> {
-            try( Transaction ignored = tx2 ) // Close transaction no matter what happens
+        Future<Lock> writeLockFuture = thread2.executeDontWait( state ->
+        {
+            try ( Transaction ignored = tx2 ) // Close transaction no matter what happens
             {
                 return tx2.acquireWriteLock( commonNode );
             }
@@ -303,10 +305,10 @@ public class TransactionConstraintsIT
         for ( int i = 0; i < 10; i++ )
         {
             thread2.waitUntilThreadState( Thread.State.TIMED_WAITING, Thread.State.WAITING );
-            Thread.sleep(2);
+            Thread.sleep( 2 );
         }
 
-        try( Transaction ignored = tx1 ) // Close transaction no matter what happens
+        try ( Transaction ignored = tx1 ) // Close transaction no matter what happens
         {
             // WHEN
             tx1.acquireWriteLock( commonNode );
@@ -319,7 +321,7 @@ public class TransactionConstraintsIT
         {
             // THEN -- deadlock should be avoided with this exception
         }
-        catch( ExecutionException e )
+        catch ( ExecutionException e )
         {
             // OR -- the tx2 thread fails with executionexception, caused by deadlock on its end
             assertThat( e.getCause(), instanceOf( DeadlockDetectedException.class ) );
@@ -441,7 +443,7 @@ public class TransactionConstraintsIT
         }
     }
 
-    private static class AcquireReadLockOnReferenceNode implements WorkerCommand<HighlyAvailableGraphDatabase, Lock>
+    private static class AcquireReadLockOnReferenceNode implements WorkerCommand<HighlyAvailableGraphDatabase,Lock>
     {
         private final Transaction tx;
         private final Node commonNode;
@@ -459,7 +461,7 @@ public class TransactionConstraintsIT
         }
     }
 
-    private static class AcquireWriteLock implements WorkerCommand<HighlyAvailableGraphDatabase, Lock>
+    private static class AcquireWriteLock implements WorkerCommand<HighlyAvailableGraphDatabase,Lock>
     {
         private final Transaction tx;
         private final Callable<Node> callable;
@@ -492,7 +494,7 @@ public class TransactionConstraintsIT
             }
             catch ( Exception e )
             {
-                if ( i > 0 && i%10 == 0 )
+                if ( i > 0 && i % 10 == 0 )
                 {
                     e.printStackTrace();
                 }

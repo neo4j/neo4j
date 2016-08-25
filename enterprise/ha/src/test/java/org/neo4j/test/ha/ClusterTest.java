@@ -21,7 +21,6 @@ package org.neo4j.test.ha;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -61,7 +60,6 @@ import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalArbiters;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
@@ -180,31 +178,6 @@ public class ClusterTest
             {
                 Node node = anySlave.getNodeById( nodeId );
                 assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
-            }
-        }
-        finally
-        {
-            clusterManager.safeShutdown();
-        }
-    }
-
-    @Test
-    @Ignore( "JH: Ignored for by CG in March 2013, needs revisit. I added @ignore instead of commenting out to list " +
-            "this in static analysis." )
-    public void testArbiterStartsFirstAndThenTwoInstancesJoin() throws Throwable
-    {
-        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "testCluster" ) )
-                .withCluster( clusterWithAdditionalArbiters( 2, 1 ) ).build();
-        try
-        {
-            clusterManager.start();
-            clusterManager.getCluster().await( allSeesAllAsAvailable() );
-
-            HighlyAvailableGraphDatabase master = clusterManager.getCluster().getMaster();
-            try ( Transaction tx = master.beginTx() )
-            {
-                master.createNode();
-                tx.success();
             }
         }
         finally
