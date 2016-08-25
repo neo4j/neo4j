@@ -99,7 +99,7 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
     this.treeFold(TreeAcc[Set[Variable]](Set.empty)) {
       case scope: ScopeExpression => {
         case acc =>
-          val newAcc = acc.pushScope(scope.variables)
+          val newAcc = acc.pushScope(scope.introducedVariables)
           (newAcc, Some((x) => x.popScope))
       }
       case id: Variable => acc => {
@@ -114,7 +114,7 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
     this.treeFold(TreeAcc[Set[Ref[Variable]]](Set.empty)) {
       case scope: ScopeExpression => {
         case acc =>
-          val newAcc = acc.pushScope(scope.variables)
+          val newAcc = acc.pushScope(scope.introducedVariables)
           (newAcc, Some((x) => x.popScope))
       }
       case occurrence: Variable if occurrence.name == variable.name => acc => {
@@ -138,7 +138,7 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
     this.treeFold(TreeAcc[Seq[(Expression, Set[Variable])]](Seq.empty)) {
       case scope: ScopeExpression=> {
         case acc =>
-          val newAcc = acc.pushScope(scope.variables).mapData { case pairs => pairs :+ (scope -> acc.variablesInScope) }
+          val newAcc = acc.pushScope(scope.introducedVariables).mapData { case pairs => pairs :+ (scope -> acc.variablesInScope) }
           (newAcc, Some((x) => x.popScope))
       }
 

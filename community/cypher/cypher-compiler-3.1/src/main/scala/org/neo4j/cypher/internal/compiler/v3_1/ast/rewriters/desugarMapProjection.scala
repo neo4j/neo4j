@@ -72,7 +72,6 @@ case class DesugaredMapProjection(name: Variable, items: Seq[LiteralEntry], incl
   override def semanticCheck(ctx: SemanticContext) =
     items.semanticCheck(ctx) chain
       name.ensureDefined() chain
-      super.semanticCheck(ctx) ifOkChain (// We need to remember the scope to later rewrite this ASTNode
-      s => SemanticCheckResult.success(s.noteCurrentScope(this)))
-
+      super.semanticCheck(ctx) ifOkChain // We need to remember the scope to later rewrite this ASTNode
+      recordCurrentScope
 }

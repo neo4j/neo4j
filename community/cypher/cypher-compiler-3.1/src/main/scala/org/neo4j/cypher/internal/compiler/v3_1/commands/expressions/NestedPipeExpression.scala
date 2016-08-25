@@ -24,17 +24,21 @@ import org.neo4j.cypher.internal.compiler.v3_1.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-case class NestedPipeExpression(pipe: Pipe, path: ProjectedPath) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+/*
+Contains an expression that is really a pipe. An inner expression is run for every row returned by the inner pipe, and
+the result of the NestedPipeExpression evaluation is a collection containing the result of these inner expressions
+ */
+case class NestedPipeExpression(pipe: Pipe, inner: Expression) extends Expression {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val innerState = state.withInitialContext(ctx).withDecorator(state.decorator.innerDecorator )
-    pipe.createResults(innerState).map(ctx => path(ctx)).toSeq
+    pipe.createResults(innerState).map(ctx => inner(ctx)).toSeq
   }
 
-  def rewrite(f: (Expression) => Expression) = f(this)
+  override def rewrite(f: (Expression) => Expression) = f(this)
 
-  def arguments = Nil
+  override def arguments = Nil
 
-  def calculateType(symbols: SymbolTable): CypherType = CTList(CTPath)
+  override def calculateType(symbols: SymbolTable): CypherType = CTList(CTPath)
 
-  def symbolTableDependencies = Set()
+  override def symbolTableDependencies = Set()
 }

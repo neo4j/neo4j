@@ -100,6 +100,50 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     expr.dependencies should equal(Set(varFor("n"), varFor("k")))
   }
 
+  test("should compute dependencies for nested filtering expressions") {
+    // extract(x IN (n)-->(k) | extract(y IN [1,2,3] | y) )
+    val pat: RelationshipsPattern = RelationshipsPattern(
+      RelationshipChain(
+        NodePattern(Some(varFor("n")), Seq.empty, None)_,
+        RelationshipPattern(None, optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+        NodePattern(Some(varFor("k")), Seq.empty, None)_
+      )_
+    )_
+    val innerExpr: Expression = ExtractExpression(
+      varFor("y"),
+      Collection(Seq(literalInt(1), literalInt(2), literalInt(3)))_,
+      None,
+      Some(varFor("y"))
+    )_
+    val expr: Expression = ExtractExpression(
+      varFor("x"),
+      PatternExpression(pat),
+      None,
+      Some(innerExpr)
+    )_
+
+    expr.dependencies should equal(Set(varFor("n"), varFor("k")))
+  }
+
+  test("should compute dependencies for pattern comprehensions") {
+    // [ (n)-->(k) | k ]
+    val pat: RelationshipsPattern = RelationshipsPattern(
+      RelationshipChain(
+        NodePattern(Some(varFor("n")), Seq.empty, None)_,
+        RelationshipPattern(None, optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+        NodePattern(Some(varFor("k")), Seq.empty, None)_
+      )_
+    )_
+    val expr = PatternComprehension(
+      namedPath = None,
+      pattern = pat,
+      predicate = None,
+      projection = varFor("k")
+    )(pos)
+
+    expr.withOuterScope(Set(varFor("n"), varFor("k"))).dependencies should equal(Set(varFor("n"), varFor("k")))
+    expr.withOuterScope(Set.empty).dependencies should equal(Set.empty)
+  }
 
   test("should compute inputs of composite expressions") {
     val identA = varFor("a")

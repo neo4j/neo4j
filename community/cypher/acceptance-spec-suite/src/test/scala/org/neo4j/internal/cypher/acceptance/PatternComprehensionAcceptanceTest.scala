@@ -225,4 +225,38 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     result.toList should equal(List(Map("list" -> List("Mats")), Map("list" -> List("Max")), Map("list" -> List(null))))
   }
+
+  test("size on unbound pattern comprehension should work fine") {
+    val a = createLabeledNode("Start")
+    relate(a, createNode())
+    relate(a, createNode())
+    relate(createLabeledNode("Start"), createNode())
+
+    val query = "RETURN size([(:Start)-->() | 1]) AS size"
+
+    val result = executeWithCostPlannerOnly(query)
+    result.toList should equal(List(Map("size" -> 3)))
+  }
+
+  test("pattern comprehension inside list comprehension") {
+    val a = createLabeledNode("X", "A")
+    val m1 = createLabeledNode("Y")
+    relate(a, m1)
+    relate(m1, createLabeledNode("Y"))
+    relate(m1, createLabeledNode("Y"))
+
+    val b = createLabeledNode("X", "B")
+    val m2 = createNode()
+    relate(b, m2)
+    relate(m2, createLabeledNode("Y"))
+    relate(m2, createNode())
+
+    val query = """MATCH p = (n:X)-->() RETURN n, [x IN nodes(p) | size([(x)-->(y:Y) | 1])] AS list"""
+
+    val result = executeWithCostPlannerOnly(query)
+    result.toSet should equal(Set(
+      Map("n" -> a, "list" -> Seq(1, 2)),
+      Map("n" -> b, "list" -> Seq(0, 1))
+    ))
+  }
 }

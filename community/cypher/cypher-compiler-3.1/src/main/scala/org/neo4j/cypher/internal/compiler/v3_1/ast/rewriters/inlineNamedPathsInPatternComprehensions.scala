@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
 case object inlineNamedPathsInPatternComprehensions extends Rewriter {
 
   private val instance = bottomUp(Rewriter.lift {
-    case expr @ PatternComprehension(Some(path), pattern, predicate, projection) =>
+    case expr @ PatternComprehension(Some(path), pattern, predicate, projection, _) =>
       val patternElement = pattern.element
       expr.copy(
         namedPath = None,
