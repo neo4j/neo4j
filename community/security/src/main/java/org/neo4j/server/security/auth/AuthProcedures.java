@@ -59,7 +59,7 @@ public class AuthProcedures
     }
 
     @Deprecated
-    @Procedure( name = "dbms.changePassword", mode = DBMS )
+    @Procedure( name = "dbms.changePassword", mode = DBMS, deprecatedBy = "dbms.security.changePassword" )
     public void changePasswordDeprecated( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
         authSubject.setPassword( password );
