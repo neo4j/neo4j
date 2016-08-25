@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -137,15 +138,19 @@ public class ReflectiveProcedureCompiler
             }
         }
 
-        boolean deprecated = method.getAnnotation( Deprecated.class ) != null;
-        String deprecatedBy = procedure.deprecatedBy();
-        if ( !deprecated && !deprecatedBy.equals( ProcedureSignature.NOT_DEPRECATED ) )
+        String deprecatedBy = procedure.deprecatedBy().trim();
+        Optional<String> deprecated = Optional.empty();
+        if ( method.isAnnotationPresent( Deprecated.class ) )
         {
-            deprecated = true;
+            deprecated = Optional.of( deprecatedBy );
+        }
+        else if ( !deprecatedBy.isEmpty() )
+        {
             log.warn( "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
+            deprecated = Optional.of( deprecatedBy );
         }
         ProcedureSignature signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode,
-                deprecated, deprecatedBy );
+                deprecated );
 
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }

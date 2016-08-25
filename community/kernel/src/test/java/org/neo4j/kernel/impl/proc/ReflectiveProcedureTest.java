@@ -290,13 +290,12 @@ public class ReflectiveProcedureTest
             switch ( name )
             {
             case "newProc":
-                assertFalse( "Should not be deprecated", proc.signature().isDeprecated() );
-                assertThat( proc.signature().deprecatedBy(), equalTo( ProcedureSignature.NOT_DEPRECATED ) );
+                assertFalse( "Should not be deprecated", proc.signature().deprecated().isPresent() );
                 break;
             case "oldProc":
             case "badProc":
-                assertTrue( "Should be deprecated", proc.signature().isDeprecated() );
-                assertThat( proc.signature().deprecatedBy(), equalTo( "newProc" ) );
+                assertTrue( "Should be deprecated", proc.signature().deprecated().isPresent() );
+                assertThat( proc.signature().deprecated().get(), equalTo( "newProc" ) );
                 break;
             default:
                 fail( "Unexpected procedure: " + name );

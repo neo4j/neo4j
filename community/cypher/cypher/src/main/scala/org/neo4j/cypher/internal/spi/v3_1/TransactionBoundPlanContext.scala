@@ -136,8 +136,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
     val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue))).toIndexedSeq
     val output = if (ks.isVoid) None else Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))).toIndexedSeq)
     val mode = asCypherProcMode(ks.mode())
-    val deprecationInfo = if (ks.isDeprecated)
-      Option(ks.deprecatedBy())
+    val deprecationInfo = if (ks.deprecated().isPresent())
+      Option(ks.deprecated().get())
     else
       None
 
