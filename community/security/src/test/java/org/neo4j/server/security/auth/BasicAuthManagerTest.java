@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
+import junit.framework.TestCase;
+import org.hamcrest.core.IsEqual;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,6 +32,7 @@ import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -149,13 +152,25 @@ public class BasicAuthManagerTest
     }
 
     @Test
-    public void shouldDeleteUnknownUser() throws Throwable
+    public void shouldFailToDeleteUnknownUser() throws Throwable
     {
         // Given
         manager.newUser( "jake", "abc123", true );
 
-        // When
-        manager.deleteUser( "unknown" );
+        try
+        {
+            // When
+            manager.deleteUser( "nonExistentUser" );
+            TestCase.fail("User 'nonExistentUser' should no longer exist, expected exception.");
+        }
+        catch ( InvalidArgumentsException e )
+        {
+            assertThat( e.getMessage(), containsString( "User 'nonExistentUser' does not exist." ) );
+        }
+        catch ( Throwable t )
+        {
+            assertThat( t.getClass(), IsEqual.equalTo( InvalidArgumentsException.class ) );
+        }
 
         // Then
         assertNotNull( users.getUserByName( "jake" ) );

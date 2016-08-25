@@ -41,7 +41,7 @@ public class ProcedureRegistry
      *
      * @param proc the procedure.
      */
-    public void register( CallableProcedure proc ) throws ProcedureException
+    public void register( CallableProcedure proc, boolean overrideCurrentImplementation ) throws ProcedureException
     {
         ProcedureSignature signature = proc.signature();
         ProcedureSignature.ProcedureName name = signature.name();
@@ -49,10 +49,22 @@ public class ProcedureRegistry
         validateSignature( signature, signature.inputSignature(), "input" );
         validateSignature( signature, signature.outputSignature(), "output" );
 
-        if ( procedures.putIfAbsent( name, proc ) != null )
+        CallableProcedure oldImplementation = procedures.get( name );
+        if ( oldImplementation == null )
         {
-            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "Unable to register procedure, because the name `%s` is already in use.", name );
+            procedures.put( name, proc );
+        }
+        else
+        {
+            if ( overrideCurrentImplementation )
+            {
+                procedures.put( name, proc );
+            }
+            else
+            {
+                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                        "Unable to register procedure, because the name `%s` is already in use.", name );
+            }
         }
     }
 

@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.auth.BasicAuthManager;
+import org.neo4j.server.security.auth.BasicAuthSubject;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 
@@ -167,7 +168,7 @@ public class AuthorizationFilterTest
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
-        AuthSubject authSubject = mock( AuthSubject.class );
+        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
@@ -195,7 +196,7 @@ public class AuthorizationFilterTest
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
-        AuthSubject authSubject = mock( AuthSubject.class );
+        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/user/foo" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
@@ -216,7 +217,7 @@ public class AuthorizationFilterTest
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
-        AuthSubject authSubject = mock( AuthSubject.class );
+        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getRequestURL() ).thenReturn( new StringBuffer( "http://bar.baz:7474/db/data/" ) );
@@ -243,7 +244,7 @@ public class AuthorizationFilterTest
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
-        AuthSubject authSubject = mock( AuthSubject.class );
+        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
@@ -267,7 +268,7 @@ public class AuthorizationFilterTest
         // Given
         final AuthorizationEnabledFilter filter = new AuthorizationEnabledFilter( () -> authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
-        AuthSubject authSubject = mock( AuthSubject.class );
+        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );

@@ -97,6 +97,11 @@ public class BasicAuthSubject implements AuthSubject
         }
     }
 
+    public BasicAuthManager getAuthManager()
+    {
+        return authManager;
+    }
+
     public boolean doesUsernameMatch( String username )
     {
         return user.name().equals( username );
@@ -135,6 +140,6 @@ public class BasicAuthSubject implements AuthSubject
     @Override
     public String name()
     {
-        return accessMode.name();
+        return user.name();
     }
 }

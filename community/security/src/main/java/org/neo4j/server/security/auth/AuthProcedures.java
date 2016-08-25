@@ -20,6 +20,10 @@
 package org.neo4j.server.security.auth;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
@@ -34,9 +38,68 @@ public class AuthProcedures
     @Context
     public AuthSubject authSubject;
 
+    @Procedure( name = "dbms.createUser", mode = DBMS )
+    public void createUser( @Name( "username" ) String username, @Name( "password" ) String password,
+            @Name( "requirePasswordChange" ) boolean requirePasswordChange )
+            throws InvalidArgumentsException, IOException
+    {
+        BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
+        subject.getAuthManager().newUser( username, password, requirePasswordChange );
+    }
+
+    @Procedure( name = "dbms.deleteUser", mode = DBMS )
+    public void deleteUser( @Name( "username" ) String username ) throws InvalidArgumentsException, IOException
+    {
+        BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
+        if ( subject.doesUsernameMatch( username ) )
+        {
+            throw new InvalidArgumentsException( "Deleting yourself (user '" + username + "') is not allowed." );
+        }
+        subject.getAuthManager().deleteUser( username );
+    }
+
     @Procedure( name = "dbms.changePassword", mode = DBMS )
     public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
         authSubject.setPassword( password );
+    }
+
+    @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
+    public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
+    {
+        BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
+        return Stream.of( new UserResult(
+                subject.name(),
+                subject.getAuthManager().getUser( subject.name() ).getFlags()
+            ) );
+    }
+
+    @Procedure( name = "dbms.listUsers", mode = DBMS )
+    public Stream<UserResult> listUsers() throws InvalidArgumentsException, IOException
+    {
+        BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
+        Set<String> usernames = subject.getAuthManager().getAllUsernames();
+        List<UserResult> results = new ArrayList<>();
+        for ( String username : usernames )
+        {
+            results.add( new UserResult(
+                    username,
+                    subject.getAuthManager().getUser( username ).getFlags()
+                ) );
+        }
+        return results.stream();
+    }
+
+    public static class UserResult
+    {
+        public final String username;
+        public final List<String> flags;
+
+        UserResult( String username, Iterable<String> flags )
+        {
+            this.username = username;
+            this.flags = new ArrayList<>();
+            for ( String f : flags ) {this.flags.add( f );}
+        }
     }
 }
