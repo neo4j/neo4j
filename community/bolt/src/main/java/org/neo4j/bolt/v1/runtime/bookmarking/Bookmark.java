@@ -51,7 +51,7 @@ public class Bookmark
             }
             catch ( NumberFormatException e )
             {
-                throw new BookmarkFormatException( bookmarkString );
+                throw new BookmarkFormatException( bookmarkString, e );
             }
         }
         throw new BookmarkFormatException( bookmarkString );
@@ -64,6 +64,12 @@ public class Bookmark
 
     static class BookmarkFormatException extends KernelException
     {
+        BookmarkFormatException( String bookmarkString, NumberFormatException e )
+        {
+            super( Status.Transaction.InvalidBookmark, e, "Supplied bookmark [%s] does not conform to pattern %s; " +
+                    "unable to parse transaction id", bookmarkString, BOOKMARK_TX_PREFIX );
+        }
+
         BookmarkFormatException( String bookmarkString )
         {
             super( Status.Transaction.InvalidBookmark, "Supplied bookmark [%s] does not conform to pattern %s",
