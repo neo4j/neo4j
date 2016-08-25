@@ -29,8 +29,6 @@ import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.graphdb.security.CredentialsExpiredException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -38,8 +36,8 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 
+import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class TransactionStateMachine implements StatementProcessor
 {
@@ -153,7 +151,7 @@ public class TransactionStateMachine implements StatementProcessor
                             if ( params.containsKey( "bookmark" ) )
                             {
                                 final Bookmark bookmark = Bookmark.fromString( params.get( "bookmark" ).toString() );
-                                spi.awaitUpToDate( bookmark.txId(), 30, TimeUnit.SECONDS );
+                                spi.awaitUpToDate( bookmark.txId(), Duration.ofSeconds( 30 ) );
                                 ctx.currentResult = new BookmarkResult( bookmark );
                             }
                             else
@@ -331,7 +329,7 @@ public class TransactionStateMachine implements StatementProcessor
 
     interface SPI
     {
-        void awaitUpToDate( long oldestAcceptableTxId, int timeout, TimeUnit timeoutUnit ) throws TransactionFailureException;
+        void awaitUpToDate( long oldestAcceptableTxId, Duration timeout ) throws TransactionFailureException;
 
         long newestEncounteredTxId();
 

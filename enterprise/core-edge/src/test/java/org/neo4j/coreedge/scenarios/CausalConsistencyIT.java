@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.coreedge.ClusterRule;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.time.Duration.ofSeconds;
 
 import static org.junit.Assert.fail;
 
@@ -58,7 +58,7 @@ public class CausalConsistencyIT
 
         // then
         EdgeGraphDatabase edgeGraphDatabase = cluster.findAnEdgeMember().database();
-        transactionIdTracker( edgeGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, 3, SECONDS );
+        transactionIdTracker( edgeGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
     }
 
     @Test
@@ -83,7 +83,7 @@ public class CausalConsistencyIT
         // when the poller is paused, transaction doesn't make it to the edge server
         try
         {
-            transactionIdTracker( edgeGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, 3, SECONDS );
+            transactionIdTracker( edgeGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
             fail( "should have thrown exception" );
         }
         catch ( TransactionFailureException e )
@@ -93,7 +93,7 @@ public class CausalConsistencyIT
 
         // when the poller is resumed, it does make it to the edge server
         pollingClient.resume();
-        transactionIdTracker( edgeGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, 3, SECONDS );
+        transactionIdTracker( edgeGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
     }
 
     private TransactionIdTracker transactionIdTracker( GraphDatabaseAPI database )

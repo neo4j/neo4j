@@ -19,8 +19,8 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.graphdb.Result;
@@ -57,9 +57,9 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
     }
 
     @Override
-    public void awaitUpToDate( long oldestAcceptableTxId, int timeout, TimeUnit timeoutUnit ) throws TransactionFailureException
+    public void awaitUpToDate( long oldestAcceptableTxId, Duration timeout ) throws TransactionFailureException
     {
-        transactionIdTracker.awaitUpToDate( oldestAcceptableTxId, timeout, timeoutUnit );
+        transactionIdTracker.awaitUpToDate( oldestAcceptableTxId, timeout );
     }
 
     @Override

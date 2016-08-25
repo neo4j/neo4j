@@ -24,8 +24,8 @@ import org.junit.Test;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.time.Duration.ofMillis;
+import static java.time.Duration.ofSeconds;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -46,7 +46,7 @@ public class TransactionIdTrackerTest
                 new TransactionIdTracker( transactionIdStore );
 
         // when
-        transactionIdTracker.awaitUpToDate( BASE_TX_ID, 5, SECONDS );
+        transactionIdTracker.awaitUpToDate( BASE_TX_ID, ofSeconds( 5 ) );
 
         // then all good!
     }
@@ -61,7 +61,7 @@ public class TransactionIdTrackerTest
                 new TransactionIdTracker( transactionIdStore );
 
         // when
-        transactionIdTracker.awaitUpToDate( version, 5, SECONDS );
+        transactionIdTracker.awaitUpToDate( version, ofSeconds( 5 ) );
 
         // then all good!
 
@@ -79,7 +79,7 @@ public class TransactionIdTrackerTest
         // when
         try
         {
-            transactionIdTracker.awaitUpToDate( version + 1, 100, MILLISECONDS);
+            transactionIdTracker.awaitUpToDate( version + 1, ofMillis( 100 ) );
             fail( "should have thrown" );
         }
         catch ( TransactionFailureException ex )

@@ -23,6 +23,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import static org.neo4j.function.Predicates.tryAwait;
@@ -61,10 +62,12 @@ public class TransactionIdTracker
      *     or timeout.</li>
      * </ol>
      *
-     * @param oldestAcceptableTxId id of the Oldest Acceptable Transaction (OAT) that must have been applied before continuing work.
+     * @param oldestAcceptableTxId id of the Oldest Acceptable Transaction (OAT) that must have been applied before
+     *                             continuing work.
+     * @param timeout maximum duration to wait for OAT to be applied
      * @throws TransactionFailureException
      */
-    public void awaitUpToDate( long oldestAcceptableTxId, int timeout, TimeUnit timeoutUnit ) throws TransactionFailureException
+    public void awaitUpToDate( long oldestAcceptableTxId, Duration timeout ) throws TransactionFailureException
     {
         if ( oldestAcceptableTxId <= BASE_TX_ID )
         {
@@ -74,7 +77,7 @@ public class TransactionIdTracker
         try
         {
             if ( !tryAwait( () -> oldestAcceptableTxId <= transactionIdStore.getLastClosedTransactionId(),
-                    timeout, timeoutUnit, POLL_INTERVAL, POLL_UNIT ) )
+                    timeout.toMillis(), TimeUnit.MILLISECONDS, POLL_INTERVAL, POLL_UNIT ) )
             {
                 throw new TransactionFailureException( Status.Transaction.InstanceStateChanged,
                         "Database not up to the requested version: %d. Latest database version is %d", oldestAcceptableTxId,
@@ -91,7 +94,7 @@ public class TransactionIdTracker
     /**
      * Find the id of the Newest Encountered Transaction (NET) that could have been seen on this server.
      * We expect the returned id to be sent back the client and ultimately supplied to
-     * {@link #awaitUpToDate(long, int, TimeUnit)} on this server, or on a different server in the cluster.
+     * {@link #awaitUpToDate(long, Duration)} on this server, or on a different server in the cluster.
      *
      * @return id of the Newest Encountered Transaction (NET).
      */
