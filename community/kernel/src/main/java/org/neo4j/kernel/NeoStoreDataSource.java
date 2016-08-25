@@ -34,7 +34,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -161,6 +160,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.time.Clocks;
 
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
@@ -660,7 +660,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         long timeMillisThreshold = config.get( GraphDatabaseSettings.check_point_interval_time );
         TimeCheckPointThreshold timeCheckPointThreshold =
-                new TimeCheckPointThreshold( timeMillisThreshold, Clock.SYSTEM_CLOCK );
+                new TimeCheckPointThreshold( timeMillisThreshold, Clocks.systemClock() );
 
         CheckPointThreshold threshold =
                 CheckPointThresholds.or( countCommittedTransactionThreshold, timeCheckPointThreshold );
@@ -795,7 +795,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
                 constraintIndexCreator, statementOperations, schemaWriteGuard, transactionHeaderInformationFactory,
                 transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor, life,
-                tracers, storageEngine, procedures, transactionIdStore, Clock.SYSTEM_CLOCK ) );
+                tracers, storageEngine, procedures, transactionIdStore, Clocks.systemClock() ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures );
 

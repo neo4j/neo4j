@@ -42,7 +42,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status.Request;
 import org.neo4j.kernel.api.exceptions.Status.Schema;
@@ -66,6 +65,7 @@ import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollecti
 import org.neo4j.string.UTF8;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
+import org.neo4j.time.Clocks;
 
 import static java.lang.Long.parseLong;
 import static java.util.Collections.emptyMap;
@@ -107,7 +107,7 @@ public class RestfulGraphDatabaseTest
                 new RestfulGraphDatabase(
                         new JsonFormat(),
                         output,
-                        new DatabaseActions( new LeaseManager( new FakeClock() ), true, database.getGraph() ),
+                        new DatabaseActions( new LeaseManager( Clocks.fakeClock() ), true, database.getGraph() ),
                         new ConfigAdapter( new Config( emptyMap(), ServerSettings.class, GraphDatabaseSettings.class ) )
                 )
         );

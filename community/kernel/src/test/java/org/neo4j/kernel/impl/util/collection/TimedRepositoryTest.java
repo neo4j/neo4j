@@ -33,7 +33,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.FakeClock;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -53,7 +54,7 @@ public class TimedRepositoryTest
     private final Consumer<Long> consumer = reapedValues::add;
 
     private final long timeout = 100;
-    private final FakeClock clock = new FakeClock();
+    private final FakeClock clock = Clocks.fakeClock();
     private final TimedRepository<Long,Long> repo = new TimedRepository<>( provider, consumer, timeout, clock );
 
     @Test

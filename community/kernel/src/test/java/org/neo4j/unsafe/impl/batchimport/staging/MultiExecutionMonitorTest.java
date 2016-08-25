@@ -22,12 +22,13 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -43,7 +44,7 @@ public class MultiExecutionMonitorTest
     public void shouldCheckMultipleMonitors() throws Exception
     {
         // GIVEN
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         TestableMonitor first = new TestableMonitor( clock, 100, MILLISECONDS, "first" );
         TestableMonitor other = new TestableMonitor( clock, 250, MILLISECONDS, "other" );
         MultiExecutionMonitor multiMonitor = new MultiExecutionMonitor( clock, first, other );

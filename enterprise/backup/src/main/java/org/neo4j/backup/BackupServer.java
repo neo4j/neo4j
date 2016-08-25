@@ -30,13 +30,14 @@ import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
-import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.Clocks;
 
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
+import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
 
 class BackupServer extends Server<TheBackupInterface,Object>
 {
@@ -53,8 +54,8 @@ class BackupServer extends Server<TheBackupInterface,Object>
                          LogProvider logProvider, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         super( requestTarget, newBackupConfig( FRAME_LENGTH, server ), logProvider, FRAME_LENGTH,
-                new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
-                TxChecksumVerifier.ALWAYS_MATCH, SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
+                new ProtocolVersion( PROTOCOL_VERSION, INTERNAL_PROTOCOL_VERSION ),
+                ALWAYS_MATCH, Clocks.systemClock(), byteCounterMonitor, requestMonitor );
     }
 
     @Override

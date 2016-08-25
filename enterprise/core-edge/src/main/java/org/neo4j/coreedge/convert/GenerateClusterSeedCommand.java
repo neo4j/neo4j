@@ -29,6 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.time.Clocks;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
@@ -43,7 +44,7 @@ public class GenerateClusterSeedCommand
 
     public GenerateClusterSeedCommand()
     {
-        this( Clock.systemUTC() );
+        this( Clocks.systemClock() );
     }
 
     GenerateClusterSeedCommand( Clock clock )

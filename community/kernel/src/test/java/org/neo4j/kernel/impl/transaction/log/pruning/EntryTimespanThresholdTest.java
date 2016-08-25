@@ -23,9 +23,11 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.FrozenClock;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
 import static org.junit.Assert.assertEquals;
@@ -40,12 +42,12 @@ public class EntryTimespanThresholdTest
     private final File file = mock( File.class );
     private final LogFileInformation source = mock( LogFileInformation.class );
     private final long version = 4;
+    private Clock clock = Clock.fixed( Instant.ofEpochMilli( 1000 ), ZoneOffset.UTC );
 
     @Test
     public void shouldReturnFalseWhenTimeIsEqualOrAfterTheLowerLimit() throws IOException
     {
         // given
-        FrozenClock clock = new FrozenClock( 1000L, TimeUnit.MILLISECONDS );
         final EntryTimespanThreshold threshold =
                 new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 200 );
 
@@ -63,7 +65,6 @@ public class EntryTimespanThresholdTest
     public void shouldReturnReturnWhenTimeIsBeforeTheLowerLimit() throws IOException
     {
         // given
-        FrozenClock clock = new FrozenClock( 1000L, TimeUnit.MILLISECONDS );
         final EntryTimespanThreshold threshold =
                 new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 
@@ -81,7 +82,6 @@ public class EntryTimespanThresholdTest
     public void shouldThrowIfTheLogCannotBeRead() throws IOException
     {
         // given
-        FrozenClock clock = new FrozenClock( 1000L, TimeUnit.MILLISECONDS );
         final EntryTimespanThreshold threshold =
                 new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 

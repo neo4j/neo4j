@@ -25,8 +25,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import org.neo4j.coreedge.core.consensus.log.EntryRecord;
-import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
+import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Args;
@@ -34,8 +34,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-
-import static java.time.Clock.systemUTC;
+import org.neo4j.time.Clocks;
 
 class DumpSegmentedRaftLog
 {
@@ -55,7 +54,7 @@ class DumpSegmentedRaftLog
         LogProvider logProvider = NullLogProvider.getInstance();
         final int[] logsFound = {0};
         FileNames fileNames = new FileNames( new File( filenameOrDirectory ) );
-        ReaderPool readerPool = new ReaderPool( 0, logProvider, fileNames, fileSystem, systemUTC() );
+        ReaderPool readerPool = new ReaderPool( 0, logProvider, fileNames, fileSystem, Clocks.systemClock() );
         RecoveryProtocol recoveryProtocol =
                 new RecoveryProtocol( fileSystem, fileNames, readerPool, marshal, logProvider );
         Segments segments = recoveryProtocol.run().segments;

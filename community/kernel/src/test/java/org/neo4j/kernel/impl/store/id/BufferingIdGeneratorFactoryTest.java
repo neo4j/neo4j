@@ -25,10 +25,11 @@ import org.junit.Test;
 import java.io.File;
 import java.util.function.Supplier;
 
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -74,11 +75,11 @@ public class BufferingIdGeneratorFactoryTest
     {
         // GIVEN
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
-        final FakeClock clock = new FakeClock();
+        final FakeClock clock = Clocks.fakeClock();
         final long safeZone = MINUTES.toMillis( 1 );
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual,
-                boundaries, t -> clock.currentTimeMillis() - t.snapshotTime() >= safeZone,
+                boundaries, t -> clock.millis() - t.snapshotTime() >= safeZone,
                 new CommunityIdTypeConfigurationProvider() );
 
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(

@@ -25,7 +25,7 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, GraphStatisticsSnapshot, NodesWithLabelCardinality}
 import org.neo4j.cypher.internal.frontend.v3_1.LabelId
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-import org.neo4j.time.FakeClock
+import org.neo4j.time.Clocks
 
 class PlanFingerprintReferenceTest extends CypherFunSuite {
 
@@ -33,7 +33,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
     val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 4.0))
     val ttl = 1000l
     val threshold = 0.0
-    val clock = new FakeClock
+    val clock = Clocks.fakeClock()
     val stats = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(label(21))).thenReturn(5.0)
     val fingerprint = PlanFingerprint(clock.millis(), 17, snapshot)
@@ -49,7 +49,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
     val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
     val ttl = 1000l
     val threshold = 0.5
-    val clock = new FakeClock
+    val clock = Clocks.fakeClock()
     val stats = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(label(21))).thenReturn(5.0)
     val fingerprint = PlanFingerprint(clock.millis(), 17, snapshot)
@@ -65,7 +65,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
     val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
     val ttl = 1000l
     val threshold = 0.0
-    val clock = new FakeClock
+    val clock = Clocks.fakeClock()
     val stats = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(label(21))).thenReturn(5.0)
     val fingerprint = PlanFingerprint(clock.millis(), 17, snapshot)
@@ -81,7 +81,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
     val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
     val ttl = 1000l
     val threshold = 0.0
-    val clock = new FakeClock
+    val clock = Clocks.fakeClock()
     val stats = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(label(21))).thenReturn(5.0)
     val fingerprint = PlanFingerprint(clock.millis(), 17, snapshot)
@@ -97,7 +97,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
     val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
     val ttl = 1000l
     val threshold = 0.0
-    val clock = new FakeClock
+    val clock = Clocks.fakeClock()
     val stats = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(label(21))).thenReturn(5.0)
     val fingerprint = PlanFingerprint(clock.millis(), 17, snapshot)
@@ -115,7 +115,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
     val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
     val ttl = 1000l
     val threshold = 0.1
-    val clock = new FakeClock
+    val clock = Clocks.fakeClock()
     val stats = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(label(21))).thenReturn(5.0)
     val fingerprint = PlanFingerprint(clock.millis(), 17, snapshot)

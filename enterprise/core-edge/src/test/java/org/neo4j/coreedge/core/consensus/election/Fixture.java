@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.core.consensus.election;
 
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -27,21 +26,22 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.RaftMachine.BootstrapException;
 import org.neo4j.coreedge.core.consensus.RaftMachineBuilder;
-import org.neo4j.coreedge.messaging.TestNetwork;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.membership.RaftTestGroup;
+import org.neo4j.coreedge.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.RaftTestMemberSetBuilder;
+import org.neo4j.coreedge.messaging.TestNetwork;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class Fixture
 {
@@ -85,7 +85,7 @@ public class Fixture
     private DelayedRenewableTimeoutService createTimeoutService()
     {
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService(
-                Clock.systemUTC(), NullLogProvider.getInstance() );
+                Clocks.systemClock(), getInstance() );
 
         timeoutServices.add( timeoutService );
 

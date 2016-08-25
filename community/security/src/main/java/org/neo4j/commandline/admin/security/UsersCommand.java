@@ -39,8 +39,7 @@ import org.neo4j.server.security.auth.BasicAuthManagerFactory;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.PasswordPolicy;
-
-import static java.time.Clock.systemUTC;
+import org.neo4j.time.Clocks;
 
 public class UsersCommand implements AdminCommand
 {
@@ -222,7 +221,7 @@ public class UsersCommand implements AdminCommand
     {
         FileUserRepository userRepository = getUserRepository();
         PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
-        BasicAuthManager authManager = new BasicAuthManager( userRepository, passwordPolicy, systemUTC() );
+        BasicAuthManager authManager = new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock() );
         authManager.start();    // required to setup default users
         return authManager;
     }

@@ -29,6 +29,7 @@ import org.neo4j.backup.BackupEmbeddedIT;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertNotEquals;
@@ -47,7 +48,7 @@ public class GenerateClusterSeedCommandTest
         BackupEmbeddedIT.createSomeData( db );
         db.shutdown();
 
-        FakeClock fakeClock = new FakeClock();
+        FakeClock fakeClock = Clocks.fakeClock();
         fakeClock.forward( System.currentTimeMillis(), TimeUnit.MILLISECONDS );
         GenerateClusterSeedCommand command = new GenerateClusterSeedCommand( fakeClock );
 

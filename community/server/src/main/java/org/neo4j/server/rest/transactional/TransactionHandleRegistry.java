@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import java.time.Clock;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -27,7 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
@@ -105,7 +105,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         {
             this.activeMarker = activeMarker;
             this.transactionHandle = transactionHandle;
-            this.lastActiveTimestamp = clock.currentTimeMillis();
+            this.lastActiveTimestamp = clock.millis();
         }
 
         @Override
@@ -242,7 +242,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
     @Override
     public void rollbackAllSuspendedTransactions()
     {
-        rollbackSuspended( Predicates.<TransactionMarker>alwaysTrue() );
+        rollbackSuspended( Predicates.alwaysTrue() );
     }
 
     public void rollbackSuspendedTransactionsIdleSince( final long oldestLastActiveTime )
@@ -262,7 +262,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     private void rollbackSuspended( Predicate<TransactionMarker> predicate )
     {
-        Set<Long> candidateTransactionIdsToRollback = new HashSet<Long>();
+        Set<Long> candidateTransactionIdsToRollback = new HashSet<>();
 
         for ( Map.Entry<Long, TransactionMarker> entry : registry.entrySet() )
         {

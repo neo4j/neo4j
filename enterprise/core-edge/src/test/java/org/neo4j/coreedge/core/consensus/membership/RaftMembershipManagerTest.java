@@ -30,14 +30,15 @@ import org.neo4j.coreedge.core.consensus.outcome.AppendLogEntry;
 import org.neo4j.coreedge.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.coreedge.core.consensus.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
-import org.neo4j.coreedge.identity.RaftTestMemberSetBuilder;
 import org.neo4j.kernel.lifecycle.LifeRule;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.time.FakeClock;
+import org.neo4j.time.Clocks;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.neo4j.coreedge.core.consensus.membership.RaftMembershipState.Marshal;
+import static org.neo4j.coreedge.identity.RaftTestMemberSetBuilder.INSTANCE;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class RaftMembershipManagerTest
 {
@@ -118,9 +119,9 @@ public class RaftMembershipManagerTest
     private RaftMembershipManager raftMembershipManager( InMemoryRaftLog log )
     {
         RaftMembershipManager raftMembershipManager = new RaftMembershipManager(
-                null, RaftTestMemberSetBuilder.INSTANCE, log,
-                NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ) );
+                null, INSTANCE, log,
+                getInstance(), 3, 1000, Clocks.fakeClock(),
+                1000, new InMemoryStateStorage<>( new Marshal().startState() ) );
 
         raftMembershipManager.setRecoverFromIndexSupplier( () -> 0 );
         return raftMembershipManager;

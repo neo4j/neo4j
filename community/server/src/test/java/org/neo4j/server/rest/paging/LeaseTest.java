@@ -19,10 +19,12 @@
  */
 package org.neo4j.server.rest.paging;
 
+import org.junit.Test;
+
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
-import org.neo4j.helpers.FakeClock;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -37,14 +39,14 @@ public class LeaseTest
     @Test
     public void shouldReturnHexIdentifierString() throws Exception
     {
-        Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, new FakeClock() );
+        Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, Clocks.fakeClock() );
         assertThat( lease.getId(), containsOnlyHex() );
     }
 
     @Test( expected = LeaseAlreadyExpiredException.class )
     public void shouldNotAllowLeasesInThePast() throws Exception
     {
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         new Lease( mock( PagedTraverser.class ), oneMinuteInThePast(), clock );
     }
 
@@ -56,7 +58,7 @@ public class LeaseTest
     @Test
     public void leasesShouldExpire() throws Exception
     {
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, clock );
         clock.forward( 10, TimeUnit.MINUTES );
         assertTrue( lease.expired() );
@@ -65,7 +67,7 @@ public class LeaseTest
     @Test
     public void shouldRenewLeaseForSamePeriod()
     {
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, clock );
 
         clock.forward( 30, TimeUnit.SECONDS );

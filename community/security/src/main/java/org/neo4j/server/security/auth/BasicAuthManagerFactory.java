@@ -20,7 +20,6 @@
 package org.neo4j.server.security.auth;
 
 import java.io.File;
-import java.nio.file.Path;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -29,8 +28,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.LogProvider;
-
-import static java.time.Clock.systemUTC;
+import org.neo4j.time.Clocks;
 
 /**
  * Wraps AuthManager and exposes it as a KernelExtension.
@@ -79,6 +77,6 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
 
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 
-        return new BasicAuthManager( userRepository, passwordPolicy, systemUTC() );
+        return new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock() );
     }
 }

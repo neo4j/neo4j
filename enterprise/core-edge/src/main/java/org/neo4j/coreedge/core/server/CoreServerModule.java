@@ -21,7 +21,6 @@ package org.neo4j.coreedge.core.server;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Clock;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.ReplicationModule;
@@ -68,6 +67,7 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.Clocks;
 
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
@@ -111,7 +111,7 @@ public class CoreServerModule
         LoggingInbound<RaftMessages.StoreIdAwareMessage> loggingRaftInbound =
                 new LoggingInbound<>( raftServer, messageLogger, myself );
 
-        CatchUpClient catchUpClient = life.add( new CatchUpClient( discoveryService, logProvider, Clock.systemUTC() ) );
+        CatchUpClient catchUpClient = life.add( new CatchUpClient( discoveryService, logProvider, Clocks.systemClock() ) );
 
         StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),

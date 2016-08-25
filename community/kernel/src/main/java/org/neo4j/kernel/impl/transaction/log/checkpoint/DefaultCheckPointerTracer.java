@@ -22,12 +22,13 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 public class DefaultCheckPointerTracer implements CheckPointTracer, CheckPointerMonitor
 {
@@ -36,7 +37,7 @@ public class DefaultCheckPointerTracer implements CheckPointTracer, CheckPointer
         void lastCheckPointEventDuration( long millis );
     }
 
-    private final Clock clock;
+    private final SystemNanoClock clock;
     private final Monitor monitor;
     private final JobScheduler jobScheduler;
 
@@ -68,10 +69,10 @@ public class DefaultCheckPointerTracer implements CheckPointTracer, CheckPointer
 
     public DefaultCheckPointerTracer( Monitor monitor, JobScheduler jobScheduler )
     {
-        this( Clock.SYSTEM_CLOCK, monitor, jobScheduler );
+        this( Clocks.nanoClock(), monitor, jobScheduler );
     }
 
-    public DefaultCheckPointerTracer( Clock clock, Monitor monitor, JobScheduler jobScheduler )
+    public DefaultCheckPointerTracer( SystemNanoClock clock, Monitor monitor, JobScheduler jobScheduler )
     {
         this.clock = clock;
         this.monitor = monitor;
@@ -81,7 +82,7 @@ public class DefaultCheckPointerTracer implements CheckPointTracer, CheckPointer
     @Override
     public LogCheckPointEvent beginCheckPoint()
     {
-        startTimeNanos = clock.nanoTime();
+        startTimeNanos = clock.nanos();
         return logCheckPointEvent;
     }
 
@@ -99,7 +100,7 @@ public class DefaultCheckPointerTracer implements CheckPointTracer, CheckPointer
 
     private void updateCountersAndNotifyListeners()
     {
-        final long lastEventTime = clock.nanoTime() - startTimeNanos;
+        final long lastEventTime = clock.nanos() - startTimeNanos;
 
         // update counters
         counter.incrementAndGet();

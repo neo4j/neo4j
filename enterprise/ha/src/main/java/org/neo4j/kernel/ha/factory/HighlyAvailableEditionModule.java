@@ -52,7 +52,6 @@ import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.MapUtil;
@@ -131,6 +130,7 @@ import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
+import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -163,7 +163,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
+import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -517,7 +517,7 @@ public class HighlyAvailableEditionModule
 
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
-        eligibleForIdReuse = new HaIdReuseEligibility( members, Clock.SYSTEM_CLOCK, idReuseSafeZone );
+        eligibleForIdReuse = new HaIdReuseEligibility( members, Clocks.systemClock(), idReuseSafeZone );
 
         registerRecovery( platformModule.databaseInfo, dependencies, logging );
 

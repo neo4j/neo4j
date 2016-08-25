@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
 public final class EntryTimespanThreshold implements Threshold
@@ -42,7 +42,7 @@ public final class EntryTimespanThreshold implements Threshold
     @Override
     public void init()
     {
-        lowerLimit = clock.currentTimeMillis() - timeToKeepInMillis;
+        lowerLimit = clock.millis() - timeToKeepInMillis;
     }
 
     @Override

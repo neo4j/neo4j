@@ -21,10 +21,12 @@ package org.neo4j.test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.helpers.Clock;
+import org.neo4j.time.Clocks;
+
 
 public class InputStreamAwaiter
 {
@@ -34,7 +36,7 @@ public class InputStreamAwaiter
 
     public InputStreamAwaiter( InputStream input )
     {
-        this( Clock.SYSTEM_CLOCK, input );
+        this( Clocks.systemClock(), input );
     }
 
     public InputStreamAwaiter( Clock clock, InputStream input )
@@ -46,7 +48,7 @@ public class InputStreamAwaiter
     public void awaitLine( String expectedLine, long timeout, TimeUnit unit ) throws IOException,
             TimeoutException, InterruptedException
     {
-        long deadline = clock.currentTimeMillis() + unit.toMillis( timeout );
+        long deadline = clock.millis() + unit.toMillis( timeout );
         StringBuilder buffer = new StringBuilder();
         do
         {
@@ -66,7 +68,7 @@ public class InputStreamAwaiter
 
             Thread.sleep( 10 );
         }
-        while ( clock.currentTimeMillis() < deadline );
+        while ( clock.millis() < deadline );
 
         throw new TimeoutException( "Timed out waiting to read line: [" + expectedLine + "]. Seen input:\n\t"
                 + buffer.toString().replaceAll( "\n", "\n\t" ) );

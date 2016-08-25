@@ -21,6 +21,7 @@ package org.neo4j.helpers;
 
 /**
  * @deprecated please use {@link java.time.Clock} instead
+ * @see org.neo4j.time.Clocks
  */
 @Deprecated
 public interface Clock

@@ -30,7 +30,6 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.database.Database;
@@ -41,6 +40,8 @@ import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -66,7 +67,7 @@ public class RestfulGraphDatabasePagedTraversalTest
         database = new WrappedDatabase( graph );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
-        leaseManager = new LeaseManager( new FakeClock() );
+        leaseManager = new LeaseManager( Clocks.fakeClock() );
         service = new RestfulGraphDatabase( new JsonFormat(), output,
                 new DatabaseActions( leaseManager, true, database.getGraph() ), null );
         service = new TransactionWrappingRestfulGraphDatabase( graph, service );

@@ -19,7 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.neo4j.helpers.Clock;
+import java.time.Clock;
+
+import org.neo4j.time.Clocks;
 
 /**
  * {@link ExecutionMonitor} that wraps several other monitors. Each wrapper monitor can still specify
@@ -33,7 +35,7 @@ public class MultiExecutionMonitor implements ExecutionMonitor
 
     public MultiExecutionMonitor( ExecutionMonitor... monitors )
     {
-        this( Clock.SYSTEM_CLOCK, monitors );
+        this( Clocks.systemClock(), monitors );
     }
 
     public MultiExecutionMonitor( Clock clock, ExecutionMonitor... monitors )
@@ -98,7 +100,7 @@ public class MultiExecutionMonitor implements ExecutionMonitor
     @Override
     public void check( StageExecution[] executions )
     {
-        long currentTimeMillis = clock.currentTimeMillis();
+        long currentTimeMillis = clock.millis();
         for ( int i = 0; i < monitors.length; i++ )
         {
             if ( currentTimeMillis >= endTimes[i] )

@@ -21,22 +21,24 @@ package org.neo4j.coreedge.core.consensus.log.debug;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Clock;
 
 import org.neo4j.coreedge.core.consensus.log.segmented.SegmentedRaftLog;
-import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.core.state.machines.tx.ReplicatedTransactionFactory;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
+import org.neo4j.time.Clocks;
 
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_pruning_strategy;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_reader_pool_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.raft_log_rotation_size;
 import static org.neo4j.coreedge.core.consensus.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class ReplayRaftLog
 {
@@ -54,9 +56,10 @@ public class ReplayRaftLog
         Config config = new Config( stringMap() );
 
         SegmentedRaftLog log = new SegmentedRaftLog( new DefaultFileSystemAbstraction(), logDirectory,
-                config.get( CoreEdgeClusterSettings.raft_log_rotation_size ), new CoreReplicatedContentMarshal(),
-                NullLogProvider.getInstance(), config.get( CoreEdgeClusterSettings.raft_log_pruning_strategy ),
-                config.get( CoreEdgeClusterSettings.raft_log_reader_pool_size ), Clock.systemUTC(), new OnDemandJobScheduler() );
+                config.get( raft_log_rotation_size ), new CoreReplicatedContentMarshal(),
+                getInstance(), config.get( raft_log_pruning_strategy ),
+                config.get( raft_log_reader_pool_size ), Clocks.systemClock(),
+                new OnDemandJobScheduler() );
 
         long totalCommittedEntries = log.appendIndex(); // Not really, but we need to have a way to pass in the commit index
         for ( int i = 0; i <= totalCommittedEntries; i++ )

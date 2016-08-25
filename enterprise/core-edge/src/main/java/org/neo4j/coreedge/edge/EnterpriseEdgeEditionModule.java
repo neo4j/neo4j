@@ -88,11 +88,10 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
-import static java.time.Clock.systemUTC;
 import static java.util.Collections.singletonMap;
-
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
@@ -180,7 +179,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
 
         DelayedRenewableTimeoutService refreshEdgeTimeoutService = life.add( new DelayedRenewableTimeoutService(
-                systemUTC(), logProvider ) );
+                Clocks.systemClock(), logProvider ) );
 
         long edgeTimeToLiveTimeout = config.get( CoreEdgeClusterSettings.edge_time_to_live );
         long edgeRefreshRate = config.get( CoreEdgeClusterSettings.edge_refresh_rate );
@@ -190,7 +189,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 edgeRefreshRate );
         life.add( dependencies.satisfyDependency( discoveryService ) );
 
-        Clock clock = Clock.systemUTC();
+        Clock clock = Clocks.systemClock();
         CatchUpClient catchUpClient = life.add( new CatchUpClient( discoveryService, logProvider, clock ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );

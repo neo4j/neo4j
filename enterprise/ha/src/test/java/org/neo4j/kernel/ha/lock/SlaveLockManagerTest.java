@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha.lock;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -30,8 +29,8 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.Clocks;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNotNull;
@@ -40,6 +39,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.function.Suppliers.singleton;
+import static org.neo4j.logging.NullLog.getInstance;
 
 public class SlaveLockManagerTest
 {
@@ -52,7 +52,7 @@ public class SlaveLockManagerTest
     {
         requestContextFactory = new RequestContextFactory( 1, singleton( mock( TransactionIdStore.class ) ) );
         master = mock( Master.class );
-        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK, NullLog.getInstance() );
+        availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), getInstance() );
     }
 
     @Test

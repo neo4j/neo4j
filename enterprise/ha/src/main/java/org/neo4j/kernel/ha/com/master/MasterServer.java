@@ -26,13 +26,13 @@ import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.kernel.ha.HaRequestType210;
-import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.Clocks;
 
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.kernel.ha.MasterClient214.PROTOCOL_VERSION;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
@@ -49,8 +49,8 @@ public class MasterServer extends Server<Master, Void>
                          RequestMonitor requestMonitor, ConversationManager conversationManager,
                          LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
-        super( requestTarget, config, logProvider, FRAME_LENGTH, MasterClient214.PROTOCOL_VERSION, txVerifier,
-                SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
+        super( requestTarget, config, logProvider, FRAME_LENGTH, PROTOCOL_VERSION, txVerifier,
+                Clocks.systemClock(), byteCounterMonitor, requestMonitor );
         this.conversationManager = conversationManager;
         this.requestTypes = new HaRequestType210( entryReader );
     }

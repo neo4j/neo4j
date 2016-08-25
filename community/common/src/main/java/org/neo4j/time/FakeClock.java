@@ -28,9 +28,18 @@ import java.util.concurrent.TimeUnit;
 /**
  * A {@link java.time.Clock} that is manually controlled.
  */
-public class FakeClock extends Clock
+public class FakeClock extends SystemNanoClock
 {
-    private long millis = 0;
+    private long nanoTime = 0;
+
+    FakeClock()
+    {
+    }
+
+    FakeClock( long initialTime, TimeUnit unit )
+    {
+        forward( initialTime, unit );
+    }
 
     @Override
     public ZoneId getZone()
@@ -47,12 +56,18 @@ public class FakeClock extends Clock
     @Override
     public Instant instant()
     {
-        return Instant.ofEpochMilli( millis );
+        return Instant.ofEpochMilli( TimeUnit.NANOSECONDS.toMillis( nanoTime ) );
+    }
+
+    @Override
+    public long nanos()
+    {
+        return nanoTime;
     }
 
     public FakeClock forward( long delta, TimeUnit unit )
     {
-        millis += unit.toMillis( delta );
+        nanoTime += unit.toNanos( delta );
         return this;
     }
 }

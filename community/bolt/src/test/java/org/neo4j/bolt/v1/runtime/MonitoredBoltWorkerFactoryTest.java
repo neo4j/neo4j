@@ -20,12 +20,14 @@
 package org.neo4j.bolt.v1.runtime;
 
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.bolt.testing.NullResponseHandler;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory.MonitoredBoltWorker;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
-
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,7 +44,7 @@ public class MonitoredBoltWorkerFactoryTest
     public void shouldSignalReceivedStartAndComplete() throws Throwable
     {
         // given
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
 
         WorkerFactory delegate = mock( WorkerFactory.class );
         BoltStateMachine machine = mock( BoltStateMachine.class );
@@ -110,7 +112,7 @@ public class MonitoredBoltWorkerFactoryTest
                 .thenReturn( innerSession );
 
         Monitors monitors = new Monitors();
-        MonitoredWorkerFactory monitoredWorkerFactory = new MonitoredWorkerFactory( monitors, workerFactory, new FakeClock() );
+        MonitoredWorkerFactory monitoredWorkerFactory = new MonitoredWorkerFactory( monitors, workerFactory, Clocks.fakeClock() );
 
         // When
         BoltWorker worker = monitoredWorkerFactory.newWorker( "<test>" );

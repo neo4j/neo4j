@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.junit.Test;
 
-import org.neo4j.helpers.FakeClock;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertFalse;
@@ -33,7 +34,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class TimeCheckPointThresholdTest
 {
-    private final FakeClock clock = new FakeClock();
+    private final FakeClock clock = Clocks.fakeClock();
     private final TriggerInfo triggerInfo = mock( TriggerInfo.class );
 
     @Test

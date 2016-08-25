@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 
 /**
@@ -264,7 +264,7 @@ public class CappedLogger
 
         private boolean checkExpiredAndSetLastCheckTime()
         {
-            long now = clock.currentTimeMillis();
+            long now = clock.millis();
             long check = this.lastCheck;
             if ( check > now - timeLimitMillis )
             {

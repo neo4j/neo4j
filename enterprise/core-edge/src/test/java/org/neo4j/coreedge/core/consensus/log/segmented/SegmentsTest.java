@@ -33,7 +33,7 @@ import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.time.FakeClock;
+import org.neo4j.time.Clocks;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -49,6 +49,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class SegmentsTest
 {
@@ -59,7 +60,8 @@ public class SegmentsTest
     private final ChannelMarshal<ReplicatedContent> contentMarshal = mock( ChannelMarshal.class );
     private final LogProvider logProvider = NullLogProvider.getInstance();
     private final SegmentHeader header = mock( SegmentHeader.class );
-    private final ReaderPool readerPool = new ReaderPool( 0, NullLogProvider.getInstance(), fileNames, fsa, new FakeClock() );
+    private final ReaderPool readerPool = new ReaderPool( 0, getInstance(), fileNames, fsa,
+            Clocks.fakeClock() );
 
     private final SegmentFile fileA = spy( new SegmentFile( fsa, fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, header ) );
     private final SegmentFile fileB = spy( new SegmentFile( fsa, fileNames.getForVersion( 1 ), readerPool, 1, contentMarshal, logProvider, header ) );

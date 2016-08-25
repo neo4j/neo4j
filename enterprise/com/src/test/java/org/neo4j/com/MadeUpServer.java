@@ -28,10 +28,11 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.Clocks;
 
+import static org.neo4j.com.Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS;
 import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 {
@@ -43,35 +44,35 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     public MadeUpServer( MadeUpCommunicationInterface requestTarget, final int port, byte internalProtocolVersion,
                          byte applicationProtocolVersion, TxChecksumVerifier txVerifier, final int chunkSize )
     {
-        super( requestTarget, new Server.Configuration()
-        {
-            @Override
-            public long getOldChannelThreshold()
-            {
-                return Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000;
-            }
+        super( requestTarget, new Configuration()
+                {
+                    @Override
+                    public long getOldChannelThreshold()
+                    {
+                        return DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000;
+                    }
 
-            @Override
-            public int getMaxConcurrentTransactions()
-            {
-                return DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS;
-            }
+                    @Override
+                    public int getMaxConcurrentTransactions()
+                    {
+                        return DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS;
+                    }
 
-            @Override
-            public int getChunkSize()
-            {
-                return chunkSize;
-            }
+                    @Override
+                    public int getChunkSize()
+                    {
+                        return chunkSize;
+                    }
 
-            @Override
-            public HostnamePort getServerAddress()
-            {
-                return new HostnamePort( null, port );
-            }
-        }, NullLogProvider.getInstance(), FRAME_LENGTH,
+                    @Override
+                    public HostnamePort getServerAddress()
+                    {
+                        return new HostnamePort( null, port );
+                    }
+                }, getInstance(), FRAME_LENGTH,
                 new ProtocolVersion( applicationProtocolVersion, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
-                txVerifier, SYSTEM_CLOCK, new Monitors().newMonitor( ByteCounterMonitor.class ),
-                new Monitors().newMonitor( RequestMonitor.class ));
+                txVerifier, Clocks.systemClock(), new Monitors().newMonitor( ByteCounterMonitor.class ),
+                new Monitors().newMonitor( RequestMonitor.class ) );
         this.internalProtocolVersion = internalProtocolVersion;
     }
 

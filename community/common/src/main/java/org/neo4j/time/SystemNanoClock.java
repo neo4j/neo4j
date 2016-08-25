@@ -17,34 +17,46 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.time;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.concurrent.TimeUnit;
+import java.time.ZoneOffset;
 
 /**
- * @deprecated please use {@link java.time.Clock#fixed(Instant, ZoneId)} instead
+ * {@link Clock} that support nano time resolution.
+ * @see Clocks
  */
-@Deprecated
-public class FrozenClock implements Clock
+public class SystemNanoClock extends Clock
 {
-    private final long nanos;
+    static final SystemNanoClock INSTANCE = new SystemNanoClock();
 
-    public FrozenClock( long time, TimeUnit timeUnit )
+    protected SystemNanoClock()
     {
-        this.nanos = timeUnit.toNanos( time );
+        // please use shared instance
     }
 
     @Override
-    public long currentTimeMillis()
+    public ZoneId getZone()
     {
-        return TimeUnit.NANOSECONDS.toMillis( nanos );
+        return ZoneOffset.UTC;
     }
 
     @Override
-    public long nanoTime()
+    public Clock withZone( ZoneId zone )
     {
-        return nanos;
+        throw new UnsupportedOperationException( "Zone update is not supported." );
+    }
+
+    @Override
+    public Instant instant()
+    {
+        return Instant.now();
+    }
+
+    public long nanos()
+    {
+        return System.nanoTime();
     }
 }

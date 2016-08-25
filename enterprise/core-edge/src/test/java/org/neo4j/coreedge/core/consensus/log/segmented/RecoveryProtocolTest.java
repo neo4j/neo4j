@@ -32,11 +32,12 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.time.FakeClock;
+import org.neo4j.time.Clocks;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class RecoveryProtocolTest
 {
@@ -45,7 +46,8 @@ public class RecoveryProtocolTest
     private final File root = new File( "root" );
     private FileNames fileNames = new FileNames( root );
     private SegmentHeader.Marshal headerMarshal = new SegmentHeader.Marshal();
-    private ReaderPool readerPool = new ReaderPool( 0, NullLogProvider.getInstance(), fileNames, fsa, new FakeClock() );
+    private ReaderPool readerPool = new ReaderPool( 0, getInstance(), fileNames, fsa,
+            Clocks.fakeClock() );
 
     @Before
     public void setup()

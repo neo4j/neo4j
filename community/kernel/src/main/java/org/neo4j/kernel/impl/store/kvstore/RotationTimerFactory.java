@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.neo4j.helpers.Clock;
+import java.time.Clock;
 
 public class RotationTimerFactory
 {
@@ -34,7 +34,7 @@ public class RotationTimerFactory
 
     public RotationTimer createTimer()
     {
-        long startTime = clock.currentTimeMillis();
+        long startTime = clock.millis();
         return new RotationTimer( startTime, startTime + timeoutMillis );
     }
 
@@ -51,12 +51,12 @@ public class RotationTimerFactory
 
         public boolean isTimedOut()
         {
-            return clock.currentTimeMillis() > timeoutTime;
+            return clock.millis() > timeoutTime;
         }
 
         public long getElapsedTimeMillis()
         {
-            return clock.currentTimeMillis() - startTime;
+            return clock.millis() - startTime;
         }
 
     }

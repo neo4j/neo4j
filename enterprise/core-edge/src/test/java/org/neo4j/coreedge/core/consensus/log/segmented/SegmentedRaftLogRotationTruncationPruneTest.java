@@ -28,13 +28,13 @@ import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
-import org.neo4j.time.FakeClock;
+import org.neo4j.time.Clocks;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class SegmentedRaftLogRotationTruncationPruneTest
 {
@@ -123,7 +123,7 @@ public class SegmentedRaftLogRotationTruncationPruneTest
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, 1,
                 new DummyRaftableContentSerializer(),
-                NullLogProvider.getInstance(), "1 entries", 8, new FakeClock(), new OnDemandJobScheduler() );
+                getInstance(), "1 entries", 8, Clocks.fakeClock(), new OnDemandJobScheduler() );
 
         newRaftLog.start();
         return newRaftLog;

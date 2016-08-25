@@ -21,7 +21,6 @@ package org.neo4j.coreedge.core.state;
 
 import org.junit.Test;
 
-import java.time.Clock;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
@@ -29,8 +28,9 @@ import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.identity.ClusterId;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.Clocks;
 
+import static java.lang.Thread.sleep;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertEquals;
@@ -40,6 +40,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class BindingServiceTest
 {
@@ -54,7 +55,8 @@ public class BindingServiceTest
 
         when( topologyService.currentTopology() ).thenReturn( topology );
 
-        BindingService bindingService = new BindingService( clusterIdStorage, topologyService, NullLogProvider.getInstance(), Clock.systemUTC(), () -> Thread.sleep( 1 ), 50 );
+        BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
+                getInstance(), Clocks.systemClock(), () -> sleep( 1 ), 50 );
 
         // when
         try
@@ -79,7 +81,8 @@ public class BindingServiceTest
 
         when( topologyService.currentTopology() ).thenReturn( topologyNOK, topologyNOK, topologyNOK, topologyOK );
 
-        BindingService bindingService = new BindingService( clusterIdStorage, topologyService, NullLogProvider.getInstance(), Clock.systemUTC(), () -> Thread.sleep( 1 ), 30_000 );
+        BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
+                getInstance(), Clocks.systemClock(), () -> sleep( 1 ), 30_000 );
 
         // when
         bindingService.start();
@@ -99,7 +102,8 @@ public class BindingServiceTest
         when( topologyService.currentTopology() ).thenReturn( topology );
         when( topologyService.publishClusterId( any() ) ).thenReturn( true );
 
-        BindingService bindingService = new BindingService( clusterIdStorage, topologyService, NullLogProvider.getInstance(), Clock.systemUTC(), () -> Thread.sleep( 1 ), 30_000 );
+        BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
+                getInstance(), Clocks.systemClock(), () -> sleep( 1 ), 30_000 );
 
         // when
         bindingService.start();
@@ -122,7 +126,8 @@ public class BindingServiceTest
         when( topologyService.currentTopology() ).thenReturn( topology );
         when( topologyService.publishClusterId( any() ) ).thenReturn( true );
 
-        BindingService bindingService = new BindingService( clusterIdStorage, topologyService, NullLogProvider.getInstance(), Clock.systemUTC(), () -> Thread.sleep( 1 ), 30_000 );
+        BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
+                getInstance(), Clocks.systemClock(), () -> sleep( 1 ), 30_000 );
 
         // when
         bindingService.start();

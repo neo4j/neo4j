@@ -22,7 +22,6 @@ package org.neo4j.server.security.enterprise.auth;
 import org.apache.shiro.realm.Realm;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,13 +32,12 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
-import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.time.Clocks;
 
-import static java.time.Clock.systemUTC;
-import static org.neo4j.server.security.auth.BasicAuthManagerFactory.*;
+import static org.neo4j.server.security.auth.BasicAuthManagerFactory.getUserRepository;
 
 /**
  * Wraps EnterpriseAuthManager and exposes it as a Service
@@ -95,7 +93,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 
-        AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( systemUTC(), 3 );
+        AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 );
 
         return new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
                 config.get( SecuritySettings.internal_authentication_enabled ),

@@ -27,19 +27,20 @@ import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.time.FakeClock;
+import org.neo4j.time.Clocks;
 
 import static java.util.Collections.emptyList;
-
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class EntryCursorTest
 {
     private final FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
     private final File bam = new File( "bam" );
     private final FileNames fileNames = new FileNames( bam );
-    private ReaderPool readerPool = new ReaderPool( 0, NullLogProvider.getInstance(), fileNames, fsa, new FakeClock() );
+    private ReaderPool readerPool = new ReaderPool( 0, getInstance(), fileNames, fsa,
+            Clocks.fakeClock() );
     private final Segments segments =
             new Segments( fsa, fileNames, readerPool, emptyList(), mock( ChannelMarshal.class ), NullLogProvider.getInstance(), -1 );
 

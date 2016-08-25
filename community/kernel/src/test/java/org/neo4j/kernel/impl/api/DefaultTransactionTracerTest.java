@@ -24,13 +24,14 @@ import org.junit.Test;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.api.DefaultTransactionTracer.Monitor;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.test.OnDemandJobScheduler;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -40,7 +41,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class DefaultTransactionTracerTest
 {
-    private final FakeClock clock = new FakeClock();
+    private final FakeClock clock = Clocks.fakeClock();
     private final OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
     private final Monitor monitor = mock( Monitor.class );
 

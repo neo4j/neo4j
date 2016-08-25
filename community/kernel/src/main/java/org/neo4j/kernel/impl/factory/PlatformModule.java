@@ -29,7 +29,6 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -61,6 +60,7 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -174,7 +174,7 @@ public class PlatformModule
         // Anyways please fix this.
         dataSourceManager = dependencies.satisfyDependency( new DataSourceManager() );
 
-        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK, logging.getInternalLog(
+        availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), logging.getInternalLog(
                 AvailabilityGuard.class ) );
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );

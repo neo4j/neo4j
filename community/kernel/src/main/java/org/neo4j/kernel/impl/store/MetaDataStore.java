@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.time.Clocks;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -155,7 +155,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider,
                 TYPE_DESCRIPTOR, recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
         this.transactionCloseWaitLogger = new CappedLogger( logProvider.getLog( MetaDataStore.class ) );
-        transactionCloseWaitLogger.setTimeLimit( 30, SECONDS, Clock.SYSTEM_CLOCK );
+        transactionCloseWaitLogger.setTimeLimit( 30, SECONDS, Clocks.systemClock() );
     }
 
     @Override

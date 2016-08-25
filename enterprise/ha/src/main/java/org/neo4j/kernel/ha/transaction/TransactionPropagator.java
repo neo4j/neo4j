@@ -29,12 +29,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.configuration.Config;
@@ -46,6 +44,9 @@ import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
+import org.neo4j.time.Clocks;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Pushes transactions committed on master to one or more slaves. Number of slaves receiving each transactions
@@ -157,8 +158,8 @@ public class TransactionPropagator implements Lifecycle
         this.log = log;
         this.slaves = slaves;
         this.pusher = pusher;
-        slaveCommitFailureLogger = new CappedLogger( log ).setTimeLimit( 5, TimeUnit.SECONDS, Clock.SYSTEM_CLOCK );
-        pushedToTooFewSlaveLogger = new CappedLogger( log ).setTimeLimit( 5, TimeUnit.SECONDS, Clock.SYSTEM_CLOCK );
+        slaveCommitFailureLogger = new CappedLogger( log ).setTimeLimit( 5, SECONDS, Clocks.systemClock() );
+        pushedToTooFewSlaveLogger = new CappedLogger( log ).setTimeLimit( 5, SECONDS, Clocks.systemClock() );
     }
 
     @Override

@@ -19,17 +19,17 @@
  */
 package org.neo4j.coreedge.core.consensus.membership;
 
-import java.io.IOException;
-
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.coreedge.core.consensus.log.RaftLogCursor;
 import org.neo4j.coreedge.core.consensus.log.ReadableRaftLog;
 import org.neo4j.coreedge.core.consensus.roles.follower.FollowerState;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -38,7 +38,7 @@ public class CatchupGoalTest
     @Test
     public void goalAchievedWhenCatchupRoundDurationLessThanTarget() throws Exception
     {
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         long electionTimeout = 15;
         StubLog log = new StubLog();
 

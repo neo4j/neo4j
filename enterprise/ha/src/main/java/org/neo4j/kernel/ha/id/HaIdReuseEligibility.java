@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.ha.id;
 
-import org.neo4j.helpers.Clock;
+import java.time.Clock;
+
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
@@ -59,7 +60,7 @@ public class HaIdReuseEligibility implements IdReuseEligibility
             // If we're master then we have to keep these ids around during the configured safe zone time
             // so that slaves have a chance to read consistently as well (slaves will know and compensate
             // for falling outside of safe zone).
-            return clock.currentTimeMillis() - snapshot.snapshotTime() >= idReuseSafeZone;
+            return clock.millis() - snapshot.snapshotTime() >= idReuseSafeZone;
         default:
             // If we're anything other than slave, i.e. also pending then retain the ids since we're
             // not quite sure what state we're in at the moment and we clear the id buffers anyway

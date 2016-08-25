@@ -24,8 +24,9 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -41,7 +42,7 @@ public class IdleChannelReaperTest
     public void shouldNotCloseAnyRecentlyActiveChannels()
     {
         // given
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         ChannelCloser channelCloser = mock( ChannelCloser.class );
         IdleChannelReaper idleChannelReaper = new IdleChannelReaper( channelCloser, NO_LOGGING, clock, THRESHOLD );
 
@@ -59,7 +60,7 @@ public class IdleChannelReaperTest
     public void shouldCloseAnyChannelsThatHaveBeenIdleForLongerThanThreshold()
     {
         // given
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         ChannelCloser channelCloser = mock( ChannelCloser.class );
         IdleChannelReaper idleChannelReaper = new IdleChannelReaper( channelCloser, NO_LOGGING, clock, THRESHOLD );
 
@@ -78,7 +79,7 @@ public class IdleChannelReaperTest
     public void shouldNotCloseAChannelThatHasBeenIdleForMoreThanHalfThresholdButIsStillOpenConnectedAndBound()
     {
         // given
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         ChannelCloser channelCloser = mock( ChannelCloser.class );
         IdleChannelReaper idleChannelReaper = new IdleChannelReaper( channelCloser, NO_LOGGING, clock, THRESHOLD );
 
@@ -100,7 +101,7 @@ public class IdleChannelReaperTest
     public void shouldNotTryToCloseAChannelThatHasBeenRemoved()
     {
         // given
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         ChannelCloser channelCloser = mock( ChannelCloser.class );
         IdleChannelReaper idleChannelReaper = new IdleChannelReaper( channelCloser, NO_LOGGING, clock, THRESHOLD );
 
@@ -122,7 +123,7 @@ public class IdleChannelReaperTest
     public void shouldNotTryToCloseAChannelThatWasRecentlyActive()
     {
         // given
-        FakeClock clock = new FakeClock();
+        FakeClock clock = Clocks.fakeClock();
         ChannelCloser channelCloser = mock( ChannelCloser.class );
         IdleChannelReaper idleChannelReaper = new IdleChannelReaper( channelCloser, NO_LOGGING, clock, THRESHOLD );
 
