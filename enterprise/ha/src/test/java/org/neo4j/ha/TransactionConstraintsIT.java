@@ -21,8 +21,6 @@ package org.neo4j.ha;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -41,7 +39,6 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -54,13 +51,11 @@ import org.neo4j.test.ha.ClusterRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
@@ -70,8 +65,8 @@ public class TransactionConstraintsIT
 {
     private static final int SLAVE_ONLY_ID = 1;
 
-    @ClassRule
-    public static final ClusterRule clusterRule = new ClusterRule( TransactionConstraintsIT.class )
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withSharedSetting( HaSettings.pull_interval, "0" )
             .withInstanceSetting( HaSettings.slave_only, new IntFunction<String>()
             {

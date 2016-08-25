@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.index;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
@@ -31,13 +31,12 @@ import org.neo4j.test.ha.ClusterRule;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 
 public class AutoIndexConfigIT
 {
-    @ClassRule
-    public static ClusterRule clusterRule = new ClusterRule( AutoIndexConfigIT.class );
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
 
     @Test
     public void programmaticConfigShouldSurviveMasterSwitches() throws Throwable

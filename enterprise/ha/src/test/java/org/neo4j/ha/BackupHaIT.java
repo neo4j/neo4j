@@ -19,8 +19,7 @@
  */
 package org.neo4j.ha;
 
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,14 +37,13 @@ import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-
 import static org.neo4j.backup.BackupEmbeddedIT.createSomeData;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 
 public class BackupHaIT
 {
-    @ClassRule
-    public static ClusterRule clusterRule = new ClusterRule( BackupHaIT.class )
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withSharedSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
             .withInstanceSetting( OnlineBackupSettings.online_backup_server, new IntFunction<String>()
             {
@@ -58,10 +56,10 @@ public class BackupHaIT
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    private static File backupPath;
+    private File backupPath;
 
-    @BeforeClass
-    public static void setup() throws Exception
+    @Before
+    public void setup() throws Exception
     {
         backupPath = clusterRule.cleanDirectory( "backup-db" );
         createSomeData( clusterRule.startCluster().getMaster() );

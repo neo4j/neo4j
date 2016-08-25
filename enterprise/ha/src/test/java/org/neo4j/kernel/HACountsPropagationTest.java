@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicLabel;
@@ -34,15 +34,14 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class HACountsPropagationTest
 {
     private static final int PULL_INTERVAL = 100;
 
-    @ClassRule
-    public static ClusterRule clusterRule = new ClusterRule( HACountsPropagationTest.class )
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withSharedSetting( HaSettings.pull_interval, PULL_INTERVAL + "ms" );
 
     @Test

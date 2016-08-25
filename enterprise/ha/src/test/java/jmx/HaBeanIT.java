@@ -19,7 +19,7 @@
  */
 package jmx;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.URI;
@@ -47,17 +47,15 @@ import org.neo4j.management.HighAvailability;
 import org.neo4j.management.Neo4jManager;
 import org.neo4j.test.ha.ClusterRule;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.ha.ClusterManager.instanceEvicted;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
@@ -67,22 +65,11 @@ import static org.neo4j.test.ha.ClusterRule.stringWithIntBase;
 
 public class HaBeanIT
 {
-    @ClassRule
-    public static final ClusterRule clusterRule = new ClusterRule( HaBeanIT.class )
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withInstanceSetting( setting( "jmx.port", STRING, (String) null ), intBase( 9912 ) )
             .withInstanceSetting( HaSettings.ha_server, stringWithIntBase( ":", 1136 ) )
             .withInstanceSetting( GraphDatabaseSettings.forced_kernel_id, stringWithIntBase( "kernel", 0 ) );
-
-    public Neo4jManager beans( HighlyAvailableGraphDatabase db )
-    {
-        return new Neo4jManager( db.getDependencyResolver().resolveDependency( JmxKernelExtension
-                .class ).getSingleManagementBean( Kernel.class ) );
-    }
-
-    public HighAvailability ha( HighlyAvailableGraphDatabase db )
-    {
-        return beans( db ).getHighAvailabilityBean();
-    }
 
     @Test
     public void canGetHaBean() throws Throwable
@@ -298,7 +285,18 @@ public class HaBeanIT
         }
     }
 
-    public static URI getUriForScheme( final String scheme, Iterable<URI> uris )
+    private Neo4jManager beans( HighlyAvailableGraphDatabase db )
+    {
+        return new Neo4jManager( db.getDependencyResolver().resolveDependency( JmxKernelExtension
+                .class ).getSingleManagementBean( Kernel.class ) );
+    }
+
+    private HighAvailability ha( HighlyAvailableGraphDatabase db )
+    {
+        return beans( db ).getHighAvailabilityBean();
+    }
+
+    private static URI getUriForScheme( final String scheme, Iterable<URI> uris )
     {
         return first( filter( new Predicate<URI>()
         {
