@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
@@ -134,7 +135,7 @@ class HazelcastClusterTopology
         {
             connectedUUIDs = executorService.submit( new GetConnectedClients( hazelcastInstance ) ).get();
         }
-        catch ( InterruptedException | ExecutionException e )
+        catch ( InterruptedException | ExecutionException | RejectedExecutionException e )
         {
             log.info( "Unable to complete operation with distributed discovery service.", e );
             return emptySet();
