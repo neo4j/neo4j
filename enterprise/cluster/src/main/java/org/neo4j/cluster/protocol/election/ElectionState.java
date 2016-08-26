@@ -115,7 +115,7 @@ public enum ElectionState
                                         {
                                             log.debug( "Starting election process for role " + role );
 
-                                            context.startDemotionProcess( role, demoteNode );
+                                            context.startElectionProcess( role );
 
                                             // Allow other live nodes to vote which one should take over
                                             for ( Map.Entry<InstanceId, URI> server : context.getMembers().entrySet() )
