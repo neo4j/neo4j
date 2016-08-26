@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.util;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -48,6 +50,11 @@ public class Converters
     public static Function<String,File> toFile()
     {
         return File::new;
+    }
+
+    public static Function<String, Path> toPath()
+    {
+        return Paths::get;
     }
 
     public static final Comparator<File> BY_FILE_NAME = ( o1, o2 ) -> o1.getName().compareTo( o2.getName() );
