@@ -239,7 +239,7 @@ public class AuthenticationIT
 
         // When
         client.send( TransportTestUtil.chunk(
-                RunMessage.run( "CALL dbms.changePassword", Collections.singletonMap( "password", "secret" ) ),
+                RunMessage.run( "CALL dbms.security.changePassword", Collections.singletonMap( "password", "secret" ) ),
                 PullAllMessage.pullAll() ) );
 
         // Then
@@ -283,7 +283,7 @@ public class AuthenticationIT
 
         // When
         client.send( TransportTestUtil.chunk(
-                RunMessage.run( "CALL dbms.changePassword", Collections.singletonMap( "password", "secret" ) ),
+                RunMessage.run( "CALL dbms.security.changePassword", Collections.singletonMap( "password", "secret" ) ),
                 PullAllMessage.pullAll() ) );
 
         // Then
@@ -314,7 +314,7 @@ public class AuthenticationIT
 
         // When
         client.send( TransportTestUtil.chunk(
-                RunMessage.run( "CALL dbms.changePassword", Collections.singletonMap( "password", "neo4j" ) ),
+                RunMessage.run( "CALL dbms.security.changePassword", Collections.singletonMap( "password", "neo4j" ) ),
                 PullAllMessage.pullAll() ) );
 
         // Then
@@ -338,7 +338,7 @@ public class AuthenticationIT
 
         // When
         client.send( TransportTestUtil.chunk(
-                RunMessage.run( "CALL dbms.changePassword", Collections.singletonMap( "password", "" ) ),
+                RunMessage.run( "CALL dbms.security.changePassword", Collections.singletonMap( "password", "" ) ),
                 PullAllMessage.pullAll() ) );
 
         // Then

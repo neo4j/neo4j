@@ -157,7 +157,7 @@ public class BoltConnectionManagementIT
     {
         // When
         admin.send( TransportTestUtil.chunk(
-                run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
+                run( "CALL dbms.security.listConnections() YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -173,7 +173,7 @@ public class BoltConnectionManagementIT
         // When
         authenticate( user, "Igor", "123", null );
         admin.send( TransportTestUtil.chunk(
-                run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
+                run( "CALL dbms.security.listConnections() YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -191,7 +191,7 @@ public class BoltConnectionManagementIT
         // When
         authenticate( user, "Igor", "123", null );
         user.send( TransportTestUtil.chunk(
-                run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
+                run( "CALL dbms.security.listConnections() YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -207,7 +207,7 @@ public class BoltConnectionManagementIT
         // When
         authenticate( user, "Igor", "123", null );
         admin.send( TransportTestUtil.chunk(
-                run( "CALL dbms.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
+                run( "CALL dbms.security.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -216,7 +216,7 @@ public class BoltConnectionManagementIT
         assertTrue( terminationResult.get( "Igor" ) == 1L );
 
         admin.send( TransportTestUtil.chunk(
-                run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
+                run( "CALL dbms.security.listConnections() YIELD username, connectionCount" ),
                 pullAll() ) );
         Map<String, Long> listResult = collectConnectionResult( admin, 1 );
         assertTrue( listResult.containsKey( "neo4j" ) );
@@ -230,7 +230,7 @@ public class BoltConnectionManagementIT
     {
         // When
         admin.send( TransportTestUtil.chunk(
-                run( "CALL dbms.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
+                run( "CALL dbms.security.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -244,7 +244,7 @@ public class BoltConnectionManagementIT
     {
         // When
         admin.send( TransportTestUtil.chunk(
-                run( "CALL dbms.terminateConnectionsForUser( 'NonExistentUser' ) YIELD username, connectionCount" ),
+                run( "CALL dbms.security.terminateConnectionsForUser( 'NonExistentUser' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -313,7 +313,7 @@ public class BoltConnectionManagementIT
     {
         // Given
         conn.send( TransportTestUtil.chunk(
-                run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
+                run( "CALL dbms.security.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -324,7 +324,7 @@ public class BoltConnectionManagementIT
             Exception
     {
         conn1.send( TransportTestUtil.chunk(
-                run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
+                run( "CALL dbms.security.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -335,7 +335,7 @@ public class BoltConnectionManagementIT
     private static void assertFailTerminateConnectionForUser( TransportConnection client, String username ) throws Exception
     {
         client.send( TransportTestUtil.chunk(
-                run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
+                run( "CALL dbms.security.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -371,7 +371,7 @@ public class BoltConnectionManagementIT
     private static void createNewUser( TransportConnection client, String username, String password ) throws Exception
     {
         client.send( TransportTestUtil.chunk(
-                run( "CALL dbms.createUser( '" + username + "', '" + password + "', false )" ),
+                run( "CALL dbms.security.createUser( '" + username + "', '" + password + "', false )" ),
                 pullAll() ) );
         assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }

@@ -105,10 +105,10 @@ abstract class AuthTestBase<S>
         userManager.newUser( "writeSubject", "abc", false );
         userManager.newUser( "readSubject", "123", false );
         // Currently admin role is created by default
-        userManager.addUserToRole( "adminSubject", ADMIN );
-        userManager.addUserToRole( "schemaSubject", ARCHITECT );
-        userManager.addUserToRole( "writeSubject", PUBLISHER );
-        userManager.addUserToRole( "readSubject", READER );
+        userManager.addRoleToUser( ADMIN, "adminSubject" );
+        userManager.addRoleToUser( ARCHITECT, "schemaSubject" );
+        userManager.addRoleToUser( PUBLISHER, "writeSubject" );
+        userManager.addRoleToUser( READER, "readSubject" );
         userManager.newRole( EMPTY_ROLE );
         noneSubject = neo.login( "noneSubject", "abc" );
         pwdSubject = neo.login( "pwdSubject", "abc" );
@@ -179,59 +179,59 @@ abstract class AuthTestBase<S>
 
     void testFailCreateUser( S subject, String errMsg )
     {
-        assertFail( subject, "CALL dbms.createUser('Craig', 'foo', false)", errMsg );
-        assertFail( subject, "CALL dbms.createUser('Craig', '', false)", errMsg );
-        assertFail( subject, "CALL dbms.createUser('', 'foo', false)", errMsg );
+        assertFail( subject, "CALL dbms.security.createUser('Craig', 'foo', false)", errMsg );
+        assertFail( subject, "CALL dbms.security.createUser('Craig', '', false)", errMsg );
+        assertFail( subject, "CALL dbms.security.createUser('', 'foo', false)", errMsg );
     }
 
-    void testFailAddUserToRole( S subject, String username, String role, String errMsg )
+    void testFailAddRoleToUser( S subject, String role, String username, String errMsg )
     {
-        assertFail( subject, "CALL dbms.addUserToRole('" + username + "', '" + role + "')", errMsg );
+        assertFail( subject, "CALL dbms.security.addRoleToUser('" + role + "', '" + username + "')", errMsg );
     }
 
-    void testFailRemoveUserFromRole( S subject, String username, String role, String errMsg )
+    void testFailRemoveRoleFromUser( S subject, String role, String username, String errMsg )
     {
-        assertFail( subject, "CALL dbms.removeUserFromRole('" + username + "', '" + role + "')", errMsg );
+        assertFail( subject, "CALL dbms.security.removeRoleFromUser('" + role + "', '" + username + "')", errMsg );
     }
 
     void testFailDeleteUser( S subject, String username, String errMsg )
     {
-        assertFail( subject, "CALL dbms.deleteUser('" + username + "')", errMsg );
+        assertFail( subject, "CALL dbms.security.deleteUser('" + username + "')", errMsg );
     }
 
     void testSuccessfulListUsers( S subject, String[] users )
     {
-        assertSuccess( subject, "CALL dbms.listUsers() YIELD username",
+        assertSuccess( subject, "CALL dbms.security.listUsers() YIELD username",
                 r -> assertKeyIsArray( r, "username", users ) );
     }
 
     void testFailListUsers( S subject, int count, String errMsg )
     {
-        assertFail( subject, "CALL dbms.listUsers() YIELD username", errMsg );
+        assertFail( subject, "CALL dbms.security.listUsers() YIELD username", errMsg );
     }
 
     void testSuccessfulListRoles( S subject, String[] roles )
     {
-        assertSuccess( subject, "CALL dbms.listRoles() YIELD role",
+        assertSuccess( subject, "CALL dbms.security.listRoles() YIELD role",
                 r -> assertKeyIsArray( r, "role", roles ) );
     }
 
     void testFailListRoles( S subject, String errMsg )
     {
-        assertFail( subject, "CALL dbms.listRoles() YIELD role", errMsg );
+        assertFail( subject, "CALL dbms.security.listRoles() YIELD role", errMsg );
     }
 
     void testFailListUserRoles( S subject, String username, String errMsg )
     {
         assertFail( subject,
-                "CALL dbms.listRolesForUser('" + username + "') YIELD value AS roles RETURN count(roles)",
+                "CALL dbms.security.listRolesForUser('" + username + "') YIELD value AS roles RETURN count(roles)",
                 errMsg );
     }
 
     void testFailListRoleUsers( S subject, String roleName, String errMsg )
     {
         assertFail( subject,
-                "CALL dbms.listUsersForRole('" + roleName + "') YIELD value AS users RETURN count(users)",
+                "CALL dbms.security.listUsersForRole('" + roleName + "') YIELD value AS users RETURN count(users)",
                 errMsg );
     }
 
@@ -260,8 +260,8 @@ abstract class AuthTestBase<S>
     void assertPasswordChangeWhenPasswordChangeRequired( S subject, String newPassword )
     {
         // TODO: REST doesn't allow changing your own password via procedure if you're in PASSWORD_CHANGE_REQUIRED mode
-        if ( IS_EMBEDDED ) assertEmpty( subject, "CALL dbms.changePassword( '" + newPassword + "' )" );
-        else assertEmpty( adminSubject, "CALL dbms.changeUserPassword( '" + neo.nameOf( subject ) + "', '" +
+        if ( IS_EMBEDDED ) assertEmpty( subject, "CALL dbms.security.changePassword( '" + newPassword + "' )" );
+        else assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( '" + neo.nameOf( subject ) + "', '" +
                 newPassword + "' )" );
         // remove above if-else ASAP
     }

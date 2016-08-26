@@ -36,24 +36,24 @@ public interface EnterpriseUserManager extends UserManager
     RoleRecord getRole( String roleName ) throws InvalidArgumentsException;
 
     /**
-     * Add a user to a role. The role has to exist.
+     * Assign a role to a user. The role and the user have to exist.
      *
-     * @param username name of user
      * @param roleName name of role
+     * @param username name of user
      * @throws InvalidArgumentsException if the role does not exist
      * @throws IOException
      */
-    void addUserToRole( String username, String roleName ) throws IOException, InvalidArgumentsException;
+    void addRoleToUser( String roleName, String username ) throws IOException, InvalidArgumentsException;
 
     /**
-     * Remove a user from a role.
+     * Unassign a role from a user. The role and the user have to exist.
      *
-     * @param username name of user
      * @param roleName name of role
+     * @param username name of user
      * @throws InvalidArgumentsException if the username or the role does not exist
      * @throws IOException
      */
-    void removeUserFromRole( String username, String roleName ) throws IOException, InvalidArgumentsException;
+    void removeRoleFromUser( String roleName, String username ) throws IOException, InvalidArgumentsException;
 
     Set<String> getAllRoleNames();
 
