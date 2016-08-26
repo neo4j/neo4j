@@ -67,7 +67,7 @@ public class TransactionIdTrackerTest
 
     }
 
-    @Test( timeout = 300 )
+    @Test( timeout = 500 )
     public void shouldTimeoutIfTheVersionIsTooHigh() throws Exception
     {
         // given
@@ -79,7 +79,7 @@ public class TransactionIdTrackerTest
         // when
         try
         {
-            transactionIdTracker.awaitUpToDate( version + 1, ofMillis( 100 ) );
+            transactionIdTracker.awaitUpToDate( version + 1, ofMillis( 50 ) );
             fail( "should have thrown" );
         }
         catch ( TransactionFailureException ex )
