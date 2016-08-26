@@ -24,6 +24,8 @@ import org.apache.shiro.realm.Realm;
 import org.slf4j.impl.StaticLoggerBinder;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +35,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.logging.FormattedLog;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
@@ -41,6 +45,8 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.time.Clocks;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.security_log_filename;
+import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.server.security.auth.BasicAuthManagerFactory.getUserRepository;
 
 /**
@@ -89,7 +95,24 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         int maxCapacity = config.get( SecuritySettings.auth_cache_max_capacity );
 
         return new MultiRealmAuthManager( internalRealm, realms,
-                new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity ) );
+                new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity ),
+                getLog( config, fileSystem ) );
+    }
+
+    private Log getLog( Config config, FileSystemAbstraction fileSystem )
+    {
+        FormattedLog.Builder builder = FormattedLog.withUTCTimeZone();
+        File logFile = config.get( security_log_filename );
+        OutputStream ouputStream;
+        try
+        {
+            ouputStream = createOrOpenAsOuputStream( fileSystem, logFile, true );
+        }
+        catch ( IOException e )
+        {
+            throw new AssertionError( "File not possible to create", e );
+        }
+        return builder.toOutputStream( ouputStream );
     }
 
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,

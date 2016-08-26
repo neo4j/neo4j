@@ -156,8 +156,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 
-        schemaWriteGuard = () -> {
-        };
+        schemaWriteGuard = () -> {};
 
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
 

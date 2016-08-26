@@ -35,10 +35,14 @@ import org.apache.shiro.util.Initializable;
 import java.util.Collection;
 import java.util.Map;
 
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserManagerSupplier;
+
+import static org.neo4j.helpers.Strings.escape;
 
 public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplier
 {
@@ -46,14 +50,17 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
     private final Collection<Realm> realms;
     private final DefaultSecurityManager securityManager;
     private final CacheManager cacheManager;
+    private final Log securityLog;
 
-    MultiRealmAuthManager( EnterpriseUserManager userManager, Collection<Realm> realms, CacheManager cacheManager )
+    MultiRealmAuthManager( EnterpriseUserManager userManager, Collection<Realm> realms, CacheManager cacheManager,
+            Log securityLog )
     {
         this.userManager = userManager;
         this.realms = realms;
         this.cacheManager = cacheManager;
 
         securityManager = new DefaultSecurityManager( realms );
+        this.securityLog = securityLog;
         securityManager.setSubjectFactory( new ShiroSubjectFactory() );
         ((ModularRealmAuthenticator) securityManager.getAuthenticator())
                 .setAuthenticationStrategy( new ShiroAuthenticationStrategy() );
@@ -84,9 +91,11 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
 
         ShiroAuthToken token = new ShiroAuthToken( authToken );
 
+        String username = escape( authToken.get( AuthToken.PRINCIPAL ).toString() );
         try
         {
             subject = (ShiroSubject) securityManager.login( null, token );
+            securityLog.info( "Login success for user `%s`", username );
         }
         catch ( UnsupportedTokenException e )
         {
@@ -96,10 +105,12 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
         {
             // NOTE: We only get this with single (internal) realm authentication
             subject = new ShiroSubject( securityManager, AuthenticationResult.TOO_MANY_ATTEMPTS );
+            securityLog.error( "Login fail for user `%s` - too many failed attempts.", username );
         }
         catch ( AuthenticationException e )
         {
             subject = new ShiroSubject( securityManager, AuthenticationResult.FAILURE );
+            securityLog.error( "Login fail for user `%s`", username );
         }
 
         return new StandardEnterpriseAuthSubject( this, subject );
