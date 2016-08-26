@@ -39,7 +39,7 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
     private void registerMigrations()
     {
         add( new SpecificPropertyMigration( "dbms.index_sampling.buffer_size",
-                "dbms.index_sampling.buffer_size has been replaced with dbms.index_sampling.sample_size_limit" )
+                "dbms.index_sampling.buffer_size has been replaced with dbms.index_sampling.sample_size_limit." )
         {
             @Override
             public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
@@ -51,6 +51,16 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                                                                            : Settings.BYTES.apply( value );
                     rawConfiguration.put( "dbms.index_sampling.sample_size_limit", String.valueOf( newValue ) );
                 }
+            }
+        } );
+
+        add( new SpecificPropertyMigration("dbms.transaction_timeout",
+                "dbms.transaction_timeout has been replaced with dbms.rest.transaction.idle_timeout.")
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+            {
+                rawConfiguration.put( "dbms.rest.transaction.idle_timeout", value );
             }
         } );
     }

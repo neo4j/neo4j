@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Map;
 
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -35,28 +39,70 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  */
 public class TestGraphDatabaseConfigurationMigrator
 {
+
+    private ConfigurationMigrator migrator;
+
+    @Rule
+    public AssertableLogProvider logProvider = new AssertableLogProvider( true );
+
+    @Before
+    public void setUp()
+    {
+        migrator = new GraphDatabaseConfigurationMigrator();
+    }
+
     @Test
     public void testNoMigration()
     {
-        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
         assertThat( migrator.apply( stringMap( "foo", "bar" ), NullLog.getInstance() ), equalTo( stringMap( "foo", "bar" ) ) );
+        logProvider.assertNoLoggingOccurred();
     }
 
     @Test
     public void migrateIndexSamplingBufferSizeIfPresent()
     {
-        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
-        Map<String,String> resultConfig = migrator.apply( stringMap( "dbms.index_sampling.buffer_size", "64m" ), NullLog.getInstance() );
+        Map<String,String> resultConfig = migrator.apply( stringMap( "dbms.index_sampling.buffer_size", "64m" ), getLog() );
         assertEquals( "Old property should be migrated to new one with correct value",
                 resultConfig, stringMap( "dbms.index_sampling.sample_size_limit", "8388608" ));
+        assertContainsWarningMessage("dbms.index_sampling.buffer_size has been replaced with dbms.index_sampling.sample_size_limit.");
     }
 
     @Test
     public void skipMigrationOfIndexSamplingBufferSizeIfNotPresent()
     {
-        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
-        Map<String,String> resultConfig = migrator.apply( stringMap( "dbms.index_sampling.sample_size_limit", "8388600" ), NullLog.getInstance() );
+        Map<String,String> resultConfig = migrator.apply( stringMap( "dbms.index_sampling.sample_size_limit", "8388600" ), getLog() );
         assertEquals( "Nothing to migrate should be the same",
                 resultConfig, stringMap( "dbms.index_sampling.sample_size_limit", "8388600" ));
+        logProvider.assertNoLoggingOccurred();
+    }
+
+    @Test
+    public void migrateRestTransactionTimeoutIfPresent() throws Exception
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.transaction_timeout", "120s" ), getLog() );
+        assertEquals( "Old property should be migrated to new",
+                migratedProperties, stringMap( "dbms.rest.transaction.idle_timeout", "120s" ));
+
+        assertContainsWarningMessage("dbms.transaction_timeout has been replaced with dbms.rest.transaction.idle_timeout.");
+    }
+
+    @Test
+    public void skipMigrationOfTransactionTimeoutIfNotPresent()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.rest.transaction.idle_timeout", "120s" ), getLog() );
+        assertEquals( "Nothing to migrate",
+                migratedProperties, stringMap( "dbms.rest.transaction.idle_timeout", "120s" ));
+        logProvider.assertNoLoggingOccurred();
+    }
+
+    private Log getLog()
+    {
+        return logProvider.getLog( GraphDatabaseConfigurationMigrator.class );
+    }
+
+    private void assertContainsWarningMessage(String deprecationMessage)
+    {
+        logProvider.assertContainsMessageContaining( "WARNING! Deprecated configuration options used. See manual for details" );
+        logProvider.assertContainsMessageContaining( deprecationMessage );
     }
 }
