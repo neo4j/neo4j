@@ -45,8 +45,9 @@ public class ThreadedTransactionCreate<S>
         this.latch = latch;
     }
 
-    void execute( ThreadingRule threading, S subject )
+    String execute( ThreadingRule threading, S subject )
     {
+        final String query = "CREATE (:Test { name: '" + neo.nameOf( subject ) + "-node'})";
         NamedFunction<S, Throwable> startTransaction =
                 new NamedFunction<S, Throwable>( "start-transaction" )
                 {
@@ -57,8 +58,7 @@ public class ThreadedTransactionCreate<S>
                         {
                             try ( InternalTransaction tx = neo.startTransactionAsUser( subject ) )
                             {
-                                neo.getGraph()
-                                        .execute( "CREATE (:Test { name: '" + neo.nameOf( subject ) + "-node'})" );
+                                neo.getGraph().execute( query );
                                 latch.startAndWaitForAllToStart();
                                 latch.waitForAllToFinish();
                                 tx.success();
@@ -73,6 +73,7 @@ public class ThreadedTransactionCreate<S>
                 };
 
         done = threading.execute( startTransaction, subject );
+        return query;
     }
 
     @SuppressWarnings( "ThrowableResultOfMethodCallIgnored" )

@@ -19,9 +19,12 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -255,6 +258,20 @@ public class AuthProcedures
                 );
     }
 
+    @Procedure( name = "dbms.listQueries", mode = DBMS )
+    public Stream<QueryStatusResult> listQueries()
+            throws InvalidArgumentsException, IOException
+    {
+        throw new NotImplementedException();
+    }
+
+    @Procedure( name = "dbms.listQueriesForUser", mode = DBMS )
+    public Stream<QueryStatusResult> listQueriesForUser( @Name( "username") String username )
+            throws InvalidArgumentsException, IOException
+    {
+        throw new NotImplementedException();
+    }
+
     @Procedure( name = "dbms.security.terminateTransactionsForUser", mode = DBMS )
     public Stream<TransactionTerminationResult> terminateTransactionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
@@ -420,6 +437,30 @@ public class AuthProcedures
         {
             this.username = username;
             this.activeTransactions = activeTransactions;
+        }
+    }
+
+    public static class QueryStatusResult
+    {
+        public final long queryId;
+
+        public final String username;
+        public final String query;
+        public final Map<String, Object> parameters;
+        public final long startTime;
+
+        // TODO: Metadata
+
+
+        public QueryStatusResult( long queryId,
+                String username, String query, Map<String,Object> parameters,
+                long startTime )
+        {
+            this.queryId = queryId;
+            this.username = username;
+            this.query = query;
+            this.parameters = parameters;
+            this.startTime = startTime;
         }
     }
 
