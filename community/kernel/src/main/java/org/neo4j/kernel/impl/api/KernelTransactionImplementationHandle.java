@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
+import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -99,6 +101,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     public boolean isUnderlyingTransaction( KernelTransaction tx )
     {
         return this.tx == tx;
+    }
+
+    @Override
+    public Stream<ExecutingQuery> executingQueries()
+    {
+        return tx.executingQueries();
     }
 
     @Override

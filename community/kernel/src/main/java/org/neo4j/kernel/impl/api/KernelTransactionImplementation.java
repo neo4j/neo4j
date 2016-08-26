@@ -26,9 +26,11 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -331,12 +333,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return currentStatement;
     }
 
-    public void upgradeToDataWrites() throws InvalidTransactionTypeKernelException
+    void upgradeToDataWrites() throws InvalidTransactionTypeKernelException
     {
         writeState = writeState.upgradeToDataWrites();
     }
 
-    public void upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
+    void upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
     {
         schemaWriteGuard.assertSchemaWritesAllowed();
         writeState = writeState.upgradeToSchemaWrites();
@@ -783,5 +785,23 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public void dispose()
     {
         storageStatement.close();
+    }
+
+    @Override
+    public Stream<ExecutingQuery> executingQueries()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void registerQueryExecutionStart( ExecutingQuery query )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void registerQueryExecutionStop( ExecutingQuery query )
+    {
+        throw new UnsupportedOperationException();
     }
 }

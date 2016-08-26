@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -90,4 +91,9 @@ public interface KernelTransactionHandle
      * @return {@code true} if this handle represents {@code tx}, {@code false} otherwise.
      */
     boolean isUnderlyingTransaction( KernelTransaction tx );
+
+    /**
+     * @return a list of all queries currently executing that use the underlying transaction
+     */
+    Stream<ExecutingQuery> executingQueries();
 }

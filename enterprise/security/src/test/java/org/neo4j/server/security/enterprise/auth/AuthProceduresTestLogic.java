@@ -1315,27 +1315,32 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 
     //---------- matchers-----------
 
+    @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasQuery( String query )
     {
         return (Matcher<Map<String, Object>>) (Matcher) hasEntry( "query", query );
     }
 
+    @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasUsername( String name )
     {
         return (Matcher<Map<String, Object>>) (Matcher) hasEntry( "userName", name );
     }
 
+    @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasQueryId()
     {
         return (Matcher<Map<String, Object>>) (Matcher) hasEntry( "queryId", isA( Long.class ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasStartTimeAfter( long base )
     {
         // TODO
         return (Matcher<Map<String, Object>>) (Matcher) hasEntry( "startTime", isA( Long.class ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasNoParameters()
     {
         return (Matcher<Map<String, Object>>) (Matcher) hasEntry( "parameters", Collections.emptySet() );

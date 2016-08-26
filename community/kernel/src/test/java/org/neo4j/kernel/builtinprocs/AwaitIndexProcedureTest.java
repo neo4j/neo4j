@@ -27,8 +27,10 @@ import org.mockito.stubbing.Answer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -244,7 +246,7 @@ public class AwaitIndexProcedureTest
     {
         private final ReadOperations readOperations;
 
-        public StubKernelTransaction( ReadOperations readOperations )
+        StubKernelTransaction( ReadOperations readOperations )
         {
             this.readOperations = readOperations;
         }
@@ -344,13 +346,31 @@ public class AwaitIndexProcedureTest
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
+
+        @Override
+        public Stream<ExecutingQuery> executingQueries()
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void registerQueryExecutionStart( ExecutingQuery query )
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void registerQueryExecutionStop( ExecutingQuery query )
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
     }
 
     private class StubStatement implements Statement
     {
         private final ReadOperations readOperations;
 
-        public StubStatement( ReadOperations readOperations )
+        StubStatement( ReadOperations readOperations )
         {
             this.readOperations = readOperations;
         }

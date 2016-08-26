@@ -23,7 +23,9 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
+import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -156,7 +158,7 @@ public class ConstraintIndexCreatorTest
         verifyZeroInteractions( indexingService );
     }
 
-    public class StubKernel implements KernelAPI
+    private class StubKernel implements KernelAPI
     {
         private final List<KernelStatement> statements = new ArrayList<>();
 
@@ -249,6 +251,24 @@ public class ConstraintIndexCreatorTest
                 public Revertable overrideWith( AccessMode read )
                 {
                     return null;
+                }
+
+                @Override
+                public Stream<ExecutingQuery> executingQueries()
+                {
+                    return null;
+                }
+
+                @Override
+                public void registerQueryExecutionStart( ExecutingQuery query )
+                {
+
+                }
+
+                @Override
+                public void registerQueryExecutionStop( ExecutingQuery query )
+                {
+
                 }
 
                 @Override

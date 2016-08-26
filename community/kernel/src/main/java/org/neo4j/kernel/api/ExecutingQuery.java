@@ -17,15 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.kernel.api;
 
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
-import org.neo4j.kernel.impl.query.QuerySession
+import java.util.Map;
 
-case class PreparedPlanExecution(plan: ExecutionPlan, executionMode: CypherExecutionMode, extractedParams: Map[String, Any]) {
-  def execute(transactionalContext: TransactionalContextWrapperv3_1, params: Map[String, Any], session: QuerySession): ExecutionResult =
-    plan.run(transactionalContext, executionMode, params ++ extractedParams, session)
+import org.neo4j.kernel.api.security.AuthSubject;
 
-  def profile(transactionalContext: TransactionalContextWrapperv3_1, params: Map[String, Any], session: QuerySession): ExecutionResult =
-    plan.run(transactionalContext, CypherExecutionMode.profile, params ++ extractedParams, session)
+public class ExecutingQuery
+{
+    private final long queryId;
+
+    private final AuthSubject subject;
+    private final String query;
+    private final Map<String, Object> parameters;
+    private final long startTime;
+
+    // TODO: Metadata
+
+    public ExecutingQuery( long queryId, AuthSubject subject, String query, Map<String,Object> queryParameters )
+    {
+        this.queryId = queryId;
+        this.subject = subject;
+        this.query = query;
+        this.parameters = queryParameters;
+        this.startTime = System.currentTimeMillis();
+    }
 }
