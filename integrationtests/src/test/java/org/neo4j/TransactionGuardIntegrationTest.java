@@ -19,8 +19,7 @@
  */
 package org.neo4j;
 
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.File;
@@ -66,6 +65,7 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
@@ -82,15 +82,15 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotF
 
 public class TransactionGuardIntegrationTest
 {
-    @Rule
-    public CleanupRule cleanupRule = new CleanupRule();
-    private FakeClock clock;
+    @ClassRule
+    public static CleanupRule cleanupRule = new CleanupRule();
+    @ClassRule
+    public static TestDirectory testDirectory = TestDirectory.testDirectory();
 
-    @Before
-    public void setUp()
-    {
-        clock = Clocks.fakeClock();
-    }
+    private static final FakeClock clock = Clocks.fakeClock();
+    private static GraphDatabaseAPI databaseWithTimeout;
+    private static GraphDatabaseAPI databaseWithoutTimeout;
+    private static CommunityNeoServer neoServer;
 
     @Test
     public void terminateLongRunningTransaction()
@@ -250,14 +250,24 @@ public class TransactionGuardIntegrationTest
 
     protected GraphDatabaseAPI startDatabaseWithTimeout()
     {
-        Map<Setting<?>,String> configMap = getSettingsWithTransactionTimeout();
-        return startCustomDatabase( clock, configMap );
+        if ( databaseWithTimeout == null )
+        {
+            Map<Setting<?>,String> configMap = getSettingsWithTimeoutAndBolt();
+            databaseWithTimeout = startCustomDatabase( testDirectory.directory( "dbWithTimeout" ), clock,
+                    configMap );
+        }
+        return databaseWithTimeout;
     }
 
     protected GraphDatabaseAPI startDatabaseWithoutTimeout()
     {
-        Map<Setting<?>,String> configMap = getSettingsWithTransactionTimeout();
-        return startCustomDatabase( clock, configMap );
+        if (databaseWithoutTimeout == null)
+        {
+            Map<Setting<?>,String> configMap = getSettingsWithoutTransactionTimeout();
+            databaseWithoutTimeout = startCustomDatabase( testDirectory.directory( "dbWithoutTimeout" ), clock,
+                    configMap );
+        }
+        return databaseWithoutTimeout;
     }
 
     private org.neo4j.driver.v1.Config getDriverConfig()
@@ -269,33 +279,36 @@ public class TransactionGuardIntegrationTest
 
     private CommunityNeoServer startNeoServer( GraphDatabaseFacade database ) throws IOException
     {
-        GuardingServerBuilder serverBuilder = new GuardingServerBuilder( database );
-        GraphDatabaseSettings.BoltConnector boltConnector = boltConnector( "0" );
-        serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
-                .withProperty( boltConnector.enabled.name(), "true" )
-                .withProperty( boltConnector.encryption_level.name(), GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name())
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" );
-        CommunityNeoServer neoServer = serverBuilder.build();
-        cleanupRule.add( neoServer );
-        neoServer.start();
+        if ( neoServer == null )
+        {
+            GuardingServerBuilder serverBuilder = new GuardingServerBuilder( database );
+            GraphDatabaseSettings.BoltConnector boltConnector = boltConnector( "0" );
+            serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
+                    .withProperty( boltConnector.enabled.name(), "true" )
+                    .withProperty( boltConnector.encryption_level.name(),
+                            GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name() )
+                    .withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" );
+            neoServer = serverBuilder.build();
+            cleanupRule.add( neoServer );
+            neoServer.start();
+        }
         return neoServer;
     }
 
-    private Map<Setting<?>,String> getSettingsWithTransactionTimeout()
-    {
-        Map<Setting<?>,String> settingMap = getSettingsWithoutTransactionTimeout();
-        settingMap.put( GraphDatabaseSettings.transaction_timeout, "2s" );
-        return settingMap;
-    }
-
-    private Map<Setting<?>,String> getSettingsWithoutTransactionTimeout()
+    private Map<Setting<?>,String> getSettingsWithTimeoutAndBolt()
     {
         GraphDatabaseSettings.BoltConnector boltConnector = boltConnector( "0" );
         return MapUtil.genericMap(
+                GraphDatabaseSettings.transaction_timeout, "2s",
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
                 boltConnector.encryption_level, GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name(),
                 GraphDatabaseSettings.auth_enabled, "false" );
+    }
+
+    private Map<Setting<?>,String> getSettingsWithoutTransactionTimeout()
+    {
+        return MapUtil.genericMap();
     }
 
     private String transactionUri(CommunityNeoServer neoServer)
@@ -332,12 +345,14 @@ public class TransactionGuardIntegrationTest
         }
     }
 
-    private GraphDatabaseAPI startCustomDatabase( Clock clock, Map<Setting<?>,String> configMap )
+    private GraphDatabaseAPI startCustomDatabase( File storeDir, Clock clock, Map<Setting<?>,String> configMap )
     {
         GuardCommunityFacadeFactory guardCommunityFacadeFactory = new GuardCommunityFacadeFactory( clock );
-        GraphDatabaseAPI database =
-                (GraphDatabaseAPI) new GuardTestGraphDatabaseFactory( guardCommunityFacadeFactory )
-                        .newImpermanentDatabase( configMap );
+        GraphDatabaseBuilder databaseBuilder = new GuardTestGraphDatabaseFactory( guardCommunityFacadeFactory )
+                .newImpermanentDatabaseBuilder( storeDir );
+        configMap.forEach( databaseBuilder::setConfig );
+
+        GraphDatabaseAPI database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
         cleanupRule.add( database );
         return database;
     }
