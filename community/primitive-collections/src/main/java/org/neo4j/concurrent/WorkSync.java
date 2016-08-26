@@ -34,20 +34,21 @@ import java.util.concurrent.locks.LockSupport;
 /**
  * Turns multi-threaded unary work into single-threaded stack work.
  * <p>
- *     The technique used here is inspired in part both by the Flat Combining
- *     concept from Hendler, Incze, Shavit &amp; Tzafrir, and in part by the
- *     wait-free linked queue design by Vyukov.
+ * The technique used here is inspired in part both by the Flat Combining
+ * concept from Hendler, Incze, Shavit &amp; Tzafrir, and in part by the
+ * wait-free linked queue design by Vyukov.
  * </p>
  * <p>
- *     In a sense, this turns many small, presumably concurrent, pieces of work
- *     into fewer, larger batches of work, that is then applied to the material
- *     under synchronisation.
+ * In a sense, this turns many small, presumably concurrent, pieces of work
+ * into fewer, larger batches of work, that is then applied to the material
+ * under synchronisation.
  * </p>
  * <p>
- *     Obviously this only makes sense for work that a) can be combined, and b)
- *     where the performance improvements from batching effects is large enough
- *     to overcome the overhead of collecting and batching up the work units.
+ * Obviously this only makes sense for work that a) can be combined, and b)
+ * where the performance improvements from batching effects is large enough
+ * to overcome the overhead of collecting and batching up the work units.
  * </p>
+ *
  * @see Work
  */
 public class WorkSync<Material, W extends Work<Material,W>>
@@ -60,6 +61,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
     /**
      * Create a new WorkSync that will synchronize the application of work to
      * the given material.
+     *
      * @param material The material we want to apply work to, in a thread-safe
      * way.
      */
@@ -75,6 +77,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
     /**
      * Apply the given work to the material in a thread-safe way, possibly by
      * combining it with other work.
+     *
      * @param work The work to be done.
      * @throws ExecutionException if this thread ends up performing the piled up work,
      * and any work unit in the pile throws an exception. Thus the current thread is not
@@ -454,6 +457,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
     private static final class FutureThrow extends FutureTask<Object>
     {
         private static final Callable<Object> NULL_CALLABLE = () -> null;
+
         FutureThrow( Throwable result )
         {
             super( NULL_CALLABLE );
