@@ -70,6 +70,12 @@ public class DoubleLatch
         finishSignal.countDown();
     }
 
+    public void finishAndWaitForAll()
+    {
+        finish();
+        awaitFinish();
+    }
+
     public void awaitFinish()
     {
         awaitLatch( finishSignal );

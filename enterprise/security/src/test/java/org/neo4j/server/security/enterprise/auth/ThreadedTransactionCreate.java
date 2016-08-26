@@ -25,24 +25,27 @@ import java.util.concurrent.Future;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.NamedFunction;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertTrue;
 
 public class ThreadedTransactionCreate<S>
 {
-    final Barrier.Control barrier = new Barrier.Control();
-    private Future<Throwable> done;
+    private volatile Future<Throwable> done = null;
+    private final NeoInteractionLevel<S> neo;
+    private final DoubleLatch latch;
 
-    NeoInteractionLevel<S> neo;
-
-    ThreadedTransactionCreate( NeoInteractionLevel<S> neo )
+    ThreadedTransactionCreate( NeoInteractionLevel<S> neo, DoubleLatch latch  )
     {
         this.neo = neo;
+        this.latch = latch;
     }
 
     void execute( ThreadingRule threading, S subject )
@@ -53,13 +56,17 @@ public class ThreadedTransactionCreate<S>
                     @Override
                     public Throwable apply( S subject )
                     {
-                        try ( InternalTransaction tx = neo.startTransactionAsUser( subject ) )
+                        try
                         {
-                            barrier.reached();
-                            neo.getGraph().execute( "CREATE (:Test { name: '" + neo.nameOf( subject ) + "-node'})" );
-                            // We would like to put barrier.reached() here, but this seems to cause threading issues
-                            tx.success();
-                            return null;
+                            try ( InternalTransaction tx = neo.startTransactionAsUser( subject ) )
+                            {
+                                neo.getGraph()
+                                        .execute( "CREATE (:Test { name: '" + neo.nameOf( subject ) + "-node'})" );
+                                latch.start();
+                                latch.awaitFinish();
+                                tx.success();
+                                return null;
+                            }
                         }
                         catch (Throwable t)
                         {
@@ -87,25 +94,15 @@ public class ThreadedTransactionCreate<S>
         {
             fail( "Expected BridgeTransactionTerminatedException in ThreadedCreate, but no exception was raised" );
         }
-        assertTrue( "Expected TransactionTerminatedException in ThreadedCreate, got '"+exceptionInOtherThread.getMessage()
-                +"'", exceptionInOtherThread instanceof TransactionTerminatedException );
+        assertThat( exceptionInOtherThread.getMessage(), containsString( "Explicitly terminated by the user.") );
     }
 
-    void closeAndAssertException( Class exceptionType, String msg ) throws Throwable
-    {
-        Throwable exceptionInOtherThread = join();
-        if ( exceptionInOtherThread == null )
-        {
-            fail( "Expected " + exceptionType + " in ThreadedCreate, but no exception was raised" );
-        }
-        assertTrue( "Expected " + exceptionType + " in ThreadedCreate, got " + exceptionInOtherThread.getClass() + "",
-                 exceptionType.isInstance( exceptionInOtherThread ) );
-        assertThat( exceptionInOtherThread.getMessage(), equalTo( msg ) );
+    void finish() {
+        latch.finish();
     }
 
     private Throwable join() throws ExecutionException, InterruptedException
     {
-        barrier.release();
         return done.get();
     }
 }

@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,7 +43,6 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.R
 
 public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
 {
-
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
 
@@ -360,14 +360,17 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         S henrik = neo.login( "Henrik", "bar" );
         neo.assertAuthenticated( henrik );
 
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo );
+        DoubleLatch latch = new DoubleLatch( 2 );
+        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
         write.execute( threading, henrik );
-        write.barrier.await();
+        latch.start();
 
         assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('" + PUBLISHER + "', 'Henrik')" );
 
-        write.closeAndAssertException( AuthorizationViolationException.class,
-                "Write operations are not allowed for 'Henrik'." );
+        write.finish();
+        latch.finishAndWaitForAll();
+
+        write.closeAndAssertSuccess();
         testFailWrite( henrik );
     }
 

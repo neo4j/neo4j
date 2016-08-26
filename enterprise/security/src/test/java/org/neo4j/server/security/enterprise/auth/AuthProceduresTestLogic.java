@@ -139,16 +139,21 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldListTransactions() throws Throwable
     {
-        ThreadedTransactionCreate<S> write1 = new ThreadedTransactionCreate<>( neo );
-        ThreadedTransactionCreate<S> write2 = new ThreadedTransactionCreate<>( neo );
+        DoubleLatch latch = new DoubleLatch( 3 );
+        ThreadedTransactionCreate<S> write1 = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransactionCreate<S> write2 = new ThreadedTransactionCreate<>( neo, latch );
+
         write1.execute( threading, writeSubject );
         write2.execute( threading, writeSubject );
-        write1.barrier.await();
-        write2.barrier.await();
+        latch.start();
 
         assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r -> assertKeyIsMap( r, "username", "activeTransactions",
                         map( "adminSubject", "1", "writeSubject", "2" ) ) );
+
+        write1.finish();
+        write2.finish();
+        latch.finishAndWaitForAll();
 
         write1.closeAndAssertSuccess();
         write2.closeAndAssertSuccess();
@@ -181,15 +186,19 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldTerminateTransactionForUser() throws Throwable
     {
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo );
+        DoubleLatch latch = new DoubleLatch( 2 );
+        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
         write.execute( threading, writeSubject );
-        write.barrier.await();
+        latch.start();
 
         assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )",
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "writeSubject", "1" ) ) );
 
         assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
+
+        write.finish();
+        latch.finishAndWaitForAll();
 
         write.closeAndAssertTransactionTermination();
 
@@ -199,14 +208,13 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldTerminateOnlyGivenUsersTransaction() throws Throwable
     {
-        ThreadedTransactionCreate<S> schema = new ThreadedTransactionCreate<>( neo );
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo );
+        DoubleLatch latch = new DoubleLatch( 3 );
+        ThreadedTransactionCreate<S> schema = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
 
         schema.execute( threading, schemaSubject );
         write.execute( threading, writeSubject );
-
-        schema.barrier.await();
-        write.barrier.await();
+        latch.start();
 
         assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'schemaSubject' )",
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "schemaSubject", "1" ) ) );
@@ -214,6 +222,10 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r ->  assertKeyIsMap( r, "username", "activeTransactions",
                         map( "adminSubject", "1", "writeSubject", "1" ) ) );
+
+        schema.finish();
+        write.finish();
+        latch.finishAndWaitForAll();
 
         schema.closeAndAssertTransactionTermination();
         write.closeAndAssertSuccess();
@@ -225,20 +237,23 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldTerminateAllTransactionsForGivenUser() throws Throwable
     {
-        ThreadedTransactionCreate<S> schema1 = new ThreadedTransactionCreate<>( neo );
-        ThreadedTransactionCreate<S> schema2 = new ThreadedTransactionCreate<>( neo );
+        DoubleLatch latch = new DoubleLatch( 3 );
+        ThreadedTransactionCreate<S> schema1 = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransactionCreate<S> schema2 = new ThreadedTransactionCreate<>( neo, latch );
 
         schema1.execute( threading, schemaSubject );
         schema2.execute( threading, schemaSubject );
-
-        schema1.barrier.await();
-        schema2.barrier.await();
+        latch.start();
 
         assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'schemaSubject' )",
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "schemaSubject", "2" ) ) );
 
         assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r ->  assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
+
+        schema1.finish();
+        schema2.finish();
+        latch.finishAndWaitForAll();
 
         schema1.closeAndAssertTransactionTermination();
         schema2.closeAndAssertTransactionTermination();
@@ -269,13 +284,18 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 
     private void shouldTerminateSelfTransactionsExceptTerminationTransaction( S subject ) throws Throwable
     {
-        ThreadedTransactionCreate<S> create = new ThreadedTransactionCreate<>( neo );
+        DoubleLatch latch = new DoubleLatch( 2 );
+        ThreadedTransactionCreate<S> create = new ThreadedTransactionCreate<>( neo, latch );
         create.execute( threading, subject );
-        create.barrier.await();
+
+        latch.start();
 
         String subjectName = neo.nameOf( subject );
         assertSuccess( subject, "CALL dbms.security.terminateTransactionsForUser( '" + subjectName + "' )",
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( subjectName, "1" ) ) );
+
+        create.finish();
+        latch.finishAndWaitForAll();
 
         create.closeAndAssertTransactionTermination();
 
@@ -292,9 +312,10 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldNotTerminateTransactionsIfNotAdmin() throws Throwable
     {
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo );
+        DoubleLatch latch = new DoubleLatch( 2 );
+        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
         write.execute( threading, writeSubject );
-        write.barrier.await();
+        latch.start();
 
         assertFail( noneSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
         assertFail( pwdSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )", CHANGE_PWD_ERR_MSG );
@@ -303,6 +324,9 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 
         assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r -> assertKeyIs( r, "username", "adminSubject", "writeSubject" ) );
+
+        write.finish();
+        latch.finishAndWaitForAll();
 
         write.closeAndAssertSuccess();
 
@@ -1207,14 +1231,18 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 
     private void shouldTerminateTransactionsForUser( S subject, String procedure ) throws Throwable
     {
-        ThreadedTransactionCreate<S> userThread = new ThreadedTransactionCreate<>( neo );
+        DoubleLatch latch = new DoubleLatch( 2 );
+        ThreadedTransactionCreate<S> userThread = new ThreadedTransactionCreate<>( neo, latch );
         userThread.execute( threading, subject );
-        userThread.barrier.await();
+        latch.start();
 
         assertEmpty( adminSubject, "CALL " + format(procedure, neo.nameOf( subject ) ) );
 
         assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
+
+        userThread.finish();
+        latch.finishAndWaitForAll();
 
         userThread.closeAndAssertTransactionTermination();
 
