@@ -17,32 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.web;
+package org.neo4j.bolt.v1.runtime.cypher;
 
-import javax.servlet.http.HttpServletRequest;
+import org.junit.Test;
 
+import org.neo4j.bolt.v1.runtime.cypher.CypherStatementRunner.BoltQuerySession;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.impl.query.FakeTransactionalContext;
 import org.neo4j.kernel.impl.query.QuerySession;
-import org.neo4j.kernel.impl.query.TransactionalContext;
 
-import static java.lang.String.format;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.*;
 
-public class ServerQuerySession extends QuerySession
+public class BoltQuerySessionTest
 {
-    private final HttpServletRequest request;
-    private final String username;
-
-    public ServerQuerySession( HttpServletRequest request, TransactionalContext transactionalContext )
+    @Test
+    public void shouldIncludeUsernameInToString()
     {
-        super( transactionalContext );
-        this.username = transactionalContext.accessMode().name();
-        this.request = request;
+        QuerySession session = new BoltQuerySession(
+                new FakeTransactionalContext( AccessMode.Static.READ ), "fakeSource" );
+
+        assertThat( session.toString(), equalTo( String.format( "bolt-session\t%s\t%s", "fakeSource", "READ" ) ) );
     }
 
-    @Override
-    public String toString()
-    {
-        return request == null ?
-               format("server-session\t%s", username) :
-               format("server-session\thttp\t%s\t%s\t%s", request.getRemoteAddr(), request.getRequestURI(), username );
-    }
 }

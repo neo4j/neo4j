@@ -129,7 +129,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         return new LifecycleAdapter();
     }
 
-    public static class QueryLogger implements QueryExecutionMonitor
+    static class QueryLogger implements QueryExecutionMonitor
     {
         private static final MetadataKey<Long> START_TIME = new MetadataKey<>( Long.class, "start time" );
         private static final MetadataKey<String> QUERY_STRING = new MetadataKey<>( String.class, "query string" );
@@ -140,7 +140,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         private final long thresholdMillis;
         private final boolean logQueryParameters;
 
-        public QueryLogger( Clock clock, Log log, long thresholdMillis, boolean logQueryParameters )
+        QueryLogger( Clock clock, Log log, long thresholdMillis, boolean logQueryParameters )
         {
             this.clock = clock;
             this.log = log;

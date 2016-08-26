@@ -17,32 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.web;
+package org.neo4j.shell.kernel.apps.cypher;
 
-import javax.servlet.http.HttpServletRequest;
+import org.junit.Test;
 
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.impl.query.FakeTransactionalContext;
 import org.neo4j.kernel.impl.query.QuerySession;
-import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.shell.Session;
 
-import static java.lang.String.format;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-public class ServerQuerySession extends QuerySession
+public class ShellQuerySessionTest
 {
-    private final HttpServletRequest request;
-    private final String username;
 
-    public ServerQuerySession( HttpServletRequest request, TransactionalContext transactionalContext )
+    @Test
+    public void shouldPutUsernameInToString()
     {
-        super( transactionalContext );
-        this.username = transactionalContext.accessMode().name();
-        this.request = request;
+        Session mock = mock( Session.class );
+        when( mock.getId() ).thenReturn( "serializable" );
+        QuerySession session = new Start.ShellQuerySession( mock, new FakeTransactionalContext( AccessMode.Static.NONE ) );
+
+        assertThat(session.toString(), equalTo(String.format( "shell-session\tshell\t%s\t%s", "serializable", "NONE" )));
     }
 
-    @Override
-    public String toString()
-    {
-        return request == null ?
-               format("server-session\t%s", username) :
-               format("server-session\thttp\t%s\t%s\t%s", request.getRemoteAddr(), request.getRequestURI(), username );
-    }
 }

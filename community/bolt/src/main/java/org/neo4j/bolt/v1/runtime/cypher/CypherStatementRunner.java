@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
@@ -58,26 +59,28 @@ public class CypherStatementRunner implements StatementRunner
             throws KernelException
     {
         InternalTransaction transaction = queryService.beginTransaction( implicit, authSubject );
-        Neo4jTransactionalContext transactionalContext =
+        TransactionalContext transactionalContext =
                 new Neo4jTransactionalContext( queryService, transaction, txBridge.get(), locker );
         QuerySession session = new BoltQuerySession( transactionalContext, querySource );
         return queryExecutionEngine.executeQuery( statement, params, session );
     }
 
-    private static class BoltQuerySession extends QuerySession
+    static class BoltQuerySession extends QuerySession
     {
         private final String querySource;
+        private final String username;
 
-        BoltQuerySession( Neo4jTransactionalContext transactionalContext, String querySource )
+        BoltQuerySession( TransactionalContext transactionalContext, String querySource )
         {
             super( transactionalContext );
+            this.username = transactionalContext.accessMode().name();
             this.querySource = querySource;
         }
 
         @Override
         public String toString()
         {
-            return format( "bolt-session\t%s", querySource );
+            return format( "bolt-session\t%s\t%s", querySource, username );
         }
     }
 }

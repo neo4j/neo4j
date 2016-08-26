@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -36,20 +32,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.server.security.enterprise.auth.EnterpriseAuthSubject;
+import org.neo4j.server.security.enterprise.auth.NeoShallowEmbeddedInteraction;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.kernel.api.security.AccessMode.Static.FULL;
+import static org.neo4j.kernel.impl.query.QueryEngineProvider.embeddedSession;
 
 public class QueryLoggerIT
 {
@@ -58,17 +66,51 @@ public class QueryLoggerIT
     public final EphemeralFileSystemRule fileSystem = new EphemeralFileSystemRule();
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private AssertableLogProvider inMemoryLog;
     private GraphDatabaseBuilder databaseBuilder;
-    public static final String QUERY = "CREATE (n:Foo{bar:\"baz\"})";
+    private static final String QUERY = "CREATE (n:Foo {bar: 'baz'})";
 
     @Before
     public void setUp()
     {
-        inMemoryLog = new AssertableLogProvider();
-        databaseBuilder = new TestGraphDatabaseFactory().setFileSystem( fileSystem.get() )
+        AssertableLogProvider inMemoryLog = new AssertableLogProvider();
+        databaseBuilder = new TestEnterpriseGraphDatabaseFactory().setFileSystem( fileSystem.get() )
                 .setInternalLogProvider( inMemoryLog )
                 .newImpermanentDatabaseBuilder( testDirectory.graphDbDir() );
+    }
+
+    @Test
+    public void shouldLogCustomUserName() throws Throwable
+    {
+        final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
+        final File logFilename = new File( logsDirectory, "query.log" );
+        // turn on query logging
+        databaseBuilder.setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() );
+        databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE );
+        NeoShallowEmbeddedInteraction db = new NeoShallowEmbeddedInteraction( databaseBuilder );
+
+        // create users
+        db.getManager().newUser( "mats", "neo4j", false );
+        db.getManager().newUser( "andres", "neo4j", false );
+        db.getManager().addUserToRole( "mats", "architect" );
+        db.getManager().addUserToRole( "andres", "reader" );
+
+        EnterpriseAuthSubject mats = db.login( "mats", "neo4j" );
+
+        // run query
+        db.executeQuery( mats, "UNWIND range(0, 10) AS i CREATE (:Foo {p: i})", Collections.emptyMap(), ResourceIterator::close );
+        db.executeQuery( mats, "CREATE (:Label)", Collections.emptyMap(), ResourceIterator::close );
+
+        // switch user, run query
+        EnterpriseAuthSubject andres = db.login( "andres", "neo4j" );
+        db.executeQuery( andres, "MATCH (n:Label) RETURN n", Collections.emptyMap(), ResourceIterator::close );
+
+        // THEN
+        List<String> logLines = readAllLines( logFilename );
+
+        assertThat( logLines, hasSize( 3 ) );
+        assertThat( logLines.get( 0 ), containsString( "mats" ) );
+        assertThat( logLines.get( 1 ), containsString( "mats" ) );
+        assertThat( logLines.get( 2 ), containsString( "andres" ) );
     }
 
     @Test
@@ -86,7 +128,8 @@ public class QueryLoggerIT
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ), endsWith( String.format( " ms: %s - %s",
-                QueryEngineProvider.embeddedSession( null ), QUERY ) ) );
+                embeddedSession( new FakeTransactionalContext( FULL ) ), QUERY ) ) );
+        assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
     }
 
     @Test
@@ -114,7 +157,8 @@ public class QueryLoggerIT
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ), endsWith( String.format(
                 " ms: %s - %s - {props: {name: Roland, position: Gunslinger, followers: [Jake, Eddie, Susannah]}}",
-                QueryEngineProvider.embeddedSession( null ), query) ) );
+                embeddedSession( new FakeTransactionalContext( FULL ) ), query) ) );
+        assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
     }
 
     @Test
@@ -136,7 +180,8 @@ public class QueryLoggerIT
         assertThat( logLines.get( 0 ),
                 endsWith( String.format(
                         " ms: %s - %s - {ids: [0, 1, 2]}",
-                        QueryEngineProvider.embeddedSession( null ), query) ) );
+                        embeddedSession( new FakeTransactionalContext( FULL ) ), query) ) );
+        assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
     }
 
     @Test
