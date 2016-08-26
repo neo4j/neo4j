@@ -69,9 +69,11 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         StaticLoggerBinder.setNeo4jLogProvider( logProvider );
 
         List<Realm> realms = new ArrayList<>( 2 );
+        Log securityLog = getLog( config, fileSystem );
 
         // We always create the internal realm as it is our only UserManager implementation
-        InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
+        InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider, fileSystem,
+                jobScheduler, securityLog );
 
         if ( config.get( SecuritySettings.internal_authentication_enabled ) ||
              config.get( SecuritySettings.internal_authorization_enabled ) )
@@ -96,7 +98,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 
         return new MultiRealmAuthManager( internalRealm, realms,
                 new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity ),
-                getLog( config, fileSystem ) );
+                securityLog );
     }
 
     private Log getLog( Config config, FileSystemAbstraction fileSystem )
@@ -116,7 +118,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     }
 
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,
-            FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
+            FileSystemAbstraction fileSystem, JobScheduler jobScheduler, Log securityLog )
     {
         // Resolve auth store and roles file names
         File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
@@ -129,6 +131,6 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 
         return new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
                 config.get( SecuritySettings.internal_authentication_enabled ),
-                config.get( SecuritySettings.internal_authorization_enabled ), jobScheduler );
+                config.get( SecuritySettings.internal_authorization_enabled ), jobScheduler, securityLog );
     }
 }

@@ -53,6 +53,7 @@ import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.ListSnapshot;
@@ -62,6 +63,7 @@ import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 import static java.lang.String.format;
+import static org.neo4j.helpers.Strings.escape;
 
 /**
  * Shiro realm wrapping FileUserRepository and FileRoleRepository
@@ -99,19 +101,22 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     private final AuthenticationStrategy authenticationStrategy;
     private final boolean authenticationEnabled;
     private final boolean authorizationEnabled;
+    private final Log securityLog;
     private final Map<String,SimpleRole> roles;
     private final JobScheduler jobScheduler;
     private JobScheduler.JobHandle reloadJobHandle;
 
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
-            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler )
+            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
+            JobScheduler jobScheduler, Log securityLog )
     {
-        this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true, jobScheduler );
+        this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true,
+                jobScheduler, securityLog );
     }
 
-    public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
+    InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
-            boolean authenticationEnabled, boolean authorizationEnabled, JobScheduler jobScheduler )
+            boolean authenticationEnabled, boolean authorizationEnabled, JobScheduler jobScheduler, Log securityLog )
     {
         super();
 
@@ -124,6 +129,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         this.jobScheduler = jobScheduler;
         setAuthenticationCachingEnabled( false );
         setAuthorizationCachingEnabled( false );
+        this.securityLog = securityLog;
         setCredentialsMatcher( new AllowAllCredentialsMatcher() );
         setRolePermissionResolver( rolePermissionResolver );
 
@@ -367,18 +373,26 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     public User newUser( String username, String initialPassword, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        assertValidUsername( username );
+        try
+        {
+            passwordPolicy.validatePassword( initialPassword );
 
-        passwordPolicy.validatePassword( initialPassword );
+            User user = new User.Builder()
+                    .withName( username )
+                    .withCredentials( Credential.forPassword( initialPassword ) )
+                    .withRequiredPasswordChange( requirePasswordChange )
+                    .build();
+            userRepository.create( user );
 
-        User user = new User.Builder()
-                .withName( username )
-                .withCredentials( Credential.forPassword( initialPassword ) )
-                .withRequiredPasswordChange( requirePasswordChange )
-                .build();
-        userRepository.create( user );
-
-        return user;
+            securityLog.info( "User created: `%s`" + (requirePasswordChange ? " (password change required)" : ""),
+                    username );
+            return user;
+        }
+        catch ( InvalidArgumentsException e )
+        {
+            securityLog.error( "User creation failed for user `%s`: %s", escape( username ), e.getMessage() );
+            throw e;
+        }
     }
 
     @Override
@@ -484,21 +498,29 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     public boolean deleteUser( String username ) throws IOException, InvalidArgumentsException
     {
         boolean result = false;
-        synchronized ( this )
+        try
         {
-            User user = getUser( username );
-            if ( userRepository.delete( user ) )
+            synchronized ( this )
             {
-                removeUserFromAllRoles( username );
-                result = true;
+                User user = getUser( username );
+                if ( userRepository.delete( user ) )
+                {
+                    removeUserFromAllRoles( username );
+                    result = true;
+                }
+                else
+                {
+                    // We should not get here, but if we do the assert will fail and give a nice error msg
+                    getUser( username );
+                }
             }
-            else
-            {
-                // We should not get here, but if we do the assert will fail and give a nice error msg
-                getUser( username );
-            }
+            clearCacheForUser( username );
+            securityLog.info( "User deleted: `%s`", username );
         }
-        clearCacheForUser( username );
+        catch ( InvalidArgumentsException e )
+        {
+            securityLog.error( "User deletion failed for user `%s`: %s", username, e.getMessage() );
+        }
         return result;
     }
 
