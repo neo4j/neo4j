@@ -22,24 +22,48 @@ package org.neo4j.coreedge.messaging.address;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
+import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
 import org.neo4j.coreedge.messaging.marshalling.StringMarshal;
-import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
+
+import static java.lang.String.format;
 
 public class AdvertisedSocketAddress
 {
     private final String address;
+    private static final Pattern pattern = Pattern.compile( "(.+):(\\d+)" );
 
     public AdvertisedSocketAddress( String address )
     {
-        if (address == null)
+        this.address = validate( address );
+    }
+
+    private String validate( String address )
+    {
+        if ( address == null )
         {
-            throw new IllegalArgumentException( "address cannot be null" );
+            throw new IllegalArgumentException( "AdvertisedSocketAddress cannot be null" );
         }
-        this.address = address;
+
+        address = address.trim();
+
+        if ( address.contains( " " ) )
+        {
+            throw new IllegalArgumentException( format( "Cannot initialize AdvertisedSocketAddress for %s. Whitespace" +
+                    " characters cause unresolvable ambiguity.", address ) );
+        }
+
+        if ( !pattern.matcher( address ).matches() )
+        {
+            throw new IllegalArgumentException( format( "AdvertisedSocketAddress can only be created with " +
+                    "hostname:port. %s is not acceptable", address ) );
+        }
+
+        return address;
     }
 
     @Override
