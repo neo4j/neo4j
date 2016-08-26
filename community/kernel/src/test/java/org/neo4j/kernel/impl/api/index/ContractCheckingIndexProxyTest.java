@@ -171,24 +171,17 @@ public class ContractCheckingIndexProxyTest
             @Override
             public void start()
             {
-                latch.startAndAwaitFinish();
+                latch.startAndWaitForAllToStartAndFinish();
             }
         };
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        runInSeparateThread( new ThrowingRunnable()
-        {
-            @Override
-            public void run() throws IOException
-            {
-                outer.start();
-            }
-        } );
+        runInSeparateThread( () -> outer.start() );
 
         try
         {
-            latch.awaitStart();
+            latch.waitForAllToStart();
             outer.close();
         }
         finally
@@ -207,24 +200,17 @@ public class ContractCheckingIndexProxyTest
             @Override
             public void start()
             {
-                latch.startAndAwaitFinish();
+                latch.startAndWaitForAllToStartAndFinish();
             }
         };
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        runInSeparateThread( new ThrowingRunnable()
-        {
-            @Override
-            public void run() throws IOException
-            {
-                outer.start();
-            }
-        } );
+        runInSeparateThread( () -> outer.start() );
 
         try
         {
-            latch.awaitStart();
+            latch.waitForAllToStart();
             outer.drop();
         }
         finally
@@ -250,26 +236,22 @@ public class ContractCheckingIndexProxyTest
         outer.start();
 
         // WHEN
-        runInSeparateThread( new ThrowingRunnable()
+        runInSeparateThread( () ->
         {
-            @Override
-            public void run() throws IOException
+            try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
             {
-                try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
-                {
-                    updater.process( null );
-                    latch.startAndAwaitFinish();
-                }
-                catch ( IndexEntryConflictException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                updater.process( null );
+                latch.startAndWaitForAllToStartAndFinish();
+            }
+            catch ( IndexEntryConflictException e )
+            {
+                throw new RuntimeException( e );
             }
         } );
 
         try
         {
-            latch.awaitStart();
+            latch.waitForAllToStart();
             outer.close();
         }
         finally
@@ -288,25 +270,18 @@ public class ContractCheckingIndexProxyTest
             @Override
             public void force()
             {
-                latch.startAndAwaitFinish();
+                latch.startAndWaitForAllToStartAndFinish();
             }
         };
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
         outer.start();
 
         // WHEN
-        runInSeparateThread( new ThrowingRunnable()
-        {
-            @Override
-            public void run() throws IOException
-            {
-                outer.force();
-            }
-        } );
+        runInSeparateThread( () -> outer.force() );
 
         try
         {
-            latch.awaitStart();
+            latch.waitForAllToStart();
             outer.close();
         }
         finally
@@ -322,19 +297,15 @@ public class ContractCheckingIndexProxyTest
 
     private void runInSeparateThread( final ThrowingRunnable action )
     {
-        new Thread( new Runnable()
+        new Thread( () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    action.run();
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                action.run();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
             }
         } ).start();
     }

@@ -135,34 +135,31 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         // This adds the node to the unique index and should take an index write lock
         dataStatement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, value ) );
 
-        Runnable runnableForThread2 = new Runnable()
+        Runnable runnableForThread2 = () ->
         {
-            @Override
-            public void run()
+            latch.waitForAllToStart();
+            try ( Transaction tx = db.beginTx() )
             {
-                latch.awaitStart();
-                try ( Transaction tx = db.beginTx() )
+                try ( Statement statement1 = statementContextSupplier.get() )
                 {
-                    try ( Statement statement = statementContextSupplier.get() )
-                    {
-                        statement.readOperations().nodeGetFromUniqueIndexSeek( index, value );
-                    }
-                    tx.success();
+                    statement1.readOperations().nodeGetFromUniqueIndexSeek( index, value );
                 }
-                catch ( IndexNotFoundKernelException | IndexBrokenKernelException e )
-                {
-                    throw new RuntimeException( e );
-                }
-                finally
-                {
-                    latch.finish();
-                }
+                tx.success();
+            }
+            catch ( IndexNotFoundKernelException | IndexBrokenKernelException e )
+            {
+                throw new RuntimeException( e );
+            }
+            finally
+            {
+                latch.finish();
             }
         };
         Thread thread2 = new Thread( runnableForThread2, "Transaction Thread 2" );
         thread2.start();
-        latch.start();
+        latch.startAndWaitForAllToStart();
 
+        //noinspection UnusedLabel
         spinUntilBlocking:
         for (; ; )
         {
@@ -174,7 +171,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         }
 
         commit();
-        latch.awaitFinish();
+        latch.waitForAllToFinish();
     }
 
     private boolean isNoSuchNode( long foundId )

@@ -29,7 +29,6 @@ public class DoubleLatch
     private static final int FIVE_MINUTES = 5;
     private final CountDownLatch startSignal;
     private final CountDownLatch finishSignal;
-    private final int numberOfContestants;
 
     public DoubleLatch()
     {
@@ -38,31 +37,25 @@ public class DoubleLatch
 
     public DoubleLatch( int numberOfContestants )
     {
-        this.numberOfContestants = numberOfContestants;
         this.startSignal = new CountDownLatch( numberOfContestants );
         this.finishSignal = new CountDownLatch( numberOfContestants );
     }
 
-    public int getNumberOfContestants()
-    {
-        return numberOfContestants;
-    }
-
-    public void startAndAwaitFinish()
-    {
-        start();
-        awaitLatch( finishSignal );
-    }
-
-    public void awaitStart()
+    public void waitForAllToStart()
     {
         awaitLatch( startSignal );
     }
 
-    public void start()
+    public void startAndWaitForAllToStart()
     {
         startSignal.countDown();
         awaitLatch( startSignal );
+    }
+
+    public void startAndWaitForAllToStartAndFinish()
+    {
+        startAndWaitForAllToStart();
+        awaitLatch( finishSignal );
     }
 
     public void finish()
@@ -70,13 +63,13 @@ public class DoubleLatch
         finishSignal.countDown();
     }
 
-    public void finishAndWaitForAll()
+    public void finishAndWaitForAllToFinish()
     {
         finish();
-        awaitFinish();
+        waitForAllToFinish();
     }
 
-    public void awaitFinish()
+    public void waitForAllToFinish()
     {
         awaitLatch( finishSignal );
     }

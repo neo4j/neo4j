@@ -295,7 +295,7 @@ public class IndexPopulationJobTest
         IndexStoreView storeView = mock( IndexStoreView.class );
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodes( any( IntPredicate.class ), any( IntPredicate.class ),
-                Matchers.<Visitor<NodePropertyUpdates,RuntimeException>>any(),
+                Matchers.any(),
                 Matchers.<Visitor<NodeLabelUpdate,RuntimeException>>any()) )
                 .thenReturn(storeScan );
 
@@ -305,21 +305,21 @@ public class IndexPopulationJobTest
         OtherThreadExecutor<Void> populationJobRunner = cleanup.add( new OtherThreadExecutor<Void>(
                 "Population job test runner", null ) );
         Future<Void> runFuture = populationJobRunner
-                .executeDontWait( (WorkerCommand<Void,Void>) state -> {
+                .executeDontWait( state -> {
                     job.run();
                     return null;
                 } );
 
-        storeScan.latch.awaitStart();
+        storeScan.latch.waitForAllToStart();
         job.cancel().get();
-        storeScan.latch.awaitFinish();
+        storeScan.latch.waitForAllToFinish();
 
         // WHEN
         runFuture.get();
 
         // THEN
         verify( populator, times( 1 ) ).close( false );
-        verify( index, times( 0 ) ).flip( Matchers.<Callable<Void>>any(), Matchers.<FailedIndexProxyFactory>any() );
+        verify( index, times( 0 ) ).flip( Matchers.any(), Matchers.any() );
 
         // AND ALSO
         assertDoubleLongEquals( 0, 0, indexUpdatesAndSize( FIRST, name ) );
@@ -456,7 +456,7 @@ public class IndexPopulationJobTest
         @Override
         public void run()
         {
-            latch.startAndAwaitFinish();
+            latch.startAndWaitForAllToStartAndFinish();
         }
 
         @Override
@@ -481,8 +481,7 @@ public class IndexPopulationJobTest
         private final Object previousValue;
         private final int label, propertyKeyId;
 
-        public NodeChangingWriter( long nodeToChange, int propertyKeyId, Object previousValue, Object newValue,
-                                   int label )
+        NodeChangingWriter( long nodeToChange, int propertyKeyId, Object previousValue, Object newValue, int label )
         {
             this.nodeToChange = nodeToChange;
             this.propertyKeyId = propertyKeyId;
@@ -553,7 +552,7 @@ public class IndexPopulationJobTest
         private final Object valueToDelete;
         private final int label;
 
-        public NodeDeletingWriter( long nodeToDelete, int propertyKeyId, Object valueToDelete, int label )
+        NodeDeletingWriter( long nodeToDelete, int propertyKeyId, Object valueToDelete, int label )
         {
             this.nodeToDelete = nodeToDelete;
             this.propertyKeyId = propertyKeyId;

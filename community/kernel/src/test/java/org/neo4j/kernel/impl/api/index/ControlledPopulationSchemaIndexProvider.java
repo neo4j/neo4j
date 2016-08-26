@@ -49,8 +49,8 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     private final IndexAccessor mockedWriter = mock( IndexAccessor.class );
     private final CountDownLatch writerLatch = new CountDownLatch( 1 );
     private InternalIndexState initialIndexState = POPULATING;
-    public final AtomicInteger populatorCallCount = new AtomicInteger();
-    public final AtomicInteger writerCallCount = new AtomicInteger();
+    final AtomicInteger populatorCallCount = new AtomicInteger();
+    final AtomicInteger writerCallCount = new AtomicInteger();
 
     public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR = new SchemaIndexProvider.Descriptor(
             "controlled-population", "1.0" );
@@ -70,7 +70,7 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
             @Override
             public void create() throws IOException
             {
-                populationCompletionLatch.startAndAwaitFinish();
+                populationCompletionLatch.startAndWaitForAllToStartAndFinish();
                 super.create();
             }
 

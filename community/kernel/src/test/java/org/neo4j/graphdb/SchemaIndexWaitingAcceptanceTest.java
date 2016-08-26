@@ -50,7 +50,7 @@ public class SchemaIndexWaitingAcceptanceTest
         protected void configure( GraphDatabaseFactory databaseFactory )
         {
             List<KernelExtensionFactory<?>> extensions;
-            extensions = Collections.<KernelExtensionFactory<?>>singletonList( singleInstanceSchemaIndexProviderFactory( "test", provider ) );
+            extensions = Collections.singletonList( singleInstanceSchemaIndexProviderFactory( "test", provider ) );
             ((TestGraphDatabaseFactory) databaseFactory).addKernelExtensions( extensions );
         }
     };
@@ -69,7 +69,7 @@ public class SchemaIndexWaitingAcceptanceTest
             tx.success();
         }
 
-        latch.awaitStart();
+        latch.waitForAllToStart();
 
         // when
         try ( Transaction tx = db.beginTx() )
@@ -103,7 +103,7 @@ public class SchemaIndexWaitingAcceptanceTest
             tx.success();
         }
 
-        latch.awaitStart();
+        latch.waitForAllToStart();
 
         // when
         try ( Transaction tx = db.beginTx() )

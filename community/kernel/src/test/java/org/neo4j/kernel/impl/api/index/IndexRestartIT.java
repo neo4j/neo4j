@@ -67,8 +67,9 @@ public class IndexRestartIT
     {
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        factory.addKernelExtensions( Collections.<KernelExtensionFactory<?>>singletonList(
-                singleInstanceSchemaIndexProviderFactory( "test", provider ) ) );
+        factory.addKernelExtensions( Collections.singletonList(
+            singleInstanceSchemaIndexProviderFactory( "test", provider )
+        ) );
     }
 
     @After
@@ -88,7 +89,7 @@ public class IndexRestartIT
         startDb();
         DoubleLatch populationCompletionLatch = provider.installPopulationJobCompletionLatch();
         IndexDefinition index = createIndex();
-        populationCompletionLatch.awaitStart(); // await population job to start
+        populationCompletionLatch.waitForAllToStart(); // await population job to start
 
         // WHEN
         dropIndex( index, populationCompletionLatch );

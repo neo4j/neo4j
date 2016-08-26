@@ -24,7 +24,6 @@ import org.junit.Test;
 
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.DoubleLatch;
@@ -363,12 +362,12 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         DoubleLatch latch = new DoubleLatch( 2 );
         ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
         write.execute( threading, henrik );
-        latch.start();
+        latch.startAndWaitForAllToStart();
 
         assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('" + PUBLISHER + "', 'Henrik')" );
 
         write.finish();
-        latch.finishAndWaitForAll();
+        latch.finishAndWaitForAllToFinish();
 
         write.closeAndAssertSuccess();
         testFailWrite( henrik );

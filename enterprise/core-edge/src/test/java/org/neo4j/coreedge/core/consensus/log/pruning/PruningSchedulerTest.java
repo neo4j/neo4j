@@ -134,14 +134,10 @@ public class PruningSchedulerTest
         final AtomicReference<Throwable> ex = new AtomicReference<>();
         final AtomicBoolean stoppedCompleted = new AtomicBoolean();
         final DoubleLatch checkPointerLatch = new DoubleLatch( 1 );
-        LogPruner logPruner = new LogPruner()
+        LogPruner logPruner = () ->
         {
-            @Override
-            public void prune() throws IOException
-            {
-                checkPointerLatch.start();
-                checkPointerLatch.awaitFinish();
-            }
+            checkPointerLatch.startAndWaitForAllToStart();
+            checkPointerLatch.waitForAllToFinish();
         };
 
         final PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, NullLogProvider.getInstance() );
@@ -159,7 +155,7 @@ public class PruningSchedulerTest
         };
         runCheckPointer.start();
 
-        checkPointerLatch.awaitStart();
+        checkPointerLatch.waitForAllToStart();
 
         Thread stopper = new Thread()
         {

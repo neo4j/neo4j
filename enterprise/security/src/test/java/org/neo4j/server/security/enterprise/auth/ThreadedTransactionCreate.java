@@ -22,9 +22,7 @@ package org.neo4j.server.security.enterprise.auth;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.NamedFunction;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -33,7 +31,6 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertTrue;
 
 public class ThreadedTransactionCreate<S>
@@ -62,8 +59,8 @@ public class ThreadedTransactionCreate<S>
                             {
                                 neo.getGraph()
                                         .execute( "CREATE (:Test { name: '" + neo.nameOf( subject ) + "-node'})" );
-                                latch.start();
-                                latch.awaitFinish();
+                                latch.startAndWaitForAllToStart();
+                                latch.waitForAllToFinish();
                                 tx.success();
                                 return null;
                             }
@@ -78,6 +75,7 @@ public class ThreadedTransactionCreate<S>
         done = threading.execute( startTransaction, subject );
     }
 
+    @SuppressWarnings( "ThrowableResultOfMethodCallIgnored" )
     void closeAndAssertSuccess() throws Throwable
     {
         Throwable exceptionInOtherThread = join();
