@@ -24,6 +24,7 @@ import java.io.File;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -65,7 +66,7 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
     }
 
     @Override
-    public AuthManager newInstance( Config config, LogProvider logProvider )
+    public AuthManager newInstance( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
     {
         if ( !config.get( GraphDatabaseSettings.auth_enabled ) )
         {
