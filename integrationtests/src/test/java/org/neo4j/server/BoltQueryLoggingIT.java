@@ -19,6 +19,9 @@
  */
 package org.neo4j.server;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -26,9 +29,6 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
@@ -38,7 +38,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 public class BoltQueryLoggingIT
@@ -91,15 +90,19 @@ public class BoltQueryLoggingIT
         {
             // Send RUN "RETURN 1 AS num" {}
             send( dataOut, "00 13 b2 10  8f 52 45 54  55 52 4e 20  31 20 41 53 20 6e 75 6d  a0 00 00" );
-            // Receive SUCCESS { "fields": ["num"] }
-            receive( dataIn, "00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75 6d 00 00" );
+            // Receive SUCCESS { "fields": ["num"], "result_available_after": X }
+            //non-deterministic so just ignore it here
+            skip( dataIn );
+
+            //receive( dataIn, "00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75 6d 00 00" );
 
             // Send PULL_ALL
             send( dataOut, "00 02 B0 3F  00 00" );
             // Receive RECORD[1]
             receive( dataIn, "00 04 b1 71  91 01 00 00" );
-            // Receive SUCCESS { "type": "r" }
-            receive( dataIn, "00 0A B1 70  A1 84 74 79  70 65 81 72  00 00" );
+            // Receive SUCCESS { "type": "r", "result_consumed_after": Y }
+            //non-deterministic so just ignore it here
+            skip( dataIn );
         }
 
         // *** THEN ***
@@ -125,6 +128,15 @@ public class BoltQueryLoggingIT
         receive( dataIn, "00 03 b1 70  a0 00 00" );
 
         socket.close();
+    }
+
+    /*
+     * Just consumes the bytes without asserting on the results.
+     */
+    private void skip( DataInputStream dataIn ) throws IOException
+    {
+        short bytes = dataIn.readShort();
+        dataIn.skipBytes( bytes + 2 );
     }
 
     private static void send( DataOutputStream dataOut, String toSend ) throws IOException

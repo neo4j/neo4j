@@ -20,12 +20,6 @@
 
 package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
-
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.After;
@@ -34,6 +28,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.messaging.message.ResetMessage;
 import org.neo4j.bolt.v1.runtime.spi.ImmutableRecord;
@@ -56,11 +56,14 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.util.Arrays.asList;
-
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasKey;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
@@ -379,8 +382,9 @@ public class BoltConnectionManagementIT
 
         // Then
         assertThat( client, eventuallyReceives(
-                msgSuccess( map( "fields", asList( "username", "connectionCount" ) ) )
-            ) );
+                msgSuccess( allOf( hasEntry(is("fields"), equalTo(asList( "username", "connectionCount" ) )),
+                        hasKey( "result_available_after" ) ) )
+        ) );
 
         for ( int i = 0; i < n; i++ )
         {

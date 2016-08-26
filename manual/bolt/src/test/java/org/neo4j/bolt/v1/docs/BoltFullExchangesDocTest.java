@@ -24,9 +24,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageReader;
-import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
@@ -35,7 +43,6 @@ import org.neo4j.bolt.v1.messaging.message.RecordMessage;
 import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
-import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
@@ -46,26 +53,20 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.dechunk;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.receiveOneResponseMessage;
 
 @RunWith( Parameterized.class )
 public class BoltFullExchangesDocTest
 {
+    private  static final long DEFAULT_TIME = 12L;
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( settings -> {
         settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-        settings.put( GraphDatabaseSettings.auth_store, this.getClass().getResource( "/authorization/auth" ).getPath() );
+        settings.put( GraphDatabaseSettings.auth_store,
+                this.getClass().getResource( "/authorization/auth" ).getPath() );
     } );
 
     @Parameterized.Parameter( 0 )
@@ -92,8 +93,8 @@ public class BoltFullExchangesDocTest
                 "code[data-lang=\"bolt_exchange\"]",
                 DocExchangeExample.exchange_example ) )
         {
-            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SecureSocketConnection(), address} );
-            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new SecureWebSocketConnection(), address} );
+            mappings.add( new Object[]{"Socket    - " + ex.name(), ex, new SecureSocketConnection(), address} );
+            mappings.add( new Object[]{"WebSocket - " + ex.name(), ex, new SecureWebSocketConnection(), address} );
         }
 
         for ( DocExchangeExample ex : DocsRepository.docs().read(
@@ -101,8 +102,8 @@ public class BoltFullExchangesDocTest
                 "code[data-lang=\"bolt_exchange\"]",
                 DocExchangeExample.exchange_example ) )
         {
-            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SecureSocketConnection(), address} );
-            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new SecureWebSocketConnection(), address} );
+            mappings.add( new Object[]{"Socket    - " + ex.name(), ex, new SecureSocketConnection(), address} );
+            mappings.add( new Object[]{"WebSocket - " + ex.name(), ex, new SecureWebSocketConnection(), address} );
         }
 
         return mappings;
@@ -162,20 +163,24 @@ public class BoltFullExchangesDocTest
                         assertThat( "'" + event.humanReadableMessage() + "' should serialize to the documented " +
                                     "binary data.",
                                 hex( event.payload() ),
-                                equalTo( hex( DocSerialization.packAndChunk( event.humanReadableMessage(), 1024 * 8 ) ) ) );
+                                equalTo( hex( DocSerialization
+                                        .packAndChunk( event.humanReadableMessage(), 1024 * 8 ) ) ) );
 
                         // Ensure that the server replies as documented
-                        ResponseMessage serverMessage = receiveOneResponseMessage( client );
+                        ResponseMessage serverMessage = normalize( receiveOneResponseMessage( client ) );
                         assertThat(
-                                "The message received from the server should match the documented binary representation. " +
-                                "Human-readable message is <" + event.humanReadableMessage() + ">, received message was: " + serverMessage,
+                                "The message received from the server should match the documented binary " +
+                                "representation. " +
+                                "Human-readable message is <" + event.humanReadableMessage() +
+                                ">, received message was: " + serverMessage,
                                 serverMessage,
                                 equalTo( unpackedResponseMessage( dechunk( event.payload() ) ) ) );
                     }
                     else
                     {
                         // Raw data assertions - used for documenting the version negotiation, for instance
-                        assertThat( "The data received from the server should match the documented binary representation.",
+                        assertThat(
+                                "The data received from the server should match the documented binary representation.",
                                 hex( client.recv( event.payload().length ) ),
                                 equalTo( hex( event.payload() ) ) );
                     }
@@ -185,6 +190,33 @@ public class BoltFullExchangesDocTest
                     throw new RuntimeException( "Unknown server event: " + event.type() );
                 }
             }
+        }
+    }
+
+    /**
+     * Some metadata is non-deterministic the responsibility is to change such values
+     * to well-defined defaults.
+     */
+    private ResponseMessage normalize( ResponseMessage responseMessage )
+    {
+        if ( responseMessage instanceof SuccessMessage )
+        {
+            SuccessMessage successMessage = (SuccessMessage) responseMessage;
+            Map<String,Object> meta = new HashMap<>( successMessage.meta() );
+            if ( meta.containsKey( "result_available_after" ) )
+            {
+                meta.put( "result_available_after", DEFAULT_TIME );
+            }
+            if ( meta.containsKey( "result_consumed_after" ) )
+            {
+                meta.put( "result_consumed_after", DEFAULT_TIME );
+            }
+
+            return new SuccessMessage( meta );
+        }
+        else
+        {
+            return responseMessage;
         }
     }
 
@@ -206,7 +238,7 @@ public class BoltFullExchangesDocTest
         reader.read( new BoltResponseMessageHandler<RuntimeException>()
         {
             @Override
-            public void onSuccess( Map<String, Object> metadata ) throws RuntimeException
+            public void onSuccess( Map<String,Object> metadata ) throws RuntimeException
             {
                 messages.add( new SuccessMessage( metadata ) );
             }

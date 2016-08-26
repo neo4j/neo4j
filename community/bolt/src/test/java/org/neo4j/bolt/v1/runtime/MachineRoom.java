@@ -20,11 +20,12 @@
 
 package org.neo4j.bolt.v1.runtime;
 
+import java.time.Clock;
+import java.util.Map;
+
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.NullResponseHandler;
-
-import java.util.Map;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,7 +46,7 @@ public class MachineRoom
 
     public static BoltStateMachine newMachine()
     {
-        return new BoltStateMachine( mock( BoltStateMachineSPI.class, RETURNS_MOCKS ), null );
+        return new BoltStateMachine( mock( BoltStateMachineSPI.class, RETURNS_MOCKS ), null, Clock.systemUTC() );
     }
 
     public static BoltStateMachine newMachine( BoltStateMachine.State state ) throws AuthenticationException, BoltConnectionFatality

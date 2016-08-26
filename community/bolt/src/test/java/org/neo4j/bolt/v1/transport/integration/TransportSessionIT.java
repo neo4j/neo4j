@@ -26,28 +26,43 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.neo4j.bolt.v1.transport.socket.client.*;
+
+import java.util.Collection;
+
+import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
+import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.InputPosition;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.SeverityLevel;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import java.util.Collection;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasKey;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.*;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.hasNotification;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.helpers.collection.MapUtil.map;
 
 @SuppressWarnings( "unchecked" )
 @RunWith(Parameterized.class)
@@ -124,7 +139,9 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( map( "fields", asList( "a", "a_squared" ) ) ),
+                msgSuccess(
+                        allOf( hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) ),
+                                hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( equalTo( 1L ), equalTo( 1L ) ) ),
                 msgRecord( eqRecord( equalTo( 2L ), equalTo( 4L ) ) ),
                 msgRecord( eqRecord( equalTo( 3L ), equalTo( 9L ) ) ),
@@ -145,7 +162,8 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( map( "fields", asList( "age" ) ) ),
+                msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) ),
+                        hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( equalTo( 2L ) ) ),
                 msgSuccess() ) );
 
@@ -156,7 +174,8 @@ public class TransportSessionIT
 
         // Then
         assertThat( client, TransportTestUtil.eventuallyReceives(
-                msgSuccess( map( "fields", asList( "label" ) ) ),
+                msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) ),
+                        hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( Matchers.equalTo( "Test" ) ) ),
                 msgSuccess()
         ) );
@@ -177,7 +196,8 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( map("fields", singletonList( "n" )))));
+                msgSuccess(  allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
+                        hasKey( "result_available_after" ) ) )));
 
         //
         //Record(0x71) {
@@ -207,7 +227,8 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( map( "fields", singletonList( "r" ) ) ) ) );
+                msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) ),
+                        hasKey( "result_available_after" ) ) ) ) );
 
         //
         //Record(0x71) {
@@ -260,7 +281,8 @@ public class TransportSessionIT
         assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( 1L ) ) ),
-                msgSuccess( map( "type", "r" ) ) ) );
+                msgSuccess( allOf( hasEntry( is( "type" ), equalTo(  "r" ) ),
+                        hasKey( "result_consumed_after" ) ) ) ) );
     }
 
     @Test
@@ -305,7 +327,8 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( map( "fields", singletonList( "p") ) ),
+                msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) ),
+                        hasKey( "result_available_after" ) )),
                 msgRecord(eqRecord( nullValue() )),
                 msgFailure( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt")) );
     }
@@ -334,7 +357,8 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, TransportTestUtil.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( map( "fields", singletonList( "n.binary") ) ),
+                msgSuccess(  allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n.binary" ) ) ),
+                        hasKey( "result_available_after" ) ) ),
                 msgRecord(eqRecord( nullValue() )),
                 msgFailure( Status.Request.Invalid, "Byte array is not yet supported in Bolt")) );
     }

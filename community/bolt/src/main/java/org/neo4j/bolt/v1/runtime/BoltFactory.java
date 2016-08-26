@@ -20,6 +20,8 @@
 
 package org.neo4j.bolt.v1.runtime;
 
+import java.time.Clock;
+
 /**
  * Factory class for Bolt runtime environments.
  */
@@ -30,7 +32,8 @@ public interface BoltFactory
      *
      * @param connectionDescriptor textual description of the connection for logging purposes
      * @param onClose callback to call on shutdown of the state machine
+     * @param clock used to keep track of execution times
      * @return new {@link BoltStateMachine} instance
      */
-    BoltStateMachine newMachine( String connectionDescriptor, Runnable onClose );
+    BoltStateMachine newMachine( String connectionDescriptor, Runnable onClose, Clock clock );
 }

@@ -28,6 +28,7 @@ import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -72,7 +74,9 @@ public class CypherAdapterStreamTest
         when( result.getQueryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
 
-        CypherAdapterStream stream = new CypherAdapterStream( result );
+        Clock clock = mock( Clock.class );
+        when( clock.millis() ).thenReturn( 0L, 1337L );
+        CypherAdapterStream stream = new CypherAdapterStream( result, clock );
 
         // When
         Map<String,Object> meta = metadataOf( stream );
@@ -92,6 +96,7 @@ public class CypherAdapterStreamTest
                 "labels-added", 10,
                 "labels-removed", 11
         ) ) );
+        assertThat(meta.get("result_consumed_after"), equalTo(1337L));
     }
 
     @Test
@@ -105,10 +110,10 @@ public class CypherAdapterStreamTest
         when( result.getQueryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
         when( result.getExecutionPlanDescription() ).thenReturn(
-                plan("Join", map( "arg1", 1 ), asList( "id1" ),
-                plan("Scan", map( "arg2", 1 ), asList("id2")) ) );
+                plan("Join", map( "arg1", 1 ), singletonList( "id1" ),
+                plan("Scan", map( "arg2", 1 ), singletonList("id2")) ) );
 
-        CypherAdapterStream stream = new CypherAdapterStream( result );
+        CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
 
         // When
         Map<String,Object> meta = metadataOf( stream );
@@ -128,10 +133,10 @@ public class CypherAdapterStreamTest
         when( result.getQueryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
         when( result.getExecutionPlanDescription() ).thenReturn(
-                plan( "Join", map( "arg1", 1 ), 2, 1, asList( "id1" ),
-                        plan( "Scan", map( "arg2", 1 ), 2, 1, asList( "id2" ) ) ) );
+                plan( "Join", map( "arg1", 1 ), 2, 1, singletonList( "id1" ),
+                        plan( "Scan", map( "arg2", 1 ), 2, 1, singletonList( "id2" ) ) ) );
 
-        CypherAdapterStream stream = new CypherAdapterStream( result );
+        CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
 
         // When
         Map<String,Object> meta = metadataOf( stream );
@@ -156,7 +161,7 @@ public class CypherAdapterStreamTest
                 NotificationCode.INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty ),
                 NotificationCode.PLANNER_UNSUPPORTED.notification( new InputPosition( 4, 5, 6 ) )
         ) );
-        CypherAdapterStream stream = new CypherAdapterStream( result );
+        CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
 
         // When
         Map<String,Object> meta = metadataOf( stream );

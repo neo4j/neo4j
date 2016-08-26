@@ -20,6 +20,7 @@
 
 package org.neo4j.bolt.v1.runtime;
 
+import java.time.Clock;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,7 +37,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
 
 /**
@@ -56,17 +56,19 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 {
     private final String id = UUID.randomUUID().toString();
     private final Runnable onClose;
+    private final Clock clock;
 
     State state = State.CONNECTED;
 
     final SPI spi;
     final MutableConnectionState ctx;
 
-    public BoltStateMachine( SPI spi, Runnable onClose )
+    public BoltStateMachine( SPI spi, Runnable onClose, Clock clock )
     {
         this.spi = spi;
-        this.ctx = new MutableConnectionState( spi );
+        this.ctx = new MutableConnectionState( spi, clock );
         this.onClose = onClose;
+        this.clock = clock;
     }
 
     public State state()
@@ -181,10 +183,12 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     public void run( String statement, Map<String, Object> params, BoltResponseHandler handler )
             throws BoltConnectionFatality
     {
+        long start = clock.millis();
         before( handler );
         try
         {
             state = state.run( this, statement, params );
+            handler.onMetadata( "result_available_after", clock.millis() - start );
         }
         finally
         {
@@ -654,6 +658,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     {
         private static final NullStatementProcessor NULL_STATEMENT_PROCESSOR = new NullStatementProcessor();
         private final SPI spi;
+        private final Clock clock;
 
         /**
          * Callback poised to receive the next response
@@ -675,14 +680,15 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
         boolean closed = false;
 
-        MutableConnectionState( SPI spi )
+        MutableConnectionState( SPI spi, Clock clock )
         {
             this.spi = spi;
+            this.clock = clock;
         }
 
         private void init( AuthenticationResult authenticationResult )
         {
-            this.statementProcessor = new TransactionStateMachine( spi.transactionSpi(), authenticationResult );
+            this.statementProcessor = new TransactionStateMachine( spi.transactionSpi(), authenticationResult, clock );
         }
 
         private void setQuerySourceFromClientNameAndPrincipal( String clientName, String principal,

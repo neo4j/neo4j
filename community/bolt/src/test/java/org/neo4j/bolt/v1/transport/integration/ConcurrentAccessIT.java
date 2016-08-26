@@ -24,25 +24,37 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.*;
-
-import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasKey;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.*;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.acceptedVersions;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 
 /**
  * Multiple concurrent users should be able to connect simultaneously. We test this with multiple users running
@@ -127,7 +139,7 @@ public class ConcurrentAccessIT
 
                 for ( int i = 0; i < iterationsToRun; i++ )
                 {
-                    creaeteAndRollback( client );
+                    createAndRollback( client );
                 }
 
                 return null;
@@ -141,21 +153,25 @@ public class ConcurrentAccessIT
                 ) );
             }
 
-            private void creaeteAndRollback( TransportConnection client ) throws Exception
+            private void createAndRollback( TransportConnection client ) throws Exception
             {
                 client.send( createAndRollback );
                 assertThat( client, eventuallyReceives(
-                        msgSuccess( map( "fields", asList() ) ),
+                        msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
+                                hasKey( "result_available_after" ) ) ),
                         msgSuccess(),
-                        msgSuccess( map( "fields", asList() ) ),
+                        msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
+                                hasKey( "result_available_after" ) ) ),
                         msgSuccess(),
-                        msgSuccess( map( "fields", asList() ) ),
+                        msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
+                                hasKey( "result_available_after" ) ) ),
                         msgSuccess() ) );
 
                 // Verify no visible data
                 client.send( matchAll );
                 assertThat( client, eventuallyReceives(
-                        msgSuccess( map( "fields", asList( "n" ) ) ),
+                        msgSuccess(allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
+                                hasKey( "result_available_after" ) ) ),
                         msgSuccess() ) );
 
             }
