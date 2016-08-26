@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -95,14 +96,50 @@ public class TestGraphDatabaseConfigurationMigrator
         logProvider.assertNoLoggingOccurred();
     }
 
+    @Test
+    public void migrateExecutionTimeLimitIfPresent()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "unsupported.dbms.executiontime_limit.time", "120s" ), getLog() );
+        assertEquals( "Old property should be migrated to new",
+                migratedProperties, stringMap( "dbms.transaction.timeout", "120s" ));
+
+        assertContainsWarningMessage("unsupported.dbms.executiontime_limit.time has been replaced with dbms.transaction.timeout.");
+    }
+
+    @Test
+    public void skipMigrationOfExecutionTimeLimitIfNotPresent()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.transaction.timeout", "120s" ), getLog() );
+        assertEquals( "Nothing to migrate", migratedProperties, stringMap( "dbms.transaction.timeout", "120s" ));
+        logProvider.assertNoLoggingOccurred();
+    }
+
+    @Test
+    public void skipMigrationOfExecutionTimeLimitIfTransactionTimeoutConfigured()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "unsupported.dbms.executiontime_limit.time", "12s",
+                "dbms.transaction.timeout", "120s" ), getLog() );
+        assertEquals( "Should keep pre configured transaction timeout.",
+                migratedProperties, stringMap( "dbms.transaction.timeout", "120s" ));
+        assertContainsWarningMessage();
+    }
+
     private Log getLog()
     {
         return logProvider.getLog( GraphDatabaseConfigurationMigrator.class );
     }
 
-    private void assertContainsWarningMessage(String deprecationMessage)
+    private void assertContainsWarningMessage()
     {
         logProvider.assertContainsMessageContaining( "WARNING! Deprecated configuration options used. See manual for details" );
-        logProvider.assertContainsMessageContaining( deprecationMessage );
+    }
+
+    private void assertContainsWarningMessage(String deprecationMessage)
+    {
+        assertContainsWarningMessage();
+        if ( StringUtils.isNotEmpty( deprecationMessage ) )
+        {
+            logProvider.assertContainsMessageContaining( deprecationMessage );
+        }
     }
 }

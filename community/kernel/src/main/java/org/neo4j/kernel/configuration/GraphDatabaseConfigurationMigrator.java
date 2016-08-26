@@ -63,5 +63,29 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                 rawConfiguration.put( "dbms.rest.transaction.idle_timeout", value );
             }
         } );
+
+        add( new SpecificPropertyMigration( "unsupported.dbms.executiontime_limit.enabled",
+                "unsupported.dbms.executiontime_limit.enabled is not supported anymore. " +
+                "Set dbms.transaction.timeout settings to some positive value to enable execution guard and set " +
+                "transaction timeout." )
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+            {
+            }
+        } );
+
+        add( new SpecificPropertyMigration("unsupported.dbms.executiontime_limit.time",
+                "unsupported.dbms.executiontime_limit.time has been replaced with dbms.transaction.timeout.")
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+            {
+                if ( StringUtils.isNotEmpty( value ) )
+                {
+                    rawConfiguration.putIfAbsent( GraphDatabaseSettings.transaction_timeout.name(), value );
+                }
+            }
+        } );
     }
 }

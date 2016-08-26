@@ -208,6 +208,10 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Long> transaction_start_timeout =
             setting( "unsupported.dbms.transaction_start_timeout", DURATION, "1s" );
 
+    @Internal
+    @Deprecated
+    public static final Setting<Boolean> execution_guard_enabled = setting("unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
+
     @Description("The maximum time interval of a transaction within which it should be completed.")
     public static final Setting<Long> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, "0" );
 
