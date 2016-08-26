@@ -383,7 +383,7 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
             userRepository.create( user );
 
             securityLog.info( "User created: `%s`" + (requirePasswordChange ? " (password change required)" : ""),
-                    username );
+                    escape( username ) );
             return user;
         }
         catch ( InvalidArgumentsException e )
@@ -449,20 +449,30 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
         assertValidRoleName( roleName );
         assertValidUsername( username );
 
-        synchronized ( this )
+        try
         {
-            getUser( username );
-            RoleRecord role = getRole( roleName );
-            RoleRecord newRole = role.augment().withUser( username ).build();
-            try
+
+            synchronized ( this )
             {
-                roleRepository.update( role, newRole );
+                getUser( username );
+                RoleRecord role = getRole( roleName );
+                RoleRecord newRole = role.augment().withUser( username ).build();
+                try
+                {
+                    roleRepository.update( role, newRole );
+                }
+                catch ( ConcurrentModificationException e )
+                {
+                    // Try again
+                    addRoleToUser( roleName, username );
+                }
             }
-            catch ( ConcurrentModificationException e )
-            {
-                // Try again
-                addRoleToUser( roleName, username );
-            }
+            securityLog.info( "Role `%s` added to user `%s`", escape( roleName ), escape( username ) );
+        }
+        catch ( InvalidArgumentsException e )
+        {
+            securityLog.error( "Role `%s` not added to user `%s`: %s", escape( roleName ), escape( username ), e.getMessage() );
+            throw e;
         }
         clearCachedAuthorizationInfoForUser( username );
     }
@@ -513,11 +523,11 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
                 }
             }
             clearCacheForUser( username );
-            securityLog.info( "User deleted: `%s`", username );
+            securityLog.info( "User deleted: `%s`", escape( username ) );
         }
         catch ( InvalidArgumentsException e )
         {
-            securityLog.error( "User deletion failed for user `%s`: %s", username, e.getMessage() );
+            securityLog.error( "User deletion failed for user `%s`: %s", escape( username ), e.getMessage() );
         }
         return result;
     }

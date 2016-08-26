@@ -29,6 +29,7 @@ import org.apache.shiro.subject.PrincipalCollection;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.time.Clock;
 import java.util.List;
 
@@ -51,6 +52,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
+import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 
 public class InternalFlatFileRealmTest
 {
@@ -178,8 +180,8 @@ public class InternalFlatFileRealmTest
     @Test
     public void shouldLogCreatingUserWithBadPassword() throws Throwable
     {
-        try { testRealm.newUser( "andres", "", true ); } catch (InvalidArgumentsException e) {/*ignore*/}
-        try { testRealm.newUser( "mats", null, true ); } catch (InvalidArgumentsException e) {/*ignore*/}
+        catchInvalidArguments( () -> testRealm.newUser( "andres", "", true ) );
+        catchInvalidArguments( () -> testRealm.newUser( "mats", null, true ) );
 
         log.assertExactly(
                 error( "User creation failed for user `%s`: %s", "andres", "A password cannot be empty." ),
@@ -200,9 +202,36 @@ public class InternalFlatFileRealmTest
     @Test
     public void shouldLogDeletingNonExistentUser() throws Throwable
     {
-        try { testRealm.deleteUser( "andres" ); } catch ( InvalidArgumentsException e ) { /*ignore*/}
+        catchInvalidArguments( () -> testRealm.deleteUser( "andres" ) );
 
         log.assertExactly( error( "User deletion failed for user `%s`: %s", "andres", "User 'andres' does not exist." ) );
+    }
+
+    @Test
+    public void shouldLogAddingRoleToUser() throws Throwable
+    {
+        testRealm.newUser( "mats", "neo4j", false );
+        testRealm.addRoleToUser( ARCHITECT, "mats" );
+
+        log.assertExactly(
+                info( "User created: `%s`", "mats" ),
+                info( "Role `%s` added to user `%s`", ARCHITECT, "mats" ) );
+    }
+
+    @Test
+    public void shouldLogFailureToAddRoleToUser() throws Throwable
+    {
+        testRealm.newUser( "mats", "neo4j", false );
+        catchInvalidArguments( () -> testRealm.addRoleToUser( "null", "mats" ) );
+
+        log.assertExactly(
+                info( "User created: `%s`", "mats" ),
+                error( "Role `%s` not added to user `%s`: %s", "null", "mats", "Role 'null' does not exist." ) );
+    }
+
+    private void catchInvalidArguments( CheckedFunction f ) throws IOException
+    {
+        try { f.apply(); } catch (InvalidArgumentsException e) { /*ignore*/ }
     }
 
     private AssertableLogProvider.LogMatcher info( String message, String... arguments )
@@ -213,5 +242,10 @@ public class InternalFlatFileRealmTest
     private AssertableLogProvider.LogMatcher error( String message, String... arguments )
     {
         return inLog( this.getClass() ).error( message, arguments );
+    }
+
+    @FunctionalInterface
+    private interface CheckedFunction {
+        void apply() throws InvalidArgumentsException, IOException;
     }
 }
