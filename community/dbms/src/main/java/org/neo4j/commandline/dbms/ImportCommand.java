@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.admin;
+package org.neo4j.commandline.dbms;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +26,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
