@@ -53,8 +53,9 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
     }
 
     @Override
-    public void onCoreTopologyChange()
+    public synchronized void onCoreTopologyChange()
     {
-        raftMachine.setTargetMembershipSet( discoveryService.currentTopology().coreMembers() );
+        Set<MemberId> targetMembers = discoveryService.currentTopology().coreMembers();
+        raftMachine.setTargetMembershipSet( targetMembers );
     }
 }

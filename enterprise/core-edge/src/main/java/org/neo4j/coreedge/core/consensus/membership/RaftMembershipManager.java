@@ -30,10 +30,10 @@ import org.neo4j.coreedge.core.consensus.log.RaftLogCursor;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.log.ReadableRaftLog;
 import org.neo4j.coreedge.core.consensus.outcome.RaftLogCommand;
-import org.neo4j.coreedge.core.replication.SendToMyself;
 import org.neo4j.coreedge.core.consensus.roles.Role;
-import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.core.consensus.roles.follower.FollowerStates;
+import org.neo4j.coreedge.core.replication.SendToMyself;
+import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -143,7 +143,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
         newReplicationMembers.addAll( additionalReplicationMembers );
 
         replicationMembers = newReplicationMembers;
-        notifyListeners();
+        listeners.forEach( Listener::onMembershipChanged );
     }
 
     /**
@@ -244,14 +244,9 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
     }
 
     @Override
-    public synchronized void registerListener( Listener listener )
+    public void registerListener( Listener listener )
     {
         listeners.add( listener );
-    }
-
-    private synchronized void notifyListeners()
-    {
-        listeners.forEach( Listener::onMembershipChanged );
     }
 
     boolean uncommittedMemberChangeInLog()
