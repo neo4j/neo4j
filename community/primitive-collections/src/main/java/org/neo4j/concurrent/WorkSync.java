@@ -19,8 +19,14 @@
  */
 package org.neo4j.concurrent;
 
+import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -86,13 +92,92 @@ public class WorkSync<Material, W extends Work<Material,W>>
         do
         {
             tryCount++;
-            Throwable failure = tryDoWork( unit, tryCount, true );
-            if ( failure != null )
-            {
-                throw new ExecutionException( failure );
-            }
+            checkFailure( tryDoWork( unit, tryCount, true ) );
         }
         while ( !unit.isDone() );
+    }
+
+    public Future<?> applyAsync( W work )
+    {
+        // Schedule our work on the stack.
+        WorkUnit<Material,W> unit = enqueueWork( work );
+
+        // Make an attempt at doing the work immediately.
+        Throwable failure = tryDoWork( unit, 0, false );
+        if ( failure != null )
+        {
+            return new FutureThrow( failure );
+        }
+
+        // Otherwise return a future where the 'get' methods will do the work,
+        // if it hasn't been done already.
+        return new Future<Object>()
+        {
+
+            @Override
+            public boolean cancel( boolean mayInterruptIfRunning )
+            {
+                return unit.cancel();
+            }
+
+            @Override
+            public boolean isCancelled()
+            {
+                return unit.isCancelled();
+            }
+
+            @Override
+            public boolean isDone()
+            {
+                return unit.isDone();
+            }
+
+            @Override
+            public Object get() throws InterruptedException, ExecutionException
+            {
+                int tryCount = 0;
+                while ( !unit.isDone() )
+                {
+                    if ( Thread.interrupted() )
+                    {
+                        throw new InterruptedException();
+                    }
+                    tryCount++;
+                    checkFailure( tryDoWork( unit, tryCount, true ) );
+                }
+                unit.checkCancelled();
+                return null;
+            }
+
+            @Override
+            public Object get( long timeout, TimeUnit timeUnit )
+                    throws InterruptedException, ExecutionException, TimeoutException
+            {
+                Objects.requireNonNull( timeUnit );
+                if ( unit.isDone() )
+                {
+                    unit.checkCancelled();
+                    return null; // short-circuit potentially expensive calls to nanoTime.
+                }
+                long deadline = System.nanoTime() + timeUnit.toNanos( timeout );
+                int tryCount = 0;
+                while ( System.nanoTime() < deadline )
+                {
+                    if ( Thread.interrupted() )
+                    {
+                        throw new InterruptedException();
+                    }
+                    if ( unit.isDone() )
+                    {
+                        unit.checkCancelled();
+                        return null;
+                    }
+                    tryCount++;
+                    checkFailure( tryDoWork( unit, tryCount, true ) );
+                }
+                throw new TimeoutException();
+            }
+        };
     }
 
     private WorkUnit<Material,W> enqueueWork( W work )
@@ -123,6 +208,14 @@ public class WorkSync<Material, W extends Work<Material,W>>
         return null;
     }
 
+    private void checkFailure( Throwable failure ) throws ExecutionException
+    {
+        if ( failure != null )
+        {
+            throw new ExecutionException( failure );
+        }
+    }
+
     private boolean tryLock( int tryCount, WorkUnit<Material,W> unit, boolean otherwisePark )
     {
         if ( lock.compareAndSet( null, Thread.currentThread() ) )
@@ -137,7 +230,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
         {
             if ( tryCount < 1000 )
             {
-                // todo Thread.onSpinWait() ?
+                // todo Thread.onSpinWait() in Java9?
                 Thread.yield();
             }
             else
@@ -159,7 +252,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
     private Throwable doSynchronizedWork()
     {
-        WorkUnit<Material,W> batch = reverse( stack.getAndSet( stackEnd ) );
+        WorkUnit<Material,W> batch = reverseAndFilterCancelled( stack.getAndSet( stackEnd ) );
         W combinedWork = combine( batch );
         Throwable failure = null;
 
@@ -179,7 +272,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
         return failure;
     }
 
-    private WorkUnit<Material,W> reverse( WorkUnit<Material,W> batch )
+    private WorkUnit<Material,W> reverseAndFilterCancelled( WorkUnit<Material,W> batch )
     {
         WorkUnit<Material,W> result = stackEnd;
         while ( batch != stackEnd )
@@ -193,8 +286,11 @@ public class WorkSync<Material, W extends Work<Material,W>>
                 Thread.yield();
                 tmp = batch.next;
             }
-            batch.next = result;
-            result = batch;
+            if ( !batch.isCancelled() )
+            {
+                batch.next = result;
+                result = batch;
+            }
             batch = tmp;
         }
         return result;
@@ -214,11 +310,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
                 result = result.combine( batch.work );
             }
 
-            do
-            {
-                batch = batch.next;
-            }
-            while ( batch.isCancelled() );
+            batch = batch.next;
         }
         return result;
     }
@@ -240,10 +332,10 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
     private static class WorkUnit<Material, W extends Work<Material,W>> extends AtomicInteger
     {
-        private static final int STATE_QUEUED = 0;
-        private static final int STATE_PARKED = 1;
-        private static final int STATE_DONE = 2;
-        private static final int STATE_CANCELLED = 3;
+        private static final int STATE_QUEUED = 0b00;
+        private static final int STATE_PARKED = 0b01;
+        private static final int STATE_DONE = 0b10;
+        private static final int STATE_CANCELLED = 0b11;
 
         private final W work;
         private final WorkUnit<Material,W> stackEnd;
@@ -327,7 +419,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
         boolean isDone()
         {
-            return get() == STATE_DONE;
+            return (get() & STATE_DONE) == STATE_DONE;
         }
 
         boolean isCancelled()
@@ -348,6 +440,24 @@ public class WorkSync<Material, W extends Work<Material,W>>
             }
             while ( !compareAndSet( state, STATE_CANCELLED ) );
             return true;
+        }
+
+        void checkCancelled()
+        {
+            if ( isCancelled() )
+            {
+                throw new CancellationException();
+            }
+        }
+    }
+
+    private static final class FutureThrow extends FutureTask<Object>
+    {
+        private static final Callable<Object> NULL_CALLABLE = () -> null;
+        FutureThrow( Throwable result )
+        {
+            super( NULL_CALLABLE );
+            setException( result );
         }
     }
 }

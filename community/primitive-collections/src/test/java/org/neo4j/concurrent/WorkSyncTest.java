@@ -20,17 +20,23 @@
 package org.neo4j.concurrent;
 
 import org.junit.Test;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -38,10 +44,25 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 public class WorkSyncTest
 {
+    private static ExecutorService executor;
+
+    @BeforeClass
+    public static void startExecutor()
+    {
+        executor = Executors.newCachedThreadPool();
+    }
+
+    @AfterClass
+    public static void stopExecutor()
+    {
+        executor.shutdown();
+    }
+
     private static void usleep( long micros )
     {
         long deadline = System.nanoTime() + TimeUnit.MICROSECONDS.toNanos( micros );
@@ -72,17 +93,40 @@ public class WorkSyncTest
         @Override
         public void apply( Adder adder )
         {
-            usleep( 50 );
             adder.add( delta );
         }
     }
 
     private class Adder
     {
+        private volatile long sum;
+        private volatile long count;
+
         public void add( int delta )
         {
-            sum.add( delta );
-            count.increment();
+            long s = sum;
+            long c = count;
+
+            // Make sure other threads have a chance to run and race with our update
+            Thread.yield();
+            // Allow an up to ~50 micro-second window for racing and losing updates
+            usleep( ThreadLocalRandom.current().nextInt( 50 ) );
+            // Finally check if we need to do any actual blocking to order test operations
+            // (using uninterruptible acquire so we don't mess with interruption tests)
+            semaphore.acquireUninterruptibly();
+
+            sum = s + delta;
+            count = c + 1;
+        }
+
+        long sum()
+        {
+            return sum;
+        }
+
+        long count()
+        {
+            return count;
         }
     }
 
@@ -103,45 +147,40 @@ public class WorkSyncTest
         }
     }
 
-    private static class UnsynchronisedAdder
-    {
-        // The volatile modifier prevents hoisting and reordering optimisations that could *hide* races
-        private volatile long value;
-
-        public void add( long delta )
-        {
-            long v = value;
-            // Make sure other threads have a chance to run and race with our update
-            Thread.yield();
-            // Allow an up to ~50 micro-second window for racing and losing updates
-            usleep( ThreadLocalRandom.current().nextInt( 50 ) );
-            value = v + delta;
-        }
-
-        public void increment()
-        {
-            add( 1 );
-        }
-
-        public long sum()
-        {
-            return value;
-        }
-    }
-
-    private UnsynchronisedAdder sum = new UnsynchronisedAdder();
-    private UnsynchronisedAdder count = new UnsynchronisedAdder();
     private Adder adder = new Adder();
     private WorkSync<Adder,AddWork> sync = new WorkSync<>( adder );
+    private Semaphore semaphore = new Semaphore( Integer.MAX_VALUE );
+
+    @After
+    public void refillSemaphore()
+    {
+        // This ensures that no threads end up stuck
+        semaphore.drainPermits();
+        semaphore.release( Integer.MAX_VALUE );
+    }
 
     @Test
     public void mustApplyWork() throws Exception
     {
         sync.apply( new AddWork( 10 ) );
-        assertThat( sum.sum(), is( 10L ) );
+        assertThat( adder.sum(), is( 10L ) );
 
         sync.apply( new AddWork( 20 ) );
-        assertThat( sum.sum(), is( 30L ) );
+        assertThat( adder.sum(), is( 30L ) );
+    }
+
+    @Test
+    public void mustApplyWorkAsync() throws Exception
+    {
+        Future<?> a = sync.applyAsync( new AddWork( 10 ) );
+        a.get();
+        assertThat( adder.sum(), is( 10L ) );
+
+        Future<?> b = sync.applyAsync( new AddWork( 20 ) );
+        Future<?> c = sync.applyAsync( new AddWork( 30 ) );
+        b.get();
+        c.get();
+        assertThat( adder.sum(), is( 60L ) );
     }
 
     @Test
@@ -155,7 +194,256 @@ public class WorkSyncTest
         executor.shutdown();
         assertTrue( executor.awaitTermination( 2, TimeUnit.SECONDS ) );
 
-        assertThat( count.sum(), lessThan( sum.sum() ) );
+        assertThat( adder.count(), lessThan( adder.sum() ) );
+    }
+
+    @Test
+    public void mustCombineWorkAsync() throws Exception
+    {
+        makeWorkStuckAtSemaphore();
+
+        Future<?> a = sync.applyAsync( new AddWork( 1 ) );
+        Future<?> b = sync.applyAsync( new AddWork( 1 ) );
+        Future<?> c = sync.applyAsync( new AddWork( 1 ) );
+        semaphore.release( 2 );
+        a.get();
+        b.get();
+        c.get();
+        assertThat( adder.sum(), is( 4L ) );
+        assertThat( adder.count(), is( 2L ) );
+    }
+
+    private void makeWorkStuckAtSemaphore() throws InterruptedException, ExecutionException
+    {
+        semaphore.drainPermits();
+        Future<Void> concurrentWork = executor.submit( new RunnableWork( new AddWork( 1 ) ) );
+        try
+        {
+            concurrentWork.get( 10, TimeUnit.MILLISECONDS );
+            fail( "should have thrown a TimeoutException" );
+        }
+        catch ( TimeoutException ignore )
+        {
+            // good, the concurrent AddWork is now stuck on the semaphore
+            assertTrue( semaphore.hasQueuedThreads() );
+        }
+    }
+
+    @Test
+    public void mustSkipFirstCancelledAsyncWork() throws Exception
+    {
+        makeWorkStuckAtSemaphore();
+
+        Future<?> a = sync.applyAsync( new AddWork( 10 ) );
+        Future<?> b = sync.applyAsync( new AddWork( 1 ) );
+        Future<?> c = sync.applyAsync( new AddWork( 1 ) );
+        assertTrue( a.cancel( true ) );
+        semaphore.release( 2 );
+        assertGetThrowsCancellationException( a );
+        b.get();
+        assertTrue( b.isDone() );
+        c.get();
+        assertTrue( c.isDone() );
+        assertThat( adder.sum(), is( 3L ) );
+        assertThat( adder.count(), is( 2L ) );
+    }
+
+    private void assertGetThrowsCancellationException( Future<?> workSyncFuture )
+            throws InterruptedException, ExecutionException
+    {
+        try
+        {
+            workSyncFuture.get();
+            fail( "should have thrown a CancellationException" );
+        }
+        catch ( CancellationException e )
+        {
+            // very good
+            assertTrue( workSyncFuture.isCancelled() );
+            assertTrue( workSyncFuture.isDone() );
+        }
+    }
+
+    @Test
+    public void mustSkipFirstCancelledAsyncWorkOnGetWithTimeout() throws Exception
+    {
+        makeWorkStuckAtSemaphore();
+
+        Future<?> a = sync.applyAsync( new AddWork( 10 ) );
+        Future<?> b = sync.applyAsync( new AddWork( 1 ) );
+        Future<?> c = sync.applyAsync( new AddWork( 1 ) );
+        assertTrue( a.cancel( true ) );
+        semaphore.release( 2 );
+        assertGetWithTimeoutThrowsCancellationException( a );
+        b.get();
+        assertTrue( b.isDone() );
+        c.get();
+        assertTrue( c.isDone() );
+        assertThat( adder.sum(), is( 3L ) );
+        assertThat( adder.count(), is( 2L ) );
+    }
+
+    private void assertGetWithTimeoutThrowsCancellationException( Future<?> workSyncFuture )
+            throws InterruptedException, ExecutionException, TimeoutException
+    {
+        try
+        {
+            workSyncFuture.get( 100, TimeUnit.MILLISECONDS );
+            fail( "should have thrown a CancellationException" );
+        }
+        catch ( CancellationException e )
+        {
+            // very good
+            assertTrue( workSyncFuture.isCancelled() );
+            assertTrue( workSyncFuture.isDone() );
+        }
+    }
+
+    @Test
+    public void mustSkipMiddleCancelledAsyncWork() throws Exception
+    {
+        makeWorkStuckAtSemaphore();
+
+        Future<?> a = sync.applyAsync( new AddWork( 1 ) );
+        Future<?> b = sync.applyAsync( new AddWork( 10 ) );
+        Future<?> c = sync.applyAsync( new AddWork( 1 ) );
+        assertTrue( b.cancel( true ) );
+        semaphore.release( 2 );
+        a.get();
+        assertTrue( a.isDone() );
+        assertGetThrowsCancellationException( b );
+        c.get();
+        assertTrue( c.isDone() );
+        assertThat( adder.sum(), is( 3L ) );
+        assertThat( adder.count(), is( 2L ) );
+    }
+
+    @Test
+    public void mustSkipMiddleCancelledAsyncWorkOnGetWithTimeout() throws Exception
+    {
+        makeWorkStuckAtSemaphore();
+
+        Future<?> a = sync.applyAsync( new AddWork( 1 ) );
+        Future<?> b = sync.applyAsync( new AddWork( 10 ) );
+        Future<?> c = sync.applyAsync( new AddWork( 1 ) );
+        assertTrue( b.cancel( true ) );
+        semaphore.release( 2 );
+        a.get();
+        assertTrue( a.isDone() );
+        assertGetWithTimeoutThrowsCancellationException( b );
+        c.get();
+        assertTrue( c.isDone() );
+        assertThat( adder.sum(), is( 3L ) );
+        assertThat( adder.count(), is( 2L ) );
+    }
+
+    @Test
+    public void mustSkipLastCancelledAsyncWork() throws Exception
+    {
+        makeWorkStuckAtSemaphore();
+
+        Future<?> a = sync.applyAsync( new AddWork( 1 ) );
+        Future<?> b = sync.applyAsync( new AddWork( 1 ) );
+        Future<?> c = sync.applyAsync( new AddWork( 10 ) );
+        assertTrue( c.cancel( true ) );
+        semaphore.release( 2 );
+        a.get();
+        assertTrue( a.isDone() );
+        b.get();
+        assertTrue( b.isDone() );
+        assertGetThrowsCancellationException( c );
+        assertThat( adder.sum(), is( 3L ) );
+        assertThat( adder.count(), is( 2L ) );
+    }
+
+    @Test
+    public void mustSkipLastCancelledAsyncWorkOnGetWithTimeout() throws Exception
+    {
+        makeWorkStuckAtSemaphore();
+
+        Future<?> a = sync.applyAsync( new AddWork( 1 ) );
+        Future<?> b = sync.applyAsync( new AddWork( 1 ) );
+        Future<?> c = sync.applyAsync( new AddWork( 10 ) );
+        assertTrue( c.cancel( true ) );
+        semaphore.release( 2 );
+        a.get();
+        assertTrue( a.isDone() );
+        b.get();
+        assertTrue( b.isDone() );
+        assertGetWithTimeoutThrowsCancellationException( c );
+        assertThat( adder.sum(), is( 3L ) );
+        assertThat( adder.count(), is( 2L ) );
+    }
+
+    @Test
+    public void applyAsyncGetMustThrowIfCancelledWhileBlocking() throws Exception
+    {
+        makeWorkStuckAtSemaphore();
+
+        Future<?> future = sync.applyAsync( new AddWork( 1 ) );
+        AtomicBoolean readyLatch = new AtomicBoolean();
+        AtomicBoolean startLatch = new AtomicBoolean();
+        executor.submit( () ->
+        {
+            readyLatch.set( true );
+            spinwait( startLatch );
+            usleep( 1000 );
+            future.cancel( true );
+            return null;
+        }) ;
+        spinwait( readyLatch );
+        startLatch.set( true );
+        assertGetThrowsCancellationException( future );
+    }
+
+    private void spinwait( AtomicBoolean latch )
+    {
+        boolean go;
+        do
+        {
+            go = latch.get();
+        }
+        while ( !go );
+    }
+
+    @Test
+    public void applyAsyncGetWithTimeoutMustThrowIfCancelledWhileBlocking() throws Exception
+    {
+        makeWorkStuckAtSemaphore();
+
+        Future<?> future = sync.applyAsync( new AddWork( 1 ) );
+        AtomicBoolean readyLatch = new AtomicBoolean();
+        AtomicBoolean startLatch = new AtomicBoolean();
+        executor.submit( () ->
+        {
+            readyLatch.set( true );
+            spinwait( startLatch );
+            usleep( 1000 );
+            future.cancel( true );
+            return null;
+        }) ;
+        spinwait( readyLatch );
+        startLatch.set( true );
+        assertGetWithTimeoutThrowsCancellationException( future );
+    }
+
+    @Test
+    public void applyAsyncGetWithTimeoutMustThrowOnTimeout() throws Exception
+    {
+        makeWorkStuckAtSemaphore();
+        Future<?> future = sync.applyAsync( new AddWork( 1 ) );
+
+        try
+        {
+            future.get( 1, TimeUnit.NANOSECONDS );
+            fail( "should have thrown a TimeoutException" );
+        }
+        catch ( TimeoutException e )
+        {
+            // very good
+            assertFalse( future.isDone() );
+            assertFalse( future.isCancelled() );
+        }
     }
 
     @Test
@@ -165,7 +453,28 @@ public class WorkSyncTest
 
         sync.apply( new AddWork( 10 ) );
 
-        assertThat( sum.sum(), is( 10L ) );
+        assertThat( adder.sum(), is( 10L ) );
+        assertTrue( Thread.interrupted() );
+    }
+
+    @Test
+    public void mustApplyWorkAsyncEvenWhenInterrupted() throws Exception
+    {
+        Thread.currentThread().interrupt();
+
+        Future<?> future = sync.applyAsync( new AddWork( 10 ) );
+        try
+        {
+            future.get();
+        }
+        catch ( InterruptedException e )
+        {
+            // if our get is interrupted, then we should be able to retry without any problems
+            future.get();
+            Thread.currentThread().interrupt();
+        }
+
+        assertThat( adder.sum(), is( 10L ) );
         assertTrue( Thread.interrupted() );
     }
 
@@ -187,7 +496,6 @@ public class WorkSyncTest
         };
         sync = new WorkSync<>( adder );
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
         try
         {
             // Run this in a different thread to account for reentrant locks.
@@ -207,8 +515,8 @@ public class WorkSyncTest
         broken.set( false );
         sync.apply( new AddWork( 20 ) );
 
-        assertThat( sum.sum(), is( 20L ) );
-        assertThat( count.sum(), is( 1L ) );
+        assertThat( adder.sum(), is( 20L ) );
+        assertThat( adder.count(), is( 1L ) );
     }
 
     @Test
@@ -254,7 +562,7 @@ public class WorkSyncTest
             future.get(); // check for any exceptions
         }
 
-        assertThat( count.sum(), lessThan( (long) (workers * iterations) ) );
-        assertThat( sum.sum(), is( (long) (incrementValue * workers * iterations) ) );
+        assertThat( adder.count(), lessThan( (long) (workers * iterations) ) );
+        assertThat( adder.sum(), is( (long) (incrementValue * workers * iterations) ) );
     }
 }
