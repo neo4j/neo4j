@@ -91,8 +91,8 @@ public class QueryLoggerIT
         // create users
         db.getManager().newUser( "mats", "neo4j", false );
         db.getManager().newUser( "andres", "neo4j", false );
-        db.getManager().addUserToRole( "mats", "architect" );
-        db.getManager().addUserToRole( "andres", "reader" );
+        db.getManager().addRoleToUser( "architect", "mats" );
+        db.getManager().addRoleToUser( "reader", "andres" );
 
         EnterpriseAuthSubject mats = db.login( "mats", "neo4j" );
 
