@@ -100,6 +100,27 @@ public class WorkSync<Material, W extends Work<Material,W>>
         while ( !unit.isDone() );
     }
 
+    /**
+     * Apply the given work to the material in a thread-safe way, possibly asynchronously
+     * if contention is observed with other threads, and possibly by combining it with other work.
+     * <p>
+     * The returned future can be cancelled while it is still enqueued to run, but cancellation
+     * may race with work combining and application, and have slightly weaker semantics than what
+     * the {@link Future} interface specifies. for instance, a unit of that is cancelled, and where
+     * the {@link Future#cancel(boolean)} cancel} method returns {@code true}, may still and up
+     * being applied.
+     * The reason for this departure from specification is implementation efficiency of the other
+     * {@code WorkSync} features, since the cancellation feature is likely rarely used.
+     * <p>
+     * The given unit of work may be done by this thread, or any other thread that is concurrently
+     * submitting work to the {@code WorkSync}. If this unit of work, or any of the other units of
+     * work, throws an exception, then the exception will surface in the thread that ends up doing
+     * the work. This may manifest itself as an {@link ExecutionException} thrown from one of the
+     * {@code get} methods of {@link Future}, or from the {@link #apply(Work)} method.
+     *
+     * @param work The work to be done.
+     * @return A {@link Future} representing the eventual completion of the work.
+     */
     public Future<?> applyAsync( W work )
     {
         // Schedule our work on the stack.

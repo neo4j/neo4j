@@ -447,6 +447,15 @@ public class WorkSyncTest
     }
 
     @Test
+    public void cannotCancelApplyAsyncFutureThatIsAlreadyDone() throws Exception
+    {
+        Future<?> future = sync.applyAsync( new AddWork( 1 ) );
+        assertTrue( future.isDone() );
+        assertFalse( future.cancel( true ) );
+        assertFalse( future.isCancelled() );
+    }
+
+    @Test
     public void mustApplyWorkEvenWhenInterrupted() throws Exception
     {
         Thread.currentThread().interrupt();
