@@ -215,5 +215,11 @@ public class ResetFuzzTest
         {
             // do nothing
         }
+
+        @Override
+        public String version()
+        {
+            return "<test-version>";
+        }
     }
 }

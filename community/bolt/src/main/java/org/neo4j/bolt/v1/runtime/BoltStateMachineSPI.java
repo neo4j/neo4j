@@ -26,6 +26,7 @@ import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -36,7 +37,9 @@ class BoltStateMachineSPI implements BoltStateMachine.SPI
     private final ErrorReporter errorReporter;
     private final BoltConnectionTracker connectionTracker;
     private final Authentication authentication;
-    private final TransactionStateMachine.SPI transactionSpi;
+    private final String version;
+
+    final TransactionStateMachine.SPI transactionSpi;
 
     BoltStateMachineSPI( String connectionDescriptor,
                          UsageData usageData,
@@ -51,6 +54,7 @@ class BoltStateMachineSPI implements BoltStateMachine.SPI
         this.connectionTracker = connectionTracker;
         this.authentication = authentication;
         this.transactionSpi = transactionStateMachineSPI;
+        this.version = "Neo4j/" + Version.getKernel().getReleaseVersion();
     }
 
     @Override
@@ -93,5 +97,11 @@ class BoltStateMachineSPI implements BoltStateMachine.SPI
     public void udcRegisterClient( String clientName )
     {
         usageData.get( UsageDataKeys.clientNames ).add( clientName );
+    }
+
+    @Override
+    public String version()
+    {
+        return version;
     }
 }

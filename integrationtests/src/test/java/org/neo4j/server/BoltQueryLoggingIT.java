@@ -82,7 +82,7 @@ public class BoltQueryLoggingIT
                 "63 72 65 64  65 6E 74 69  61 6C 73 86  73 65 63 72\n" +
                 "65 74 00 00" );
         // Receive SUCCESS {}
-        receive( dataIn, "00 03 b1 70 a0 00 00" );
+        receiveSuccess( dataIn );
 
         // *** WHEN ***
 
@@ -92,7 +92,7 @@ public class BoltQueryLoggingIT
             send( dataOut, "00 13 b2 10  8f 52 45 54  55 52 4e 20  31 20 41 53 20 6e 75 6d  a0 00 00" );
             // Receive SUCCESS { "fields": ["num"], "result_available_after": X }
             //non-deterministic so just ignore it here
-            skip( dataIn );
+            receiveSuccess( dataIn );
 
             //receive( dataIn, "00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75 6d 00 00" );
 
@@ -102,7 +102,7 @@ public class BoltQueryLoggingIT
             receive( dataIn, "00 04 b1 71  91 01 00 00" );
             // Receive SUCCESS { "type": "r", "result_consumed_after": Y }
             //non-deterministic so just ignore it here
-            skip( dataIn );
+            receiveSuccess(  dataIn );
         }
 
         // *** THEN ***
@@ -130,15 +130,6 @@ public class BoltQueryLoggingIT
         socket.close();
     }
 
-    /*
-     * Just consumes the bytes without asserting on the results.
-     */
-    private void skip( DataInputStream dataIn ) throws IOException
-    {
-        short bytes = dataIn.readShort();
-        dataIn.skipBytes( bytes + 2 );
-    }
-
     private static void send( DataOutputStream dataOut, String toSend ) throws IOException
     {
         send( dataOut, hexBytes( toSend ) );
@@ -148,6 +139,14 @@ public class BoltQueryLoggingIT
     {
         dataOut.write( bytesToSend );
         dataOut.flush();
+    }
+
+    private void receiveSuccess( DataInputStream dataIn ) throws IOException
+    {
+        short bytes = dataIn.readShort();
+        assertThat(dataIn.readUnsignedByte(), equalTo(0xB1));
+        assertThat(dataIn.readUnsignedByte(), equalTo(0x70));
+        dataIn.skipBytes( bytes);
     }
 
     private static void receive( DataInputStream dataIn, String expected ) throws IOException
