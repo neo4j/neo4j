@@ -68,32 +68,15 @@ import static org.neo4j.helpers.Strings.escape;
 /**
  * Shiro realm wrapping FileUserRepository and FileRoleRepository
  */
-public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, EnterpriseUserManager
+class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, EnterpriseUserManager
 {
     /**
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
      * placed here because of user suspension not being a part of community edition
      */
-    public static final String IS_SUSPENDED = "is_suspended";
-
     private int MAX_READ_ATTEMPTS = 10;
 
-    private final RolePermissionResolver rolePermissionResolver = new RolePermissionResolver()
-    {
-        @Override
-        public Collection<Permission> resolvePermissionsInRole( String roleString )
-        {
-            SimpleRole role = roles.get( roleString );
-            if ( role != null )
-            {
-                return role.getPermissions();
-            }
-            else
-            {
-                return Collections.emptyList();
-            }
-        }
-    };
+    static final String IS_SUSPENDED = "is_suspended";
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -131,7 +114,22 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         setAuthorizationCachingEnabled( false );
         this.securityLog = securityLog;
         setCredentialsMatcher( new AllowAllCredentialsMatcher() );
-        setRolePermissionResolver( rolePermissionResolver );
+        setRolePermissionResolver( new RolePermissionResolver()
+            {
+                @Override
+                public Collection<Permission> resolvePermissionsInRole( String roleString )
+                {
+                    SimpleRole role = roles.get( roleString );
+                    if ( role != null )
+                    {
+                        return role.getPermissions();
+                    }
+                    else
+                    {
+                        return Collections.emptyList();
+                    }
+                }
+            } );
 
         roles = new PredefinedRolesBuilder().buildRoles();
     }
@@ -359,12 +357,12 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         return new ShiroAuthenticationInfo( user.name(), user.credentials(), getName(), result );
     }
 
-    int numberOfUsers()
+    private int numberOfUsers()
     {
         return userRepository.numberOfUsers();
     }
 
-    int numberOfRoles()
+    private int numberOfRoles()
     {
         return roleRepository.numberOfRoles();
     }
