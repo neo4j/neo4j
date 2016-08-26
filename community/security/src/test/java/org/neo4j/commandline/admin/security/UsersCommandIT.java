@@ -189,7 +189,7 @@ public class UsersCommandIT extends CommandTestBase
         assertSuccessfulSubCommand( "create", args("another", "abc"), "Created new user 'another'" );
 
         // And the user requires password change
-        assertUserDoesNotRequirePasswordChange( "another" );
+        assertUserRequiresPasswordChange( "another" );
     }
 
     @Test
