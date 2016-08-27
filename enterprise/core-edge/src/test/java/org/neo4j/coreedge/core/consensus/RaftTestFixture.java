@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
+import org.neo4j.coreedge.core.consensus.membership.RaftTestGroup;
 import org.neo4j.coreedge.messaging.Inbound;
 import org.neo4j.coreedge.messaging.LoggingOutbound;
 import org.neo4j.coreedge.messaging.Outbound;
@@ -72,6 +73,14 @@ public class RaftTestFixture
     public Members members()
     {
         return members;
+    }
+
+    public void bootstrap( MemberId[] members ) throws RaftMachine.BootstrapException
+    {
+        for ( MemberFixture member : members() )
+        {
+            member.raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( members ) );
+        }
     }
 
     public static class Members implements Iterable<MemberFixture>

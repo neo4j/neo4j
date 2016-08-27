@@ -57,7 +57,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
     protected void decode( ChannelHandlerContext ctx, ByteBuf buffer, List<Object> list ) throws Exception
     {
         ReadableChannel channel = new NetworkReadableClosableChannelNetty4( buffer );
-        StoreId storeId = StoreIdMarshal.unmarshal( channel );
+        StoreId storeId = StoreIdMarshal.INSTANCE.unmarshal( channel );
 
         int messageTypeWire = channel.getInt();
         RaftMessages.Type[] values = RaftMessages.Type.values();

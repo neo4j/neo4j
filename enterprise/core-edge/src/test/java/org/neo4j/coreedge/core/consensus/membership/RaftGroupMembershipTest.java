@@ -90,9 +90,7 @@ public class RaftGroupMembershipTest
         final MemberId[] finalMembers = {leader, stable1, stable2, toBeAdded};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, finalMembers );
-
-        fixture.members().withId( leader ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup(
-                initialMembers ) );
+        fixture.bootstrap( initialMembers );
 
         fixture.members().withId( leader ).timeoutService().invokeTimeout( ELECTION );
         net.processMessages();
@@ -128,8 +126,8 @@ public class RaftGroupMembershipTest
         final MemberId[] finalMembers = {leader, stable1, stable2, toBeAdded1, toBeAdded2, toBeAdded3};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, finalMembers );
+        fixture.bootstrap( initialMembers );
 
-        fixture.members().withId( leader ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( initialMembers ) );
         fixture.members().withId( leader ).timeoutService().invokeTimeout( ELECTION );
         net.processMessages();
 
@@ -166,8 +164,8 @@ public class RaftGroupMembershipTest
         final MemberId[] finalMembers = {leader, stable};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 2, initialMembers );
+        fixture.bootstrap( initialMembers );
 
-        fixture.members().withId( leader ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( initialMembers ) );
         fixture.members().withId( leader ).timeoutService().invokeTimeout( ELECTION );
 
         // when
@@ -196,8 +194,8 @@ public class RaftGroupMembershipTest
         final MemberId[] finalMembers = {leader, stable};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 2, initialMembers );
+        fixture.bootstrap( initialMembers );
 
-        fixture.members().withId( leader ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( initialMembers ) );
         fixture.members().withId( leader ).timeoutService().invokeTimeout( ELECTION );
         net.processMessages();
 
@@ -230,14 +228,14 @@ public class RaftGroupMembershipTest
         final MemberId[] finalMembers = {leader, stable, toBeAdded1, toBeAdded2};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, everyone );
+        fixture.bootstrap( initialMembers );
 
-        fixture.members().withId( leader ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( initialMembers ) );
         fixture.members().withId( leader ).timeoutService().invokeTimeout( ELECTION );
         net.processMessages();
 
         // when
-        fixture.members().withId( leader ).raftInstance().setTargetMembershipSet( new RaftTestGroup( finalMembers )
-                .getMembers() );
+        fixture.members().withId( leader ).raftInstance().setTargetMembershipSet(
+                new RaftTestGroup( finalMembers ).getMembers() );
         net.processMessages();
 
         fixture.members().withId( leader ).timeoutService().invokeTimeout( HEARTBEAT );
@@ -267,8 +265,7 @@ public class RaftGroupMembershipTest
         final MemberId[] finalMembers = {stable1, stable2};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 2, initialMembers );
-
-        fixture.members().withId( leader ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( initialMembers ) );
+        fixture.bootstrap( initialMembers );
         fixture.members().withId( leader ).timeoutService().invokeTimeout( ELECTION );
         net.processMessages();
 
@@ -300,9 +297,9 @@ public class RaftGroupMembershipTest
         final MemberId[] fewerMembers = {leader2, stable1, stable2};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, allMembers );
+        fixture.bootstrap( allMembers );
 
         // when
-        fixture.members().withId( leader1 ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( allMembers ) );
         fixture.members().withId( leader1 ).timeoutService().invokeTimeout( ELECTION );
         net.processMessages();
 
@@ -340,9 +337,9 @@ public class RaftGroupMembershipTest
         final MemberId[] fewerMembers = {leader, stable1, stable2};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, allMembers );
+        fixture.bootstrap( allMembers );
 
         // when
-        fixture.members().withId( leader ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( allMembers ) );
         fixture.members().withId( leader ).timeoutService().invokeTimeout( ELECTION );
         net.processMessages();
 
@@ -376,8 +373,7 @@ public class RaftGroupMembershipTest
         final MemberId[] initialMembers = {leader1, leader2, stable};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 2, initialMembers );
-
-        fixture.members().withId( leader1 ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( initialMembers ) );
+        fixture.bootstrap( initialMembers );
 
         fixture.members().withId( leader1 ).timeoutService().invokeTimeout( ELECTION );
         net.processMessages();

@@ -308,4 +308,17 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
             updateMemberSets();
         }
     }
+
+    public MembershipEntry getCommitted()
+    {
+        return state.committed();
+
+    }
+
+    public void install( MembershipEntry committed ) throws IOException
+    {
+        state = new RaftMembershipState( committed.logIndex(), committed, null );
+        storage.persistStoreData( state );
+        updateMemberSets();
+    }
 }

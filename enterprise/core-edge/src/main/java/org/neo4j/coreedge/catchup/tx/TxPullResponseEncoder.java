@@ -31,12 +31,13 @@ import org.neo4j.coreedge.messaging.marshalling.storeid.StoreIdMarshal;
 
 public class TxPullResponseEncoder extends MessageToMessageEncoder<TxPullResponse>
 {
+
     @Override
     protected void encode( ChannelHandlerContext ctx, TxPullResponse response, List<Object> out ) throws Exception
     {
         ByteBuf encoded = ctx.alloc().buffer();
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( encoded );
-        StoreIdMarshal.marshal( response.storeId(), channel );
+        StoreIdMarshal.INSTANCE.marshal( response.storeId(), channel );
         new CommittedTransactionSerializer( channel ).visit( response.tx() );
         out.add( encoded );
     }

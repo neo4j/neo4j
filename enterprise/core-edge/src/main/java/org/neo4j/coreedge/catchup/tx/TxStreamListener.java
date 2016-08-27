@@ -17,19 +17,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge;
+package org.neo4j.coreedge.catchup.tx;
 
-import java.io.IOException;
-
-import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
-
-public interface SnapFlushable
+interface TxStreamListener extends TxPullResponseListener, TxStreamCompleteListener
 {
-    void flush() throws IOException;
-
-    void addSnapshots( CoreSnapshot coreSnapshot );
-
-    long getLastAppliedIndex();
-
-    void installSnapshots( CoreSnapshot coreSnapshot );
 }

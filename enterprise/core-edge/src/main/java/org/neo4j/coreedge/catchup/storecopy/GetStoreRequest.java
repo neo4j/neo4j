@@ -20,13 +20,26 @@
 package org.neo4j.coreedge.catchup.storecopy;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
+import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.messaging.CatchUpRequest;
 
 public class GetStoreRequest implements CatchUpRequest
 {
+    private final StoreId expectedStoreId;
+
+    GetStoreRequest( StoreId expectedStoreId )
+    {
+        this.expectedStoreId = expectedStoreId;
+    }
+
     @Override
     public RequestMessageType messageType()
     {
         return RequestMessageType.STORE;
+    }
+
+    StoreId expectedStoreId()
+    {
+        return expectedStoreId;
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.core.consensus.roles;
 
 import org.hamcrest.Matchers;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -31,6 +32,7 @@ import java.util.Collection;
 import org.neo4j.coreedge.core.consensus.RaftMessages.AppendEntries.Response;
 import org.neo4j.coreedge.core.consensus.ReplicatedString;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
+import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.outcome.BatchAppendLogEntries;
 import org.neo4j.coreedge.core.consensus.outcome.Outcome;
@@ -74,9 +76,11 @@ public class AppendEntriesRequestTest
     private MemberId leader = member( 1 );
 
     @Test
-    public void shouldAcceptInitialEntry() throws Exception
+    public void shouldAcceptInitialEntryAfterBootstrap() throws Exception
     {
+        RaftLog raftLog = bootstrappedLog();
         RaftState state = raftState()
+                .entryLog( raftLog )
                 .myself( myself )
                 .build();
 
@@ -87,20 +91,22 @@ public class AppendEntriesRequestTest
         Outcome outcome = role.handler.handle( appendEntriesRequest()
                 .from( leader )
                 .leaderTerm( leaderTerm )
-                .prevLogIndex( -1 )
-                .prevLogTerm( -1 )
+                .prevLogIndex( 0 )
+                .prevLogTerm( 0 )
                 .logEntry( logEntry )
                 .build(), state, log() );
 
         // then
         assertTrue( ((Response) messageFor( outcome, leader )).success() );
-        assertThat( outcome.getLogCommands(), hasItem( new BatchAppendLogEntries( 0, 0, new RaftLogEntry[]{ logEntry } ) ) );
+        assertThat( outcome.getLogCommands(), hasItem( new BatchAppendLogEntries( 1, 0, new RaftLogEntry[]{ logEntry } ) ) );
     }
 
     @Test
-    public void shouldAcceptInitialEntries() throws Exception
+    public void shouldAcceptInitialEntriesAfterBootstrap() throws Exception
     {
+        RaftLog raftLog = bootstrappedLog();
         RaftState state = raftState()
+                .entryLog( raftLog )
                 .myself( myself )
                 .build();
 
@@ -112,16 +118,23 @@ public class AppendEntriesRequestTest
         Outcome outcome = role.handler.handle( appendEntriesRequest()
                 .from( leader )
                 .leaderTerm( leaderTerm )
-                .prevLogIndex( -1 )
-                .prevLogTerm( -1 )
+                .prevLogIndex( 0 )
+                .prevLogTerm( 0 )
                 .logEntry( logEntry1 )
                 .logEntry( logEntry2 )
                 .build(), state, log() );
 
         // then
         assertTrue( ((Response) messageFor( outcome, leader )).success() );
-        assertThat( outcome.getLogCommands(), hasItem( new BatchAppendLogEntries( 0, 0,
+        assertThat( outcome.getLogCommands(), hasItem( new BatchAppendLogEntries( 1, 0,
                 new RaftLogEntry[]{logEntry1, logEntry2} ) ) );
+    }
+
+    private RaftLog bootstrappedLog() throws IOException
+    {
+        InMemoryRaftLog raftLog = new InMemoryRaftLog();
+        raftLog.append( new RaftLogEntry( 0, content() ) );
+        return raftLog;
     }
 
     @Test
@@ -187,19 +200,21 @@ public class AppendEntriesRequestTest
 
         long leaderTerm = state.term() + leaderTermDifference;
         raftLog.append( new RaftLogEntry( state.term() - 1, content() ) );
+        raftLog.append( new RaftLogEntry( state.term() - 1, content() ) );
 
         // when
+        long previousIndex = raftLog.appendIndex() - 1;
         Outcome outcome = role.handler.handle( appendEntriesRequest()
                 .from( leader )
                 .leaderTerm( leaderTerm )
-                .prevLogIndex( raftLog.appendIndex() - 1 )
-                .prevLogTerm( -1 )
+                .prevLogIndex( previousIndex )
+                .prevLogTerm( raftLog.readEntryTerm( previousIndex ) )
                 .logEntry( new RaftLogEntry( leaderTerm, content() ) )
                 .build(), state, log() );
 
         // then
         assertTrue( ((Response) messageFor( outcome, leader )).success() );
-        assertThat( outcome.getLogCommands(), hasItem( new TruncateLogCommand( 0 ) ) );
+        assertThat( outcome.getLogCommands(), hasItem( new TruncateLogCommand( 1 ) ) );
     }
 
     @Test

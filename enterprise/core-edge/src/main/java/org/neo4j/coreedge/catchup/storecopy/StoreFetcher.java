@@ -22,9 +22,12 @@ package org.neo4j.coreedge.catchup.storecopy;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.coreedge.catchup.CatchUpClientException;
+import org.neo4j.coreedge.catchup.CatchupResult;
 import org.neo4j.coreedge.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.coreedge.catchup.tx.TxPullClient;
+import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -32,6 +35,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.coreedge.catchup.CatchupResult.SUCCESS;
 
 public class StoreFetcher
 {
@@ -57,43 +62,42 @@ public class StoreFetcher
         log = logProvider.getLog( getClass() );
     }
 
-    boolean tryCatchingUp( MemberId from, StoreId storeId, File storeDir ) throws StoreCopyFailedException, IOException
+    public CatchupResult tryCatchingUp( MemberId from, StoreId expectedStoreId, File storeDir ) throws StoreCopyFailedException, IOException
     {
         ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
-        long lastCommittedTransactionId = transactionIdStore.getLastCommittedTransactionId();
+        long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
+        return pullTransactions( from, expectedStoreId, storeDir, lastCommittedTxId );
+    }
 
-        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider
-        ) )
+    private CatchupResult pullTransactions( MemberId from, StoreId expectedStoreId, File storeDir, long fromTxId ) throws IOException, StoreCopyFailedException
+    {
+        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider ) )
         {
-            log.info( "Pulling transactions from: %d", lastCommittedTransactionId );
-            try
-            {
-                long lastPulledTxId = txPullClient.pullTransactions( from, storeId, lastCommittedTransactionId,
-                        writer );
-                log.info( "Txs streamed up to %d", lastPulledTxId );
-                return true;
-            }
-            catch ( StoreCopyFailedException e )
-            {
-                return false;
-            }
+            log.info( "Pulling transactions from: %d", fromTxId );
+            return txPullClient.pullTransactions( from, expectedStoreId, fromTxId, writer );
+        }
+        catch ( CatchUpClientException | NoKnownAddressesException e )
+        {
+            throw new StoreCopyFailedException( e );
         }
     }
 
-    void copyStore( MemberId from, StoreId storeId, File storeDir ) throws StoreCopyFailedException
+    public void copyStore( MemberId from, StoreId expectedStoreId, File destDir ) throws StoreCopyFailedException
     {
         try
         {
             log.info( "Copying store from %s", from );
-            long lastFlushedTxId = storeCopyClient.copyStoreFiles( from, new StreamToDisk( storeDir, fs ) );
-            log.info( "Store files streamed up to %d", lastFlushedTxId );
+            long lastFlushedTxId = storeCopyClient.copyStoreFiles( from, expectedStoreId, new StreamToDisk( destDir, fs ) );
 
-            try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache,
-                    logProvider ) )
+            /* Strictly we do not require lastFlushedTxId, but we do not know if a later one exists
+             * and we require at least one transaction usually, e.g. for extracting the log index
+             * of the consensus log. */
+            log.info( "Store files need to be recovered starting from: %d", lastFlushedTxId );
+
+            CatchupResult catchupResult = pullTransactions( from, expectedStoreId, destDir, lastFlushedTxId );
+            if ( catchupResult != SUCCESS )
             {
-                log.info( "Pulling transactions from: %d", lastFlushedTxId - 1 );
-                long lastPulledTxId = txPullClient.pullTransactions( from, storeId, lastFlushedTxId - 1, writer );
-                log.info( "Txs streamed up to %d", lastPulledTxId );
+                throw new StoreCopyFailedException( "Failed to pull transactions: " + catchupResult );
             }
         }
         catch ( IOException e )
@@ -102,7 +106,7 @@ public class StoreFetcher
         }
     }
 
-    public StoreId storeId( MemberId from ) throws StoreIdDownloadFailedException
+    public StoreId getStoreIdOf( MemberId from ) throws StoreIdDownloadFailedException
     {
         String operation = "get store id";
         long retryInterval = 5_000;

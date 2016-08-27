@@ -26,11 +26,16 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.io.IOException;
+
 import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.RaftMachineBuilder;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.ReplicatedInteger;
+import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
+import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
+import org.neo4j.coreedge.core.consensus.membership.RaftTestGroup;
 import org.neo4j.coreedge.messaging.Outbound;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.RaftTestMemberSetBuilder;
@@ -63,10 +68,14 @@ public class AppendEntriesMessageFlowTest
     private RaftMachine raft;
 
     @Before
-    public void setup()
+    public void setup() throws IOException
     {
         // given
+        RaftLog raftLog = new InMemoryRaftLog();
+        raftLog.append( new RaftLogEntry( 0, new RaftTestGroup( 0 ) ) );
+
         raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .raftLog( raftLog )
                 .outbound( outbound )
                 .build();
     }
@@ -80,7 +89,7 @@ public class AppendEntriesMessageFlowTest
 
         // then
         verify( outbound ).send( same( otherMember ),
-                eq( appendEntriesResponse().from( myself ).term( 0 ).appendIndex( -1 ).matchIndex( -1 ).failure()
+                eq( appendEntriesResponse().from( myself ).term( 0 ).appendIndex( 0 ).matchIndex( -1 ).failure()
                         .build() ) );
     }
 
@@ -88,25 +97,12 @@ public class AppendEntriesMessageFlowTest
     public void shouldReturnTrueOnAppendRequestWithFirstLogEntry() throws Exception
     {
         // when
-        raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( -1 )
-                .prevLogTerm( -1 ).logEntry( new RaftLogEntry( 0, data ) ).leaderCommit( -1 ).build() );
+        raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 1 ).prevLogIndex( 0 )
+                .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 1, data ) ).leaderCommit( -1 ).build() );
 
         // then
         verify( outbound ).send( same( otherMember ), eq( appendEntriesResponse().
-                appendIndex( 0 ).matchIndex( 0 ).from( myself ).term( 0 ).success().build() ) );
-    }
-
-    @Test
-    public void shouldReturnTrueOnAppendRequestWithFirstLogEntryAndIgnorePrevTerm() throws Exception
-    {
-        // when
-        raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( -1 )
-                .prevLogTerm( -1 ).logEntry( new RaftLogEntry( 0, data ) ).build() );
-
-        // then
-        verify( outbound ).send( same( otherMember ),
-                eq( appendEntriesResponse().from( myself ).term( 0 ).appendIndex( 0 ).matchIndex( 0 ).success()
-                        .build() ) );
+                appendIndex( 1 ).matchIndex( 1 ).from( myself ).term( 1 ).success().build() ) );
     }
 
     @Test
@@ -114,72 +110,71 @@ public class AppendEntriesMessageFlowTest
     {
         // when
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( 0 )
-                .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data ) ).build() );
+                .prevLogTerm( 1 ).logEntry( new RaftLogEntry( 0, data ) ).build() );
 
         // then
         verify( outbound ).send( same( otherMember ),
-                eq( appendEntriesResponse().from( myself ).term( 0 ).failure().build() ) );
+                eq( appendEntriesResponse().matchIndex( -1 ).appendIndex( 0 ).from( myself ).term( 0 ).failure().build() ) );
     }
 
     @Test
     public void shouldAcceptSequenceOfAppendEntries() throws Exception
     {
         // when
-        raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( -1 )
-                .prevLogTerm( -1 ).logEntry( new RaftLogEntry( 0, data( 1 ) ) ).leaderCommit( -1 ).build() );
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( 0 )
-                .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data( 2 ) ) ).leaderCommit( -1 ).build() );
+                .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data( 1 ) ) ).leaderCommit( -1 ).build() );
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( 1 )
+                .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data( 2 ) ) ).leaderCommit( -1 ).build() );
+        raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( 2 )
                 .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data( 3 ) ) ).leaderCommit( 0 ).build() );
 
-        raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 1 ).prevLogIndex( 2 )
-                .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 1, data( 4 ) ) ).leaderCommit( 1 ).build() );
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 1 ).prevLogIndex( 3 )
-                .prevLogTerm( 1 ).logEntry( new RaftLogEntry( 1, data( 5 ) ) ).leaderCommit( 2 ).build() );
+                .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 1, data( 4 ) ) ).leaderCommit( 1 ).build() );
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 1 ).prevLogIndex( 4 )
+                .prevLogTerm( 1 ).logEntry( new RaftLogEntry( 1, data( 5 ) ) ).leaderCommit( 2 ).build() );
+        raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 1 ).prevLogIndex( 5 )
                 .prevLogTerm( 1 ).logEntry( new RaftLogEntry( 1, data( 6 ) ) ).leaderCommit( 4 ).build() );
 
         // then
         InOrder invocationOrder = inOrder( outbound );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 0 ).appendIndex( 0 ).matchIndex( 0 ).success().build() ) );
-        invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
                 myself ).term( 0 ).appendIndex( 1 ).matchIndex( 1 ).success().build() ) );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
                 myself ).term( 0 ).appendIndex( 2 ).matchIndex( 2 ).success().build() ) );
-
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 1 ).appendIndex( 3 ).matchIndex( 3 ).success().build() ) );
+                myself ).term( 0 ).appendIndex( 3 ).matchIndex( 3 ).success().build() ) );
+
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
                 myself ).term( 1 ).appendIndex( 4 ).matchIndex( 4 ).success().build() ) );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
                 myself ).term( 1 ).appendIndex( 5 ).matchIndex( 5 ).success().build() ) );
+        invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
+                myself ).term( 1 ).appendIndex( 6 ).matchIndex( 6 ).success().build() ) );
     }
 
     @Test
     public void shouldReturnFalseIfLogHistoryDoesNotMatch() throws Exception
     {
-        raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( -1 )
-                .prevLogTerm( -1 ).logEntry( new RaftLogEntry( 0, data( 1 ) ) ).build() );
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( 0 )
-                .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data( 2 ) ) ).build() );
+                .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data( 1 ) ) ).build() );
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( 1 )
+                .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data( 2 ) ) ).build() );
+        raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( 2 )
                 .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data( 3 ) ) ).build() ); // will conflict
 
         // when
-        raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 2 ).prevLogIndex( 2 )
-                .prevLogTerm( 1 ).logEntry( new RaftLogEntry( 2, data( 4 ) ) ).build() ); // should reply false
-        // because of prevLogTerm
+        raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 2 ).prevLogIndex( 3 )
+                .prevLogTerm( 1 ).logEntry( new RaftLogEntry( 2, data( 4 ) ) ).build() ); // should reply false because of prevLogTerm
 
         // then
         InOrder invocationOrder = inOrder( outbound );
-        invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 0 ).matchIndex( 0 ).appendIndex( 0 ).success().build() ) );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
                 myself ).term( 0 ).matchIndex( 1 ).appendIndex( 1 ).success().build() ) );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
                 myself ).term( 0 ).matchIndex( 2 ).appendIndex( 2 ).success().build() ) );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 2 ).matchIndex( -1 ).appendIndex( 2 ).failure().build() ) );
+                myself ).term( 0 ).matchIndex( 3 ).appendIndex( 3 ).success().build() ) );
+        invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
+                myself ).term( 2 ).matchIndex( -1 ).appendIndex( 3 ).failure().build() ) );
     }
 }

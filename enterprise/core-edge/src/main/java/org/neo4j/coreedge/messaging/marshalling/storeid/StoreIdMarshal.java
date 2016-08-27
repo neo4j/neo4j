@@ -19,18 +19,22 @@
  */
 package org.neo4j.coreedge.messaging.marshalling.storeid;
 
+import io.netty.handler.codec.DecoderException;
+
 import java.io.IOException;
 
+import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public final class StoreIdMarshal
+public final class StoreIdMarshal extends SafeChannelMarshal<StoreId>
 {
-    private StoreIdMarshal() { }
+    public static final StoreIdMarshal INSTANCE = new StoreIdMarshal();
 
-    public static void marshal( StoreId storeId, WritableChannel channel ) throws IOException
+    private StoreIdMarshal() {}
+
+    public void marshal( StoreId storeId, WritableChannel channel ) throws IOException
     {
         if ( storeId == null)
         {
@@ -45,25 +49,23 @@ public final class StoreIdMarshal
         channel.putLong( storeId.getUpgradeId() );
     }
 
-    public static StoreId unmarshal( ReadableChannel channel ) throws IOException
+    protected StoreId unmarshal0( ReadableChannel channel ) throws IOException
     {
-        try
-        {
-            if ( channel.get() == 0 )
-            {
-                return null;
-            }
 
-            long creationTime = channel.getLong();
-            long randomId = channel.getLong();
-            long upgradeTime = channel.getLong();
-            long upgradeId = channel.getLong();
-            return new StoreId( creationTime, randomId, upgradeTime, upgradeId );
-        }
-        catch ( ReadPastEndException notEnoughBytes )
+        byte exists = channel.get();
+        if ( exists == 0 )
         {
             return null;
         }
-    }
+        else if ( exists != 1 )
+        {
+            throw new DecoderException( "Unexpected value" );
+        }
 
+        long creationTime = channel.getLong();
+        long randomId = channel.getLong();
+        long upgradeTime = channel.getLong();
+        long upgradeId = channel.getLong();
+        return new StoreId( creationTime, randomId, upgradeTime, upgradeId );
+    }
 }

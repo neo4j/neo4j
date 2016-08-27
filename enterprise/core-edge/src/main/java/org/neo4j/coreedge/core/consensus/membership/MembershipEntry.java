@@ -33,7 +33,7 @@ import org.neo4j.storageengine.api.WritableChannel;
 /**
  * Represents a membership entry in the RAFT log.
  */
-class MembershipEntry
+public class MembershipEntry
 {
     private long logIndex;
     private Set<MemberId> members;
@@ -81,7 +81,7 @@ class MembershipEntry
                '}';
     }
 
-    static class Marshal extends SafeStateMarshal<MembershipEntry>
+    public static class Marshal extends SafeStateMarshal<MembershipEntry>
     {
         MemberId.Marshal memberMarshal = new MemberId.Marshal();
 
@@ -119,7 +119,7 @@ class MembershipEntry
         }
 
         @Override
-        public MembershipEntry unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
+        protected MembershipEntry unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
         {
             int hasEntry = channel.getInt();
             if ( hasEntry == 0 )

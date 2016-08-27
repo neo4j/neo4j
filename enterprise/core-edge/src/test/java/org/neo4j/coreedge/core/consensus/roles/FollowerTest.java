@@ -30,11 +30,14 @@ import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.core.consensus.RaftMessages.Timeout.Election;
 import org.neo4j.coreedge.core.consensus.ReplicatedString;
+import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
+import org.neo4j.coreedge.core.consensus.log.RaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
-import org.neo4j.coreedge.messaging.Inbound;
+import org.neo4j.coreedge.core.consensus.membership.RaftTestGroup;
 import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.core.consensus.state.RaftState;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.Inbound;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -108,13 +111,15 @@ public class FollowerTest
         // given
         int term = 1;
         int followerAppendIndex = 9;
+        RaftLog entryLog = new InMemoryRaftLog();
+        entryLog.append( new RaftLogEntry( 0, new RaftTestGroup( 0 ) ) );
         RaftState state = raftState()
                 .myself( myself )
                 .term( term )
                 .build();
 
         Follower follower = new Follower();
-        appendSomeEntriesToLog( state, follower, followerAppendIndex, term );
+        appendSomeEntriesToLog( state, follower, followerAppendIndex - 1, term, 1 );
 
         AppendEntries.Request heartbeat = appendEntriesRequest().from( member1 )
                 .leaderTerm( term )
@@ -135,31 +140,34 @@ public class FollowerTest
     public void shouldTruncateIfTermDoesNotMatch() throws Exception
     {
         // given
+        RaftLog entryLog = new InMemoryRaftLog();
+        entryLog.append( new RaftLogEntry( 0, new RaftTestGroup( 0 ) ) );
         int term = 1;
         RaftState state = raftState()
                 .myself( myself )
+                .entryLog( entryLog )
                 .term( term )
                 .build();
 
         Follower follower = new Follower();
 
-        state.update( follower.handle( new AppendEntries.Request( member1, 1, -1, -1,
+        state.update( follower.handle( new AppendEntries.Request( member1, 1, 0, 0,
                 new RaftLogEntry[]{
                         new RaftLogEntry( 2, ContentGenerator.content() ),
                 },
-                -1 ), state, log() ) );
+                0 ), state, log() ) );
 
         RaftLogEntry[] entries = {
                 new RaftLogEntry( 1, new ReplicatedString( "commit this!" ) ),
         };
 
         Outcome outcome = follower.handle(
-                new AppendEntries.Request( member1, 1, -1, -1, entries, -1 ), state, log() );
+                new AppendEntries.Request( member1, 1, 0, 0, entries, 0 ), state, log() );
         state.update( outcome );
 
         // then
-        assertEquals( 0, state.entryLog().appendIndex() );
-        assertEquals( 1, state.entryLog().readEntryTerm( 0 ) );
+        assertEquals( 1, state.entryLog().appendIndex() );
+        assertEquals( 1, state.entryLog().readEntryTerm( 1 ) );
     }
 
     // TODO move this to outcome tests
@@ -167,39 +175,46 @@ public class FollowerTest
     public void followerLearningAboutHigherCommitCausesValuesTobeAppliedToItsLog() throws Exception
     {
         // given
+        RaftLog entryLog = new InMemoryRaftLog();
+        entryLog.append( new RaftLogEntry( 0, new RaftTestGroup( 0 ) ) );
         RaftState state = raftState()
                 .myself( myself )
+                .entryLog( entryLog )
                 .build();
 
         Follower follower = new Follower();
 
-        appendSomeEntriesToLog( state, follower, 3, 0 );
+        appendSomeEntriesToLog( state, follower, 3, 0, 1 );
 
-        // when receiving AppEntries with high leader commit (3)
-        Outcome outcome = follower.handle( new AppendEntries.Request( myself, 0, 2, 0,
-                new RaftLogEntry[] { new RaftLogEntry( 0, ContentGenerator.content() ) }, 3 ), state, log() );
+        // when receiving AppEntries with high leader commit (4)
+        Outcome outcome = follower.handle( new AppendEntries.Request( myself, 0, 3, 0,
+                new RaftLogEntry[] { new RaftLogEntry( 0, ContentGenerator.content() ) }, 4 ), state, log() );
 
         state.update( outcome );
 
         // then
-        assertEquals( 3, state.commitIndex() );
+        assertEquals( 4, state.commitIndex() );
     }
 
     @Test
     public void shouldUpdateCommitIndexIfNecessary() throws Exception
     {
         //  If leaderCommit > commitIndex, set commitIndex = min( leaderCommit, index of last new entry )
+
         // given
+        RaftLog entryLog = new InMemoryRaftLog();
+        entryLog.append( new RaftLogEntry( 0, new RaftTestGroup( 0 ) ) );
         RaftState state = raftState()
-                                        .myself( myself )
-                                        .build();
+                .myself( myself )
+                .entryLog( entryLog )
+                .build();
 
         Follower follower = new Follower();
 
-        int localAppendIndex = 2;
+        int localAppendIndex = 3;
         int localCommitIndex =  localAppendIndex - 1;
         int term = 0;
-        appendSomeEntriesToLog( state, follower, localAppendIndex + 1, term ); // append index is 0 based
+        appendSomeEntriesToLog( state, follower, localAppendIndex, term, 1 ); // append index is 0 based
 
         // the next when-then simply verifies that the test is setup properly, with commit and append index as expected
         // when
@@ -214,7 +229,7 @@ public class FollowerTest
         // when
         // an append req comes in with leader commit index > localAppendIndex but localCommitIndex < localAppendIndex
         Outcome outcome = follower.handle( appendEntriesRequest()
-                .leaderTerm( term ).prevLogIndex( 2 )
+                .leaderTerm( term ).prevLogIndex( 3 )
                 .prevLogTerm( term ).leaderCommit( localCommitIndex + 4 )
                 .build(), state, log() );
 
@@ -222,7 +237,7 @@ public class FollowerTest
 
         // then
         // The local commit index must be brought as far along as possible
-        assertEquals( 2, state.commitIndex() );
+        assertEquals( 3, state.commitIndex() );
     }
 
     @Test
@@ -261,23 +276,14 @@ public class FollowerTest
         assertFalse( outcome.electionTimeoutRenewed() );
     }
 
-    private void appendSomeEntriesToLog( RaftState raft, Follower follower, int numberOfEntriesToAppend,
-                                         int term ) throws IOException
+    private void appendSomeEntriesToLog( RaftState raft, Follower follower, int numberOfEntriesToAppend, int term, int firstIndex ) throws IOException
     {
         for ( int i = 0; i < numberOfEntriesToAppend; i++ )
         {
-            if ( i == 0 )
-            {
-                raft.update( follower.handle( new AppendEntries.Request( myself, term, i - 1, -1,
-                        new RaftLogEntry[] { new RaftLogEntry( term, ContentGenerator.content() ) }, -1
-                ), raft, log() ) );
-            }
-            else
-            {
-                raft.update( follower.handle( new AppendEntries.Request( myself, term, i - 1, term,
-                        new RaftLogEntry[]{new RaftLogEntry( term, ContentGenerator.content() )}, -1 ), raft,
-                        log() ) );
-            }
+            int prevLogIndex = (firstIndex + i) - 1;
+            raft.update( follower.handle( new AppendEntries.Request( myself, term, prevLogIndex, term,
+                            new RaftLogEntry[]{new RaftLogEntry( term, ContentGenerator.content() )}, -1 ), raft,
+                    log() ) );
         }
     }
 

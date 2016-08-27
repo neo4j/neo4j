@@ -35,7 +35,7 @@ public class TxPullRequestEncoder extends MessageToMessageEncoder<TxPullRequest>
     {
         ByteBuf encoded = ctx.alloc().buffer();
         encoded.writeLong( request.txId() );
-        StoreIdMarshal.marshal( request.storeId(), new NetworkFlushableChannelNetty4( encoded ) );
+        StoreIdMarshal.INSTANCE.marshal( request.expectedStoreId(), new NetworkFlushableChannelNetty4( encoded ) );
         out.add( encoded );
     }
 }

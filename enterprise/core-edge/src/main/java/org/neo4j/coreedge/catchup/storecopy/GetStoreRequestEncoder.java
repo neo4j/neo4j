@@ -19,11 +19,14 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
+
+import java.util.List;
+
+import org.neo4j.coreedge.messaging.NetworkFlushableChannelNetty4;
+import org.neo4j.coreedge.messaging.marshalling.storeid.StoreIdMarshal;
 
 public class GetStoreRequestEncoder extends MessageToMessageEncoder<GetStoreRequest>
 {
@@ -31,7 +34,7 @@ public class GetStoreRequestEncoder extends MessageToMessageEncoder<GetStoreRequ
     protected void encode( ChannelHandlerContext ctx, GetStoreRequest msg, List<Object> out ) throws Exception
     {
         ByteBuf buffer = ctx.alloc().buffer();
-        buffer.writeByte( 0 );
+        StoreIdMarshal.INSTANCE.marshal( msg.expectedStoreId(), new NetworkFlushableChannelNetty4( buffer ) );
         out.add( buffer );
     }
 }

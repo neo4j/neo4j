@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+import static org.neo4j.coreedge.catchup.CatchupResult.SUCCESS;
 
 public class TxStreamFinishedResponseEncodeDecodeTest
 {
@@ -31,10 +32,9 @@ public class TxStreamFinishedResponseEncodeDecodeTest
     public void shouldEncodeAndDecodePullRequestMessage()
     {
         // given
-        EmbeddedChannel channel =
-                new EmbeddedChannel( new TxStreamFinishedResponseEncoder(), new TxStreamFinishedResponseDecoder() );
-        final long arbitraryId = 23;
-        TxStreamFinishedResponse sent = new TxStreamFinishedResponse( arbitraryId, true );
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new TxStreamFinishedResponseEncoder(), new TxStreamFinishedResponseDecoder() );
+        TxStreamFinishedResponse sent = new TxStreamFinishedResponse( SUCCESS );
 
         // when
         channel.writeOutbound( sent );

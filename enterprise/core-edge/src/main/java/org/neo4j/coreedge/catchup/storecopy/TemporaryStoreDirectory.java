@@ -21,6 +21,7 @@ package org.neo4j.coreedge.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
 import org.neo4j.io.fs.FileUtils;
 
@@ -28,25 +29,24 @@ public class TemporaryStoreDirectory
 {
     private static final String TEMP_COPY_DIRECTORY_NAME = "temp-copy";
 
-    private final File storeDir;
+    private final File tempStoreDir;
 
-    TemporaryStoreDirectory( File parent ) throws IOException
+    public TemporaryStoreDirectory( File parent ) throws IOException
     {
-        this.storeDir = new File( parent, TEMP_COPY_DIRECTORY_NAME );
+        this.tempStoreDir = new File( parent, TEMP_COPY_DIRECTORY_NAME );
         cleanDirectory();
     }
 
     private void cleanDirectory() throws IOException
     {
-        if ( !storeDir.mkdir() )
+        if ( !tempStoreDir.mkdir() )
         {
-            FileUtils.deleteRecursively( storeDir );
-            storeDir.mkdir();
+            FileUtils.deleteRecursively( tempStoreDir );
         }
     }
 
     public File storeDir()
     {
-        return storeDir;
+        return tempStoreDir;
     }
 }

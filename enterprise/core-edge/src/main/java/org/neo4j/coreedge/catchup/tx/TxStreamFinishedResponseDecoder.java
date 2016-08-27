@@ -25,13 +25,15 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.util.List;
 
+import org.neo4j.coreedge.catchup.CatchupResult;
+
 public class TxStreamFinishedResponseDecoder extends MessageToMessageDecoder<ByteBuf>
 {
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        long lastTransactionIdSent = msg.readLong();
-        boolean success = msg.readBoolean();
-        out.add( new TxStreamFinishedResponse( lastTransactionIdSent, success ) );
+        int ordinal = msg.readInt();
+        CatchupResult status = CatchupResult.values()[ordinal];
+        out.add( new TxStreamFinishedResponse( status ) );
     }
 }

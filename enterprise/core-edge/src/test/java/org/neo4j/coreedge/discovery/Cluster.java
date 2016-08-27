@@ -470,4 +470,17 @@ public class Cluster
                     DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
         }
     }
+
+    public void startCoreMembers() throws ExecutionException, InterruptedException
+    {
+        ExecutorService executor = Executors.newCachedThreadPool( new NamedThreadFactory( "core-starter" ) );
+        try
+        {
+            startCoreMembers( executor );
+        }
+        finally
+        {
+            executor.shutdown();
+        }
+    }
 }

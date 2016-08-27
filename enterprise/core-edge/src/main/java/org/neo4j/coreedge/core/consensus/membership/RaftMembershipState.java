@@ -180,6 +180,11 @@ public class RaftMembershipState extends LifecycleAdapter
         return new RaftMembershipState( ordinal, committed, appended );
     }
 
+    public MembershipEntry committed()
+    {
+        return committed;
+    }
+
     public static class Marshal extends SafeStateMarshal<RaftMembershipState>
     {
         MembershipEntry.Marshal entryMarshal = new MembershipEntry.Marshal();

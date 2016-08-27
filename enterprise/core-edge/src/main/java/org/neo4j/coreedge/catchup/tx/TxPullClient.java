@@ -24,11 +24,10 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchUpClientException;
 import org.neo4j.coreedge.catchup.CatchUpResponseAdaptor;
-import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
+import org.neo4j.coreedge.catchup.CatchupResult;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -44,40 +43,25 @@ public class TxPullClient
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 
-    public long pullTransactions( MemberId from, StoreId storeId, long startTxId, TxPullResponseListener
-            txPullResponseListener )
-            throws StoreCopyFailedException
+    public CatchupResult pullTransactions( MemberId from, StoreId storeId, long startTxId,
+            TxPullResponseListener txPullResponseListener )
+            throws CatchUpClientException, NoKnownAddressesException
     {
-        try
-        {
-            pullRequestMonitor.txPullRequest( startTxId );
-            return catchUpClient.makeBlockingRequest( from, new TxPullRequest( startTxId, storeId ), 30, SECONDS,
-                    new CatchUpResponseAdaptor<Long>()
+        pullRequestMonitor.txPullRequest( startTxId );
+        return catchUpClient.makeBlockingRequest( from, new TxPullRequest( startTxId, storeId ), 30, SECONDS,
+                new CatchUpResponseAdaptor<CatchupResult>()
+                {
+                    @Override
+                    public void onTxPullResponse( CompletableFuture<CatchupResult> signal, TxPullResponse response )
                     {
-                        @Override
-                        public void onTxPullResponse( CompletableFuture<Long> signal, TxPullResponse response )
-                        {
-                            txPullResponseListener.onTxReceived( response );
-                        }
+                        txPullResponseListener.onTxReceived( response );
+                    }
 
-                        @Override
-                        public void onTxStreamFinishedResponse( CompletableFuture<Long> signal,
-                                                                TxStreamFinishedResponse response )
-                        {
-                            if ( response.isSuccess() )
-                            {
-                                signal.complete( response.lastTransactionIdSent() );
-                            }
-                            else
-                            {
-                                signal.completeExceptionally( new NoSuchTransactionException( startTxId ) );
-                            }
-                        }
-                    } );
-        }
-        catch ( CatchUpClientException | NoKnownAddressesException e )
-        {
-            throw new StoreCopyFailedException( e );
-        }
+                    @Override
+                    public void onTxStreamFinishedResponse( CompletableFuture<CatchupResult> signal, TxStreamFinishedResponse response )
+                    {
+                        signal.complete( response.status() );
+                    }
+                } );
     }
 }

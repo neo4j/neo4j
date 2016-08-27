@@ -27,7 +27,6 @@ import java.io.PrintWriter;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.ReplicationModule;
-import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.core.consensus.ConsensusModule;
@@ -135,10 +134,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
-                platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
-
-        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, copiedStoreRecovery,
+        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
                 new StoreFiles( new DefaultFileSystemAbstraction() ),
                 platformModule.dataSourceManager,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier,
@@ -185,7 +181,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         CoreServerModule coreServerModule = new CoreServerModule( identityModule.myself(), platformModule, consensusModule,
                 coreStateMachinesModule, replicationModule, clusterStateDirectory, topologyService, localDatabase,
-                messageLogger );
+                messageLogger, databaseHealthSupplier );
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 

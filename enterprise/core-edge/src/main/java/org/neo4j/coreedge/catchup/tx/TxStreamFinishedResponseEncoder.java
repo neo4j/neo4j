@@ -32,8 +32,7 @@ public class TxStreamFinishedResponseEncoder extends MessageToMessageEncoder<TxS
             Exception
     {
         ByteBuf encoded = ctx.alloc().buffer();
-        encoded.writeLong( response.lastTransactionIdSent() );
-        encoded.writeBoolean( response.isSuccess() );
+        encoded.writeInt( response.status().ordinal() );
         out.add( encoded );
     }
 }

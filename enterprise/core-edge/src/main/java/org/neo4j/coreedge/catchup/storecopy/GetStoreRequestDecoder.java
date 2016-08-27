@@ -17,25 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.core.state.snapshot;
+package org.neo4j.coreedge.catchup.storecopy;
 
-import org.neo4j.coreedge.core.replication.session.GlobalSessionTrackerState;
-import org.neo4j.coreedge.core.state.storage.StateMarshal;
-import org.neo4j.coreedge.core.state.machines.id.IdAllocationState;
-import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.core.state.machines.locks.ReplicatedLockTokenState;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageDecoder;
 
-public enum CoreStateType
+import java.util.List;
+
+import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.coreedge.messaging.marshalling.storeid.StoreIdMarshal;
+
+public class GetStoreRequestDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    LOCK_TOKEN( new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() ) ),
-    SESSION_TRACKER( new GlobalSessionTrackerState.Marshal( new MemberId.Marshal() ) ),
-    ID_ALLOCATION( new IdAllocationState.Marshal() ),
-    RAFT_CORE_STATE( new RaftCoreState.Marshal() );
-
-    public final StateMarshal marshal;
-
-    CoreStateType( StateMarshal marshal )
+    @Override
+    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        this.marshal = marshal;
+        StoreId expectedStoreId = StoreIdMarshal.INSTANCE.unmarshal( new NetworkReadableClosableChannelNetty4( msg ) );
+        out.add( new GetStoreRequest( expectedStoreId ) );
     }
 }

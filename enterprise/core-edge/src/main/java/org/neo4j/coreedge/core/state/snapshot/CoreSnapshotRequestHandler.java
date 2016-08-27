@@ -19,10 +19,10 @@
  */
 package org.neo4j.coreedge.core.state.snapshot;
 
-import java.io.IOException;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+
+import java.io.IOException;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;

@@ -22,6 +22,7 @@ package org.neo4j.coreedge.core.consensus.membership;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.coreedge.core.consensus.MismatchedStoreIdService;
@@ -29,6 +30,7 @@ import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.state.RaftState;
 import org.neo4j.coreedge.core.consensus.state.RaftStateBuilder;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 
@@ -38,16 +40,25 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
+import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.identity.RaftTestMember.member;
 
 public class MembershipWaiterTest
 {
+    private DatabaseHealth dbHealth = mock( DatabaseHealth.class );
+
+    @Before
+    public void mocking()
+    {
+        when( dbHealth.isHealthy() ).thenReturn( true );
+    }
+
     @Test
     public void shouldReturnImmediatelyIfMemberAndCaughtUp() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, 500,
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500,
                 mock( MismatchedStoreIdService.class ), NullLogProvider.getInstance() );
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
@@ -69,7 +80,7 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfCaughtUpButNotMember() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, 1,
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1,
                 mock( MismatchedStoreIdService.class ), NullLogProvider.getInstance() );
 
         RaftState raftState = RaftStateBuilder.raftState()
@@ -96,7 +107,7 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfMemberButNotCaughtUp() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, 1,
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1,
                 mock( MismatchedStoreIdService.class ), NullLogProvider.getInstance() );
 
         RaftState raftState = RaftStateBuilder.raftState()
@@ -118,5 +129,4 @@ public class MembershipWaiterTest
             // expected
         }
     }
-
 }

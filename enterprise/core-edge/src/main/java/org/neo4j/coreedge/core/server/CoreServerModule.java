@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.core.server;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.ReplicationModule;
@@ -28,6 +27,7 @@ import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
+import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyClient;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
@@ -76,9 +76,9 @@ public class CoreServerModule
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
 
     public CoreServerModule( MemberId myself, final PlatformModule platformModule, ConsensusModule consensusModule,
-                             CoreStateMachinesModule coreStateMachinesModule, ReplicationModule replicationModule,
-                             File clusterStateDirectory, CoreTopologyService discoveryService,
-                             LocalDatabase localDatabase, MessageLogger<MemberId> messageLogger )
+            CoreStateMachinesModule coreStateMachinesModule, ReplicationModule replicationModule,
+            File clusterStateDirectory, CoreTopologyService discoveryService,
+            LocalDatabase localDatabase, MessageLogger<MemberId> messageLogger, Supplier<DatabaseHealth> dbHealthSupplier )
     {
         final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
@@ -112,15 +112,18 @@ public class CoreServerModule
                 new TransactionLogCatchUpFactory() );
 
         CoreStateApplier coreStateApplier = new CoreStateApplier( logProvider );
+
+        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
+                platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
         CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher,
-                catchUpClient, logProvider );
+                catchUpClient, logProvider, copiedStoreRecovery );
 
         NotMyselfSelectionStrategy someoneElse = new NotMyselfSelectionStrategy( discoveryService, myself );
 
         CoreState coreState = new CoreState(
                 consensusModule.raftMachine(), localDatabase,
                 logProvider,
-                someoneElse, downloader,
+                downloader,
                 new CommandApplicationProcess( coreStateMachinesModule.coreStateMachines, consensusModule.raftLog(),
                         config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
                         config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
@@ -142,7 +145,8 @@ public class CoreServerModule
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
 
         MembershipWaiter membershipWaiter =
-                new MembershipWaiter( myself, platformModule.jobScheduler, electionTimeout * 4, coreState, logProvider );
+                new MembershipWaiter( myself, platformModule.jobScheduler, dbHealthSupplier,
+                        electionTimeout * 4, coreState, logProvider );
         long joinCatchupTimeout = config.get( CoreEdgeClusterSettings.join_catch_up_timeout );
         membershipWaiterLifecycle = new MembershipWaiterLifecycle( membershipWaiter,
                 joinCatchupTimeout, consensusModule.raftMachine(), logProvider );

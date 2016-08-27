@@ -27,6 +27,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.coreedge.core.state.machines.tx.LogIndexTxHeaderEncoding.decodeLogIndexFromTxHeader;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 /**
  * Finds the last committed transaction in the transaction log, then decodes the header as a raft index.
@@ -51,7 +52,7 @@ class LastCommittedIndexFinder
         long lastCommittedIndex;
         long lastTxId = transactionIdStore.getLastCommittedTransactionId();
 
-        if ( lastTxId == 1 )
+        if ( lastTxId == BASE_TX_ID )
         {
             lastCommittedIndex = -1;
         }

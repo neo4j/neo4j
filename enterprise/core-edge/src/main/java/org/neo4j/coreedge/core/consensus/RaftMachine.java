@@ -41,6 +41,7 @@ import org.neo4j.coreedge.core.consensus.state.RaftState;
 import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
 import org.neo4j.coreedge.core.consensus.term.TermState;
 import org.neo4j.coreedge.core.consensus.vote.VoteState;
+import org.neo4j.coreedge.core.state.snapshot.RaftCoreState;
 import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.identity.MemberId;
@@ -152,6 +153,16 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         electionTimer.cancel();
     }
 
+    public synchronized RaftCoreState coreState()
+    {
+        return new RaftCoreState( membershipManager.getCommitted() );
+    }
+
+    public void installCoreState( RaftCoreState coreState ) throws IOException
+    {
+        membershipManager.install( coreState.committed() );
+    }
+
     /**
      * All members must be bootstrapped with the exact same set of initial members. Bootstrapping
      * requires an empty log as input and will seed it with the initial group entry in term 0.
@@ -173,6 +184,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         {
             Outcome outcome = new Outcome( currentRole, state );
             outcome.setCommitIndex( 0 );
+            outcome.setLeaderCommit( 0 );
 
             AppendLogEntry appendCommand = new AppendLogEntry( 0, membershipLogEntry );
             outcome.addLogCommand( appendCommand );

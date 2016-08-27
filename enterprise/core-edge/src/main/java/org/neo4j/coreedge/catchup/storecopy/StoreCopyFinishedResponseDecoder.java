@@ -25,11 +25,15 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.util.List;
 
+import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponse.Status;
+
 public class StoreCopyFinishedResponseDecoder extends MessageToMessageDecoder<ByteBuf>
 {
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        out.add( new StoreCopyFinishedResponse( msg.readLong() ) );
+        int statusOrdinal = msg.readInt();
+        long lastCommittedTxBeforeStoreCopy = msg.readLong();
+        out.add( new StoreCopyFinishedResponse( Status.values()[statusOrdinal], lastCommittedTxBeforeStoreCopy ) );
     }
 }

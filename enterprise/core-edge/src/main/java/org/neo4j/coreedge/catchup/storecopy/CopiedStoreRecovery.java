@@ -45,7 +45,7 @@ public class CopiedStoreRecovery
         this.pageCache = pageCache;
     }
 
-    void recoverCopiedStore( File tempStore )
+    public void recoverCopiedStore( File tempStore )
     {
         try
         {

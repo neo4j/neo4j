@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -32,13 +31,10 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.lang.String.format;
-
 public class LocalDatabase implements Supplier<StoreId>, Lifecycle
 {
     private final File storeDir;
 
-    private final CopiedStoreRecovery copiedStoreRecovery;
     private final StoreFiles storeFiles;
     private final DataSourceManager dataSourceManager;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
@@ -48,20 +44,19 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
     private volatile StoreId storeId;
     private volatile DatabaseHealth databaseHealth;
 
-    public LocalDatabase( File storeDir, CopiedStoreRecovery copiedStoreRecovery, StoreFiles storeFiles,
-                          DataSourceManager dataSourceManager,
-                          Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                          Supplier<DatabaseHealth> databaseHealthSupplier,
-                          LogProvider logProvider )
+    public LocalDatabase( File storeDir, StoreFiles storeFiles,
+            DataSourceManager dataSourceManager,
+            Supplier<TransactionIdStore> transactionIdStoreSupplier,
+            Supplier<DatabaseHealth> databaseHealthSupplier,
+            LogProvider logProvider )
     {
         this.storeDir = storeDir;
-        this.copiedStoreRecovery = copiedStoreRecovery;
         this.storeFiles = storeFiles;
         this.dataSourceManager = dataSourceManager;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.databaseHealthSupplier = databaseHealthSupplier;
         this.log = logProvider.getLog( getClass() );
-        this.storeId = StoreId.DEFAULT;
+        this.storeId = null;
     }
 
     @Override
@@ -83,7 +78,7 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
     @Override
     public void stop() throws Throwable
     {
-        this.storeId = StoreId.DEFAULT;
+        this.storeId = null;
         this.databaseHealth = null;
         dataSourceManager.stop();
     }
@@ -118,50 +113,14 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         return databaseHealth;
     }
 
-    public void bringUpToDateOrReplaceStoreFrom( MemberId source, StoreId wantedStoreId, StoreFetcher storeFetcher ) throws StoreCopyFailedException
+    public void delete() throws IOException
     {
-        try
-        {
-            boolean successfullyCaughtUp = false;
-            if ( wantedStoreId.equals( storeId ) )
-            {
-                log.info( "Bringing store up to date with %s", source );
-                successfullyCaughtUp = tryToCatchUp( source, storeFetcher );
-
-                if ( !successfullyCaughtUp )
-                {
-                    log.info( "Failed to bring store up to date with %s.", source );
-                }
-            }
-
-            if ( !successfullyCaughtUp )
-            {
-                log.info( "Deleting local store and downloading new store from %s.", source );
-                storeFiles.delete( storeDir );
-                copyWholeStoreFrom( source, wantedStoreId, storeFetcher );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new StoreCopyFailedException( e );
-        }
-    }
-
-    private boolean tryToCatchUp( MemberId source, StoreFetcher storeFetcher ) throws IOException, StoreCopyFailedException
-    {
-        return storeFetcher.tryCatchingUp( source, storeId, storeDir );
-    }
-
-    private void copyWholeStoreFrom( MemberId source, StoreId wantedStoreId, StoreFetcher storeFetcher ) throws IOException, StoreCopyFailedException
-    {
-        TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( storeDir );
-        storeFetcher.copyStore( source, wantedStoreId, tempStore.storeDir() );
-        copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
-        storeFiles.moveTo( tempStore.storeDir(), storeDir );
+        storeFiles.delete( storeDir );
     }
 
     public boolean isEmpty()
     {
+        // TODO: Below doesn't work for an imported store. Need to check high-ids as well.
         return transactionIdStoreSupplier.get().getLastCommittedTransactionId() == TransactionIdStore.BASE_TX_ID;
     }
 
@@ -171,18 +130,14 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
         return storeId();
     }
 
-    public void ensureSameStoreId( MemberId memberId, StoreFetcher storeFetcher )
-            throws StoreIdDownloadFailedException
+    public File storeDir()
     {
-        StoreId localStoreId = storeId();
-        log.info( "Getting StoreId from %s", memberId );
-        StoreId remoteStoreId = storeFetcher.storeId( memberId );
-        log.info( "Got StoreId %s from %s", remoteStoreId, memberId );
-        if ( !localStoreId.equals( remoteStoreId ) )
-        {
-            throw new IllegalStateException( format( "This edge machine cannot join the cluster. " +
-                            "The local database is not empty and has a mismatching storeId: expected %s actual %s.",
-                    remoteStoreId, localStoreId ) );
-        }
+        return storeDir;
+    }
+
+    public void replaceWith( File sourceDir ) throws IOException
+    {
+        storeFiles.delete( storeDir );
+        storeFiles.moveTo( sourceDir, storeDir );
     }
 }
