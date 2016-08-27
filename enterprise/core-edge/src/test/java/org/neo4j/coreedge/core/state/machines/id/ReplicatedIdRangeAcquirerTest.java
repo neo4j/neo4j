@@ -21,9 +21,12 @@ package org.neo4j.coreedge.core.state.machines.id;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.core.replication.DirectReplicator;
 import org.neo4j.coreedge.core.state.storage.InMemoryStateStorage;
@@ -95,8 +98,10 @@ public class ReplicatedIdRangeAcquirerTest
     private ReplicatedIdGenerator createForMemberWithInitialIdAndRangeLength(
             MemberId member, long initialHighId, int idRangeLength )
     {
+        Map<IdType,Integer> allocationSizes =
+                Arrays.stream( IdType.values() ).collect( Collectors.toMap( idType -> idType, idType -> idRangeLength ) );
         ReplicatedIdRangeAcquirer acquirer = new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine,
-                idRangeLength, member, NullLogProvider.getInstance() );
+                allocationSizes, member, NullLogProvider.getInstance() );
 
         return new ReplicatedIdGenerator( IdType.ARRAY_BLOCK, initialHighId, acquirer,
                 NullLogProvider.getInstance() );

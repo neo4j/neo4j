@@ -21,9 +21,10 @@ package org.neo4j.coreedge.core.state.machines;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.replication.RaftReplicator;
 import org.neo4j.coreedge.core.replication.Replicator;
@@ -58,12 +59,34 @@ import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.Token;
+
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.array_block_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.id_alloc_state_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.label_token_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.label_token_name_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.leader_lock_token_timeout;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.neostore_block_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.node_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.node_labels_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.property_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.property_key_token_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.property_key_token_name_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.relationship_group_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.relationship_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.relationship_type_token_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.relationship_type_token_name_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.replicated_lock_token_state_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.schema_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.state_machine_apply_max_batch_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.string_block_id_allocation_size;
+import static org.neo4j.coreedge.core.CoreEdgeClusterSettings.token_creation_timeout;
 
 public class CoreStateMachinesModule
 {
@@ -96,12 +119,12 @@ public class CoreStateMachinesModule
             lockTokenState = life.add(
                     new DurableStateStorage<>( fileSystem, clusterStateDirectory, LOCK_TOKEN_NAME,
                             new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() ),
-                            config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ), logProvider ) );
+                            config.get( replicated_lock_token_state_size ), logProvider ) );
 
             idAllocationState = life.add(
                     new DurableStateStorage<>( fileSystem, clusterStateDirectory, ID_ALLOCATION_NAME,
                             new IdAllocationState.Marshal(),
-                            config.get( CoreEdgeClusterSettings.id_alloc_state_size ), logProvider ) );
+                            config.get( id_alloc_state_size ), logProvider ) );
         }
         catch ( IOException e )
         {
@@ -111,9 +134,10 @@ public class CoreStateMachinesModule
         ReplicatedIdAllocationStateMachine idAllocationStateMachine =
                 new ReplicatedIdAllocationStateMachine( idAllocationState );
 
-        int allocationChunk  = config.get( CoreEdgeClusterSettings.allocation_chunk_size );
+        Map<IdType,Integer> allocationSizes = getIdTypeAllocationSizeFromConfig( config );
+
         ReplicatedIdRangeAcquirer idRangeAcquirer =
-                new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine, allocationChunk, myself,
+                new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine, allocationSizes, myself,
                         logProvider );
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
@@ -126,7 +150,7 @@ public class CoreStateMachinesModule
 
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
-        Long tokenCreationTimeout = config.get( CoreEdgeClusterSettings.token_creation_timeout );
+        Long tokenCreationTimeout = config.get( token_creation_timeout );
 
         TokenRegistry<RelationshipTypeToken> relationshipTypeTokenRegistry = new TokenRegistry<>( "RelationshipType" );
         ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder =
@@ -160,11 +184,11 @@ public class CoreStateMachinesModule
 
         ReplicatedTransactionStateMachine replicatedTxStateMachine =
                 new ReplicatedTransactionStateMachine( replicatedLockTokenStateMachine,
-                        config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ), logProvider );
+                        config.get( state_machine_apply_max_batch_size ), logProvider );
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );
 
-        long leaderLockTokenTimeout = config.get( CoreEdgeClusterSettings.leader_lock_token_timeout );
+        long leaderLockTokenTimeout = config.get( leader_lock_token_timeout );
         lockManager = createLockManager( config, logging, replicator, myself, leaderLocator, leaderLockTokenTimeout,
                 replicatedLockTokenStateMachine );
 
@@ -182,6 +206,27 @@ public class CoreStateMachinesModule
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
+    }
+
+    private Map<IdType,Integer> getIdTypeAllocationSizeFromConfig( Config config )
+    {
+        Map<IdType,Integer> allocationSizes = new HashMap<>( IdType.values().length );
+        allocationSizes.put( IdType.NODE, config.get( node_id_allocation_size ) );
+        allocationSizes.put( IdType.RELATIONSHIP, config.get( relationship_id_allocation_size ) );
+        allocationSizes.put( IdType.PROPERTY, config.get( property_id_allocation_size ) );
+        allocationSizes.put( IdType.STRING_BLOCK, config.get( string_block_id_allocation_size ) );
+        allocationSizes.put( IdType.ARRAY_BLOCK, config.get( array_block_id_allocation_size ) );
+        allocationSizes.put( IdType.PROPERTY_KEY_TOKEN, config.get( property_key_token_id_allocation_size ) );
+        allocationSizes.put( IdType.PROPERTY_KEY_TOKEN_NAME, config.get( property_key_token_name_id_allocation_size ) );
+        allocationSizes.put( IdType.RELATIONSHIP_TYPE_TOKEN, config.get( relationship_type_token_id_allocation_size ) );
+        allocationSizes.put( IdType.RELATIONSHIP_TYPE_TOKEN_NAME, config.get( relationship_type_token_name_id_allocation_size ) );
+        allocationSizes.put( IdType.LABEL_TOKEN, config.get( label_token_id_allocation_size ) );
+        allocationSizes.put( IdType.LABEL_TOKEN_NAME, config.get( label_token_name_id_allocation_size ) );
+        allocationSizes.put( IdType.NEOSTORE_BLOCK, config.get( neostore_block_id_allocation_size ) );
+        allocationSizes.put( IdType.SCHEMA, config.get( schema_id_allocation_size ) );
+        allocationSizes.put( IdType.NODE_LABELS, config.get( node_labels_id_allocation_size ) );
+        allocationSizes.put( IdType.RELATIONSHIP_GROUP, config.get( relationship_group_id_allocation_size ) );
+        return allocationSizes;
     }
 
     private ReplicatedIdGeneratorFactory createIdGeneratorFactory(
