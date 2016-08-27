@@ -188,9 +188,9 @@ abstract class AuthTestBase<S>
 
     void testFailCreateRole( S subject, String errMsg )
     {
-        assertFail( subject, "CALL dbms.createRole('RealAdmins')", errMsg );
-        assertFail( subject, "CALL dbms.createRole('RealAdmins')", errMsg );
-        assertFail( subject, "CALL dbms.createRole('RealAdmins')", errMsg );
+        assertFail( subject, "CALL dbms.security.createRole('RealAdmins')", errMsg );
+        assertFail( subject, "CALL dbms.security.createRole('RealAdmins')", errMsg );
+        assertFail( subject, "CALL dbms.security.createRole('RealAdmins')", errMsg );
     }
 
     void testFailAddRoleToUser( S subject, String role, String username, String errMsg )
@@ -210,7 +210,7 @@ abstract class AuthTestBase<S>
 
     void testFailDeleteRole( S subject, String roleName, String errMsg )
     {
-        assertFail( subject, "CALL dbms.deleteRole('" + roleName + "')", errMsg );
+        assertFail( subject, "CALL dbms.security.deleteRole('" + roleName + "')", errMsg );
     }
 
     void testSuccessfulListUsers( S subject, String[] users )

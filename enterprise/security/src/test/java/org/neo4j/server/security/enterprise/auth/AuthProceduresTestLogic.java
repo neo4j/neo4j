@@ -699,24 +699,28 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldCreateRole() throws Exception
     {
-        assertEmpty( adminSubject, "CALL dbms.createRole('new_role')" );
+        assertEmpty( adminSubject, "CALL dbms.security.createRole('new_role')" );
         userManager.getRole( "new_role" );
     }
 
     @Test
     public void shouldNotCreateRoleIfInvalidRoleName() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.createRole('')", "Role name contains illegal characters" );
-        assertFail( adminSubject, "CALL dbms.createRole('&%ss!')", "Role name contains illegal characters" );
-        assertFail( adminSubject, "CALL dbms.createRole('åäöø')", "Role name contains illegal characters" );
+        assertFail( adminSubject, "CALL dbms.security.createRole('')", "The provided role name is empty." );
+        assertFail( adminSubject, "CALL dbms.security.createRole('&%ss!')",
+                "Role name '&%ss!' contains illegal characters. Use simple ascii characters and numbers." );
+        assertFail( adminSubject, "CALL dbms.security.createRole('åäöø')",
+                "Role name 'åäöø' contains illegal characters. Use simple ascii characters and numbers" );
     }
 
     @Test
     public void shouldNotCreateExistingRole() throws Exception
     {
-        assertFail( adminSubject, format( "CALL dbms.createRole('%s')", ARCHITECT), "The specified role already exists" );
-        assertEmpty( adminSubject, "CALL dbms.createRole('new_role')" );
-        assertFail( adminSubject, "CALL dbms.createRole('new_role')", "The specified role already exists" );
+        assertFail( adminSubject, format( "CALL dbms.security.createRole('%s')", ARCHITECT),
+                "The specified role 'architect' already exists" );
+        assertEmpty( adminSubject, "CALL dbms.security.createRole('new_role')" );
+        assertFail( adminSubject, "CALL dbms.security.createRole('new_role')",
+                "The specified role 'new_role' already exists" );
     }
 
     @Test
@@ -746,7 +750,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldThrowIfNonAdminTryingToDeleteRole() throws Exception
     {
-        assertEmpty( adminSubject, format("CALL dbms.createRole('%s')", "new_role" ) );
+        assertEmpty( adminSubject, format("CALL dbms.security.createRole('%s')", "new_role" ) );
         testFailDeleteRole( schemaSubject, "new_role", PERMISSION_DENIED);
         testFailDeleteRole( writeSubject, "new_role", PERMISSION_DENIED);
         testFailDeleteRole( readSubject, "new_role", PERMISSION_DENIED);
@@ -756,14 +760,14 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldThrowIfDeletingNonExistentRole()
     {
-        testFailDeleteRole( adminSubject, "nonExistent", "foo" );
+        testFailDeleteRole( adminSubject, "nonExistent", "Role 'nonExistent' does not exist." );
     }
 
     @Test
     public void shouldDeleteRole() throws Exception
     {
-        assertEmpty( adminSubject, format("CALL dbms.createRole('%s')", "new_role") );
-        assertEmpty( adminSubject, format("CALL dbms.deleteRole('%s')", "new_role") );
+        neo.getManager().newRole( "new_role" );
+        assertEmpty( adminSubject, format("CALL dbms.security.deleteRole('%s')", "new_role") );
 
         assertThat( userManager.getAllRoleNames(), not( contains( "new_role" ) ) );
     }
@@ -771,11 +775,11 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void deletingRoleAssignedToSelfShouldWork() throws Exception
     {
-        assertEmpty( adminSubject, format( "CALL dbms.createRole('%s')", "new_role" ) );
-        assertEmpty( adminSubject, format( "CALL dbms.addUserToRole('%s', '%s')", "adminSubject", "new_role" ) );
+        assertEmpty( adminSubject, format( "CALL dbms.security.createRole('%s')", "new_role" ) );
+        assertEmpty( adminSubject, format( "CALL dbms.security.addRoleToUser('%s', '%s')", "new_role", "adminSubject" ) );
         assertThat( userManager.getRoleNamesForUser( "adminSubject" ), hasItem( "new_role" ) );
 
-        assertEmpty( this.adminSubject, format( "CALL dbms.deleteRole('%s')", "new_role" ) );
+        assertEmpty( this.adminSubject, format( "CALL dbms.security.deleteRole('%s')", "new_role" ) );
         assertThat( userManager.getRoleNamesForUser( "adminSubject" ), not( hasItem( "new_role" ) ) );
         assertThat( userManager.getAllRoleNames(), not( contains( "new_role" ) ) );
     }
