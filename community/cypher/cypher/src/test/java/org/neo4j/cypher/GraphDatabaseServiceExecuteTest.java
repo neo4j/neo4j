@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
+import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -176,6 +177,23 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
+    public void shouldBeAbleToUseExternalGeometryAsParameterToQuery() throws Exception
+    {
+        // given a point created from public interface
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        Geometry geometry = makeFakePointAsGeometry( 144.317718, -37.031738, makeWGS84() );
+
+        // when passing as params to a distance function
+        Result result = graphDb.execute(
+                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),{previous}) AS dist",
+                map( "previous", geometry ) );
+
+        // then
+        Double dist = (Double) result.next().get( "dist" );
+        assertThat( dist, equalTo( 0.0 ) );
+    }
+
+    @Test
     public void shouldBeAbleToUseExternalPointArrayAsParameterToQuery() throws Exception
     {
         // given a point created from public interface
@@ -197,6 +215,31 @@ public class GraphDatabaseServiceExecuteTest
     {
         final Coordinate coord = new Coordinate( x, y );
         return new Point() {
+
+            @Override
+            public String getGeometryType()
+            {
+                return "Point";
+            }
+
+            @Override
+            public List<Coordinate> getCoordinates()
+            {
+                return Arrays.asList( new Coordinate[]{coord} );
+            }
+
+            @Override
+            public CRS getCRS()
+            {
+                return crs;
+            }
+        };
+    }
+
+    private Geometry makeFakePointAsGeometry(double x, double y, final CRS crs)
+    {
+        final Coordinate coord = new Coordinate( x, y );
+        return new Geometry() {
 
             @Override
             public String getGeometryType()

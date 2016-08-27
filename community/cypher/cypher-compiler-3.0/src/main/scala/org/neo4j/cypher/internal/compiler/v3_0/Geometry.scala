@@ -22,14 +22,19 @@ package org.neo4j.cypher.internal.compiler.v3_0
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InvalidArgumentException}
 
 trait Geometry {
-  def coordinates: Seq[Double]
+  def geometryType: String
+  def coordinates: Array[Coordinate]
   def crs: CRS
 }
 
+case class Coordinate(values:Double*)
+
 trait Point extends Geometry {
+  def geometryType = "Point"
   def x: Double
   def y: Double
-  def coordinates = Vector(x, y)
+  def coordinate = Coordinate(x, y)
+  def coordinates = Array(coordinate)
 }
 
 case class CartesianPoint(x: Double, y: Double, crs: CRS) extends Point

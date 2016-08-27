@@ -69,6 +69,7 @@ object typeConversionsFor3_0 {
     case seq: Seq[Any] => seq.foldLeft(Seq.empty[Any]) { (s, v: Any) => s :+ asPrivateType(v) }
     case arr: Array[Any] => arr.foldLeft(Array.empty[Any]) { (a, v: Any) => a :+ asPrivateType(v) }
     case point: graphdb.spatial.Point => asPrivatePoint(point)
+    case geometry: graphdb.spatial.Geometry => asPrivateGeometry(geometry)
     case value => value
   }
 
@@ -90,7 +91,7 @@ object typeConversionsFor3_0 {
     }
 
     override def getCoordinates: java.util.List[graphdb.spatial.Coordinate] = Collections
-      .singletonList(new graphdb.spatial.Coordinate(point.coordinates:_*))
+      .singletonList(new graphdb.spatial.Coordinate(point.coordinate.values: _*))
   }
 
   private def asPrivatePoint(point: graphdb.spatial.Point) = new Point {
@@ -99,6 +100,17 @@ object typeConversionsFor3_0 {
     override def y: Double = point.getCoordinate.getCoordinate.get(1)
 
     override def crs: CRS = CRS.fromURL(point.getCRS.getHref)
+  }
+
+  private def asPrivateCoordinate(coordinate: graphdb.spatial.Coordinate) =
+    Coordinate(coordinate.getCoordinate.asScala.toSeq.map(v=>v.doubleValue()):_*)
+
+  private def asPrivateGeometry(geometry: graphdb.spatial.Geometry) = new Geometry {
+    override def coordinates: Array[Coordinate] = geometry.getCoordinates.asScala.toArray.map(asPrivateCoordinate)
+
+    override def crs: CRS = CRS.fromURL(geometry.getCRS.getHref)
+
+    override def geometryType: String = geometry.getGeometryType
   }
 }
 
