@@ -224,8 +224,11 @@ public class WorkSyncTest
         }
         catch ( TimeoutException ignore )
         {
+            while ( !semaphore.hasQueuedThreads() )
+            {
+                usleep( 1 );
+            }
             // good, the concurrent AddWork is now stuck on the semaphore
-            assertTrue( semaphore.hasQueuedThreads() );
         }
     }
 
