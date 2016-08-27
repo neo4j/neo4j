@@ -20,10 +20,6 @@ When running your own code and Neo4j in the same JVM, there are a few things you
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-examples-docs-jar/dev/procedures.asciidoc[]
-
-:leveloffset: 2
-
 include::server-unmanaged-extensions.asciidoc[]
 
 :leveloffset: 2
