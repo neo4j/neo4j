@@ -192,7 +192,7 @@ public class WorkSyncTest
             executor.submit( new RunnableWork( new AddWork( 1 ) ) );
         }
         executor.shutdown();
-        assertTrue( executor.awaitTermination( 2, TimeUnit.SECONDS ) );
+        assertTrue( executor.awaitTermination( 10, TimeUnit.SECONDS ) );
 
         assertThat( adder.count(), lessThan( adder.sum() ) );
     }
