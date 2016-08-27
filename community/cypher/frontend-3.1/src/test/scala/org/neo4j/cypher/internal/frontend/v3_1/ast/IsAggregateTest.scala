@@ -36,13 +36,13 @@ class IsAggregateTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("distinct id(null) an aggregate expression") {
-    val expr: Expression = new FunctionInvocation(FunctionName("id")_, distinct = true, Vector(Null()_))(pos)
+    val expr: Expression = FunctionInvocation(Namespace()_, FunctionName("id")_, distinct = true, Vector(Null()_))(pos)
 
     IsAggregate.unapply(expr) should equal(Some(expr))
   }
 
   test("id(null) is not an aggregate expression") {
-    val expr: Expression = new FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Null()_))(pos)
+    val expr: Expression = FunctionInvocation(Namespace()_, FunctionName("id")_, distinct = false, Vector(Null()_))(pos)
 
     IsAggregate.unapply(expr) should equal(None)
   }

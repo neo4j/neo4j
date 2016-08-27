@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.parser
 
-import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, InternalException, SyntaxException}
+import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, InternalException, SyntaxException, ast}
 import org.parboiled.Context
 import org.parboiled.errors.{InvalidInputError, ParseError}
 import org.parboiled.scala._
@@ -111,6 +111,10 @@ trait Base extends Parser {
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
   }
 
+  def Namespace: Rule1[ast.Namespace] = rule("namespace of a procedure") {
+    zeroOrMore(SymbolicNameString ~ ".") ~~>> (ast.Namespace(_))
+  }
+
   def parseOrThrow[T](input: String, initialOffset: Option[InputPosition], rule: Rule1[Seq[T]]): T = {
     val parsingResults = ReportingParseRunner(rule).run(input)
     parsingResults.result match {
@@ -121,7 +125,7 @@ trait Base extends Parser {
         } else {
           throw new SyntaxException(s"Expected exactly one statement per query but got: ${statements.size}")
         }
-      case _ => {
+      case _ =>
         val parseErrors: List[ParseError] = parsingResults.parseErrors
         parseErrors.map { error =>
           val message = if (error.getErrorMessage != null) {
@@ -139,7 +143,6 @@ trait Base extends Parser {
         }
 
         throw new InternalException("Parsing failed but no parse errors were provided")
-      }
     }
   }
 

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val ns = ProcedureNamespace(List("my", "proc"))(pos)
+  val ns = Namespace(List("my", "proc"))(pos)
   val name = ProcedureName("foo")(pos)
   val qualifiedName = QualifiedProcedureName(ns.parts, name.name)
   val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))

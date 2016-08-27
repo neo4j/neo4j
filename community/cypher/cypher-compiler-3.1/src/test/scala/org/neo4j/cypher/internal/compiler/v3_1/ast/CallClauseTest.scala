@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheckResult, SemanticSta
 
 class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val ns = ProcedureNamespace(List("my", "proc"))(pos)
+  val ns = Namespace(List("my", "proc"))(pos)
   val name = ProcedureName("foo")(pos)
   val qualifiedName = QualifiedProcedureName(ns.parts, name.name)
 
