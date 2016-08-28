@@ -146,9 +146,6 @@ public class AwaitIndexProcedure implements AutoCloseable
     @Override
     public void close()
     {
-        if ( statement != null )
-        {
-            statement.close();
-        }
+        statement.close();
     }
 }
