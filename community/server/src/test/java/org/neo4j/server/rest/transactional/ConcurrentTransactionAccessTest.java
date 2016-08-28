@@ -36,6 +36,7 @@ import org.neo4j.test.DoubleLatch;
 import static javax.xml.bind.DatatypeConverter.parseLong;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -49,11 +50,11 @@ public class ConcurrentTransactionAccessTest
                 new TransactionHandleRegistry( mock( Clock.class), 0, NullLogProvider.getInstance() );
         TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
-        when(kernel.newTransaction( any( KernelTransaction.Type.class ), any( AccessMode.class ) ) )
+        when(kernel.newTransaction( any( KernelTransaction.Type.class ), any( AccessMode.class ), anyLong() ) )
                 .thenReturn( mock(TransitionalTxManagementKernelTransaction.class) );
         TransactionFacade actions = new TransactionFacade( kernel, null, queryService, registry, NullLogProvider.getInstance() );
 
-        final TransactionHandle transactionHandle = actions.newTransactionHandle( new DisgustingUriScheme(), true, AccessMode.Static.FULL );
+        final TransactionHandle transactionHandle = actions.newTransactionHandle( new DisgustingUriScheme(), true, AccessMode.Static.FULL, -1 );
 
         final DoubleLatch latch = new DoubleLatch();
 

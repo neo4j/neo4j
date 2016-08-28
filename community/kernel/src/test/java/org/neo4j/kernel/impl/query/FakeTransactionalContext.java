@@ -104,6 +104,12 @@ public class FakeTransactionalContext implements TransactionalContext
     }
 
     @Override
+    public void check()
+    {
+        throw new UnsupportedOperationException( "fake test class" );
+    }
+
+    @Override
     public TxStateHolder stateView()
     {
         throw new UnsupportedOperationException( "fake test class" );

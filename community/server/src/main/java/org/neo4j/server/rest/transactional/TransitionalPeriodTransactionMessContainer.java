@@ -47,9 +47,10 @@ public class TransitionalPeriodTransactionMessContainer
         this.txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    public TransitionalTxManagementKernelTransaction newTransaction( Type type, AccessMode mode )
+    public TransitionalTxManagementKernelTransaction newTransaction( Type type, AccessMode mode,
+            long customTransactionTimeout )
     {
-        return new TransitionalTxManagementKernelTransaction( db, type, mode, txBridge );
+        return new TransitionalTxManagementKernelTransaction( db, type, mode, customTransactionTimeout, txBridge );
     }
 
     public ThreadToStatementContextBridge getBridge()
@@ -57,18 +58,14 @@ public class TransitionalPeriodTransactionMessContainer
         return txBridge;
     }
 
-    public QuerySession create(
-            String query,
-            Map<String, Object> parameters,
-            GraphDatabaseQueryService service,
-            Type type,
-            AccessMode mode,
-            HttpServletRequest request )
+
+    public QuerySession create( String query, Map<String, Object> parameters, GraphDatabaseQueryService service,
+            Type type, AccessMode mode, long customTransactionTimeout, HttpServletRequest request )
     {
-        InternalTransaction transaction = db.beginTransaction( type, mode );
-        TransactionalContext context = new Neo4jTransactionalContext(
-            service, transaction, txBridge.get(), query, parameters, locker
-        );
+        InternalTransaction transaction = customTransactionTimeout > 0 ? db.beginTransaction( type, mode, customTransactionTimeout ) :
+                                          db.beginTransaction( type, mode);
+        TransactionalContext context = new Neo4jTransactionalContext( service, transaction, txBridge.get(), query,
+                parameters, locker );
         return new ServerQuerySession( request, context );
     }
 }

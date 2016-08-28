@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.server.web.HttpHeaderUtils;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -79,7 +80,7 @@ public class CypherExecutorTest
     @Test
     public void startTransactionWithCustomTimeout() throws Throwable
     {
-        when( request.getHeader( CypherExecutor.MAX_EXECUTION_TIME_HEADER ) )
+        when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( String.valueOf( CUSTOM_TRANSACTION_TIMEOUT ) );
 
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
@@ -95,7 +96,7 @@ public class CypherExecutorTest
     @Test
     public void startDefaultTransactionWhenHeaderHasIncorrectValue() throws Throwable
     {
-        when( request.getHeader( CypherExecutor.MAX_EXECUTION_TIME_HEADER ) )
+        when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( "not a number" );
 
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
@@ -111,23 +112,8 @@ public class CypherExecutorTest
     @Test
     public void startDefaultTransactionIfTimeoutIsNegative() throws Throwable
     {
-        when( request.getHeader( CypherExecutor.MAX_EXECUTION_TIME_HEADER ) )
+        when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( "-2" );
-
-        CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
-        cypherExecutor.start();
-
-        cypherExecutor.createSession( request );
-
-        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
-        logProvider.assertNoLoggingOccurred();
-    }
-
-    @Test
-    public void startDefaultTransactionIfExecutionGuardDisabled() throws Throwable
-    {
-        when( request.getHeader( CypherExecutor.MAX_EXECUTION_TIME_HEADER ) )
-                .thenReturn( String.valueOf( CUSTOM_TRANSACTION_TIMEOUT ) );
 
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
@@ -157,6 +143,10 @@ public class CypherExecutorTest
 
         InternalTransaction transaction = new TopLevelTransaction( kernelTransaction, () -> statement );
 
+        AccessMode.Static accessMode = AccessMode.Static.FULL;
+        KernelTransaction.Type type = KernelTransaction.Type.implicit;
+        when( kernelTransaction.mode() ).thenReturn( accessMode );
+        when( kernelTransaction.transactionType() ).thenReturn( type  );
         when( database.getGraph() ).thenReturn( databaseFacade );
         when( databaseFacade.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( QueryExecutionEngine.class ) ).thenReturn( executionEngine );
@@ -164,9 +154,9 @@ public class CypherExecutorTest
                 statementBridge );
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn(
                 databaseQueryService );
-        when( databaseQueryService.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL ) )
+        when( databaseQueryService.beginTransaction( type, accessMode ) )
                 .thenReturn( transaction );
-        when( databaseQueryService.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL,
+        when( databaseQueryService.beginTransaction( type, accessMode,
                 CUSTOM_TRANSACTION_TIMEOUT ) ).thenReturn( transaction );
         when( databaseQueryService.getDependencyResolver() ).thenReturn( dependencyResolver );
     }

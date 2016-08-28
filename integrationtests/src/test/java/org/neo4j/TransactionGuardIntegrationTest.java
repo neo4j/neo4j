@@ -56,6 +56,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.helpers.CommunityServerBuilder;
+import org.neo4j.server.web.HttpHeaderUtils;
 import org.neo4j.shell.InterruptSignalHandler;
 import org.neo4j.shell.Response;
 import org.neo4j.shell.ShellException;
@@ -70,15 +71,14 @@ import org.neo4j.test.server.HTTP;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
-import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
+import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class TransactionGuardIntegrationTest
 {
@@ -205,13 +205,47 @@ public class TransactionGuardIntegrationTest
     }
 
     @Test
-    public void terminateLongRunningRestQuery() throws Exception
+    public void terminateLongRunningRestTransactionalEndpointQuery() throws Exception
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         CommunityNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
-        String transactionEndPoint = HTTP.POST( transactionUri(neoServer), singletonList( map( "statement", "create (n)" ) ) ).location();
+        String transactionEndPoint = HTTP.POST( transactionUri(neoServer) ).location();
 
         clock.forward( 3, TimeUnit.SECONDS );
+
+        HTTP.Response response = HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
+        assertEquals( "Response should be successful.", 200, response.status() );
+
+        HTTP.Response commitResponse = HTTP.POST( transactionEndPoint + "/commit" );
+        assertEquals( "Transaction should be already closed and not found.", 404, commitResponse.status() );
+
+        assertEquals( "Transaction should be forcefully closed.", TransactionNotFound.code().serialize(),
+                commitResponse.get( "errors" ).findValue( "code" ).asText());
+        assertDatabaseDoesNotHaveNodes( database );
+    }
+
+    @Test
+    public void terminateLongRunningRestTransactionalEndpointWithCustomTimeoutQuery() throws Exception
+    {
+        GraphDatabaseAPI database = startDatabaseWithTimeout();
+        CommunityNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        long customTimeout = TimeUnit.SECONDS.toMillis( 10 );
+        HTTP.Response beginResponse = HTTP
+                .withHeaders( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER, String.valueOf( customTimeout ) )
+                .POST( transactionUri( neoServer ), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
+        assertEquals( "Response should be successful.", 201, beginResponse.status() );
+
+        String transactionEndPoint = beginResponse.location();
+        clock.forward( 3, TimeUnit.SECONDS );
+
+        HTTP.Response response = HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
+        assertEquals( "Response should be successful.", 200, response.status() );
+
+        clock.forward( 11, TimeUnit.SECONDS );
+
+        response = HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
+        assertEquals( "Response should be successful.", 200, response.status() );
+
         HTTP.Response commitResponse = HTTP.POST( transactionEndPoint + "/commit" );
         assertEquals( "Transaction should be already closed and not found.", 404, commitResponse.status() );
 
