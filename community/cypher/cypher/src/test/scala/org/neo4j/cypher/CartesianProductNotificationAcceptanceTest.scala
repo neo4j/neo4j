@@ -119,7 +119,8 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       runtimeName = Some(InterpretedRuntimeName),
       updateStrategy = None,
       rewriterSequencer = RewriterStepSequencer.newValidating,
-      publicTypeConverter = identity
+      publicTypeConverter = identity,
+      privateTypeConverter = identity
     )
   }
 }

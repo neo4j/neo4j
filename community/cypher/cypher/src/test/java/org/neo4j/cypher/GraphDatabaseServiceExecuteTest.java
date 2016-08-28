@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
@@ -34,6 +35,10 @@ import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.procedure.Name;
+import org.neo4j.procedure.Procedure;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -211,7 +216,27 @@ public class GraphDatabaseServiceExecuteTest
         assertThat( dist, equalTo( 0.0 ) );
     }
 
-    private Point makeFakePoint(double x, double y, final CRS crs)
+    @Test
+    public void shouldBeAbleToUseResultsOfPointProcedureAsInputToDistanceFunction() throws Exception
+    {
+        // given procedure that produces a point
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        Procedures procedures =
+                ((GraphDatabaseAPI) graphDb).getDependencyResolver().resolveDependency( Procedures.class );
+        procedures.register( PointProcs.class );
+
+        // when calling procedure that produces a point
+        Result result = graphDb.execute(
+                "CALL spatial.point(144.317718, -37.031738) YIELD point " +
+                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), point) AS dist" );
+
+        // then
+        Double dist = (Double) result.next().get( "dist" );
+        assertThat( dist, equalTo( 0.0 ) );
+
+    }
+
+    private static Point makeFakePoint(double x, double y, final CRS crs)
     {
         final Coordinate coord = new Coordinate( x, y );
         return new Point() {
@@ -236,7 +261,7 @@ public class GraphDatabaseServiceExecuteTest
         };
     }
 
-    private Geometry makeFakePointAsGeometry(double x, double y, final CRS crs)
+    private static Geometry makeFakePointAsGeometry(double x, double y, final CRS crs)
     {
         final Coordinate coord = new Coordinate( x, y );
         return new Geometry() {
@@ -261,7 +286,7 @@ public class GraphDatabaseServiceExecuteTest
         };
     }
 
-    private CRS makeWGS84()
+    private static CRS makeWGS84()
     {
         // "WGS-84", 4326, "http://spatialreference.org/ref/epsg/4326/"
         return new CRS() {
@@ -285,4 +310,23 @@ public class GraphDatabaseServiceExecuteTest
         };
     }
 
+    public static class PointProcs
+    {
+        @Procedure( "spatial.point" )
+        public Stream<PointResult> spatialPoint( @Name( "longitude" ) double longitude, @Name( "latitude" ) double latitude )
+        {
+            Point point = makeFakePoint( longitude, latitude, makeWGS84() );
+            return Stream.of( new PointResult(point) );
+        }
+    }
+
+    public static class PointResult
+    {
+        public Point point;
+
+        public PointResult( Point point )
+        {
+            this.point = point;
+        }
+    }
 }

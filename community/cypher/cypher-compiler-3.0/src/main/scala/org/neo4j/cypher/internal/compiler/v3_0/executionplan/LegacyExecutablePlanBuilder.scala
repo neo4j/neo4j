@@ -40,7 +40,8 @@ trait ExecutionPlanInProgressRewriter {
 class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConfiguration,
                                   rewriterSequencer: (String) => RewriterStepSequencer,
                                   eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary,
-                                  publicTypeConverter: Any => Any)
+                                  publicTypeConverter: Any => Any,
+                                  privateTypeConverter: Any => Any)
   extends PatternGraphBuilder with ExecutablePlanBuilder with GraphQueryBuilder {
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
@@ -48,7 +49,7 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConf
   override def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
                            createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan =
     interpretedToExecutionPlan(producePipe(inputQuery, planContext, tracer), planContext, inputQuery,
-                               createFingerprintReference, config, publicTypeConverter)
+                               createFingerprintReference, config, publicTypeConverter, privateTypeConverter)
 
   def producePipe(in: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer): PipeInfo = {
     val rewriter = rewriterSequencer("LegacyPipeBuilder")(reattachAliasedExpressions).rewriter

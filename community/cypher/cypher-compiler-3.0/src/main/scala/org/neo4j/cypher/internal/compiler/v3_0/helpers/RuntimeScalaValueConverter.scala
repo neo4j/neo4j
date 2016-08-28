@@ -31,7 +31,7 @@ import scala.collection.immutable
 //
 // Main use: Converting results when using ExecutionEngine from scala
 //
-class RuntimeScalaValueConverter(skip: Any => Boolean) {
+class RuntimeScalaValueConverter(skip: Any => Boolean, converter: Any => Any) {
 
   final def asDeepScalaMap[A, B](map: JavaMap[A, B]): immutable.Map[A, Any] =
     if (map == null) null else immutableMapValues(map.asScala, asDeepScalaValue): immutable.Map[A, Any]
@@ -45,7 +45,7 @@ class RuntimeScalaValueConverter(skip: Any => Boolean) {
     case javaIterable: JavaIterable[_] => javaIterable.asScala.map(asDeepScalaValue).toList: List[_]
     case map: collection.Map[_, _] => immutableMapValues(map, asDeepScalaValue): immutable.Map[_, _]
     case traversable: TraversableOnce[_] => traversable.map(asDeepScalaValue).toList: List[_]
-    case anything => anything
+    case anything => converter(anything)
   }
 
   def asShallowScalaValue(value: Any): Any = value match {
@@ -53,6 +53,6 @@ class RuntimeScalaValueConverter(skip: Any => Boolean) {
     case javaMap: JavaMap[_, _] => javaMap.asScala.toMap: immutable.Map[_, _]
     case javaIterable: JavaIterable[_] => javaIterable.asScala.toList: List[_]
     case map: collection.Map[_, _] => map.toMap: immutable.Map[_, _]
-    case anything => anything
+    case anything => converter(anything)
   }
 }

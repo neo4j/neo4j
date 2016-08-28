@@ -62,7 +62,8 @@ case class InterpretedRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder
 
 }
 
-case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors, publicTypeConverter: Any => Any) {
+case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors, publicTypeConverter: Any => Any,
+                                  privateTypeConverter: Any => Any) {
 
   def apply(periodicCommit: Option[PeriodicCommit], logicalPlan: LogicalPlan,
             pipeBuildContext: PipeExecutionBuilderContext,
@@ -71,7 +72,8 @@ case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors, publicTypeCo
             config: CypherCompilerConfiguration) =
     closing(tracer.beginPhase(PIPE_BUILDING)) {
       interpretedToExecutionPlan(new PipeExecutionPlanBuilder(clock, monitors)
-                                   .build(periodicCommit, logicalPlan)(pipeBuildContext, planContext),
-                                 planContext, preparedQuery, createFingerprintReference, config, publicTypeConverter)
+        .build(periodicCommit, logicalPlan)(pipeBuildContext, planContext),
+        planContext, preparedQuery, createFingerprintReference, config,
+        publicTypeConverter, privateTypeConverter)
     }
 }

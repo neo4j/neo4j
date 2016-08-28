@@ -88,10 +88,11 @@ object InterpretedExecutionPlanBuilder {
   def interpretedToExecutionPlan(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuerySemantics,
                                  createFingerprintReference:Option[PlanFingerprint]=>PlanFingerprintReference,
                                  config: CypherCompilerConfiguration,
-                                 publicTypeConverter: Any => Any) = {
+                                 publicTypeConverter: Any => Any,
+                                 privateTypeConverter: Any => Any) = {
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = inputQuery.statement.returnColumns
-    val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, publicTypeConverter = publicTypeConverter)
+    val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, publicTypeConverter, privateTypeConverter)
     val func = getExecutionPlanFunction(periodicCommitInfo, inputQuery.queryText, updating, resultBuilderFactory, inputQuery
       .notificationLogger)
     new ExecutionPlan {

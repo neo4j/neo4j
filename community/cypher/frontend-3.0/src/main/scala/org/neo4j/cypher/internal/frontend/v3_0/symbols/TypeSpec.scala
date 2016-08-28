@@ -37,6 +37,7 @@ object TypeSpec {
     CTPath,
     CTRelationship,
     CTPoint,
+    CTGeometry,
     CTString
   )
 

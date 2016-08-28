@@ -77,7 +77,8 @@ object CypherCompilerFactory {
                         plannerName: Option[CostBasedPlannerName],
                         runtimeName: Option[RuntimeName],
                         updateStrategy: Option[UpdateStrategy],
-                        publicTypeConverter: Any => Any): CypherCompiler = {
+                        publicTypeConverter: Any => Any,
+                        privateTypeConverter: Any => Any): CypherCompiler = {
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
@@ -85,7 +86,7 @@ object CypherCompilerFactory {
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
 
-    val interpretedPlanBuilder = InterpretedPlanBuilder(clock, monitors, publicTypeConverter)
+    val interpretedPlanBuilder = InterpretedPlanBuilder(clock, monitors, publicTypeConverter, privateTypeConverter)
 
     // Pick runtime based on input
     val runtimeBuilder = RuntimeBuilder.create(runtimeName, interpretedPlanBuilder)
@@ -103,7 +104,8 @@ object CypherCompilerFactory {
       publicTypeConverter = publicTypeConverter
     )
     val procedurePlanProducer = new DelegatingProcedureExecutablePlanBuilder(costPlanProducer, publicTypeConverter)
-    val rulePlanProducer = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer, publicTypeConverter = publicTypeConverter)
+    val rulePlanProducer = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer,
+      publicTypeConverter = publicTypeConverter, privateTypeConverter = privateTypeConverter)
 
     // Pick planner based on input
     val planBuilder = ExecutablePlanBuilder.create(plannerName, rulePlanProducer,
@@ -121,12 +123,14 @@ object CypherCompilerFactory {
   def ruleBasedCompiler(graph: GraphDatabaseQueryService,
                         config: CypherCompilerConfiguration, clock: Clock, monitors: Monitors,
                         rewriterSequencer: (String) => RewriterStepSequencer,
-                        publicTypeConverter: Any => Any): CypherCompiler = {
+                        publicTypeConverter: Any => Any,
+                        privateTypeConverter: Any => Any): CypherCompiler = {
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
     val pipeBuilder = new DelegatingProcedureExecutablePlanBuilder(
-      new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer, publicTypeConverter = publicTypeConverter),
+      new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer,
+        publicTypeConverter = publicTypeConverter, privateTypeConverter = privateTypeConverter),
       publicTypeConverter)
 
     val execPlanBuilder = new ExecutionPlanBuilder(graph, clock, pipeBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))

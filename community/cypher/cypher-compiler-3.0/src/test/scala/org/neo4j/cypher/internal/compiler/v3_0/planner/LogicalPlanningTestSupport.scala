@@ -167,7 +167,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       queryPlanner = queryPlanner,
       rewriterSequencer = rewriterSequencer,
       plannerName = None,
-      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors, identity)),
+      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors, identity, identity)),
       semanticChecker = semanticChecker,
       updateStrategy = None,
       config = config,

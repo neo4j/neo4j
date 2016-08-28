@@ -200,7 +200,8 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       plannerName = Some(IDPPlannerName),
       runtimeName = Some(InterpretedRuntimeName),
       updateStrategy = None,
-      publicTypeConverter = identity
+      publicTypeConverter = identity,
+      privateTypeConverter = identity
     )
   }
 

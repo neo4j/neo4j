@@ -43,7 +43,8 @@ class RuleExecutablePlanBuilderTest extends CypherFunSuite {
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
     errorIfShortestPathFallbackUsedAtRuntime = false
   )
-  val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors], config, RewriterStepSequencer.newValidating, publicTypeConverter = identity)
+  val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors], config, RewriterStepSequencer.newValidating,
+    publicTypeConverter = identity, privateTypeConverter = identity)
 
   test("should_use_distinct_pipe_for_distinct") {
     val pipe = buildExecutionPipe("MATCH n RETURN DISTINCT n")

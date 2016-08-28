@@ -40,6 +40,7 @@ class QueryState(val query: QueryContext,
                  val triadicState: mutable.Map[String, PrimitiveLongSet] = mutable.Map.empty,
                  val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty,
                  val publicTypeConverter: Any => Any = identity,
+                 val privateTypeConverter: Any => Any = identity,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] =
                    new SingleThreadedLRUCache(maxSize = 16)) {
   private var _pathValueBuilder: PathValueBuilder = null
@@ -59,13 +60,13 @@ class QueryState(val query: QueryContext,
   def getStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, publicTypeConverter, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, publicTypeConverter, privateTypeConverter, cachedIn)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, repeatableReads, publicTypeConverter, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, repeatableReads, publicTypeConverter, privateTypeConverter, cachedIn)
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, publicTypeConverter, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, publicTypeConverter, privateTypeConverter, cachedIn)
 }
 
 object QueryState {

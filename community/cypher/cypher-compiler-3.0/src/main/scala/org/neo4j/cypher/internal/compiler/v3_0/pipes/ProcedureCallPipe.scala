@@ -68,7 +68,7 @@ case class ProcedureCallPipe(source: Pipe,
     builder.sizeHint(resultIndices.length)
 
     val isGraphKernelResultValue = qtx.isGraphKernelResultValue _
-    val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
+    val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, state.privateTypeConverter)
 
     input flatMap { input =>
       val argValues = argExprs.map(arg => converter.asDeepJavaValue(arg(input)(state)))

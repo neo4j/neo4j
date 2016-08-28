@@ -571,8 +571,8 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseQueryService,
     val logger = new StringInfoLogger3_0(log)
     val monitors = new WrappedMonitors3_0(kernelMonitors)
     CypherCompilerFactory.costBasedCompiler(graph, config, clock,
-                                            monitors, logger, rewriterSequencer, plannerName, runtimeName,
-                                            updateStrategy, typeConversionsFor3_0.asPublicType)
+      monitors, logger, rewriterSequencer, plannerName, runtimeName, updateStrategy,
+      typeConversionsFor3_0.asPublicType, typeConversionsFor3_0.asPrivateType)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize
@@ -585,7 +585,8 @@ case class CompatibilityFor3_0Rule(graph: GraphDatabaseQueryService,
                                    kernelAPI: KernelAPI) extends CompatibilityFor3_0 {
   protected val compiler = {
     val monitors = new WrappedMonitors3_0(kernelMonitors)
-    CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer, typeConversionsFor3_0.asPublicType)
+    CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer,
+      typeConversionsFor3_0.asPublicType, typeConversionsFor3_0.asPrivateType)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize
