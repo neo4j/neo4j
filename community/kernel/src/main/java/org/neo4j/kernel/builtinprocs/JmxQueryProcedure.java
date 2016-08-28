@@ -59,6 +59,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
                 .out( "name", Neo4jTypes.NTString )
                 .out( "description", Neo4jTypes.NTString )
                 .out( "attributes", Neo4jTypes.NTMap )
+                .description( "Query JMX management data by domain and name. For instance, \"org.neo4j:*\"" )
                 .build() );
         this.jmxServer = jmxServer;
     }

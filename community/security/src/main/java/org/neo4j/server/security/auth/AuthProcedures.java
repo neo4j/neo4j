@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
@@ -38,6 +39,7 @@ public class AuthProcedures
     @Context
     public AuthSubject authSubject;
 
+    @Description( "Create a user." )
     @Procedure( name = "dbms.createUser", mode = DBMS )
     public void createUser( @Name( "username" ) String username, @Name( "password" ) String password,
             @Name( "requirePasswordChange" ) boolean requirePasswordChange )
@@ -47,6 +49,7 @@ public class AuthProcedures
         subject.getAuthManager().newUser( username, password, requirePasswordChange );
     }
 
+    @Description( "Delete the user." )
     @Procedure( name = "dbms.deleteUser", mode = DBMS )
     public void deleteUser( @Name( "username" ) String username ) throws InvalidArgumentsException, IOException
     {
@@ -59,6 +62,7 @@ public class AuthProcedures
     }
 
     @Deprecated
+    @Description( "Change the user password." )
     @Procedure( name = "dbms.changePassword", mode = DBMS, deprecatedBy = "dbms.security.changePassword" )
     public void changePasswordDeprecated( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {

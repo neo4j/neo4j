@@ -153,15 +153,15 @@ public class BuiltInProceduresTest
     {
         // When/Then
         assertThat( call( "dbms.procedures" ), contains(
-            record( "db.awaitIndex", "db.awaitIndex(label :: STRING?, property :: STRING?, timeOutSeconds :: INTEGER?) :: VOID" ),
-            record( "db.constraints", "db.constraints() :: (description :: STRING?)" ),
-            record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)" ),
-            record( "db.labels", "db.labels() :: (label :: STRING?)" ),
-            record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)" ),
-            record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)" ),
-            record( "dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)" ),
-            record( "dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: STRING?)" ),
-            record( "dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)")
+            record( "db.awaitIndex", "db.awaitIndex(label :: STRING?, property :: STRING?, timeOutSeconds :: INTEGER?) :: VOID", "Await indexes in the database to come online." ),
+            record( "db.constraints", "db.constraints() :: (description :: STRING?)", "List all constraints in the database." ),
+            record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)", "List all indexes in the database." ),
+            record( "db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database." ),
+            record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)", "List all property keys in the database." ),
+            record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)", "List all relationship types in the database." ),
+            record( "dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)", "List DBMS components and their versions." ),
+            record( "dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: STRING?, description :: STRING?)", "List all procedures in the DBMS." ),
+            record( "dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)", "Query JMX management data by domain and name. For instance, \"org.neo4j:*\"")
         ) );
     }
 

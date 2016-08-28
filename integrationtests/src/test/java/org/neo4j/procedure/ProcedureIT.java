@@ -1046,6 +1046,25 @@ public class ProcedureIT
         assertFalse( res.hasNext() );
     }
 
+    @Test
+    public void shouldShowDescriptionWhenListingProcedures() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL dbms.procedures()" );
+
+        while(res.hasNext())
+        {
+            Map<String,Object> result = res.next();
+            if ( result.get("name").equals( "org.neo4j.procedure.nodeWithDescription" ))
+            {
+                assertThat(result.get("description"),
+                        equalTo("This is a description"));
+            }
+        }
+        // Then
+        assertFalse( res.hasNext() );
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -1471,6 +1490,13 @@ public class ProcedureIT
         public Stream<NodeOutput> nodeWithDefault( @Name( value = "node", defaultValue = "null") Node node )
         {
             return Stream.of(new NodeOutput(node));
+        }
+
+        @Description( "This is a description" )
+        @Procedure( mode = WRITE )
+        public Stream<NodeOutput> nodeWithDescription( @Name( "node" ) Node node )
+        {
+            return Stream.of( new NodeOutput( node ) );
         }
 
         @Procedure( mode = WRITE )

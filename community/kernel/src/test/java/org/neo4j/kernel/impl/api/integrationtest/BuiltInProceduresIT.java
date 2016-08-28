@@ -105,20 +105,21 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)"} ),
-                equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)"} ),
+                equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)", "List all constraints in the database."} ),
+                equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)", "List all indexes in the database."} ),
                 equalTo( new Object[]{"db.awaitIndex", "db.awaitIndex(label :: STRING?, property :: STRING?, " +
-                        "timeOutSeconds :: INTEGER?) :: VOID"} ),
-                equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)"} ),
-                equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)"} ),
+                        "timeOutSeconds :: INTEGER?) :: VOID", "Await indexes in the database to come online."} ),
+                equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)", "List all property keys in the database."} ),
+                equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database."} ),
                 equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: " +
-                        "STRING?)"} ),
+                        "STRING?)", "List all relationship types in the database."} ),
                 equalTo( new Object[]{"dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: " +
-                        "STRING?)"} ),
+                        "STRING?, description :: STRING?)", "List all procedures in the DBMS."} ),
                 equalTo( new Object[]{"dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF" +
-                        " STRING?, edition :: STRING?)"} ),
+                        " STRING?, edition :: STRING?)", "List DBMS components and their versions."} ),
                 equalTo( new Object[]{"dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, " +
-                        "description :: STRING?, attributes :: MAP?)"} )
+                        "description :: STRING?, attributes :: MAP?)", "Query JMX management data by domain and name." +
+                                                                       " For instance, \"org.neo4j:*\""} )
         ) );
     }
 
