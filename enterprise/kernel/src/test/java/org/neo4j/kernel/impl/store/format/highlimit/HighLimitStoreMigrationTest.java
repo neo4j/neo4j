@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.test.rule.PageCacheRule;
 
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
@@ -55,7 +56,7 @@ public class HighLimitStoreMigrationTest
     @Test
     public void haveSameFormatCapabilitiesAsHighLimit3_0()
     {
-        HighLimit.RECORD_FORMATS.hasSameCapabilities( HighLimitV3_0.RECORD_FORMATS, CapabilityType.FORMAT );
+        assertTrue( HighLimit.RECORD_FORMATS.hasSameCapabilities( HighLimitV3_0.RECORD_FORMATS, CapabilityType.FORMAT ) );
     }
 
     @Test
