@@ -250,7 +250,7 @@ case class CollectionSubQueryExpressionSolver[T <: Expression](namer: T => (T, M
     topDown(inner, stopper = {
       case _: PatternComprehension => false
       case _: ScopeExpression | _: CaseExpression => true
-      case f: FunctionInvocation => f.function contains Exists
+      case f: FunctionInvocation => f.function == Exists
       case _ => false
     })
   }

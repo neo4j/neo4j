@@ -30,12 +30,12 @@ object functionConverter {
            (implicit context: CodeGenContext): CodeGenExpression = fcn.function match {
 
     // id(n)
-    case Some(ast.functions.Id) =>
+    case ast.functions.Id =>
       assert(fcn.args.size == 1)
       IdCodeGenFunction(callback(fcn.args(0)))
 
     // type(r)
-    case Some(ast.functions.Type) =>
+    case ast.functions.Type =>
       assert(fcn.args.size == 1)
       TypeCodeGenFunction(callback(fcn.args(0)))
 

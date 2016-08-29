@@ -39,7 +39,7 @@ object WithSeekableArgs {
 object AsIdSeekable {
   def unapply(v: Any) = v match {
     case WithSeekableArgs(func@FunctionInvocation(_, _, _, IndexedSeq(ident: Variable)), rhs)
-      if func.function.contains(functions.Id) && !rhs.dependencies(ident) =>
+      if func.function == functions.Id && !rhs.dependencies(ident) =>
       Some(IdSeekable(func, ident, rhs))
     case _ =>
       None
@@ -60,7 +60,7 @@ object AsPropertyScannable {
   def unapply(v: Any): Option[Scannable[Expression]] = v match {
 
     case func@FunctionInvocation(_, _, _, IndexedSeq(property@Property(ident: Variable, _)))
-      if func.function.contains(functions.Exists) =>
+      if func.function == functions.Exists =>
       Some(ExplicitlyPropertyScannable(func, ident, property))
 
     case expr: Equals =>

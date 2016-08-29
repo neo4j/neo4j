@@ -141,6 +141,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
     ProcedureSignature(name, input, output, deprecationInfo, mode)
   }
 
+
+  //TODE wire down to kernel
+  override def functionSignature(name: QualifiedProcedureName): Option[UserDefinedFunctionSignature] = None
+
   private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 
   private def asCypherProcMode(mode: KernelProcedureSignature.Mode, allowed: Array[String]): ProcedureAccessMode = mode match {

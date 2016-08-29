@@ -300,13 +300,13 @@ object QueryTagger extends QueryTagger[String] {
 
     // functions
     lift[ASTNode] {
-      case f: FunctionInvocation if f.function.exists(mathFunctions) => Set(MathFunctionTag)
-      case f: FunctionInvocation if f.function.exists(stringFunctions) => Set(StringFunctionTag)
+      case f: FunctionInvocation if mathFunctions contains f.function => Set(MathFunctionTag)
+      case f: FunctionInvocation if stringFunctions contains f.function => Set(StringFunctionTag)
       case f: FunctionInvocation if isAggregation(f.function) => Set(AggregationTag)
     }
   ))
 
-  private def isAggregation(function: Option[Function]) = function.exists {
+  private def isAggregation(function: Function) = function match {
     case x: AggregatingFunction => true
     case _ => false
   }

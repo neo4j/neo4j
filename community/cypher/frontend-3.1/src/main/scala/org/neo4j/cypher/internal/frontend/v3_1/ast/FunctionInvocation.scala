@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.frontend.v3_1.ast
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, SemanticError, _}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.functions.UnresolvedFunction
+import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, _}
 
 object FunctionInvocation {
   def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =
@@ -36,11 +37,13 @@ object FunctionInvocation {
 case class FunctionInvocation(namespace: Namespace, functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])
                              (val position: InputPosition) extends Expression {
   val name = functionName.name
-  val function: Option[Function] = Function.lookup.get(name.toLowerCase)
+  val function = Function.lookup.getOrElse(name.toLowerCase, UnresolvedFunction)
 
-  def semanticCheck(ctx: SemanticContext) = function match {
-    case None    => SemanticError(s"Unknown function '$name'", position)
-    case Some(f) => f.semanticCheckHook(ctx, this)
+  def semanticCheck(ctx: SemanticContext) = function.semanticCheckHook(ctx, this)
+
+  def needsToBeResolved = function match {
+    case UnresolvedFunction => true
+    case _ => false
   }
 }
 

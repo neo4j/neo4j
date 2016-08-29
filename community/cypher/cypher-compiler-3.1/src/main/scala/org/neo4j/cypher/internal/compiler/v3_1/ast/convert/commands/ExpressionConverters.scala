@@ -259,7 +259,7 @@ object ExpressionConverters {
     case e: ast.Divide => commandexpressions.Divide(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
     case e: ast.Modulo => commandexpressions.Modulo(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
     case e: ast.Pow => commandexpressions.Pow(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
-    case e: ast.FunctionInvocation => toCommandExpression(e.function.get, e)
+    case e: ast.FunctionInvocation => toCommandExpression(e.function, e)
     case e: ast.CountStar => commandexpressions.CountStar()
     case e: ast.Property => toCommandProperty(e)
     case e: ast.Parameter => toCommandParameter(e)

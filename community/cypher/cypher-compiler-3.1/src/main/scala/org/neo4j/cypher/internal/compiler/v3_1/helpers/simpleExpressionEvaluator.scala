@@ -38,8 +38,8 @@ object simpleExpressionEvaluator {
 
   def isNonDeterministic(expr: Expression): Boolean =
     expr.inputs.exists {
-      case (func@FunctionInvocation(_, _, _), _) if func.function contains Rand => true
-      case (func@FunctionInvocation(_, _, _), _) if func.function contains Timestamp => true
+      case (func@FunctionInvocation(_, _, _, _), _) if func.function == Rand => true
+      case (func@FunctionInvocation(_, _, _, _), _) if func.function == Timestamp => true
       case _ => false
     }
 

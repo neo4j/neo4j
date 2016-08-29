@@ -17,26 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_1.ast
+package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
+import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_1.ast._
+import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheckResult, InputPosition, SemanticError}
 
-object IsAggregate {
-  def unapply(v: Any) = v match {
-    case expr: CountStar =>
-      Some(expr)
+case object UnresolvedFunction extends Function {
+  def name = "UNKNOWN"
 
-    case fi: FunctionInvocation if fi.distinct =>
-      Some(fi)
-
-    case fi: FunctionInvocation =>
-      fi.function match {
-        case fun: AggregatingFunction => Some(fi)
-        case _                              => None
-      }
-
-    case _ =>
-      None
-  }
-
-  def apply(e: Expression): Boolean = unapply(e).nonEmpty
+  //we cannot do a full semantic check until we have resolved the function call.
+  override protected def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation) = SemanticCheckResult.success
 }

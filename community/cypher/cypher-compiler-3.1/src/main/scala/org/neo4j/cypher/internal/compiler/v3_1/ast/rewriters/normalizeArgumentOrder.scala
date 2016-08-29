@@ -33,10 +33,10 @@ case object normalizeArgumentOrder extends Rewriter {
   private val instance: Rewriter = topDown(Rewriter.lift {
 
     // move id(n) on equals to the left
-    case predicate @ Equals(func@FunctionInvocation(_, _, _), _) if func.function.contains(functions.Id) =>
+    case predicate @ Equals(func@FunctionInvocation(_, _, _, _), _) if func.function == functions.Id =>
       predicate
 
-    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _)) if rhs.function.contains(functions.Id) =>
+    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _, _)) if rhs.function == functions.Id =>
       predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
 
     // move n.prop on equals to the left

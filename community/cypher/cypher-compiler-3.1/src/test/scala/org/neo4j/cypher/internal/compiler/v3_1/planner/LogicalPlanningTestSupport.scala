@@ -34,11 +34,12 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.{DefaultIDPSo
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, PlanContext, ProcedureSignature, QualifiedProcedureName}
+import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_1._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
+import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, CypherTestSupport}
 
 import scala.collection.mutable
@@ -191,13 +192,26 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     queries.head
   }
 
-  def buildPlannerUnionQuery(query: String, lookup: Option[QualifiedProcedureName => ProcedureSignature] = None) = {
+  def buildPlannerUnionQuery(query: String, procLookup: Option[QualifiedProcedureName => ProcedureSignature] = None,
+                             fcnLookup: Option[QualifiedProcedureName => Option[UserDefinedFunctionSignature]] = None) = {
+    val signature = ProcedureSignature(
+      QualifiedProcedureName(Seq.empty, "foo"),
+      inputSignature = IndexedSeq.empty,
+      deprecationInfo = None,
+      outputSignature = Some(IndexedSeq(FieldSignature("all", CTInteger)))
+    )
     val parsedStatement = parser.parse(query.replace("\r\n", "\n"))
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val semanticState = semanticChecker.check(query, cleanedStatement, mkException)
     val astRewriterResultStatement = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
-    val resolvedStatement = lookup.map(l => astRewriterResultStatement.endoRewrite(rewriteProcedureCalls(l))).getOrElse(astRewriterResultStatement)
+    val resolvedStatement = (procLookup, fcnLookup) match {
+      case (None, None) => astRewriterResultStatement
+      case (Some(pl), None) =>  astRewriterResultStatement.endoRewrite(rewriteProcedureCalls(pl, _ => None))
+      case (None, Some(fl)) =>  astRewriterResultStatement.endoRewrite(rewriteProcedureCalls(_ => signature, fl))
+      case (Some(pl), Some(fl)) =>  astRewriterResultStatement.endoRewrite(rewriteProcedureCalls(pl, fl))
+
+    }
     val semanticTable: SemanticTable = SemanticTable(types = semanticState.typeTable)
     val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(resolvedStatement, semanticState.scopeTree,
       semanticTable, RewriterStepSequencer.newValidating, semanticChecker, Set.empty, mock[AstRewritingMonitor])
