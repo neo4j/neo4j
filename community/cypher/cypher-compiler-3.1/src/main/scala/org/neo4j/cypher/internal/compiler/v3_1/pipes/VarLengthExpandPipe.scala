@@ -28,21 +28,20 @@ import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.mutable
 
-trait VarLengthPredicate {
-  def filterNode(row: ExecutionContext, state: QueryState)(node: Node): Boolean
-
-  def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Relationship): Boolean
+trait VarlenghtPredicate {
+  def filterNode(row: ExecutionContext, state:QueryState)(node: Node): Boolean
+  def filterRelationship(row: ExecutionContext, state:QueryState)(rel: Relationship): Boolean
 }
 
-object VarLengthPredicate {
+object VarlenghtPredicate {
 
-  val NONE = new VarLengthPredicate {
-    override def filterNode(row: ExecutionContext, state: QueryState)(node: Node): Boolean = true
+  val NONE = new VarlenghtPredicate {
 
-    override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Relationship): Boolean = true
+    override def filterNode(row: ExecutionContext, state:QueryState)(node: Node): Boolean = true
+
+    override def filterRelationship(row: ExecutionContext, state:QueryState)(rel: Relationship): Boolean = true
   }
 }
-
 case class VarLengthExpandPipe(source: Pipe,
                                fromName: String,
                                relName: String,
@@ -53,63 +52,38 @@ case class VarLengthExpandPipe(source: Pipe,
                                min: Int,
                                max: Option[Int],
                                nodeInScope: Boolean,
-                               filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)
+                               filteringStep: VarlenghtPredicate = VarlenghtPredicate.NONE)
                               (val estimatedCardinality: Option[Double] = None)
                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
-  private val needsFlipping = if (dir == SemanticDirection.BOTH)
-    projectedDir == SemanticDirection.INCOMING
-  else
-    dir != projectedDir
-
-  val stack = new mutable.ArrayBuffer[(Node, Int, List[Relationship])]()
-  val relSet = mutable.HashSet[Relationship]()
-
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(Node, Seq[Relationship])] = {
-
-    val nodeFilter: (Node) => Boolean = filteringStep.filterNode(row, state)
-
-    if (!nodeFilter(node)) return Iterator((node, List.empty))
-
-    val relationshipFilter: (Relationship) => Boolean = filteringStep.filterRelationship(row, state)
-
-    val maxDepthValue = maxDepth.getOrElse(Int.MaxValue)
-    val relTypes = types.types(state.query)
-
-    if (stack.nonEmpty) stack.clear()
-
-    stack.append((node, 0, List.empty))
+    val stack = new mutable.Stack[(Node, Seq[Relationship])]
+    stack.push((node, Seq.empty))
 
     new Iterator[(Node, Seq[Relationship])] {
-      override def next(): (Node, Seq[Relationship]) = {
-        val (node, count, relsFromStack) = stack.remove(stack.length - 1)
-        if (count < maxDepthValue) {
-          val relationships: Iterator[Relationship] = state.query
-            .getRelationshipsForIds(node, dir, relTypes)
-            .filter(relationshipFilter)
+      def next(): (Node, Seq[Relationship]) = {
+        val (node, rels) = stack.pop()
+        if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
+          val relationships: Iterator[Relationship] = state.query.getRelationshipsForIds(node, dir, types.types(state.query))
 
-          if (relationships.nonEmpty) {
-            relSet.clear()
-            relsFromStack.foreach(relSet.add)
-
-            relationships.foreach { rel =>
-              val otherNode = rel.getOtherNode(node)
-              if (!relSet.contains(rel) && nodeFilter(otherNode)) {
-                stack.append((otherNode, count+1, (rel :: relsFromStack)))
-              }
+          relationships.filter(filteringStep.filterRelationship(row, state)).foreach { rel =>
+            val otherNode = rel.getOtherNode(node)
+            if (!rels.contains(rel) && filteringStep.filterNode(row,state)(otherNode)) {
+              stack.push((otherNode, rels :+ rel))
             }
           }
         }
+        val needsFlipping = if (dir == SemanticDirection.BOTH) projectedDir == SemanticDirection.INCOMING else dir != projectedDir
         val projectedRels = if (needsFlipping) {
-          relsFromStack
+          rels.reverse
         } else {
-          relsFromStack.reverse
+          rels
         }
         (node, projectedRels)
       }
 
-      override def hasNext: Boolean = stack.nonEmpty
+      def hasNext: Boolean = stack.nonEmpty
     }
   }
 
