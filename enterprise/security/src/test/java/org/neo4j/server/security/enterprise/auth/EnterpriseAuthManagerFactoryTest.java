@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Test;
+import org.junit.Ignore;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
@@ -34,7 +34,8 @@ import static org.mockito.Mockito.when;
 
 public class EnterpriseAuthManagerFactoryTest
 {
-    @Test
+    // Since this depends on the order of static class initialization it doensn't work on full test runs
+    @Ignore
     public void shouldGetShiroDebugLogs()
     {
         // Given
