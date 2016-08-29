@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -127,6 +128,12 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     public boolean hasCapability( Capability capability )
     {
         return actual.hasCapability( capability );
+    }
+
+    @Override
+    public FormatFamily getFormatFamily()
+    {
+        return StandardFormatFamily.INSTANCE;
     }
 
     @Override

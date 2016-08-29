@@ -92,6 +92,8 @@ public interface RecordFormats
      */
     boolean hasCapability( Capability capability );
 
+    FormatFamily getFormatFamily();
+
     /**
      * Whether or not this format has the same capabilities of the specific {@code type} as the {@code other} format.
      *

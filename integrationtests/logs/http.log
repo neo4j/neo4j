@@ -1,0 +1,2 @@
+2016-08-29 17:34:26.028+0000 INFO  [REQUEST] [AsyncLog @ 2016-08-29 17:34:26.027+0000]  null - null [Mon Aug 29 19:34:26 CEST 2016] "/db/data/node?null" 201 -1 "null" "Java/1.8.0_101" 1472492066027
+2016-08-29 17:34:26.029+0000 INFO  [REQUEST] [AsyncLog @ 2016-08-29 17:34:26.028+0000]  127.0.0.1 - null [Mon Aug 29 19:34:26 CEST 2016] "/db/data/batch?null" 200 -1 "null" "Java/1.8.0_101" 114

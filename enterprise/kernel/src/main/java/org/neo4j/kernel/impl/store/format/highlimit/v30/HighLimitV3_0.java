@@ -21,10 +21,12 @@ package org.neo4j.kernel.impl.store.format.highlimit.v30;
 
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.highlimit.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimitFormatFamily;
 import org.neo4j.kernel.impl.store.format.standard.LabelTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.PropertyKeyTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipTypeTokenRecordFormat;
@@ -55,8 +57,7 @@ public class HighLimitV3_0 extends BaseRecordFormats
 
     public HighLimitV3_0()
     {
-        super( STORE_VERSION, 7, Capability.DENSE_NODES, Capability.SCHEMA, Capability.LUCENE_5,
-                Capability.FIXED_REFERENCE );
+        super( STORE_VERSION, 7, Capability.DENSE_NODES, Capability.SCHEMA, Capability.LUCENE_5 );
     }
 
     @Override
@@ -105,5 +106,11 @@ public class HighLimitV3_0 extends BaseRecordFormats
     public RecordFormat<DynamicRecord> dynamic()
     {
         return new DynamicRecordFormat();
+    }
+
+    @Override
+    public FormatFamily getFormatFamily()
+    {
+        return HighLimitFormatFamily.INSTANCE;
     }
 }

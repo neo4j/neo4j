@@ -38,11 +38,6 @@ public enum Capability
     DENSE_NODES( CapabilityType.FORMAT, CapabilityType.STORE ),
 
     /**
-     * Store has fixed reference encoding support
-     */
-    FIXED_REFERENCE( CapabilityType.FORMAT ),
-
-    /**
      * Store has version trailers in the end of cleanly shut down store
      */
     VERSION_TRAILERS( CapabilityType.STORE ),

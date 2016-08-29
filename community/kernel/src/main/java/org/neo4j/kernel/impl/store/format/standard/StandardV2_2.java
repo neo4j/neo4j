@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.format.standard;
 
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
@@ -90,5 +91,11 @@ public class StandardV2_2 extends BaseRecordFormats
     public RecordFormat<DynamicRecord> dynamic()
     {
         return new DynamicRecordFormat();
+    }
+
+    @Override
+    public FormatFamily getFormatFamily()
+    {
+        return StandardFormatFamily.INSTANCE;
     }
 }
