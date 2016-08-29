@@ -118,7 +118,8 @@ public class Start extends TransactionProvidingApp
     private Result getResult( String query, Session session )
             throws ShellException, RemoteException, QueryExecutionKernelException
     {
-        return getEngine().executeQuery( query, getParameters( session ), shellSession( session ) );
+        Map<String,Object> parameters = getParameters( session );
+        return getEngine().executeQuery( query, parameters, shellSession( query, parameters, session ) );
     }
 
     private String trimQuery( String query )
@@ -188,14 +189,15 @@ public class Start extends TransactionProvidingApp
         return System.currentTimeMillis();
     }
 
-    private QuerySession shellSession( Session session )
+    private QuerySession shellSession( String query, Map<String,Object> parameters, Session session )
     {
         DependencyResolver dependencyResolver = getDependencyResolver();
         GraphDatabaseQueryService graph = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
         InternalTransaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
         Statement statement = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
-        Neo4jTransactionalContext context =
-                new Neo4jTransactionalContext( graph, transaction, statement, new PropertyContainerLocker() );
+        Neo4jTransactionalContext context = new Neo4jTransactionalContext(
+                graph, transaction, statement, query, parameters, new PropertyContainerLocker()
+        );
         return new ShellQuerySession( session, context );
     }
 

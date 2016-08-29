@@ -21,25 +21,86 @@ package org.neo4j.kernel.api;
 
 import java.util.Map;
 
-import org.neo4j.kernel.api.security.AuthSubject;
-
 public class ExecutingQuery
 {
     private final long queryId;
 
-    private final AuthSubject subject;
-    private final String query;
-    private final Map<String, Object> parameters;
+    private final String authSubjectName;
+    private final String queryText;
+    private final Map<String, Object> queryParameters;
     private final long startTime;
 
     // TODO: Metadata
 
-    public ExecutingQuery( long queryId, AuthSubject subject, String query, Map<String,Object> queryParameters )
+    public ExecutingQuery( long queryId, String authSubjectName, String queryText, Map<String,Object> queryParameters )
     {
         this.queryId = queryId;
-        this.subject = subject;
-        this.query = query;
-        this.parameters = queryParameters;
+        this.authSubjectName = authSubjectName;
+        this.queryText = queryText;
+        this.queryParameters = queryParameters;
         this.startTime = System.currentTimeMillis();
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        ExecutingQuery that = (ExecutingQuery) o;
+
+        return queryId == that.queryId;
+
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return (int) (queryId ^ (queryId >>> 32));
+    }
+
+    public long queryId()
+    {
+        return queryId;
+    }
+
+    public String authSubjectName()
+    {
+        return authSubjectName;
+    }
+
+    public String queryText()
+    {
+        return queryText;
+    }
+
+    public Map<String,Object> queryParameters()
+    {
+        return queryParameters;
+    }
+
+    public long startTime()
+    {
+        return startTime;
+    }
+
+    @SuppressWarnings( "StringBufferReplaceableByString" )
+    @Override
+    public String toString()
+    {
+        final StringBuilder sb = new StringBuilder( "ExecutingQuery{" );
+        sb.append( "queryId=" ).append( queryId );
+        sb.append( ", authSubjectName='" ).append( authSubjectName ).append( '\'' );
+        sb.append( ", queryText='" ).append( queryText ).append( '\'' );
+        sb.append( ", queryParameters=" ).append( queryParameters );
+        sb.append( ", startTime=" ).append( startTime );
+        sb.append( '}' );
+        return sb.toString();
     }
 }

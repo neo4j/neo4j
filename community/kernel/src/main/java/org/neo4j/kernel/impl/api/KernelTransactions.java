@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;

@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
@@ -32,8 +33,10 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.MetaOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
@@ -81,6 +84,7 @@ import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
 import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
+import org.neo4j.kernel.impl.api.operations.MetaStatementOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -92,7 +96,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
-public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations
+public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations, MetaOperations
 {
     private final KernelTransaction tx;
     private final KernelStatement statement;
@@ -146,6 +150,11 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     final org.neo4j.kernel.impl.api.operations.SchemaWriteOperations schemaWrite()
     {
         return operations.schemaWriteOperations();
+    }
+
+    final MetaStatementOperations metaStatementOperations()
+    {
+        return operations.metaStatementOperations();
     }
 
     final SchemaStateOperations schemaState()
@@ -1428,6 +1437,31 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     // </Counts>
+
+    // <Meta>
+
+    @Override
+    public Stream<ExecutingQuery> executingQueries()
+    {
+        statement.assertOpen();
+        return metaStatementOperations().executingQueries( statement );
+    }
+
+    @Override
+    public ExecutingQuery startQueryExecution( String queryText, Map<String,Object> queryParameters )
+    {
+        statement.assertOpen();
+        return metaStatementOperations().startQueryExecution( statement, queryText, queryParameters );
+    }
+
+    @Override
+    public void stopQueryExecution( ExecutingQuery executingQuery )
+    {
+        statement.assertOpen();
+        metaStatementOperations().stopQueryExecution( statement, executingQuery );
+    }
+
+    // </Meta>
 
     // <Procedures>
 

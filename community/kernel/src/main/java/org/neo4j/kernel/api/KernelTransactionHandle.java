@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.stream.Stream;
 

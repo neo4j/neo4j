@@ -20,34 +20,35 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import org.hamcrest.Matcher;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.lang.String.format;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.hasEntry;
-import static org.hamcrest.Matchers.isA;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.isA;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -63,6 +64,7 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.A
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
+import static org.neo4j.test.matchers.CommonMatchers.itemsMatchingExactlyOneOf;
 
 public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 {
@@ -174,7 +176,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         ClassWithProcedures.setTestLatch( new ClassWithProcedures.LatchedRunnables( doubleLatch, () -> {}, () -> {} ) );
 
         new Thread( () -> assertEmpty( writeSubject, "CALL test.waitForLatch()" ) ).start();
-        doubleLatch.start();
+        doubleLatch.startAndWaitForAllToStart();
         try
         {
             assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
@@ -183,52 +185,38 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         }
         finally
         {
-            doubleLatch.finish();
-            doubleLatch.awaitFinish();
+            doubleLatch.finishAndWaitForAllToFinish();
         }
     }
 
-    @Ignore
     @Test
     public void shouldListQueries() throws Throwable
     {
-        DoubleLatch latch = new DoubleLatch( 3 );
-        ThreadedTransactionCreate<S> write1 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> write2 = new ThreadedTransactionCreate<>( neo, latch );
+        DoubleLatch latch = new DoubleLatch( 3, true );
+        long startTime = System.currentTimeMillis();
+        ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
+        ThreadedTransactionCreate<S> read2 = new ThreadedTransactionCreate<>( neo, latch );
 
-        String q1 = write1.execute( threading, writeSubject );
-        String q2 = write2.execute( threading, writeSubject );
+        String q1 = read1.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
+        String q2 = read2.execute( threading, readSubject, "UNWIND [4,5,6] AS y RETURN y" );
         latch.startAndWaitForAllToStart();
 
         assertSuccess( adminSubject, "CALL dbms.listQueries()", r ->
-            r.forEachRemaining( m ->
-            {
-                // TODO: Make sure each matches exactly once
-                Matcher<Map<String,Object>> matcher1 =
-                        allOf( hasQuery( q1 ),
-                               hasUsername( "writeSubject" ),
-                               hasQueryId(),
-                               hasStartTimeAfter( 0L ),
-                               hasNoParameters() );
+        {
+            Set<Map<String,Object>> maps = r.stream().collect( Collectors.toSet() );
 
-                Matcher<Map<String,Object>> matcher2 =
-                        allOf( hasQuery( q2 ),
-                               hasUsername( "writeSubject" ),
-                               hasQueryId(),
-                               hasStartTimeAfter( 0L ),
-                               hasNoParameters() );
+            Matcher<Map<String,Object>> matcher1 = listedQuery( startTime, q1 );
+            Matcher<Map<String,Object>> matcher2 = listedQuery( startTime, q2 );
 
-                assertThat( m, anyOf( matcher1, matcher2 ) );
-            }
-        ) );
+            assertThat( maps, itemsMatchingExactlyOneOf( matcher1, matcher2 ) );
+        } );
 
-
-        write1.finish();
-        write2.finish();
+        read1.finish();
+        read2.finish();
         latch.finishAndWaitForAllToFinish();
 
-        write1.closeAndAssertSuccess();
-        write2.closeAndAssertSuccess();
+        read1.closeAndAssertSuccess();
+        read2.closeAndAssertSuccess();
     }
 
     //---------- terminate transactions for user -----------
@@ -394,7 +382,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         new Thread( () -> assertFail( writeSubject, "CALL test.waitForLatch()", "Explicitly terminated by the user." ) )
                 .start();
 
-        doubleLatch.start();
+        doubleLatch.startAndWaitForAllToStart();
         try
         {
             assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )",
@@ -402,8 +390,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         }
         finally
         {
-            doubleLatch.finish();
-            doubleLatch.awaitFinish();
+            doubleLatch.finishAndWaitForAllToFinish();
         }
     }
 
@@ -1315,34 +1302,44 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 
     //---------- matchers-----------
 
+    private Matcher<Map<String,Object>> listedQuery( long startTime, String query )
+    {
+        return allOf(
+                hasQuery( query ),
+                hasUsername( "readSubject" ),
+                hasQueryId(),
+                hasStartTimeAfter( startTime ),
+                hasNoParameters()
+        );
+    }
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasQuery( String query )
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( "query", query );
+        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "query" ), equalTo( query ) );
     }
 
     @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasUsername( String name )
+    private Matcher<Map<String, Object>> hasUsername( String username )
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( "userName", name );
+        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "username" ), equalTo( username ) );
     }
 
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasQueryId()
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( "queryId", isA( Long.class ) );
+        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "queryId" ), anyOf( (Matcher) isA( Integer.class ), isA( Long.class ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasStartTimeAfter( long base )
     {
         // TODO
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( "startTime", isA( Long.class ) );
+        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "startTime" ), allOf( isA( Long.class ), greaterThanOrEqualTo( base ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasNoParameters()
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( "parameters", Collections.emptySet() );
+        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "parameters" ), equalTo ( Collections.emptyMap() ) );
     }
 }

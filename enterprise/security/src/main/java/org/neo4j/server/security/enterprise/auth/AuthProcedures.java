@@ -30,9 +30,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -45,6 +48,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
+import static java.util.function.Predicate.isEqual;
 import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Procedure.Mode.DBMS;
 
@@ -262,7 +266,27 @@ public class AuthProcedures
     public Stream<QueryStatusResult> listQueries()
             throws InvalidArgumentsException, IOException
     {
-        throw new NotImplementedException();
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            // Expected to always succeed
+            ExecutingQuery ownQuery = statement.metaOperations().executingQueries().findFirst().get();
+            DependencyResolver resolver = graph.getDependencyResolver();
+            KernelTransactions kernelTransactions = resolver.resolveDependency( KernelTransactions.class );
+            Set<ExecutingQuery> executingQueries = kernelTransactions.executingQueries();
+            executingQueries.removeIf( isEqual( ownQuery ) );
+            return executingQueries.stream().map( this::queryStatusResult );
+        }
+    }
+
+    private QueryStatusResult queryStatusResult( ExecutingQuery q )
+    {
+        return new QueryStatusResult(
+            q.queryId(),
+            q.authSubjectName(),
+            q.queryText(),
+            q.queryParameters(),
+            q.startTime()
+        );
     }
 
     @Procedure( name = "dbms.listQueriesForUser", mode = DBMS )
@@ -449,11 +473,11 @@ public class AuthProcedures
         public final Map<String, Object> parameters;
         public final long startTime;
 
-        // TODO: Metadata
-
-
-        public QueryStatusResult( long queryId,
-                String username, String query, Map<String,Object> parameters,
+        public QueryStatusResult(
+                long queryId,
+                String username,
+                String query,
+                Map<String,Object> parameters,
                 long startTime )
         {
             this.queryId = queryId;

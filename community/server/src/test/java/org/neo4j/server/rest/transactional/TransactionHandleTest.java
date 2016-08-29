@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
@@ -80,7 +81,7 @@ public class TransactionHandleTest
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
         Result executionResult = mock( Result.class );
         QuerySession querySession = mock( QuerySession.class );
-        when( kernel.create( any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
+        when( kernel.create( "X", Collections.emptyMap(), any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
         when( executionEngine.executeQuery( "query", map(), querySession ) ).thenReturn( executionResult );
         TransactionRegistry registry = mock( TransactionRegistry.class );
@@ -116,7 +117,7 @@ public class TransactionHandleTest
 
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
         QuerySession querySession = mock( QuerySession.class );
-        when( kernel.create( any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
+        when( kernel.create( "X", Collections.emptyMap(), any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
         Result executionResult = mock( Result.class );
         when( executionEngine.executeQuery( "query", map(), querySession ) ).thenReturn( executionResult );
@@ -153,7 +154,7 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
         QuerySession querySession = mock( QuerySession.class );
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
-        when( kernel.create( any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
+        when( kernel.create( "X", Collections.emptyMap(), any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
@@ -196,7 +197,7 @@ public class TransactionHandleTest
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
         Result executionResult = mock( Result.class );
         QuerySession querySession = mock( QuerySession.class );
-        when( kernel.create( any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
+        when( kernel.create( "X", Collections.emptyMap(), any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
         when( executionEngine.isPeriodicCommit( queryText) ).thenReturn( true );
         when( executionEngine.executeQuery( eq( queryText ), eq( map() ), eq( querySession ) ) )
@@ -233,7 +234,7 @@ public class TransactionHandleTest
 
         QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
         QuerySession querySession = mock( QuerySession.class );
-        when( kernel.create( any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
+        when( kernel.create( "X", Collections.emptyMap(), any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
 
         Result result = mock( Result.class );
@@ -301,7 +302,7 @@ public class TransactionHandleTest
         QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
         Result executionResult = mock( Result.class );
         QuerySession querySession = mock( QuerySession.class );
-        when( kernel.create( any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
+        when( kernel.create( "X", Collections.emptyMap(), any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
         when( engine.executeQuery( "query", map(), querySession ) ).thenReturn( executionResult );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
@@ -340,7 +341,7 @@ public class TransactionHandleTest
 
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
         QuerySession querySession = mock( QuerySession.class );
-        when( kernel.create( any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
+        when( kernel.create( "X", Collections.emptyMap(), any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
         when( executionEngine.executeQuery( "query", map(), querySession ) ).thenThrow( new NullPointerException() );
 
@@ -380,7 +381,7 @@ public class TransactionHandleTest
         QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
         Result executionResult = mock( Result.class );
         QuerySession querySession = mock( QuerySession.class );
-        when( kernel.create( any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
+        when( kernel.create( "X", Collections.emptyMap(), any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
         when( engine.executeQuery( "query", map(), querySession ) ).thenReturn( executionResult );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
@@ -412,7 +413,7 @@ public class TransactionHandleTest
 
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
         QuerySession querySession = mock( QuerySession.class );
-        when( kernel.create( any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
+        when( kernel.create( "X", Collections.emptyMap(), any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
         when( executionEngine.executeQuery( "matsch (n) return n", map(), querySession ) )
                 .thenThrow( new QueryExecutionKernelException( new SyntaxException( "did you mean MATCH?" ) ) );

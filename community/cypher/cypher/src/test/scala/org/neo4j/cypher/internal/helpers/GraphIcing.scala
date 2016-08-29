@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.helpers
 
 import java.util
+import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -100,7 +101,7 @@ trait GraphIcing {
 
     private def createSession(txType: Type): (InternalTransaction, QuerySession) = {
       val tx = graph.beginTransaction(txType, AccessMode.Static.FULL)
-      val transactionalContext = new Neo4jTransactionalContext(graphService, tx, txBridge.get(), locker)
+      val transactionalContext = new Neo4jTransactionalContext(graphService, tx, txBridge.get(), "X", Collections.emptyMap(), locker)
       val session = QueryEngineProvider.embeddedSession(transactionalContext)
       (tx, session)
     }

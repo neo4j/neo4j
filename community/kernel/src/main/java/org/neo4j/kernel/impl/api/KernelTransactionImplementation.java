@@ -333,6 +333,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return currentStatement;
     }
 
+    KernelStatement tryAcquireStatement()
+    {
+        assertTransactionOpen();
+        return currentStatement.isAcquired() ? currentStatement : null;
+    }
+
     void upgradeToDataWrites() throws InvalidTransactionTypeKernelException
     {
         writeState = writeState.upgradeToDataWrites();
@@ -785,23 +791,5 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public void dispose()
     {
         storageStatement.close();
-    }
-
-    @Override
-    public Stream<ExecutingQuery> executingQueries()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void registerQueryExecutionStart( ExecutingQuery query )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void registerQueryExecutionStop( ExecutingQuery query )
-    {
-        throw new UnsupportedOperationException();
     }
 }

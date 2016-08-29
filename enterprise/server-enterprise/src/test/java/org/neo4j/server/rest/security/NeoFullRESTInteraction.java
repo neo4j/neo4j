@@ -22,11 +22,14 @@ package org.neo4j.server.rest.security;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.IntNode;
+import org.codehaus.jackson.node.LongNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.codehaus.jackson.node.TextNode;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
@@ -245,37 +248,63 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
             for ( int i = 0; i < columns.size(); i++ )
             {
                 String key = columns.get( i ).asText();
-                JsonNode value = row.get( i );
-                if ( value instanceof TextNode )
-                {
-                    map.put( key, row.get( i ).asText() );
-                }
-                else if ( value instanceof ArrayNode )
-                {
-                    ArrayNode aNode = (ArrayNode) value;
-                    ArrayList<String> listValue = new ArrayList( aNode.size() );
-                    for ( int j = 0; j < aNode.size(); j++ )
-                    {
-                        listValue.add( aNode.get( j ).asText() );
-                    }
-                    map.put( key, listValue );
-                }
-                else if ( value instanceof ObjectNode )
-                {
-                    map.put( key, value );
-                }
-                else if ( value instanceof IntNode )
-                {
-                    map.put( key, value.getIntValue() );
-                }
-                else
-                {
-                    throw new RuntimeException( "Unhandled REST value type '" + value.getClass() +
-                            "'. Need String (TextNode), List (ArrayNode), Object (ObjectNode) or int (IntNode)." );
-                }
+                Object value = getValue( row.get( i ) );
+                map.put( key, value );
             }
-
             return map;
         }
+    }
+
+    private Object getValue( JsonNode valueNode )
+    {
+        Object value;
+
+        if ( valueNode instanceof TextNode )
+        {
+            value = valueNode.asText();
+        }
+        else if ( valueNode instanceof ObjectNode )
+        {
+            value = mapValue( valueNode.getFieldNames(), valueNode );
+        }
+        else if ( valueNode instanceof ArrayNode )
+        {
+            ArrayNode aNode = (ArrayNode) valueNode;
+            ArrayList<String> listValue = new ArrayList( aNode.size() );
+            for ( int j = 0; j < aNode.size(); j++ )
+            {
+                listValue.add( aNode.get( j ).asText() );
+            }
+            value = listValue;
+        }
+        else if ( valueNode instanceof IntNode )
+        {
+            value = valueNode.getIntValue();
+        }
+        else if ( valueNode instanceof LongNode )
+        {
+            value = valueNode.getLongValue();
+        }
+        else
+        {
+            throw new RuntimeException( String.format(
+                "Unhandled REST value type '%s'. Need String (TextNode), List (ArrayNode), Object (ObjectNode), long (LongNode), or int (IntNode).",
+                valueNode.getClass()
+            ) );
+        }
+        return value;
+    }
+
+    private Map<String,Object> mapValue( Iterator<String> columns, JsonNode node )
+    {
+        TreeMap<String,Object> map = new TreeMap();
+        while ( columns.hasNext() )
+        {
+            String key = columns.next();
+            Object value = getValue( node.get( key ) );
+            map.put( key, value );
+        }
+
+        return map;
     }
 }

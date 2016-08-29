@@ -254,24 +254,6 @@ public class ConstraintIndexCreatorTest
                 }
 
                 @Override
-                public Stream<ExecutingQuery> executingQueries()
-                {
-                    return null;
-                }
-
-                @Override
-                public void registerQueryExecutionStart( ExecutingQuery query )
-                {
-
-                }
-
-                @Override
-                public void registerQueryExecutionStop( ExecutingQuery query )
-                {
-
-                }
-
-                @Override
                 public long lastTransactionIdWhenStarted()
                 {
                     return 0;

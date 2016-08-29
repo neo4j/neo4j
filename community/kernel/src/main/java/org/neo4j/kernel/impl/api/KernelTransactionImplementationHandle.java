@@ -106,7 +106,8 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     @Override
     public Stream<ExecutingQuery> executingQueries()
     {
-        return tx.executingQueries();
+        KernelStatement statement = tx.tryAcquireStatement();
+        return statement == null ? Stream.empty() : statement.metaOperations().executingQueries();
     }
 
     @Override

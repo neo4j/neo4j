@@ -22,6 +22,7 @@ package org.neo4j.server.security.enterprise.auth;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.NamedFunction;
@@ -48,8 +49,13 @@ public class ThreadedTransactionCreate<S>
     String execute( ThreadingRule threading, S subject )
     {
         final String query = "CREATE (:Test { name: '" + neo.nameOf( subject ) + "-node'})";
+        return execute( threading, subject, query );
+    }
+
+    String execute( ThreadingRule threading, S subject, String query )
+    {
         NamedFunction<S, Throwable> startTransaction =
-                new NamedFunction<S, Throwable>( "start-transaction" )
+                new NamedFunction<S, Throwable>( "start-transaction-" + query.hashCode() )
                 {
                     @Override
                     public Throwable apply( S subject )
@@ -58,9 +64,10 @@ public class ThreadedTransactionCreate<S>
                         {
                             try ( InternalTransaction tx = neo.startTransactionAsUser( subject ) )
                             {
-                                neo.getGraph().execute( query );
+                                Result result = neo.getGraph().execute( query );
                                 latch.startAndWaitForAllToStart();
                                 latch.waitForAllToFinish();
+                                result.close();
                                 tx.success();
                                 return null;
                             }

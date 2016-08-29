@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.Map;
+
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
@@ -58,4 +60,9 @@ public interface Statement extends Resource
      * and it's of a different type, e.g {@link #dataWriteOperations()}.
      */
     SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeKernelException;
+
+    /**
+     * @return interface exposing operations for associating metadata with this statement
+     */
+    MetaOperations metaOperations();
 }

@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.stream.Stream;
+
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.MetaOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -63,15 +66,21 @@ public class KernelStatement implements TxStateHolder, Statement
     private final OperationsFacade facade;
     private StatementLocks statementLocks;
     private int referenceCount;
+    private volatile ExecutingQueryEntry executingQueryListHead;
 
-    public KernelStatement( KernelTransactionImplementation transaction,
-            TxStateHolder txStateHolder,
-            StatementOperationParts operations, StorageStatement storeStatement, Procedures procedures )
+    public KernelStatement(
+        KernelTransactionImplementation transaction,
+        TxStateHolder txStateHolder,
+        StatementOperationParts operations,
+        StorageStatement storeStatement,
+        Procedures procedures
+    )
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
         this.storeStatement = storeStatement;
         this.facade = new OperationsFacade( transaction, this, operations, procedures );
+        this.executingQueryListHead = null;
     }
 
     @Override
@@ -114,6 +123,12 @@ public class KernelStatement implements TxStateHolder, Statement
                     String.format( "Schema operations are not allowed for '%s'.", transaction.mode().name() ) );
         }
         transaction.upgradeToSchemaWrites();
+        return facade;
+    }
+
+    @Override
+    public MetaOperations metaOperations()
+    {
         return facade;
     }
 
@@ -178,6 +193,11 @@ public class KernelStatement implements TxStateHolder, Statement
         }
     }
 
+    final boolean isAcquired()
+    {
+        return ( referenceCount > 0 );
+    }
+
     final void forceClose()
     {
         if ( referenceCount > 0 )
@@ -187,14 +207,37 @@ public class KernelStatement implements TxStateHolder, Statement
         }
     }
 
-    private void cleanupResources()
+    final String authSubjectName()
     {
-        storeStatement.release();
-        // closing is done by KTI
+        return transaction.mode().name();
     }
 
-    public StorageStatement getStoreStatement()
+    final Stream<ExecutingQuery> executingQueries()
+    {
+        return executingQueryListHead == null ? Stream.empty() : executingQueryListHead.queries();
+    }
+
+    final void startQueryExecution( ExecutingQuery query )
+    {
+        this.executingQueryListHead =
+            executingQueryListHead == null ?
+                new ExecutingQueryEntry( query, null ) : executingQueryListHead.push( query );
+    }
+
+    final void stopQueryExecution( ExecutingQuery executingQuery )
+    {
+        this.executingQueryListHead = executingQueryListHead.remove( executingQuery );
+    }
+
+    /* only public for tests */ public final StorageStatement getStoreStatement()
     {
         return storeStatement;
+    }
+
+    private void cleanupResources()
+    {
+        // closing is done by KTI
+        storeStatement.release();
+        executingQueryListHead = null;
     }
 }

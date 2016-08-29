@@ -93,7 +93,7 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     @Override
     public Stream<ExecutingQuery> executingQueries()
     {
-        return tx.executingQueries();
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -346,7 +346,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Result execute( String query ) throws QueryExecutionException
     {
-        return execute( query, Collections.<String,Object>emptyMap() );
+        return execute( query, Collections.emptyMap() );
     }
 
     @Override
@@ -361,8 +361,14 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public Result execute( InternalTransaction transaction, String query, Map<String,Object> parameters )
             throws QueryExecutionException
     {
-        TransactionalContext transactionalContext =
-                new Neo4jTransactionalContext( spi.queryService(), transaction, spi.currentStatement(), locker );
+        TransactionalContext transactionalContext = new Neo4jTransactionalContext(
+            spi.queryService(),
+            transaction,
+            spi.currentStatement(),
+            query,
+            parameters,
+            locker
+        );
         return spi.executeQuery( query, parameters, QueryEngineProvider.embeddedSession( transactionalContext ) );
     }
 

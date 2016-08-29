@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.MetaOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -346,24 +347,6 @@ public class AwaitIndexProcedureTest
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
-
-        @Override
-        public Stream<ExecutingQuery> executingQueries()
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
-
-        @Override
-        public void registerQueryExecutionStart( ExecutingQuery query )
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
-
-        @Override
-        public void registerQueryExecutionStop( ExecutingQuery query )
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
     }
 
     private class StubStatement implements Statement
@@ -401,6 +384,12 @@ public class AwaitIndexProcedureTest
 
         @Override
         public SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeKernelException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public MetaOperations metaOperations()
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
