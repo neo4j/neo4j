@@ -26,6 +26,7 @@ import org.apache.lucene.store.IndexInput;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.impl.index.storage.layout.FolderLayout;
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
+import org.neo4j.kernel.impl.util.NumberAwareStringComparator;
 
 import static java.util.stream.Collectors.toList;
 
@@ -48,6 +50,15 @@ import static java.util.stream.Collectors.toList;
  */
 public class PartitionedIndexStorage
 {
+    private static final Comparator<File> FILE_COMPARATOR = new Comparator<File>()
+    {
+        @Override
+        public int compare( File o1, File o2 )
+        {
+            return NumberAwareStringComparator.INSTANCE.compare( o1.getName(), o2.getName() );
+        }
+    };
+
     private final DirectoryFactory directoryFactory;
     private final FileSystemAbstraction fileSystem;
     private final boolean archiveFailed;
@@ -235,7 +246,10 @@ public class PartitionedIndexStorage
     {
         File[] files = fileSystem.listFiles( rootFolder );
         return files == null ? Collections.emptyList()
-                             : Stream.of( files ).filter( fileSystem::isDirectory ).collect( toList() );
+                             : Stream.of( files )
+                               .filter( fileSystem::isDirectory )
+                               .sorted( FILE_COMPARATOR )
+                               .collect( toList() );
 
     }
 
