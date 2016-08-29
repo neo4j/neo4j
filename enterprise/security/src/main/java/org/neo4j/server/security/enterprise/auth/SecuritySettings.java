@@ -65,8 +65,14 @@ public class SecuritySettings
             setting( "dbms.security.realms.plugin.authorization_enabled", BOOLEAN, "false" );
 
     @Description( "Hostname and port of LDAP server to use for authentication and authorization." )
-    public static final Setting<HostnamePort> ldap_server =
-            setting( "dbms.security.realms.ldap.host", HOSTNAME_PORT, "0.0.0.0:389" );
+    public static final Setting<String> ldap_server =
+            setting( "dbms.security.realms.ldap.host", STRING, "0.0.0.0:389" );
+
+    @Description( "Use secure communication with the LDAP server using opportunistic TLS. " +
+            "First an initial insecure connection will be made with the LDAP server and a STARTTLS command will be " +
+            "issued to negotiate an upgrade of the connection to TLS before initiating authentication." )
+    public static final Setting<Boolean> ldap_use_starttls =
+            setting( "dbms.security.realms.ldap.use_starttls", BOOLEAN, "false" );
 
     @Description( "LDAP authentication mechanism. This is one of `simple` or a SASL mechanism supported by JNDI, " +
                   "e.g. `DIGEST-MD5`. `simple` is basic username" +

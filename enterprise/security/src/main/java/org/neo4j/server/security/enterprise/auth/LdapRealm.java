@@ -53,7 +53,10 @@ import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
+import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
+import javax.naming.ldap.StartTlsRequest;
+import javax.naming.ldap.StartTlsResponse;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.configuration.Config;
@@ -71,6 +74,7 @@ public class LdapRealm extends JndiLdapRealm
 
     private Boolean authenticationEnabled;
     private Boolean authorizationEnabled;
+    private Boolean useStartTls;
     private String userSearchBase;
     private String userSearchFilter;
     private List<String> membershipAttributeNames;
@@ -98,7 +102,72 @@ public class LdapRealm extends JndiLdapRealm
             LdapContextFactory ldapContextFactory )
             throws NamingException
     {
-        return authenticationEnabled ? super.queryForAuthenticationInfo( token, ldapContextFactory ) : null;
+        if ( authenticationEnabled )
+        {
+            JndiLdapContextFactory jndiLdapContextFactory = (JndiLdapContextFactory) ldapContextFactory;
+            // TODO: Maybe change this to security event log once we have it
+            log.debug( "Authenticating user '%s' against LDAP server '%s'%s", token.getPrincipal(),
+                    jndiLdapContextFactory.getUrl(),
+                    useStartTls ? " using StartTLS" : "" );
+            try
+            {
+                return useStartTls ? queryForAuthenticationInfoUsingStartTls( token, ldapContextFactory ) :
+                       super.queryForAuthenticationInfo( token, ldapContextFactory );
+            }
+            catch ( Exception e )
+            {
+                // TODO: Maybe change this to security event log once we have it
+                log.debug( "Authentication exception: [%s] %s",  e.getClass().getName(), e.getMessage() );
+                throw e;
+            }
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    protected AuthenticationInfo queryForAuthenticationInfoUsingStartTls( AuthenticationToken token,
+            LdapContextFactory ldapContextFactory ) throws NamingException
+    {
+        JndiLdapContextFactory jndiLdapContextFactory = (JndiLdapContextFactory) ldapContextFactory;
+        Object principal = token.getPrincipal();
+        Object credentials = token.getCredentials();
+
+        principal = getLdapPrincipal(token);
+
+        LdapContext ctx = null;
+        Hashtable<String, Object> env = new Hashtable<>();
+        env.put( Context.INITIAL_CONTEXT_FACTORY, jndiLdapContextFactory.getContextFactoryClassName() );
+        env.put( Context.PROVIDER_URL, jndiLdapContextFactory.getUrl() );
+
+        try {
+            ctx = new InitialLdapContext( env, null );
+
+            StartTlsRequest startTlsRequest = new StartTlsRequest();
+            StartTlsResponse tls = (StartTlsResponse) ctx.extendedOperation( startTlsRequest );
+            try
+            {
+                tls.negotiate();
+            }
+            catch ( IOException e )
+            {
+                log.error( "Failed to negotiate TLS connection", e );
+                throw new CommunicationException( e.getMessage() );
+            }
+
+            ctx.addToEnvironment( Context.SECURITY_AUTHENTICATION, ((JndiLdapContextFactory) ldapContextFactory).getAuthenticationMechanism() );
+            ctx.addToEnvironment( Context.SECURITY_PRINCIPAL, principal );
+            ctx.addToEnvironment( Context.SECURITY_CREDENTIALS, credentials );
+
+            ctx.reconnect( ctx.getConnectControls() );
+
+            return createAuthenticationInfo(token, principal, credentials, ctx);
+        }
+        finally
+        {
+            LdapUtils.closeContext( ctx );
+        }
     }
 
     @Override
@@ -148,6 +217,8 @@ public class LdapRealm extends JndiLdapRealm
             throws NamingException
     {
         // NOTE: This will be called only if authentication with the ldap context was successful
+        // TODO: Change this to security event log once we have it
+        log.debug( "Successfully authenticated user '%s' through LDAP", token.getPrincipal() );
 
         // If authorization is enabled but useSystemAccountForAuthorization is disabled, we should perform
         // the search for groups directly here while the user's authenticated ldap context is open.
@@ -199,7 +270,7 @@ public class LdapRealm extends JndiLdapRealm
     private void configureRealm( Config config )
     {
         JndiLdapContextFactory contextFactory = new JndiLdapContextFactory();
-        contextFactory.setUrl( "ldap://" + config.get( SecuritySettings.ldap_server ) );
+        contextFactory.setUrl( parseLdapServerUrl( config.get( SecuritySettings.ldap_server ) ) );
         contextFactory.setAuthenticationMechanism( config.get( SecuritySettings.ldap_auth_mechanism ) );
         contextFactory.setReferral( config.get( SecuritySettings.ldap_referral ) );
         contextFactory.setSystemUsername( config.get( SecuritySettings.ldap_system_username ) );
@@ -215,6 +286,7 @@ public class LdapRealm extends JndiLdapRealm
 
         authenticationEnabled = config.get( SecuritySettings.ldap_authentication_enabled );
         authorizationEnabled = config.get( SecuritySettings.ldap_authorization_enabled );
+        useStartTls = config.get( SecuritySettings.ldap_use_starttls );
 
         userSearchBase = config.get( SecuritySettings.ldap_authorization_user_search_base );
         userSearchFilter = config.get( SecuritySettings.ldap_authorization_user_search_filter );
@@ -222,6 +294,11 @@ public class LdapRealm extends JndiLdapRealm
         useSystemAccountForAuthorization = config.get( SecuritySettings.ldap_authorization_use_system_account );
         groupToRoleMapping =
                 parseGroupToRoleMapping( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) );
+    }
+
+    private String parseLdapServerUrl( String rawLdapServer )
+    {
+        return rawLdapServer.contains( "://" ) ? rawLdapServer : "ldap://" + rawLdapServer;
     }
 
     Map<String,Collection<String>> parseGroupToRoleMapping( String groupToRoleMappingString )
