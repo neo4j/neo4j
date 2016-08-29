@@ -39,12 +39,14 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.logging.Log;
 import org.neo4j.server.rest.transactional.ExecutionResultSerializer;
 import org.neo4j.server.rest.transactional.TransactionFacade;
 import org.neo4j.server.rest.transactional.TransactionHandle;
 import org.neo4j.server.rest.transactional.TransactionTerminationHandle;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
+import org.neo4j.server.web.HttpHeaderUtils;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.udc.UsageDataKeys.Features.http_tx_endpoint;
@@ -60,12 +62,15 @@ public class TransactionalService
     private final TransactionFacade facade;
     private final UsageData usage;
     private final TransactionUriScheme uriScheme;
+    private Log log;
 
-    public TransactionalService( @Context TransactionFacade facade, @Context UriInfo uriInfo, @Context UsageData usage )
+    public TransactionalService( @Context TransactionFacade facade, @Context UriInfo uriInfo, @Context UsageData usage,
+            @Context Log log )
     {
         this.facade = facade;
         this.usage = usage;
         this.uriScheme = new TransactionUriBuilder( uriInfo );
+        this.log = log;
     }
 
     @POST
@@ -77,7 +82,9 @@ public class TransactionalService
         try
         {
             usage.get( features ).flag( http_tx_endpoint );
-            TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme, false, AccessMode.Static.FULL );
+            long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
+            AccessMode accessMode = AccessMode.Static.FULL;
+            TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme, false, accessMode, customTransactionTimeout );
             return createdResponse( transactionHandle, executeStatements( input, transactionHandle, uriInfo.getBaseUri(), request ) );
         }
         catch ( TransactionLifecycleException e )
@@ -134,7 +141,9 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = facade.newTransactionHandle( uriScheme, true, AccessMode.Static.FULL );
+            long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
+            AccessMode accessMode = AccessMode.Static.FULL;
+            transactionHandle = facade.newTransactionHandle( uriScheme, true, accessMode, customTransactionTimeout );
         }
         catch ( TransactionLifecycleException e )
         {

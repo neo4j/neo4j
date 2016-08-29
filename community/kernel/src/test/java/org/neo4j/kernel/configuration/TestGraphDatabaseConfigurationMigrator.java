@@ -19,10 +19,15 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.apache.commons.lang3.StringUtils;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Map;
 
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -35,17 +40,27 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  */
 public class TestGraphDatabaseConfigurationMigrator
 {
+
+    private ConfigurationMigrator migrator;
+
+    @Rule
+    public AssertableLogProvider logProvider = new AssertableLogProvider( true );
+
+    @Before
+    public void setUp()
+    {
+        migrator = new GraphDatabaseConfigurationMigrator();
+    }
+
     @Test
     public void testNoMigration()
     {
-        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
         assertThat( migrator.apply( stringMap( "foo", "bar" ), NullLog.getInstance() ), equalTo( stringMap( "foo", "bar" ) ) );
     }
 
     @Test
     public void migrateIndexSamplingBufferSizeIfPresent()
     {
-        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
         Map<String,String> resultConfig = migrator.apply( stringMap( "dbms.index_sampling.buffer_size", "64m" ), NullLog.getInstance() );
         assertEquals( "Old property should be migrated to new one with correct value",
                 resultConfig, stringMap( "dbms.index_sampling.sample_size_limit", "8388608" ));
@@ -54,9 +69,56 @@ public class TestGraphDatabaseConfigurationMigrator
     @Test
     public void skipMigrationOfIndexSamplingBufferSizeIfNotPresent()
     {
-        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
         Map<String,String> resultConfig = migrator.apply( stringMap( "dbms.index_sampling.sample_size_limit", "8388600" ), NullLog.getInstance() );
         assertEquals( "Nothing to migrate should be the same",
                 resultConfig, stringMap( "dbms.index_sampling.sample_size_limit", "8388600" ));
     }
+
+    @Test
+    public void migrateExecutionTimeLimitIfPresent()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "unsupported.dbms.executiontime_limit.time", "120s" ), getLog() );
+        assertEquals( "Old property should be migrated to new",
+                migratedProperties, stringMap( "dbms.transaction.timeout", "120s" ));
+
+        assertContainsWarningMessage("unsupported.dbms.executiontime_limit.time has been replaced with dbms.transaction.timeout.");
+    }
+
+    @Test
+    public void skipMigrationOfExecutionTimeLimitIfNotPresent()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.transaction.timeout", "120s" ), getLog() );
+        assertEquals( "Nothing to migrate", migratedProperties, stringMap( "dbms.transaction.timeout", "120s" ));
+        logProvider.assertNoLoggingOccurred();
+    }
+
+    @Test
+    public void skipMigrationOfExecutionTimeLimitIfTransactionTimeoutConfigured()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "unsupported.dbms.executiontime_limit.time", "12s",
+                "dbms.transaction.timeout", "120s" ), getLog() );
+        assertEquals( "Should keep pre configured transaction timeout.",
+                migratedProperties, stringMap( "dbms.transaction.timeout", "120s" ));
+        assertContainsWarningMessage();
+    }
+
+    private void assertContainsWarningMessage()
+    {
+        logProvider.assertContainsMessageContaining( "WARNING! Deprecated configuration options used. See manual for details" );
+    }
+
+    private void assertContainsWarningMessage(String deprecationMessage)
+    {
+        assertContainsWarningMessage();
+        if ( StringUtils.isNotEmpty( deprecationMessage ) )
+        {
+            logProvider.assertContainsMessageContaining( deprecationMessage );
+        }
+    }
+
+    private Log getLog()
+    {
+        return logProvider.getLog( GraphDatabaseConfigurationMigrator.class );
+    }
+
 }
