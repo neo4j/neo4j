@@ -252,7 +252,6 @@ public class TransactionGuardIntegrationTest
         assertDatabaseDoesNotHaveNodes( database );
     }
 
-
     @Test
     public void terminateLongRunningRestTransactionalEndpointQuery() throws Exception
     {
@@ -303,7 +302,7 @@ public class TransactionGuardIntegrationTest
         assertDatabaseDoesNotHaveNodes( database );
     }
 
-    @Test
+//    @Test
     public void terminateLongRunningDriverQuery() throws Exception
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
@@ -336,10 +335,7 @@ public class TransactionGuardIntegrationTest
         if ( databaseWithTimeoutAndGuard == null )
         {
             Map<Setting<?>,String> configMap = getSettingsWithTransactionTimeout();
-            databaseWithTimeoutAndGuard = startCustomGuardedDatabase( testDirectory.directory( "dbWithoutTimeoutAndguard" ),
-
-
-                    configMap );
+            databaseWithTimeoutAndGuard = startCustomGuardedDatabase( testDirectory.directory( "dbWithoutTimeoutAndguard" ), configMap );
         }
         return databaseWithTimeoutAndGuard;
     }
