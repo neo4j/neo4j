@@ -19,18 +19,18 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.coreedge.discovery.Cluster;
@@ -48,10 +48,8 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.equalTo;
-
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.security.AccessMode.Static.READ;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -70,12 +68,9 @@ public class ClusterOverviewIT
     }
 
     @Parameterized.Parameters( name = "discovery-{0}" )
-    public static Collection<Object[]> data()
+    public static Collection<DiscoveryService> data()
     {
-        return Arrays.asList( new Object[][]{
-                {DiscoveryService.SHARED},
-                {DiscoveryService.HAZELCAST},
-        } );
+        return Arrays.asList( DiscoveryService.SHARED, DiscoveryService.HAZELCAST );
     }
 
     public ClusterOverviewIT( DiscoveryService discoveryService )
@@ -276,16 +271,18 @@ public class ClusterOverviewIT
     {
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         KernelTransaction transaction = kernel.newTransaction( Type.implicit, READ );
-        Statement statement = transaction.acquireStatement();
-
-        RawIterator<Object[],ProcedureException> itr = statement.readOperations().procedureCallRead(
-                procedureName( "dbms", "cluster", ClusterOverviewProcedure.PROCEDURE_NAME ), null );
-
         List<MemberInfo> infos = new ArrayList<>();
-        while ( itr.hasNext() )
+        try ( Statement statement = transaction.acquireStatement() )
         {
-            Object[] row = itr.next();
-            infos.add( new MemberInfo( (String) row[1], Role.valueOf( (String) row[2] ) ) );
+
+            RawIterator<Object[],ProcedureException> itr = statement.readOperations().procedureCallRead(
+                    procedureName( "dbms", "cluster", ClusterOverviewProcedure.PROCEDURE_NAME ), null );
+
+            while ( itr.hasNext() )
+            {
+                Object[] row = itr.next();
+                infos.add( new MemberInfo( (String) row[1], Role.valueOf( (String) row[2] ) ) );
+            }
         }
         return infos;
     }

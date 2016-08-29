@@ -116,7 +116,7 @@ public interface KernelTransaction extends AutoCloseable
 
     /**
      * Closes this transaction, committing its changes if {@link #success()} has been called and neither
-     * {@link #failure()} nor {@link #markForTermination()} has been called.
+     * {@link #failure()} nor {@link #markForTermination(Status)} has been called.
      * Otherwise its changes will be rolled back.
      *
      * @return id of the committed transaction or {@link #ROLLBACK} if transaction was rolled back or
@@ -126,7 +126,7 @@ public interface KernelTransaction extends AutoCloseable
 
     /**
      * Closes this transaction, committing its changes if {@link #success()} has been called and neither
-     * {@link #failure()} nor {@link #markForTermination()} has been called.
+     * {@link #failure()} nor {@link #markForTermination(Status)} has been called.
      * Otherwise its changes will be rolled back.
      */
     @Override

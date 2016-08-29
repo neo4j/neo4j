@@ -112,12 +112,13 @@ public class ClusterDiscoveryIT
     {
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         KernelTransaction transaction = kernel.newTransaction( Type.implicit, READ );
-        Statement statement = transaction.acquireStatement();
-
-        // when
-        return asList( statement.readOperations().procedureCallRead(
-                procedureName( "dbms", "cluster", DiscoverEndpointAcquisitionServersProcedure.NAME ),
-                new Object[0] ) );
+        try ( Statement statement = transaction.acquireStatement() )
+        {
+            // when
+            return asList( statement.readOperations().procedureCallRead(
+                    procedureName( "dbms", "cluster", DiscoverEndpointAcquisitionServersProcedure.NAME ),
+                    new Object[0] ) );
+        }
     }
 
     private List<Object[]> endPoints( GraphDatabaseFacade db ) throws TransactionFailureException, org
@@ -125,11 +126,12 @@ public class ClusterDiscoveryIT
     {
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         KernelTransaction transaction = kernel.newTransaction( Type.implicit, READ );
-        Statement statement = transaction.acquireStatement();
-
-        // when
-        return asList( statement.readOperations().procedureCallRead(
-                procedureName( "dbms", "cluster", AcquireEndpointsProcedure.NAME ),
-                new Object[0] ) );
+        try ( Statement statement = transaction.acquireStatement() )
+        {
+            // when
+            return asList( statement.readOperations().procedureCallRead(
+                    procedureName( "dbms", "cluster", AcquireEndpointsProcedure.NAME ),
+                    new Object[0] ) );
+        }
     }
 }

@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -77,40 +78,44 @@ public class BuiltInProcedures
     @Procedure(name = "db.indexes", mode = READ)
     public Stream<IndexResult> listIndexes() throws ProcedureException
     {
-        ReadOperations operations = tx.acquireStatement().readOperations();
-        TokenNameLookup tokens = new StatementTokenNameLookup( operations );
-
-        List<IndexDescriptor> indexes =
-                asList( operations.indexesGetAll() );
-
-        Set<IndexDescriptor> uniqueIndexes = asSet( operations.uniqueIndexesGetAll() );
-        indexes.addAll( uniqueIndexes );
-        indexes.sort( (a,b) -> a.userDescription(tokens).compareTo( b.userDescription(tokens) ) );
-
-        ArrayList<IndexResult> result = new ArrayList<>();
-        for ( IndexDescriptor index : indexes )
+        try ( Statement statement = tx.acquireStatement() )
         {
-            try
-            {
-                String type;
-                if (uniqueIndexes.contains( index ))
-                {
-                    type = IndexType.NODE_UNIQUE_PROPERTY.typeName();
-                }
-                else {
-                    type = IndexType.NODE_LABEL_PROPERTY.typeName();
-                }
+            ReadOperations operations = statement.readOperations();
+            TokenNameLookup tokens = new StatementTokenNameLookup( operations );
 
-                result.add( new IndexResult( "INDEX ON " + index.userDescription( tokens ),
-                        operations.indexGetState( index ).toString(), type ) );
-            }
-            catch ( IndexNotFoundKernelException e )
+            List<IndexDescriptor> indexes =
+                    asList( operations.indexesGetAll() );
+
+            Set<IndexDescriptor> uniqueIndexes = asSet( operations.uniqueIndexesGetAll() );
+            indexes.addAll( uniqueIndexes );
+            indexes.sort( ( a, b ) -> a.userDescription( tokens ).compareTo( b.userDescription( tokens ) ) );
+
+            ArrayList<IndexResult> result = new ArrayList<>();
+            for ( IndexDescriptor index : indexes )
             {
-                throw new ProcedureException( Status.Schema.IndexNotFound, e,
-                        "No index on ", index.userDescription( tokens ) );
+                try
+                {
+                    String type;
+                    if ( uniqueIndexes.contains( index ) )
+                    {
+                        type = IndexType.NODE_UNIQUE_PROPERTY.typeName();
+                    }
+                    else
+                    {
+                        type = IndexType.NODE_LABEL_PROPERTY.typeName();
+                    }
+
+                    result.add( new IndexResult( "INDEX ON " + index.userDescription( tokens ),
+                            operations.indexGetState( index ).toString(), type ) );
+                }
+                catch ( IndexNotFoundKernelException e )
+                {
+                    throw new ProcedureException( Status.Schema.IndexNotFound, e,
+                            "No index on ", index.userDescription( tokens ) );
+                }
             }
+            return result.stream();
         }
-        return result.stream();
     }
 
     @Description( "Await indexes in the database to come online." )
@@ -119,31 +124,39 @@ public class BuiltInProcedures
                             @Name("property") String propertyKeyName,
                             @Name(value = "timeOutSeconds") long timeout ) throws ProcedureException
     {
-        new AwaitIndexProcedure( tx ).execute( labelName, propertyKeyName, timeout, TimeUnit.SECONDS );
+        try ( AwaitIndexProcedure awaitIndexProcedure = new AwaitIndexProcedure( tx ) )
+        {
+            awaitIndexProcedure.execute( labelName, propertyKeyName, timeout, TimeUnit.SECONDS );
+        }
     }
 
     @Description( "List all constraints in the database." )
     @Procedure(name = "db.constraints", mode = READ)
     public Stream<ConstraintResult> listConstraints()
     {
-        ReadOperations operations = tx.acquireStatement().readOperations();
+        Statement statement = tx.acquireStatement();
+        ReadOperations operations = statement.readOperations();
         TokenNameLookup tokens = new StatementTokenNameLookup( operations );
 
         return asList( operations.constraintsGetAll() )
                 .stream()
                 .map( ( constraint ) -> constraint.userDescription( tokens ) )
                 .sorted()
-                .map( ConstraintResult::new );
+                .map( ConstraintResult::new )
+                .onClose( statement::close );
     }
 
     @Description( "List all procedures in the DBMS." )
     @Procedure(name = "dbms.procedures", mode = READ)
     public Stream<ProcedureResult> listProcedures()
     {
-        return tx.acquireStatement().readOperations().proceduresGetAll()
-                .stream()
-                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
-                .map( ProcedureResult::new );
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            return statement.readOperations().proceduresGetAll()
+                    .stream()
+                    .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                    .map( ProcedureResult::new );
+        }
     }
 
     public class LabelResult

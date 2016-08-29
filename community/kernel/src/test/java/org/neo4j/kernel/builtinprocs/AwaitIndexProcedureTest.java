@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -55,7 +56,6 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
@@ -67,6 +67,19 @@ public class AwaitIndexProcedureTest
     private static final TimeUnit timeoutUnits = TimeUnit.MILLISECONDS;
     private final ReadOperations operations = mock( ReadOperations.class );
     private final AwaitIndexProcedure procedure = new AwaitIndexProcedure( new StubKernelTransaction( operations ) );
+
+    @Test
+    public void closeStatementOnClose() throws Exception
+    {
+        KernelTransaction kernelTransaction = Mockito.mock( KernelTransaction.class );
+        Statement statement = mock( Statement.class );
+        when( kernelTransaction.acquireStatement() ).thenReturn( statement );
+        try ( AwaitIndexProcedure ignored = new AwaitIndexProcedure( kernelTransaction ) )
+        {
+            //empty
+        }
+        verify( statement ).close();
+    }
 
     @Test
     public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException
