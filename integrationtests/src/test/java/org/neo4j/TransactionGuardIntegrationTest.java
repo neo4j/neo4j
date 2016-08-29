@@ -24,7 +24,10 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Serializable;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.time.Clock;
 import java.util.HashMap;
@@ -40,9 +43,12 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.GuardTimeoutException;
+import org.neo4j.kernel.guard.TimeoutGuard;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -50,8 +56,11 @@ import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.LifecycleManagingDatabase;
@@ -88,7 +97,9 @@ public class TransactionGuardIntegrationTest
     public static TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private static final FakeClock clock = Clocks.fakeClock();
+    private TickingGuard tickingGuard = new TickingGuard( clock, NullLog.getInstance(), 1, TimeUnit.SECONDS );
     private static GraphDatabaseAPI databaseWithTimeout;
+    private static GraphDatabaseAPI databaseWithTimeoutAndGuard;
     private static GraphDatabaseAPI databaseWithoutTimeout;
     private static CommunityNeoServer neoServer;
 
@@ -108,6 +119,22 @@ public class TransactionGuardIntegrationTest
             assertThat( e.getMessage(), startsWith( "Transaction timeout." ) );
         }
 
+        assertDatabaseDoesNotHaveNodes( database );
+    }
+
+    @Test
+    public void terminateLongRunningTransactionWithPeriodicCommit() throws Exception
+    {
+        GraphDatabaseAPI database = startDatabaseWithTimeoutCustomGuard();
+        try
+        {
+            URL url = prepareTestImportFile( 8 );
+            database.execute( "USING PERIODIC COMMIT 5 LOAD CSV FROM '" + url + "' AS line CREATE ();" );
+            fail( "Transaction should be already terminated." );
+        }
+        catch ( GuardTimeoutException ignored )
+        {
+        }
         assertDatabaseDoesNotHaveNodes( database );
     }
 
@@ -205,6 +232,28 @@ public class TransactionGuardIntegrationTest
     }
 
     @Test
+    public void terminateLongRunningShellPeriodicCommitQuery() throws Exception
+    {
+        GraphDatabaseAPI database = startDatabaseWithTimeoutCustomGuard();
+        GraphDatabaseShellServer shellServer = getGraphDatabaseShellServer( database );
+        try
+        {
+            SameJvmClient client = getShellClient( shellServer );
+            CollectingOutput commandOutput = new CollectingOutput();
+            URL url = prepareTestImportFile( 8 );
+            execute( shellServer, commandOutput, client.getId(), "USING PERIODIC COMMIT 5 LOAD CSV FROM '" + url + "' AS line CREATE ();" );
+            fail( "Transaction should be already terminated." );
+        }
+        catch ( ShellException e )
+        {
+            assertThat( e.getMessage(), containsString( "Transaction timeout." ) );
+        }
+
+        assertDatabaseDoesNotHaveNodes( database );
+    }
+
+
+    @Test
     public void terminateLongRunningRestTransactionalEndpointQuery() throws Exception
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
@@ -282,23 +331,36 @@ public class TransactionGuardIntegrationTest
         assertDatabaseDoesNotHaveNodes( database );
     }
 
-    protected GraphDatabaseAPI startDatabaseWithTimeout()
+    private GraphDatabaseAPI startDatabaseWithTimeoutCustomGuard()
+    {
+        if ( databaseWithTimeoutAndGuard == null )
+        {
+            Map<Setting<?>,String> configMap = getSettingsWithTransactionTimeout();
+            databaseWithTimeoutAndGuard = startCustomGuardedDatabase( testDirectory.directory( "dbWithoutTimeoutAndguard" ),
+
+
+                    configMap );
+        }
+        return databaseWithTimeoutAndGuard;
+    }
+
+    private GraphDatabaseAPI startDatabaseWithTimeout()
     {
         if ( databaseWithTimeout == null )
         {
             Map<Setting<?>,String> configMap = getSettingsWithTimeoutAndBolt();
-            databaseWithTimeout = startCustomDatabase( testDirectory.directory( "dbWithTimeout" ), clock,
+            databaseWithTimeout = startCustomDatabase( testDirectory.directory( "dbWithTimeout" ),
                     configMap );
         }
         return databaseWithTimeout;
     }
 
-    protected GraphDatabaseAPI startDatabaseWithoutTimeout()
+    private GraphDatabaseAPI startDatabaseWithoutTimeout()
     {
         if (databaseWithoutTimeout == null)
         {
             Map<Setting<?>,String> configMap = getSettingsWithoutTransactionTimeout();
-            databaseWithoutTimeout = startCustomDatabase( testDirectory.directory( "dbWithoutTimeout" ), clock,
+            databaseWithoutTimeout = startCustomDatabase( testDirectory.directory( "dbWithoutTimeout" ),
                     configMap );
         }
         return databaseWithoutTimeout;
@@ -331,13 +393,19 @@ public class TransactionGuardIntegrationTest
 
     private Map<Setting<?>,String> getSettingsWithTimeoutAndBolt()
     {
+        Map<Setting<?>,String> configMap = getSettingsWithTransactionTimeout();
         GraphDatabaseSettings.BoltConnector boltConnector = boltConnector( "0" );
-        return MapUtil.genericMap(
-                GraphDatabaseSettings.transaction_timeout, "2s",
+        MapUtil.genericMap(configMap,
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
                 boltConnector.encryption_level, GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name(),
                 GraphDatabaseSettings.auth_enabled, "false" );
+        return configMap;
+    }
+
+    private Map<Setting<?>,String> getSettingsWithTransactionTimeout()
+    {
+        return MapUtil.genericMap( GraphDatabaseSettings.transaction_timeout, "2s" );
     }
 
     private Map<Setting<?>,String> getSettingsWithoutTransactionTimeout()
@@ -348,6 +416,19 @@ public class TransactionGuardIntegrationTest
     private String transactionUri(CommunityNeoServer neoServer)
     {
         return neoServer.baseUri().toString() + "db/data/transaction";
+    }
+
+    private URL prepareTestImportFile( int lines ) throws IOException
+    {
+        File tempFile = File.createTempFile( "testImport", ".csv" );
+        try ( PrintWriter writer = FileUtils.newFilePrintWriter( tempFile, StandardCharsets.UTF_8 ) )
+        {
+            for ( int i = 0; i < lines; i++ )
+            {
+                writer.println( "a,b,c" );
+            }
+        }
+        return tempFile.toURI().toURL();
     }
 
     private Response execute( GraphDatabaseShellServer shellServer,
@@ -379,10 +460,24 @@ public class TransactionGuardIntegrationTest
         }
     }
 
-    private GraphDatabaseAPI startCustomDatabase( File storeDir, Clock clock, Map<Setting<?>,String> configMap )
+    private GraphDatabaseAPI startCustomGuardedDatabase( File storeDir, Map<Setting<?>,
+            String> configMap )
     {
-        GuardCommunityFacadeFactory guardCommunityFacadeFactory = new GuardCommunityFacadeFactory( clock );
-        GraphDatabaseBuilder databaseBuilder = new GuardTestGraphDatabaseFactory( guardCommunityFacadeFactory )
+        CustomClockCommunityFacadeFactory guardCommunityFacadeFactory = new CustomClockGuardedCommunityFacadeFactory();
+        GraphDatabaseBuilder databaseBuilder = new CustomGuardTestTestGraphDatabaseFactory( guardCommunityFacadeFactory )
+                .newImpermanentDatabaseBuilder( storeDir );
+        configMap.forEach( databaseBuilder::setConfig );
+
+        GraphDatabaseAPI database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
+        cleanupRule.add( database );
+        return database;
+    }
+
+    private GraphDatabaseAPI startCustomDatabase( File storeDir, Map<Setting<?>,String> configMap )
+    {
+        CustomClockCommunityFacadeFactory customClockCommunityFacadeFactory = new CustomClockCommunityFacadeFactory();
+        GraphDatabaseBuilder databaseBuilder = new CustomGuardTestTestGraphDatabaseFactory(
+                customClockCommunityFacadeFactory )
                 .newImpermanentDatabaseBuilder( storeDir );
         configMap.forEach( databaseBuilder::setConfig );
 
@@ -421,12 +516,12 @@ public class TransactionGuardIntegrationTest
         }
     }
 
-    private class GuardTestGraphDatabaseFactory extends TestGraphDatabaseFactory
+    private class CustomGuardTestTestGraphDatabaseFactory extends TestGraphDatabaseFactory
     {
 
         private GraphDatabaseFacadeFactory customFacadeFactory;
 
-        GuardTestGraphDatabaseFactory( GraphDatabaseFacadeFactory customFacadeFactory )
+        CustomGuardTestTestGraphDatabaseFactory( GraphDatabaseFacadeFactory customFacadeFactory )
         {
             this.customFacadeFactory = customFacadeFactory;
         }
@@ -440,38 +535,90 @@ public class TransactionGuardIntegrationTest
         }
     }
 
-    private class GuardCommunityFacadeFactory extends GraphDatabaseFacadeFactory
+    private class CustomClockCommunityFacadeFactory extends GraphDatabaseFacadeFactory
     {
 
-        private Clock clock;
-
-        GuardCommunityFacadeFactory( Clock clock )
+        CustomClockCommunityFacadeFactory()
         {
             super( DatabaseInfo.COMMUNITY, CommunityEditionModule::new);
-            this.clock = clock;
         }
 
         @Override
         protected DataSourceModule createDataSource( Dependencies dependencies,
                 PlatformModule platformModule, EditionModule editionModule )
         {
-            return new GuardDataSourceModule( dependencies, platformModule, editionModule );
+            return new CustomClockDataSourceModule( dependencies, platformModule, editionModule );
+        }
+    }
+
+    private class CustomClockDataSourceModule extends DataSourceModule
+    {
+
+        CustomClockDataSourceModule( GraphDatabaseFacadeFactory.Dependencies dependencies,
+                PlatformModule platformModule, EditionModule editionModule )
+        {
+            super( dependencies, platformModule, editionModule );
         }
 
-        private class GuardDataSourceModule extends DataSourceModule
+        @Override
+        protected Clock getClock()
         {
+            return clock;
+        }
 
-            GuardDataSourceModule( GraphDatabaseFacadeFactory.Dependencies dependencies,
-                    PlatformModule platformModule, EditionModule editionModule )
-            {
-                super( dependencies, platformModule, editionModule );
-            }
+    }
 
-            @Override
-            protected Clock getClock()
-            {
-                return clock;
-            }
+    private class CustomClockGuardedCommunityFacadeFactory extends CustomClockCommunityFacadeFactory
+    {
+
+        CustomClockGuardedCommunityFacadeFactory()
+        {
+            super();
+        }
+
+        @Override
+        protected DataSourceModule createDataSource( Dependencies dependencies,
+                PlatformModule platformModule, EditionModule editionModule )
+        {
+            return new GuardedCustomClockDataSourceModule( dependencies, platformModule, editionModule );
+        }
+    }
+
+    private class GuardedCustomClockDataSourceModule extends CustomClockDataSourceModule
+    {
+
+        GuardedCustomClockDataSourceModule( GraphDatabaseFacadeFactory.Dependencies dependencies,
+                PlatformModule platformModule, EditionModule editionModule )
+        {
+            super( dependencies, platformModule, editionModule );
+        }
+
+        @Override
+        protected TimeoutGuard createGuard( Clock clock, LogService logging )
+        {
+            return tickingGuard;
+        }
+    }
+
+    private class TickingGuard extends TimeoutGuard
+    {
+        private final FakeClock clock;
+        private final long delta;
+        private final TimeUnit unit;
+
+        TickingGuard( Clock clock, Log log, long delta, TimeUnit unit )
+        {
+            super( clock, log );
+            this.clock = (FakeClock) clock;
+            this.delta = delta;
+            this.unit = unit;
+        }
+
+        @Override
+        public void check( KernelStatement statement )
+        {
+            super.check( statement );
+            clock.forward( delta, unit );
         }
     }
 }

@@ -356,12 +356,12 @@ public class DataSourceModule
 
     private Guard createGuard( Dependencies deps, Clock clock, LogService logging )
     {
-        TimeoutGuard guard = createTimeoutGuard( clock, logging );
+        TimeoutGuard guard = createGuard( clock, logging );
         deps.satisfyDependency( guard );
         return guard;
     }
 
-    private TimeoutGuard createTimeoutGuard( Clock clock, LogService logging )
+    protected TimeoutGuard createGuard( Clock clock, LogService logging )
     {
         return new TimeoutGuard( clock, logging.getInternalLog( TimeoutGuard.class ) );
     }
