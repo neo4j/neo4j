@@ -40,7 +40,7 @@ public class AuthProcedures
     public AuthSubject authSubject;
 
     @Description( "Create a user." )
-    @Procedure( name = "dbms.createUser", mode = DBMS )
+    @Procedure( name = "dbms.security.createUser", mode = DBMS )
     public void createUser( @Name( "username" ) String username, @Name( "password" ) String password,
             @Name( "requirePasswordChange" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
@@ -50,7 +50,7 @@ public class AuthProcedures
     }
 
     @Description( "Delete the user." )
-    @Procedure( name = "dbms.deleteUser", mode = DBMS )
+    @Procedure( name = "dbms.security.deleteUser", mode = DBMS )
     public void deleteUser( @Name( "username" ) String username ) throws InvalidArgumentsException, IOException
     {
         BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
@@ -62,20 +62,21 @@ public class AuthProcedures
     }
 
     @Deprecated
-    @Description( "Change the user password." )
+    @Description( "Change the user password. Deprecated by dbms.security.changePassword." )
     @Procedure( name = "dbms.changePassword", mode = DBMS, deprecatedBy = "dbms.security.changePassword" )
     public void changePasswordDeprecated( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
         authSubject.setPassword( password, false );
     }
 
+    @Description( "Change the user password." )
     @Procedure( name = "dbms.security.changePassword", mode = DBMS )
     public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
         authSubject.setPassword( password, false );
     }
 
-    @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
+    @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
     {
         BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
@@ -85,7 +86,7 @@ public class AuthProcedures
             ) );
     }
 
-    @Procedure( name = "dbms.listUsers", mode = DBMS )
+    @Procedure( name = "dbms.security.listUsers", mode = DBMS )
     public Stream<UserResult> listUsers() throws InvalidArgumentsException, IOException
     {
         BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );

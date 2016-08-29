@@ -92,7 +92,7 @@ public class AuthProceduresIT
     @Test
     public void shouldCreateUser() throws Exception
     {
-        assertEmpty( admin, "CALL dbms.createUser('andres', '123', true)" );
+        assertEmpty( admin, "CALL dbms.security.createUser('andres', '123', true)" );
         try
         {
             authManager.getUser( "andres" );
@@ -106,24 +106,24 @@ public class AuthProceduresIT
     @Test
     public void shouldNotCreateUserIfInvalidUsername() throws Exception
     {
-        assertFail( admin, "CALL dbms.createUser('', '1234', true)", "The provided user name is empty." );
-        assertFail( admin, "CALL dbms.createUser('&%ss!', '1234', true)",
+        assertFail( admin, "CALL dbms.security.createUser('', '1234', true)", "The provided user name is empty." );
+        assertFail( admin, "CALL dbms.security.createUser('&%ss!', '1234', true)",
                 "User name '&%ss!' contains illegal characters." );
-        assertFail( admin, "CALL dbms.createUser('&%ss!', '', true)", "User name '&%ss!' contains illegal characters." );
+        assertFail( admin, "CALL dbms.security.createUser('&%ss!', '', true)", "User name '&%ss!' contains illegal characters." );
     }
 
     @Test
     public void shouldNotCreateUserIfInvalidPassword() throws Exception
     {
-        assertFail( admin, "CALL dbms.createUser('andres', '', true)", "A password cannot be empty." );
+        assertFail( admin, "CALL dbms.security.createUser('andres', '', true)", "A password cannot be empty." );
     }
 
     @Test
     public void shouldNotCreateExistingUser() throws Exception
     {
-        assertFail( admin, "CALL dbms.createUser('neo4j', '1234', true)",
+        assertFail( admin, "CALL dbms.security.createUser('neo4j', '1234', true)",
                 "The specified user 'neo4j' already exists" );
-        assertFail( admin, "CALL dbms.createUser('neo4j', '', true)", "A password cannot be empty." );
+        assertFail( admin, "CALL dbms.security.createUser('neo4j', '', true)", "A password cannot be empty." );
     }
 
     //---------- delete user -----------
@@ -132,7 +132,7 @@ public class AuthProceduresIT
     public void shouldDeleteUser() throws Exception
     {
         authManager.newUser( "andres", "123", false );
-        assertEmpty( admin, "CALL dbms.deleteUser('andres')" );
+        assertEmpty( admin, "CALL dbms.security.deleteUser('andres')" );
         try
         {
             authManager.getUser( "andres" );
@@ -151,7 +151,7 @@ public class AuthProceduresIT
     @Test
     public void shouldNotDeleteNonExistentUser() throws Exception
     {
-        assertFail( admin, "CALL dbms.deleteUser('nonExistentUser')", "User 'nonExistentUser' does not exist" );
+        assertFail( admin, "CALL dbms.security.deleteUser('nonExistentUser')", "User 'nonExistentUser' does not exist" );
     }
 
     //---------- list users -----------
@@ -160,7 +160,7 @@ public class AuthProceduresIT
     public void shouldListUsers() throws Exception
     {
         authManager.newUser( "andres", "123", false );
-        assertSuccess( admin, "CALL dbms.listUsers() YIELD username",
+        assertSuccess( admin, "CALL dbms.security.listUsers() YIELD username",
                 r -> assertKeyIs( r, "username", "neo4j", "andres" ) );
     }
 
@@ -172,19 +172,19 @@ public class AuthProceduresIT
                 "neo4j", listOf( PWD_CHANGE ),
                 "andres", listOf()
         );
-        assertSuccess( admin, "CALL dbms.listUsers()",
+        assertSuccess( admin, "CALL dbms.security.listUsers()",
                 r -> assertKeyIsMap( r, "username", "flags", expected ) );
     }
 
     @Test
     public void shouldShowCurrentUser() throws Exception
     {
-        assertSuccess( admin, "CALL dbms.showCurrentUser()",
+        assertSuccess( admin, "CALL dbms.security.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "flags", map( "neo4j", listOf( PWD_CHANGE ) ) ) );
 
         authManager.newUser( "andres", "123", false );
         BasicAuthSubject andres = login( "andres", "123" );
-        assertSuccess( andres, "CALL dbms.showCurrentUser()",
+        assertSuccess( andres, "CALL dbms.security.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "flags", map( "andres", listOf() ) ) );
     }
 
