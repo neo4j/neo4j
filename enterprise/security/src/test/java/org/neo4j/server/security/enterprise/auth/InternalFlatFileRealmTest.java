@@ -271,6 +271,40 @@ public class InternalFlatFileRealmTest
         );
     }
 
+    @Test
+    public void shouldLogPasswordChanges() throws IOException, InvalidArgumentsException
+    {
+        // Given
+        realm.newUser( "andres", "neo4j", true );
+        log.clear();
+
+        // When
+        realm.setUserPassword( "andres", "longerPassword", false );
+
+        // Then
+        log.assertExactly( info( "Password changed for user `%s`.", "andres" ) );
+    }
+
+    @Test
+    public void shouldLogFailureToChangePassword() throws IOException, InvalidArgumentsException
+    {
+        // Given
+        realm.newUser( "andres", "neo4j", true );
+        log.clear();
+
+        // When
+        catchInvalidArguments( () -> realm.setUserPassword( "andres", "neo4j", false ) );
+        catchInvalidArguments( () -> realm.setUserPassword( "andres", "", false ) );
+        catchInvalidArguments( () -> realm.setUserPassword( "notAndres", "good password", false ) );
+
+        // Then
+        log.assertExactly(
+                error( "Password not changed for user `%s`: %s", "andres", "Old password and new password cannot be the same." ),
+                error( "Password not changed for user `%s`: %s", "andres", "A password cannot be empty." ),
+                error( "Password not changed for user `%s`: %s", "notAndres", "User 'notAndres' does not exist." )
+        );
+    }
+
     private void catchInvalidArguments( CheckedFunction f ) throws IOException
     {
         try { f.apply(); } catch (InvalidArgumentsException e) { /*ignore*/ }

@@ -556,28 +556,38 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
     public void setUserPassword( String username, String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        User existingUser = getUser( username );
-
-        passwordPolicy.validatePassword( password );
-
-        if ( existingUser.credentials().matchesPassword( password ) )
-        {
-            throw new InvalidArgumentsException( "Old password and new password cannot be the same." );
-        }
-
         try
         {
-            User updatedUser = existingUser.augment()
-                    .withCredentials( Credential.forPassword( password ) )
-                    .withRequiredPasswordChange( requirePasswordChange )
-                    .build();
-            userRepository.update( existingUser, updatedUser );
+            User existingUser = getUser( username );
+
+            passwordPolicy.validatePassword( password );
+
+            if ( existingUser.credentials().matchesPassword( password ) )
+            {
+                throw new InvalidArgumentsException( "Old password and new password cannot be the same." );
+            }
+            
+            try
+            {
+                User updatedUser = existingUser.augment()
+                        .withCredentials( Credential.forPassword( password ) )
+                        .withRequiredPasswordChange( requirePasswordChange )
+                        .build();
+                userRepository.update( existingUser, updatedUser );
+            }
+            catch ( ConcurrentModificationException e )
+            {
+                // try again
+                setUserPassword( username, password, requirePasswordChange );
+            }
         }
-        catch ( ConcurrentModificationException e )
+        catch ( InvalidArgumentsException e )
         {
-            // try again
-            setUserPassword( username, password, requirePasswordChange );
+            securityLog.error( "Password not changed for user `%s`: %s", escape( username ), e.getMessage() );
+            throw e;
         }
+
+        securityLog.info( "Password changed for user `%s`.", escape( username ) );
 
         clearCacheForUser( username );
     }
