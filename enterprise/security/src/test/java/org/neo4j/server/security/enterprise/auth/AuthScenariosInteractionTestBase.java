@@ -103,6 +103,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('reader', 'mats')" );
         mats = neo.login( "mats", "neo4j" );
         assertEmpty( mats, "MATCH (n) WHERE id(n) < 0 RETURN 1" );
+        assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('reader', 'mats')" );
 //        assertEmpty( adminSubject, "CALL dbms.security.deleteRole('role1')" );
         assertEmpty( adminSubject, "CALL dbms.security.deleteUser('mats')" );
 
@@ -114,8 +115,9 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
 
         assertThat( allLines, hasItem( containsString( "Login fail for user `mats`" ) ) );
         assertThat( allLines, hasItem( containsString( "User created: `mats`" ) ) );
-        assertThat( allLines, hasItem( containsString( "Role `reader` added to user `mats`" ) ) );
         assertThat( allLines, hasItem( containsString( "Login success for user `mats`" ) ) );
+        assertThat( allLines, hasItem( containsString( "Role `reader` added to user `mats`" ) ) );
+        assertThat( allLines, hasItem( containsString( "Role `reader` removed from user `mats`" ) ) );
         assertThat( allLines, hasItem( containsString( "User deleted: `mats`" ) ) );
     }
 

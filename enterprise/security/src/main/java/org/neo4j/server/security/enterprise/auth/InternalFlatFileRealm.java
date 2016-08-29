@@ -451,7 +451,6 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
 
         try
         {
-
             synchronized ( this )
             {
                 getUser( username );
@@ -483,21 +482,31 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
         assertValidRoleName( roleName );
         assertValidUsername( username );
 
-        synchronized ( this )
+        try
         {
-            getUser( username );
-            RoleRecord role = getRole( roleName );
+            synchronized ( this )
+            {
+                getUser( username );
+                RoleRecord role = getRole( roleName );
 
-            RoleRecord newRole = role.augment().withoutUser( username ).build();
-            try
-            {
-                roleRepository.update( role, newRole );
+                RoleRecord newRole = role.augment().withoutUser( username ).build();
+                try
+                {
+                    roleRepository.update( role, newRole );
+                    securityLog.info( "Role `%s` removed from user `%s`", escape( roleName ), escape( username ) );
+                }
+                catch ( ConcurrentModificationException e )
+                {
+                    // Try again
+                    removeRoleFromUser( roleName, username );
+                }
             }
-            catch ( ConcurrentModificationException e )
-            {
-                // Try again
-                removeRoleFromUser( roleName, username );
-            }
+        }
+        catch ( InvalidArgumentsException e )
+        {
+            securityLog.error( "Role `%s` not removed from user `%s`: %s", escape( roleName ), escape( username ),
+                    e.getMessage() );
+            throw e;
         }
         clearCachedAuthorizationInfoForUser( username );
     }
