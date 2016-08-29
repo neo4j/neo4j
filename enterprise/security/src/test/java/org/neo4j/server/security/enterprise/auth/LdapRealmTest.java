@@ -116,6 +116,24 @@ public class LdapRealmTest
     }
 
     @Test
+    public void groupToRoleMappingShouldBeAbleToHaveQuotedKeysAndWhitespaces()
+    {
+        when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
+                .thenReturn( "'group1' = role1;\t \"group2\"\n=\t role2,role3 ;  gr oup3= role4\n ;'group4 '= ; g =r" );
+
+        LdapRealm realm = new LdapRealm( config, logProvider );
+
+        assertThat( realm.getGroupToRoleMapping().keySet(),
+                equalTo( new TreeSet<>( Arrays.asList( "group1", "group2", "gr oup3", "group4 ", "g" ) ) ) );
+        assertThat( realm.getGroupToRoleMapping().get( "group1" ), equalTo( Arrays.asList( "role1" ) ) );
+        assertThat( realm.getGroupToRoleMapping().get( "group2" ), equalTo( Arrays.asList( "role2", "role3" ) ) );
+        assertThat( realm.getGroupToRoleMapping().get( "gr oup3" ), equalTo( Arrays.asList( "role4" ) ) );
+        assertThat( realm.getGroupToRoleMapping().get( "group4 " ), equalTo( Collections.emptyList() ) );
+        assertThat( realm.getGroupToRoleMapping().get( "g" ), equalTo( Arrays.asList( "r" ) ) );
+        assertThat( realm.getGroupToRoleMapping().size(), equalTo( 5 ) );
+    }
+
+    @Test
     public void groupToRoleMappingShouldBeAbleToHaveTrailingSemicolons()
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) ).thenReturn( "group=role;;" );
@@ -169,9 +187,22 @@ public class LdapRealmTest
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) ).thenReturn( "=role" );
 
         expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "empty group name" );
+        expectedException.expectMessage( "wrong number of fields" );
 
         LdapRealm realm = new LdapRealm( config, logProvider );
+    }
+
+    @Test
+    public void groupComparisonShouldBeCaseInsensitive()
+    {
+        when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
+                .thenReturn( "GrouP=role1,role2,role3" );
+
+        LdapRealm realm = new LdapRealm( config, logProvider );
+
+        assertThat( realm.getGroupToRoleMapping().get( "group" ),
+                equalTo( Arrays.asList( "role1", "role2", "role3" ) ) );
+        assertThat( realm.getGroupToRoleMapping().size(), equalTo( 1 ) );
     }
 
     @Test

@@ -32,15 +32,21 @@ import org.apache.shiro.realm.ldap.LdapContextFactory;
 import org.apache.shiro.realm.ldap.LdapUtils;
 import org.apache.shiro.subject.PrincipalCollection;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.naming.CommunicationException;
+import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -73,6 +79,11 @@ public class LdapRealm extends JndiLdapRealm
     private final Log log;
 
     private Map<String, SimpleAuthorizationInfo> authorizationInfoCache = new ConcurrentHashMap<>();
+
+    // Parser regex for group-to-role-mapping
+    private static final String KEY_GROUP = "\\s*('(.+)'|\"(.+)\"|(\\S)|(\\S.*\\S))\\s*";
+    private static final String VALUE_GROUP = "\\s*(.*)";
+    private Pattern keyValuePattern = Pattern.compile( KEY_GROUP + KEY_VALUE_DELIMITER + VALUE_GROUP );
 
     public LdapRealm( Config config, LogProvider logProvider )
     {
@@ -122,6 +133,8 @@ public class LdapRealm extends JndiLdapRealm
                 if ( authorizationInfo == null )
                 {
                     // TODO: Do a new LDAP search? But we need to cache the credentials for that...
+                    // Or we need the resulting failure message to the client to contain some status
+                    // so that the client can react by resending the auth token.
                 }
                 return authorizationInfo;
             }
@@ -221,15 +234,20 @@ public class LdapRealm extends JndiLdapRealm
             {
                 if ( !groupAndRoles.isEmpty() )
                 {
-                    String[] parts = groupAndRoles.split( KEY_VALUE_DELIMITER, 2 );
-                    if ( parts.length != 2 )
+                    Matcher matcher = keyValuePattern.matcher( groupAndRoles );
+                    if ( !(matcher.find() && matcher.groupCount() == 6) )
                     {
                         String errorMessage = String.format( "Failed to parse setting %s: wrong number of fields",
                                 SecuritySettings.ldap_authorization_group_to_role_mapping.name() );
                         log.error( errorMessage );
                         throw new IllegalArgumentException( errorMessage );
                     }
-                    String group = parts[0];
+
+                    String group = matcher.group(2) != null ? matcher.group(2) :
+                                   matcher.group(3) != null ? matcher.group(3) :
+                                   matcher.group(4) != null ? matcher.group(4) :
+                                   matcher.group(5) != null ? matcher.group(5) : "";
+
                     if ( group.isEmpty() )
                     {
                         String errorMessage = String.format( "Failed to parse setting %s: empty group name",
@@ -238,14 +256,15 @@ public class LdapRealm extends JndiLdapRealm
                         throw new IllegalArgumentException( errorMessage );
                     }
                     Collection<String> roleList = new ArrayList<>();
-                    for ( String role : parts[1].split( ROLE_DELIMITER ) )
+                    for ( String role : matcher.group(6).trim().split( ROLE_DELIMITER ) )
                     {
                         if ( !role.isEmpty() )
                         {
                             roleList.add( role );
                         }
                     }
-                    map.put( group, roleList );
+                    // We only support case-insensitive comparison of group DNs
+                    map.put( group.toLowerCase(), roleList );
                 }
             }
         }
@@ -339,7 +358,7 @@ public class LdapRealm extends JndiLdapRealm
         Collection<String> roles = new ArrayList<>();
         for ( String group : groupNames )
         {
-            Collection<String> rolesForGroup = groupToRoleMapping.get( group );
+            Collection<String> rolesForGroup = groupToRoleMapping.get( group.toLowerCase() );
             if ( rolesForGroup != null )
             {
                 roles.addAll( rolesForGroup );
