@@ -66,17 +66,15 @@ object typeConversionsFor3_0 {
 
   def asPrivateType(obj: Any): Any = obj match {
     case map: Map[String, Any] => asPrivateMap(map)
-    case seq: Seq[Any] => seq.foldLeft(Seq.empty[Any]) { (s, v: Any) => s :+ asPrivateType(v) }
-    case arr: Array[Any] => arr.foldLeft(Array.empty[Any]) { (a, v: Any) => a :+ asPrivateType(v) }
+    case seq: Seq[Any] => seq.map(asPrivateType)
+    case arr: Array[Any] => arr.map(asPrivateType)
     case point: graphdb.spatial.Point => asPrivatePoint(point)
     case geometry: graphdb.spatial.Geometry => asPrivateGeometry(geometry)
     case value => value
   }
 
   def asPrivateMap(incoming: Map[String, Any]): Map[String, Any] =
-    incoming.foldLeft(Map.empty[String, Any]) { (params, v: (String, Any)) =>
-      params + (v._1 -> asPrivateType(v._2))
-    }
+    incoming.mapValues(asPrivateType)
 
   private def asPublicPoint(point: Point) = new graphdb.spatial.Point {
     override def getGeometryType = "Point"
