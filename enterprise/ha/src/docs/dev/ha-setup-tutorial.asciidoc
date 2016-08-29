@@ -200,8 +200,8 @@ neo4j-03$ ./bin/neo4j start
 .Startup Time
 ==================
 When running in HA mode, the startup script returns immediately instead of waiting for the server to become available.
-This is because the instance does not accept any requests until a cluster has been formed.
-In the example above this happens when you startup the second instance.
+This is because the instance does not accept any requests until a cluster has been formed, which on cold start is when all the servers in `ha.initial_hosts` are running and have joined the cluster.
+In the example above this happens when you have started all three instances.
 To keep track of the startup state you can follow the messages in console.log - the path to that is printed before the startup script returns.
 ==================
 
