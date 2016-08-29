@@ -19,6 +19,14 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import com.google.common.base.Charsets;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -29,9 +37,12 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSION_DENIED;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
@@ -76,6 +87,46 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'Henrik')" );
         S subject = neo.login( "Henrik", "foo" );
         neo.assertInitFailed( subject );
+    }
+
+    /*
+     * Logging scenario smoke test
+     */
+    @Test
+    public void shouldLogSecurityEvents() throws Exception
+    {
+        S mats = neo.login( "mats", "neo4j" );
+        // for REST, login doesn't happen until the subject does something
+        neo.executeQuery( mats, "UNWIND [] AS i RETURN 1", Collections.emptyMap(), r -> {} );
+        assertEmpty( adminSubject, "CALL dbms.security.createUser('mats', 'neo4j', false)" );
+//        assertEmpty( adminSubject, "CALL dbms.security.createRole('role1')" );
+        assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('reader', 'mats')" );
+        mats = neo.login( "mats", "neo4j" );
+        assertEmpty( mats, "MATCH (n) WHERE id(n) < 0 RETURN 1" );
+//        assertEmpty( adminSubject, "CALL dbms.security.deleteRole('role1')" );
+        assertEmpty( adminSubject, "CALL dbms.security.deleteUser('mats')" );
+
+        // flush log
+        neo.getLocalGraph().shutdown();
+
+        // assert on log content
+        List<String> allLines = readFullLog();
+
+        assertThat( allLines, hasItem( containsString( "Login fail for user `mats`" ) ) );
+        assertThat( allLines, hasItem( containsString( "User created: `mats`" ) ) );
+        assertThat( allLines, hasItem( containsString( "Role `reader` added to user `mats`" ) ) );
+        assertThat( allLines, hasItem( containsString( "Login success for user `mats`" ) ) );
+        assertThat( allLines, hasItem( containsString( "User deleted: `mats`" ) ) );
+    }
+
+    private List<String> readFullLog() throws IOException
+    {
+        List<String> lines = new ArrayList<>();
+        BufferedReader bufferedReader = new BufferedReader(
+                neo.fileSystem().openAsReader( new File( securityLog.getAbsolutePath() ), Charsets.UTF_8 ) );
+        lines.add( bufferedReader.readLine() );
+        bufferedReader.lines().forEach( lines::add );
+        return lines;
     }
 
     /*

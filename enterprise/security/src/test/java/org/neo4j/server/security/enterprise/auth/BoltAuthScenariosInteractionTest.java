@@ -22,7 +22,10 @@ package org.neo4j.server.security.enterprise.auth;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
+import java.util.Map;
+
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -31,7 +34,7 @@ import org.neo4j.test.rule.SuppressOutput;
 public class BoltAuthScenariosInteractionTest extends AuthScenariosInteractionTestBase<BoltInteraction.BoltSubject>
 {
     private Neo4jWithSocket server = new Neo4jWithSocket( getTestGraphDatabaseFactory(),
-        settings -> settings.put( GraphDatabaseSettings.auth_enabled, "true" ) );
+            settings -> settings.put( GraphDatabaseSettings.auth_enabled, "true" ) );
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( server );
@@ -49,8 +52,8 @@ public class BoltAuthScenariosInteractionTest extends AuthScenariosInteractionTe
     }
 
     @Override
-    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer() throws Throwable
+    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer( Map<Setting<?>, String> config ) throws Throwable
     {
-        return new BoltInteraction( server );
+        return new BoltInteraction( config );
     }
 }

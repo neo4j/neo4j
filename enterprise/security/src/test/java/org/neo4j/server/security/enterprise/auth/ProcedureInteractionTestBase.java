@@ -23,7 +23,12 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,12 +36,13 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -62,7 +68,6 @@ import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
@@ -106,11 +111,22 @@ abstract class ProcedureInteractionTestBase<S>
     EnterpriseUserManager userManager;
 
     protected NeoInteractionLevel<S> neo;
+    File securityLog;
+
+    private Map<Setting<?>,String> configure() throws IOException
+    {
+        Path homeDir = Files.createTempDirectory( "logs" );
+        securityLog = new File( homeDir.toFile(), "security.log" );
+        Map<Setting<?>,String> config = new HashMap<>( 1 );
+        config.put( GraphDatabaseSettings.logs_directory, homeDir.toAbsolutePath().toString() );
+        return config;
+    }
 
     @Before
     public void setUp() throws Throwable
     {
-        neo = setUpNeoServer();
+        neo = setUpNeoServer( configure() );
+
         neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class )
                 .registerProcedure( ClassWithProcedures.class );
         userManager = neo.getLocalUserManager();
@@ -135,7 +151,7 @@ abstract class ProcedureInteractionTestBase<S>
         executeQuery( writeSubject, "UNWIND range(0,2) AS number CREATE (:Node {number:number, name:'node'+number})" );
     }
 
-    protected abstract NeoInteractionLevel<S> setUpNeoServer() throws Throwable;
+    protected abstract NeoInteractionLevel<S> setUpNeoServer( Map<Setting<?>, String> config ) throws Throwable;
 
     @After
     public void tearDown() throws Throwable

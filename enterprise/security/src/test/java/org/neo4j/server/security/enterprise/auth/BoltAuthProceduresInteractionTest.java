@@ -22,7 +22,10 @@ package org.neo4j.server.security.enterprise.auth;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
+import java.util.Map;
+
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -49,8 +52,8 @@ public class BoltAuthProceduresInteractionTest extends AuthProceduresInteraction
     }
 
     @Override
-    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer() throws Throwable
+    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer( Map<Setting<?>, String> config ) throws Throwable
     {
-        return new BoltInteraction( server );
+        return new BoltInteraction( config );
     }
 }

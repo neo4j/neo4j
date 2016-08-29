@@ -26,8 +26,11 @@ import java.util.function.Consumer;
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
@@ -46,21 +49,36 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     private GraphDatabaseFacade db;
     private MultiRealmAuthManager manager;
     private EnterpriseUserManager userManager;
+    private FileSystemAbstraction _fileSystem;
 
-    EmbeddedInteraction() throws Throwable
+    EmbeddedInteraction( Map<Setting<?>, String> config ) throws Throwable
     {
-        this(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabaseBuilder());
+        TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
+        factory.setFileSystem( new EphemeralFileSystemAbstraction() );
+        GraphDatabaseBuilder builder = factory.newImpermanentDatabaseBuilder();
+        for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
+        {
+            builder.setConfig( entry.getKey(), entry.getValue() );
+        }
+        this._fileSystem = factory.getFileSystem();
+
+        init( builder );
     }
 
     public EmbeddedInteraction( GraphDatabaseBuilder builder ) throws Throwable
     {
+        init( builder );
+    }
+
+    private void init( GraphDatabaseBuilder builder ) throws Throwable
+    {
         builder.setConfig( boltConnector( "0" ).enabled, "true" );
         builder.setConfig( boltConnector( "0" ).encryption_level, OPTIONAL.name() );
         builder.setConfig( BoltKernelExtension.Settings.tls_key_file, NeoInteractionLevel.tempPath( "key", ".key" ) );
-        builder.setConfig( BoltKernelExtension.Settings.tls_certificate_file, NeoInteractionLevel.tempPath( "cert", ".cert" ) );
+        builder.setConfig( BoltKernelExtension.Settings.tls_certificate_file,
+                NeoInteractionLevel.tempPath( "cert", ".cert" ) );
         builder.setConfig( GraphDatabaseSettings.auth_enabled, "true" );
         builder.setConfig( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
-
         db = (GraphDatabaseFacade) builder.newGraphDatabase();
         manager = db.getDependencyResolver().resolveDependency( MultiRealmAuthManager.class );
         manager.init();
@@ -76,6 +94,12 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
 
     @Override
     public GraphDatabaseFacade getLocalGraph() { return db; }
+
+    @Override
+    public FileSystemAbstraction fileSystem()
+    {
+        return _fileSystem;
+    }
 
     @Override
     public InternalTransaction beginLocalTransactionAsUser( EnterpriseAuthSubject subject,
