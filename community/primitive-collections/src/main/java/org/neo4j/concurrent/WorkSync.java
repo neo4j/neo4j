@@ -350,15 +350,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
         while ( batch != stackEnd )
         {
             batch.complete();
-            WorkUnit<Material,W> tmp = batch.next;
-            // The batch linked-list has been reversed, so oldest WorkUnits point to newer objects.
-            // Because of this, we null out the next reference here, to reduce the probability of
-            // ending up with a WorkUnit that has been promoted to the old-gen, that has a reference
-            // to objects in the new-gen. Old-gen objects are always considered live during new-gen
-            // collections, so a dead old-gen object can keep new-gen objects alive longer than
-            // necessary, causing a cascading premature promotion.
-            batch.next = null;
-            batch = tmp;
+            batch = batch.next;
         }
     }
 
