@@ -165,7 +165,7 @@ include::actors.csv[]
 
 Finally we have the roles that an actor plays in a movie which will be represented by relationships in the database.
 In order to create a relationship between nodes we refer to the ids used in `actors.csv` and `movies.csv` in the `START_ID` and `END_ID` fields.
-We also need to provide a relationship type (in this case `ACTS_IN`) in the `:TYPE` field.
+We also need to provide a relationship type (in this case `ACTED_IN`) in the `:TYPE` field.
 
 .roles.csv
 [source]
@@ -393,7 +393,7 @@ include::same-node-label-everywhere.adoc[]
 
 If you want to use the same relationship type for every relationship in your relationships file you can do this by
 specifying the appropriate value as an option to `neo4j-import`.
-In this example we'll put the relationship type `ACTS_IN` on every relationship specified in `roles6.csv`:
+In this example we'll put the relationship type `ACTED_IN` on every relationship specified in `roles6.csv`:
 
 .movies6.csv
 [source]
