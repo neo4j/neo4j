@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Map;
 
 import org.neo4j.bolt.security.auth.AuthenticationResult;
@@ -27,8 +28,8 @@ import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v1.runtime.cypher.CypherAdapterStream;
 import org.neo4j.bolt.v1.runtime.cypher.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.cypher.StatementProcessor;
-import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Result;
@@ -38,8 +39,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-
-import java.time.Duration;
 
 public class TransactionStateMachine implements StatementProcessor
 {
@@ -186,10 +185,40 @@ public class TransactionStateMachine implements StatementProcessor
                         {
                             ctx.currentTransaction = spi.beginTransaction( ctx.authSubject );
 
-                            Result result = executeQuery( ctx, spi, statement, params );
+                            Result result = execute( ctx, spi, statement, params );
 
                             ctx.currentResult = new CypherAdapterStream( result, ctx.clock );
                             return AUTO_COMMIT;
+                        }
+                    }
+
+                    /*
+                     * In AUTO_COMMIT we must make sure to fail, close and set the current
+                     * transaction to null.
+                     */
+                    private Result execute( MutableTransactionState ctx, SPI spi,
+                            String statement, Map<String,Object> params )
+                            throws TransactionFailureException, QueryExecutionKernelException
+                    {
+                        try
+                        {
+                            return executeQuery( ctx, spi, statement, params );
+                        }
+                        catch ( Throwable e )
+                        {
+                            if (ctx.currentTransaction != null)
+                            {
+                                try
+                                {
+                                    ctx.currentTransaction.failure();
+                                    ctx.currentTransaction.close();
+                                }
+                                finally
+                                {
+                                    ctx.currentTransaction = null;
+                                }
+                            }
+                            throw e;
                         }
                     }
 
@@ -246,10 +275,27 @@ public class TransactionStateMachine implements StatementProcessor
                         }
                         else
                         {
-                            Result result = executeQuery( ctx, spi, statement, params );
+                            Result result = execute( ctx, spi, statement, params );
 
                             ctx.currentResult = new CypherAdapterStream( result, ctx.clock );
                             return EXPLICIT_TRANSACTION;
+                        }
+                    }
+
+                    private Result execute( MutableTransactionState ctx, SPI spi,
+                            String statement, Map<String,Object> params ) throws QueryExecutionKernelException
+                    {
+                        try
+                        {
+                            return executeQuery( ctx, spi, statement, params );
+                        }
+                        catch ( Throwable e )
+                        {
+                          if (ctx.currentTransaction != null)
+                          {
+                              ctx.currentTransaction.failure();
+                          }
+                            throw e;
                         }
                     }
 

@@ -390,16 +390,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     @Override
                     public State reset( BoltStateMachine machine ) throws BoltConnectionFatality
                     {
-                        try
-                        {
-                            machine.ctx.statementProcessor.reset();
-                            return READY;
-                        }
-                        catch ( Throwable e )
-                        {
-                            fail( machine, Neo4jError.from( e ) );
-                            throw new BoltConnectionFatality( e.getMessage() );
-                        }
+                        return resetMachine( machine );
                     }
                 },
 
@@ -419,16 +410,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     @Override
                     public State reset( BoltStateMachine machine ) throws BoltConnectionFatality
                     {
-                        try
-                        {
-                            machine.ctx.statementProcessor.reset();
-                            return READY;
-                        }
-                        catch ( Throwable e )
-                        {
-                            fail( machine, Neo4jError.from( e ) );
-                            throw new BoltConnectionFatality( e.getMessage() );
-                        }
+                        return resetMachine( machine );
                     }
 
                     @Override
@@ -436,9 +418,8 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     {
                         try
                         {
-                            machine.ctx.statementProcessor.streamResult( recordStream -> {
-                                machine.ctx.responseHandler.onRecords( recordStream, true );
-                            } );
+                            machine.ctx.statementProcessor.streamResult( recordStream ->
+                                    machine.ctx.responseHandler.onRecords( recordStream, true ) );
 
                             return READY;
                         }
@@ -454,9 +435,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     {
                         try
                         {
-                            machine.ctx.statementProcessor.streamResult( recordStream -> {
-                                machine.ctx.responseHandler.onRecords( recordStream, false );
-                            } );
+                            machine.ctx.statementProcessor.streamResult( recordStream -> machine.ctx.responseHandler.onRecords( recordStream, false ) );
 
                             return READY;
                         }
@@ -486,30 +465,13 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     @Override
                     public State reset( BoltStateMachine machine ) throws BoltConnectionFatality
                     {
-                        try
-                        {
-                            machine.ctx.statementProcessor.reset();
-                            return READY;
-                        }
-                        catch ( Throwable e )
-                        {
-                            fail( machine, Neo4jError.from( e ) );
-                            throw new BoltConnectionFatality( e.getMessage() );
-                        }
+                        return resetMachine( machine );
                     }
 
                     @Override
                     public State ackFailure( BoltStateMachine machine ) throws BoltConnectionFatality
                     {
-                        try
-                        {
-                            return READY;
-                        }
-                        catch ( Throwable e )
-                        {
-                            fail( machine, Neo4jError.from( e ) );
-                            throw new BoltConnectionFatality( e.getMessage() );
-                        }
+                        return READY;
                     }
 
                     @Override
@@ -557,16 +519,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                             machine.ctx.markIgnored();
                             return INTERRUPTED;
                         }
-                        try
-                        {
-                            machine.ctx.statementProcessor.reset();
-                            return READY;
-                        }
-                        catch ( Throwable e )
-                        {
-                            fail( machine, Neo4jError.from( e ) );
-                            throw new BoltConnectionFatality( e.getMessage() );
-                        }
+                        return resetMachine( machine );
                     }
 
                     @Override
@@ -643,6 +596,20 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
             String msg = "PULL_ALL cannot be handled by a session in the " + name() + " state.";
             fail( machine, new Neo4jError( Status.Request.Invalid, msg ) );
             throw new BoltConnectionFatality( msg );
+        }
+
+        State resetMachine( BoltStateMachine machine ) throws BoltConnectionFatality
+        {
+            try
+            {
+                machine.ctx.statementProcessor.reset();
+                return READY;
+            }
+            catch ( Throwable e )
+            {
+                fail( machine, Neo4jError.from( e ) );
+                throw new BoltConnectionFatality( e.getMessage() );
+            }
         }
 
     }
