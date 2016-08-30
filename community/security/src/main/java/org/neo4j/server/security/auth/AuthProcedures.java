@@ -41,8 +41,10 @@ public class AuthProcedures
 
     @Description( "Create a user." )
     @Procedure( name = "dbms.security.createUser", mode = DBMS )
-    public void createUser( @Name( "username" ) String username, @Name( "password" ) String password,
-            @Name( "requirePasswordChange" ) boolean requirePasswordChange )
+    public void createUser(
+            @Name( "username" ) String username,
+            @Name( "password" ) String password,
+            @Name( value = "requirePasswordChange", defaultValue = "true") boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
         BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );

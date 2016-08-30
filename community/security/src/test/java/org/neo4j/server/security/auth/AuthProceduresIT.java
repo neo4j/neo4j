@@ -95,7 +95,35 @@ public class AuthProceduresIT
         assertEmpty( admin, "CALL dbms.security.createUser('andres', '123', true)" );
         try
         {
-            authManager.getUser( "andres" );
+            assertThat( authManager.getUser( "andres" ).passwordChangeRequired(), equalTo( true ) );
+        }
+        catch ( Throwable t )
+        {
+            fail( "Expected no exception!" );
+        }
+    }
+
+    @Test
+    public void shouldCreateUserWithNoPasswordChange() throws Exception
+    {
+        assertEmpty( admin, "CALL dbms.security.createUser('andres', '123', false)" );
+        try
+        {
+            assertThat( authManager.getUser( "andres" ).passwordChangeRequired(), equalTo( false ) );
+        }
+        catch ( Throwable t )
+        {
+            fail( "Expected no exception!" );
+        }
+    }
+
+    @Test
+    public void shouldCreateUserWithDefault() throws Exception
+    {
+        assertEmpty( admin, "CALL dbms.security.createUser('andres', '123')" );
+        try
+        {
+            assertThat( authManager.getUser( "andres" ).passwordChangeRequired(), equalTo( true ) );
         }
         catch ( Throwable t )
         {

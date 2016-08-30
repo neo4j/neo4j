@@ -298,12 +298,12 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldChangeUserPasswordIfSameUser() throws Throwable
     {
-        assertEmpty( readSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '321' )" );
+        assertEmpty( readSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '321', false )" );
         neo.updateAuthToken( readSubject, "readSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
         neo.assertAuthenticated( readSubject );
         testSuccessfulRead( readSubject, 3 );
 
-        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'adminSubject', 'cba' )" );
+        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'adminSubject', 'cba', false )" );
         neo.updateAuthToken( adminSubject, "adminSubject", "cba" ); // Because RESTSubject caches an auth token that is sent with every request
         neo.assertAuthenticated( adminSubject );
         testSuccessfulRead( adminSubject, 3 );
