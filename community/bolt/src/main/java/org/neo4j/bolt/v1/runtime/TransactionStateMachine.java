@@ -245,7 +245,8 @@ public class TransactionStateMachine implements StatementProcessor
                     {
                         if ( statement.equalsIgnoreCase( BEGIN ) )
                         {
-                            return EXPLICIT_TRANSACTION;
+                            throw new QueryExecutionKernelException(
+                                    new InvalidSemanticsException( "Nested transactions are not supported." ) );
                         }
                         else if ( statement.equalsIgnoreCase( COMMIT ) )
                         {
