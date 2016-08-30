@@ -127,11 +127,16 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
             {
                 log.info( "Bringing store up to date with %s", source );
                 successfullyCaughtUp = tryToCatchUp( source, storeFetcher );
+
+                if ( !successfullyCaughtUp )
+                {
+                    log.info( "Failed to bring store up to date with %s.", source );
+                }
             }
 
             if ( !successfullyCaughtUp )
             {
-                log.info( "Failed to bring store up to date with %s. Downloading new store. ", source );
+                log.info( "Deleting local store and downloading new store from %s.", source );
                 storeFiles.delete( storeDir );
                 copyWholeStoreFrom( source, wantedStoreId, storeFetcher );
             }
