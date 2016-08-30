@@ -141,8 +141,8 @@ public class ClusterOverviewIT
         Cluster cluster = clusterRule.startCluster();
 
         // when
-        cluster.addCoreMemberWithId( 3, 4 ).start();
-        cluster.addCoreMemberWithId( 4, 5 ).start();
+        cluster.addCoreMemberWithId( 3 ).start();
+        cluster.addCoreMemberWithId( 4 ).start();
 
         Matcher<List<MemberInfo>> expected = allOf(
                 containsAddress( "127.0.0.1:8000" ), containsAddress( "127.0.0.1:8001" ), containsAddress( "127.0.0.1:8002" ),

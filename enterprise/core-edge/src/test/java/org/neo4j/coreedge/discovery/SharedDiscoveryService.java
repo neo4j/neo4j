@@ -52,7 +52,8 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     private AtomicReference<ClusterId> clusterId = new AtomicReference<>();
 
     @Override
-    public CoreTopologyService coreTopologyService( Config config, MemberId myself, LogProvider logProvider )
+    public CoreTopologyService coreTopologyService( Config config, MemberId myself,
+            DiscoveredMemberRepository discoveredMemberRepository, LogProvider logProvider )
     {
         return new SharedDiscoveryCoreClient( this, myself, logProvider, config );
     }

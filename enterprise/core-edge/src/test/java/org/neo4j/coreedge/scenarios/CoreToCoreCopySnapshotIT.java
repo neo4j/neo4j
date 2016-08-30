@@ -105,7 +105,7 @@ public class CoreToCoreCopySnapshotIT
         leader = cluster.awaitLeader();
 
         int newDbId = 3;
-        cluster.addCoreMemberWithId( newDbId, 3 ).start();
+        cluster.addCoreMemberWithId( newDbId ).start();
         CoreGraphDatabase newDb = cluster.getCoreMemberById( newDbId ).database();
 
         // then

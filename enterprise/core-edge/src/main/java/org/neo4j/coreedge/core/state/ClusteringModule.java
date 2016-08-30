@@ -23,6 +23,7 @@ import java.io.File;
 
 import org.neo4j.coreedge.core.state.storage.SimpleStorage;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.discovery.DiscoveredMemberRepository;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
@@ -52,7 +53,11 @@ public class ClusteringModule
         SimpleStorage<ClusterId> clusterIdStorage = new SimpleStorage<>( fileSystem, clusterStateDirectory,
                 CLUSTER_ID_NAME, new ClusterId.Marshal(), logProvider );
 
-        topologyService = discoveryServiceFactory.coreTopologyService( config, myself, logProvider );
+        DiscoveredMemberRepository discoveredMemberRepository =
+                new DiscoveredMemberRepository( clusterStateDirectory, fileSystem, logProvider );
+
+        topologyService = discoveryServiceFactory.coreTopologyService( config, myself, discoveredMemberRepository,
+                logProvider );
         BindingService bindingService = new BindingService( clusterIdStorage, topologyService, logProvider,
                 Clocks.systemClock(), () -> sleep( 100 ), 60000 );
 

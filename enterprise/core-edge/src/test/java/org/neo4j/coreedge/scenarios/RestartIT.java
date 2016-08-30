@@ -19,12 +19,12 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.coreedge.discovery.Cluster;
@@ -41,7 +41,6 @@ import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.coreedge.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.graphdb.Label.label;
 
@@ -60,7 +59,7 @@ public class RestartIT
 
         // when
         cluster.removeCoreMemberWithMemberId( 0 );
-        cluster.addCoreMemberWithId( 0, 3 );
+        cluster.addCoreMemberWithId( 0 );
 
         // then
         cluster.shutdown();
@@ -74,7 +73,7 @@ public class RestartIT
 
         // when
         cluster.removeCoreMemberWithMemberId( 1 );
-        cluster.addCoreMemberWithId( 1, 3 );
+        cluster.addCoreMemberWithId( 1 );
 
         // then
         cluster.shutdown();
@@ -110,7 +109,7 @@ public class RestartIT
         Thread.sleep( 500 );
 
         cluster.removeCoreMemberWithMemberId( 1 );
-        cluster.addCoreMemberWithId( 1, 3 );
+        cluster.addCoreMemberWithId( 1 );
         Thread.sleep( 500 );
 
         // then
@@ -156,7 +155,7 @@ public class RestartIT
             tx.success();
         }
 
-        cluster.addCoreMemberWithId( 2, 3 ).start();
+        cluster.addCoreMemberWithId( 2 ).start();
         cluster.shutdown();
 
         for ( CoreClusterMember core : cluster.coreMembers() )

@@ -29,9 +29,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -139,7 +139,7 @@ public class ClusterIdentityIT
         // WHEN
         try
         {
-            cluster.addCoreMemberWithId( 0, 3 ).start();
+            cluster.addCoreMemberWithId( 0 ).start();
             fail( "Should not have joined the cluster" );
         }
         catch ( RuntimeException e )
@@ -169,7 +169,7 @@ public class ClusterIdentityIT
         }
 
         // WHEN
-        cluster.addCoreMemberWithId( 0, 3 ).start();
+        cluster.addCoreMemberWithId( 0 ).start();
 
         cluster.awaitLeader();
 
@@ -206,7 +206,7 @@ public class ClusterIdentityIT
         // WHEN
         try
         {
-            cluster.addCoreMemberWithId( 0, 3 ).start();
+            cluster.addCoreMemberWithId( 0 ).start();
             fail( "Should not have joined the cluster" );
         }
         catch ( RuntimeException e )
@@ -234,7 +234,7 @@ public class ClusterIdentityIT
         }
 
         // WHEN
-        cluster.addCoreMemberWithId( 4, 4 ).start();
+        cluster.addCoreMemberWithId( 4 ).start();
 
         cluster.awaitLeader();
 

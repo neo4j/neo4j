@@ -22,6 +22,7 @@ package org.neo4j.coreedge.discovery;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,7 +40,6 @@ import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
 import org.neo4j.coreedge.core.consensus.roles.Role;
@@ -51,7 +51,6 @@ import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -59,7 +58,6 @@ import org.neo4j.test.DbRepresentation;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.concurrent.Futures.combine;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -69,6 +67,7 @@ public class Cluster
 {
     private static final int DEFAULT_TIMEOUT_MS = 15_000;
     private static final int DEFAULT_BACKOFF_MS = 100;
+    public final int defaultClusterSize = 3;
 
     private final File parentDir;
     private final DiscoveryServiceFactory discoveryServiceFactory;
@@ -84,7 +83,12 @@ public class Cluster
     {
         this.discoveryServiceFactory = discoveryServiceFactory;
         this.parentDir = parentDir;
-        List<AdvertisedSocketAddress> initialHosts = buildAddresses( noOfCoreMembers );
+        HashSet<Integer> coreServerIds = new HashSet<>();
+        for ( int i = 0; i < noOfCoreMembers; i++ )
+        {
+            coreServerIds.add( i );
+        }
+        List<AdvertisedSocketAddress> initialHosts = buildAddresses( coreServerIds );
         createCoreMembers( noOfCoreMembers, initialHosts, coreParams, instanceCoreParams, recordFormat );
         createEdgeMembers( noOfEdgeMembers, initialHosts, edgeParams, instanceEdgeParams, recordFormat );
     }
@@ -121,21 +125,24 @@ public class Cluster
         return edgeMembers.get( memberId );
     }
 
-    public CoreClusterMember addCoreMemberWithId( int memberId, int intendedClusterSize )
+    public CoreClusterMember addCoreMemberWithId( int memberId )
     {
-        return addCoreMemberWithId( memberId, intendedClusterSize, stringMap(), emptyMap(), StandardV3_0.NAME );
+        return addCoreMemberWithId( memberId, stringMap(), emptyMap(), StandardV3_0.NAME );
+    }
+
+    public CoreClusterMember addCoreMemberWithIdAndInitialMembers( int memberId,
+            List<AdvertisedSocketAddress> initialMembers )
+    {
+        CoreClusterMember coreClusterMember = new  CoreClusterMember( memberId, defaultClusterSize, initialMembers,
+                discoveryServiceFactory, StandardV3_0.NAME, parentDir,
+                emptyMap(), emptyMap() );
+        coreMembers.put( memberId, coreClusterMember );
+        return coreClusterMember;
     }
 
     public EdgeClusterMember addEdgeMemberWithIdAndRecordFormat( int memberId, String recordFormat )
     {
-        CoreClusterMember coreClusterMember = coreMembers.values().stream().filter( ( member ) -> member.database()
-                != null )
-                .findAny().orElseThrow( () -> new IllegalStateException(
-                        "No core members are running to use as a template for the edge member" ) );
-        Config config = coreClusterMember.database().getDependencyResolver().resolveDependency( Config.class );
-
-        List<AdvertisedSocketAddress> hazelcastAddresses =
-                config.get( CoreEdgeClusterSettings.initial_discovery_members );
+        List<AdvertisedSocketAddress> hazelcastAddresses = buildAddresses( coreMembers.keySet() );
         EdgeClusterMember member = new EdgeClusterMember( parentDir, memberId, discoveryServiceFactory,
                 hazelcastAddresses, stringMap(), emptyMap(), recordFormat );
         edgeMembers.put( memberId, member );
@@ -290,15 +297,10 @@ public class Cluster
         return leaderTx( op );
     }
 
-    private CoreClusterMember addCoreMemberWithId( int memberId, int intendedClusterSize,
-            Map<String,String> extraParams, Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
+    private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams, Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
-        Config config = firstOrNull( coreMembers.values() ).database().getDependencyResolver().resolveDependency(
-                Config.class );
-        List<AdvertisedSocketAddress> advertisedAddress = config.get( CoreEdgeClusterSettings
-                .initial_discovery_members );
-
-        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, intendedClusterSize, advertisedAddress,
+        List<AdvertisedSocketAddress> advertisedAddress = buildAddresses( coreMembers.keySet() );
+        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, defaultClusterSize, advertisedAddress,
                 discoveryServiceFactory, recordFormat, parentDir,
                 extraParams, instanceExtraParams );
         coreMembers.put( memberId, coreClusterMember );
@@ -366,15 +368,19 @@ public class Cluster
                         LockSessionExpired;
     }
 
-    private static List<AdvertisedSocketAddress> buildAddresses( int noOfCoreMembers )
+    private static List<AdvertisedSocketAddress> buildAddresses( Set<Integer> coreServerIds )
     {
         List<AdvertisedSocketAddress> addresses = new ArrayList<>();
-        for ( int i = 0; i < noOfCoreMembers; i++ )
+        for ( Integer i : coreServerIds )
         {
-            int port = 5000 + i;
-            addresses.add( new AdvertisedSocketAddress( "localhost:" + port ) );
+            addresses.add( socketAddressForServer( i ) );
         }
         return addresses;
+    }
+
+    public static AdvertisedSocketAddress socketAddressForServer( int id )
+    {
+        return new AdvertisedSocketAddress( "localhost:" + (5000 + id) );
     }
 
     private void createCoreMembers( final int noOfCoreMembers,

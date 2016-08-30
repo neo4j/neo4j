@@ -31,11 +31,13 @@ import com.hazelcast.core.MembershipListener;
 import com.hazelcast.instance.GroupProperties;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.neo4j.coreedge.identity.ClusterId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -46,16 +48,19 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 {
     private final Config config;
     private final MemberId myself;
+    private final DiscoveredMemberRepository discoveredMemberRepository;
     private final Log log;
     private final CoreTopologyListenerService listenerService;
     private String membershipRegistrationId;
 
     private HazelcastInstance hazelcastInstance;
 
-    HazelcastCoreTopologyService( Config config, MemberId myself, LogProvider logProvider )
+    HazelcastCoreTopologyService( Config config, MemberId myself, DiscoveredMemberRepository discoveredMemberRepository,
+            LogProvider logProvider )
     {
         this.config = config;
         this.myself = myself;
+        this.discoveredMemberRepository = discoveredMemberRepository;
         this.listenerService = new CoreTopologyListenerService();
         this.log = logProvider.getLog( getClass() );
     }
@@ -78,6 +83,16 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     {
         log.info( "Core member added %s", membershipEvent );
         log.info( "Current topology is %s", currentTopology() );
+        notifyMembershipChange();
+    }
+
+    private void notifyMembershipChange()
+    {
+        Set<AdvertisedSocketAddress> members = hazelcastInstance.getCluster().getMembers().stream()
+                .map( member -> new AdvertisedSocketAddress(
+                        String.format( "%s:%d", member.getSocketAddress().getHostName(),
+                                member.getSocketAddress().getPort() ) ) ).collect( Collectors.toSet() );
+        discoveredMemberRepository.store( members );
         listenerService.notifyListeners();
     }
 
@@ -86,7 +101,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     {
         log.info( "Core member removed %s", membershipEvent );
         log.info( "Current topology is %s", currentTopology() );
-        listenerService.notifyListeners();
+        notifyMembershipChange();
     }
 
     @Override
@@ -100,7 +115,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         hazelcastInstance = createHazelcastInstance();
         log.info( "Cluster discovery service started" );
         membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( this );
-        listenerService.notifyListeners();
+        notifyMembershipChange();
     }
 
     @Override
@@ -132,7 +147,13 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         {
             tcpIpConfig.addMember( address.toString() );
         }
-        log.info( "Discovering cluster with initial members: " + initialMembers );
+        Set<AdvertisedSocketAddress> previouslySeenMembers = discoveredMemberRepository.previouslyDiscoveredMembers();
+        for ( AdvertisedSocketAddress seenAddress : previouslySeenMembers )
+        {
+            tcpIpConfig.addMember( seenAddress.toString() );
+        }
+        log.info( String.format( "Discovering cluster with initial members: %s and previously seen members: %s",
+                initialMembers, previouslySeenMembers ) );
 
         NetworkConfig networkConfig = new NetworkConfig();
         ListenSocketAddress hazelcastAddress = config.get( CoreEdgeClusterSettings.discovery_listen_address );

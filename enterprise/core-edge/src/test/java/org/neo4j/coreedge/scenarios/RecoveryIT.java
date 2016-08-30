@@ -80,7 +80,7 @@ public class RecoveryIT
         {
             cluster.removeCoreMemberWithMemberId( i );
             fireSomeLoadAtTheCluster( cluster );
-            cluster.addCoreMemberWithId( i, clusterSize ).start();
+            cluster.addCoreMemberWithId( i ).start();
         }
 
         cluster.shutdown();
