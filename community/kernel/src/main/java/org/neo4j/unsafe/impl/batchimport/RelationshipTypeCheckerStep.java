@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.apache.commons.lang3.mutable.MutableLong;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -41,7 +43,7 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingR
 public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private static final Comparator<Map.Entry<Object,MutableLong>> SORT_BY_COUNT_DESC =
-            (e1,e2) -> Long.compare( e2.getValue().value, e1.getValue().value );
+            (e1,e2) -> Long.compare( e2.getValue().longValue(), e1.getValue().longValue() );
     private static final Comparator<Map.Entry<Object,MutableLong>> SORT_BY_ID_DESC =
             (e1,e2) -> Integer.compare( (Integer)e2.getKey(), (Integer)e1.getKey() );
     private final Map<Thread,Map<Object,MutableLong>> typeCheckers = new ConcurrentHashMap<>();
@@ -72,7 +74,7 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
             {
                 types.put( type, count = new MutableLong() );
             }
-            count.value++;
+            count.increment();
         }
         sender.send( batch );
     }
@@ -91,7 +93,7 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
                 {
                     mergedTypes.put( localType.getKey(), count = new MutableLong() );
                 }
-                count.value += localType.getValue().value;
+                count.add( localType.getValue().longValue() );
             }
         }
 
@@ -135,17 +137,12 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
         List<Object> result = new ArrayList<>();
         for ( Map.Entry<Object,MutableLong> candidate : sortedTypes )
         {
-            if ( candidate.getValue().value <= belowOrEqualToThreshold )
+            if ( candidate.getValue().longValue() <= belowOrEqualToThreshold )
             {
                 result.add( candidate.getKey() );
             }
         }
 
         return result.toArray();
-    }
-
-    private static class MutableLong
-    {
-        private long value;
     }
 }
