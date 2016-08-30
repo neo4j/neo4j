@@ -256,8 +256,6 @@ public class EdgeServerReplicationIT
             ThrowingSupplier<Boolean,Exception> availability = () -> edgeClusterMember.database().isAvailable( 0 );
             assertEventually( "edge server becomes available", availability, is( true ), 10, SECONDS );
         }
-
-        System.exit( 1 );
     }
 
     private boolean edgesUpToDateAsTheLeader( CoreClusterMember leader, Collection<EdgeClusterMember> edgeClusterMembers )
