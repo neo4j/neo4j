@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, TokenT
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InterpretedExecutionPlanBuilder.interpretedToExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.{DisconnectedShortestPathEndPointsBuilder, _}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
@@ -40,8 +41,7 @@ trait ExecutionPlanInProgressRewriter {
 class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConfiguration,
                                   rewriterSequencer: (String) => RewriterStepSequencer,
                                   eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary,
-                                  publicTypeConverter: Any => Any,
-                                  privateTypeConverter: Any => Any)
+                                  typeConverter: RuntimeTypeConverter)
   extends PatternGraphBuilder with ExecutablePlanBuilder with GraphQueryBuilder {
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
@@ -49,7 +49,7 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConf
   override def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
                            createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan =
     interpretedToExecutionPlan(producePipe(inputQuery, planContext, tracer), planContext, inputQuery,
-                               createFingerprintReference, config, publicTypeConverter, privateTypeConverter)
+                               createFingerprintReference, config, typeConverter)
 
   def producePipe(in: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer): PipeInfo = {
     val rewriter = rewriterSequencer("LegacyPipeBuilder")(reattachAliasedExpressions).rewriter

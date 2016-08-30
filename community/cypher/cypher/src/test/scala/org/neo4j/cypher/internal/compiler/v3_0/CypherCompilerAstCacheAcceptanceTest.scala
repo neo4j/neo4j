@@ -24,6 +24,7 @@ import java.time.{Clock, Instant, ZoneOffset}
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.{StringInfoLogger3_0, WrappedMonitors3_0}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlan
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -57,8 +58,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       runtimeName = Some(InterpretedRuntimeName),
       updateStrategy = None,
       rewriterSequencer = RewriterStepSequencer.newValidating,
-      publicTypeConverter = identity,
-      privateTypeConverter = identity
+      typeConverter = IdentityTypeConverter
     )
   }
 

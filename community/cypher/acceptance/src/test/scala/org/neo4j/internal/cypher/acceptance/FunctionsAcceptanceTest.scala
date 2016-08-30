@@ -594,7 +594,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
 
   test("distance function should fail on wrong type") {
     val error = intercept[SyntaxException](executeWithAllPlanners("RETURN distance(1, 2) as dist"))
-    assert(error.getMessage.contains("Type mismatch: expected Point but was Integer"))
+    assert(error.getMessage.contains("Type mismatch: expected Point or Geometry but was Integer"))
   }
 
   test("point function should work with node properties") {

@@ -17,18 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
+package org.neo4j.cypher.internal.compiler.v3_0.helpers
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Function, SimpleTypedFunction}
-import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+trait RuntimeTypeConverter {
+  def asPublicType: Any => Any
 
-case object Distance extends Function with SimpleTypedFunction {
-  def name = "distance"
+  def asPrivateType: Any => Any
+}
 
-  val signatures = Vector(
-    Signature(argumentTypes = Vector(CTGeometry, CTGeometry), outputType = CTFloat),
-    Signature(argumentTypes = Vector(CTPoint, CTGeometry), outputType = CTFloat),
-    Signature(argumentTypes = Vector(CTGeometry, CTPoint), outputType = CTFloat),
-    Signature(argumentTypes = Vector(CTPoint, CTPoint), outputType = CTFloat)
-  )
+object IdentityTypeConverter extends RuntimeTypeConverter {
+  override val asPublicType: Any => Any = identity
+
+  override def asPrivateType: Any => Any = identity
 }

@@ -26,6 +26,7 @@ import java.util.{Date, Locale}
 
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
@@ -304,15 +305,15 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       plannerName = Some(plannerName),
       rewriterSequencer = rewriterSequencer,
       queryPlanner = queryPlanner,
-      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(clock, monitors, identity, identity)),
+      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(clock, monitors, IdentityTypeConverter)),
       semanticChecker = checker,
       config = config,
       updateStrategy = None,
       publicTypeConverter = identity
     )
     val pipeBuilder = new SilentFallbackPlanBuilder(
-      new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer,
-        publicTypeConverter = identity, privateTypeConverter = identity), planner, planBuilderMonitor)
+      new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer, typeConverter = IdentityTypeConverter),
+      planner, planBuilderMonitor)
     val execPlanBuilder =
       new ExecutionPlanBuilder(graph, clock, pipeBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
@@ -330,8 +331,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
-    val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer,
-      publicTypeConverter = identity, privateTypeConverter = identity)
+    val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer, typeConverter = IdentityTypeConverter)
     val execPlanBuilder =
       new ExecutionPlanBuilder(graph, clock, pipeBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)

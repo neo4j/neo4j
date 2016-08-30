@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
+  private val availableCalculators = Seq(HaversinCalculator, CartesianCalculator)
+
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     // TODO: Support better calculations, like https://en.wikipedia.org/wiki/Vincenty%27s_formulae
     // TODO: Support more coordinate systems
@@ -56,10 +58,7 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
   }
 
   def calculateDistance(geometry1: Point, geometry2: Point) = {
-    Seq(
-      HaversinCalculator,
-      CartesianCalculator
-    ).collectFirst {
+    availableCalculators.collectFirst {
       case distance: DistanceCalculator if distance.isDefinedAt(geometry1, geometry2) =>
         distance(geometry1, geometry2)
     }.getOrElse(
@@ -109,8 +108,8 @@ object HaversinCalculator extends DistanceCalculator {
     p1.crs == CRS.WGS84 && p2.crs == CRS.WGS84
 
   override def calculateDistance(p1: Point, p2: Point): Double = {
-    val c1: Seq[Double] = p1.coordinate.values.map(toRadians)
-    val c2: Seq[Double] = p2.coordinate.values.map(toRadians)
+    val c1: Array[Double] = p1.coordinate.values.map(toRadians).toArray
+    val c2: Array[Double] = p2.coordinate.values.map(toRadians).toArray
     val dx = c2(0) - c1(0)
     val dy = c2(1) - c1(1)
     val a = pow(sin(dy / 2), 2.0) + cos(c1(1)) * cos(c2(1)) * pow(sin(dx / 2.0), 2.0)

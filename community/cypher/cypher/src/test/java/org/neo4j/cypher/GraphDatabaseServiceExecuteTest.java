@@ -236,6 +236,26 @@ public class GraphDatabaseServiceExecuteTest
 
     }
 
+    @Test
+    public void shouldBeAbleToUseResultsOfPointGeometryProcedureAsInputToDistanceFunction() throws Exception
+    {
+        // given procedure that produces a point
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        Procedures procedures =
+                ((GraphDatabaseAPI) graphDb).getDependencyResolver().resolveDependency( Procedures.class );
+        procedures.register( PointProcs.class );
+
+        // when calling procedure that produces a point
+        Result result = graphDb.execute(
+                "CALL spatial.pointGeometry(144.317718, -37.031738) YIELD geometry " +
+                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), geometry) AS dist" );
+
+        // then
+        Double dist = (Double) result.next().get( "dist" );
+        assertThat( dist, equalTo( 0.0 ) );
+
+    }
+
     private static Point makeFakePoint(double x, double y, final CRS crs)
     {
         final Coordinate coord = new Coordinate( x, y );
@@ -318,6 +338,12 @@ public class GraphDatabaseServiceExecuteTest
             Point point = makeFakePoint( longitude, latitude, makeWGS84() );
             return Stream.of( new PointResult(point) );
         }
+        @Procedure( "spatial.pointGeometry" )
+        public Stream<GeometryResult> spatialPointGeometry( @Name( "longitude" ) double longitude, @Name( "latitude" ) double latitude )
+        {
+            Geometry geometry = makeFakePointAsGeometry( longitude, latitude, makeWGS84() );
+            return Stream.of( new GeometryResult(geometry) );
+        }
     }
 
     public static class PointResult
@@ -327,6 +353,16 @@ public class GraphDatabaseServiceExecuteTest
         public PointResult( Point point )
         {
             this.point = point;
+        }
+    }
+
+    public static class GeometryResult
+    {
+        public Geometry geometry;
+
+        public GeometryResult( Geometry geometry )
+        {
+            this.geometry = geometry;
         }
     }
 }

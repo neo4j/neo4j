@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD}
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_0
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, InfoLogger, _}
 
@@ -200,8 +201,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       plannerName = Some(IDPPlannerName),
       runtimeName = Some(InterpretedRuntimeName),
       updateStrategy = None,
-      publicTypeConverter = identity,
-      privateTypeConverter = identity
+      typeConverter = IdentityTypeConverter
     )
   }
 

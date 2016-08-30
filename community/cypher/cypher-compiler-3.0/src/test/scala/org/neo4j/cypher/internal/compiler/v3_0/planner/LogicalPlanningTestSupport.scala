@@ -26,6 +26,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.{namePatternPredicatePatternElements, normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_0.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
@@ -167,7 +168,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       queryPlanner = queryPlanner,
       rewriterSequencer = rewriterSequencer,
       plannerName = None,
-      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors, identity, identity)),
+      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors, IdentityTypeConverter)),
       semanticChecker = semanticChecker,
       updateStrategy = None,
       config = config,

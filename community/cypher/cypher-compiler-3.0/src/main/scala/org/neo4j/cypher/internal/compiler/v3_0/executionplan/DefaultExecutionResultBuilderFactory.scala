@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{CSVResources, QueryContext}
@@ -28,8 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.CypherException
 import scala.collection.mutable
 
 case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: List[String],
-                                                publicTypeConverter: Any => Any,
-                                                privateTypeConverter: Any => Any) extends ExecutionResultBuilderFactory {
+                                                typeConverter: RuntimeTypeConverter) extends ExecutionResultBuilderFactory {
   def create(): ExecutionResultBuilder =
     ExecutionWorkflowBuilder()
 
@@ -62,7 +62,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
       taskCloser.addTask(queryContext.transactionalContext.close)
       val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId,
                                  triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty,
-                                 publicTypeConverter = publicTypeConverter, privateTypeConverter = privateTypeConverter)
+                                 typeConverter = typeConverter)
       try {
         try {
           createResults(state, planType, notificationLogger)

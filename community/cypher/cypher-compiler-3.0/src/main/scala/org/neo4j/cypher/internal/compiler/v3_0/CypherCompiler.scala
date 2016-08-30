@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer.Compilatio
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs.DelegatingProcedureExecutablePlanBuilder
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.closing
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{RuntimeTypeConverter, closing}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
@@ -77,8 +77,7 @@ object CypherCompilerFactory {
                         plannerName: Option[CostBasedPlannerName],
                         runtimeName: Option[RuntimeName],
                         updateStrategy: Option[UpdateStrategy],
-                        publicTypeConverter: Any => Any,
-                        privateTypeConverter: Any => Any): CypherCompiler = {
+                        typeConverter: RuntimeTypeConverter): CypherCompiler = {
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
@@ -86,7 +85,7 @@ object CypherCompilerFactory {
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
 
-    val interpretedPlanBuilder = InterpretedPlanBuilder(clock, monitors, publicTypeConverter, privateTypeConverter)
+    val interpretedPlanBuilder = InterpretedPlanBuilder(clock, monitors, typeConverter)
 
     // Pick runtime based on input
     val runtimeBuilder = RuntimeBuilder.create(runtimeName, interpretedPlanBuilder)
@@ -101,11 +100,11 @@ object CypherCompilerFactory {
       runtimeBuilder = runtimeBuilder,
       config = config,
       updateStrategy = updateStrategy,
-      publicTypeConverter = publicTypeConverter
+      publicTypeConverter = typeConverter.asPublicType
     )
-    val procedurePlanProducer = new DelegatingProcedureExecutablePlanBuilder(costPlanProducer, publicTypeConverter)
+    val procedurePlanProducer = new DelegatingProcedureExecutablePlanBuilder(costPlanProducer, typeConverter.asPublicType)
     val rulePlanProducer = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer,
-      publicTypeConverter = publicTypeConverter, privateTypeConverter = privateTypeConverter)
+      typeConverter = typeConverter)
 
     // Pick planner based on input
     val planBuilder = ExecutablePlanBuilder.create(plannerName, rulePlanProducer,
@@ -123,15 +122,13 @@ object CypherCompilerFactory {
   def ruleBasedCompiler(graph: GraphDatabaseQueryService,
                         config: CypherCompilerConfiguration, clock: Clock, monitors: Monitors,
                         rewriterSequencer: (String) => RewriterStepSequencer,
-                        publicTypeConverter: Any => Any,
-                        privateTypeConverter: Any => Any): CypherCompiler = {
+                        typeConverter: RuntimeTypeConverter): CypherCompiler = {
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
     val pipeBuilder = new DelegatingProcedureExecutablePlanBuilder(
       new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer,
-        publicTypeConverter = publicTypeConverter, privateTypeConverter = privateTypeConverter),
-      publicTypeConverter)
+        typeConverter = typeConverter), typeConverter.asPublicType)
 
     val execPlanBuilder = new ExecutionPlanBuilder(graph, clock, pipeBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](config.queryCacheSize)
