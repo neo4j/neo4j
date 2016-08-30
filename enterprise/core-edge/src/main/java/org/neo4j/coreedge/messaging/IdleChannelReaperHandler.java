@@ -25,7 +25,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 
 public class IdleChannelReaperHandler extends ChannelDuplexHandler
 {
@@ -42,8 +42,8 @@ public class IdleChannelReaperHandler extends ChannelDuplexHandler
         if ( evt instanceof IdleStateEvent && evt == IdleStateEvent.ALL_IDLE_STATE_EVENT )
         {
             final InetSocketAddress socketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
-            final AdvertisedSocketAddress address = new AdvertisedSocketAddress(
-                    socketAddress.getHostName() + ":" + socketAddress.getPort() );
+            final AdvertisedSocketAddress address =
+                    new AdvertisedSocketAddress( socketAddress.getHostName(), socketAddress.getPort() );
 
             nonBlockingChannels.remove( address );
         }

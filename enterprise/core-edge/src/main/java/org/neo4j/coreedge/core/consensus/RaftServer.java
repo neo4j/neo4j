@@ -40,7 +40,7 @@ import org.neo4j.coreedge.VersionPrepender;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
 import org.neo4j.coreedge.messaging.Inbound;
-import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;
 import org.neo4j.coreedge.messaging.marshalling.RaftMessageDecoder;
 import org.neo4j.helpers.NamedThreadFactory;

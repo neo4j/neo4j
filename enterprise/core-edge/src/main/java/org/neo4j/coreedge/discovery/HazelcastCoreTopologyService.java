@@ -19,6 +19,9 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import java.util.List;
+
+import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MemberAttributeConfig;
 import com.hazelcast.config.NetworkConfig;
@@ -31,13 +34,11 @@ import com.hazelcast.core.MembershipListener;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.instance.GroupProperty;
 
-import java.util.List;
-
-import org.neo4j.coreedge.identity.ClusterId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -141,7 +142,10 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
         NetworkConfig networkConfig = new NetworkConfig();
         ListenSocketAddress hazelcastAddress = config.get( CoreEdgeClusterSettings.discovery_listen_address );
-        networkConfig.setPort( hazelcastAddress.socketAddress().getPort() );
+        InterfacesConfig interfaces = new InterfacesConfig();
+        interfaces.addInterface( hazelcastAddress.getHostname() );
+        networkConfig.setInterfaces( interfaces );
+        networkConfig.setPort( hazelcastAddress.getPort() );
         networkConfig.setJoin( joinConfig );
 
         com.hazelcast.config.Config c = new com.hazelcast.config.Config();

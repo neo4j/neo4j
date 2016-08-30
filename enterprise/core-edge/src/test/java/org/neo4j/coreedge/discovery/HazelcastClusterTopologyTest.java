@@ -34,7 +34,7 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
@@ -59,7 +59,9 @@ public class HazelcastClusterTopologyTest
         HashMap<String, String> settings = new HashMap<>();
         settings.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "tx:1001" );
         settings.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "raft:2001" );
-        settings.put( GraphDatabaseSettings.bolt_advertised_address.name(), "bolt:3001" );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:3001" );
         config.augment( settings );
 
         // when
@@ -70,9 +72,9 @@ public class HazelcastClusterTopologyTest
         // then
         assertEquals( memberId, extracted.first() );
         CoreAddresses addresses = extracted.other();
-        assertEquals( new AdvertisedSocketAddress( "tx:1001" ), addresses.getCatchupServer() );
-        assertEquals( new AdvertisedSocketAddress( "raft:2001" ), addresses.getRaftServer() );
-        assertEquals( new AdvertisedSocketAddress( "bolt:3001" ), addresses.getBoltServer() );
+        assertEquals( new AdvertisedSocketAddress( "tx", 1001 ), addresses.getCatchupServer() );
+        assertEquals( new AdvertisedSocketAddress( "raft", 2001 ), addresses.getRaftServer() );
+        assertEquals( new AdvertisedSocketAddress( "bolt", 3001 ), addresses.getBoltServer() );
     }
 
     @Test
@@ -89,7 +91,9 @@ public class HazelcastClusterTopologyTest
             HashMap<String, String> settings = new HashMap<>();
             settings.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "tx:" + (i + 1) );
             settings.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "raft:" + (i + 1) );
-            settings.put( GraphDatabaseSettings.bolt_advertised_address.name(), "bolt:" + (i + 1) );
+            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
+            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
+            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
             config.augment( settings );
             Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
             hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null, attributes, false ) );
@@ -104,9 +108,9 @@ public class HazelcastClusterTopologyTest
         for ( int i = 0; i < 5; i++ )
         {
             CoreAddresses coreAddresses = coreMemberMap.get( coreMembers.get( i ) );
-            assertEquals( new AdvertisedSocketAddress( "tx:" + (i + 1) ), coreAddresses.getCatchupServer() );
-            assertEquals( new AdvertisedSocketAddress( "raft:" + (i + 1) ), coreAddresses.getRaftServer() );
-            assertEquals( new AdvertisedSocketAddress( "bolt:" + (i + 1) ), coreAddresses.getBoltServer() );
+            assertEquals( new AdvertisedSocketAddress( "tx", (i + 1) ), coreAddresses.getCatchupServer() );
+            assertEquals( new AdvertisedSocketAddress( "raft", (i + 1) ), coreAddresses.getRaftServer() );
+            assertEquals( new AdvertisedSocketAddress( "bolt", (i + 1) ), coreAddresses.getBoltServer() );
         }
     }
 
@@ -120,7 +124,13 @@ public class HazelcastClusterTopologyTest
         {
             MemberId memberId = new MemberId( UUID.randomUUID() );
             coreMembers.add( memberId );
-            Map<String, Object> attributes = buildMemberAttributes( memberId, Config.defaults() ).getAttributes();
+            Config config = Config.defaults();
+            HashMap<String, String> settings = new HashMap<>();
+            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
+            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
+            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
+            config.augment( settings );
+            Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
             if ( i == 2 )
             {
                 attributes.remove( HazelcastClusterTopology.RAFT_SERVER );

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -32,15 +30,25 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
+
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.helpers.SocketAddressFormat;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.Character.isDigit;
+import static java.lang.Integer.parseInt;
+import static java.lang.String.format;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_advertised_hostname;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.io.fs.FileUtils.fixSeparatorsInPath;
 
 /**
@@ -326,7 +334,7 @@ public class Settings
         {
             try
             {
-                return Integer.parseInt( value );
+                return parseInt( value );
             }
             catch ( NumberFormatException e )
             {
@@ -479,6 +487,120 @@ public class Settings
             return "a duration (valid units are `" + DURATION_UNITS.replace( ", ", "`, `" ) + "`; default unit is `ms`)";
         }
     };
+
+    public static final Function<String, ListenSocketAddress> LISTEN_SOCKET_ADDRESS =
+            new Function<String, ListenSocketAddress>()
+            {
+                @Override
+                public ListenSocketAddress apply( String value )
+                {
+                    return SocketAddressFormat.socketAddress( value, ListenSocketAddress::new );
+                }
+
+                @Override
+                public String toString()
+                {
+                    return "a socket address";
+                }
+            };
+
+    public static final Function<String, AdvertisedSocketAddress> ADVERTISED_SOCKET_ADDRESS =
+            new Function<String, AdvertisedSocketAddress>()
+            {
+                @Override
+                public AdvertisedSocketAddress apply( String value )
+                {
+                    return SocketAddressFormat.socketAddress( value, AdvertisedSocketAddress::new );
+                }
+
+                @Override
+                public String toString()
+                {
+                    return "a socket address";
+                }
+            };
+
+    public static Setting<ListenSocketAddress> listenAddress( String name, int defaultPort )
+    {
+        return new Setting<ListenSocketAddress>()
+        {
+            @Override
+            public String name()
+            {
+                return name;
+            }
+
+            @Override
+            public String getDefaultValue()
+            {
+                return default_listen_address.getDefaultValue() + ":" + defaultPort;
+            }
+
+            @Override
+            public ListenSocketAddress from( Configuration config )
+            {
+                return config.get( this );
+            }
+
+            @Override
+            public ListenSocketAddress apply( Function<String, String> config )
+            {
+                String value = config.apply( name );
+                String hostname = default_listen_address.apply( config );
+
+                return SocketAddressFormat.socketAddress( name, value, hostname, defaultPort, ListenSocketAddress::new );
+            }
+
+            @Override
+            public String toString()
+            {
+                return LISTEN_SOCKET_ADDRESS.toString();
+            }
+        };
+    }
+
+    public static Setting<AdvertisedSocketAddress> advertisedAddress( String name, Setting<ListenSocketAddress> listenAddressSetting )
+    {
+        return new Setting<AdvertisedSocketAddress>()
+        {
+            @Override
+            public String name()
+            {
+                return name;
+            }
+
+            @Override
+            public String getDefaultValue()
+            {
+                return default_advertised_hostname.getDefaultValue() + ":" +
+                        LISTEN_SOCKET_ADDRESS.apply( listenAddressSetting.getDefaultValue() ).socketAddress().getPort();
+            }
+
+            @Override
+            public AdvertisedSocketAddress from( Configuration config )
+            {
+                return config.get( this );
+            }
+
+            @Override
+            public AdvertisedSocketAddress apply( Function<String, String> config )
+            {
+                ListenSocketAddress listenSocketAddress = listenAddressSetting.apply( config );
+                String hostname = default_advertised_hostname.apply( config );
+                int port = listenSocketAddress.socketAddress().getPort();
+
+                String value = config.apply( name );
+
+                return SocketAddressFormat.socketAddress( name, value, hostname, port, AdvertisedSocketAddress::new );
+            }
+
+            @Override
+            public String toString()
+            {
+                return ADVERTISED_SOCKET_ADDRESS.toString();
+            }
+        };
+    }
 
     public static final Function<String, Long> BYTES = new Function<String, Long>()
     {
@@ -940,6 +1062,39 @@ public class Settings
             else
             {
                 return value;
+            }
+        };
+    }
+
+    public static <T> Setting<T> legacyFallback( Setting<T> fallbackSetting, Setting<T> newSetting )
+    {
+        return new Setting<T>()
+        {
+            public String name()
+            {
+                return newSetting.name();
+            }
+
+            public String getDefaultValue()
+            {
+                return newSetting.getDefaultValue();
+            }
+
+            public T from( Configuration config )
+            {
+                return newSetting.from( config );
+            }
+
+            public T apply( Function<String, String> config )
+            {
+                String newValue = config.apply( newSetting.name() );
+                return newValue == null ? fallbackSetting.apply( config ) : newSetting.apply( config );
+            }
+
+            @Override
+            public String toString()
+            {
+                return newSetting.toString();
             }
         };
     }

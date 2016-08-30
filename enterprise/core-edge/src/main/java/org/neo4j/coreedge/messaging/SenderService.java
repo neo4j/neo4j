@@ -30,7 +30,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.monitoring.MessageQueueMonitor;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.JobScheduler;

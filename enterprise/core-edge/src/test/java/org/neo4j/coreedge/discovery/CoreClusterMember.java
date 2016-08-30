@@ -31,7 +31,7 @@ import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.log.segmented.FileNames;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -69,11 +69,10 @@ public class CoreClusterMember
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
         config.put( "dbms.mode", "CORE" );
+        config.put( GraphDatabaseSettings.default_advertised_hostname.name(), "localhost" );
         config.put( CoreEdgeClusterSettings.initial_discovery_members.name(), initialMembers );
         config.put( CoreEdgeClusterSettings.discovery_listen_address.name(), "127.0.0.1:" + hazelcastPort );
-        config.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "localhost:" + txPort );
         config.put( CoreEdgeClusterSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
-        config.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "localhost:" + raftPort );
         config.put( CoreEdgeClusterSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
         config.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
         config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
@@ -81,7 +80,7 @@ public class CoreClusterMember
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + boltPort );
-        config.put( GraphDatabaseSettings.bolt_advertised_address.name(), "127.0.0.1:" + boltPort );
+        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "127.0.0.1:" + boltPort );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         config.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
         config.putAll( extraParams );

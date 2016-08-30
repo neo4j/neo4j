@@ -28,8 +28,8 @@ import java.util.Optional;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.harness.ServerControls;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.AbstractNeoServer;
 
@@ -51,8 +51,8 @@ public class InProcessServerControls implements ServerControls
     @Override
     public URI boltURI()
     {
-        HostnamePort address = server.getConfig().get( boltConnector( "0" ).address );
-        return URI.create( "bolt://" + address.getHost() + ":" + address.getPort() );
+        AdvertisedSocketAddress address = server.getConfig().get( boltConnector( "0" ).advertised_address );
+        return URI.create( "bolt://" + address.getHostname() + ":" + address.getPort() );
     }
 
     @Override

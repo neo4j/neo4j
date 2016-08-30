@@ -41,7 +41,8 @@ import org.neo4j.bolt.security.ssl.KeyStoreFactory;
 import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.RunCarefully;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -57,6 +58,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.configuration.ServerSettings.HttpConnector;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.CypherExecutorProvider;
 import org.neo4j.server.database.Database;
@@ -91,7 +93,6 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTimeout;
-import static org.neo4j.server.configuration.ServerSettings.HttpConnector;
 import static org.neo4j.server.configuration.ServerSettings.httpConnector;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;
@@ -123,8 +124,10 @@ public abstract class AbstractNeoServer implements NeoServer
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
     private final Config config;
     private final LifeSupport life = new LifeSupport();
-    private final HostnamePort httpAddress;
-    private final Optional<HostnamePort> httpsAddress;
+    private final ListenSocketAddress httpListenAddress;
+    private final AdvertisedSocketAddress httpAdvertisedAddress;
+    private final Optional<ListenSocketAddress> httpsListenAddress;
+    private final Optional<AdvertisedSocketAddress> httpsAdvertisedAddress;
 
     protected Database database;
     protected CypherExecutor cypherExecutor;
@@ -150,13 +153,16 @@ public abstract class AbstractNeoServer implements NeoServer
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
 
-        httpAddress = httpConnector( config, HttpConnector.Encryption.NONE )
+        HttpConnector httpConnector = httpConnector( config, HttpConnector.Encryption.NONE )
                 .orElseThrow( () ->
-                        new IllegalArgumentException( "An HTTP connector must be configured to run the server" ) )
-                .address
-                .from( config );
-        httpsAddress = httpConnector( config, HttpConnector.Encryption.TLS )
-                .map( (connector) -> connector.address.from( config ) );
+                        new IllegalArgumentException( "An HTTP connector must be configured to run the server" ) );
+        httpListenAddress = config.get( httpConnector.listen_address );
+        httpAdvertisedAddress = config.get( httpConnector.advertised_address );
+
+        Optional<HttpConnector> httpsConnector =
+                httpConnector( config, HttpConnector.Encryption.TLS );
+        httpsListenAddress = httpsConnector.map( (connector) -> config.get( connector.listen_address ) );
+        httpsAdvertisedAddress = httpsConnector.map( (connector) -> config.get( connector.advertised_address ) );
     }
 
     @Override
@@ -299,8 +305,8 @@ public abstract class AbstractNeoServer implements NeoServer
     // configuration itself.
     private void configureWebServer() throws Exception
     {
-        webServer.setAddress( httpAddress );
-        webServer.setHttpsAddress( httpsAddress );
+        webServer.setAddress( httpListenAddress );
+        webServer.setHttpsAddress( httpsListenAddress );
         webServer.setMaxThreads( config.get( ServerSettings.webserver_max_threads ) );
         webServer.setWadlEnabled( config.get( ServerSettings.wadl_enabled ) );
         webServer.setDefaultInjectables( createDefaultInjectables() );
@@ -359,14 +365,14 @@ public abstract class AbstractNeoServer implements NeoServer
         webServer.addFilter( filter, "/*" );
     }
 
-    public HostnamePort getAddress()
+    public ListenSocketAddress getAddress()
     {
-        return httpAddress;
+        return httpListenAddress;
     }
 
     protected boolean httpsIsEnabled()
     {
-        return httpsAddress.isPresent();
+        return httpsListenAddress.isPresent();
     }
 
     protected Pattern[] getUriWhitelist()
@@ -389,7 +395,7 @@ public abstract class AbstractNeoServer implements NeoServer
                     //noinspection deprecation
                     log.info( "No SSL certificate found, generating a self-signed certificate.." );
                     Certificates certFactory = new Certificates();
-                    certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, httpAddress.getHost() );
+                    certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, httpListenAddress.getHostname() );
                 }
 
                 // Make sure both files were there, or were generated
@@ -462,12 +468,12 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public URI baseUri()
     {
-        return uriBuilder.buildURI( httpAddress, false );
+        return uriBuilder.buildURI( httpAdvertisedAddress, false );
     }
 
     public Optional<URI> httpsUri()
     {
-        return httpsAddress.map( ( address ) -> uriBuilder.buildURI( address, true ) );
+        return httpsAdvertisedAddress.map( ( address ) -> uriBuilder.buildURI( address, true ) );
     }
 
     public WebServer getWebServer()

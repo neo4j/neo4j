@@ -19,20 +19,6 @@
  */
 package org.neo4j.server.web;
 
-import java.io.IOException;
-import java.net.BindException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.function.Consumer;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
@@ -50,8 +36,32 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
 
+import java.io.IOException;
+import java.net.BindException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.BlockingQueue;
+import java.util.function.Consumer;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.neo4j.bolt.security.ssl.KeyStoreInformation;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.PortBindException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
@@ -101,12 +111,12 @@ public class Jetty9WebServer implements WebServer
         }
     }
 
-    public static final HostnamePort DEFAULT_ADDRESS = new HostnamePort( "0.0.0.0", 80 );
+    public static final ListenSocketAddress DEFAULT_ADDRESS = new ListenSocketAddress( "0.0.0.0", 80 );
 
     private Server jetty;
     private HandlerCollection handlers;
-    private HostnamePort jettyAddress = DEFAULT_ADDRESS;
-    private Optional<HostnamePort> jettyHttpsAddress = Optional.empty();
+    private ListenSocketAddress jettyAddress = DEFAULT_ADDRESS;
+    private Optional<ListenSocketAddress> jettyHttpsAddress = Optional.empty();
 
     private final HashMap<String, String> staticContent = new HashMap<>();
     private final Map<String, JaxRsServletHolderFactory> jaxRSPackages =
@@ -200,7 +210,7 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setAddress( HostnamePort address )
+    public void setAddress( ListenSocketAddress address )
     {
         jettyAddress = address;
     }
@@ -330,7 +340,7 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setHttpsAddress( Optional<HostnamePort> address )
+    public void setHttpsAddress( Optional<ListenSocketAddress> address )
     {
         jettyHttpsAddress = address;
     }

@@ -21,10 +21,13 @@ package org.neo4j.graphdb.factory;
 
 import java.io.File;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Group;
@@ -38,6 +41,8 @@ import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.logging.Level;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
+import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -45,7 +50,6 @@ import static org.neo4j.kernel.configuration.Settings.DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.DOUBLE;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.LONG;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
@@ -53,9 +57,12 @@ import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
+import static org.neo4j.kernel.configuration.Settings.legacyFallback;
 import static org.neo4j.kernel.configuration.Settings.list;
+import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
@@ -502,11 +509,18 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<String> auth_manager = setting( "unsupported.dbms.security.auth_manager", STRING, "" );
 
-    // Bolt Settings
+    @Description("Default network interface to listen for incoming connections. " +
+            "To listen for connections on all interfaces, use \"0.0.0.0\". " +
+            "To bind specific connectors to a specific network interfaces, " +
+            "specify the listen_address properties for the specific connector.")
+    public static final Setting<String> default_listen_address =
+            setting( "dbms.connectors.default_listen_address", STRING, "localhost" );
 
-    @Description("Hostname/IP address and port that we can be connected to be the driver.")
-    public static final Setting<HostnamePort> bolt_advertised_address =
-            setting( "bolt_advertised_address", HOSTNAME_PORT, "localhost:7687" );
+    @Description("Default hostname or IP address the server uses to advertise itself to its connectors. " +
+            "To advertise a specific hostname or IP address for a specific connector, " +
+            "specify the advertised_address property for the specific connector.")
+    public static final Setting<String> default_advertised_hostname =
+            setting( "dbms.connectors.default_advertised_hostname", STRING, "localhost" );
 
     @Group("dbms.connector")
     public static class Connector
@@ -546,8 +560,15 @@ public abstract class GraphDatabaseSettings
         @Description( "Encryption level to require this connector to use" )
         public final Setting<EncryptionLevel> encryption_level;
 
+        @Description( "Address the connector should bind to. " +
+                "This setting is deprecated and will be replaced by listen_address" )
+        public final Setting<ListenSocketAddress> address;
+
         @Description( "Address the connector should bind to" )
-        public final Setting<HostnamePort> address;
+        public final Setting<ListenSocketAddress> listen_address;
+
+        @Description( "Advertised address for this connector" )
+        public final Setting<AdvertisedSocketAddress> advertised_address;
 
         // Used by config doc generator
         public BoltConnector()
@@ -560,7 +581,13 @@ public abstract class GraphDatabaseSettings
             super(key, ConnectorType.BOLT.name() );
             encryption_level = group.scope(
                     setting( "tls_level", options( EncryptionLevel.class ), OPTIONAL.name() ));
-            address = group.scope( setting( "address", HOSTNAME_PORT, "localhost:7687" ) );
+            Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", 7687 );
+            Setting<ListenSocketAddress> listenAddressSetting = legacyFallback( legacyAddressSetting,
+                    listenAddress( "listen_address", 7687 ) );
+
+            this.address = group.scope( legacyAddressSetting );
+            this.listen_address = group.scope( listenAddressSetting );
+            this.advertised_address = group.scope( advertisedAddress( "advertised_address", listenAddressSetting ) );
         }
 
         public enum EncryptionLevel
@@ -586,4 +613,15 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<Boolean> archive_failed_index = setting(
             "unsupported.dbms.index.archive_failed", BOOLEAN, "false" );
+
+    public static List<BoltConnector> boltConnectors( Config config )
+    {
+        return config
+                .view( enumerate( Connector.class ) )
+                .map( BoltConnector::new )
+                .filter( ( connConfig ) ->
+                        config.get( connConfig.type ) == BOLT &&
+                                config.get( connConfig.enabled ) )
+                .collect( Collectors.toList() );
+    }
 }

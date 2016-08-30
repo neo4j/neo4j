@@ -31,7 +31,7 @@ import java.util.Properties;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -61,8 +61,8 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 public class CommunityServerBuilder
 {
     protected final LogProvider logProvider;
-    private HostnamePort address = new HostnamePort( "localhost", 7474 );
-    private HostnamePort httpsAddress = new HostnamePort( "localhost", 7473 );
+    private ListenSocketAddress address = new ListenSocketAddress( "localhost", 7474 );
+    private ListenSocketAddress httpsAddress = new ListenSocketAddress( "localhost", 7473 );
     private String maxThreads = null;
     private String dataDir = null;
     private String managementUri = "/db/manage/";
@@ -281,13 +281,13 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder onAddress( HostnamePort address )
+    public CommunityServerBuilder onAddress( ListenSocketAddress address )
     {
         this.address = address;
         return this;
     }
 
-    public CommunityServerBuilder onHttpsAddress( HostnamePort address )
+    public CommunityServerBuilder onHttpsAddress( ListenSocketAddress address )
     {
         this.httpsAddress = address;
         return this;

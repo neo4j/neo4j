@@ -42,11 +42,10 @@ import org.neo4j.coreedge.core.state.machines.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.discovery.procedures.EdgeRoleProcedure;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.routing.ConnectToRandomCoreMember;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -92,6 +91,8 @@ import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
 import static java.util.Collections.singletonMap;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
@@ -237,8 +238,9 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
     public static AdvertisedSocketAddress extractBoltAddress( Config config )
     {
-        HostnamePort address = config.get( GraphDatabaseSettings.bolt_advertised_address );
-        return new AdvertisedSocketAddress( address.toString() );
+        return boltConnectors( config ).stream().findFirst()
+                .map( boltConnector -> config.get( boltConnector.advertised_address ) ).orElseThrow( () ->
+                        new IllegalArgumentException( "A Bolt connector must be configured to run a cluster" ) );
     }
 
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,

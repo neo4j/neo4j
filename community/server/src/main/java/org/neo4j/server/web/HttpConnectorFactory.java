@@ -27,7 +27,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 
@@ -37,7 +37,6 @@ public class HttpConnectorFactory
 
     public HttpConnectorFactory( Config config )
     {
-
         this.configuration = config;
     }
 
@@ -54,13 +53,13 @@ public class HttpConnectorFactory
         return httpConfig;
     }
 
-    public ServerConnector createConnector( Server server, HostnamePort address, JettyThreadCalculator jettyThreadCalculator )
+    public ServerConnector createConnector( Server server, ListenSocketAddress address, JettyThreadCalculator jettyThreadCalculator )
     {
         ConnectionFactory httpFactory = createHttpConnectionFactory();
         return createConnector(server, address, jettyThreadCalculator, httpFactory );
     }
 
-    public ServerConnector createConnector( Server server, HostnamePort address, JettyThreadCalculator jettyThreadCalculator, ConnectionFactory... httpFactories )
+    public ServerConnector createConnector( Server server, ListenSocketAddress address, JettyThreadCalculator jettyThreadCalculator, ConnectionFactory... httpFactories )
     {
         int acceptors = jettyThreadCalculator.getAcceptors();
         int selectors = jettyThreadCalculator.getSelectors();
@@ -72,7 +71,7 @@ public class HttpConnectorFactory
         // TCP backlog, per socket, 50 is the default, consider adapting if needed
         connector.setAcceptQueueSize( 50 );
 
-        connector.setHost( address.getHost() );
+        connector.setHost( address.getHostname() );
         connector.setPort( address.getPort() );
 
         return connector;

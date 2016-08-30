@@ -37,11 +37,12 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
-import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.configuration.ServerSettings.HttpConnector;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 
 import static java.lang.String.format;
+import static org.neo4j.server.configuration.ServerSettings.httpConnector;
 
 public abstract class ServerBootstrapper implements Bootstrapper
 {
@@ -80,8 +81,8 @@ public abstract class ServerBootstrapper implements Bootstrapper
             log = userLogProvider.getLog( getClass() );
             config.setLogger( log );
 
-            serverAddress = ServerSettings.httpConnector( config, ServerSettings.HttpConnector.Encryption.NONE )
-                    .map( ( connector ) -> connector.address.toString() )
+            serverAddress = httpConnector( config, HttpConnector.Encryption.NONE )
+                    .map( ( connector ) -> config.get( connector.address ).toString() )
                     .orElse( serverAddress );
 
             checkCompatibility();
@@ -107,7 +108,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
         }
         catch ( Exception e )
         {
-            log.error( format( "Failed to start Neo4j on %s", serverAddress ), e );
+            log.error( format( "Failed to start Neo4j on %s.", serverAddress ), e );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
     }

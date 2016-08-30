@@ -34,7 +34,7 @@ import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.identity.ClusterId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.NullLogProvider;
 
@@ -156,13 +156,13 @@ public class DiscoverEndpointAcquisitionServersProcedureTest
 
     static CoreAddresses coreAddresses( int id )
     {
-        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost:" + (3000 + id) );
+        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (3000 + id) );
         return new CoreAddresses( advertisedSocketAddress, advertisedSocketAddress, advertisedSocketAddress );
     }
 
     static EdgeAddresses edgeAddresses( int id )
     {
-        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost:" + (3000 + id) );
+        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (3000 + id) );
         return new EdgeAddresses( advertisedSocketAddress );
     }
 }
