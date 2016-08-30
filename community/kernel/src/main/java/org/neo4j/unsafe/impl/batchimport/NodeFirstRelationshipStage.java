@@ -27,7 +27,16 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
 /**
- * Sets {@link NodeRecord#setNextRel(long)} in {@link ParallelBatchImporter}.
+ * Updates {@link NodeRecord node records} with relationship/group chain heads after relationship import. Steps:
+ *
+ * <ol>
+ * <li>{@link ReadNodeRecordsByCacheStep} looks at {@link NodeRelationshipCache} for which nodes have had
+ * relationships imported and loads those {@link NodeRecord records} from store.</li>
+ * <li>{@link RecordProcessorStep} / {@link NodeFirstRelationshipProcessor} uses {@link NodeRelationshipCache}
+ * to update each {@link NodeRecord#setNextRel(long)}. For dense nodes {@link RelationshipGroupRecord group records}
+ * are created and set as {@link NodeRecord#setNextRel(long)}.</li>
+ * <li>{@link UpdateRecordsStep} writes the updated records back into store.</li>
+ * </ol>
  */
 public class NodeFirstRelationshipStage extends Stage
 {

@@ -28,7 +28,14 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
 
 /**
- * Stage for counting groups per node, populates {@link RelationshipGroupCache}.
+ * Stage for counting groups per node, populates {@link RelationshipGroupCache}. Steps:
+ *
+ * <ol>
+ * <li>{@link ReadRecordsStep} reads {@link RelationshipGroupRecord relationship group records} for later counting.</li>
+ * <li>{@link CountGroupsStep} populates {@link RelationshipGroupCache} with how many relationship groups each
+ * node has. This is useful for calculating how to divide the work of defragmenting the relationship groups
+ * in a {@link ScanAndCacheGroupsStage later stage}.</li>
+ * </ol>
  */
 public class CountGroupsStage extends Stage
 {

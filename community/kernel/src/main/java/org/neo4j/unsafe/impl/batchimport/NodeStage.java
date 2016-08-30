@@ -25,9 +25,12 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
@@ -39,8 +42,21 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
 /**
- * Imports nodes and their properties, everything except
- * {@link NodeRecord#setNextRel(long) first relationship id pointer} is set for every node in this stage.
+ * Imports nodes and their properties and labels. Steps:
+ * <ol>
+ * <li>{@link InputIteratorBatcherStep} reading from {@link InputIterator} produced from {@link Input#nodes()}.</li>
+ * <li>{@link InputEntityCacherStep} alternatively {@link InputCache caches} this input data
+ * (all the {@link InputNode input nodes}) if the iterator doesn't support
+ * {@link InputIterable#supportsMultiplePasses() multiple passes}.</li>
+ * <li>{@link PropertyEncoderStep} encodes properties from {@link InputNode input nodes} into {@link PropertyBlock},
+ * low level kernel encoded values.</li>
+ * <li>{@link NodeEncoderStep} creates the {@link NodeRecord node records} and assigns label ids from input data.
+ * It also assigns real store node ids from {@link InputNode#id() input ids} and stores them in {@link IdMapper}
+ * for use in other upcoming stages.</li>
+ * <li>{@link LabelScanStorePopulationStep} populates the {@link LabelScanStore} with the node labels.</li>
+ * <li>{@link EntityStoreUpdaterStep} forms {@link PropertyRecord property records} out of previously encoded
+ * {@link PropertyBlock} and writes those as well as the {@link NodeRecord} to store.</li>
+ * </ol>
  */
 public class NodeStage extends Stage
 {
