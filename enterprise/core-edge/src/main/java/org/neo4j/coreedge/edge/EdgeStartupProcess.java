@@ -72,13 +72,18 @@ public class EdgeStartupProcess implements Lifecycle
         MemberId memberId = findCoreMemberToCopyFrom();
         if ( localDatabase.isEmpty() )
         {
+            log.info( "Local database is empty. Stopping local database" );
             localDatabase.stop();
+            log.info( "Getting StoreId from %s", memberId );
             StoreId storeId = storeFetcher.storeId( memberId );
+            log.info( "Got StoreId %s from %s", storeId, memberId );
             localDatabase.bringUpToDateOrReplaceStoreFrom( memberId, storeId, storeFetcher );
             localDatabase.start();
         }
         else
         {
+            log.info( "Already have store with StoreId %s. Checking that it matches the StoreId of %s",
+                    localDatabase.storeId(), memberId );
             localDatabase.ensureSameStoreId( memberId, storeFetcher );
         }
 

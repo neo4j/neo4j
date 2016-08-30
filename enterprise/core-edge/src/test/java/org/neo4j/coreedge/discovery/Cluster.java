@@ -103,6 +103,19 @@ public class Cluster
         }
     }
 
+    public void startCoreMembers() throws InterruptedException, ExecutionException
+    {
+        ExecutorService executor = Executors.newCachedThreadPool( new NamedThreadFactory( "cluster-starter" ) );
+        try
+        {
+            startCoreMembers( executor );
+        }
+        finally
+        {
+            executor.shutdown();
+        }
+    }
+
     public Set<CoreClusterMember> healthyCoreMembers()
     {
         return coreMembers.values().stream()
@@ -153,7 +166,7 @@ public class Cluster
         shutdownEdgeMembers();
     }
 
-    private void shutdownCoreMembers() throws InterruptedException, ExecutionException
+    public void shutdownCoreMembers() throws InterruptedException, ExecutionException
     {
         ExecutorService executor = Executors.newCachedThreadPool();
         List<Callable<Object>> memberShutdownSuppliers = new ArrayList<>();
