@@ -140,14 +140,14 @@ public @interface Procedure
     String deprecatedBy() default "";
 
     /**
-     * Specifies a role name such that a user that is assigned to that role is allowed to execute this procedure,
+     * Specifies role names such that a user that is assigned to any of these roles is allowed to execute this procedure,
      * regardless of any other permissions that the user has or doesn't have. The use-case for this attribute is to
      * allow users with no or little privileges to access the parts of the database that the annotated procedure
      * exposes.
      *
-     * @return the name of the role whose users are allowed to execute this procedure.
+     * @return an array of role names whose users are allowed to execute this procedure.
      */
-    String allowed() default "";
+    String[] allowed() default {};
 
     enum Mode
     {

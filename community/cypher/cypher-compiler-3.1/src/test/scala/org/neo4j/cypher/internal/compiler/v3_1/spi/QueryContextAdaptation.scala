@@ -122,13 +122,13 @@ trait QueryContextAdaptation {
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = ???
 
-  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String): scala.Iterator[Array[AnyRef]] = ???
+  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
 
-  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String): scala.Iterator[Array[AnyRef]] = ???
+  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
 
-  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String): Iterator[Array[AnyRef]] = ???
+  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
 
-  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String): Iterator[Array[AnyRef]] = ???
+  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
 

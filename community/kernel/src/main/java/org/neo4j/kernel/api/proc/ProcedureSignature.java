@@ -156,7 +156,7 @@ public class ProcedureSignature
     private final List<FieldSignature> outputSignature;
     private final Mode mode;
     private final Optional<String> deprecated;
-    private final String allowed;
+    private final String[] allowed;
     private final Optional<String> description;
 
     /**
@@ -180,7 +180,7 @@ public class ProcedureSignature
             List<FieldSignature> outputSignature,
             Mode mode,
             Optional<String> deprecated,
-            String allowed,
+            String[] allowed,
             Optional<String> description )
     {
         this.name = name;
@@ -204,7 +204,7 @@ public class ProcedureSignature
         return deprecated;
     }
 
-    public String allowed() { return allowed; }
+    public String[] allowed() { return allowed; }
 
     public List<FieldSignature> inputSignature()
     {
@@ -269,7 +269,7 @@ public class ProcedureSignature
         private List<FieldSignature> outputSignature = new LinkedList<>();
         private Mode mode = Mode.READ_ONLY;
         private Optional<String> deprecated = Optional.empty();
-        private String allowed = "";
+        private String[] allowed = new String[0];
         private Optional<String> description = Optional.empty();
 
         public Builder( String[] namespace, String name )
@@ -315,7 +315,7 @@ public class ProcedureSignature
             return this;
         }
 
-        public Builder allowed( String allowed )
+        public Builder allowed( String[] allowed )
         {
             this.allowed = allowed;
             return this;

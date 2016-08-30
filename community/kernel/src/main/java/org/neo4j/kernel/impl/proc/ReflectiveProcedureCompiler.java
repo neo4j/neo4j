@@ -72,7 +72,7 @@ public class ReflectiveProcedureCompiler
     {
         try
         {
-            List<Method> procedureMethods = asList( procDefinition.getDeclaredMethods() ).stream()
+            List<Method> procedureMethods = Arrays.stream( procDefinition.getDeclaredMethods() )
                     .filter( m -> m.isAnnotationPresent( Procedure.class ) )
                     .collect( Collectors.toList() );
 

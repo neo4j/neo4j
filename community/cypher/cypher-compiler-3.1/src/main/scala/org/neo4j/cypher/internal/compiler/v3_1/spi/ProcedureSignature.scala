@@ -47,7 +47,7 @@ case class FieldSignature(name: String, typ: CypherType, default: Option[CypherV
 
 sealed trait ProcedureAccessMode
 
-case class ProcedureReadOnlyAccess(allowed: String) extends ProcedureAccessMode
-case class ProcedureReadWriteAccess(allowed: String) extends ProcedureAccessMode
-case class ProcedureSchemaWriteAccess(allowed: String) extends ProcedureAccessMode
-case class ProcedureDbmsAccess(allowed: String) extends ProcedureAccessMode
+case class ProcedureReadOnlyAccess(allowed: Array[String]) extends ProcedureAccessMode
+case class ProcedureReadWriteAccess(allowed: Array[String]) extends ProcedureAccessMode
+case class ProcedureSchemaWriteAccess(allowed: Array[String]) extends ProcedureAccessMode
+case class ProcedureDbmsAccess(allowed: Array[String]) extends ProcedureAccessMode

@@ -181,16 +181,16 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
                                filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
 
-  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) =
+  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) =
     singleDbHit(inner.callReadOnlyProcedure(name, args, allowed))
 
-  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) =
+  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) =
     singleDbHit(inner.callReadWriteProcedure(name, args, allowed))
 
-  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) =
+  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) =
     singleDbHit(inner.callSchemaWriteProcedure(name, args, allowed))
 
-  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) =
+  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) =
     inner.callDbmsProcedure(name, args, allowed)
 
   override def isGraphKernelResultValue(v: Any): Boolean =

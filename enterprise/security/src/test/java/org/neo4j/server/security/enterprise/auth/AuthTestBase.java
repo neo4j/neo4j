@@ -416,14 +416,14 @@ abstract class AuthTestBase<S>
             return Stream.of( new CountResult( nNodes ) );
         }
 
-        @Procedure( name = "test.allowedProcedure1", allowed = "role1", mode = Procedure.Mode.READ )
+        @Procedure( name = "test.allowedProcedure1", allowed = {"role1"}, mode = Procedure.Mode.READ )
         public Stream<AuthProcedures.StringResult> allowedProcedure1()
         {
             db.execute( "MATCH (:Foo) RETURN 'foo' AS foo" );
             return Stream.of( new AuthProcedures.StringResult( "foo" ) );
         }
 
-        @Procedure( name = "test.allowedProcedure2", allowed = "role1", mode = Procedure.Mode.WRITE )
+        @Procedure( name = "test.allowedProcedure2", allowed = {"otherRole", "role1"}, mode = Procedure.Mode.WRITE )
         public Stream<AuthProcedures.StringResult> allowedProcedure2()
         {
             db.execute( "CREATE (:VeryUniqueLabel {prop: 'a'})" );
@@ -431,7 +431,7 @@ abstract class AuthTestBase<S>
                     .map( r -> new AuthProcedures.StringResult( (String) r.get( "a" ) ) );
         }
 
-        @Procedure( name = "test.allowedProcedure3", allowed = "role1", mode = Procedure.Mode.SCHEMA )
+        @Procedure( name = "test.allowedProcedure3", allowed = {"role1"}, mode = Procedure.Mode.SCHEMA )
         public Stream<AuthProcedures.StringResult> allowedProcedure3()
         {
             db.execute( "CREATE INDEX ON :VeryUniqueLabel(prop)" );

@@ -584,7 +584,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
-  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) = {
+  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) = {
     val revertable = transactionalContext.accessMode match {
       case a: AuthSubject if a.allowsProcedureWith(allowed) =>
         Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_READ))
@@ -593,7 +593,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     callProcedure(name, args, transactionalContext.statement.readOperations().procedureCallRead, revertable.foreach(_.close))
   }
 
-  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) = {
+  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) = {
     val revertable = transactionalContext.accessMode match {
       case a: AuthSubject if a.allowsProcedureWith(allowed) =>
         Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_WRITE))
@@ -604,7 +604,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
 
-  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) = {
+  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) = {
     val revertable = transactionalContext.accessMode match {
       case a: AuthSubject if a.allowsProcedureWith(allowed) =>
         Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_SCHEMA))
@@ -613,7 +613,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     callProcedure(name, args, transactionalContext.statement.schemaWriteOperations().procedureCallSchema, revertable.foreach(_.close))
   }
 
-  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) = {
+  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) = {
     callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_, _), ())
   }
 

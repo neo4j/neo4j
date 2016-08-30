@@ -98,9 +98,9 @@ public class BasicAuthSubject implements AuthSubject
     }
 
     @Override
-    public boolean allowsProcedureWith( String roleName )
+    public boolean allowsProcedureWith( String[] roleName )
     {
-        return false;
+        return true;
     }
 
     public BasicAuthManager getAuthManager()

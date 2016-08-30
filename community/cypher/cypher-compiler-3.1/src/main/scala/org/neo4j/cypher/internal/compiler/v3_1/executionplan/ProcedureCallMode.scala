@@ -36,17 +36,17 @@ sealed trait ProcedureCallMode {
 
   def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 
-  val allowed: String
+  val allowed: Array[String]
 }
 
-case class LazyReadOnlyCallMode(allowed: String) extends ProcedureCallMode {
+case class LazyReadOnlyCallMode(allowed: Array[String]) extends ProcedureCallMode {
   override val queryType: InternalQueryType = READ_ONLY
 
   override def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
     ctx.callReadOnlyProcedure(name, args, allowed)
 }
 
-case class EagerReadWriteCallMode(allowed: String) extends ProcedureCallMode {
+case class EagerReadWriteCallMode(allowed: Array[String]) extends ProcedureCallMode {
   override val queryType: InternalQueryType = READ_WRITE
 
   override def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
@@ -59,7 +59,7 @@ case class EagerReadWriteCallMode(allowed: String) extends ProcedureCallMode {
   }
 }
 
-case class SchemaWriteCallMode(allowed: String) extends ProcedureCallMode {
+case class SchemaWriteCallMode(allowed: Array[String]) extends ProcedureCallMode {
   override val queryType: InternalQueryType = SCHEMA_WRITE
 
   override def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
@@ -72,7 +72,7 @@ case class SchemaWriteCallMode(allowed: String) extends ProcedureCallMode {
   }
 }
 
-case class DbmsCallMode(allowed: String) extends ProcedureCallMode {
+case class DbmsCallMode(allowed: Array[String]) extends ProcedureCallMode {
   override val queryType: InternalQueryType = DBMS
 
   override def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {

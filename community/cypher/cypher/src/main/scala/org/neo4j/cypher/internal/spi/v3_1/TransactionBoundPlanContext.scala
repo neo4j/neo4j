@@ -143,7 +143,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
 
   private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 
-  private def asCypherProcMode(mode: KernelProcedureSignature.Mode, allowed: String): ProcedureAccessMode = mode match {
+  private def asCypherProcMode(mode: KernelProcedureSignature.Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
     case KernelProcedureSignature.Mode.READ_ONLY => ProcedureReadOnlyAccess(allowed)
     case KernelProcedureSignature.Mode.READ_WRITE => ProcedureReadWriteAccess(allowed)
     case KernelProcedureSignature.Mode.SCHEMA_WRITE => ProcedureSchemaWriteAccess(allowed)
