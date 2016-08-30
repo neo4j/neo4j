@@ -69,7 +69,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     public void addCoreTopologyListener( Listener listener )
     {
         listenerService.addCoreTopologyListener( listener );
-        listener.onCoreTopologyChange();
+        listener.onCoreTopologyChange( currentTopology() );
     }
 
     @Override
@@ -82,26 +82,30 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     public void memberAdded( MembershipEvent membershipEvent )
     {
         log.info( "Core member added %s", membershipEvent );
-        log.info( "Current topology is %s", currentTopology() );
-        notifyMembershipChange();
-    }
 
-    private void notifyMembershipChange()
-    {
-        Set<AdvertisedSocketAddress> members = hazelcastInstance.getCluster().getMembers().stream()
-                .map( member -> new AdvertisedSocketAddress(
-                        String.format( "%s:%d", member.getSocketAddress().getHostName(),
-                                member.getSocketAddress().getPort() ) ) ).collect( Collectors.toSet() );
-        discoveredMemberRepository.store( members );
-        listenerService.notifyListeners();
+        ClusterTopology clusterTopology = currentTopology();
+        log.info( "Current topology is %s", clusterTopology );
+        notifyMembershipChange( clusterTopology );
     }
 
     @Override
     public void memberRemoved( MembershipEvent membershipEvent )
     {
         log.info( "Core member removed %s", membershipEvent );
-        log.info( "Current topology is %s", currentTopology() );
-        notifyMembershipChange();
+
+        ClusterTopology clusterTopology = currentTopology();
+        log.info( "Current topology is %s", clusterTopology );
+        notifyMembershipChange( clusterTopology );
+    }
+
+    private void notifyMembershipChange( ClusterTopology clusterTopology )
+    {
+        Set<AdvertisedSocketAddress> members = hazelcastInstance.getCluster().getMembers().stream()
+                .map( member -> new AdvertisedSocketAddress(
+                        String.format( "%s:%d", member.getSocketAddress().getHostName(),
+                                member.getSocketAddress().getPort() ) ) ).collect( Collectors.toSet() );
+        discoveredMemberRepository.store( members );
+        listenerService.notifyListeners( clusterTopology );
     }
 
     @Override
@@ -115,7 +119,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         hazelcastInstance = createHazelcastInstance();
         log.info( "Cluster discovery service started" );
         membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( this );
-        notifyMembershipChange();
+        notifyMembershipChange( currentTopology() );
     }
 
     @Override

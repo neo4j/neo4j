@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -49,13 +48,15 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
 
     private final Lock lock = new ReentrantLock();
     private final Condition enoughMembers = lock.newCondition();
-    private AtomicReference<ClusterId> clusterId = new AtomicReference<>();
+    private ClusterId clusterId;
 
     @Override
     public CoreTopologyService coreTopologyService( Config config, MemberId myself,
             DiscoveredMemberRepository discoveredMemberRepository, LogProvider logProvider )
     {
-        return new SharedDiscoveryCoreClient( this, myself, logProvider, config );
+        SharedDiscoveryCoreClient sharedDiscoveryCoreClient = new SharedDiscoveryCoreClient( this, myself, logProvider, config );
+        sharedDiscoveryCoreClient.onTopologyChange( currentTopology( sharedDiscoveryCoreClient ) );
+        return sharedDiscoveryCoreClient;
     }
 
     @Override
@@ -86,7 +87,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         try
         {
             return new ClusterTopology(
-                    clusterId.get(),
+                    clusterId,
                     coreClients.size() > 0 && coreClients.get( 0 ) == client,
                     unmodifiableMap( coreMembers ),
                     unmodifiableSet( edgeAddresses )
@@ -106,7 +107,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
             coreMembers.put( memberId, coreAddresses );
             coreClients.add( client );
             enoughMembers.signalAll();
-            coreClients.forEach( SharedDiscoveryCoreClient::onTopologyChange );
+            notifyCoreClients();
         }
         finally
         {
@@ -121,11 +122,19 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         {
             coreMembers.remove( memberId );
             coreClients.remove( client );
-            coreClients.forEach( SharedDiscoveryCoreClient::onTopologyChange );
+            notifyCoreClients();
         }
         finally
         {
             lock.unlock();
+        }
+    }
+
+    private void notifyCoreClients()
+    {
+        for ( SharedDiscoveryCoreClient coreClient : coreClients )
+        {
+            coreClient.onTopologyChange( currentTopology( coreClient ) );
         }
     }
 
@@ -135,6 +144,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         try
         {
             this.edgeAddresses.add( edgeAddresses );
+            notifyCoreClients();
         }
         finally
         {
@@ -148,6 +158,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         try
         {
             this.edgeAddresses.remove( edgeAddresses );
+            notifyCoreClients();
         }
         finally
         {
@@ -157,6 +168,30 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
 
     boolean casClusterId( ClusterId clusterId )
     {
-        return this.clusterId.compareAndSet( null, clusterId ) || this.clusterId.get().equals( clusterId );
+        boolean success;
+        lock.lock();
+        try
+        {
+            if ( this.clusterId == null )
+            {
+                success = true;
+                this.clusterId = clusterId;
+            }
+            else
+            {
+                success = this.clusterId.equals( clusterId );
+            }
+
+            if ( success )
+            {
+                notifyCoreClients();
+            }
+        }
+        finally
+        {
+            lock.unlock();
+        }
+
+        return success;
     }
 }

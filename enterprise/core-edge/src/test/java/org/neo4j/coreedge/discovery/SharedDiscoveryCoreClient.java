@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -38,8 +37,10 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     private final SharedDiscoveryService sharedDiscoveryService;
     private final MemberId member;
     private final CoreAddresses coreAddresses;
-    private final Set<Listener> listeners = Collections.synchronizedSet( new LinkedHashSet<>() );
+    private final Set<Listener> listeners = new LinkedHashSet<>();
     private final Log log;
+
+    private ClusterTopology clusterTopology;
 
     SharedDiscoveryCoreClient( SharedDiscoveryService sharedDiscoveryService, MemberId member, LogProvider logProvider, Config config )
     {
@@ -50,10 +51,10 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public void addCoreTopologyListener( Listener listener )
+    public synchronized void addCoreTopologyListener( Listener listener )
     {
         listeners.add( listener );
-        listener.onCoreTopologyChange();
+        listener.onCoreTopologyChange( clusterTopology );
     }
 
     @Override
@@ -79,17 +80,19 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public ClusterTopology currentTopology()
+    public synchronized ClusterTopology currentTopology()
     {
-        ClusterTopology topology = sharedDiscoveryService.currentTopology( this );
-        log.info( "Current topology is %s", topology );
-        return topology;
+        return clusterTopology;
     }
 
-    void onTopologyChange()
+    synchronized void onTopologyChange( ClusterTopology clusterTopology )
     {
         log.info( "Notified of topology change" );
-        listeners.forEach( Listener::onCoreTopologyChange );
+        this.clusterTopology = clusterTopology;
+        for ( Listener listener : listeners )
+        {
+            listener.onCoreTopologyChange( clusterTopology );
+        }
     }
 
     private static CoreAddresses extractAddresses( Config config )
