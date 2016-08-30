@@ -22,8 +22,10 @@ package org.neo4j.kernel.configuration;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -289,6 +291,58 @@ public class Settings
             public String toString()
             {
                 return "A filesystem path; relative paths are resolved against the installation root, _<neo4j-home>_";
+            }
+        };
+    }
+
+    /**
+     * A setting for specifying the hostname of this server that should be advertised to other servers.
+     * When unspecified, the system will try to resolve the hostname of localhost.
+     */
+    public static Setting<String> hostnameSetting( String name )
+    {
+        return new Setting<String>()
+        {
+            @Override
+            public String name()
+            {
+                return name;
+            }
+
+            @Override
+            public String getDefaultValue()
+            {
+                return "localhost";
+            }
+
+            @Override
+            public String from( Configuration config )
+            {
+                return config.get( this );
+            }
+
+            @Override
+            public String apply( Function<String, String> config )
+            {
+                String value = config.apply( name );
+                if ( value != null )
+                {
+                    return value;
+                }
+                try
+                {
+                    return InetAddress.getLocalHost().getHostAddress();
+                }
+                catch ( UnknownHostException e )
+                {
+                    return getDefaultValue();
+                }
+            }
+
+            @Override
+            public String toString()
+            {
+                return "a hostname or IP address";
             }
         };
     }
