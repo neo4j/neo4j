@@ -20,7 +20,9 @@
 package org.neo4j.commandline.dbms;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -108,16 +110,66 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldThrowIfTheCommandFails() throws IOException, IncorrectUsage
+    public void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws IOException, IncorrectUsage
     {
-        doThrow( IOException.class ).when( dumper ).dump( any(), any() );
+        doThrow( new FileAlreadyExistsException( "the-archive-path" ) ).when( dumper ).dump( any(), any() );
         try
         {
             execute( null );
             fail( "expected exception" );
         }
-        catch ( CommandFailed ignored )
+        catch ( CommandFailed e )
         {
+            assertThat( e.getMessage(), equalTo( "archive already exists: the-archive-path" ) );
+        }
+    }
+
+    @Test
+    public void shouldGiveAClearMessageIfTheDatabaseDoesntExist() throws IOException, IncorrectUsage
+    {
+        doThrow( new NoSuchFileException( homeDir.resolve( "data/databases/foo.db" ).toString() ) )
+                .when( dumper ).dump( any(), any() );
+        try
+        {
+            execute( "foo.db" );
+            fail( "expected exception" );
+        }
+        catch ( CommandFailed e )
+        {
+            assertThat( e.getMessage(), equalTo( "database does not exist: foo.db" ) );
+        }
+    }
+
+    @Test
+    public void shouldGiveAClearMessageIfTheArchivesParentDoesntExist() throws IOException, IncorrectUsage
+    {
+        doThrow( new NoSuchFileException( archive.getParent().toString() ) ).when( dumper ).dump( any(), any() );
+        try
+        {
+            execute( "foo.db" );
+            fail( "expected exception" );
+        }
+        catch ( CommandFailed e )
+        {
+            assertThat( e.getMessage(),
+                    equalTo( "unable to dump database: NoSuchFileException: " + archive.getParent() ) );
+        }
+    }
+
+    @Test
+    public void
+    shouldWrapIOExceptionsCarefulllyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
+            throws IOException, IncorrectUsage
+    {
+        doThrow( new IOException( "the-message" ) ).when( dumper ).dump( any(), any() );
+        try
+        {
+            execute( null );
+            fail( "expected exception" );
+        }
+        catch ( CommandFailed e )
+        {
+            assertThat( e.getMessage(), equalTo( "unable to dump database: IOException: the-message" ) );
         }
     }
 

@@ -57,6 +57,11 @@ public class Converters
         return Paths::get;
     }
 
+    public static Function<String, String> identity()
+    {
+        return s -> s;
+    }
+
     public static final Comparator<File> BY_FILE_NAME = ( o1, o2 ) -> o1.getName().compareTo( o2.getName() );
 
     public static final Comparator<File> BY_FILE_NAME_WITH_CLEVER_NUMBERS =

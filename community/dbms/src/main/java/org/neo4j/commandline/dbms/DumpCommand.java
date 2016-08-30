@@ -20,6 +20,8 @@
 package org.neo4j.commandline.dbms;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -35,10 +37,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.server.configuration.ConfigLoader;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.util.Converters.identity;
 import static org.neo4j.kernel.impl.util.Converters.mandatory;
 
 public class DumpCommand implements AdminCommand
@@ -83,15 +87,28 @@ public class DumpCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        Path databaseDirectory = parse( args, "database", this::toDatabaseDirectory );
+        String database = parse( args, "database", identity() );
+        Path databaseDirectory = toDatabaseDirectory( database );
         Path archive = parse( args, "to", Paths::get );
         try
         {
             dumper.dump( databaseDirectory, archive );
         }
+        catch ( FileAlreadyExistsException e )
+        {
+            throw new CommandFailed( "archive already exists: " + e.getMessage(), e );
+        }
+        catch ( NoSuchFileException e )
+        {
+            if ( databaseDirectory.toString().equals( e.getMessage() ) )
+            {
+                throw new CommandFailed( "database does not exist: " + database, e );
+            }
+            wrapIOException( e );
+        }
         catch ( IOException e )
         {
-            throw new CommandFailed( "unable to dump database", e );
+            wrapIOException( e );
         }
     }
 
@@ -110,11 +127,17 @@ public class DumpCommand implements AdminCommand
     private Path toDatabaseDirectory( String databaseName )
     {
         //noinspection unchecked
-        return new ConfigLoader( asList( DatabaseManagementSystemSettings.class, GraphDatabaseSettings.class     ) )
+        return new ConfigLoader( asList( DatabaseManagementSystemSettings.class, GraphDatabaseSettings.class ) )
                 .loadConfig(
                         Optional.of( homeDir.toFile() ),
                         Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) )
                 .with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) )
                 .get( database_path ).toPath();
+    }
+
+    private void wrapIOException( IOException e ) throws CommandFailed
+    {
+        throw new CommandFailed(
+                format( "unable to dump database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );
     }
 }
