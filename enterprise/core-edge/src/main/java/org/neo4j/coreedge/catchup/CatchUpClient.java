@@ -89,7 +89,10 @@ public class CatchUpClient extends LifecycleAdapter
         channel.setResponseHandler( responseHandler, future );
         channel.send( request );
 
-        return TimeoutLoop.waitForCompletion( future, channel::millisSinceLastResponse, inactivityTimeout, timeUnit );
+        String operation = String.format( "Timed out executing operation %s on %s", request, memberId );
+
+        return TimeoutLoop.waitForCompletion( future, operation,
+                channel::millisSinceLastResponse, inactivityTimeout, timeUnit );
     }
 
     private synchronized void dispose( CatchUpChannel channel )

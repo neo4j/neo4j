@@ -25,4 +25,9 @@ public class CatchUpClientException extends Exception
     {
         super( cause );
     }
+
+    public CatchUpClientException( String operation, Throwable cause )
+    {
+        super( operation, cause );
+    }
 }
