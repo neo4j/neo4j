@@ -56,6 +56,7 @@ public class ToFileStoreWriter implements StoreWriter
         {
             temporaryBuffer.clear();
             File file = new File( basePath, path );
+            file.getParentFile().mkdirs();
 
             String filename = file.getName();
             final Optional<StoreType> storeType = isStoreType( filename );
@@ -80,7 +81,6 @@ public class ToFileStoreWriter implements StoreWriter
                 }
                 else
                 {
-                    file.getParentFile().mkdirs();
                     return writeDataThroughFileSystem( file, data, temporaryBuffer, hasData );
                 }
             }
