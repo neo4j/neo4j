@@ -38,10 +38,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
@@ -576,5 +579,70 @@ public class WorkSyncTest
 
         assertThat( adder.count(), lessThan( (long) (workers * iterations) ) );
         assertThat( adder.sum(), is( (long) (incrementValue * workers * iterations) ) );
+    }
+
+    @Test
+    public void mustNotApplyAsyncWorkInParallelUnderStress() throws Exception
+    {
+        int workers = Runtime.getRuntime().availableProcessors() * 5;
+        int iterations = 200;
+        int incrementValue = 512;
+        CountDownLatch startLatch = new CountDownLatch( workers );
+        CountDownLatch endLatch = new CountDownLatch( workers );
+        ExecutorService executor = Executors.newFixedThreadPool( workers );
+        AtomicBoolean start = new AtomicBoolean();
+        LongAdder cancelledCounter = new LongAdder();
+        Callable<Void> work = () ->
+        {
+            startLatch.countDown();
+            boolean spin;
+            do
+            {
+                spin = !start.get();
+            }
+            while ( spin );
+
+            for ( int i = 0; i < iterations; i++ )
+            {
+                Future<?> future = sync.applyAsync( new AddWork( incrementValue ) );
+                ThreadLocalRandom rng = ThreadLocalRandom.current();
+                if ( rng.nextBoolean() )
+                {
+                    usleep( rng.nextInt( 50 ) );
+                    future.get();
+                }
+                else
+                {
+                    usleep( rng.nextInt( 25 ) );
+                    future.cancel( true );
+                    usleep( rng.nextInt( 25 ) );
+                    cancelledCounter.increment();
+                }
+            }
+
+            endLatch.countDown();
+            return null;
+        };
+
+        List<Future<Void>> futureList = new ArrayList<>();
+        for ( int i = 0; i < workers; i++ )
+        {
+            futureList.add( executor.submit( work ) );
+        }
+        startLatch.await();
+        start.set( true );
+        endLatch.await();
+
+        for ( Future<Void> future : futureList )
+        {
+            future.get(); // check for any exceptions
+        }
+
+        long expectedCount = workers * iterations;
+        long expectedSum = incrementValue * expectedCount;
+        long cancelledIncrements = incrementValue * cancelledCounter.sum();
+        assertThat( adder.count(), lessThan( expectedCount ) );
+        assertThat( adder.sum(), lessThanOrEqualTo( expectedSum ) );
+        assertThat( adder.sum(), greaterThanOrEqualTo( expectedSum - cancelledIncrements ) );
     }
 }
