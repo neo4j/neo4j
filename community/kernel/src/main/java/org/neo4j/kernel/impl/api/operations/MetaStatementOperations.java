@@ -24,15 +24,10 @@ import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.query.QuerySession;
-import org.neo4j.kernel.impl.query.TransactionalContext;
 
 public interface MetaStatementOperations
 {
     Stream<ExecutingQuery> executingQueries( KernelStatement statement );
     ExecutingQuery startQueryExecution( KernelStatement statement, String queryText, Map<String, Object> queryParameters );
     void stopQueryExecution( KernelStatement statement, ExecutingQuery executingQuery );
-
-    QuerySession.MetadataKey<ExecutingQuery> METADATA_KEY =
-        new QuerySession.MetadataKey<>( ExecutingQuery.class, "executing-query" );
 }

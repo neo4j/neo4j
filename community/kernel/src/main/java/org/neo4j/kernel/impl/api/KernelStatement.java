@@ -66,7 +66,7 @@ public class KernelStatement implements TxStateHolder, Statement
     private final OperationsFacade facade;
     private StatementLocks statementLocks;
     private int referenceCount;
-    private volatile ExecutingQueryEntry executingQueryListHead;
+    private volatile ExecutingQueryList executingQueryList;
 
     public KernelStatement(
         KernelTransactionImplementation transaction,
@@ -80,7 +80,7 @@ public class KernelStatement implements TxStateHolder, Statement
         this.txStateHolder = txStateHolder;
         this.storeStatement = storeStatement;
         this.facade = new OperationsFacade( transaction, this, operations, procedures );
-        this.executingQueryListHead = null;
+        this.executingQueryList = ExecutingQueryList.EMPTY;
     }
 
     @Override
@@ -214,19 +214,17 @@ public class KernelStatement implements TxStateHolder, Statement
 
     final Stream<ExecutingQuery> executingQueries()
     {
-        return executingQueryListHead == null ? Stream.empty() : executingQueryListHead.queries();
+        return executingQueryList.queries();
     }
 
     final void startQueryExecution( ExecutingQuery query )
     {
-        this.executingQueryListHead =
-            executingQueryListHead == null ?
-                new ExecutingQueryEntry( query, null ) : executingQueryListHead.push( query );
+        this.executingQueryList = executingQueryList.push( query );
     }
 
     final void stopQueryExecution( ExecutingQuery executingQuery )
     {
-        this.executingQueryListHead = executingQueryListHead.remove( executingQuery );
+        this.executingQueryList = executingQueryList.remove( executingQuery );
     }
 
     /* only public for tests */ public final StorageStatement getStoreStatement()
@@ -238,6 +236,6 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         // closing is done by KTI
         storeStatement.release();
-        executingQueryListHead = null;
+        executingQueryList = ExecutingQueryList.EMPTY;
     }
 }

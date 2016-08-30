@@ -30,9 +30,7 @@ import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertTrue;
 
 public class ThreadedTransactionCreate<S>
 {
