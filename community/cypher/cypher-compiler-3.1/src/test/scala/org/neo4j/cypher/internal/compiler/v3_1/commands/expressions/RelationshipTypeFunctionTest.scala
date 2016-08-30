@@ -23,7 +23,7 @@ import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{Operations, QueryContext}
-import org.neo4j.cypher.internal.frontend.v3_1.{EntityNotFoundException, ParameterWrongTypeException}
+import org.neo4j.cypher.internal.frontend.v3_1.ParameterWrongTypeException
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Relationship, RelationshipType}
 
@@ -42,11 +42,11 @@ class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSup
     RelationshipTypeFunction(Variable("r")).compute(rel, null) should equal("T")
   }
 
-  test("should throw if the relationship was deleted in this tx") {
+  test("should handle deleted relationships since types are inlined") {
     doReturn(true).when(operations).isDeletedInThisTx(any())
 
     val rel = new FakeRel(null, null, RelationshipType.withName("T"))
-    an [EntityNotFoundException] should be thrownBy RelationshipTypeFunction(Variable("r")).compute(rel, null)
+    RelationshipTypeFunction(Variable("r")).compute(rel, null) should equal("T")
   }
 
   test("should throw if encountering anything other than a relationship") {

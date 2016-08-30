@@ -23,19 +23,15 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Effects, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_1.{EntityNotFoundException, ParameterWrongTypeException}
+import org.neo4j.cypher.internal.frontend.v3_1.ParameterWrongTypeException
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.graphdb.Relationship
 
 case class RelationshipTypeFunction(relationship: Expression) extends NullInNullOutExpression(relationship) {
 
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): String = value match {
-    case r: Relationship =>
-      if (state.query.relationshipOps.isDeletedInThisTx(r)) {
-        throw new EntityNotFoundException(s"Relationship with id ${r.getId} has been deleted in this transaction")
-      } else {
-        r.getType.name()
-      }
+    case r: Relationship => r.getType.name()
+
     case x => throw new ParameterWrongTypeException("Expected a Relationship, got: " + x)
   }
 

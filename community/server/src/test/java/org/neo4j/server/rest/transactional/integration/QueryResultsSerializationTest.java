@@ -408,51 +408,6 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     }
 
     @Test
-    public void shouldFailIfTryingToReturnTypeOfDeletedRelationshipGraph()
-    {
-        // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
-
-        // execute and commit
-        Response commit = http.POST( commitResource,
-                queryAsJsonGraph( "MATCH (s)-[r:R]->(e) DELETE r RETURN type(r)" ) );
-
-        assertThat( commit, hasErrors( Status.Statement.EntityNotFound ) );
-        assertThat( commit.status(), equalTo( 200 ) );
-        assertThat( nodesInDatabase(), equalTo( 2L ) );
-    }
-
-    @Test
-    public void shouldFailIfTryingToReturnTypeOfDeletedRelationshipRow()
-    {
-        // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
-
-        // execute and commit
-        Response commit = http.POST( commitResource,
-                queryAsJsonRow( "MATCH (s)-[r:R]->(e) DELETE r RETURN type(r)" ) );
-
-        assertThat( commit, hasErrors( Status.Statement.EntityNotFound ) );
-        assertThat( commit.status(), equalTo( 200 ) );
-        assertThat( nodesInDatabase(), equalTo( 2L ) );
-    }
-
-    @Test
-    public void shouldFailIfTryingToReturnTypeOfDeletedRelationshipRest()
-    {
-        // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
-
-        // execute and commit
-        Response commit = http.POST( commitResource,
-                queryAsJsonRest( "MATCH (s)-[r:R]->(e) DELETE r RETURN type(r)" ) );
-
-        assertThat( commit, hasErrors( Status.Statement.EntityNotFound ) );
-        assertThat( commit.status(), equalTo( 200 ) );
-        assertThat( nodesInDatabase(), equalTo( 2L ) );
-    }
-
-    @Test
     public void returningADeletedPathGraph()
     {
         // given
@@ -626,7 +581,6 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
 
     /**
      * This matcher is hardcoded to check for a list containing one deleted node and one map with a deleted node mapped to the key `someKey`.
-     * @return
      */
     public static Matcher<? super Response> restContainsNestedDeleted()
     {
