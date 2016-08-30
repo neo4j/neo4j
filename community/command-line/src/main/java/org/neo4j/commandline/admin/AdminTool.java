@@ -129,18 +129,9 @@ public class AdminTool
     {
         if ( debug )
         {
-            failure( e, format( "%s: %s", message, e.getMessage() ) );
+            outsideWorld.printStacktrace( e );
         }
-        else
-        {
-            failure( e.getMessage() );
-        }
-    }
-
-    private void failure( Exception e, String message )
-    {
-        outsideWorld.printStacktrace( e );
-        failure( message );
+        failure( format( "%s: %s", message, e.getMessage() ) );
     }
 
     private void failure( String message )

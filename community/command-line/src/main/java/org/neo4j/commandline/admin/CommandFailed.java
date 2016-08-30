@@ -25,4 +25,9 @@ public class CommandFailed extends Exception
     {
         super( message, cause );
     }
+
+    public CommandFailed( String message )
+    {
+        super( message );
+    }
 }
