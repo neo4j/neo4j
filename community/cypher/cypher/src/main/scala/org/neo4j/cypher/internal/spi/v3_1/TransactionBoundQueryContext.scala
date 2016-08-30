@@ -586,7 +586,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) = {
     val revertable = transactionalContext.accessMode match {
-      case a: AuthSubject if a.hasRole(allowed) =>
+      case a: AuthSubject if a.allowsProcedureWith(allowed) =>
         Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_READ))
       case _ => None
     }
@@ -595,7 +595,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) = {
     val revertable = transactionalContext.accessMode match {
-      case a: AuthSubject if a.hasRole(allowed) =>
+      case a: AuthSubject if a.allowsProcedureWith(allowed) =>
         Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_WRITE))
       case _ => None
     }
@@ -606,7 +606,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: String) = {
     val revertable = transactionalContext.accessMode match {
-      case a: AuthSubject if a.hasRole(allowed) =>
+      case a: AuthSubject if a.allowsProcedureWith(allowed) =>
         Some(transactionalContext.restrictCurrentTransaction(AccessMode.Static.OVERRIDE_SCHEMA))
       case _ => None
     }

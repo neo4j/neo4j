@@ -39,7 +39,13 @@ public interface AuthSubject extends AccessMode
      */
     void setPassword( String password ) throws IOException, InvalidArgumentsException;
 
-    boolean hasRole( String roleName ) throws InvalidArgumentsException;
+    /**
+     * Determines whether this subject is allowed to execute a procedure with the parameter string in its procedure annotation.
+     * @param roleName
+     * @return
+     * @throws InvalidArgumentsException
+     */
+    boolean allowsProcedureWith( String roleName ) throws InvalidArgumentsException;
 
     /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
@@ -64,7 +70,7 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public boolean hasRole( String roleName )
+        public boolean allowsProcedureWith( String roleName )
         {
             return false;
         }
@@ -164,7 +170,7 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public boolean hasRole( String roleName )
+        public boolean allowsProcedureWith( String roleName )
         {
             return true;
         }
