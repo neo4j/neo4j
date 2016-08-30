@@ -64,7 +64,9 @@ public class SecuritySettings
     public static final Setting<Boolean> plugin_authorization_enabled =
             setting( "dbms.security.realms.plugin.authorization_enabled", BOOLEAN, "false" );
 
-    @Description( "Hostname and port of LDAP server to use for authentication and authorization." )
+    @Description( "URL of LDAP server (with protocol, hostname and port) to use for authentication and authorization. " +
+                  "If no protocol is specified the default will be 'ldap://'. To use LDAPS, " +
+                  "set the protocol and port, e.g. 'ldaps://ldap.example.com:636'" )
     public static final Setting<String> ldap_server =
             setting( "dbms.security.realms.ldap.host", STRING, "0.0.0.0:389" );
 
@@ -104,7 +106,9 @@ public class SecuritySettings
 
     @Description(
             "An LDAP system account username to use for authorization searches when " +
-            "`dbms.security.realms.ldap.authorization.use_system_account` is `true`." )
+            "`dbms.security.realms.ldap.authorization.use_system_account` is `true`. " +
+            "Note that the `dbms.security.realms.ldap.user_dn_template` will not be applied to this username, " +
+            "so you may have to specify a full DN." )
     public static final Setting<String> ldap_system_username =
             setting( "dbms.security.realms.ldap.system_username", STRING, NO_DEFAULT );
 

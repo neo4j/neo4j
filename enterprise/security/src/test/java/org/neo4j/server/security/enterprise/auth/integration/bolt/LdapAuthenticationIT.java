@@ -356,6 +356,8 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithLdapOnlyUsingLDAPS() throws Throwable
     {
+        getLdapServer().setConfidentialityRequired( true );
+
         try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
@@ -371,6 +373,8 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextUsingLDAPS() throws Throwable
     {
+        getLdapServer().setConfidentialityRequired( true );
+
         try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
@@ -387,6 +391,8 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithLdapOnlyUsingStartTls() throws Throwable
     {
+        getLdapServer().setConfidentialityRequired( true );
+
         try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
@@ -403,6 +409,8 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithLdapUserContextUsingStartTls() throws Throwable
     {
+        getLdapServer().setConfidentialityRequired( true );
+
         try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
@@ -546,6 +554,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     public void setup()
     {
         this.client = cf.newInstance();
+        getLdapServer().setConfidentialityRequired( false );
     }
 
     @After
