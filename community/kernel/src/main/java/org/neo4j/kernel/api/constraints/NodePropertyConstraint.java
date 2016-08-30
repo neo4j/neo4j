@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.constraints;
 
+import org.neo4j.kernel.api.TokenNameLookup;
+
 /**
  * Base class describing property constraint on nodes.
  */
@@ -51,6 +53,20 @@ public abstract class NodePropertyConstraint extends PropertyConstraint
         NodePropertyConstraint that = (NodePropertyConstraint) o;
         return propertyKeyId == that.propertyKeyId && labelId == that.labelId;
 
+    }
+
+    protected String labelName( TokenNameLookup tokenNameLookup)
+    {
+        String labelName = tokenNameLookup.labelGetName( labelId );
+        //if the labelName contains a `:` we must escape it to avoid disambiguation,
+        //e.g. CONSTRAINT on foo:bar:foo:bar
+        if (labelName.contains( ":" )) {
+            return "`" + labelName + "`";
+        }
+        else
+        {
+            return labelName;
+        }
     }
 
     @Override
