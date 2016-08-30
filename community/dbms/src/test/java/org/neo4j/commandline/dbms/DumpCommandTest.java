@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -62,7 +63,7 @@ public class DumpCommandTest
     {
         homeDir = testDirectory.directory( "home-dir" ).toPath();
         configDir = testDirectory.directory( "config-dir" ).toPath();
-        archive = testDirectory.directory( "some-archive.dump" ).toPath();
+        archive = testDirectory.file( "some-archive.dump" ).toPath();
         dumper = mock( Dumper.class );
     }
 
@@ -79,6 +80,24 @@ public class DumpCommandTest
         Files.write( configDir.resolve( "neo4j.conf" ), asList( data_directory.name() + "=/some/data/dir" ) );
         execute( "foo.db" );
         verify( dumper ).dump( eq( Paths.get( "/some/data/dir/databases/foo.db" ) ), any() );
+    }
+
+    @Test
+    public void shouldCalculateTheArchiveNameIfPassedAnExistingDirectory()
+            throws CommandFailed, IncorrectUsage, IOException
+    {
+        File to = testDirectory.directory( "some-dir" );
+        new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--database=" + "foo.db", "--to=" + to} );
+        verify( dumper ).dump( any( Path.class ), eq( to.toPath().resolve( "foo.db.dump" ) ) );
+    }
+
+    @Test
+    public void shouldNotCalculateTheArchiveNameIfPassedAnExistingFile()
+            throws CommandFailed, IncorrectUsage, IOException
+    {
+        Files.createFile( archive );
+        execute( "foo.db" );
+        verify( dumper ).dump( homeDir.resolve( "data/databases/foo.db" ), archive );
     }
 
     @Test

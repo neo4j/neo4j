@@ -21,6 +21,7 @@ package org.neo4j.commandline.dbms;
 
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -88,28 +89,8 @@ public class DumpCommand implements AdminCommand
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
         String database = parse( args, "database", identity() );
-        Path databaseDirectory = toDatabaseDirectory( database );
-        Path archive = parse( args, "to", Paths::get );
-        try
-        {
-            dumper.dump( databaseDirectory, archive );
-        }
-        catch ( FileAlreadyExistsException e )
-        {
-            throw new CommandFailed( "archive already exists: " + e.getMessage(), e );
-        }
-        catch ( NoSuchFileException e )
-        {
-            if ( databaseDirectory.toString().equals( e.getMessage() ) )
-            {
-                throw new CommandFailed( "database does not exist: " + database, e );
-            }
-            wrapIOException( e );
-        }
-        catch ( IOException e )
-        {
-            wrapIOException( e );
-        }
+        Path archive = calcuateArchive( database, parse( args, "to", Paths::get ) );
+        dump( database, toDatabaseDirectory( database ), archive );
     }
 
     private <T> T parse( String[] args, String argument, Function<String, T> converter ) throws IncorrectUsage
@@ -133,6 +114,44 @@ public class DumpCommand implements AdminCommand
                         Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) )
                 .with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) )
                 .get( database_path ).toPath();
+    }
+
+    private Path calcuateArchive( String database, Path to )
+    {
+        Path archive;
+        if ( Files.exists( to ) && Files.isDirectory( to ) )
+        {
+            archive = to.resolve( database + ".dump" );
+        }
+        else
+        {
+            archive = to;
+        }
+        return archive;
+    }
+
+    private void dump( String database, Path databaseDirectory, Path archive ) throws CommandFailed
+    {
+        try
+        {
+            dumper.dump( databaseDirectory, archive );
+        }
+        catch ( FileAlreadyExistsException e )
+        {
+            throw new CommandFailed( "archive already exists: " + e.getMessage(), e );
+        }
+        catch ( NoSuchFileException e )
+        {
+            if ( databaseDirectory.toString().equals( e.getMessage() ) )
+            {
+                throw new CommandFailed( "database does not exist: " + database, e );
+            }
+            wrapIOException( e );
+        }
+        catch ( IOException e )
+        {
+            wrapIOException( e );
+        }
     }
 
     private void wrapIOException( IOException e ) throws CommandFailed
