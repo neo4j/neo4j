@@ -23,7 +23,8 @@ import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.ExcessiveAttemptsException;
 import org.apache.shiro.authc.pam.ModularRealmAuthenticator;
 import org.apache.shiro.authc.pam.UnsupportedTokenException;
-import org.apache.shiro.cache.ehcache.EhCacheManager;
+import org.apache.shiro.cache.CacheManager;
+import org.apache.shiro.cache.MemoryConstrainedCacheManager;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.realm.CachingRealm;
 import org.apache.shiro.realm.Realm;
@@ -42,7 +43,7 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
     private final EnterpriseUserManager userManager;
     private final Collection<Realm> realms;
     private final DefaultSecurityManager securityManager;
-    private final EhCacheManager cacheManager;
+    private final CacheManager cacheManager;
 
     public MultiRealmAuthManager( EnterpriseUserManager userManager, Collection<Realm> realms )
     {
@@ -53,9 +54,7 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
         ((ModularRealmAuthenticator) securityManager.getAuthenticator())
                 .setAuthenticationStrategy( new ShiroAuthenticationStrategy() );
 
-        // TODO: This is a bit big dependency for our current needs.
-        // Maybe MemoryConstrainedCacheManager is good enough if we do not need timeToLiveSeconds?
-        cacheManager = new EhCacheManager();
+        cacheManager = new MemoryConstrainedCacheManager();
     }
 
     @Override
@@ -89,8 +88,6 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
     @Override
     public void init() throws Throwable
     {
-        cacheManager.init();
-
         for ( Realm realm : realms )
         {
             if ( realm instanceof Initializable )
@@ -146,7 +143,6 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
                 ((RealmLifecycle) realm).shutdown();
             }
         }
-        cacheManager.destroy();
     }
 
     @Override
