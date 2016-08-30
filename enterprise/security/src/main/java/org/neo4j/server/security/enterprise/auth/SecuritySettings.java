@@ -117,7 +117,7 @@ public class SecuritySettings
                   "enabled. The filter should contain the placeholder token {0} which will be substituted for the " +
                   "user principal." )
     public static Setting<String> ldap_authorization_user_search_filter =
-            setting( "dbms.security.realms.ldap.authorization.user_search_filter", STRING, "(&(objectClass=*)(uid={0})" );
+            setting( "dbms.security.realms.ldap.authorization.user_search_filter", STRING, "(&(objectClass=*)(uid={0}))" );
 
     @Description( "A list of attribute names on a user object that contains groups to be used for mapping to roles " +
                   "when LDAP authorization is enabled." )

@@ -87,6 +87,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
         },
         saslHost = "0.0.0.0"
 )
+@ApplyLdifFiles( "ldap_test_data.ldif" )
 public class LdapAuthenticationIT extends AbstractLdapTestUnit
 {
     final String MD5_HASHED_abc123 = "{MD5}6ZoYxCjLONXyYIU2eJIuAw=="; // Hashed 'abc123' (see ldap_test_data.ldif)
@@ -153,21 +154,18 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     protected TransportConnection client;
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldLoginWithLdap() throws Throwable
     {
         assertAuth( "neo4j", "abc123" );
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldFailToLoginWithLdapIfInvalidCredentials() throws Throwable
     {
         assertAuthFail( "neo4j", "CANT_REMEMBER_MY_PASSWORDS_ANYMORE!" );
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldLoginWithLdapUsingSaslDigestMd5() throws Throwable
     {
         // When
@@ -178,7 +176,6 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldFailToLoginWithLdapDigestMd5IfInvalidCredentials() throws Throwable
     {
         // When
@@ -189,7 +186,6 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldLoginWithLdapUsingSaslCramMd5() throws Throwable
     {
         // When
@@ -200,7 +196,6 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldFailToLoginWithLdapCramMd5IfInvalidCredentials() throws Throwable
     {
         // When
@@ -211,7 +206,6 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeReaderWithLdapOnly() throws Throwable
     {
         // When
@@ -222,7 +216,6 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizePublisherWithLdapOnly() throws Throwable
     {
         // When
@@ -233,7 +226,6 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithLdapOnly() throws Throwable
     {
         // When
@@ -244,7 +236,6 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithLdapOnlyAndNoGroupToRoleMapping() throws Throwable
     {
         // When
@@ -259,7 +250,24 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
+
+    public void shouldBeAbleToLoginAndAuthorizeWithLdapOnlyAndQuotedGroupToRoleMapping() throws Throwable
+    {
+        // When
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping,
+                    " '500'  =\t reader  ; \"501\"\t=publisher\n;502 =architect  ;  \"503\"=  \nadmin" );
+        } ) );
+
+        // Then
+        testAuthWithReaderUser();
+        reconnect();
+        testAuthWithPublisherUser();
+        reconnect();
+        testAuthWithNoPermissionUser( "smith" );
+    }
+
+    @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContext() throws Throwable
     {
         // When
@@ -272,7 +280,6 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizePublisherWithUserLdapContext() throws Throwable
     {
         // When
@@ -285,7 +292,6 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContext() throws Throwable
     {
         // When
@@ -298,7 +304,6 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContextAndNoGroupToRoleMapping() throws Throwable
     {
         // When
@@ -314,7 +319,6 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     }
 
     @Test
-    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginWithLdapAndAuthorizeInternally() throws Throwable
     {
         // When
