@@ -142,7 +142,7 @@ public class DumpCommand implements AdminCommand
         }
         catch ( NoSuchFileException e )
         {
-            if ( databaseDirectory.toString().equals( e.getMessage() ) )
+            if ( Paths.get( e.getMessage() ).toAbsolutePath().equals( databaseDirectory.toAbsolutePath() ) )
             {
                 throw new CommandFailed( "database does not exist: " + database, e );
             }

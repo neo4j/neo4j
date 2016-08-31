@@ -20,7 +20,11 @@
 package org.neo4j.commandline.dbms;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -111,16 +115,66 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldThrowIfTheCommandFails() throws IOException, IncorrectUsage, IncorrectFormat
+    public void shouldGiveAClearMessageIfTheArchiveDoesntExist() throws IOException, IncorrectFormat, IncorrectUsage
     {
-        doThrow( IOException.class ).when( loader ).load( any(), any() );
+        doThrow( new NoSuchFileException( archive.toString() ) ).when( loader ).load( any(), any() );
         try
         {
             execute( null );
             fail( "expected exception" );
         }
-        catch ( CommandFailed ignored )
+        catch ( CommandFailed e )
         {
+            assertThat( e.getMessage(), equalTo( "archive does not exist: " + archive ) );
+        }
+    }
+
+    @Test
+    public void shouldGiveAClearMessageIfTheDatabaseAlreadyExists() throws IOException, IncorrectFormat, IncorrectUsage
+    {
+        doThrow( FileAlreadyExistsException.class ).when( loader ).load( any(), any() );
+        try
+        {
+            execute( "foo.db" );
+            fail( "expected exception" );
+        }
+        catch ( CommandFailed e )
+        {
+            assertThat( e.getMessage(), equalTo( "database already exists: foo.db" ) );
+        }
+    }
+
+    @Test
+    public void shouldGiveAClearMessageIfTheDatabasesDirectoryIsNotWritable()
+            throws IOException, IncorrectFormat, IncorrectUsage
+    {
+        doThrow( AccessDeniedException.class ).when( loader ).load( any(), any() );
+        try
+        {
+            execute( null );
+            fail( "expected exception" );
+        }
+        catch ( CommandFailed e )
+        {
+            assertThat( e.getMessage(), equalTo( "you do not have permission to load a database -- is Neo4j running " +
+                    "as a different user?" ) );
+        }
+    }
+
+    @Test
+    public void
+    shouldWrapIOExceptionsCarefulllyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
+            throws IOException, IncorrectUsage, IncorrectFormat
+    {
+        doThrow( new FileSystemException( "the-message" ) ).when( loader ).load( any(), any() );
+        try
+        {
+            execute( null );
+            fail( "expected exception" );
+        }
+        catch ( CommandFailed e )
+        {
+            assertThat( e.getMessage(), equalTo( "unable to load database: FileSystemException: the-message" ) );
         }
     }
 

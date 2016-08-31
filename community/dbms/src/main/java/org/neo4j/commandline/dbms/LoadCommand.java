@@ -20,6 +20,9 @@
 package org.neo4j.commandline.dbms;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -36,10 +39,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.server.configuration.ConfigLoader;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.util.Converters.identity;
 import static org.neo4j.kernel.impl.util.Converters.mandatory;
 
 public class LoadCommand implements AdminCommand
@@ -85,19 +90,8 @@ public class LoadCommand implements AdminCommand
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
         Path archive = parse( args, "from", Paths::get );
-        Path databaseDirectory = parse( args, "database", this::toDatabaseDirectory );
-        try
-        {
-            loader.load( archive, databaseDirectory );
-        }
-        catch ( IOException e )
-        {
-            throw new CommandFailed( "unable to load database: " + e.getMessage(), e );
-        }
-        catch ( IncorrectFormat incorrectFormat )
-        {
-            throw new CommandFailed( "Not a valid Neo4j archive: " + archive, incorrectFormat );
-        }
+        String database = parse( args, "database", identity() );
+        load( archive, database, toDatabaseDirectory( database ) );
     }
 
     private <T> T parse( String[] args, String argument, Function<String, T> converter ) throws IncorrectUsage
@@ -121,5 +115,44 @@ public class LoadCommand implements AdminCommand
                         Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) )
                 .with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) )
                 .get( database_path ).toPath();
+    }
+
+    private void load( Path archive, String database, Path databaseDirectory ) throws CommandFailed
+    {
+        try
+        {
+            loader.load( archive, databaseDirectory );
+        }
+        catch ( NoSuchFileException e )
+        {
+            if ( Paths.get( e.getMessage() ).toAbsolutePath().equals( archive.toAbsolutePath() ) )
+            {
+                throw new CommandFailed( "archive does not exist: " + archive, e );
+            }
+            wrapIOException( e );
+        }
+        catch ( FileAlreadyExistsException e )
+        {
+            throw new CommandFailed( "database already exists: " + database, e );
+        }
+        catch ( AccessDeniedException e )
+        {
+            throw new CommandFailed( "you do not have permission to load a database -- is Neo4j running as a " +
+                    "different user?", e );
+        }
+        catch ( IOException e )
+        {
+            wrapIOException( e );
+        }
+        catch ( IncorrectFormat incorrectFormat )
+        {
+            throw new CommandFailed( "Not a valid Neo4j archive: " + archive, incorrectFormat );
+        }
+    }
+
+    private void wrapIOException( IOException e ) throws CommandFailed
+    {
+        throw new CommandFailed( format( "unable to load database: %s: %s",
+                e.getClass().getSimpleName(), e.getMessage() ), e );
     }
 }
