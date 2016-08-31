@@ -25,6 +25,8 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
+
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.RandomRule;
 import static org.junit.Assert.assertEquals;
@@ -40,6 +42,8 @@ public class ForkedProcessorStepTest
 {
     @Rule
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    @Rule
+    public final OtherThreadRule<Void> t3 = new OtherThreadRule<>();
     @Rule
     public final RandomRule random = new RandomRule();
 
@@ -129,7 +133,7 @@ public class ForkedProcessorStepTest
         // GIVEN
         SimpleStageControl control = new SimpleStageControl();
         int maxProcessorCount = 10;
-        try ( Step<Object> step = new ForkedProcessorStep<Object>( control, "Test", DEFAULT, maxProcessorCount )
+        try ( Step<Object> step = new ForkedProcessorStep<Object>( control, "Stress", DEFAULT, maxProcessorCount )
         {
             private boolean[] seen = new boolean[maxProcessorCount];
 
@@ -163,6 +167,21 @@ public class ForkedProcessorStepTest
                 {
                     Thread.sleep( 10 );
                     step.processors( random.nextInt( maxProcessorCount ) + 1 );
+                }
+                return null;
+            } );
+            // Thread doing unpark on all the processor threads, just to verify that it can handle sprious wakeups
+            t3.execute( ignore ->
+            {
+                while ( !step.isCompleted() )
+                {
+                    for ( Thread thread : Thread.getAllStackTraces().keySet() )
+                    {
+                        if ( thread.getName().contains( "Stress-" ) )
+                        {
+                            LockSupport.unpark( thread );
+                        }
+                    }
                 }
                 return null;
             } );

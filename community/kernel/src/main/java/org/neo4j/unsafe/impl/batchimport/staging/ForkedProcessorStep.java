@@ -40,6 +40,11 @@ import static java.util.concurrent.locks.LockSupport.park;
  */
 public abstract class ForkedProcessorStep<T> extends ProcessorStep<T>
 {
+    // ID 0 is the id of a processor which is always present, no matter how many or few processors
+    // are assigned to process a batch. Therefore some tasks can be put on this processor, tasks
+    // which may affect the batches as a whole.
+    protected static final int MAIN = 0;
+
     // used by forked processors to count down when they're done, so that main processing thread
     // knows when they're all done
     private final AtomicInteger doneSignal = new AtomicInteger();
@@ -48,15 +53,19 @@ public abstract class ForkedProcessorStep<T> extends ProcessorStep<T>
     // main processing thread communicates batch to process using this variable
     // it's not volatile, but piggy-backs on globalTicket for that
     private T currentBatch;
-    // this ticket helps coordinating with the forked processors
-    private long globalTicket;
+    // this ticket helps coordinating with the forked processors. It's checked by the forked processors
+    // and so acts as a useful memory barrier for other variables
+    private volatile long globalTicket;
     // processorCount can be changed asynchronically by calls to processors(int), although its
     // changes will only be applied between processing batches as to not interfere
     private volatile int processorCount = 1;
-    // forked processors can communicate errors via this variable
+    // forked processors can communicate errors via this variable.
+    // Doesn't need to be volatile - piggy-backs off of doneSignal access between submitter thread
+    // and the failing processor thread
     private Throwable error;
-    // forked processors can ping main process thread via this variable
-    private Thread ticketThread;
+    // represents the submitter thread which called process() method. Forked processor threads can
+    // ping/unpark submitter thread via this variable. Piggy-backs off of globalTicket/doneSignal.
+    private Thread submitterThread;
 
     protected ForkedProcessorStep( StageControl control, String name, Configuration config, int maxProcessors )
     {
@@ -79,15 +88,17 @@ public abstract class ForkedProcessorStep<T> extends ProcessorStep<T>
         {
             // Multiple processors, hand over the state to the processors and let them loose
             currentBatch = batch;
-            ticketThread = Thread.currentThread(); // so that forked processors can unpark
-            globalTicket++;
-            // ^^^ --- everything above this line will piggy-back on the volatility from the line below
+            submitterThread = Thread.currentThread(); // so that forked processors can unpark
+            // ^^^ --- everything above this line will piggy-back on the volatility from globalTicket
             doneSignal.set( processorCount );
+            globalTicket++;
             notifyProcessors();
             while ( doneSignal.get() > 0 )
             {
                 LockSupport.park();
             }
+            // any write to "error" is now visible to us because of our check (and forked processor's write)
+            // to doneSignal
             if ( error != null )
             {
                 throw error;
@@ -170,6 +181,7 @@ public abstract class ForkedProcessorStep<T> extends ProcessorStep<T>
 
         ForkedProcessor( int id )
         {
+            super( name() + "-" + id );
             this.id = id;
             this.localTicket = globalTicket;
             start();
@@ -180,15 +192,16 @@ public abstract class ForkedProcessorStep<T> extends ProcessorStep<T>
         {
             while ( !halted )
             {
+                boolean processed = false;
                 try
                 {
                     park();
                     if ( !halted && localTicket + 1 == globalTicket )
                     {
-                        // ^^^ we just accessed volatile variable 'halted' and so the rest of the non-volatile
-                        // variables will not be up to date for us
+                        // ^^^ we just accessed volatile variable 'globalTicket' and so currentBatch and
+                        // forkedProcessors will now be up to date for us
+                        processed = true;
                         forkedProcess( id, forkedProcessors.size(), currentBatch );
-                        localTicket++;
                     }
                 }
                 catch ( Throwable t )
@@ -200,8 +213,12 @@ public abstract class ForkedProcessorStep<T> extends ProcessorStep<T>
                     // ^^^ finish off with counting down doneSignal which serves two purposes:
                     // - notifying the main submitter thread that we're done
                     // - going through a volatile memory access to let our changes propagate
-                    doneSignal.decrementAndGet();
-                    LockSupport.unpark( ticketThread );
+                    if ( processed )
+                    {
+                        localTicket++;
+                        doneSignal.decrementAndGet();
+                        LockSupport.unpark( submitterThread );
+                    }
                 }
             }
         }
