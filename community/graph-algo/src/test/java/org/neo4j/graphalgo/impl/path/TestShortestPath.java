@@ -20,6 +20,7 @@
 package org.neo4j.graphalgo.impl.path;
 
 import common.Neo4jAlgoTestCase;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -43,7 +44,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.impl.StandardExpander;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.MutableInteger;
 
 import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
 import static java.util.Arrays.asList;
@@ -96,7 +96,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         assertEquals(
                 "There are 625 different end nodes. The algorithm should start one traversal for each such node. "
                         + "That is 625*2 visited nodes if traversal is interrupted correctly.", 1250,
-                countingPathExpander.nodesVisited.value );
+                countingPathExpander.nodesVisited.intValue() );
     }
 
     private void recursiveSnowFlake( Node parent, int level, final int desiredLevel, final int branchingFactor,
@@ -478,16 +478,16 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     // Used to count how many nodes are visited
     private class CountingPathExpander implements PathExpander
     {
-        private MutableInteger nodesVisited;
+        private MutableInt nodesVisited;
         private final PathExpander delegate;
 
         public CountingPathExpander( PathExpander delegate )
         {
-            nodesVisited = new MutableInteger( 0 );
+            nodesVisited = new MutableInt( 0 );
             this.delegate = delegate;
         }
 
-        public CountingPathExpander( PathExpander delegate, MutableInteger nodesVisited )
+        public CountingPathExpander( PathExpander delegate, MutableInt nodesVisited )
         {
             this( delegate );
             this.nodesVisited = nodesVisited;
@@ -496,7 +496,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         @Override
         public Iterable expand( Path path, BranchState state )
         {
-            nodesVisited.value++;
+            nodesVisited.increment();
             return delegate.expand( path, state );
         }
 

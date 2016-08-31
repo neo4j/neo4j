@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checking.full;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -83,12 +84,12 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
-import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -103,7 +104,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.kernel.impl.util.MutableInteger;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -123,7 +123,6 @@ import static org.neo4j.consistency.checking.schema.IndexRules.loadAllIndexRules
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.asIterable;
-import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
@@ -134,13 +133,15 @@ import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
-import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule
+        .nodePropertyExistenceConstraintRule;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule
+        .relPropertyExistenceConstraintRule;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -2055,7 +2056,7 @@ public class FullCheckIntegrationTest
 
     private int createLabel() throws Exception
     {
-        final MutableInteger id = new MutableInteger( -1 );
+        final MutableInt id = new MutableInt( -1 );
 
         fixture.apply( new GraphStoreFixture.Transaction()
         {
@@ -2065,16 +2066,16 @@ public class FullCheckIntegrationTest
             {
                 int labelId = next.label();
                 tx.nodeLabel( labelId, "label" );
-                id.value = labelId;
+                id.setValue( labelId );
             }
         } );
 
-        return id.value;
+        return id.intValue();
     }
 
     private int createPropertyKey() throws Exception
     {
-        final MutableInteger id = new MutableInteger( -1 );
+        final MutableInt id = new MutableInt( -1 );
 
         fixture.apply( new GraphStoreFixture.Transaction()
         {
@@ -2084,16 +2085,16 @@ public class FullCheckIntegrationTest
             {
                 int propertyKeyId = next.propertyKey();
                 tx.propertyKey( propertyKeyId, "property" );
-                id.value = propertyKeyId;
+                id.setValue( propertyKeyId );
             }
         } );
 
-        return id.value;
+        return id.intValue();
     }
 
     private int createRelType() throws Exception
     {
-        final MutableInteger id = new MutableInteger( -1 );
+        final MutableInt id = new MutableInt( -1 );
 
         fixture.apply( new GraphStoreFixture.Transaction()
         {
@@ -2103,11 +2104,11 @@ public class FullCheckIntegrationTest
             {
                 int relTypeId = next.relationshipType();
                 tx.relationshipType( relTypeId, "relType" );
-                id.value = relTypeId;
+                id.setValue( relTypeId );
             }
         } );
 
-        return id.value;
+        return id.intValue();
     }
 
     private void createIndexRule( final int labelId, final int propertyKeyId ) throws Exception

@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import org.apache.commons.lang3.mutable.MutableDouble;
+
 import java.util.Collections;
 import java.util.function.Predicate;
 
@@ -48,7 +50,6 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
-import org.neo4j.kernel.impl.util.MutableDouble;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -108,7 +109,8 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
     private Traverser traverser( Node start, final Node end, PathInterest interest )
     {
         final MutableDouble shortestSoFar = new MutableDouble( Double.MAX_VALUE );
-        final MutableDouble startSideShortest = new MutableDouble( 0 );
+        final org.apache.commons.lang3.mutable.MutableDouble
+                startSideShortest = new org.apache.commons.lang3.mutable.MutableDouble( 0 );
         final MutableDouble endSideShortest = new MutableDouble( 0 );
         PathExpander dijkstraExpander = new DijkstraBidirectionalPathExpander( expander, shortestSoFar, true,
                 startSideShortest, endSideShortest, epsilon);
@@ -164,7 +166,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         private final boolean stopAfterLowestCost;
 
         DijkstraBidirectionalPathExpander( PathExpander source, MutableDouble shortestSoFar,
-                boolean stopAfterLowestCost, MutableDouble thisSideShortest, MutableDouble otherSideShortest,
+                boolean stopAfterLowestCost, org.apache.commons.lang3.mutable.MutableDouble thisSideShortest, MutableDouble otherSideShortest,
                 double epsilon )
         {
             this.source = source;
@@ -179,8 +181,8 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         public Iterable<Relationship> expand( Path path, BranchState<Double> state )
         {
             double thisState = state.getState();
-            thisSideShortest.value = thisState;
-            if ( NoneStrictMath.compare( thisState + otherSideShortest.value, shortestSoFar.value, epsilon ) > 0 &&
+            thisSideShortest.setValue( thisState );
+            if ( NoneStrictMath.compare( thisState + otherSideShortest.doubleValue(), shortestSoFar.doubleValue(), epsilon ) > 0 &&
                  stopAfterLowestCost )
             {
                 return Collections.emptyList();

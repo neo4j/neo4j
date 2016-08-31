@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
+import org.apache.commons.lang3.mutable.MutableDouble;
+
 import java.util.function.Predicate;
 
 import org.neo4j.graphalgo.CostEvaluator;
@@ -26,7 +28,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.impl.traversal.StandardBranchCollisionDetector;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.kernel.impl.util.MutableDouble;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 /**
@@ -40,7 +41,7 @@ public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDete
 
     public DijkstraBranchCollisionDetector( Evaluator evaluator,
             CostEvaluator costEvaluator,
-            MutableDouble shortestSoFar, double epsilon, Predicate<Path> pathPredicate )
+            org.apache.commons.lang3.mutable.MutableDouble shortestSoFar, double epsilon, Predicate<Path> pathPredicate )
     {
         super( evaluator, pathPredicate );
         this.costEvaluator = costEvaluator;
@@ -86,11 +87,11 @@ public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDete
 
         double cost = new WeightedPathImpl( costEvaluator, path ).weight();
 
-        if ( cost < shortestSoFar.value )
+        if ( cost < shortestSoFar.doubleValue() )
         {
-            shortestSoFar.value = cost;
+            shortestSoFar.setValue( cost );
         }
-        if ( NoneStrictMath.compare( cost, shortestSoFar.value, epsilon ) <= 0 )
+        if ( NoneStrictMath.compare( cost, shortestSoFar.doubleValue(), epsilon ) <= 0 )
         {
             return true;
         }
