@@ -60,6 +60,7 @@ public class AssignRelationshipIdBatchStepTest
             Batch<InputRelationship,RelationshipRecord> second = new Batch<>( new InputRelationship[config.batchSize()] );
             step.receive( 1, second );
             while ( results.stats().stat( Keys.done_batches ).asLong() < 2 );
+            assertEquals( 2, results.receivedBatches().size() );
 
             // THEN
             assertEquals( 100, first.firstRecordId );
@@ -89,11 +90,40 @@ public class AssignRelationshipIdBatchStepTest
             Batch<InputRelationship,RelationshipRecord> third = new Batch<>( new InputRelationship[config.batchSize()] );
             step.receive( 2, third );
             while ( results.stats().stat( Keys.done_batches ).asLong() < 3 );
+            assertEquals( 3, results.receivedBatches().size() );
 
             // THEN
             assertEquals( INTEGER_MINUS_ONE - 15, first.firstRecordId );
             assertEquals( INTEGER_MINUS_ONE + 1, second.firstRecordId );
             assertEquals( second.firstRecordId + config.batchSize(), third.firstRecordId );
+        }
+    }
+
+    @Test
+    public void shouldAvoidReservedIdAsFirstAssignment() throws Exception
+    {
+        // GIVEN
+        try (
+                Step<Batch<InputRelationship,RelationshipRecord>> step =
+                new AssignRelationshipIdBatchStep( control, config, INTEGER_MINUS_ONE - 5 );
+                CapturingStep<Batch<InputRelationship,RelationshipRecord>> results =
+                        new CapturingStep<>( control, "end", config ) )
+        {
+            step.setDownstream( results );
+            step.start( ORDER_SEND_DOWNSTREAM );
+            results.start( ORDER_SEND_DOWNSTREAM );
+
+            // WHEN
+            Batch<InputRelationship,RelationshipRecord> first = new Batch<>( new InputRelationship[config.batchSize()] );
+            step.receive( 0, first );
+            Batch<InputRelationship,RelationshipRecord> second = new Batch<>( new InputRelationship[config.batchSize()] );
+            step.receive( 1, second );
+            while ( results.stats().stat( Keys.done_batches ).asLong() < 2 );
+            assertEquals( 2, results.receivedBatches().size() );
+
+            // THEN
+            assertEquals( INTEGER_MINUS_ONE + 1, first.firstRecordId );
+            assertEquals( first.firstRecordId + config.batchSize(), second.firstRecordId );
         }
     }
 }

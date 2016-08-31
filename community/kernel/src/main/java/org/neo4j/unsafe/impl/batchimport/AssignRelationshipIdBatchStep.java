@@ -44,12 +44,6 @@ public class AssignRelationshipIdBatchStep extends ProcessorStep<Batch<InputRela
     @Override
     protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender ) throws Throwable
     {
-        // Assign first record id and send
-        batch.firstRecordId = nextId;
-        sender.send( batch );
-
-        // Set state for the next batch
-        nextId += batch.input.length;
         if ( nextId <= IdGeneratorImpl.INTEGER_MINUS_ONE &&
                 nextId + batch.input.length >= IdGeneratorImpl.INTEGER_MINUS_ONE )
         {
@@ -57,6 +51,13 @@ public class AssignRelationshipIdBatchStep extends ProcessorStep<Batch<InputRela
             // or at least the part up to that id and just continue after it.
             nextId = IdGeneratorImpl.INTEGER_MINUS_ONE + 1;
         }
+
+        // Assign first record id and send
+        batch.firstRecordId = nextId;
+        sender.send( batch );
+
+        // Set state for the next batch
+        nextId += batch.input.length;
     }
 
     public long getNextRelationshipId()
