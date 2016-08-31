@@ -566,7 +566,7 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
             {
                 throw new InvalidArgumentsException( "Old password and new password cannot be the same." );
             }
-            
+
             try
             {
                 User updatedUser = existingUser.augment()

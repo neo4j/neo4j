@@ -25,6 +25,7 @@ import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import java.util.Map;
@@ -41,7 +42,7 @@ public interface AuthManager extends Lifecycle
             super( key, altKeys );
         }
 
-        public abstract AuthManager newInstance( Config config, LogProvider logProvider,
+        public abstract AuthManager newInstance( Config config, LogProvider logProvider, Log log,
                 FileSystemAbstraction fileSystem, JobScheduler jobScheduler );
     }
 

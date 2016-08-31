@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
+import org.neo4j.logging.Log;
 
 /**
  * This implementation of {@link EditionModule} creates the implementations of services
@@ -48,7 +50,9 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     {
         super.registerProcedures( procedures );
         procedures.registerProcedure( BuiltInProcedures.class );
+        procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
     }
+    private SecurityLog securityLog;
 
     public EnterpriseEditionModule( PlatformModule platformModule )
     {
@@ -80,5 +84,15 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     protected StatementLocksFactory createStatementLocksFactory( Locks locks, Config config, LogService logService )
     {
         return new StatementLocksFactorySelector( locks, config, logService ).select();
+    }
+
+    @Override
+    protected Log authManagerLog( Config config, FileSystemAbstraction fileSystem )
+    {
+        if (securityLog == null)
+        {
+            securityLog = new SecurityLog( config, fileSystem );
+        }
+        return securityLog;
     }
 }

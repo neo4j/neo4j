@@ -103,8 +103,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('reader', 'mats')" );
         mats = neo.login( "mats", "neo4j" );
         assertEmpty( mats, "MATCH (n) WHERE id(n) < 0 RETURN 1" );
-        // TODO: Log attempts by non-admins to change another user's password
-//        assertFail( mats, "CALL dbms.security.changeUserPassword('neo4j', 'hackerPassword')", PERMISSION_DENIED );
+        assertFail( mats, "CALL dbms.security.changeUserPassword('neo4j', 'hackerPassword')", PERMISSION_DENIED );
         assertFail( mats, "CALL dbms.security.changeUserPassword('mats', '')", "A password cannot be empty." );
         assertEmpty( mats, "CALL dbms.security.changeUserPassword('mats', 'hackerPassword')" );
         assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('reader', 'mats')" );
@@ -121,6 +120,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertThat( allLines, hasItem( containsString( "User created: `mats`" ) ) );
         assertThat( allLines, hasItem( containsString( "Login success for user `mats`" ) ) );
         assertThat( allLines, hasItem( containsString( "Role `reader` added to user `mats`" ) ) );
+        assertThat( allLines, hasItem( containsString( "User `mats` tried to change password for user `neo4j`" ) ) );
         assertThat( allLines, hasItem( containsString( "Password not changed for user `mats`" ) ) );
         assertThat( allLines, hasItem( containsString( "Password changed for user `mats`" ) ) );
         assertThat( allLines, hasItem( containsString( "Role `reader` removed from user `mats`" ) ) );

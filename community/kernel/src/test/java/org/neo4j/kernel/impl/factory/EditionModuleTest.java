@@ -25,8 +25,10 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.Log;
 
 import static org.mockito.Matchers.anyString;
@@ -58,7 +60,13 @@ public class EditionModuleTest
         exception.expectMessage( "Auth enabled but no auth manager found. This is an illegal product configuration." );
 
         // When
-        EditionModule.createAuthManager( config, logService, new EphemeralFileSystemAbstraction(), null );
+        new EditionModule() {
+            @Override
+            public void registerProcedures( Procedures procedures ) throws KernelException
+            {
+
+            }
+        }.createAuthManager( config, logService, new EphemeralFileSystemAbstraction(), null );
 
         // Then
         verify( userLog ).error( anyString() );

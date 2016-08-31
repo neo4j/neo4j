@@ -24,12 +24,8 @@ import org.apache.shiro.realm.Realm;
 import org.slf4j.impl.StaticLoggerBinder;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.shiro.realm.Realm;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.Service;
@@ -37,7 +33,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -47,9 +42,7 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.time.Clocks;
 
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.server.security.auth.BasicAuthManagerFactory.getUserRepository;
-import static org.neo4j.server.security.enterprise.auth.SecuritySettings.security_log_filename;
 
 /**
  * Wraps EnterpriseAuthManager and exposes it as a Service
@@ -65,13 +58,12 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     }
 
     @Override
-    public AuthManager newInstance( Config config, LogProvider logProvider,
+    public AuthManager newInstance( Config config, LogProvider logProvider, Log securityLog,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
         StaticLoggerBinder.setNeo4jLogProvider( logProvider );
 
         List<Realm> realms = new ArrayList<>( 2 );
-        Log securityLog = getLog( config, fileSystem );
 
         // We always create the internal realm as it is our only UserManager implementation
         InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider, fileSystem,
@@ -101,22 +93,6 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         return new MultiRealmAuthManager( internalRealm, realms,
                 new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity ),
                 securityLog );
-    }
-
-    private Log getLog( Config config, FileSystemAbstraction fileSystem )
-    {
-        FormattedLog.Builder builder = FormattedLog.withUTCTimeZone();
-        File logFile = config.get( security_log_filename );
-        OutputStream ouputStream;
-        try
-        {
-            ouputStream = createOrOpenAsOuputStream( fileSystem, logFile, true );
-        }
-        catch ( IOException e )
-        {
-            throw new AssertionError( "File not possible to create", e );
-        }
-        return builder.toOutputStream( ouputStream );
     }
 
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,

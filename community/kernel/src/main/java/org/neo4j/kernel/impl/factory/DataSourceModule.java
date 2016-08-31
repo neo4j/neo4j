@@ -405,14 +405,6 @@ public class DataSourceModule
         procedures.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ) );
         procedures.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> platform.graphDatabaseFacade );
 
-        // Security procedures
-        procedures.registerComponent( AuthSubject.class, ctx -> ctx.get( AUTH_SUBJECT ) );
-
-        for ( ProceduresProvider candidate : Service.load( ProceduresProvider.class ) )
-        {
-            candidate.registerProcedures( procedures );
-        }
-
         // Edition procedures
         try
         {
@@ -422,6 +414,14 @@ public class DataSourceModule
         {
             internalLog.error( "Failed to register built-in edition procedures at start up: " + e.getMessage() );
             throw new RuntimeException( e );
+        }
+
+        // Security procedures
+        procedures.registerComponent( AuthSubject.class, ctx -> ctx.get( AUTH_SUBJECT ) );
+
+        for ( ProceduresProvider candidate : Service.load( ProceduresProvider.class ) )
+        {
+            candidate.registerProcedures( procedures );
         }
 
         return procedures;

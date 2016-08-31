@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -59,6 +60,9 @@ public class AuthProcedures
 
     @Context
     public KernelTransaction tx;
+
+    @Context
+    public SecurityLog securityLog;
 
     @Description( "Create a new user." )
     @Procedure( name = "dbms.security.createUser", mode = DBMS )
@@ -89,6 +93,8 @@ public class AuthProcedures
         }
         else if ( !enterpriseSubject.isAdmin() )
         {
+            securityLog.error( "User `%s` tried to change password for user `%s`: %s",
+                    enterpriseSubject.name(), username, PERMISSION_DENIED );
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
         else

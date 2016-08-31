@@ -155,10 +155,4 @@ public class SecuritySettings
     @Description( "The maximum capacity for authentication and authorization caches (respectively)." )
     public static Setting<Integer> auth_cache_max_capacity =
             setting( "dbms.security.realms.auth_cache_max_capacity", INTEGER, "10000" );
-
-    @Description( "File name for the security log." )
-    public static final Setting<File> security_log_filename = derivedSetting("dbms.security.log_path",
-            GraphDatabaseSettings.logs_directory,
-            ( logs ) -> new File( logs, "security.log" ),
-            PATH );
 }

@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.impl.enterprise.configuration;
 
+import java.io.File;
 import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.store.id.IdType;
 
+import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -41,4 +45,11 @@ public class EnterpriseEditionSettings
     public static Setting<List<IdType>> idTypesToReuse = setting(
             "dbms.ids.reuse.types.override", list( ",", optionsIgnoreCase( NODE, RELATIONSHIP ) ),
             String.join( ",", IdType.RELATIONSHIP.name(), IdType.NODE.name() ) );
+
+    @Description( "File name for the security log." )
+    public static final Setting<File> security_log_filename = derivedSetting("dbms.security.log_path",
+            GraphDatabaseSettings.logs_directory,
+            ( logs ) -> new File( logs, "security.log" ),
+            PATH );
+
 }

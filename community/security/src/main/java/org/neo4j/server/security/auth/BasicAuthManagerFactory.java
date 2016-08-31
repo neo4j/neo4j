@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 
@@ -68,7 +69,7 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
     }
 
     @Override
-    public AuthManager newInstance( Config config, LogProvider logProvider,
+    public AuthManager newInstance( Config config, LogProvider logProvider, Log ignored,
             FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
         if ( !config.get( GraphDatabaseSettings.auth_enabled ) )
