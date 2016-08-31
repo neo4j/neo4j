@@ -27,12 +27,10 @@ import org.mockito.stubbing.Answer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.MetaOperations;
+import org.neo4j.kernel.api.MetaDataOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -389,7 +387,7 @@ public class AwaitIndexProcedureTest
         }
 
         @Override
-        public MetaOperations metaOperations()
+        public MetaDataOperations metaOperations()
         {
             throw new UnsupportedOperationException( "not implemented" );
         }

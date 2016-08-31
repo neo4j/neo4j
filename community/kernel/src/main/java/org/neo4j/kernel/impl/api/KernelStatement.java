@@ -25,7 +25,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
-import org.neo4j.kernel.api.MetaOperations;
+import org.neo4j.kernel.api.MetaDataOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -63,7 +63,7 @@ public class KernelStatement implements TxStateHolder, Statement
     private final TxStateHolder txStateHolder;
     private final StorageStatement storeStatement;
     private final KernelTransactionImplementation transaction;
-    private final OperationsFacade facade;
+    private final DataOperationsFacade facade;
     private StatementLocks statementLocks;
     private int referenceCount;
     private volatile ExecutingQueryList executingQueryList;
@@ -79,7 +79,7 @@ public class KernelStatement implements TxStateHolder, Statement
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
         this.storeStatement = storeStatement;
-        this.facade = new OperationsFacade( transaction, this, operations, procedures );
+        this.facade = new DataOperationsFacade( transaction, this, operations, procedures );
         this.executingQueryList = ExecutingQueryList.EMPTY;
     }
 
@@ -127,7 +127,7 @@ public class KernelStatement implements TxStateHolder, Statement
     }
 
     @Override
-    public MetaOperations metaOperations()
+    public MetaDataOperations metaOperations()
     {
         return facade;
     }

@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.impl.api.OperationsFacade;
+import org.neo4j.kernel.impl.api.DataOperationsFacade;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -182,7 +182,7 @@ public class PropertyExistenceConstraintVerificationIT
                     createConstraint( db, KEY, PROPERTY );
 
                     nodeCreation = thread.executeAndAwait( createOffender(), null,
-                            waitingWhileIn( OperationsFacade.class, offenderCreationMethodName() ), 5, SECONDS );
+                            waitingWhileIn( DataOperationsFacade.class, offenderCreationMethodName() ), 5, SECONDS );
 
                     tx.success();
                 }
@@ -216,7 +216,7 @@ public class PropertyExistenceConstraintVerificationIT
                     createOffender( db, KEY );
 
                     constraintCreation = thread.executeAndAwait( createConstraint(), null,
-                            waitingWhileIn( OperationsFacade.class, constraintCreationMethodName() ), 5, SECONDS );
+                            waitingWhileIn( DataOperationsFacade.class, constraintCreationMethodName() ), 5, SECONDS );
 
                     tx.success();
                 }
@@ -238,35 +238,27 @@ public class PropertyExistenceConstraintVerificationIT
 
         private ThrowingFunction<Void,Void,RuntimeException> createOffender()
         {
-            return new ThrowingFunction<Void,Void,RuntimeException>()
+            return aVoid ->
             {
-                @Override
-                public Void apply( Void aVoid ) throws RuntimeException
+                try ( Transaction tx = db.beginTx() )
                 {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        createOffender( db, KEY );
-                        tx.success();
-                    }
-                    return null;
+                    createOffender( db, KEY );
+                    tx.success();
                 }
+                return null;
             };
         }
 
         private ThrowingFunction<Void,Void,RuntimeException> createConstraint()
         {
-            return new ThrowingFunction<Void,Void,RuntimeException>()
+            return aVoid ->
             {
-                @Override
-                public Void apply( Void aVoid ) throws RuntimeException
+                try ( Transaction tx = db.beginTx() )
                 {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        createConstraint( db, KEY, PROPERTY );
-                        tx.success();
-                    }
-                    return null;
+                    createConstraint( db, KEY, PROPERTY );
+                    tx.success();
                 }
+                return null;
             };
         }
     }

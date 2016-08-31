@@ -101,8 +101,8 @@ public class DataStatementArgumentVerificationTest
         assertFalse( "should not contain any ids", hasLabel );
     }
 
-    private OperationsFacade stubStatement()
+    private DataOperationsFacade stubStatement()
     {
-        return new OperationsFacade( mock(KernelTransaction.class), mock( KernelStatement.class ), null, new Procedures() );
+        return new DataOperationsFacade( mock(KernelTransaction.class), mock( KernelStatement.class ), null, new Procedures() );
     }
 }

@@ -17,15 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api.operations;
 
 import java.util.Map;
 import java.util.stream.Stream;
 
-public interface MetaOperations
+import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.impl.api.KernelStatement;
+
+public interface MetaDataOperations
 {
-    Stream<ExecutingQuery> executingQueries();
-    void registerQueryExecution( ExecutingQuery executingQuery );
-    ExecutingQuery startQueryExecution( String queryText, Map<String, Object> queryParameters );
-    void stopQueryExecution( ExecutingQuery executingQuery );
+    Stream<ExecutingQuery> executingQueries( KernelStatement statement );
+
+    ExecutingQuery startQueryExecution( KernelStatement statement, String queryText, Map<String, Object> queryParameters );
+
+    void registerExecutingQuery( KernelStatement statement, ExecutingQuery executingQuery );
+    void unregisterExecutingQuery( KernelStatement statement, ExecutingQuery executingQuery );
 }

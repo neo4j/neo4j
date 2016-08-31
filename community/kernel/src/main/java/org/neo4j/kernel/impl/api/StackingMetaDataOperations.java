@@ -23,16 +23,16 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.ExecutingQuery;
-import org.neo4j.kernel.impl.api.operations.MetaStatementOperations;
+import org.neo4j.kernel.impl.api.operations.MetaDataOperations;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 
-public class StackingMetaStatementOperations implements MetaStatementOperations
+public class StackingMetaDataOperations implements MetaDataOperations
 {
     public static final MonotonicCounter LAST_QUERY_ID = MonotonicCounter.newAtomicMonotonicCounter();
 
     private final MonotonicCounter lastQueryId;
 
-    public StackingMetaStatementOperations( MonotonicCounter lastQueryId )
+    public StackingMetaDataOperations( MonotonicCounter lastQueryId )
     {
         this.lastQueryId = lastQueryId;
     }
@@ -44,7 +44,7 @@ public class StackingMetaStatementOperations implements MetaStatementOperations
     }
 
     @Override
-    public void registerQueryExecution( KernelStatement statement, ExecutingQuery executingQuery )
+    public void registerExecutingQuery( KernelStatement statement, ExecutingQuery executingQuery )
     {
         statement.startQueryExecution( executingQuery );
     }
@@ -59,7 +59,7 @@ public class StackingMetaStatementOperations implements MetaStatementOperations
     }
 
     @Override
-    public void stopQueryExecution( KernelStatement statement, ExecutingQuery executingQuery )
+    public void unregisterExecutingQuery( KernelStatement statement, ExecutingQuery executingQuery )
     {
         statement.stopQueryExecution( executingQuery );
     }

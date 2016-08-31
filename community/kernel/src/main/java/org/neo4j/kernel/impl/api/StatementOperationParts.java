@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.impl.api.operations.MetaStatementOperations;
+import org.neo4j.kernel.impl.api.operations.MetaDataOperations;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -45,7 +45,7 @@ public class StatementOperationParts
     private final CountsOperations countsStatementOperations;
     private final LegacyIndexReadOperations legacyIndexReadOperations;
     private final LegacyIndexWriteOperations legacyIndexWriteOperations;
-    private final MetaStatementOperations metaStatementOperations;
+    private final MetaDataOperations metaDataOperations;
 
     public StatementOperationParts(
             KeyReadOperations keyReadOperations,
@@ -59,7 +59,7 @@ public class StatementOperationParts
             CountsOperations countsStatementOperations,
             LegacyIndexReadOperations legacyIndexReadOperations,
             LegacyIndexWriteOperations legacyIndexWriteOperations,
-            MetaStatementOperations metaStatementOperations)
+            MetaDataOperations metaDataOperations )
     {
         this.keyReadOperations = keyReadOperations;
         this.keyWriteOperations = keyWriteOperations;
@@ -72,7 +72,7 @@ public class StatementOperationParts
         this.countsStatementOperations = countsStatementOperations;
         this.legacyIndexReadOperations = legacyIndexReadOperations;
         this.legacyIndexWriteOperations = legacyIndexWriteOperations;
-        this.metaStatementOperations = metaStatementOperations;
+        this.metaDataOperations = metaDataOperations;
     }
 
     public KeyReadOperations keyReadOperations()
@@ -130,9 +130,9 @@ public class StatementOperationParts
         return checkNotNull( countsStatementOperations, CountsOperations.class );
     }
 
-    public MetaStatementOperations metaStatementOperations()
+    public MetaDataOperations metaStatementOperations()
     {
-        return checkNotNull( metaStatementOperations, MetaStatementOperations.class );
+        return checkNotNull( metaDataOperations, MetaDataOperations.class );
     }
 
     public StatementOperationParts override(
@@ -147,7 +147,7 @@ public class StatementOperationParts
             CountsOperations countsStatementOperations,
             LegacyIndexReadOperations legacyIndexReadOperations,
             LegacyIndexWriteOperations legacyIndexWriteOperations,
-            MetaStatementOperations metaStatementOperations )
+            MetaDataOperations metaDataOperations )
     {
         return new StatementOperationParts(
             eitherOr( keyReadOperations, this.keyReadOperations, KeyReadOperations.class ),
@@ -161,7 +161,7 @@ public class StatementOperationParts
             eitherOr( countsStatementOperations, this.countsStatementOperations, CountsOperations.class ),
             eitherOr( legacyIndexReadOperations, this.legacyIndexReadOperations, LegacyIndexReadOperations.class ),
             eitherOr( legacyIndexWriteOperations, this.legacyIndexWriteOperations, LegacyIndexWriteOperations.class ),
-            eitherOr( metaStatementOperations, this.metaStatementOperations, MetaStatementOperations.class ) );
+            eitherOr( metaDataOperations, this.metaDataOperations, MetaDataOperations.class ) );
     }
 
     private <T> T checkNotNull( T object, Class<T> cls )

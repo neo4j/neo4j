@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.Map;
-
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
@@ -64,5 +62,5 @@ public interface Statement extends Resource
     /**
      * @return interface exposing operations for associating metadata with this statement
      */
-    MetaOperations metaOperations();
+    MetaDataOperations metaOperations();
 }
