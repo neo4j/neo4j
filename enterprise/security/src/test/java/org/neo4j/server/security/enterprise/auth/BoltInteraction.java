@@ -129,7 +129,7 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
         }
         subject.client.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk( InitMessage.init( "TestClient/1.1",
-                        map( "principal", username, "credentials", password, "scheme", "basic" ) ) ) );
+                        map( "realm", "neo4j", "principal", username, "credentials", password, "scheme", "basic" ) ) ) );
         assertThat( subject.client, TransportTestUtil.eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         subject.setLoginResult( TransportTestUtil.receiveOneResponseMessage( subject.client ) );
         return subject;

@@ -194,7 +194,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         {
             if ( token instanceof ShiroAuthToken )
             {
-                return ((ShiroAuthToken) token).getScheme().equals( "basic" );
+                ShiroAuthToken shiroAuthToken = (ShiroAuthToken) token;
+                return shiroAuthToken.getScheme().equals( "basic" ) && (shiroAuthToken.supportsRealm( "neo4j" ));
             }
             return false;
         }

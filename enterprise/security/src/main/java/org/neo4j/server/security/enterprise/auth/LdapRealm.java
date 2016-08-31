@@ -60,6 +60,7 @@ import javax.naming.ldap.StartTlsRequest;
 import javax.naming.ldap.StartTlsResponse;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -268,6 +269,29 @@ public class LdapRealm extends JndiLdapRealm
         String username = (String) getAvailablePrincipal( principals );
 
         authorizationInfoCache.remove( username );
+    }
+
+    @Override
+    public boolean supports( AuthenticationToken token )
+    {
+        return super.supports( token ) && realmUnspecifiedOrMatched( token );
+    }
+
+    private boolean realmUnspecifiedOrMatched( AuthenticationToken token )
+    {
+        try
+        {
+            if ( token instanceof ShiroAuthToken )
+            {
+                ShiroAuthToken shiroAuthToken = (ShiroAuthToken) token;
+                return shiroAuthToken.getScheme().equals( "basic" ) && (shiroAuthToken.supportsRealm( "ldap" ));
+            }
+            return false;
+        }
+        catch ( InvalidAuthTokenException e )
+        {
+            return false;
+        }
     }
 
     @Override

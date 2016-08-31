@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
 public class ShiroAuthToken implements AuthenticationToken
 {
+    private static final String REALM_KEY = "realm";
     private final Map<String,Object> authToken;
 
     public ShiroAuthToken( Map<String,Object> authToken )
@@ -55,5 +56,11 @@ public class ShiroAuthToken implements AuthenticationToken
     Map<String,Object> getAuthTokenMap()
     {
         return authToken;
+    }
+
+    /** returns true if token map does not specify a realm, or if it specifies the requested realm */
+    public boolean supportsRealm( String realm )
+    {
+        return !authToken.containsKey( REALM_KEY ) || authToken.get( REALM_KEY ).equals( realm );
     }
 }
