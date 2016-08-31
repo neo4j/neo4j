@@ -49,7 +49,7 @@ public class CoreEdgeClusterSettings
         @Override
         public ListenSocketAddress apply( String value )
         {
-            String[] split = value.split( ":" );
+            String[] split = value.trim().split( ":" );
             return new ListenSocketAddress( new InetSocketAddress( split[0], Integer.valueOf( split[1] ) ) );
         }
 
