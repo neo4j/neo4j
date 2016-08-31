@@ -23,7 +23,7 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
@@ -52,7 +52,7 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
         // Given
         webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.empty() );
 
-        webServer.setAddress( new HostnamePort( "localhost", 0 ) );
+        webServer.setAddress( new ListenSocketAddress( "localhost", 0 ) );
 
         // When
         webServer.start();
@@ -65,7 +65,7 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
     {
         // given
         webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.empty() );
-        webServer.setAddress( new HostnamePort( "127.0.0.1", 7878 ) );
+        webServer.setAddress( new ListenSocketAddress( "127.0.0.1", 7878 ) );
 
         // when
         webServer.start();

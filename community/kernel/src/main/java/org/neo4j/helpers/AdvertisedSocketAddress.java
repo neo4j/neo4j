@@ -17,25 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.messaging.address;
+package org.neo4j.helpers;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.regex.Pattern;
-
-import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
-import org.neo4j.coreedge.messaging.EndOfStreamException;
-import org.neo4j.coreedge.messaging.marshalling.StringMarshal;
-import org.neo4j.storageengine.api.ReadableChannel;
-import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
 
 public class AdvertisedSocketAddress
 {
-    private final String address;
     private static final Pattern pattern = Pattern.compile( "(.+):(\\d+)" );
+    private final String address;
 
     public AdvertisedSocketAddress( String address )
     {
@@ -98,19 +91,13 @@ public class AdvertisedSocketAddress
         return new InetSocketAddress( split[0], Integer.valueOf( split[1] ) );
     }
 
-    public static class AdvertisedSocketAddressChannelMarshal extends SafeChannelMarshal<AdvertisedSocketAddress>
+    public String getHost()
     {
-        @Override
-        public void marshal( AdvertisedSocketAddress address, WritableChannel channel ) throws IOException
-        {
-            StringMarshal.marshal( channel, address.address );
-        }
+        return address.split( ":" )[0];
+    }
 
-        @Override
-        public AdvertisedSocketAddress unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
-        {
-            String host = StringMarshal.unmarshal( channel );
-            return new AdvertisedSocketAddress( host );
-        }
+    public int getPort()
+    {
+        return Integer.valueOf( address.split( ":" )[1] );
     }
 }

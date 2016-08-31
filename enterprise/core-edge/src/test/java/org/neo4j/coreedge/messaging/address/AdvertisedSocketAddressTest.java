@@ -21,6 +21,8 @@ package org.neo4j.coreedge.messaging.address;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.AdvertisedSocketAddress;
+
 import static java.lang.String.format;
 
 import static junit.framework.TestCase.fail;

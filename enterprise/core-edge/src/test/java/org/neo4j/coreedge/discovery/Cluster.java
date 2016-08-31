@@ -46,7 +46,7 @@ import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.state.machines.id.IdGenerationException;
 import org.neo4j.coreedge.core.state.machines.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.edge.EdgeGraphDatabase;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;

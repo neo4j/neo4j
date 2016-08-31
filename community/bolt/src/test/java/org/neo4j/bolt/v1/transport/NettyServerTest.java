@@ -29,7 +29,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 
 import org.neo4j.bolt.transport.NettyServer;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.PortBindException;
 
@@ -47,7 +47,7 @@ public class NettyServerTest
         int port = 16000;
         try(ServerSocketChannel ignore = ServerSocketChannel.open().bind( new InetSocketAddress( "localhost", port ) ))
         {
-            final HostnamePort address = new HostnamePort( "localhost:" + port );
+            final ListenSocketAddress address = new ListenSocketAddress( "localhost", port );
 
             // Expect
             exception.expect( PortBindException.class );
@@ -58,7 +58,7 @@ public class NettyServerTest
         }
     }
 
-    private NettyServer.ProtocolInitializer protocolOnAddress( final HostnamePort address )
+    private NettyServer.ProtocolInitializer protocolOnAddress( final ListenSocketAddress address )
     {
         return new NettyServer.ProtocolInitializer()
         {
@@ -75,7 +75,7 @@ public class NettyServerTest
             }
 
             @Override
-            public HostnamePort address()
+            public ListenSocketAddress address()
             {
                 return address;
             }

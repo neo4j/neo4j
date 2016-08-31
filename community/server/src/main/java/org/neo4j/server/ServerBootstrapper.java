@@ -37,7 +37,6 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 
@@ -80,7 +79,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
             log = userLogProvider.getLog( getClass() );
             config.setLogger( log );
 
-            serverAddress = ServerSettings.httpConnector( config, ServerSettings.HttpConnector.Encryption.NONE )
+            serverAddress = GraphDatabaseSettings.httpConnector( config, GraphDatabaseSettings.HttpConnector.Encryption.NONE )
                     .map( ( connector ) -> connector.address.toString() )
                     .orElse( serverAddress );
 

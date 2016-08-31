@@ -38,11 +38,15 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.Character.isDigit;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.advertised_hostname;
 import static org.neo4j.io.fs.FileUtils.fixSeparatorsInPath;
 
 /**
@@ -534,6 +538,85 @@ public class Settings
         }
     };
 
+    public static final Function<String, ListenSocketAddress> LISTEN_SOCKET_ADDRESS = new Function<String,
+            ListenSocketAddress>()
+    {
+        @Override
+        public ListenSocketAddress apply( String value )
+        {
+            return new ListenSocketAddress( value );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "a socket address";
+        }
+    };
+
+    public static final Function<String, AdvertisedSocketAddress> ADVERTISED_SOCKET_ADDRESS = new Function<String,
+            AdvertisedSocketAddress>()
+    {
+        @Override
+        public AdvertisedSocketAddress apply( String value )
+        {
+            return new AdvertisedSocketAddress( value );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "a socket address";
+        }
+    };
+
+    public static Setting<AdvertisedSocketAddress> advertisedAddress( String name, Setting<ListenSocketAddress> listenSocketAddressSetting )
+    {
+        return new Setting<AdvertisedSocketAddress>()
+        {
+            @Override
+            public String name()
+            {
+                return name;
+            }
+
+            @Override
+            public String getDefaultValue()
+            {
+                return "localhost" + LISTEN_SOCKET_ADDRESS.apply( listenSocketAddressSetting.getDefaultValue() )
+                        .socketAddress().getPort();
+            }
+
+            @Override
+            public AdvertisedSocketAddress from( Configuration config )
+            {
+                return config.get( this );
+            }
+
+            @Override
+            public AdvertisedSocketAddress apply( Function<String, String> config )
+            {
+                String value = config.apply( name );
+                if ( value != null )
+                {
+                    return new AdvertisedSocketAddress( value );
+                }
+
+                String hostname = advertised_hostname.apply( config );
+                ListenSocketAddress listenSocketAddress = listenSocketAddressSetting.apply( config );
+
+                return new AdvertisedSocketAddress( hostname + ":" + listenSocketAddress.socketAddress().getPort() );
+            }
+
+            @Override
+            public String toString()
+            {
+                return "a socket address advertised for connecting to this server";
+            }
+        };
+    }
+
+
     public static final Function<String, Long> BYTES = new Function<String, Long>()
     {
         @Override
@@ -994,6 +1077,33 @@ public class Settings
             else
             {
                 return value;
+            }
+        };
+    }
+
+    public static <T> Setting<T> legacyFallback( Setting<T> fallbackSetting, Setting<T> newSetting )
+    {
+        return new Setting<T>()
+        {
+            public String name()
+            {
+                return newSetting.name();
+            }
+
+            public String getDefaultValue()
+            {
+                return newSetting.getDefaultValue();
+            }
+
+            public T from( Configuration config )
+            {
+                return newSetting.from( config );
+            }
+
+            public T apply( Function<String, String> config )
+            {
+                T newValue = newSetting.apply( config );
+                return newValue == null ? fallbackSetting.apply( config ) : newValue;
             }
         };
     }

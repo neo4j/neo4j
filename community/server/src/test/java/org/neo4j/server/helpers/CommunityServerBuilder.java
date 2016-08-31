@@ -55,7 +55,7 @@ import org.neo4j.time.Clocks;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
-import static org.neo4j.server.configuration.ServerSettings.httpConnector;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.httpConnector;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class CommunityServerBuilder
@@ -174,16 +174,16 @@ public class CommunityServerBuilder
             properties.put( ServerSettings.security_rules.name(), propertyKeys );
         }
 
-        properties.put( httpConnector("http").type.name(), "HTTP" );
-        properties.put( httpConnector("http").enabled.name(), "true" );
-        properties.put( httpConnector("http").address.name(), address.toString() );
+        properties.put( GraphDatabaseSettings.httpConnector("http").type.name(), "HTTP" );
+        properties.put( GraphDatabaseSettings.httpConnector("http").enabled.name(), "true" );
+        properties.put( GraphDatabaseSettings.httpConnector("http").address.name(), address.toString() );
 
         if ( httpsEnabled )
         {
-            properties.put( httpConnector("https").type.name(), "HTTP" );
-            properties.put( httpConnector("https").enabled.name(), "true" );
-            properties.put( httpConnector("https").address.name(), "localhost:7473" );
-            properties.put( httpConnector("https").encryption.name(), "TLS" );
+            properties.put( GraphDatabaseSettings.httpConnector("https").type.name(), "HTTP" );
+            properties.put( GraphDatabaseSettings.httpConnector("https").enabled.name(), "true" );
+            properties.put( GraphDatabaseSettings.httpConnector("https").address.name(), "localhost:7473" );
+            properties.put( GraphDatabaseSettings.httpConnector("https").encryption.name(), "TLS" );
         }
 
         properties.put( GraphDatabaseSettings.auth_enabled.name(), "false" );

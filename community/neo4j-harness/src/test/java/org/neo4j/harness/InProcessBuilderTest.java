@@ -68,7 +68,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.configuration.ServerSettings.httpConnector;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.httpConnector;
 
 public class InProcessBuilderTest
 {
@@ -110,12 +110,12 @@ public class InProcessBuilderTest
 
         // When
         try ( ServerControls server = getTestServerBuilder( testDir.directory() )
-                .withConfig( httpConnector( "0" ).type, "HTTP" )
-                .withConfig( httpConnector( "0" ).enabled, "true" )
-                .withConfig( httpConnector( "1" ).type, "HTTP" )
-                .withConfig( httpConnector( "1" ).enabled, "true" )
-                .withConfig( httpConnector( "1" ).encryption, "TLS" )
-                .withConfig( httpConnector( "1" ).address, "localhost:7473" )
+                .withConfig( GraphDatabaseSettings.httpConnector( "0" ).type, "HTTP" )
+                .withConfig( GraphDatabaseSettings.httpConnector( "0" ).enabled, "true" )
+                .withConfig( GraphDatabaseSettings.httpConnector( "1" ).type, "HTTP" )
+                .withConfig( GraphDatabaseSettings.httpConnector( "1" ).enabled, "true" )
+                .withConfig( GraphDatabaseSettings.httpConnector( "1" ).encryption, "TLS" )
+                .withConfig( GraphDatabaseSettings.httpConnector( "1" ).address, "localhost:7473" )
                 .withConfig( ServerSettings.certificates_directory.name(), testDir.directory( "certificates" ).getAbsolutePath() )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
                 .newServer() )

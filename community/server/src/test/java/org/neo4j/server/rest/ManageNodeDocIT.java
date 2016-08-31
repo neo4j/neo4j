@@ -42,6 +42,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -93,7 +94,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.configuration.ServerSettings.httpConnector;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.httpConnector;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
@@ -636,8 +637,8 @@ public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
             when( uriInfo.getBaseUri() ).thenReturn( uri );
 
             RootService svc = new RootService( new CommunityNeoServer( new Config( stringMap(
-                    httpConnector( "1" ).type.name(), "HTTP",
-                    httpConnector( "1" ).enabled.name(), "true"
+                    GraphDatabaseSettings.httpConnector( "1" ).type.name(), "HTTP",
+                    GraphDatabaseSettings.httpConnector( "1" ).enabled.name(), "true"
             ) ),
                     GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() )
                             .monitors( new Monitors() ),

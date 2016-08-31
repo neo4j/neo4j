@@ -17,18 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.messaging.address;
+package org.neo4j.helpers;
 
 import java.net.InetSocketAddress;
 import java.util.Objects;
 
 public class ListenSocketAddress
 {
-    private final InetSocketAddress address;
+    private final String hostname;
+    private final int port;
 
-    public ListenSocketAddress( InetSocketAddress address )
+    public ListenSocketAddress( String addressString )
     {
-        this.address = address;
+        String[] split = addressString.split( ":" );
+        this.hostname = split[0];
+        this.port = Integer.parseInt( split[1] );
+    }
+
+    public ListenSocketAddress( String hostname, int port )
+    {
+        this.hostname = hostname;
+        this.port = port;
     }
 
     @Override
@@ -43,23 +52,34 @@ public class ListenSocketAddress
             return false;
         }
         ListenSocketAddress that = (ListenSocketAddress) o;
-        return Objects.equals( address, that.address );
+        return port == that.port &&
+                Objects.equals( hostname, that.hostname );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( address );
+        return Objects.hash( hostname, port );
     }
 
     public InetSocketAddress socketAddress()
     {
-        return address;
+        return new InetSocketAddress( hostname, port );
     }
 
     @Override
     public String toString()
     {
-        return address.getHostName() + ":" + address.getPort();
+        return hostname + ":" + port;
+    }
+
+    public String getHostname()
+    {
+        return hostname;
+    }
+
+    public int getPort()
+    {
+        return port;
     }
 }

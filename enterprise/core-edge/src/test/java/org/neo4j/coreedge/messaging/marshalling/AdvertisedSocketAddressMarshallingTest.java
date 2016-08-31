@@ -23,10 +23,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
+import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddressChannelMarshal;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
@@ -40,8 +41,8 @@ public class AdvertisedSocketAddressMarshallingTest
         // given
         ByteBuf buffer = Unpooled.buffer( 2_000 );
         AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal marshal =
-                new AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal();
+        AdvertisedSocketAddressChannelMarshal marshal =
+                new AdvertisedSocketAddressChannelMarshal();
 
         // when
         marshal.marshal( sent, new NetworkFlushableChannelNetty4( buffer ) );
@@ -58,8 +59,8 @@ public class AdvertisedSocketAddressMarshallingTest
         // given
         ByteBuf buffer = Unpooled.buffer( 2_000 );
         AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal marshal =
-                new AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal();
+        AdvertisedSocketAddressChannelMarshal marshal =
+                new AdvertisedSocketAddressChannelMarshal();
 
         // when
         marshal.marshal( sent, new NetworkFlushableChannelNetty4( buffer ) );

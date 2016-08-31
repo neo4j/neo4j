@@ -70,7 +70,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.coreedge.core.consensus.schedule.ControlledRenewableTimeoutService;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;

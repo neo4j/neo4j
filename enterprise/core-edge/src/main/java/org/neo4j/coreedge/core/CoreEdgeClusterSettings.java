@@ -19,13 +19,11 @@
  */
 package org.neo4j.coreedge.core;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.function.Function;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
-import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
-import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -38,6 +36,7 @@ import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.MANDATORY;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -51,8 +50,7 @@ public class CoreEdgeClusterSettings
         @Override
         public ListenSocketAddress apply( String value )
         {
-            String[] split = value.split( ":" );
-            return new ListenSocketAddress( new InetSocketAddress( split[0], Integer.valueOf( split[1] ) ) );
+            return new ListenSocketAddress( value );
         }
 
         @Override
@@ -77,52 +75,6 @@ public class CoreEdgeClusterSettings
             return "a socket address";
         }
     };
-
-    private static Setting<AdvertisedSocketAddress> advertisedAddress( String name, Setting<ListenSocketAddress> listenSocketAddressSetting )
-    {
-        return new Setting<AdvertisedSocketAddress>()
-        {
-            @Override
-            public String name()
-            {
-                return name;
-            }
-
-            @Override
-            public String getDefaultValue()
-            {
-                return "localhost" + LISTEN_SOCKET_ADDRESS.apply( listenSocketAddressSetting.getDefaultValue() )
-                        .socketAddress().getPort();
-            }
-
-            @Override
-            public AdvertisedSocketAddress from( Configuration config )
-            {
-                return config.get( this );
-            }
-
-            @Override
-            public AdvertisedSocketAddress apply( Function<String, String> config )
-            {
-                String value = config.apply( name );
-                if ( value != null )
-                {
-                    return new AdvertisedSocketAddress( value );
-                }
-
-                String hostname = GraphDatabaseSettings.advertised_hostname.apply( config );
-                ListenSocketAddress listenSocketAddress = listenSocketAddressSetting.apply( config );
-
-                return new AdvertisedSocketAddress( hostname + ":" + listenSocketAddress.socketAddress().getPort() );
-            }
-
-            @Override
-            public String toString()
-            {
-                return "a socket address advertised for connecting to this server";
-            }
-        };
-    }
 
     @Description("Time out for a new member to catch up")
     public static final Setting<Long> join_catch_up_timeout =

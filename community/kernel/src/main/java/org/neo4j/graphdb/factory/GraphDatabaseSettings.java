@@ -21,10 +21,15 @@ package org.neo4j.graphdb.factory;
 
 import java.io.File;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Group;
@@ -38,6 +43,10 @@ import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.logging.Level;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.HTTP;
+import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
+import static org.neo4j.kernel.configuration.Settings.ADVERTISED_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -47,15 +56,18 @@ import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.Settings.LISTEN_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.LONG;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.hostnameSetting;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
+import static org.neo4j.kernel.configuration.Settings.legacyFallback;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.max;
@@ -504,7 +516,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<String> auth_manager = setting( "unsupported.dbms.security.auth_manager", STRING, "" );
 
     @Description("Default hostname for use when the server advertises its network addresses.")
-    public static final Setting<String> advertised_hostname = hostnameSetting( "dbms.network.advertised_hostname" );
+    public static final Setting<String> advertised_hostname = setting( "dbms.network.advertised_hostname", STRING, "localhost" );
 
     // Bolt Settings
 
@@ -550,8 +562,16 @@ public abstract class GraphDatabaseSettings
         @Description( "Encryption level to require this connector to use" )
         public final Setting<EncryptionLevel> encryption_level;
 
+        @Description( "Address the connector should bind to. " +
+                "This setting is deprecated and will be replaced by listen_address" )
+        @Deprecated
+        public final Setting<ListenSocketAddress> address;
+
         @Description( "Address the connector should bind to" )
-        public final Setting<HostnamePort> address;
+        public final Setting<ListenSocketAddress> listen_address;
+
+        @Description( "Advertised address for this connector" )
+        public final Setting<AdvertisedSocketAddress> advertised_address;
 
         // Used by config doc generator
         public BoltConnector()
@@ -564,7 +584,10 @@ public abstract class GraphDatabaseSettings
             super(key, ConnectorType.BOLT.name() );
             encryption_level = group.scope(
                     setting( "tls_level", options( EncryptionLevel.class ), OPTIONAL.name() ));
-            address = group.scope( setting( "address", HOSTNAME_PORT, "localhost:7687" ) );
+            Setting<ListenSocketAddress> legacyAddress = setting( "address", LISTEN_SOCKET_ADDRESS, "localhost:7687" );
+            this.address = group.scope( legacyAddress );
+            listen_address = group.scope( legacyFallback( legacyAddress, setting( "listen_address", LISTEN_SOCKET_ADDRESS, NO_DEFAULT ) ) );
+            advertised_address = group.scope( advertisedAddress( "advertised_address", listen_address ) );
         }
 
         public enum EncryptionLevel
@@ -590,4 +613,72 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<Boolean> archive_failed_index = setting(
             "unsupported.dbms.index.archive_failed", BOOLEAN, "false" );
+
+    @Description("Configuration options for HTTP connectors. " +
+                 "\"(http-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
+                 "\"http-public\" or some other name that describes what the connector is for.")
+    public static class HttpConnector extends Connector
+    {
+        @Description("Enable TLS for this connector")
+        public final Setting<Encryption> encryption;
+
+        @Description( "Address the connector should bind to. " +
+                "This setting is deprecated and will be replaced by listen_address" )
+        @Deprecated
+        public final Setting<ListenSocketAddress> address;
+
+        @Description( "Address the connector should bind to" )
+        public final Setting<ListenSocketAddress> listen_address;
+
+        @Description( "Advertised address for this connector" )
+        public final Setting<AdvertisedSocketAddress> advertised_address;
+
+        public HttpConnector()
+        {
+            this( "(http-connector-key)" );
+        }
+
+        public HttpConnector( String key )
+        {
+            super( key, ConnectorType.HTTP.name() );
+            encryption = group.scope( setting( "encryption", options( Encryption.class ), Encryption.NONE.name() ) );
+            Setting<ListenSocketAddress> legacyAddress = setting( "address", LISTEN_SOCKET_ADDRESS, NO_DEFAULT );
+            this.address = group.scope( legacyAddress );
+            listen_address = group.scope( legacyFallback( legacyAddress, setting( "listen_address", LISTEN_SOCKET_ADDRESS, "localhost:7474" ) ) );
+            advertised_address = group.scope( advertisedAddress( "advertised_address", listen_address ) );
+        }
+
+        public enum Encryption
+        {
+            NONE, TLS
+        }
+    }
+
+    public static HttpConnector httpConnector( String key )
+    {
+        return new HttpConnector( key );
+    }
+
+    public static Optional<HttpConnector> httpConnector( Config config, HttpConnector.Encryption encryption )
+    {
+        return config
+                .view( enumerate( Connector.class ) )
+                .map( HttpConnector::new )
+                .filter( ( connConfig ) ->
+                        config.get( connConfig.type ) == HTTP &&
+                                config.get( connConfig.enabled ) &&
+                                config.get( connConfig.encryption ) == encryption )
+                .findFirst();
+    }
+
+    public static List<BoltConnector> boltConnectors( Config config )
+    {
+        return config
+                .view( enumerate( Connector.class ) )
+                .map( BoltConnector::new )
+                .filter( ( connConfig ) ->
+                        config.get( connConfig.type ) == BOLT &&
+                                config.get( connConfig.enabled ) )
+                .collect( Collectors.toList() );
+    }
 }

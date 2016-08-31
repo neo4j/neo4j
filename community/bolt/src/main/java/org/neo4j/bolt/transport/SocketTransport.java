@@ -24,7 +24,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslContext;
-import org.neo4j.helpers.HostnamePort;
+
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.LogProvider;
 
 import java.util.Map;
@@ -35,13 +36,13 @@ import java.util.function.BiFunction;
  */
 public class SocketTransport implements NettyServer.ProtocolInitializer
 {
-    private final HostnamePort address;
+    private final ListenSocketAddress address;
     private final SslContext sslCtx;
     private final boolean encryptionRequired;
     private LogProvider logging;
     private final Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> protocolVersions;
 
-    public SocketTransport( HostnamePort address, SslContext sslCtx, boolean encryptionRequired, LogProvider logging,
+    public SocketTransport( ListenSocketAddress address, SslContext sslCtx, boolean encryptionRequired, LogProvider logging,
                             Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> protocolVersions )
     {
         this.address = address;
@@ -67,7 +68,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     }
 
     @Override
-    public HostnamePort address()
+    public ListenSocketAddress address()
     {
         return address;
     }

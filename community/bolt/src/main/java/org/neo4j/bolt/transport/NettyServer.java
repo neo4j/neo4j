@@ -31,7 +31,7 @@ import java.net.BindException;
 import java.util.Collection;
 import java.util.concurrent.ThreadFactory;
 
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.PortBindException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -57,7 +57,7 @@ public class NettyServer extends LifecycleAdapter
     public interface ProtocolInitializer
     {
         ChannelInitializer<io.netty.channel.socket.SocketChannel> channelInitializer();
-        HostnamePort address();
+        ListenSocketAddress address();
     }
 
     /**
@@ -96,7 +96,7 @@ public class NettyServer extends LifecycleAdapter
                         .group( bossGroup, selectorGroup )
                         .channel( NioServerSocketChannel.class )
                         .childHandler( initializer.channelInitializer() )
-                        .bind( initializer.address().getHost(), initializer.address().getPort() )
+                        .bind( initializer.address().socketAddress() )
                         .sync();
             }
             catch ( Throwable e )

@@ -55,7 +55,8 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
@@ -77,8 +78,8 @@ import org.neo4j.udc.UsageData;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
-import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
@@ -161,13 +162,10 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         WorkerFactory workerFactory = new MonitoredWorkerFactory( dependencies.monitors(), threadedSessions,
                 Clocks.systemClock() );
 
-        List<ProtocolInitializer> connectors = config
-                .view( enumerate( GraphDatabaseSettings.Connector.class ) )
-                .map( BoltConnector::new )
-                .filter( ( connConfig ) -> BOLT.equals( config.get( connConfig.type ) )
-                        && config.get( connConfig.enabled ) )
+        List<ProtocolInitializer> connectors = boltConnectors( config ).stream()
                 .map( ( connConfig ) -> {
-                    HostnamePort address = config.get( connConfig.address );
+                    ListenSocketAddress listenAddress = config.get( connConfig.listen_address );
+                    AdvertisedSocketAddress advertisedAddress = config.get( connConfig.advertised_address );
                     SslContext sslCtx;
                     boolean requireEncryption;
                     final BoltConnector.EncryptionLevel encryptionLevel = config.get( connConfig.encryption_level );
@@ -176,12 +174,12 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                     case REQUIRED:
                         // Encrypted connections are mandatory, a self-signed certificate may be generated.
                         requireEncryption = true;
-                        sslCtx = createSslContext( config, log, address );
+                        sslCtx = createSslContext( config, log, advertisedAddress );
                         break;
                     case OPTIONAL:
                         // Encrypted connections are optional, a self-signed certificate may be generated.
                         requireEncryption = false;
-                        sslCtx = createSslContext( config, log, address );
+                        sslCtx = createSslContext( config, log, advertisedAddress );
                         break;
                     case DISABLED:
                         // Encryption is turned off, no self-signed certificate will be generated.
@@ -201,7 +199,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
                     final Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> versions =
                             newVersions( logService, workerFactory );
-                    return new SocketTransport( address, sslCtx, requireEncryption, logService.getInternalLogProvider(), versions );
+                    return new SocketTransport( listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(), versions );
                 } )
                 .collect( toList() );
 
@@ -218,7 +216,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         return life;
     }
 
-    private SslContext createSslContext( Config config, Log log, HostnamePort address )
+    private SslContext createSslContext( Config config, Log log, AdvertisedSocketAddress address )
     {
         try
         {
@@ -247,7 +245,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         return availableVersions;
     }
 
-    private KeyStoreInformation createKeyStore( Configuration config, Log log, HostnamePort address )
+    private KeyStoreInformation createKeyStore( Configuration config, Log log, AdvertisedSocketAddress address )
             throws GeneralSecurityException, IOException, OperatorCreationException
     {
         File privateKeyPath = config.get( Settings.tls_key_file ).getAbsoluteFile();

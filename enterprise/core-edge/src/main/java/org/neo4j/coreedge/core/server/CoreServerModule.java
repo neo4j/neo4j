@@ -54,7 +54,7 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.messaging.LoggingInbound;
-import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.coreedge.messaging.routing.NotMyselfSelectionStrategy;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
