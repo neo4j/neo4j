@@ -120,7 +120,7 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "c", "end", "length", 4L );
         graph.makeEdge( "start", "d", "length", (short)2 );
         graph.makeEdge( "d", "e", "length", (byte)3 );
-        graph.makeEdge( "e", "end", "length", (int)2 );
+        graph.makeEdge( "e", "end", "length", 2 );
 
         // WHEN
         WeightedPath path = finder.findSinglePath( start, end );
@@ -222,7 +222,7 @@ public class TestAStar extends Neo4jAlgoTestCase
         WeightedPath path = traversalFinder.findSinglePath( nodeA, nodeC );
         assertEquals( (Double) 5.0D, (Double) path.weight() );
         assertPathDef( path, "A", "B", "C" );
-        assertEquals( MapUtil.<Node,Double>genericMap( nodeA, 0D, nodeB, 2D, nodeC, 5D ), seenBranchStates );
+        assertEquals( MapUtil.<Node,Double>genericMap( nodeA, 0D, nodeB, 2D ), seenBranchStates );
     }
 
     @Test
