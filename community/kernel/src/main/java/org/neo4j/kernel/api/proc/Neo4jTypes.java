@@ -38,6 +38,8 @@ public class Neo4jTypes
     public static final NodeType NTNode = new NodeType();
     public static final RelationshipType NTRelationship = new RelationshipType();
     public static final PathType NTPath = new PathType();
+    public static final GeometryType NTGeometry = new GeometryType();
+    public static final PointType NTPoint = new PointType();
     public static ListType NTList( AnyType innerType ) { return new ListType( innerType ); }
 
     public static class AnyType
@@ -172,6 +174,22 @@ public class Neo4jTypes
         public PathType()
         {
             super( "PATH?" );
+        }
+    }
+
+    public static class GeometryType extends AnyType
+    {
+        public GeometryType()
+        {
+            super( "GEOMETRY?" );
+        }
+    }
+
+    public static class PointType extends AnyType
+    {
+        public PointType()
+        {
+            super( "POINT?" );
         }
     }
 }

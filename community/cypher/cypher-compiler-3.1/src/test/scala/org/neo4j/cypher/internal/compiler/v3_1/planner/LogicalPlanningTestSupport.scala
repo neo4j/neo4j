@@ -26,10 +26,11 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.{namePatternPredicatePatternElements, normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_1.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp._
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.{DefaultIDPSolverConfig, IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
@@ -167,7 +168,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       queryPlanner = queryPlanner,
       rewriterSequencer = rewriterSequencer,
       plannerName = None,
-      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors, identity)),
+      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors, IdentityTypeConverter)),
       semanticChecker = semanticChecker,
       updateStrategy = None,
       config = config,

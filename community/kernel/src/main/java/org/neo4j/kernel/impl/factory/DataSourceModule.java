@@ -32,6 +32,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
+import org.neo4j.graphdb.spatial.Geometry;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -83,6 +85,8 @@ import static org.neo4j.kernel.api.proc.CallableProcedure.Context.KERNEL_TRANSAC
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTGeometry;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPoint;
 
 /**
  * Datasource module for {@link GraphDatabaseFacadeFactory}. This implements all the
@@ -356,6 +360,8 @@ public class DataSourceModule
         procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class ) );
         procedures.registerType( Relationship.class, new SimpleConverter( NTRelationship, Relationship.class ) );
         procedures.registerType( Path.class, new SimpleConverter( NTPath, Path.class ) );
+        procedures.registerType( Geometry.class, new SimpleConverter( NTGeometry, Geometry.class ) );
+        procedures.registerType( Point.class, new SimpleConverter( NTPoint, Point.class ) );
 
         // Register injected public API components
         Log proceduresLog = platform.logging.getUserLog( Procedures.class );

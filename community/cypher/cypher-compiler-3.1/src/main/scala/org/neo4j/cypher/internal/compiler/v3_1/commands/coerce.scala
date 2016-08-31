@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.commands
 
-import org.neo4j.cypher.internal.compiler.v3_1.Point
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.{IsCollection, IsMap}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_1.{Geometry, Point}
 import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.graphdb.{Node, Path, Relationship}
@@ -52,6 +52,7 @@ object coerce {
         case CTBoolean => value.asInstanceOf[Boolean]
         case CTNumber => value.asInstanceOf[Number]
         case CTPoint => value.asInstanceOf[Point]
+        case CTGeometry => value.asInstanceOf[Geometry]
         case _ => throw cantCoerce(value, typ)
       }
     }

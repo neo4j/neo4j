@@ -43,7 +43,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   import scala.collection.JavaConverters._
 
   protected val isGraphKernelResultValue = context.isGraphKernelResultValue _
-  private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
+  private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, identity)
 
   private var successful = false
 

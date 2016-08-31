@@ -26,6 +26,9 @@ case object Distance extends Function with SimpleTypedFunction {
   def name = "distance"
 
   val signatures = Vector(
+    Signature(argumentTypes = Vector(CTGeometry, CTGeometry), outputType = CTFloat),
+    Signature(argumentTypes = Vector(CTPoint, CTGeometry), outputType = CTFloat),
+    Signature(argumentTypes = Vector(CTGeometry, CTPoint), outputType = CTFloat),
     Signature(argumentTypes = Vector(CTPoint, CTPoint), outputType = CTFloat)
   )
 }

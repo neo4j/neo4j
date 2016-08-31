@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.TokenType.{Label, PropertyKey}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.{ReturnItem, _}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlanInProgress, _}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_1.mutation.{CreateNode, DeletePropertyAction}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
@@ -71,7 +72,7 @@ class RuleExecutablePlanBuilderTest
     queryPlanner = queryPlanner,
     rewriterSequencer = rewriterSequencer,
     plannerName = None,
-    runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), mock[Monitors], identity), CompiledPlanBuilder(Clock.systemUTC(),GeneratedQueryStructure)),
+    runtimeBuilder =  SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), mock[Monitors], IdentityTypeConverter), CompiledPlanBuilder(Clock.systemUTC(),GeneratedQueryStructure)),
     semanticChecker = mock[SemanticChecker],
     updateStrategy = None,
     config = config,
@@ -115,8 +116,8 @@ class RuleExecutablePlanBuilderTest
         .updates(DeletePropertyAction(variable, PropertyKey("foo")))
         .returns(ReturnItem(Variable("x"), "x"))
 
-      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config, RewriterStepSequencer.newValidating,
-                                                        publicTypeConverter = identity)
+      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
+        RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
 
       val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, statement, locker))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
@@ -145,7 +146,7 @@ class RuleExecutablePlanBuilderTest
         .returns(ReturnItem(Variable("x"), "x"))
 
       val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
-                                                            RewriterStepSequencer.newValidating, publicTypeConverter = identity)
+        RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
       val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, statement, locker))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val labelId = queryContext.getLabelId("Person")
@@ -176,8 +177,9 @@ class RuleExecutablePlanBuilderTest
         .returns(AllVariables())
       val parsedQ = new FakePreparedSemanticQuery(q)
 
-      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config, RewriterStepSequencer.newValidating,
-                                                        publicTypeConverter = identity)
+
+      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
+        RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
       val pipe = pipeBuilder.producePipe(parsedQ, planContext, CompilationPhaseTracer.NO_TRACING).pipe
 
       toSeq(pipe) should equal (Seq(
@@ -205,8 +207,9 @@ class RuleExecutablePlanBuilderTest
         .returns(AllVariables())
       val parsedQ = new FakePreparedSemanticQuery(q)
 
-      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config, RewriterStepSequencer.newValidating,
-                                                        publicTypeConverter = identity)
+
+      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
+        RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
       val pipe = pipeBuilder.producePipe(parsedQ, planContext, CompilationPhaseTracer.NO_TRACING).pipe
 
       toSeq(pipe) should equal (Seq(
@@ -233,8 +236,9 @@ class RuleExecutablePlanBuilderTest
       val parsedQ = new FakePreparedSemanticQuery(q)
 
 
-      val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config, RewriterStepSequencer.newValidating,
-                                                            publicTypeConverter = identity)
+
+      val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
+        RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
       val pipe = execPlanBuilder.producePipe(parsedQ, planContext, CompilationPhaseTracer.NO_TRACING).pipe
 
       toSeq(pipe) should equal (Seq(
@@ -258,8 +262,9 @@ class RuleExecutablePlanBuilderTest
       )
       val parsedQ = new FakePreparedSemanticQuery(q)
 
-      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config, RewriterStepSequencer.newValidating,
-                                                        publicTypeConverter = identity)
+
+      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
+        RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
 
       // when
       val periodicCommit = pipeBuilder.producePipe(parsedQ, planContext, CompilationPhaseTracer.NO_TRACING).periodicCommit
@@ -271,8 +276,8 @@ class RuleExecutablePlanBuilderTest
   }
 }
 
-class LegacyExecutablePlanBuilderWithCustomPlanBuilders(innerBuilders: Seq[PlanBuilder], monitors:Monitors, config: CypherCompilerConfiguration)
-  extends LegacyExecutablePlanBuilder(monitors, config, RewriterStepSequencer.newValidating, publicTypeConverter = identity) {
+class LegacyExecutablePlanBuilderWithCustomPlanBuilders(innerBuilders: Seq[PlanBuilder], monitors: Monitors, config: CypherCompilerConfiguration)
+  extends LegacyExecutablePlanBuilder(monitors, config, RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter) {
   override val phases = new Phase { def myBuilders: Seq[PlanBuilder] = innerBuilders }
 }
 

@@ -57,18 +57,19 @@ case class ProcedureCallPipe(source: Pipe,
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
-    val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue, state.publicTypeConverter)
+    val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue, state.typeConverter.asPublicType)
 
     rowProcessor(input, state, converter)
   }
 
-  private def internalCreateResultsByAppending(input: Iterator[ExecutionContext], state: QueryState, converter: RuntimeJavaValueConverter): Iterator[ExecutionContext] = {
+  private def internalCreateResultsByAppending(input: Iterator[ExecutionContext], state: QueryState,
+                                               converter: RuntimeJavaValueConverter): Iterator[ExecutionContext] = {
     val qtx = state.query
     val builder = Seq.newBuilder[(String, Any)]
     builder.sizeHint(resultIndices.length)
 
     val isGraphKernelResultValue = qtx.isGraphKernelResultValue _
-    val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
+    val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, state.typeConverter.asPrivateType)
 
     input flatMap { input =>
       val argValues = argExprs.map(arg => converter.asDeepJavaValue(arg(input)(state)))

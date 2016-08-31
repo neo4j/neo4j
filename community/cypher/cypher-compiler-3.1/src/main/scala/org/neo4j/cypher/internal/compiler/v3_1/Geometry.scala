@@ -19,17 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1
 
-import org.neo4j.cypher.internal.frontend.v3_1.InvalidArgumentException
+import org.neo4j.cypher.internal.frontend.v3_1.{CypherTypeException, InvalidArgumentException}
 
 trait Geometry {
-  def coordinates: Seq[Double]
+  def geometryType: String
+  def coordinates: Array[Coordinate]
   def crs: CRS
 }
 
+case class Coordinate(values:Double*)
+
 trait Point extends Geometry {
+  def geometryType = "Point"
   def x: Double
   def y: Double
-  def coordinates = Vector(x, y)
+  def coordinate = Coordinate(x, y)
+  def coordinates = Array(coordinate)
 }
 
 case class CartesianPoint(x: Double, y: Double, crs: CRS) extends Point
@@ -61,5 +66,32 @@ object CRS {
     case Cartesian.url => Cartesian
     case WGS84.url => WGS84
     case _ => throw new InvalidArgumentException(s"HREF '$url' does not match any supported coordinate reference system for points, supported CRS are: '${WGS84.url}', '${Cartesian.url}'")
+  }
+}
+
+object Points {
+  def fromMap(map: collection.Map[String, Any]): Point = {
+    if (map.contains("x") && map.contains("y")) {
+      val x = safeToDouble(map("x"))
+      val y = safeToDouble(map("y"))
+      val crsName = map.getOrElse("crs", CRS.Cartesian.name).asInstanceOf[String]
+      val crs = CRS.fromName(crsName)
+      crs match {
+        case CRS.WGS84 => GeographicPoint(x, y, crs)
+        case _ => CartesianPoint(x, y, crs)
+      }
+    } else if (map.contains("latitude") && map.contains("longitude")) {
+      val crsName = map.getOrElse("crs", CRS.WGS84.name).asInstanceOf[String]
+      if (crsName != CRS.WGS84.name) throw new InvalidArgumentException(s"'$crsName' is not a supported coordinate reference system for geographic points, supported CRS are: '${CRS.WGS84.name}'")
+      val latitude = safeToDouble(map("latitude"))
+      val longitude = safeToDouble(map("longitude"))
+      GeographicPoint(longitude, latitude, CRS.fromName(crsName))
+    } else {
+      throw new InvalidArgumentException("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'")
+    }
+  }
+  private def safeToDouble(value: Any) = value match {
+    case n: Number => n.doubleValue()
+    case other => throw new CypherTypeException(other.getClass.getSimpleName + " is not a valid coordinate type.")
   }
 }

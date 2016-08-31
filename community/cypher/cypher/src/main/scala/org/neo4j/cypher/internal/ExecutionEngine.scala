@@ -76,7 +76,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
   private val parsedQueries = new LRUCachev3_1[String, ParsedQuery](getPlanCacheSize)
 
   private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue, identity)
-  private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
+  private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, identity)
 
   @throws(classOf[SyntaxException])
   def profile(query: String, scalaParams: Map[String, Any], session: QuerySession): ExecutionResult = {

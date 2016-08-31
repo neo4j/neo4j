@@ -19,36 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 
+import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionContext, _}
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v3_1.{CRS, CartesianPoint, ExecutionContext, GeographicPoint}
+import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
-import org.neo4j.cypher.internal.frontend.v3_1.{CypherTypeException, InvalidArgumentException, SyntaxException}
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
 
   override def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = value match {
     case IsMap(mapCreator) =>
-      val map = mapCreator(state.query)
-      if (map.contains("x") && map.contains("y")) {
-        val x = safeToDouble(map("x"))
-        val y = safeToDouble(map("y"))
-        val crsName = map.getOrElse("crs", CRS.Cartesian.name).asInstanceOf[String]
-        val crs = CRS.fromName(crsName)
-        crs match {
-          case CRS.WGS84 => GeographicPoint(x, y, crs)
-          case _ => CartesianPoint(x, y, crs)
-        }
-      } else if (map.contains("latitude") && map.contains("longitude")) {
-        val crsName = map.getOrElse("crs", CRS.WGS84.name).asInstanceOf[String]
-        if (crsName != CRS.WGS84.name) throw new InvalidArgumentException(s"'$crsName' is not a supported coordinate reference system for geographic points, supported CRS are: '${CRS.WGS84.name}'")
-        val latitude = safeToDouble(map("latitude"))
-        val longitude = safeToDouble(map("longitude"))
-        GeographicPoint(longitude, latitude, CRS.fromName(crsName))
-      } else {
-        throw new InvalidArgumentException("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'")
-      }
+      Points.fromMap(mapCreator(state.query))
     case x => throw new CypherTypeException(s"Expected a map but got $x")
   }
 
@@ -61,9 +43,4 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
   override def symbolTableDependencies = data.symbolTableDependencies
 
   override def toString = "Point(" + data + ")"
-
-  private def safeToDouble(value: Any) = value match {
-    case n: Number => n.doubleValue()
-    case other => throw new CypherTypeException(other.getClass.getSimpleName + " is not a valid coordinate type.")
-  }
 }

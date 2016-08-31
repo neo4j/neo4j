@@ -109,7 +109,7 @@ case class ErrorReportingRuntimeBuilder(compiledProducer: CompiledPlanBuilder) e
       InvalidArgumentException("The given query is not currently supported in the selected runtime")
 }
 
-case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors, publicTypeConverter: Any => Any) {
+case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors,typeConverter: RuntimeTypeConverter) {
 
   def apply(periodicCommit: Option[PeriodicCommit], logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext,
             planContext: PlanContext, tracer: CompilationPhaseTracer, preparedQuery: PreparedQuerySemantics,
@@ -118,7 +118,7 @@ case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors, publicTypeCo
     closing(tracer.beginPhase(PIPE_BUILDING)) {
       interpretedToExecutionPlan(new PipeExecutionPlanBuilder(clock, monitors)
                                    .build(periodicCommit, logicalPlan)(pipeBuildContext, planContext),
-                                 planContext, preparedQuery, createFingerprintReference, config, publicTypeConverter)
+                                 planContext, preparedQuery, createFingerprintReference, config, typeConverter)
     }
 }
 

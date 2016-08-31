@@ -156,6 +156,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
     case Neo4jTypes.NTNode => symbols.CTNode
     case Neo4jTypes.NTRelationship => symbols.CTRelationship
     case Neo4jTypes.NTPath => symbols.CTPath
+    case Neo4jTypes.NTPoint => symbols.CTPoint
     case Neo4jTypes.NTAny => symbols.CTAny
   }
 }
