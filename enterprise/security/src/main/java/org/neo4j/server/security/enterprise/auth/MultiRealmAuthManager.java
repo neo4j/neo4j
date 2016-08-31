@@ -25,6 +25,9 @@ import org.apache.shiro.authc.pam.ModularRealmAuthenticator;
 import org.apache.shiro.authc.pam.UnsupportedTokenException;
 import org.apache.shiro.cache.CacheManager;
 import org.apache.shiro.mgt.DefaultSecurityManager;
+import org.apache.shiro.mgt.DefaultSessionStorageEvaluator;
+import org.apache.shiro.mgt.DefaultSubjectDAO;
+import org.apache.shiro.mgt.SubjectDAO;
 import org.apache.shiro.realm.CachingRealm;
 import org.apache.shiro.realm.Realm;
 import org.apache.shiro.util.Initializable;
@@ -54,6 +57,17 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
         securityManager.setSubjectFactory( new ShiroSubjectFactory() );
         ((ModularRealmAuthenticator) securityManager.getAuthenticator())
                 .setAuthenticationStrategy( new ShiroAuthenticationStrategy() );
+
+        securityManager.setSubjectDAO( createSubjectDAO() );
+    }
+
+    private SubjectDAO createSubjectDAO()
+    {
+        DefaultSubjectDAO subjectDAO = new DefaultSubjectDAO();
+        DefaultSessionStorageEvaluator sessionStorageEvaluator = new DefaultSessionStorageEvaluator();
+        sessionStorageEvaluator.setSessionStorageEnabled( false );
+        subjectDAO.setSessionStorageEvaluator( sessionStorageEvaluator );
+        return subjectDAO;
     }
 
     @Override
