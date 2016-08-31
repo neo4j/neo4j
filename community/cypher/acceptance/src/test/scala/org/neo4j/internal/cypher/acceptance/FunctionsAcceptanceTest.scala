@@ -594,7 +594,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
 
   test("distance function should fail on wrong type") {
     val error = intercept[SyntaxException](executeWithAllPlanners("RETURN distance(1, 2) as dist"))
-    assert(error.getMessage.contains("Type mismatch: expected Point but was Integer"))
+    assert(error.getMessage.contains("Type mismatch: expected Point or Geometry but was Integer"))
   }
 
   test("point function should work with node properties") {
@@ -641,6 +641,13 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
   test("point function should fail on wrong type") {
     val error = intercept[SyntaxException](executeWithAllPlanners("RETURN point(1) as dist"))
     assert(error.getMessage.contains("Type mismatch: expected Map, Node or Relationship but was Integer"))
+  }
+
+  test("point results should be usable as parameters to subsequent queries") {
+    val p = executeWithAllPlanners("RETURN point({latitude: 12.78, longitude: 56.7}) as point").columnAs("point").next().asInstanceOf[GeographicPoint]
+    List(p) should equal(List(GeographicPoint(56.7, 12.78, CRS.WGS84)))
+    val result = executeWithAllPlanners("RETURN distance(point({latitude: 12.18, longitude: 56.2}),{point}) as dist", "point" -> p)
+    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(86107)
   }
 
   ignore("point function should be assignable to node property") {

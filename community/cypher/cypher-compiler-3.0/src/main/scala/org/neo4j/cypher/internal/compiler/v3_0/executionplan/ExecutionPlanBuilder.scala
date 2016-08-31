@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders._
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantCompileQueryException, CantHandleQueryException}
@@ -88,10 +89,10 @@ object InterpretedExecutionPlanBuilder {
   def interpretedToExecutionPlan(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuerySemantics,
                                  createFingerprintReference:Option[PlanFingerprint]=>PlanFingerprintReference,
                                  config: CypherCompilerConfiguration,
-                                 publicTypeConverter: Any => Any) = {
+                                 typeConverter: RuntimeTypeConverter) = {
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = inputQuery.statement.returnColumns
-    val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, publicTypeConverter = publicTypeConverter)
+    val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, typeConverter)
     val func = getExecutionPlanFunction(periodicCommitInfo, inputQuery.queryText, updating, resultBuilderFactory, inputQuery
       .notificationLogger)
     new ExecutionPlan {

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0._
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
@@ -43,7 +44,8 @@ class RuleExecutablePlanBuilderTest extends CypherFunSuite {
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
     errorIfShortestPathFallbackUsedAtRuntime = false
   )
-  val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors], config, RewriterStepSequencer.newValidating, publicTypeConverter = identity)
+  val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors], config, RewriterStepSequencer.newValidating,
+    typeConverter = IdentityTypeConverter)
 
   test("should_use_distinct_pipe_for_distinct") {
     val pipe = buildExecutionPipe("MATCH n RETURN DISTINCT n")

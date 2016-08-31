@@ -24,7 +24,7 @@ import java.util.{ArrayList => JavaList, HashMap => JavaMap}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.Counter
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Point}
+import org.neo4j.cypher.internal.compiler.v3_0.{Geometry, ExecutionContext, Point}
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -58,6 +58,14 @@ class CoerceToTest extends CypherFunSuite {
       .coerce(mock[Point])
       .to(CTAny).unchanged
       .to(CTPoint).unchanged
+      .forRemainingTypes { typ => _.notTo(typ) }
+  }
+
+  test("GEOMETRY") {
+    testedTypes
+      .coerce(mock[Geometry])
+      .to(CTAny).unchanged
+      .to(CTGeometry).unchanged
       .forRemainingTypes { typ => _.notTo(typ) }
   }
 
@@ -168,6 +176,8 @@ class CoerceToTest extends CypherFunSuite {
         .to(CTList(CTNumber)).changedTo(List.empty)
         .to(CTList(CTList(CTPoint))).changedTo(List.empty)
         .to(CTList(CTPoint)).changedTo(List.empty)
+        .to(CTList(CTList(CTGeometry))).changedTo(List.empty)
+        .to(CTList(CTGeometry)).changedTo(List.empty)
         .to(CTList(CTList(CTNode))).changedTo(List.empty)
         .to(CTList(CTNode)).changedTo(List.empty)
         .to(CTList(CTList(CTRelationship))).changedTo(List.empty)
