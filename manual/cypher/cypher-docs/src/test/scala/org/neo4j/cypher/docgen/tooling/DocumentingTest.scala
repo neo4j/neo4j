@@ -28,12 +28,10 @@ import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, QuerySource}
 import org.scalatest.{Assertions, Matchers}
 
 /**
@@ -123,7 +121,7 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
 // formatting applied to them
 class ValueFormatter(db: GraphDatabaseQueryService, tx: InternalTransaction) extends (Any => String) with CypherSerializer with GraphIcing {
   def apply(x: Any): String = {
-    val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(db, tx, db.statement, "X", Collections.emptyMap(), new PropertyContainerLocker))
+    val transactionalContext = TransactionalContextWrapperv3_1(Neo4jTransactionalContext.create(db, QuerySource.UNKNOWN, tx, db.statement, "X", Collections.emptyMap(), new PropertyContainerLocker))
     val ctx = new TransactionBoundQueryContext(transactionalContext)(QuietMonitor)
     serialize(x, ctx)
   }

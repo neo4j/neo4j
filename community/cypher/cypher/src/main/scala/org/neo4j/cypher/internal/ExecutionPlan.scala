@@ -22,13 +22,12 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.impl.query.QuerySession
 
 final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
 
 trait ExecutionPlan {
 
-  def run(transactionalContext: TransactionalContextWrapperv3_1, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExecutionResult
+  def run(transactionalContext: TransactionalContextWrapperv3_1, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult
 
   def isPeriodicCommit: Boolean
 

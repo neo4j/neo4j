@@ -66,9 +66,21 @@ public class Neo4jTransactionalContextTest
     @Test
     public void checkKernelStatementOnCheck() throws Exception
     {
+        KernelTransaction.Type transactionType = null;
+        AccessMode transactionMode = null;
+        ExecutingQuery executingQuery = null;
+        PropertyContainerLocker locker = null;
+        DbmsOperations.Factory dbmsOperationsFactory = null;
+        ThreadToStatementContextBridge txBridge = null;
         Neo4jTransactionalContext transactionalContext =
-            new Neo4jTransactionalContext(
-                databaseQueryService, transaction, statement, "", Collections.emptyMap(), propertyContainerLocker );
+//<<<<<<< HEAD
+//            new Neo4jTransactionalContext(
+//                databaseQueryService, transaction, statement, "", Collections.emptyMap(), propertyContainerLocker );
+//=======
+                new Neo4jTransactionalContext(
+                        databaseQueryService, transaction, transactionType, transactionMode, statement, executingQuery,
+                        propertyContainerLocker, txBridge, dbmsOperationsFactory, guard );
+//>>>>>>> b556d13... Moved functionality from QuerySession to TransactionContext
 
         transactionalContext.check();
 

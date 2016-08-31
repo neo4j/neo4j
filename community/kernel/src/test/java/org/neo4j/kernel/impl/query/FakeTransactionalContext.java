@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.query;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -35,6 +36,12 @@ public class FakeTransactionalContext implements TransactionalContext
 
     public FakeTransactionalContext( AccessMode mode ) {
         this.mode = mode;
+    }
+
+    @Override
+    public ExecutingQuery executingQuery()
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override

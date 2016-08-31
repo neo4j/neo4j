@@ -32,7 +32,7 @@ import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
@@ -116,17 +116,17 @@ public class CypherService
                 handler.closeTransaction();
             }
 
-            QuerySession querySession = cypherExecutor.createSession( query, params, request );
+            TransactionalContext tc = cypherExecutor.createTransactionContext( query, params, request );
 
             Result result;
             if ( profile )
             {
-                result = executionEngine.profileQuery( query, params, querySession );
+                result = executionEngine.profileQuery( query, params, tc );
                 includePlan = true;
             }
             else
             {
-                result = executionEngine.executeQuery( query, params, querySession );
+                result = executionEngine.executeQuery( query, params, tc );
                 includePlan = result.getQueryExecutionType().requestedExecutionPlanDescription();
             }
 

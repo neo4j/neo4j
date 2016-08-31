@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import java.util.function.Supplier;
 import java.time.Clock;
 
 import org.neo4j.bolt.security.auth.Authentication;
@@ -93,8 +92,7 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
     @Override
     public BoltStateMachine newMachine( String connectionDescriptor, Runnable onClose, Clock clock )
     {
-        final CypherStatementRunner statementRunner = new CypherStatementRunner( queryExecutionEngine, txBridge,
-                queryService );
+        final CypherStatementRunner statementRunner = new CypherStatementRunner( queryExecutionEngine, queryService );
         TransactionStateMachine.SPI transactionSPI = new TransactionStateMachineSPI( gds, txBridge,
                 queryExecutionEngine, statementRunner, transactionIdStore );
         BoltStateMachine.SPI boltSPI = new BoltStateMachineSPI( connectionDescriptor, usageData,

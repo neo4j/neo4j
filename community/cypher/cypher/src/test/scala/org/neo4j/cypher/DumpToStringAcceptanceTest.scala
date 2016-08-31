@@ -37,13 +37,14 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("format relationship") {
     relate(createNode(), createNode(), "T", Map("prop1" -> "A", "prop2" -> 2))
 
-    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match ()-[r]->() return r").dumpToString() should equal("""+--------------------------+
-                                                                                                  || r                        |
-                                                                                                  |+--------------------------+
-                                                                                                  || :T[0]{prop1:"A",prop2:2} |
-                                                                                                  |+--------------------------+
-                                                                                                  |1 row
-                                                                                                  |""".stripMargin)
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match ()-[r]->() return r").dumpToString() should equal(
+      """+--------------------------+
+        || r                        |
+        |+--------------------------+
+        || :T[0]{prop1:"A",prop2:2} |
+        |+--------------------------+
+        |1 row
+        |""".stripMargin)
   }
 
   test("format collection of maps") {

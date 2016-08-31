@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.api;
 
 import java.time.Clock;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
+import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 
 public class StackingQueryRegistrationOperations implements QueryRegistrationOperations
@@ -53,11 +53,16 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
 
     @Override
     public ExecutingQuery startQueryExecution(
-            KernelStatement statement, String queryText, Map<String,Object> queryParameters )
+        KernelStatement statement,
+        QuerySource querySource,
+        String queryText,
+        Map<String,Object> queryParameters
+    )
     {
         long queryId = lastQueryId.incrementAndGet();
         ExecutingQuery executingQuery =
-                new ExecutingQuery( queryId, statement.username(), queryText, queryParameters, clock.millis() );
+                new ExecutingQuery( queryId, querySource, statement.username(), queryText, queryParameters,
+                        clock.millis() );
         registerExecutingQuery( statement, executingQuery );
         return executingQuery;
     }

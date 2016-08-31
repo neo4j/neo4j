@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.api.index.IndexingService
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.query.{QuerySession, TransactionalContext}
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
 import org.neo4j.test.{AsciiDocGenerator, GraphDescription, TestGraphDatabaseFactory}
 import org.neo4j.visualization.asciidoc.AsciidocHelper
@@ -317,7 +318,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
     val results = planners.flatMap {
       case planner if expectedException.isEmpty =>
-        val rewindable = RewindableExecutionResult(engine.execute(s"$planner $query", parameters, db.session()))
+        val rewindable = RewindableExecutionResult(engine.execute(s"$planner $query", parameters, db.session().get(TransactionalContext.METADATA_KEY)))
         db.inTx(assertions(rewindable))
         val dump = rewindable.dumpToString()
         if (graphvizExecutedAfter && planner == planners.head) {
@@ -328,7 +329,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
         Some(dump)
 
       case s =>
-        val e = intercept[CypherException](engine.execute(s"$s $query", parameters, db.session()))
+        val e = intercept[CypherException](engine.execute(s"$s $query", parameters, db.session().get(TransactionalContext.METADATA_KEY)))
         val expectedExceptionType = expectedException.get
         e match {
           case expectedExceptionType(typedE) => expectedCaught(typedE)
@@ -399,7 +400,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   }
 
   private def executeQueries(queries: List[String]) {
-    queries.foreach { q => engine.execute(q, Map.empty[String, Object], db.session()) }
+    queries.foreach { q => engine.execute(q, Map.empty[String, Object], db.session().get(TransactionalContext.METADATA_KEY)) }
   }
 
   protected def sampleAllIndicesAndWait(mode: IndexSamplingMode = IndexSamplingMode.TRIGGER_REBUILD_ALL, time: Long = 10, unit: TimeUnit = TimeUnit.SECONDS) = {

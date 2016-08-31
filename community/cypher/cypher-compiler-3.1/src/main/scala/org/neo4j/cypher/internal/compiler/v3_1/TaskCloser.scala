@@ -37,7 +37,7 @@ class TaskCloser {
   def close(success: Boolean) {
     if (!closed) {
       closed = true
-      val errors = _tasks.toSeq.flatMap {
+      val errors = _tasks.flatMap {
         f =>
           try {
             f(success)

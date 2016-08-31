@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -233,12 +233,17 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def runSimulation(graph: GraphDatabaseQueryService, pipe: Pipe): Seq[DataPoint] =
     runSimulation(graph, Seq(pipe))
 
+  private def transactionContext(graph: GraphDatabaseQueryService, tx: InternalTransaction) = {
+    val contextFactory = new Neo4jTransactionalContextFactory(graph, new PropertyContainerLocker)
+    contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap())
+  }
+
   //executes the provided pipes and returns execution times
   private def runSimulation(graph: GraphDatabaseQueryService, pipes: Seq[Pipe]) = {
     val results = new ListBuffer[DataPoint]
+
     graph.withTx { tx =>
-      val locker = new PropertyContainerLocker
-      val tc = new Neo4jTransactionalContext(graph, tx, graph.statement, "X", Collections.emptyMap(), locker)
+      val tc = transactionContext(graph, tx)
       val tcWrapper = TransactionalContextWrapperv3_1(tc)
       val queryContext = new TransactionBoundQueryContext(tcWrapper)(mock[IndexSearchMonitor])
       val state = QueryStateHelper.emptyWith(queryContext)
@@ -302,7 +307,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def indexSeek(graph: GraphDatabaseQueryService) = {
     graph.withTx { tx =>
-      val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, "X", Collections.emptyMap(), new PropertyContainerLocker))
+      val transactionalContext = TransactionalContextWrapperv3_1(transactionContext(graph, tx))
       val ctx = new TransactionBoundPlanContext(transactionalContext)
       val literal = Literal(42)
 
@@ -317,7 +322,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def indexScan(graph: GraphDatabaseQueryService): NodeIndexScanPipe = {
     graph.withTx { tx =>
-      val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, "X", Collections.emptyMap(), new PropertyContainerLocker))
+      val transactionalContext = TransactionalContextWrapperv3_1(transactionContext(graph, tx))
       val ctx = new TransactionBoundPlanContext(transactionalContext)
 
       val labelId = ctx.getOptLabelId(LABEL.name()).get

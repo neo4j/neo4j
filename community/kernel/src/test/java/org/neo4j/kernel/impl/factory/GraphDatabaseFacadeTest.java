@@ -31,9 +31,12 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -42,25 +45,26 @@ import static org.mockito.Mockito.when;
 
 public class GraphDatabaseFacadeTest
 {
-
     private GraphDatabaseFacade.SPI spi = Mockito.mock( GraphDatabaseFacade.SPI.class, Mockito.RETURNS_DEEP_STUBS );
     private GraphDatabaseFacade graphDatabaseFacade = new GraphDatabaseFacade();
     private GraphDatabaseQueryService queryService;
     private DependencyResolver dependencyResolver;
     private Config defaultConfig;
+    private Statement statement;
 
     @Before
     public void setUp()
     {
         queryService = mock( GraphDatabaseQueryService.class );
         dependencyResolver = mock( DependencyResolver.class );
+        statement = mock( Statement.class, Mockito.RETURNS_DEEP_STUBS );
         ThreadToStatementContextBridge contextBridge = mock( ThreadToStatementContextBridge.class );
 
         when( spi.queryService() ).thenReturn( queryService );
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) )
                 .thenReturn( contextBridge );
-
+        when( contextBridge.get() ).thenReturn( statement );
         defaultConfig = Config.defaults();
 
         graphDatabaseFacade.init( spi, defaultConfig );
@@ -98,6 +102,12 @@ public class GraphDatabaseFacadeTest
     @Test
     public void executeQueryStartDefaultTransaction()
     {
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        InternalTransaction transaction = new TopLevelTransaction( kernelTransaction, null );
+
+        when( queryService.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL ) )
+                .thenReturn( transaction );
+
         graphDatabaseFacade.execute( "create (n)" );
         graphDatabaseFacade.execute( "create (n)", new HashMap<>() );
 

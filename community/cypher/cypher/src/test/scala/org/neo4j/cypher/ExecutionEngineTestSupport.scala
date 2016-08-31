@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, Cyp
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.{ExecutionEngine, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.kernel.impl.query.TransactionalContext
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -73,13 +74,13 @@ trait ExecutionEngineHelper {
   def eengine: ExecutionEngine
 
   def execute(q: String, params: (String, Any)*): InternalExecutionResult =
-    RewindableExecutionResult(eengine.execute(q, params.toMap, graph.session()))
+    RewindableExecutionResult(eengine.execute(q, params.toMap, graph.transactionalContext(query = q -> params.toMap)))
 
   def profile(q: String, params: (String, Any)*): InternalExecutionResult =
-    RewindableExecutionResult(eengine.profile(q, params.toMap, graph.session()))
+    RewindableExecutionResult(eengine.profile(q, params.toMap, graph.transactionalContext(query = q -> params.toMap)))
 
   def executeScalar[T](q: String, params: (String, Any)*): T =
-    scalar[T](eengine.execute(q, params.toMap, graph.session()).toList)
+    scalar[T](eengine.execute(q, params.toMap, graph.transactionalContext(query = q -> params.toMap)).toList)
 
   private def scalar[T](input: List[Map[String, Any]]): T = input match {
     case m :: Nil =>
@@ -93,4 +94,12 @@ trait ExecutionEngineHelper {
   }
 
   protected class ScalarFailureException(msg: String) extends RuntimeException(msg)
+
+  implicit class RichExecutionEngine(engine: ExecutionEngine) {
+    def profile(query: String, params: Map[String, Any]) =
+      engine.profile(query, params, engine.queryService.transactionalContext(query = query -> params))
+
+    def execute(query: String, params: Map[String, Any]) =
+      engine.execute(query, params, engine.queryService.transactionalContext(query = query -> params))
+  }
 }

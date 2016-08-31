@@ -56,7 +56,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.security.AccessMode.Static.FULL;
-import static org.neo4j.kernel.impl.query.QueryEngineProvider.embeddedSession;
 
 public class QueryLoggerIT
 {
@@ -126,8 +125,7 @@ public class QueryLoggerIT
 
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
-        assertThat( logLines.get( 0 ), endsWith( String.format( " ms: %s - %s",
-                embeddedSession( new FakeTransactionalContext( FULL ) ), QUERY ) ) );
+        assertThat( logLines.get( 0 ), endsWith( String.format( " ms: %s - %s", querySource(), QUERY ) ) );
         assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
     }
 
@@ -154,10 +152,16 @@ public class QueryLoggerIT
 
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
+        QuerySource querySource = querySource();
         assertThat( logLines.get( 0 ), endsWith( String.format(
                 " ms: %s - %s - {props: {name: Roland, position: Gunslinger, followers: [Jake, Eddie, Susannah]}}",
-                embeddedSession( new FakeTransactionalContext( FULL ) ), query) ) );
+                querySource, query) ) );
         assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
+    }
+
+    private QuerySource querySource()
+    {
+        return QueryEngineProvider.describe().append( FULL.name() );
     }
 
     @Test
@@ -179,7 +183,7 @@ public class QueryLoggerIT
         assertThat( logLines.get( 0 ),
                 endsWith( String.format(
                         " ms: %s - %s - {ids: [0, 1, 2]}",
-                        embeddedSession( new FakeTransactionalContext( FULL ) ), query) ) );
+                        querySource(), query) ) );
         assertThat( logLines.get( 0 ), containsString( FULL.name() ) );
     }
 

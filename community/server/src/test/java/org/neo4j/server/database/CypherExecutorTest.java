@@ -75,7 +75,7 @@ public class CypherExecutorTest
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
-        cypherExecutor.createSession( QUERY, Collections.emptyMap(), request );
+        cypherExecutor.createTransactionContext( QUERY, Collections.emptyMap(), request );
 
         verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
         logProvider.assertNoLoggingOccurred();
@@ -90,7 +90,7 @@ public class CypherExecutorTest
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
-        cypherExecutor.createSession( QUERY, Collections.emptyMap(), request );
+        cypherExecutor.createTransactionContext( QUERY, Collections.emptyMap(), request );
 
         verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL,
                 CUSTOM_TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS );
@@ -106,7 +106,7 @@ public class CypherExecutorTest
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
-        cypherExecutor.createSession( QUERY, Collections.emptyMap(), request );
+        cypherExecutor.createTransactionContext( QUERY, Collections.emptyMap(), request );
 
         verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
         logProvider.assertContainsMessageContaining( "Fail to parse `max-execution-time` header with value: 'not a " +
@@ -122,7 +122,7 @@ public class CypherExecutorTest
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
-        cypherExecutor.createSession( QUERY, Collections.emptyMap(), request );
+        cypherExecutor.createTransactionContext( QUERY, Collections.emptyMap(), request );
 
         verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
         logProvider.assertNoLoggingOccurred();

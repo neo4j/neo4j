@@ -21,28 +21,14 @@ package org.neo4j.server.rest.web;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.neo4j.kernel.impl.query.QuerySession;
-import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.kernel.impl.query.QuerySource;
 
-import static java.lang.String.format;
-
-public class ServerQuerySession extends QuerySession
+public class ServerQuerySession
 {
-    private final HttpServletRequest request;
-    private final String username;
-
-    public ServerQuerySession( HttpServletRequest request, TransactionalContext transactionalContext )
-    {
-        super( transactionalContext );
-        this.username = transactionalContext.accessMode().name();
-        this.request = request;
-    }
-
-    @Override
-    public String toString()
+    public static QuerySource describe( HttpServletRequest request )
     {
         return request == null ?
-               format("server-session\t%s", username) :
-               format("server-session\thttp\t%s\t%s\t%s", request.getRemoteAddr(), request.getRequestURI(), username );
+            new QuerySource( "server-session" ) :
+            new QuerySource( "server-session", "http", request.getRemoteAddr(), request.getRequestURI() );
     }
 }

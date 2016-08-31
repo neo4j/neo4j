@@ -19,12 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.nio.file.Files
 import java.util
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compatibility.CompatibilityPlanDescriptionFor3_1
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.IDPSolverMonitor
+import org.neo4j.cypher.internal.compiler.v3_1.{IDPPlannerName, InterpretedRuntimeName}
 import org.neo4j.cypher.internal.{ExecutionEngine, PlanDescription}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
@@ -90,7 +91,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
       println(s"\t$query")
     }
     val start = System.currentTimeMillis()
-    val result = eengine.execute(s"EXPLAIN CYPHER planner=IDP $query", Map.empty[String, Any], graph.session())
+    val result = innerExecute(s"EXPLAIN CYPHER planner=IDP $query")
     val duration = System.currentTimeMillis() - start
     if (VERBOSE) {
       println(result.executionPlanDescription())
@@ -122,14 +123,14 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
         if(VERBOSE) println("QUERY: " + query)
 
         // measure planning time
-        var startPlaning = System.currentTimeMillis()
-        val resultPlanning = eengine.execute(s"EXPLAIN CYPHER planner=$planner $query", Map.empty[String, Any], graph.session())
+        val startPlaning = System.currentTimeMillis()
+        val resultPlanning = innerExecute(s"EXPLAIN CYPHER planner=$planner $query")
         val durationPlanning = System.currentTimeMillis()-startPlaning
         val plan = resultPlanning.executionPlanDescription()
 
         // measure query time
-        var start = System.currentTimeMillis()
-        val result = eengine.execute(s"CYPHER planner=$planner $query", Map.empty[String, Any], graph.session())
+        val start = System.currentTimeMillis()
+        val result = innerExecute(s"CYPHER planner=$planner $query")
         val resultCount = result.toList.length
         val duration = System.currentTimeMillis()-start
         val expectedResultCount = Math.pow(2, pathlen % indexStep).toInt
@@ -141,7 +142,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
           "joins" -> (if(planner == "IDP") pathlen / 15 else 0)
         )
         val counts = assertMinExpandsAndJoins(plan, minCounts)
-        acc :+ Seq(durationPlanning,duration,counts("joins").toLong,resultCount.toLong)
+        acc :+ Seq(durationPlanning, duration, counts("joins").toLong, resultCount.toLong)
       }
       data + (planner -> times)
     }
@@ -160,7 +161,12 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
     }
   }
 
-  private def assertMinExpandsAndJoins(plan: PlanDescription, minCounts: Map[String, Int]) = {
+  private def assertMinExpandsAndJoins(plan: InternalPlanDescription, minCounts: Map[String, Int]): Map[String, Int] = {
+    val externalPlanDescription = CompatibilityPlanDescriptionFor3_1(plan, CypherVersion.v3_1, IDPPlannerName, InterpretedRuntimeName)
+    assertMinExpandsAndJoins(externalPlanDescription, minCounts)
+  }
+
+  private def assertMinExpandsAndJoins(plan: PlanDescription, minCounts: Map[String, Int]): Map[String, Int] = {
     val counts = countExpandsAndJoins(plan)
     Seq("expands", "joins").foreach { op =>
       if(VERBOSE) println(s"\t$op\t${counts(op)}")
@@ -169,7 +175,12 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
     counts
   }
 
-  private def countExpandsAndJoins(plan: PlanDescription) = {
+  private def countExpandsAndJoins(plan: InternalPlanDescription): Map[String, Int] = {
+    val externalPlanDescription = CompatibilityPlanDescriptionFor3_1(plan, CypherVersion.v3_1, IDPPlannerName, InterpretedRuntimeName)
+    countExpandsAndJoins(externalPlanDescription)
+  }
+
+  private def countExpandsAndJoins(plan: PlanDescription): Map[String, Int] = {
     def addCounts(map1: Map[String, Int], map2: Map[String, Int]) = map1 ++ map2.map { case (k, v) => k -> (v + map1.getOrElse(k, 0)) }
     def incrCount(map: Map[String, Int], key: String) = addCounts(map, Map(key -> 1))
     def expandsAndJoinsCount(plan: PlanDescription, counts: Map[String, Int]): Map[String, Int] = {
@@ -194,11 +205,12 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
       runWithConfig(config.toSeq: _*) {
         (engine, db) =>
           graph = db
+          eengine = new ExecutionEngine(graph)
           makeLargeMatrixDataset(100)
           val monitor = TestIDPSolverMonitor()
           val monitors: monitoring.Monitors = graph.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
           monitors.addMonitorListener(monitor)
-          val result = engine.execute(s"EXPLAIN CYPHER planner=IDP $query", Map.empty[String, Any], graph.session())
+          val result = innerExecute(s"EXPLAIN CYPHER planner=IDP $query")
           val counts = countExpandsAndJoins(result.executionPlanDescription())
           counts("joins") should be > 1
           counts("joins") should be < numberOfPatternRelationships / 2

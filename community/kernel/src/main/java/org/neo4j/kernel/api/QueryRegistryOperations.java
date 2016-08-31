@@ -22,6 +22,8 @@ package org.neo4j.kernel.api;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.impl.query.QuerySource;
+
 
 /**
  * Tracks currently running stream. This is used for listing currently running stream and to make it possible to
@@ -41,7 +43,9 @@ public interface QueryRegistryOperations
     /**
      * Registers a query, and creates the ExecutingQuery object for it.
      */
-    ExecutingQuery startQueryExecution( String queryText, Map<String, Object> queryParameters );
+    ExecutingQuery startQueryExecution(
+        QuerySource descriptor, String queryText, Map<String, Object> queryParameters
+    );
 
     /**
      * Registers an already known query to a this transaction.
@@ -52,7 +56,7 @@ public interface QueryRegistryOperations
     void registerExecutingQuery( ExecutingQuery executingQuery );
 
     /**
-     * Disassociates a query with this transaction/
+     * Disassociates a query with this transaction.
      */
     void unregisterExecutingQuery( ExecutingQuery executingQuery );
 }

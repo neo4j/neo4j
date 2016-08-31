@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.MergePattern
+import org.neo4j.kernel.impl.query.TransactionalContext
 
 class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
   test("normal query is marked as such") {
@@ -39,7 +40,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("EXPLAIN for Cypher 3.1") {
-    val result = eengine.execute("explain match (n) return n", Map.empty[String, Object], graph.session())
+    val result = eengine.execute("explain match (n) return n", Map.empty[String, Object])
     result.toList
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
     result.executionPlanDescription().toString should include("Estimated Rows")

@@ -28,17 +28,18 @@ import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, READ_WRITE, _}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Argument, Children, Id, InternalPlanDescription, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_1.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.frontend.v2_3.{notification => notification_2_3}
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, notification}
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
 
 object RewindableExecutionResult {
+
   private def current(inner: InternalExecutionResult, planner: PlannerName, runtime: RuntimeName): InternalExecutionResult =
     inner match {
       case other: PipeExecutionResult =>
-        exceptionHandlerFor3_0.runSafely {
+        exceptionHandlerFor3_1.runSafely {
           new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
             other.executionMode, READ_WRITE) {
             override def executionPlanDescription(): InternalPlanDescription = super.executionPlanDescription()
@@ -46,7 +47,7 @@ object RewindableExecutionResult {
           }
         }
       case other: StandardInternalExecutionResult =>
-        exceptionHandlerFor3_0.runSafely {
+        exceptionHandlerFor3_1.runSafely {
           other.toEagerResultForTestingOnly(planner, runtime)
         }
 
@@ -71,13 +72,14 @@ object RewindableExecutionResult {
     InternalExecutionResultCompatibilityWrapperFor2_3(result)
   }
 
+  // TODO: Should this not also include 3.0 results?
   def apply(in: ExecutionResult): InternalExecutionResult = in match {
     case ExecutionResultWrapperFor3_1(inner, planner, runtime) =>
       exceptionHandlerFor3_1.runSafely(current(inner, planner, runtime))
     case ExecutionResultWrapperFor2_3(inner, planner, runtime) =>
       exceptionHandlerFor2_3.runSafely(compatibility(inner, planner, runtime))
-
-    case _ => throw new InternalException("Can't get the internal execution result of an older compiler")
+    case _ =>
+      throw new InternalException("Can't get the internal execution result of an older compiler")
   }
 
   private case class InternalExecutionResultCompatibilityWrapperFor2_3(inner: v2_3.executionplan.InternalExecutionResult) extends InternalExecutionResult {

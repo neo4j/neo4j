@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1
 import java.io.{File, FileWriter}
 import java.text.NumberFormat
 import java.time.Clock
-import java.util.{Date, Locale}
+import java.util.{Collections, Date, Locale}
 
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_1
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
@@ -41,7 +41,8 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.xml.Elem
@@ -542,19 +543,23 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
   }
 
   private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseQueryService): (List[Map[String, Any]], InternalExecutionResult) = {
-    val (plan: ExecutionPlan, parameters) = db.withTxAndSession {
-      (tx, session) =>
-        val transactionalContext = new TransactionalContextWrapperv3_1(session.get(TransactionalContext.METADATA_KEY))
-        val planContext = new TransactionBoundPlanContext(transactionalContext)
-        compiler.planQuery(query, planContext, devNullLogger)
+    val querySource = new QuerySource("<--!oO!-->")
+    val locker = new PropertyContainerLocker()
+
+    val contextFactory: Neo4jTransactionalContextFactory = new Neo4jTransactionalContextFactory(db, locker)
+
+    val (executionPlan: ExecutionPlan, extractedParams: Map[String, Any]) = db.withTx { tx =>
+      val transactionalContext = contextFactory.newContext(querySource, tx, query, Collections.emptyMap())
+      val planContext = new TransactionBoundPlanContext(TransactionalContextWrapperv3_1(transactionalContext))
+      compiler.planQuery(query, planContext, devNullLogger)
     }
 
-    db.withTxAndSession {
-      (tx, session) =>
-        val transactionalContext = new TransactionalContextWrapperv3_1(session.get(TransactionalContext.METADATA_KEY))
-        val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
-        val result = plan.run(queryContext, ProfileMode, parameters)
-        (result.toList, result)
+    db.withTx { tx =>
+      val transactionalContext = contextFactory.newContext(querySource, tx, query, Collections.emptyMap())
+      val tcWrapper = TransactionalContextWrapperv3_1(transactionalContext)
+      val queryContext = new TransactionBoundQueryContext(tcWrapper)(indexSearchMonitor)
+      val result = executionPlan.run(queryContext, ProfileMode, extractedParams)
+      (result.toList, result)
     }
   }
 }

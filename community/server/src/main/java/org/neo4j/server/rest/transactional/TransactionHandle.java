@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
@@ -316,9 +316,9 @@ public class TransactionHandle implements TransactionTerminationHandle
                     }
 
                     hasPrevious = true;
-                    QuerySession querySession = txManagerFacade.create(  statement.statement(), statement.parameters(),
-                            queryService, type, mode, customTransactionTimeout, request );
-                    Result result = safelyExecute( statement, hasPeriodicCommit, querySession );
+                    TransactionalContext tc = txManagerFacade.create( request, queryService, type, mode,
+                            statement.statement(), statement.parameters() );
+                    Result result = safelyExecute( statement, hasPeriodicCommit, tc );
                     output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                     output.notifications( result.getNotifications() );
                 }
@@ -360,12 +360,12 @@ public class TransactionHandle implements TransactionTerminationHandle
         }
     }
 
-    private Result safelyExecute( Statement statement, boolean hasPeriodicCommit, QuerySession querySession )
+    private Result safelyExecute( Statement statement, boolean hasPeriodicCommit, TransactionalContext tc )
             throws QueryExecutionKernelException
     {
         try
         {
-            return engine.executeQuery( statement.statement(), statement.parameters(), querySession );
+            return engine.executeQuery( statement.statement(), statement.parameters(), tc );
         }
         finally
         {

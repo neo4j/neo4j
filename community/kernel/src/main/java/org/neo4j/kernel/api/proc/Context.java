@@ -36,5 +36,5 @@ public interface Context
     Key<Thread> THREAD = Key.key( "Thread", Thread.class );
 
     <T> T get( Key<T> key ) throws ProcedureException;
-    <T> T getOrElse( Key<T> key, T defaultValue ) throws ProcedureException;
+    <T> T getOrElse( Key<T> key, T orElse );
 }

@@ -90,9 +90,7 @@ public class ProceduresTest
         procs.register( procedure );
 
         // When
-        RawIterator<Object[], ProcedureException> result = procs.callProcedure( new BasicContext()
-        {
-        }, signature.name(), new Object[]{1337} );
+        RawIterator<Object[], ProcedureException> result = procs.callProcedure( new BasicContext(), signature.name(), new Object[]{1337} );
 
         // Then
         assertThat( asList( result ), contains( equalTo( new Object[]{1337} ) ) );
@@ -108,9 +106,7 @@ public class ProceduresTest
                                  "procedure name correctly and that the procedure is properly deployed." );
 
         // When
-        procs.callProcedure( new BasicContext()
-        {
-        }, signature.name(), new Object[]{1337} );
+        procs.callProcedure( new BasicContext(), signature.name(), new Object[]{1337} );
     }
 
     @Test

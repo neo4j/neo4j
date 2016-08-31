@@ -52,7 +52,7 @@ import org.neo4j.graphdb.Label.label
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory, QuerySource}
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.Seq
@@ -120,7 +120,8 @@ class RuleExecutablePlanBuilderTest
       val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_1(kernelMonitors), config,
         RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
 
-      val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, statement, "X", Collections.emptyMap(), locker))
+      val contextFactory = new Neo4jTransactionalContextFactory(graph, locker)
+      val transactionalContext = TransactionalContextWrapperv3_1(contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val pkId = queryContext.getPropertyKeyId("foo")
       val parsedQ = new FakePreparedSemanticQuery(q)
@@ -148,7 +149,8 @@ class RuleExecutablePlanBuilderTest
 
       val execPlanBuilder = new LegacyExecutablePlanBuilder(WrappedMonitors3_1(kernelMonitors), config,
                                                             RewriterStepSequencer.newValidating, typeConverter = IdentityTypeConverter)
-      val transactionalContext = TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, statement, "X", Collections.emptyMap(), locker))
+      val contextFactory = new Neo4jTransactionalContextFactory(graph, locker)
+      val transactionalContext = TransactionalContextWrapperv3_1(contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val labelId = queryContext.getLabelId("Person")
       val parsedQ = new FakePreparedSemanticQuery(q)

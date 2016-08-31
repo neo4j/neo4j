@@ -21,8 +21,8 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, NewQuerySeen, UnableToHandleQuery}
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
-import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, ExecutionResultWrapperFor3_1}
+import org.neo4j.cypher.internal.{ExecutionResult, RewindableExecutionResult}
+import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, ExecutionResultWrapperFor2_3, ExecutionResultWrapperFor3_1}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CantCompileQueryException, CantHandleQueryException}
@@ -34,6 +34,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Exceptions
 import org.scalatest.matchers.{MatchResult, Matcher}
 
+import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 object NewPlannerMonitor {
@@ -278,9 +279,16 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   }
 
   protected def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    eengine.execute(queryText, params.toMap, graph.session()) match {
-      case e: ExecutionResultWrapperFor3_1 => RewindableExecutionResult(e)
-      case e: ExecutionResultWrapperFor2_3 => RewindableExecutionResult(e)
+    val result: ExecutionResult = eengine.execute(queryText, params.toMap, graph.transactionalContext(query = queryText -> params.toMap))
+    rewindableResult(result)
+  }
+
+  private def rewindableResult(result: ExecutionResult): InternalExecutionResult = {
+    result match {
+      case e: ClosingExecutionResult => e.inner match {
+        case _: ExecutionResultWrapperFor3_1 => RewindableExecutionResult(e)
+        case _: ExecutionResultWrapperFor2_3 => RewindableExecutionResult(e)
+      }
     }
   }
 

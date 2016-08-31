@@ -24,17 +24,17 @@ import java.util.{Map => JavaMap}
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
+import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession, TransactionalContext}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 
 class DocsExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance)
   extends ExecutionEngine(graph, logProvider) {
 
   @throws(classOf[SyntaxException])
-  def internalExecute(query: String, params: JavaMap[String, AnyRef], session: QuerySession): InternalExecutionResult =
-    RewindableExecutionResult(execute(query, params, session))
+  def internalExecute(query: String, params: JavaMap[String, AnyRef], context: TransactionalContext): InternalExecutionResult =
+    RewindableExecutionResult(execute(query, params, context))
 
   @throws(classOf[SyntaxException])
-  def internalProfile(query: String, params: JavaMap[String, AnyRef], session: QuerySession): InternalExecutionResult =
-    RewindableExecutionResult(profile(query, params, session))
+  def internalProfile(query: String, params: JavaMap[String, AnyRef], context: TransactionalContext): InternalExecutionResult =
+    RewindableExecutionResult(profile(query, params, context))
 }

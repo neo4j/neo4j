@@ -95,7 +95,7 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
   private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled))
 
   @throws(classOf[SyntaxException])
-  def preParseQuery(queryText: String): PreParsedQuery = exceptionHandlerFor3_1.runSafely{
+  def preParseQuery(queryText: String): PreParsedQuery = exceptionHandlerFor3_1.runSafely {
     val preParsedStatement = CypherPreParser(queryText)
     val CypherStatementWithOptions(statement, offset, version, planner, runtime, updateStrategy, mode) =
       CypherStatementWithOptions(preParsedStatement)

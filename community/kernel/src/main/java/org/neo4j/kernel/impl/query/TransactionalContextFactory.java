@@ -17,27 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime.cypher;
+package org.neo4j.kernel.impl.query;
 
-import org.junit.Test;
+import java.util.Map;
 
-import org.neo4j.bolt.v1.runtime.cypher.CypherStatementRunner.BoltQuerySession;
-import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.impl.query.FakeTransactionalContext;
-import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.*;
-
-public class BoltQuerySessionTest
+public interface TransactionalContextFactory<C extends TransactionalContext>
 {
-    @Test
-    public void shouldIncludeUsernameInToString()
-    {
-        QuerySession session = new BoltQuerySession(
-                new FakeTransactionalContext( AccessMode.Static.READ ), "fakeSource" );
-
-        assertThat( session.toString(), equalTo( String.format( "bolt-session\t%s\t%s", "fakeSource", "READ" ) ) );
-    }
-
+    C newContext( QuerySource descriptor,
+                  InternalTransaction tx,
+                  String queryText,
+                  Map<String,Object> queryParameters
+    );
 }

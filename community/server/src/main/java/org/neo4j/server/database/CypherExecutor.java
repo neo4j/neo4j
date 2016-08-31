@@ -29,29 +29,28 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.web.ServerQuerySession;
 
+import org.neo4j.logging.Log;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
 public class CypherExecutor extends LifecycleAdapter
 {
     private final Database database;
+    private final Log log;
     private ExecutionEngine executionEngine;
-    private GraphDatabaseQueryService service;
-    private ThreadToStatementContextBridge txBridge;
+    private TransactionalContextFactory contextFactory;
 
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
-    private final Log log;
+    private GraphDatabaseQueryService service;
 
     public CypherExecutor( Database database, LogProvider logProvider )
     {
@@ -69,31 +68,32 @@ public class CypherExecutor extends LifecycleAdapter
     {
         DependencyResolver dependencyResolver = database.getGraph().getDependencyResolver();
         this.executionEngine = (ExecutionEngine) dependencyResolver.resolveDependency( QueryExecutionEngine.class );
+        this.contextFactory = new Neo4jTransactionalContextFactory(
+                dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ),
+                locker
+        );
         this.service = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
-        this.txBridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     @Override
     public void stop() throws Throwable
     {
         this.executionEngine = null;
-        this.service = null;
-        this.txBridge = null;
+        this.contextFactory = null;
     }
 
-    public QuerySession createSession( String query, Map<String, Object> parameters, HttpServletRequest request )
+    public TransactionalContext createTransactionContext( String query, Map<String, Object> parameters,
+            HttpServletRequest request )
     {
-        InternalTransaction transaction = getInternalTransaction( request );
-        TransactionalContext context = new Neo4jTransactionalContext( service, transaction, txBridge.get(), query,
-                parameters, locker );
-        return new ServerQuerySession( request, context );
+        InternalTransaction tx = getInternalTransaction( request );
+        return contextFactory.newContext( ServerQuerySession.describe( request ), tx, query, parameters );
     }
 
     private InternalTransaction getInternalTransaction( HttpServletRequest request )
     {
         long customTimeout = getTransactionTimeout( request, log );
         return customTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ? beginCustomTransaction( customTimeout ) :
-                                                                           beginDefaultTransaction();
+               beginDefaultTransaction();
     }
 
     private InternalTransaction beginCustomTransaction( long customTimeout )
