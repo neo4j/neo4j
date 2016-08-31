@@ -28,6 +28,8 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 public interface MetaStatementOperations
 {
     Stream<ExecutingQuery> executingQueries( KernelStatement statement );
+    void registerQueryExecution( KernelStatement statement, ExecutingQuery executingQuery );
     ExecutingQuery startQueryExecution( KernelStatement statement, String queryText, Map<String, Object> queryParameters );
     void stopQueryExecution( KernelStatement statement, ExecutingQuery executingQuery );
+
 }

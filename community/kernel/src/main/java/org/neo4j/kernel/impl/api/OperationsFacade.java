@@ -1455,6 +1455,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public void registerQueryExecution( ExecutingQuery executingQuery )
+    {
+        statement.assertOpen();
+        metaStatementOperations().registerQueryExecution( statement, executingQuery );
+    }
+
+
+    @Override
     public void stopQueryExecution( ExecutingQuery executingQuery )
     {
         statement.assertOpen();

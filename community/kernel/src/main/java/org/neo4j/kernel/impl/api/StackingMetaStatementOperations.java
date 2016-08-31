@@ -44,6 +44,12 @@ public class StackingMetaStatementOperations implements MetaStatementOperations
     }
 
     @Override
+    public void registerQueryExecution( KernelStatement statement, ExecutingQuery executingQuery )
+    {
+        statement.startQueryExecution( executingQuery );
+    }
+
+    @Override
     public ExecutingQuery startQueryExecution(
             KernelStatement statement, String queryText, Map<String,Object> queryParameters )
     {

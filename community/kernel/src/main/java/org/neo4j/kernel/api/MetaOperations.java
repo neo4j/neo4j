@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 public interface MetaOperations
 {
     Stream<ExecutingQuery> executingQueries();
+    void registerQueryExecution( ExecutingQuery executingQuery );
     ExecutingQuery startQueryExecution( String queryText, Map<String, Object> queryParameters );
     void stopQueryExecution( ExecutingQuery executingQuery );
 }

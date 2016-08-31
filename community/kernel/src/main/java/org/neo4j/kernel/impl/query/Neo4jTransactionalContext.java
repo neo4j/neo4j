@@ -63,28 +63,30 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this(
             graph,
             initialTransaction,
+            initialTransaction.transactionType(),
+            initialTransaction.mode(),
             initialStatement,
             initialStatement.metaOperations().startQueryExecution( queryText, queryParameters ),
-            locker
+            locker,
+            graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ),
+            graph.getDependencyResolver().resolveDependency( DbmsOperations.Factory.class )
         );
     }
 
-    public Neo4jTransactionalContext(
-            GraphDatabaseQueryService graph,
-            InternalTransaction initialTransaction,
-            Statement initialStatement,
-            ExecutingQuery executingQuery,
-            PropertyContainerLocker locker )
+    public Neo4jTransactionalContext( GraphDatabaseQueryService graph, InternalTransaction initialTransaction,
+            KernelTransaction.Type transactionType, AccessMode transactionMode, Statement initialStatement, ExecutingQuery executingQuery,
+            PropertyContainerLocker locker, ThreadToStatementContextBridge txBridge,
+            DbmsOperations.Factory dbmsOperationsFactory )
     {
         this.graph = graph;
         this.transaction = initialTransaction;
-        this.transactionType = initialTransaction.transactionType();
-        this.mode = initialTransaction.mode();
+        this.transactionType = transactionType;
+        this.mode = transactionMode;
         this.statement = initialStatement;
         this.executingQuery = executingQuery;
         this.locker = locker;
-        this.txBridge = graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        this.dbmsOperationsFactory = graph.getDependencyResolver().resolveDependency( DbmsOperations.Factory.class );
+        this.txBridge = txBridge;
+        this.dbmsOperationsFactory = dbmsOperationsFactory;
     }
 
     @Override
@@ -137,16 +139,23 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public void commitAndRestartTx()
     {
-        statement.metaOperations().stopQueryExecution( executingQuery );
-        transaction.success();
-        transaction.close();
+        MetaOperations oldMetaOperations = statement.metaOperations();
+        InternalTransaction oldTransaction = transaction;
+        KernelTransaction oldKernelTx = txBridge.getKernelTransactionBoundToThisThread( true );
+        txBridge.unbindTransactionFromCurrentThread();
 
         transaction = graph.beginTransaction( transactionType, mode );
         statement = txBridge.get();
-        executingQuery = statement.metaOperations().startQueryExecution(
-                executingQuery.queryText(),
-                executingQuery.queryParameters()
-        );
+        statement.metaOperations().registerQueryExecution( executingQuery );
+        KernelTransaction kernelTx = txBridge.getKernelTransactionBoundToThisThread( true );
+        txBridge.unbindTransactionFromCurrentThread();
+
+        txBridge.bindTransactionToCurrentThread( oldKernelTx );
+        oldMetaOperations.stopQueryExecution( executingQuery );
+        oldTransaction.success();
+        oldTransaction.close();
+
+        txBridge.bindTransactionToCurrentThread( kernelTx );
     }
 
     @Override
@@ -157,10 +166,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         statement.metaOperations().stopQueryExecution( executingQuery );
         statement.close();
         statement = txBridge.get();
-        executingQuery = statement.metaOperations().startQueryExecution(
-                executingQuery.queryText(),
-                executingQuery.queryParameters()
-        );
+        statement.metaOperations().registerQueryExecution( executingQuery );
     }
 
     @Override
