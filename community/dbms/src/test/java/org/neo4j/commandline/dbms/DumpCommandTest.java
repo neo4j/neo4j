@@ -19,13 +19,13 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,20 +34,26 @@ import org.junit.Test;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.dbms.archive.Dumper;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
+import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 
 public class DumpCommandTest
 {
@@ -77,9 +83,13 @@ public class DumpCommandTest
     @Test
     public void shouldCalculateTheDatabaseDirectoryFromConfig() throws IOException, CommandFailed, IncorrectUsage
     {
-        Files.write( configDir.resolve( "neo4j.conf" ), asList( data_directory.name() + "=/some/data/dir" ) );
+        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
+        Path databaseDir = dataDir.resolve( "databases/foo.db" );
+        Files.createDirectories( databaseDir );
+        Files.write( configDir.resolve( "neo4j.conf" ), asList( format( "%s=%s", data_directory.name(), dataDir ) ) );
+
         execute( "foo.db" );
-        verify( dumper ).dump( eq( Paths.get( "/some/data/dir/databases/foo.db" ) ), any() );
+        verify( dumper ).dump( eq( databaseDir ), any() );
     }
 
     @Test
@@ -98,6 +108,88 @@ public class DumpCommandTest
         Files.createFile( archive );
         execute( "foo.db" );
         verify( dumper ).dump( homeDir.resolve( "data/databases/foo.db" ), archive );
+    }
+
+    @Test
+    public void shouldRespectTheStoreLock() throws IOException, IncorrectUsage
+    {
+        Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        Files.createDirectories( databaseDirectory );
+        new StoreLocker( new DefaultFileSystemAbstraction() ).checkLock( databaseDirectory.toFile() );
+
+        try
+        {
+            execute( "foo.db" );
+            fail( "expected exception" );
+        }
+        catch ( CommandFailed e )
+        {
+            assertThat( e.getMessage(), equalTo( "the database is in use -- stop Neo4j and try again" ) );
+        }
+    }
+
+    @Test
+    public void shouldReleaseTheStoreLockAfterDumping() throws IOException, IncorrectUsage, CommandFailed
+    {
+        Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        Files.createDirectories( databaseDirectory );
+
+        execute( "foo.db" );
+        new StoreLocker( new DefaultFileSystemAbstraction() ).checkLock( databaseDirectory.toFile() );
+    }
+
+    @Test
+    public void shouldReleaseTheStoreLockEvenIfThereIsAnError() throws IOException, IncorrectUsage
+    {
+        doThrow( IOException.class ).when( dumper ).dump( any(), any() );
+        Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        Files.createDirectories( databaseDirectory );
+
+        try
+        {
+            execute( "foo.db" );
+        }
+        catch ( CommandFailed ignored )
+        {
+        }
+
+        new StoreLocker( new DefaultFileSystemAbstraction() ).checkLock( databaseDirectory.toFile() );
+    }
+
+    @Test
+    public void shouldNotAccidentallyCreateTheDatabaseDirectoryAsASideEffectOfStoreLocking()
+            throws CommandFailed, IncorrectUsage, IOException
+    {
+        Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+
+        doAnswer( ignored ->
+        {
+            assertThat( Files.exists( databaseDirectory ), equalTo( false ) );
+            return null;
+        } ).when( dumper ).dump( any(), any() );
+
+        execute( "foo.db" );
+    }
+
+    @Test
+    public void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock()
+            throws IOException, IncorrectUsage
+    {
+        Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        Files.createDirectories( databaseDirectory );
+        new StoreLocker( new DefaultFileSystemAbstraction() ).checkLock( databaseDirectory.toFile() );
+        Path lockFile = databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME );
+
+        try ( Closeable ignored = withPermissions( lockFile, emptySet() ) )
+        {
+            execute( "foo.db" );
+            fail( "expected exception" );
+        }
+        catch ( CommandFailed e )
+        {
+            assertThat( e.getMessage(), equalTo( "you do not have permission to dump the database -- is Neo4j " +
+                    "running as a different user?" ) );
+        }
     }
 
     @Test

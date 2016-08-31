@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -36,6 +37,9 @@ import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.lang.String.format;
@@ -89,8 +93,21 @@ public class DumpCommand implements AdminCommand
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
         String database = parse( args, "database", identity() );
-        Path archive = calcuateArchive( database, parse( args, "to", Paths::get ) );
-        dump( database, toDatabaseDirectory( database ), archive );
+        Path archive = calculateArchive( database, parse( args, "to", Paths::get ) );
+        Path databaseDirectory = toDatabaseDirectory( database );
+
+        try ( Closeable ignored = withLock( databaseDirectory ) )
+        {
+            dump( database, databaseDirectory, archive );
+        }
+        catch ( StoreLockException e )
+        {
+            throw new CommandFailed( "the database is in use -- stop Neo4j and try again", e );
+        }
+        catch ( IOException e )
+        {
+            wrapIOException( e );
+        }
     }
 
     private <T> T parse( String[] args, String argument, Function<String, T> converter ) throws IncorrectUsage
@@ -116,7 +133,7 @@ public class DumpCommand implements AdminCommand
                 .get( database_path ).toPath();
     }
 
-    private Path calcuateArchive( String database, Path to )
+    private Path calculateArchive( String database, Path to )
     {
         Path archive;
         if ( Files.exists( to ) && Files.isDirectory( to ) )
@@ -128,6 +145,28 @@ public class DumpCommand implements AdminCommand
             archive = to;
         }
         return archive;
+    }
+
+    private Closeable withLock( Path databaseDirectory ) throws CommandFailed
+    {
+        Path lockFile = databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME );
+        if ( Files.exists( lockFile ) )
+        {
+            if ( Files.isWritable( lockFile ) )
+            {
+                StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() );
+                storeLocker.checkLock( databaseDirectory.toFile() );
+                return storeLocker::release;
+            }
+            else
+            {
+                throw new CommandFailed( "you do not have permission to dump the database -- is Neo4j running as a " +
+                        "different user?" );
+            }
+        }
+        return () ->
+        {
+        };
     }
 
     private void dump( String database, Path databaseDirectory, Path archive ) throws CommandFailed

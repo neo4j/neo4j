@@ -22,7 +22,6 @@ package org.neo4j.commandline.dbms;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,6 +37,10 @@ import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.lang.String.format;
@@ -95,6 +98,7 @@ public class LoadCommand implements AdminCommand
         boolean force = Args.parse( args ).getBoolean( "force" );
 
         Path databaseDirectory = toDatabaseDirectory( database );
+
         deleteIfNecessary( databaseDirectory, force );
         load( archive, database, databaseDirectory );
     }
@@ -128,12 +132,25 @@ public class LoadCommand implements AdminCommand
         {
             if ( force )
             {
-                Files.deleteIfExists( databaseDirectory );
+                checkLock( databaseDirectory );
+                FileUtils.deletePathRecursively( databaseDirectory );
             }
         }
         catch ( IOException e )
         {
             wrapIOException( e );
+        }
+    }
+
+    private void checkLock( Path databaseDirectory ) throws CommandFailed
+    {
+        try
+        {
+            new StoreLocker( new DefaultFileSystemAbstraction() ).checkLock( databaseDirectory.toFile() );
+        }
+        catch ( StoreLockException e )
+        {
+            throw new CommandFailed( "the database is in use -- stop Neo4j and try again", e );
         }
     }
 

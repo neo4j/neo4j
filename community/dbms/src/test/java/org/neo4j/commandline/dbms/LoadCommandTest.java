@@ -36,6 +36,9 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
+import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
@@ -92,17 +95,15 @@ public class LoadCommandTest
             throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
-        Files.createDirectories( databaseDirectory.getParent() );
-        Files.createFile( databaseDirectory );
+        Files.createDirectories( databaseDirectory );
 
         doAnswer( ignored ->
         {
-            assertThat( Files.exists( databaseDirectory ), equalTo( false ));
+            assertThat( Files.exists( databaseDirectory ), equalTo( false ) );
             return null;
         } ).when( loader ).load( any(), any() );
 
-        new LoadCommand( homeDir, configDir, loader )
-                .execute( new String[]{"--database=foo.db", "--from=" + archive, "--force"}  );
+        execute( "foo.db", "--force" );
     }
 
     @Test
@@ -110,17 +111,33 @@ public class LoadCommandTest
             throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
-        Files.createDirectories( databaseDirectory.getParent() );
-        Files.createFile( databaseDirectory );
+        Files.createDirectories( databaseDirectory );
 
         doAnswer( ignored ->
         {
-            assertThat( Files.exists( databaseDirectory ), equalTo( true ));
+            assertThat( Files.exists( databaseDirectory ), equalTo( true ) );
             return null;
         } ).when( loader ).load( any(), any() );
 
-        new LoadCommand( homeDir, configDir, loader )
-                .execute( new String[]{"--database=foo.db", "--from=" + archive}  );
+        execute( "foo.db" );
+    }
+
+    @Test
+    public void shouldRespectTheStoreLock() throws IOException, IncorrectUsage
+    {
+        Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        Files.createDirectories( databaseDirectory );
+        new StoreLocker( new DefaultFileSystemAbstraction() ).checkLock( databaseDirectory.toFile() );
+
+        try
+        {
+            execute( "foo.db", "--force" );
+            fail( "expected exception" );
+        }
+        catch ( CommandFailed e )
+        {
+            assertThat( e.getMessage(), equalTo( "the database is in use -- stop Neo4j and try again" ) );
+        }
     }
 
     @Test
@@ -231,9 +248,9 @@ public class LoadCommandTest
         }
     }
 
-    private void execute( final String database ) throws IncorrectUsage, CommandFailed
+    private void execute( String database, String... otherArgs ) throws IncorrectUsage, CommandFailed
     {
         new LoadCommand( homeDir, configDir, loader )
-                .execute( new String[]{"--database=" + database, "--from=" + archive} );
+                .execute( ArrayUtil.concat( new String[]{"--database=" + database, "--from=" + archive}, otherArgs ) );
     }
 }
