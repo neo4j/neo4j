@@ -197,7 +197,7 @@ public class UserServiceTest
 
         // Then
         assertThat( response.getStatus(), equalTo( 200 ) );
-        verify( userManager ).setUserPassword( "neo4j", "test" );
+        verify( userManager ).setUserPassword( "neo4j", "test", false );
     }
 
     @Test

@@ -56,13 +56,12 @@ public class BasicAuthentication implements Authentication
     {
         if ( !SCHEME.equals( authToken.get( SCHEME_KEY ) ) )
         {
-            throw new AuthenticationException( Status.Security.Unauthorized,
-                    "Missing username and password" );
+            throw new AuthenticationException( Status.Security.Unauthorized, "Missing username and password" );
         }
 
         if ( authToken.containsKey( NEW_CREDENTIALS ) )
         {
-            return update( authToken );
+            return update( authToken, false );
         }
         else
         {
@@ -96,7 +95,8 @@ public class BasicAuthentication implements Authentication
         }
     }
 
-    private AuthenticationResult update( Map<String,Object> authToken ) throws AuthenticationException
+    private AuthenticationResult update( Map<String,Object> authToken, boolean requiresPasswordChange )
+            throws AuthenticationException
     {
         try
         {
@@ -107,7 +107,7 @@ public class BasicAuthentication implements Authentication
             case SUCCESS:
             case PASSWORD_CHANGE_REQUIRED:
                 String newPassword = AuthToken.safeCast( NEW_CREDENTIALS, authToken );
-                authSubject.setPassword( newPassword );
+                authSubject.setPassword( newPassword, requiresPasswordChange );
                 break;
             default:
                 throw new AuthenticationException( Status.Security.Unauthorized );

@@ -183,7 +183,7 @@ public class BasicAuthManagerTest
         manager.newUser( "jake", "abc123", true );
 
         // When
-        manager.setUserPassword( "jake", "hello, world!" );
+        manager.setUserPassword( "jake", "hello, world!", false );
 
         // Then
         User user = manager.getUser( "jake" );
@@ -197,7 +197,7 @@ public class BasicAuthManagerTest
         // When
         try
         {
-            manager.setUserPassword( "unknown", "hello, world!" );
+            manager.setUserPassword( "unknown", "hello, world!", false );
             fail( "exception expected" );
         }
         catch ( InvalidArgumentsException e )

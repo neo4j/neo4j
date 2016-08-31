@@ -30,8 +30,8 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
-import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
@@ -57,8 +57,11 @@ public class AuthProcedures
     public KernelTransaction tx;
 
     @Procedure( name = "dbms.security.createUser", mode = DBMS )
-    public void createUser( @Name( "username" ) String username, @Name( "password" ) String password,
-            @Name( "requirePasswordChange" ) boolean requirePasswordChange )
+    public void createUser(
+            @Name( "username" ) String username,
+            @Name( "password" ) String password,
+            @Name( value = "requirePasswordChange", defaultValue = "true"  ) boolean requirePasswordChange
+    )
             throws InvalidArgumentsException, IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
@@ -66,13 +69,17 @@ public class AuthProcedures
     }
 
     @Procedure( name = "dbms.security.changeUserPassword", mode = DBMS )
-    public void changeUserPassword( @Name( "username" ) String username, @Name( "newPassword" ) String newPassword )
+    public void changeUserPassword(
+            @Name( "username" ) String username,
+            @Name( "newPassword" ) String newPassword,
+            @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange
+    )
             throws InvalidArgumentsException, IOException
     {
         EnterpriseAuthSubject enterpriseSubject = EnterpriseAuthSubject.castOrFail( authSubject );
         if ( enterpriseSubject.doesUsernameMatch( username ) )
         {
-            enterpriseSubject.setPassword( newPassword );
+            enterpriseSubject.setPassword( newPassword, requirePasswordChange );
         }
         else if ( !enterpriseSubject.isAdmin() )
         {
@@ -80,7 +87,7 @@ public class AuthProcedures
         }
         else
         {
-            enterpriseSubject.getUserManager().setUserPassword( username, newPassword );
+            enterpriseSubject.getUserManager().setUserPassword( username, newPassword, requirePasswordChange );
             terminateTransactionsForValidUser( username );
             terminateConnectionsForValidUser( username );
         }
@@ -136,7 +143,10 @@ public class AuthProcedures
     }
 
     @Procedure( name = "dbms.security.activateUser", mode = DBMS )
-    public void activateUser( @Name( "username" ) String username ) throws IOException, InvalidArgumentsException
+    public void activateUser(
+            @Name( "username" ) String username,
+            @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange
+    ) throws IOException, InvalidArgumentsException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         if ( adminSubject.doesUsernameMatch( username ) )
@@ -144,7 +154,7 @@ public class AuthProcedures
             throw new InvalidArgumentsException( "Activating yourself (user '" + username +
                     "') is not allowed." );
         }
-        adminSubject.getUserManager().activateUser( username );
+        adminSubject.getUserManager().activateUser( username, requirePasswordChange );
     }
 
     @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )

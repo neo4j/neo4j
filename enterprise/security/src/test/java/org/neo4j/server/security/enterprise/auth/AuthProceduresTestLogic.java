@@ -261,12 +261,28 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldChangeUserPassword() throws Throwable
     {
-        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '321' )" );
+        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '321', false )" );
         // TODO: uncomment and fix
         // testUnAuthenticated( readSubject );
 
         neo.assertInitFailed( neo.login( "readSubject", "123" ) );
         neo.assertAuthenticated( neo.login( "readSubject", "321" ) );
+    }
+
+    @Test
+    public void shouldChangeUserPasswordAndRequirePasswordChangeOnNextLoginByDefault() throws Throwable
+    {
+        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '321' )" );
+        neo.assertInitFailed( neo.login( "readSubject", "123" ) );
+        neo.assertPasswordChangeRequired( neo.login( "readSubject", "321" ) );
+    }
+
+    @Test
+    public void shouldChangeUserPasswordAndRequirePasswordChangeOnNextLoginOnRequest() throws Throwable
+    {
+        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '321', true )" );
+        neo.assertInitFailed( neo.login( "readSubject", "123" ) );
+        neo.assertPasswordChangeRequired( neo.login( "readSubject", "321" ) );
     }
 
     // Should fail vaguely to change password for non-admin subject, regardless of user and password
@@ -282,12 +298,12 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldChangeUserPasswordIfSameUser() throws Throwable
     {
-        assertEmpty( readSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '321' )" );
+        assertEmpty( readSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '321', false )" );
         neo.updateAuthToken( readSubject, "readSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
         neo.assertAuthenticated( readSubject );
         testSuccessfulRead( readSubject, 3 );
 
-        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'adminSubject', 'cba' )" );
+        assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'adminSubject', 'cba', false )" );
         neo.updateAuthToken( adminSubject, "adminSubject", "cba" ); // Because RESTSubject caches an auth token that is sent with every request
         neo.assertAuthenticated( adminSubject );
         testSuccessfulRead( adminSubject, 3 );
@@ -352,10 +368,29 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     //---------- create user -----------
 
     @Test
-    public void shouldCreateUser() throws Exception
+    public void shouldCreateUserAndRequirePasswordChangeByDefault() throws Exception
+    {
+        assertEmpty( adminSubject, "CALL dbms.security.createUser('craig', '1234' )" );
+        userManager.getUser( "craig" );
+        neo.assertInitFailed( neo.login( "craig", "321" ) );
+        neo.assertPasswordChangeRequired( neo.login( "craig", "1234" ) );
+    }
+
+    @Test
+    public void shouldCreateUserAndRequirePasswordChangeIfRequested() throws Exception
     {
         assertEmpty( adminSubject, "CALL dbms.security.createUser('craig', '1234', true)" );
         userManager.getUser( "craig" );
+        neo.assertInitFailed( neo.login( "craig", "321" ) );
+        neo.assertPasswordChangeRequired( neo.login( "craig", "1234" ) );
+    }
+
+    @Test
+    public void shouldCreateUserAndRequireNoPasswordChangeIfRequested() throws Exception
+    {
+        assertEmpty( adminSubject, "CALL dbms.security.createUser('craig', '1234', false)" );
+        userManager.getUser( "craig" );
+        neo.assertAuthenticated( neo.login( "craig", "1234" ) );
     }
 
     @Test
@@ -534,10 +569,30 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     //---------- activate user -----------
 
     @Test
-    public void shouldActivateUser() throws Exception
+    public void shouldActivateUserAndRequirePasswordChangeByDefault() throws Exception
     {
         userManager.suspendUser( "readSubject" );
         assertEmpty( adminSubject, "CALL dbms.security.activateUser('readSubject')" );
+        neo.assertInitFailed( neo.login( "readSubject", "321" ) );
+        neo.assertPasswordChangeRequired( neo.login( "readSubject", "123" ) );
+        assertFalse( userManager.getUser( "readSubject" ).hasFlag( IS_SUSPENDED ) );
+    }
+
+    @Test
+    public void shouldActivateUserAndRequirePasswordChangeIfRequested() throws Exception
+    {
+        userManager.suspendUser( "readSubject" );
+        assertEmpty( adminSubject, "CALL dbms.security.activateUser('readSubject', true)" );
+        neo.assertInitFailed( neo.login( "readSubject", "321" ) );
+        neo.assertPasswordChangeRequired( neo.login( "readSubject", "123" ) );
+        assertFalse( userManager.getUser( "readSubject" ).hasFlag( IS_SUSPENDED ) );
+    }
+
+    @Test
+    public void shouldActivateUserAndRequireNoPasswordChangeIfRequested() throws Exception
+    {
+        userManager.suspendUser( "readSubject" );
+        assertEmpty( adminSubject, "CALL dbms.security.activateUser('readSubject', false)" );
         assertFalse( userManager.getUser( "readSubject" ).hasFlag( IS_SUSPENDED ) );
     }
 

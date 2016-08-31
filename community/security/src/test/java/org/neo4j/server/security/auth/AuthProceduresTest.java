@@ -51,7 +51,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
                 .procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray );
 
         // Then
-        verify( authSubject ).setPassword( (String) inputArray[0] );
+        verify( authSubject ).setPassword( (String) inputArray[0], false );
         assertThat( asList( stream ), emptyIterable() );
     }
 
@@ -88,7 +88,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
                 .procedureCallDbms( procedureName( "dbms", "security", "changePassword" ), inputArray );
 
         // Then
-        verify( authSubject ).setPassword( (String) inputArray[0] );
+        verify( authSubject ).setPassword( (String) inputArray[0], false );
         assertThat( asList( stream ), emptyIterable() );
     }
 

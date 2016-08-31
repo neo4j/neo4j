@@ -34,10 +34,11 @@ public interface AuthSubject extends AccessMode
     /**
      * Set the password for the AuthSubject
      * @param password The new password
+     * @param requirePasswordChange
      * @throws IOException If the new credentials cannot be serialized to disk.
      * @throws InvalidArgumentsException If the new password is invalid.
      */
-    void setPassword( String password ) throws IOException, InvalidArgumentsException;
+    void setPassword( String password, boolean requirePasswordChange ) throws IOException, InvalidArgumentsException;
 
     /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
@@ -56,7 +57,8 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public void setPassword( String password ) throws IOException, InvalidArgumentsException
+        public void setPassword( String password, boolean requirePasswordChange )
+                throws IOException, InvalidArgumentsException
         {
             throw new AuthorizationViolationException( "Anonymous cannot change password" );
         }
@@ -151,7 +153,8 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public void setPassword( String password ) throws IOException, InvalidArgumentsException
+        public void setPassword( String password, boolean requirePasswordChange )
+                throws IOException, InvalidArgumentsException
         {
         }
     };

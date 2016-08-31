@@ -29,7 +29,7 @@ public interface EnterpriseUserManager extends UserManager
 {
     void suspendUser( String username ) throws IOException, InvalidArgumentsException;
 
-    void activateUser( String username ) throws IOException, InvalidArgumentsException;
+    void activateUser( String username, boolean requirePasswordChange ) throws IOException, InvalidArgumentsException;
 
     RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException;
 
