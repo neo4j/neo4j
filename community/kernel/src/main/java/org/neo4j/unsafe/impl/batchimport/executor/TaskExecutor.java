@@ -53,6 +53,11 @@ public interface TaskExecutor<LOCAL> extends Parallelizable
     void shutdown( int flags );
 
     /**
+     * @return {@code true} if {@link #shutdown(int)} has been called, otherwise {@code false}.
+     */
+    boolean isShutdown();
+
+    /**
      * Asserts that this {@link TaskExecutor} is healthy. Useful to call when deciding to wait on a condition
      * this executor is expected to fulfill.
      *

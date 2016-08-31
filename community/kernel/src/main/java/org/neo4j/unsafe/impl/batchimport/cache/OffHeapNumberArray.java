@@ -52,7 +52,11 @@ public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseN
     {
         if ( !closed )
         {
-            UnsafeUtil.free( address );
+            if ( length > 0 )
+            {
+                // Allocating 0 bytes actually returns address 0
+                UnsafeUtil.free( address );
+            }
             closed = true;
         }
     }

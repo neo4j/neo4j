@@ -107,7 +107,7 @@ public class ParallelBatchImporterTest
         @Override
         public int batchSize()
         {
-            // Set to extra low to exercise the internals and IoQueue a bit more.
+            // Set to extra low to exercise the internals a bit more.
             return 100;
         }
 
@@ -175,7 +175,7 @@ public class ParallelBatchImporterTest
                     nodes( nodeRandomSeed, NODE_COUNT, inputIdGenerator, groups ),
                     relationships( relationshipRandomSeed, RELATIONSHIP_COUNT, inputIdGenerator, groups ),
                     idMapper, idGenerator,
-                    /*insanely high bad tolerance, but it will actually never  be that many*/
+                    /*insanely high bad tolerance, but it will actually never be that many*/
                     silentBadCollector( RELATIONSHIP_COUNT ) ) );
 
             // THEN

@@ -168,7 +168,7 @@ public class EncodingIdMapper implements IdMapper
         this.encoder = encoder;
         this.radixFactory = radixFactory;
         this.radix = radixFactory.newInstance();
-        this.collisionNodeIdCache = cacheFactory.newDynamicLongArray( chunkSize, -1 );
+        this.collisionNodeIdCache = cacheFactory.newDynamicLongArray( chunkSize, ID_NOT_FOUND );
     }
 
     /**
@@ -314,7 +314,7 @@ public class EncodingIdMapper implements IdMapper
         }
 
         long returnVal = binarySearch( x, inputId, low, high, groupId );
-        if ( returnVal == -1 )
+        if ( returnVal == ID_NOT_FOUND )
         {
             low = 0;
             high = highestSetIndex;
@@ -368,7 +368,7 @@ public class EncodingIdMapper implements IdMapper
             {
                 long dataIndexA = trackerCache.get( i );
                 long dataIndexB = trackerCache.get( i+1 );
-                if ( dataIndexA == -1 || dataIndexB == -1 )
+                if ( dataIndexA == ID_NOT_FOUND || dataIndexB == ID_NOT_FOUND )
                 {
                     sameGroupDetector.reset();
                     continue;
@@ -399,7 +399,7 @@ public class EncodingIdMapper implements IdMapper
                         trackerCache.swap( i, i+1, 1 );
                     }
 
-                    if ( collision != -1 )
+                    if ( collision != ID_NOT_FOUND )
                     {
                         if ( markAsCollision( collision ) )
                         {
@@ -452,7 +452,7 @@ public class EncodingIdMapper implements IdMapper
         Radix radix = radixFactory.newInstance();
         List<String> sourceDescriptions = new ArrayList<>();
         String lastSourceDescription = null;
-        collisionSourceDataCache = cacheFactory.newLongArray( numberOfCollisions, -1 );
+        collisionSourceDataCache = cacheFactory.newLongArray( numberOfCollisions, ID_NOT_FOUND );
         collisionTrackerCache = trackerFactory.create( cacheFactory, numberOfCollisions );
         for ( long i = 0; ids.hasNext(); )
         {
@@ -654,9 +654,9 @@ public class EncodingIdMapper implements IdMapper
         {
             long mid = low + (high - low)/2;//(low + high) / 2;
             long dataIndex = trackerCache.get( mid );
-            if ( dataIndex == -1 )
+            if ( dataIndex == ID_NOT_FOUND )
             {
-                return -1;
+                return ID_NOT_FOUND;
             }
             long midValue = dataCache.get( dataIndex );
             switch ( unsignedDifference( clearCollision( midValue ), x ) )
@@ -673,7 +673,7 @@ public class EncodingIdMapper implements IdMapper
                     return findFromEIdRange( mid, midValue, inputId, x, groupId );
                 }
                 // This is the only value here, let's do a simple comparison with correct group id and return
-                return groupOf( dataIndex ).id() == groupId ? dataIndex : -1;
+                return groupOf( dataIndex ).id() == groupId ? dataIndex : ID_NOT_FOUND;
             case LT:
                 low = mid + 1;
                 break;
@@ -682,7 +682,7 @@ public class EncodingIdMapper implements IdMapper
                 break;
             }
         }
-        return -1;
+        return ID_NOT_FOUND;
     }
 
     private long dataValue( long index )
@@ -710,7 +710,7 @@ public class EncodingIdMapper implements IdMapper
                 break;
             }
         }
-        return -1;
+        return ID_NOT_FOUND;
     }
 
     private long findFromEIdRange( long index, long val, Object inputId, long x, int groupId )
@@ -734,7 +734,7 @@ public class EncodingIdMapper implements IdMapper
 
     private long findFromEIdRange( long fromIndex, long toIndex, int groupId, Object inputId )
     {
-        long lowestFound = -1; // lowest data index means "first put"
+        long lowestFound = ID_NOT_FOUND; // lowest data index means "first put"
         for ( long index = fromIndex; index <= toIndex; index++ )
         {
             long dataIndex = trackerCache.get( index );
@@ -750,7 +750,7 @@ public class EncodingIdMapper implements IdMapper
                     if ( inputId.equals( value ) )
                     {
                         // :)
-                        lowestFound = lowestFound == -1 ? dataIndex : min( lowestFound, dataIndex );
+                        lowestFound = lowestFound == ID_NOT_FOUND ? dataIndex : min( lowestFound, dataIndex );
                         // continue checking so that we can find the lowest one. It's not up to us here to
                         // consider multiple equal ids in this group an error or not. That should have been
                         // decided in #prepare.
@@ -774,7 +774,7 @@ public class EncodingIdMapper implements IdMapper
     {
         int indexA = tracker.get( a );
         int indexB = tracker.get( b );
-        if ( indexA == -1 || indexB == -1 )
+        if ( indexA == ID_NOT_FOUND || indexB == ID_NOT_FOUND )
         {
             return false;
         }

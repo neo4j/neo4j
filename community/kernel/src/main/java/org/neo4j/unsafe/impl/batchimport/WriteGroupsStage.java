@@ -26,7 +26,16 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import static org.neo4j.unsafe.impl.batchimport.RelationshipGroupCache.GROUP_ENTRY_SIZE;
 
 /**
- * Writes cached {@link RelationshipGroupRecord} to store.
+ * Writes cached {@link RelationshipGroupRecord} from {@link ScanAndCacheGroupsStage} to store. This is done
+ * as a separate step because here the cache is supposed to contain complete chains of relationship group records
+ * for a section of the node store. Steps:
+ *
+ * <ol>
+ * <li>{@link ReadGroupsFromCacheStep} reads complete relationship group chains from {@link RelationshipGroupCache}.
+ * </li>
+ * <li>{@link EncodeGroupsStep} sets correct {@link RelationshipGroupRecord#setNext(long)} pointers for records.</li>
+ * <li>{@link UpdateRecordsStep} writes the relationship group records to store.</li>
+ * </ol>
  */
 public class WriteGroupsStage extends Stage
 {

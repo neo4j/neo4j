@@ -25,15 +25,24 @@ import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
-import static org.neo4j.unsafe.impl.batchimport.RecordIdIteration.allInReversed;
+import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allInReversed;
 
+/**
+ * Scans {@link RelationshipGroupRecord} from store in reverse, this because during import the relationships
+ * are imported per type in descending type id order, i.e. with highest type first. This stage runs as part
+ * of defragmenting the relationship group store so that relationship groups for a particular node will be
+ * co-located on disk. The {@link RelationshipGroupCache} given to this stage has already been primed with
+ * information about which groups to cache, i.e. for which nodes (id range). This step in combination
+ * with {@link WriteGroupsStage} alternating each other can run multiple times to limit max memory consumption
+ * caching relationship groups.
+ */
 public class ScanAndCacheGroupsStage extends Stage
 {
     public ScanAndCacheGroupsStage( Configuration config, RecordStore<RelationshipGroupRecord> store,
             RelationshipGroupCache cache )
     {
         super( "Gather", config );
-        add( new ReadRecordsStep<>( control(), config, store, allInReversed( store ) ) );
+        add( new ReadRecordsStep<>( control(), config, store, allInReversed( store, config ) ) );
         add( new CacheGroupsStep( control(), config, cache ) );
     }
 }

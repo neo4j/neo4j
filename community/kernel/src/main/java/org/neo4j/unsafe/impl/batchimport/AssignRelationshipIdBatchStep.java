@@ -19,40 +19,49 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
+import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
- * Keeps track of number of relationships to import, this to set highId in relationship store before import.
- * This is because of the way double-unit records works, so the secondary units will end up beyond this limit.
+ * Assigns record ids to {@link Batch} for later record allocation. Since this step is single-threaded
+ * we can safely assign these ids here.
  */
-public class CalculateRelationshipsStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
+public class AssignRelationshipIdBatchStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
-    private final RelationshipStore relationshipStore;
-    private long numberOfRelationships;
+    private long nextId;
 
-    public CalculateRelationshipsStep( StageControl control, Configuration config, RelationshipStore relationshipStore )
+    public AssignRelationshipIdBatchStep( StageControl control, Configuration config, long firstRelationshipId )
     {
-        super( control, "RelationshipCalculator", config, 1 );
-        this.relationshipStore = relationshipStore;
+        super( control, "ASSIGN", config, 1 );
+        this.nextId = firstRelationshipId;
     }
 
     @Override
     protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender ) throws Throwable
     {
-        numberOfRelationships += batch.input.length;
+        if ( nextId <= IdGeneratorImpl.INTEGER_MINUS_ONE &&
+                nextId + batch.input.length >= IdGeneratorImpl.INTEGER_MINUS_ONE )
+        {
+            // There's this pesky INTEGER_MINUS_ONE ID again. Easiest is to simply skip this batch of ids
+            // or at least the part up to that id and just continue after it.
+            nextId = IdGeneratorImpl.INTEGER_MINUS_ONE + 1;
+        }
+
+        // Assign first record id and send
+        batch.firstRecordId = nextId;
         sender.send( batch );
+
+        // Set state for the next batch
+        nextId += batch.input.length;
     }
 
-    @Override
-    protected void done()
+    public long getNextRelationshipId()
     {
-        long highestId = relationshipStore.getHighId() + numberOfRelationships;
-        relationshipStore.setHighestPossibleIdInUse( highestId );
-        super.done();
+        return nextId;
     }
 }

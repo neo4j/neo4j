@@ -24,12 +24,23 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
-
-import static org.neo4j.unsafe.impl.batchimport.RecordIdIteration.backwards;
+import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.backwards;
 
 /**
  * Sets {@link RelationshipRecord#setFirstPrevRel(long)} and {@link RelationshipRecord#setSecondPrevRel(long)}
- * in {@link ParallelBatchImporter}.
+ * by going through the {@link RelationshipStore} in reversed order. It uses the {@link NodeRelationshipCache}
+ * the same way as {@link RelationshipStage} does to link chains together, but this time for the "prev"
+ * pointers of {@link RelationshipRecord}. Steps:
+ *
+ * <ol>
+ * <li>{@link ReadRecordsStep} reads records from store and passes on downwards to be processed.
+ * Ids are read page-wise by {@link RecordIdIterator}, where each page is read forwards internally,
+ * i.e. the records in the batches are ordered by ascending id and so consecutive steps needs to
+ * process the records within each batch from end to start.</li>
+ * <li>{@link RelationshipLinkbackStep} processes each batch and assigns the "prev" pointers in
+ * {@link RelationshipRecord} by using {@link NodeRelationshipCache}.</li>
+ * <li>{@link UpdateRecordsStep} writes the updated records back into store.</li>
+ * </ol>
  */
 public class RelationshipLinkbackStage extends Stage
 {
@@ -37,9 +48,9 @@ public class RelationshipLinkbackStage extends Stage
             NodeRelationshipCache cache, long lowRelationshipId, long highRelationshipId, boolean denseNodes )
     {
         super( "Relationship --> Relationship" + topic, config );
-        add( new ReadRecordsStep<>( control(), config, store, backwards( lowRelationshipId, highRelationshipId ) ) );
-        add( new RecordProcessorStep<>( control(), "LINK", config,
-                new RelationshipLinkbackProcessor( cache, denseNodes ), false ) );
+        add( new ReadRecordsStep<>( control(), config, store,
+                backwards( lowRelationshipId, highRelationshipId, config ) ) );
+        add( new RelationshipLinkbackStep( control(), config, cache, denseNodes ) );
         add( new UpdateRecordsStep<>( control(), config, store ) );
     }
 }

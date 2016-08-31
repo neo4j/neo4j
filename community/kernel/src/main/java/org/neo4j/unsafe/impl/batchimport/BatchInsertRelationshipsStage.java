@@ -19,13 +19,31 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
+/**
+ * Inserts relationships one by one, {@link BatchInserter} style which may incur random I/O. This stage
+ * should only be used on relationship types which are very small (<100). Steps:
+ *
+ * <ol>
+ * <li>{@link InputIteratorBatcherStep} reading from {@link InputIterator} produced from {@link Input#nodes()}.</li>
+ * <li>{@link RelationshipPreparationStep} looks up {@link InputRelationship#startNode() start node input id} /
+ * {@link InputRelationship#endNode() end node input id} from {@link IdMapper} and attaches to the batches going
+ * through because that lookup is costly and this step can be parallelized.</li>
+ * <li>{@link PropertyEncoderStep} encodes properties from {@link InputRelationship input relationships} into
+ * {@link PropertyBlock}, low level kernel encoded values.</li>
+ * <li>{@link BatchInsertRelationshipsStep} inserts relationships one by one by reading from and updating store
+ * as it sees required.</li>
+ * </ol>
+ */
 public class BatchInsertRelationshipsStage extends Stage
 {
     public BatchInsertRelationshipsStage( Configuration config, IdMapper idMapper,

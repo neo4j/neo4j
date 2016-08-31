@@ -26,7 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
-import static org.neo4j.unsafe.impl.batchimport.RecordIdIteration.allIn;
+import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
 
 /**
  * Reads all records from {@link NodeStore} and process the counts in them, populating {@link NodeLabelsCache}
@@ -38,7 +38,7 @@ public class NodeCountsStage extends Stage
             int highLabelId, CountsAccessor.Updater countsUpdater, StatsProvider... additionalStatsProviders )
     {
         super( "Node counts", config );
-        add( new ReadRecordsStep<>( control(), config, nodeStore, allIn( nodeStore ) ) );
+        add( new ReadRecordsStep<>( control(), config, nodeStore, allIn( nodeStore, config ) ) );
         add( new RecordProcessorStep<>( control(), "COUNT", config, new NodeCountsProcessor(
                 nodeStore, cache, highLabelId, countsUpdater ), true, additionalStatsProviders ) );
     }

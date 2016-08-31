@@ -86,7 +86,7 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
         public boolean test( long ticket )
         {
             long queued = submittedTicket.get() - processedTicket.get();
-            return queued <= executor.processors( 0 );
+            return queued <= executor.processors( 0 ) | executor.isShutdown();
         }
     };
     private final Runnable healthCheck;

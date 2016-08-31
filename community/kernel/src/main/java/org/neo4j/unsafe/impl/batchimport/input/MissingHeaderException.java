@@ -19,15 +19,19 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
+
+import java.util.Arrays;
+
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
 public class MissingHeaderException extends HeaderException
 {
     private final Type missingType;
 
-    public MissingHeaderException( Type missingType )
+    public MissingHeaderException( Type missingType, Entry[] allEntries )
     {
-        super( "Missing header of type " + missingType );
+        super( "Missing header of type " + missingType + ", among entries " + Arrays.toString( allEntries ) );
         this.missingType = missingType;
     }
 

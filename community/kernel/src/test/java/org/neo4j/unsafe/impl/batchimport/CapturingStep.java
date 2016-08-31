@@ -19,33 +19,34 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
-/**
- * Caches {@link RelationshipGroupRecord} into {@link RelationshipGroupCache}.
- */
-public class CacheGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
+public class CapturingStep<T> extends ProcessorStep<T>
 {
-    private final RelationshipGroupCache cache;
+    private final List<T> receivedBatches = Collections.synchronizedList( new ArrayList<>() );
 
-    public CacheGroupsStep( StageControl control, Configuration config, RelationshipGroupCache cache )
+    public CapturingStep( StageControl control, String name, Configuration config,
+            StatsProvider... additionalStatsProvider )
     {
-        super( control, "CACHE", config, 1 );
-        this.cache = cache;
+        super( control, name, config, 1, additionalStatsProvider );
+    }
+
+    public List<T> receivedBatches()
+    {
+        return receivedBatches;
     }
 
     @Override
-    protected void process( RelationshipGroupRecord[] batch, BatchSender sender ) throws Throwable
+    protected void process( T batch, BatchSender sender ) throws Throwable
     {
-        // These records are read page-wise forwards, but should be cached in reverse
-        // since the records exists in the store in reverse order.
-        for ( int i = batch.length-1; i >= 0; i-- )
-        {
-            cache.put( batch[i] );
-        }
+        receivedBatches.add( batch );
     }
 }

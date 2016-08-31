@@ -19,16 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
-import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
+import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
+import org.neo4j.unsafe.impl.batchimport.staging.ForkedProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository;
-
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -39,78 +35,49 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
  * relationship ids are kept in {@link NodeRelationshipCache node cache}, which is a point of scalability issues,
  * although mitigated using multi-pass techniques.
  */
-public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
+public class RelationshipEncoderStep extends ForkedProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
-    private final BatchingTokenRepository<?, ?> relationshipTypeRepository;
     private final NodeRelationshipCache cache;
-    private final ParallelizationCoordinator parallelization = new ParallelizationCoordinator();
 
-    public RelationshipEncoderStep( StageControl control,
-            Configuration config,
-            BatchingTokenRepository<?, ?> relationshipTypeRepository,
-            NodeRelationshipCache cache )
+    public RelationshipEncoderStep( StageControl control, Configuration config, NodeRelationshipCache cache )
     {
         super( control, "RELATIONSHIP", config, 0 );
-        this.relationshipTypeRepository = relationshipTypeRepository;
         this.cache = cache;
     }
 
     @Override
-    protected Resource permit( Batch<InputRelationship,RelationshipRecord> batch )
+    protected void forkedProcess( int id, int processors, Batch<InputRelationship,RelationshipRecord> batch )
     {
-        return parallelization.coordinate( batch.parallelizableWithPrevious );
-    }
-
-    @Override
-    protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender ) throws Throwable
-    {
-        InputRelationship[] input = batch.input;
-        batch.records = new RelationshipRecord[input.length];
-        long[] ids = batch.ids;
-        long nextRelationshipId = batch.firstRecordId;
-        for ( int i = 0; i < input.length; i++ )
+        for ( int i = 0; i < batch.records.length; i++ )
         {
-            InputRelationship batchRelationship = input[i];
-            long relationshipId = nextRelationshipId++;
-            // Ids have been verified to exist in CalculateDenseNodeStep
-            long startNodeId = ids[i*2];
-            long endNodeId = ids[i*2+1];
-            if ( startNodeId == -1 || endNodeId == -1 )
+            RelationshipRecord relationship = batch.records[i];
+            long startNode = relationship.getFirstNode();
+            long endNode = relationship.getSecondNode();
+            if ( !relationship.inUse() )
             {   // This means that we here have a relationship that refers to missing nodes.
                 // It also means that we tolerate some amount of bad relationships and CalculateDenseNodesStep
                 // already have reported this to the bad collector.
-                batch.records[i] = new RelationshipRecord( relationshipId );
-                batch.records[i].setInUse( false );
                 continue;
             }
 
-            int typeId = batchRelationship.hasTypeId() ? batchRelationship.typeId() :
-                    relationshipTypeRepository.getOrCreateId( batchRelationship.type() );
-            RelationshipRecord relationshipRecord = batch.records[i] = new RelationshipRecord( relationshipId,
-                    startNodeId, endNodeId, typeId );
-            relationshipRecord.setInUse( true );
-
             // Set first/second next rel
-            boolean loop = startNodeId == endNodeId;
-            long firstNextRel = cache.getAndPutRelationship(
-                    startNodeId, loop ? BOTH : OUTGOING, relationshipId, true );
-            relationshipRecord.setFirstNextRel( firstNextRel );
-            if ( loop )
+            boolean loop = startNode == endNode;
+            if ( startNode % processors == id )
             {
-                relationshipRecord.setSecondNextRel( firstNextRel );
-            }
-            else
-            {
-                relationshipRecord.setSecondNextRel( cache.getAndPutRelationship(
-                        endNodeId, INCOMING, relationshipId, true ) );
+                long firstNextRel = cache.getAndPutRelationship(
+                        startNode, loop ? BOTH : OUTGOING, relationship.getId(), true );
+                relationship.setFirstNextRel( firstNextRel );
+                if ( loop )
+                {
+                    relationship.setSecondNextRel( firstNextRel );
+                }
             }
 
-            // Most rels will not be first in chain
-            relationshipRecord.setFirstInFirstChain( false );
-            relationshipRecord.setFirstInSecondChain( false );
-            relationshipRecord.setFirstPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
-            relationshipRecord.setSecondPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
+            if ( !loop && endNode % processors == id )
+            {
+                relationship.setSecondNextRel( cache.getAndPutRelationship(
+                        endNode, INCOMING, relationship.getId(), true ) );
+            }
         }
-        sender.send( batch );
     }
 }

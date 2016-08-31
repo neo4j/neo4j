@@ -79,13 +79,13 @@ public class NodeRelationshipCacheTest
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.AUTO, 5, 100, base );
+        cache.setHighNodeId( 26 );
         increment( cache, 2, 10 );
         increment( cache, 5, 2 );
         increment( cache, 7, 12 );
         increment( cache, 23, 4 );
         increment( cache, 24, 5 );
         increment( cache, 25, 6 );
-        cache.setHighNodeId( 25 );
 
         // THEN
         assertFalse( cache.isDense( 0 ) );
@@ -129,7 +129,7 @@ public class NodeRelationshipCacheTest
         Direction[] directions = Direction.values();
         GroupVisitor groupVisitor = mock( GroupVisitor.class );
         cache.setForwardScan( true );
-        cache.setHighNodeId( nodes );
+        cache.setHighNodeId( nodes+1 );
         for ( int i = 0; i < nodes; i++ )
         {
             assertEquals( -1L, cache.getFirstRel( nodes, groupVisitor ) );
@@ -185,7 +185,7 @@ public class NodeRelationshipCacheTest
 
         // WHEN
         long nodeId = 1_000_000 - 1;
-        cache.setHighNodeId( nodeId );
+        cache.setHighNodeId( nodeId+1 );
         Direction direction = Direction.OUTGOING;
         long relId = 10;
         cache.getAndPutRelationship( nodeId, direction, relId, false );
@@ -203,6 +203,7 @@ public class NodeRelationshipCacheTest
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 1000, base );
 
         // mark random nodes as dense (dense node threshold is 1 so enough with one increment
+        cache.setHighNodeId( nodes );
         for ( long nodeId = 0; nodeId < nodes; nodeId++ )
         {
             if ( random.nextBoolean() )
@@ -210,7 +211,6 @@ public class NodeRelationshipCacheTest
                 cache.incrementCount( nodeId );
             }
         }
-        cache.setHighNodeId( nodes );
 
         // WHEN
         for ( int i = 0; i < 100_000; i++ )
@@ -239,8 +239,8 @@ public class NodeRelationshipCacheTest
         long sparseNode = 0;
         long denseNode = 1;
         long relationshipId = (1L << 48) - 2;
+        cache.setHighNodeId( 2 );
         cache.incrementCount( denseNode );
-        cache.setHighNodeId( 1 );
 
         // WHEN
         assertEquals( -1L, cache.getAndPutRelationship( sparseNode, OUTGOING, relationshipId, false ) );
@@ -278,6 +278,7 @@ public class NodeRelationshipCacheTest
         // GIVEN
         int nodes = 10;
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 2, 100, base );
+        cache.setHighNodeId( nodes );
         for ( long nodeId = 0; nodeId < nodes; nodeId++ )
         {
             cache.incrementCount( nodeId );
@@ -286,7 +287,6 @@ public class NodeRelationshipCacheTest
                 cache.incrementCount( nodeId );
             }
         }
-        cache.setHighNodeId( nodes );
         PrimitiveLongSet keySparseChanged = Primitive.longSet( nodes );
         PrimitiveLongSet keyDenseChanged = Primitive.longSet( nodes );
         for ( int i = 0; i < nodes / 2; i++ )
@@ -329,6 +329,7 @@ public class NodeRelationshipCacheTest
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 10, 100, base );
         long nodeId = 5;
         int count = NodeRelationshipCache.MAX_COUNT - 5;
+        cache.setHighNodeId( 10 );
         cache.setCount( nodeId, count );
 
         // WHEN
@@ -352,8 +353,8 @@ public class NodeRelationshipCacheTest
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
         long nodeId = 0;
-        cache.incrementCount( nodeId );
         cache.setHighNodeId( nodeId+1 );
+        cache.incrementCount( nodeId );
         GroupVisitor groupVisitor = mock( GroupVisitor.class );
         when( groupVisitor.visit( anyLong(), anyLong(), anyLong(), anyLong(), anyLong() ) ).thenReturn( 1L, 2L, 3L );
 
