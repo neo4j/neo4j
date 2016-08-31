@@ -22,6 +22,7 @@ package org.neo4j.commandline.dbms;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -91,7 +92,11 @@ public class LoadCommand implements AdminCommand
     {
         Path archive = parse( args, "from", Paths::get );
         String database = parse( args, "database", identity() );
-        load( archive, database, toDatabaseDirectory( database ) );
+        boolean force = Args.parse( args ).getBoolean( "force" );
+
+        Path databaseDirectory = toDatabaseDirectory( database );
+        deleteIfNecessary( databaseDirectory, force );
+        load( archive, database, databaseDirectory );
     }
 
     private <T> T parse( String[] args, String argument, Function<String, T> converter ) throws IncorrectUsage
@@ -115,6 +120,21 @@ public class LoadCommand implements AdminCommand
                         Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) )
                 .with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) )
                 .get( database_path ).toPath();
+    }
+
+    private void deleteIfNecessary( Path databaseDirectory, boolean force ) throws CommandFailed
+    {
+        try
+        {
+            if ( force )
+            {
+                Files.deleteIfExists( databaseDirectory );
+            }
+        }
+        catch ( IOException e )
+        {
+            wrapIOException( e );
+        }
     }
 
     private void load( Path archive, String database, Path databaseDirectory ) throws CommandFailed

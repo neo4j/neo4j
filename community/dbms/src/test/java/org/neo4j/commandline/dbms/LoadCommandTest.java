@@ -46,6 +46,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -84,6 +85,42 @@ public class LoadCommandTest
         Files.write( configDir.resolve( "neo4j.conf" ), asList( data_directory.name() + "=/some/data/dir" ) );
         execute( "foo.db" );
         verify( loader ).load( any(), eq( Paths.get( "/some/data/dir/databases/foo.db" ) ) );
+    }
+
+    @Test
+    public void shouldDeleteTheOldDatabaseIfForceArgumentIsProvided()
+            throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
+    {
+        Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        Files.createDirectories( databaseDirectory.getParent() );
+        Files.createFile( databaseDirectory );
+
+        doAnswer( ignored ->
+        {
+            assertThat( Files.exists( databaseDirectory ), equalTo( false ));
+            return null;
+        } ).when( loader ).load( any(), any() );
+
+        new LoadCommand( homeDir, configDir, loader )
+                .execute( new String[]{"--database=foo.db", "--from=" + archive, "--force"}  );
+    }
+
+    @Test
+    public void shouldNotDeleteTheOldDatabaseIfForceArgumentIsNotProvided()
+            throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
+    {
+        Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        Files.createDirectories( databaseDirectory.getParent() );
+        Files.createFile( databaseDirectory );
+
+        doAnswer( ignored ->
+        {
+            assertThat( Files.exists( databaseDirectory ), equalTo( true ));
+            return null;
+        } ).when( loader ).load( any(), any() );
+
+        new LoadCommand( homeDir, configDir, loader )
+                .execute( new String[]{"--database=foo.db", "--from=" + archive}  );
     }
 
     @Test
