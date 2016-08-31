@@ -26,6 +26,7 @@ import org.junit.Before;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -38,6 +39,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.test.DoubleLatch;
 
 import static java.util.stream.Collectors.toList;
 
@@ -50,6 +52,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.procedure.Procedure.Mode.READ;
 import static org.neo4j.procedure.Procedure.Mode.WRITE;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
@@ -423,6 +426,8 @@ abstract class AuthTestBase<S>
         @Context
         public Log log;
 
+        private static final AtomicReference<LatchedRunnables> testLatch = new AtomicReference<>();
+
         @Procedure( name = "test.numNodes" )
         public Stream<CountResult> numNodes()
         {
@@ -456,6 +461,53 @@ abstract class AuthTestBase<S>
         public void createNode()
         {
             db.createNode();
+        }
+
+        @Procedure( name = "test.waitForLatch", mode = READ )
+        public void waitForLatch()
+        {
+            try
+            {
+                testLatch.get().runBefore.run();
+            }
+            finally
+            {
+                testLatch.get().doubleLatch.start();
+            }
+            try
+            {
+                testLatch.get().runAfter.run();
+            }
+            finally
+            {
+                testLatch.get().doubleLatch.finish();
+                testLatch.get().doubleLatch.awaitFinish();
+            }
+        }
+
+        static class LatchedRunnables implements AutoCloseable
+        {
+            DoubleLatch doubleLatch;
+            Runnable runBefore;
+            Runnable runAfter;
+
+            public LatchedRunnables( DoubleLatch doubleLatch, Runnable runBefore, Runnable runAfter )
+            {
+                this.doubleLatch = doubleLatch;
+                this.runBefore = runBefore;
+                this.runAfter = runAfter;
+            }
+
+            @Override
+            public void close() throws Exception
+            {
+                ClassWithProcedures.testLatch.set( null );
+            }
+        }
+
+        public static void setTestLatch( LatchedRunnables testLatch )
+        {
+            ClassWithProcedures.testLatch.set( testLatch );
         }
     }
 }
