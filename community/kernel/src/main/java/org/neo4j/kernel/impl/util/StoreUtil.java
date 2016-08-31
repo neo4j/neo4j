@@ -28,6 +28,7 @@ public class StoreUtil
 {
     // Branched directories will end up in <dbStoreDir>/branched/<timestamp>/
     public final static String BRANCH_SUBDIRECTORY = "branched";
+    public static final String TEMP_COPY_DIRECTORY_NAME = "temp-copy";
 
     public static void cleanStoreDir( File storeDir ) throws IOException
     {
@@ -37,7 +38,7 @@ public class StoreUtil
         }
     }
 
-    private static File[] relevantDbFiles( File storeDir )
+    public static File[] relevantDbFiles( File storeDir )
     {
         if ( !storeDir.exists() )
         {
@@ -52,7 +53,7 @@ public class StoreUtil
                     return false;
                 }
             }
-            return !isBranchedDataRootDirectory( file );
+            return !isBranchedDataRootDirectory( file ) && !isTemporaryCopy( file );
         });
     }
 
@@ -66,6 +67,11 @@ public class StoreUtil
     private static boolean isBranchedDataRootDirectory( File file )
     {
         return file.isDirectory() && file.getName().equals( BRANCH_SUBDIRECTORY );
+    }
+
+    private static boolean isTemporaryCopy( File file )
+    {
+        return file.isDirectory() && file.getName().equals( TEMP_COPY_DIRECTORY_NAME );
     }
 
     public static boolean isBranchedDataDirectory( File file )

@@ -32,6 +32,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ExternallyManagedPageCache;
+import org.neo4j.com.storecopy.MoveToDir;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreCopyClient;
@@ -142,7 +143,7 @@ class BackupService
             StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory, tuningConfiguration,
                     loadKernelExtensions(), logProvider, new DefaultFileSystemAbstraction(), pageCache,
                     monitors.newMonitor( StoreCopyClient.Monitor.class, getClass() ), forensics );
-            storeCopier.copyStore( new StoreCopyClient.StoreCopyRequester()
+            File copyOfStore = storeCopier.copyStore( new StoreCopyClient.StoreCopyRequester()
             {
                 private BackupClient client;
 
@@ -162,6 +163,7 @@ class BackupService
                     client.stop();
                 }
             }, CancellationRequest.NEVER_CANCELLED );
+            new MoveToDir().move( copyOfStore, targetDirectory );
 
             bumpDebugDotLogFileVersion( targetDirectory, timestamp );
             boolean consistent = false;

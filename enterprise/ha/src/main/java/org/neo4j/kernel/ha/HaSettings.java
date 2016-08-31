@@ -35,6 +35,7 @@ import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.ha.HaSettings.BranchedDataCopyingStrategy.branch_then_copy;
 import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
 
 /**
@@ -94,6 +95,10 @@ public class HaSettings
     @Description( "Push strategy of a transaction to a slave during commit." )
     public static final Setting<TxPushStrategy> tx_push_strategy = setting( "ha.tx_push_strategy", options( TxPushStrategy.class ), fixed_ascending.name() );
 
+    @Description( "Strategy for how to handle copying of the store from the master if branched data happens." )
+    public static final Setting<BranchedDataCopyingStrategy> branched_data_copying_strategy =
+            setting( "ha.branched_data_copying_strategy", options( BranchedDataCopyingStrategy.class ), branch_then_copy.name() );
+
     @Description( "Size of batches of transactions applied on slaves when pulling from master" )
     public static final Setting<Integer> pull_apply_batch_size = setting( "ha.pull_batch_size", INTEGER, "100" );
 
@@ -103,6 +108,15 @@ public class HaSettings
                   "inconsistent/reused records." )
     @Internal
     public static final Setting<Long> id_reuse_safe_zone_time = setting( "unsupported.dbms.id_reuse_safe_zone", Settings.DURATION, "1h" );
+
+    public enum BranchedDataCopyingStrategy
+    {
+        @Description("Branches the store, copies down a new store from the master, and replaces it. ")
+        branch_then_copy,
+
+        @Description("Copies down a new store from the master, then branches the existing store and replaces it. ")
+        copy_then_branch;
+    }
 
     public enum TxPushStrategy
     {

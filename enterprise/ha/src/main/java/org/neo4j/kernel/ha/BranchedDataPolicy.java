@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.impl.util.StoreUtil.cleanStoreDir;
 import static org.neo4j.kernel.impl.util.StoreUtil.getBranchedDataRootDirectory;
@@ -35,17 +37,23 @@ public enum BranchedDataPolicy
     keep_all
             {
                 @Override
-                public void handle( File storeDir ) throws IOException
+                public void handle( File storeDir, LogService logService ) throws IOException
                 {
-                    moveAwayDb( storeDir, newBranchedDataDir( storeDir ) );
+                    Log msgLog = logService.getInternalLog( getClass() );
+                    File branchedDataDir = newBranchedDataDir( storeDir );
+                    msgLog.debug( "Moving store from " + storeDir + " to " + branchedDataDir );
+                    moveAwayDb( storeDir, branchedDataDir );
                 }
             },
     keep_last
             {
                 @Override
-                public void handle( File storeDir ) throws IOException
+                public void handle( File storeDir, LogService logService ) throws IOException
                 {
+                    Log msgLog = logService.getInternalLog( getClass() );
+
                     File branchedDataDir = newBranchedDataDir( storeDir );
+                    msgLog.debug( "Moving store from " + storeDir + " to " + branchedDataDir );
                     moveAwayDb( storeDir, branchedDataDir );
                     for ( File file : getBranchedDataRootDirectory( storeDir ).listFiles() )
                     {
@@ -59,11 +67,13 @@ public enum BranchedDataPolicy
     keep_none
             {
                 @Override
-                public void handle( File storeDir ) throws IOException
+                public void handle( File storeDir, LogService logService ) throws IOException
                 {
+                    Log msgLog = logService.getInternalLog( getClass() );
+                    msgLog.debug( "Removing store  " + storeDir );
                     cleanStoreDir( storeDir );
                 }
             };
 
-    public abstract void handle( File storeDir ) throws IOException;
+    public abstract void handle( File storeDir, LogService msgLog ) throws IOException;
 }
