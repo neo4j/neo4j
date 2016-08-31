@@ -132,8 +132,6 @@ public class EdgeServerReplicationIT
             ThrowingSupplier<Boolean,Exception> availability = () -> edgeClusterMember.database().isAvailable( 0 );
             assertEventually( "edge server becomes available", availability, is( true ), 10, SECONDS );
         }
-
-        Thread.sleep( 20_000 );
     }
 
     @Test
@@ -210,28 +208,6 @@ public class EdgeServerReplicationIT
         }
     }
 
-    private boolean edgesUpToDateAsTheLeader( CoreClusterMember leader, Collection<EdgeClusterMember> edgeClusterMembers )
-    {
-        long leaderTxId = lastClosedTransactionId( leader.database() );
-        return edgeClusterMembers.stream().map( EdgeClusterMember::database ).map( this::lastClosedTransactionId )
-                .reduce( true, ( acc, txId ) -> acc && txId == leaderTxId, Boolean::logicalAnd );
-    }
-
-    private void putSomeDataWithDifferentStoreId( File storeDir, File coreStoreDir ) throws IOException
-    {
-        FileUtils.copyRecursively( coreStoreDir, storeDir );
-        changeStoreId( storeDir );
-    }
-
-    private void changeStoreId( File storeDir ) throws IOException
-    {
-        File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
-        {
-            MetaDataStore.setRecord( pageCache, neoStoreFile, TIME, System.currentTimeMillis() );
-        }
-    }
-
     @Test
     public void anEdgeServerShouldBeAbleToRejoinTheCluster() throws Exception
     {
@@ -262,6 +238,46 @@ public class EdgeServerReplicationIT
         Set<DbRepresentation> dbs = coreStoreDirs.stream().map( DbRepresentation::of ).collect( toSet() );
         dbs.addAll( edgeStoreDirs.stream().map( DbRepresentation::of ).collect( toSet() ) );
         assertEquals( 1, dbs.size() );
+    }
+
+    @Test
+    public void edgeServersShouldRestartIfTheWholeClusterIsRestarted() throws Exception
+    {
+        // given
+        Cluster cluster = clusterRule.startCluster();
+
+        // when
+        cluster.shutdown();
+        cluster.start();
+
+        // then
+        for ( final EdgeClusterMember edgeClusterMember : cluster.edgeMembers() )
+        {
+            ThrowingSupplier<Boolean,Exception> availability = () -> edgeClusterMember.database().isAvailable( 0 );
+            assertEventually( "edge server becomes available", availability, is( true ), 10, SECONDS );
+        }
+    }
+
+    private boolean edgesUpToDateAsTheLeader( CoreClusterMember leader, Collection<EdgeClusterMember> edgeClusterMembers )
+    {
+        long leaderTxId = lastClosedTransactionId( leader.database() );
+        return edgeClusterMembers.stream().map( EdgeClusterMember::database ).map( this::lastClosedTransactionId )
+                .reduce( true, ( acc, txId ) -> acc && txId == leaderTxId, Boolean::logicalAnd );
+    }
+
+    private void putSomeDataWithDifferentStoreId( File storeDir, File coreStoreDir ) throws IOException
+    {
+        FileUtils.copyRecursively( coreStoreDir, storeDir );
+        changeStoreId( storeDir );
+    }
+
+    private void changeStoreId( File storeDir ) throws IOException
+    {
+        File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
+        {
+            MetaDataStore.setRecord( pageCache, neoStoreFile, TIME, System.currentTimeMillis() );
+        }
     }
 
     private long lastClosedTransactionId( GraphDatabaseFacade db )

@@ -125,6 +125,7 @@ public class EdgeStartupProcessTest
         Mockito.verify( localDatabase ).start();
         Mockito.verify( localDatabase ).isEmpty();
         Mockito.verify( localDatabase ).ensureSameStoreId( memberId, storeFetcher );
+        Mockito.verify( localDatabase ).storeId();
         Mockito.verifyNoMoreInteractions( localDatabase, dataSourceManager );
         Mockito.verifyZeroInteractions( txPulling );
     }
@@ -161,6 +162,7 @@ public class EdgeStartupProcessTest
         Mockito.verify( localDatabase ).isEmpty();
         Mockito.verify( localDatabase ).ensureSameStoreId( memberId, storeFetcher );
         Mockito.verify( localDatabase ).start();
+        Mockito.verify( localDatabase ).storeId();
         Mockito.verify( txPulling ).start();
         Mockito.verifyNoMoreInteractions( localDatabase, txPulling );
     }

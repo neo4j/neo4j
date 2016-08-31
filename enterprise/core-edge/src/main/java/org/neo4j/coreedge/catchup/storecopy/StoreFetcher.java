@@ -62,12 +62,14 @@ public class StoreFetcher
         ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
         long lastCommittedTransactionId = transactionIdStore.getLastCommittedTransactionId();
 
-        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider ) )
+        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider
+        ) )
         {
             log.info( "Pulling transactions from: %d", lastCommittedTransactionId );
             try
             {
-                long lastPulledTxId = txPullClient.pullTransactions( from, storeId, lastCommittedTransactionId, writer );
+                long lastPulledTxId = txPullClient.pullTransactions( from, storeId, lastCommittedTransactionId,
+                        writer );
                 log.info( "Txs streamed up to %d", lastPulledTxId );
                 return true;
             }
@@ -86,7 +88,8 @@ public class StoreFetcher
             long lastFlushedTxId = storeCopyClient.copyStoreFiles( from, new StreamToDisk( storeDir, fs ) );
             log.info( "Store files streamed up to %d", lastFlushedTxId );
 
-            try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider ) )
+            try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache,
+                    logProvider ) )
             {
                 log.info( "Pulling transactions from: %d", lastFlushedTxId - 1 );
                 long lastPulledTxId = txPullClient.pullTransactions( from, storeId, lastFlushedTxId - 1, writer );
@@ -101,6 +104,36 @@ public class StoreFetcher
 
     public StoreId storeId( MemberId from ) throws StoreIdDownloadFailedException
     {
-        return storeCopyClient.fetchStoreId( from );
+        String operation = "get store id";
+        long retryInterval = 5_000;
+        int attempts = 0;
+
+        while ( attempts++ < 5 )
+        {
+            log.info( "Attempt #%d to %s.", attempts, operation );
+
+            try
+            {
+                return storeCopyClient.fetchStoreId( from );
+            }
+            catch ( StoreIdDownloadFailedException e )
+            {
+                log.info( "Attempt #%d to %s failed.", attempts, operation );
+            }
+
+            try
+            {
+                log.info( "Next attempt to %s in %d ms.", operation, retryInterval );
+                Thread.sleep( retryInterval );
+                retryInterval = retryInterval * 2;
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+                throw new StoreIdDownloadFailedException( e );
+            }
+        }
+
+        throw new StoreIdDownloadFailedException( "Failed to get store id after " + (attempts - 1) + " attempts" );
     }
 }

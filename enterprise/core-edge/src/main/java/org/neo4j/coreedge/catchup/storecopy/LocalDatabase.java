@@ -125,11 +125,18 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
             boolean successfullyCaughtUp = false;
             if ( wantedStoreId.equals( storeId ) )
             {
+                log.info( "Bringing store up to date with %s", source );
                 successfullyCaughtUp = tryToCatchUp( source, storeFetcher );
+
+                if ( !successfullyCaughtUp )
+                {
+                    log.info( "Failed to bring store up to date with %s.", source );
+                }
             }
 
             if ( !successfullyCaughtUp )
             {
+                log.info( "Deleting local store and downloading new store from %s.", source );
                 storeFiles.delete( storeDir );
                 copyWholeStoreFrom( source, wantedStoreId, storeFetcher );
             }
@@ -168,7 +175,9 @@ public class LocalDatabase implements Supplier<StoreId>, Lifecycle
             throws StoreIdDownloadFailedException
     {
         StoreId localStoreId = storeId();
+        log.info( "Getting StoreId from %s", memberId );
         StoreId remoteStoreId = storeFetcher.storeId( memberId );
+        log.info( "Got StoreId %s from %s", remoteStoreId, memberId );
         if ( !localStoreId.equals( remoteStoreId ) )
         {
             throw new IllegalStateException( format( "This edge machine cannot join the cluster. " +

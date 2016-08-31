@@ -46,7 +46,7 @@ public class TimeoutLoopTest
         Supplier<Long> lastResponseSupplier = () -> 1L;
 
         // when
-        long value = TimeoutLoop.<Long>waitForCompletion( future, lastResponseSupplier, 2, MILLISECONDS );
+        long value = TimeoutLoop.<Long>waitForCompletion( future, "", lastResponseSupplier, 2, MILLISECONDS );
 
         // then
         assertEquals( 12L, value );
@@ -65,7 +65,7 @@ public class TimeoutLoopTest
         try
         {
             // when
-            TimeoutLoop.<Long>waitForCompletion( future, lastResponseSupplier, 1, MILLISECONDS );
+            TimeoutLoop.<Long>waitForCompletion( future, "", lastResponseSupplier, 1, MILLISECONDS );
             fail( "Should have timed out" );
         }
         catch ( CatchUpClientException e )
@@ -86,7 +86,7 @@ public class TimeoutLoopTest
         Supplier<Long> lastResponseSupplier = () -> 1L;
 
         // when
-        long value = TimeoutLoop.<Long>waitForCompletion( future, lastResponseSupplier, 2, MILLISECONDS );
+        long value = TimeoutLoop.<Long>waitForCompletion( future, "", lastResponseSupplier, 2, MILLISECONDS );
 
         // then
         assertEquals( 12L, value );
@@ -102,7 +102,7 @@ public class TimeoutLoopTest
         // when
         try
         {
-            TimeoutLoop.<Long>waitForCompletion( future, () -> 1L, 2, MILLISECONDS );
+            TimeoutLoop.<Long>waitForCompletion( future, "", () -> 1L, 2, MILLISECONDS );
             fail( "Should have thrown exception" );
         }
         catch ( CatchUpClientException e )

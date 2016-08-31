@@ -80,8 +80,8 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     public void start() throws Throwable
     {
         edgeRefreshTimer = renewableTimeoutService.create( REFRESH_EDGE, edgeRefreshRate, 0, timeout -> {
-            retry( ( hazelcastInstance ) -> addEdgeServer( hazelcastInstance ) );
             timeout.renew();
+            retry( ( hazelcastInstance ) -> addEdgeServer( hazelcastInstance ) );
         } );
     }
 
