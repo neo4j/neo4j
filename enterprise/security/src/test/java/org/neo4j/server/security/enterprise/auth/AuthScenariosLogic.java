@@ -366,7 +366,6 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
 
         assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('" + PUBLISHER + "', 'Henrik')" );
 
-        write.finish();
         latch.finishAndWaitForAllToFinish();
 
         write.closeAndAssertSuccess();

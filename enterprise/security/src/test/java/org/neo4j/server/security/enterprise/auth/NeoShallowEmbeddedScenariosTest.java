@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+
 public class NeoShallowEmbeddedScenariosTest extends AuthScenariosLogic<EnterpriseAuthSubject>
 {
     @Override

@@ -17,15 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.kernel.enterprise.api.security;
 
-import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
+import org.neo4j.kernel.api.security.AuthSubject;
 
-public class NeoShallowEmbeddedProceduresTest extends AuthProceduresTestLogic<EnterpriseAuthSubject>
+public interface EnterpriseAuthSubject extends AuthSubject
 {
-    @Override
-    protected NeoInteractionLevel<EnterpriseAuthSubject> setUpNeoServer() throws Throwable
-    {
-        return new NeoShallowEmbeddedInteraction();
-    }
+    boolean isAdmin();
 }

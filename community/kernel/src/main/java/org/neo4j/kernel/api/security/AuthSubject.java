@@ -77,6 +77,12 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
+        public boolean doesUsernameMatch( String username )
+        {
+            return false;
+        }
+
+        @Override
         public boolean allowsProcedureWith( String[] roleNames )
         {
             return false;
@@ -190,9 +196,17 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
+        public boolean doesUsernameMatch( String username )
+        {
+            return false;
+        }
+
+        @Override
         public boolean allowsProcedureWith( String[] roleNames )
         {
             return true;
         }
     };
+
+    boolean doesUsernameMatch( String username );
 }

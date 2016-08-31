@@ -30,10 +30,11 @@ import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 
 import static java.util.stream.Collectors.toSet;
 
-public class EnterpriseAuthSubject implements AuthSubject
+public class StandardEnterpriseAuthSubject implements EnterpriseAuthSubject
 {
     static final String SCHEMA_READ_WRITE = "schema:read,write";
     static final String READ_WRITE = "data:read,write";
@@ -42,19 +43,19 @@ public class EnterpriseAuthSubject implements AuthSubject
     private final EnterpriseAuthManager authManager;
     private final ShiroSubject shiroSubject;
 
-    public static EnterpriseAuthSubject castOrFail( AuthSubject authSubject )
-    {
-        if ( !(authSubject instanceof EnterpriseAuthSubject) )
-        {
-            throw new IllegalArgumentException( "Incorrect AuthSubject type " + authSubject.getClass().getTypeName() );
-        }
-        return (EnterpriseAuthSubject) authSubject;
-    }
-
-    public EnterpriseAuthSubject( EnterpriseAuthManager authManager, ShiroSubject shiroSubject )
+    public StandardEnterpriseAuthSubject( EnterpriseAuthManager authManager, ShiroSubject shiroSubject )
     {
         this.authManager = authManager;
         this.shiroSubject = shiroSubject;
+    }
+
+    public static StandardEnterpriseAuthSubject castOrFail( AuthSubject authSubject )
+    {
+        if ( !(authSubject instanceof StandardEnterpriseAuthSubject) )
+        {
+            throw new IllegalArgumentException( "Incorrect AuthSubject type " + authSubject.getClass().getTypeName() );
+        }
+        return (StandardEnterpriseAuthSubject) authSubject;
     }
 
     @Override
@@ -95,11 +96,13 @@ public class EnterpriseAuthSubject implements AuthSubject
         return authManager.getUserManager();
     }
 
+    @Override
     public boolean isAdmin()
     {
         return shiroSubject.isAuthenticated() && shiroSubject.isPermitted( "*" );
     }
 
+    @Override
     public boolean doesUsernameMatch( String username )
     {
         Object principal = shiroSubject.getPrincipal();

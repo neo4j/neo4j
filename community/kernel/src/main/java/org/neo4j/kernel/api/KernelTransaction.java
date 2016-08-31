@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.Set;
-import java.util.stream.Stream;
-
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -210,25 +207,6 @@ public interface KernelTransaction extends AutoCloseable
     long getCommitTime();
 
     Revertable overrideWith( AccessMode mode );
-
-    /**
-     * @return list of executing queries that use this transaction
-     */
-    Stream<ExecutingQuery> executingQueries();
-
-    /**
-     * Notify this transaction that a query has started to execute using it
-     *
-     * @param query descriptor for a query that was just started using this transaction
-     */
-    void registerQueryExecutionStart( ExecutingQuery query );
-
-    /**
-     * Notify this transaction that a query has stopped to execute using it
-     *
-     * @param query descriptor for a query that was just started using this transaction
-     */
-    void registerQueryExecutionStop( ExecutingQuery query );
 
     @FunctionalInterface
     interface Revertable extends AutoCloseable

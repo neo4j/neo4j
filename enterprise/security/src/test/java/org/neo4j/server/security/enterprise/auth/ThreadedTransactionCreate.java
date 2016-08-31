@@ -64,7 +64,7 @@ public class ThreadedTransactionCreate<S>
                             {
                                 Result result = neo.getGraph().execute( query );
                                 latch.startAndWaitForAllToStart();
-                                latch.waitForAllToFinish();
+                                latch.finishAndWaitForAllToFinish();
                                 result.close();
                                 tx.success();
                                 return null;
@@ -99,10 +99,6 @@ public class ThreadedTransactionCreate<S>
             fail( "Expected BridgeTransactionTerminatedException in ThreadedCreate, but no exception was raised" );
         }
         assertThat( exceptionInOtherThread.getMessage(), containsString( "Explicitly terminated by the user.") );
-    }
-
-    void finish() {
-        latch.finish();
     }
 
     private Throwable join() throws ExecutionException, InterruptedException

@@ -472,7 +472,7 @@ abstract class AuthTestBase<S>
             }
             finally
             {
-                testLatch.get().doubleLatch.start();
+                testLatch.get().doubleLatch.startAndWaitForAllToStart();
             }
             try
             {
@@ -480,8 +480,7 @@ abstract class AuthTestBase<S>
             }
             finally
             {
-                testLatch.get().doubleLatch.finish();
-                testLatch.get().doubleLatch.awaitFinish();
+                testLatch.get().doubleLatch.finishAndWaitForAllToFinish();
             }
         }
 

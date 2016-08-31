@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,12 +28,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -74,7 +69,7 @@ public class AuthProcedures
     )
             throws InvalidArgumentsException, IOException
     {
-        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         adminSubject.getUserManager().newUser( username, password, requirePasswordChange );
     }
 
@@ -87,7 +82,7 @@ public class AuthProcedures
     )
             throws InvalidArgumentsException, IOException
     {
-        EnterpriseAuthSubject enterpriseSubject = EnterpriseAuthSubject.castOrFail( authSubject );
+        StandardEnterpriseAuthSubject enterpriseSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
         if ( enterpriseSubject.doesUsernameMatch( username ) )
         {
             enterpriseSubject.setPassword( newPassword, requirePasswordChange );
@@ -109,7 +104,7 @@ public class AuthProcedures
     public void addRoleToUser(@Name( "roleName" ) String roleName, @Name( "username" ) String username )
             throws IOException, InvalidArgumentsException
     {
-        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         adminSubject.getUserManager().addRoleToUser( roleName, username );
     }
 
@@ -118,7 +113,7 @@ public class AuthProcedures
     public void removeRoleFromUser( @Name( "roleName" ) String roleName, @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
     {
-        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         if ( adminSubject.doesUsernameMatch( username ) && roleName.equals( PredefinedRolesBuilder.ADMIN ) )
         {
             throw new InvalidArgumentsException( "Removing yourself (user '" + username +
@@ -131,7 +126,7 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.deleteUser", mode = DBMS )
     public void deleteUser( @Name( "username" ) String username ) throws InvalidArgumentsException, IOException
     {
-        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         if ( adminSubject.doesUsernameMatch( username ) )
         {
             throw new InvalidArgumentsException( "Deleting yourself (user '" + username +
@@ -146,7 +141,7 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.suspendUser", mode = DBMS )
     public void suspendUser( @Name( "username" ) String username ) throws IOException, InvalidArgumentsException
     {
-        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         if ( adminSubject.doesUsernameMatch( username ) )
         {
             throw new InvalidArgumentsException( "Suspending yourself (user '" + username +
@@ -164,7 +159,7 @@ public class AuthProcedures
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange
     ) throws IOException, InvalidArgumentsException
     {
-        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         if ( adminSubject.doesUsernameMatch( username ) )
         {
             throw new InvalidArgumentsException( "Activating yourself (user '" + username +
@@ -177,7 +172,7 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
     {
-        EnterpriseAuthSubject enterpriseSubject = EnterpriseAuthSubject.castOrFail( authSubject );
+        StandardEnterpriseAuthSubject enterpriseSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
         EnterpriseUserManager userManager = enterpriseSubject.getUserManager();
         return Stream.of( new UserResult( enterpriseSubject.username(),
                 userManager.getRoleNamesForUser( enterpriseSubject.username() ),
@@ -188,7 +183,7 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.listUsers", mode = DBMS )
     public Stream<UserResult> listUsers() throws InvalidArgumentsException, IOException
     {
-        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         EnterpriseUserManager userManager = adminSubject.getUserManager();
         Set<String> users = userManager.getAllUsernames();
         List<UserResult> results = new ArrayList<>();
@@ -204,7 +199,7 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.listRoles", mode = DBMS )
     public Stream<RoleResult> listRoles() throws InvalidArgumentsException, IOException
     {
-        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         EnterpriseUserManager userManager = adminSubject.getUserManager();
         Set<String> roles = userManager.getAllRoleNames();
         List<RoleResult> results = new ArrayList<>();
@@ -220,7 +215,7 @@ public class AuthProcedures
     public Stream<StringResult> listRolesForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
     {
-        EnterpriseAuthSubject subject = ensureSelfOrAdminAuthSubject( username );
+        StandardEnterpriseAuthSubject subject = ensureSelfOrAdminAuthSubject( username );
         return subject.getUserManager().getRoleNamesForUser( username ).stream().map( StringResult::new );
     }
 
@@ -229,7 +224,7 @@ public class AuthProcedures
     public Stream<StringResult> listUsersForRole( @Name( "roleName" ) String roleName )
             throws InvalidArgumentsException, IOException
     {
-        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         return adminSubject.getUserManager().getUsernamesForRole( roleName ).stream().map( StringResult::new );
     }
 
@@ -288,7 +283,7 @@ public class AuthProcedures
     public Stream<ConnectionResult> terminateConnectionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException
     {
-        EnterpriseAuthSubject subject = EnterpriseAuthSubject.castOrFail( authSubject );
+        StandardEnterpriseAuthSubject subject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
         if ( !subject.isAdmin() && !subject.doesUsernameMatch( username ) )
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
@@ -357,9 +352,9 @@ public class AuthProcedures
                 );
     }
 
-    private EnterpriseAuthSubject ensureAdminAuthSubject()
+    private StandardEnterpriseAuthSubject ensureAdminAuthSubject()
     {
-        EnterpriseAuthSubject enterpriseAuthSubject = EnterpriseAuthSubject.castOrFail( authSubject );
+        StandardEnterpriseAuthSubject enterpriseAuthSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
         if ( !enterpriseAuthSubject.isAdmin() )
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
@@ -367,9 +362,9 @@ public class AuthProcedures
         return enterpriseAuthSubject;
     }
 
-    private EnterpriseAuthSubject ensureSelfOrAdminAuthSubject( String username ) throws InvalidArgumentsException
+    private StandardEnterpriseAuthSubject ensureSelfOrAdminAuthSubject( String username ) throws InvalidArgumentsException
     {
-        EnterpriseAuthSubject subject = EnterpriseAuthSubject.castOrFail( authSubject );
+        StandardEnterpriseAuthSubject subject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
         subject.getUserManager().getUser( username );
 
         if ( subject.isAdmin() || subject.doesUsernameMatch( username ) )

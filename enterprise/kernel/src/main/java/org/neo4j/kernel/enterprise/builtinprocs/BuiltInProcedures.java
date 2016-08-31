@@ -26,7 +26,9 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
@@ -42,12 +44,27 @@ public class BuiltInProcedures
     @Context
     public KernelTransaction tx;
 
+    @Context
+    public AuthSubject authSubject;
+
     @Procedure( name = "dbms.listQueries", mode = DBMS )
     public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException, IOException
     {
+        return getKernelTransactions().executingQueries().stream().filter(
+                ( query ) -> isAdmin() || authSubject.doesUsernameMatch( query.authSubjectName() ) )
+                .map( this::queryStatusResult );
+    }
+
+    private KernelTransactions getKernelTransactions()
+    {
         DependencyResolver resolver = graph.getDependencyResolver();
-        KernelTransactions kernelTransactions = resolver.resolveDependency( KernelTransactions.class );
-        return kernelTransactions.executingQueries().stream().map( this::queryStatusResult );
+        return resolver.resolveDependency( KernelTransactions.class );
+    }
+
+    private boolean isAdmin()
+    {
+        EnterpriseAuthSubject enterpriseAuthSubject = (EnterpriseAuthSubject) authSubject;
+        return enterpriseAuthSubject.isAdmin();
     }
 
     private QueryStatusResult queryStatusResult( ExecutingQuery q )
