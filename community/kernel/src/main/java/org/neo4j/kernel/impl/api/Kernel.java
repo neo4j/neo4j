@@ -25,6 +25,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.proc.CallableFunction;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.configuration.Config;
@@ -114,9 +115,15 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public void registerProcedure( CallableProcedure signature ) throws ProcedureException
+    public void registerProcedure( CallableProcedure procedure ) throws ProcedureException
     {
-        procedures.register( signature );
+        procedures.register( procedure );
+    }
+
+    @Override
+    public void registerFunction( CallableFunction function ) throws ProcedureException
+    {
+        procedures.register( function );
     }
 
     @Override

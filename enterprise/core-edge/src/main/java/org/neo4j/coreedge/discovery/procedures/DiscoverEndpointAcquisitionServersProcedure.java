@@ -30,8 +30,9 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -47,7 +48,7 @@ public class DiscoverEndpointAcquisitionServersProcedure extends CallableProcedu
 
     public DiscoverEndpointAcquisitionServersProcedure( CoreTopologyService discoveryService, LogProvider logProvider )
     {
-        super( procedureSignature( new ProcedureSignature.ProcedureName( new String[]{"dbms", "cluster"}, NAME ) )
+        super( procedureSignature( new QualifiedName( new String[]{"dbms", "cluster"}, NAME ) )
                 .out( "address", Neo4jTypes.NTString ).build() );
 
         this.discoveryService = discoveryService;

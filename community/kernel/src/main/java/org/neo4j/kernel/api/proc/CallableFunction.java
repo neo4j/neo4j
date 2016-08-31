@@ -19,30 +19,29 @@
  */
 package org.neo4j.kernel.api.proc;
 
-import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 
-public interface CallableProcedure
+public interface CallableFunction
 {
-    ProcedureSignature signature();
-    RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException;
+    FunctionSignature signature();
+    Object apply( Context ctx, Object[] input ) throws ProcedureException;
 
-    abstract class BasicProcedure implements CallableProcedure
+    abstract class BasicFunction implements CallableFunction
     {
-        private final ProcedureSignature signature;
+        private final FunctionSignature signature;
 
-        protected BasicProcedure( ProcedureSignature signature )
+        protected BasicFunction( FunctionSignature signature )
         {
             this.signature = signature;
         }
 
         @Override
-        public ProcedureSignature signature()
+        public FunctionSignature signature()
         {
             return signature;
         }
 
         @Override
-        public abstract RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException;
+        public abstract Object apply( Context ctx, Object[] input ) throws ProcedureException;
     }
 }

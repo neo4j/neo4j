@@ -26,8 +26,12 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.CallableFunction;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.FunctionSignature;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -62,7 +66,7 @@ public class Procedures extends LifecycleAdapter
     }
 
     /**
-     * Register a new procedure. This method must not be called concurrently with {@link #get(ProcedureSignature.ProcedureName)}.
+     * Register a new procedure. This method must not be called concurrently with {@link #procedure(QualifiedName)}.
      * @param proc the procedure.
      */
     public void register( CallableProcedure proc ) throws ProcedureException
@@ -71,7 +75,25 @@ public class Procedures extends LifecycleAdapter
     }
 
     /**
-     * Register a new procedure. This method must not be called concurrently with {@link #get(ProcedureSignature.ProcedureName)}.
+     * Register a new function. This method must not be called concurrently with {@link #procedure(QualifiedName)}.
+     * @param function the fucntion.
+     */
+    public void register( CallableFunction function ) throws ProcedureException
+    {
+        register( function, false );
+    }
+
+    /**
+     * Register a new procedure. This method must not be called concurrently with {@link #procedure(QualifiedName)}.
+     * @param function the function.
+     */
+    public void register( CallableFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
+    {
+        registry.register( function, overrideCurrentImplementation );
+    }
+
+    /**
+     * Register a new procedure. This method must not be called concurrently with {@link #procedure(QualifiedName)}.
      * @param proc the procedure.
      */
     public void register( CallableProcedure proc, boolean overrideCurrentImplementation ) throws ProcedureException
@@ -121,20 +143,36 @@ public class Procedures extends LifecycleAdapter
         components.register( cls, provider );
     }
 
-    public ProcedureSignature get( ProcedureSignature.ProcedureName name ) throws ProcedureException
+    public ProcedureSignature procedure( QualifiedName name ) throws ProcedureException
     {
-        return registry.get( name );
+        return registry.procedure( name );
     }
 
-    public Set<ProcedureSignature> getAll()
+    public FunctionSignature function( QualifiedName name ) throws ProcedureException
     {
-        return registry.getAll();
+        return registry.function( name );
     }
 
-    public RawIterator<Object[], ProcedureException> call( CallableProcedure.Context ctx, ProcedureSignature.ProcedureName name,
+    public Set<ProcedureSignature> getAllProcedures()
+    {
+        return registry.getAllProcedures();
+    }
+
+    public Set<FunctionSignature> getAllFunctions()
+    {
+        return registry.getAllFunctions();
+    }
+
+    public RawIterator<Object[], ProcedureException> callProcedure( Context ctx, QualifiedName name,
                                                            Object[] input ) throws ProcedureException
     {
-        return registry.call( ctx, name, input );
+        return registry.callProcedure( ctx, name, input );
+    }
+
+    public Object callFunction( Context ctx, QualifiedName name,
+            Object[] input ) throws ProcedureException
+    {
+        return registry.callFunction( ctx, name, input );
     }
 
     @Override

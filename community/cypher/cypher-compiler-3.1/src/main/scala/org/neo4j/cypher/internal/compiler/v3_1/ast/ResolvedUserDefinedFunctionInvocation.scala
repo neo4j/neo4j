@@ -89,7 +89,7 @@ case class ResolvedUserDefinedFunctionInvocation(qualifiedName: QualifiedProcedu
   override def containsNoUpdates = fcnSignature match {
     case None => true
     case Some(signature) => signature.accessMode match {
-      case ProcedureReadOnlyAccess => true
+      case _: ProcedureReadOnlyAccess => true
       case _ => false
     }
   }

@@ -34,8 +34,9 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.proc
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
-import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProcedureSignature}
+import org.neo4j.kernel.api.proc.{ProcedureSignature => KernelProcedureSignature, Mode, QualifiedName, Neo4jTypes}
 import org.neo4j.kernel.impl.proc.Neo4jValue
 
 import scala.collection.JavaConverters._
@@ -131,7 +132,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
   val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
   override def procedureSignature(name: QualifiedProcedureName) = {
-    val kn = new KernelProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
+    val kn = new QualifiedName(name.namespace.asJava, name.name)
     val ks = tc.statement.readOperations().procedureGet(kn)
     val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue))).toIndexedSeq
     val output = if (ks.isVoid) None else Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))).toIndexedSeq)
@@ -141,17 +142,17 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
     ProcedureSignature(name, input, output, deprecationInfo, mode)
   }
 
-
   //TODE wire down to kernel
   override def functionSignature(name: QualifiedProcedureName): Option[UserDefinedFunctionSignature] = None
 
   private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 
-  private def asCypherProcMode(mode: KernelProcedureSignature.Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
-    case KernelProcedureSignature.Mode.READ_ONLY => ProcedureReadOnlyAccess(allowed)
-    case KernelProcedureSignature.Mode.READ_WRITE => ProcedureReadWriteAccess(allowed)
-    case KernelProcedureSignature.Mode.SCHEMA_WRITE => ProcedureSchemaWriteAccess(allowed)
-    case KernelProcedureSignature.Mode.DBMS => ProcedureDbmsAccess(allowed)
+  private def asCypherProcMode(mode: proc.Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
+    case proc.Mode.READ_ONLY => ProcedureReadOnlyAccess(allowed)
+    case proc.Mode.READ_WRITE => ProcedureReadWriteAccess(allowed)
+    case proc.Mode.SCHEMA_WRITE => ProcedureSchemaWriteAccess(allowed)
+    case proc.Mode.DBMS => ProcedureDbmsAccess(allowed)
+
     case _ => throw new CypherExecutionException(
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null )
   }

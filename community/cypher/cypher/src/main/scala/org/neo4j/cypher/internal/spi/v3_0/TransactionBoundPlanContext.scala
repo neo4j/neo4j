@@ -32,8 +32,9 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.proc
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
-import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProcedureSignature}
+import org.neo4j.kernel.api.proc.{ProcedureSignature => KernelProcedureSignature, Mode, QualifiedName, Neo4jTypes}
 
 import scala.collection.JavaConverters._
 
@@ -128,7 +129,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
   val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
   override def procedureSignature(name: QualifiedProcedureName) = {
-    val kn = new KernelProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
+    val kn = new QualifiedName(name.namespace.asJava, name.name)
     val ks = tc.statement.readOperations().procedureGet(kn)
     val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
     val output = if (ks.isVoid) None else Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))))
@@ -137,10 +138,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
     ProcedureSignature(name, input, output, mode)
   }
 
-  private def asCypherProcMode(mode: KernelProcedureSignature.Mode): ProcedureAccessMode = mode match {
-    case KernelProcedureSignature.Mode.READ_ONLY => ProcedureReadOnlyAccess
-    case KernelProcedureSignature.Mode.READ_WRITE => ProcedureReadWriteAccess
-    case KernelProcedureSignature.Mode.DBMS => ProcedureDbmsAccess
+  private def asCypherProcMode(mode: Mode): ProcedureAccessMode = mode match {
+    case proc.Mode.READ_ONLY => ProcedureReadOnlyAccess
+    case proc.Mode.READ_WRITE => ProcedureReadWriteAccess
+    case proc.Mode.DBMS => ProcedureDbmsAccess
     case _ => throw new CypherExecutionException(
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null )
   }

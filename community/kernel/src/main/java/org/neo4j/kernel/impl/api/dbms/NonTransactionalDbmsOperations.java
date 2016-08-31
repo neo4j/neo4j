@@ -23,8 +23,9 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.BasicContext;
+import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.proc.Procedures;
 
@@ -41,17 +42,17 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallDbms( ProcedureSignature.ProcedureName name,
+    public RawIterator<Object[],ProcedureException> procedureCallDbms( QualifiedName name,
             Object[] input ) throws ProcedureException
     {
-        CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
-        ctx.put( CallableProcedure.Context.KERNEL_TRANSACTION, transaction );
+        BasicContext ctx = new BasicContext();
+        ctx.put( Context.KERNEL_TRANSACTION, transaction );
         if ( transaction.mode() instanceof AuthSubject )
         {
             AuthSubject subject = (AuthSubject) transaction.mode();
-            ctx.put( CallableProcedure.Context.AUTH_SUBJECT, subject );
+            ctx.put( Context.AUTH_SUBJECT, subject );
         }
-        return procedures.call( ctx, name, input );
+        return procedures.callProcedure( ctx, name, input );
     }
 
     public static class Factory implements DbmsOperations.Factory

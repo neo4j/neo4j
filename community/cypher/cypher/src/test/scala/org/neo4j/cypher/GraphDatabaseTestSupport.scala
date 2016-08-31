@@ -32,8 +32,7 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.api.proc.CallableProcedure
-import org.neo4j.kernel.api.proc.ProcedureSignature._
+import org.neo4j.kernel.api.proc.{FunctionSignature, CallableFunction, CallableProcedure, ProcedureSignature}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.monitoring
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -216,18 +215,32 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     (a, b, c, d)
   }
 
-  def registerProcedure[T <: CallableProcedure](qualifiedName: String)(f: Builder => T): T = {
+  def registerProcedure[T <: CallableProcedure](qualifiedName: String)(f: ProcedureSignature.Builder => T): T = {
     val parts = qualifiedName.split('.')
     val namespace = parts.reverse.tail.reverse
     val name = parts.last
     registerProcedure(namespace: _*)(name)(f)
   }
 
-  def registerProcedure[T <: CallableProcedure](namespace: String*)(name: String)(f: Builder => T): T = {
-    val builder = procedureSignature(namespace.toArray, name)
+  def registerProcedure[T <: CallableProcedure](namespace: String*)(name: String)(f: ProcedureSignature.Builder => T): T = {
+    val builder = ProcedureSignature.procedureSignature(namespace.toArray, name)
     val proc = f(builder)
     kernelAPI.registerProcedure(proc)
     proc
+  }
+
+  def registerFunction[T <: CallableFunction](qualifiedName: String)(f: FunctionSignature.Builder => T): T = {
+    val parts = qualifiedName.split('.')
+    val namespace = parts.reverse.tail.reverse
+    val name = parts.last
+    registerFunction(namespace: _*)(name)(f)
+  }
+
+  def registerFunction[T <: CallableFunction](namespace: String*)(name: String)(f: FunctionSignature.Builder => T): T = {
+    val builder = FunctionSignature.functionSignature(namespace.toArray, name)
+    val func = f(builder)
+    kernelAPI.registerFunction(func)
+    func
   }
 
   def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()

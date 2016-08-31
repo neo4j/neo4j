@@ -38,7 +38,7 @@ case class UserDefinedFunctionSignature(name: QualifiedProcedureName,
                               inputSignature: IndexedSeq[FieldSignature],
                               outputFields: IndexedSeq[FieldSignature],
                               deprecationInfo: Option[String],
-                              accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess)
+                              accessMode: ProcedureAccessMode)
 
 object QualifiedProcedureName {
   def apply(unresolved: UnresolvedCall): QualifiedProcedureName =

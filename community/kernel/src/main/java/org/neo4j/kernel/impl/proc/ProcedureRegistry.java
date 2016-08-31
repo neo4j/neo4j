@@ -29,12 +29,18 @@ import java.util.stream.Collectors;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.proc.CallableFunction;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.kernel.api.proc.FieldSignature;
+import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.FunctionSignature;
 
 public class ProcedureRegistry
 {
-    private final Map<ProcedureSignature.ProcedureName,CallableProcedure> procedures = new HashMap<>();
+    private final Map<QualifiedName,CallableProcedure> procedures = new HashMap<>();
+    private final Map<QualifiedName,CallableFunction> functions = new HashMap<>();
 
     /**
      * Register a new procedure.
@@ -44,10 +50,11 @@ public class ProcedureRegistry
     public void register( CallableProcedure proc, boolean overrideCurrentImplementation ) throws ProcedureException
     {
         ProcedureSignature signature = proc.signature();
-        ProcedureSignature.ProcedureName name = signature.name();
+        QualifiedName name = signature.name();
 
-        validateSignature( signature, signature.inputSignature(), "input" );
-        validateSignature( signature, signature.outputSignature(), "output" );
+        String descriptiveName = signature.toString();
+        validateSignature( descriptiveName, signature.inputSignature(), "input" );
+        validateSignature( descriptiveName, signature.outputSignature(), "output" );
 
         CallableProcedure oldImplementation = procedures.get( name );
         if ( oldImplementation == null )
@@ -68,22 +75,55 @@ public class ProcedureRegistry
         }
     }
 
-    private void validateSignature( ProcedureSignature signature, List<ProcedureSignature.FieldSignature> fields, String fieldType )
+    /**
+     * Register a new function.
+     *
+     * @param function the function.
+     */
+    public void register( CallableFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
+    {
+        FunctionSignature signature = function.signature();
+        QualifiedName name = signature.name();
+
+        String descriptiveName = signature.toString();
+        validateSignature( descriptiveName, signature.inputSignature(), "input" );
+        validateSignature( descriptiveName, signature.outputSignature(), "output" );
+
+        CallableFunction oldImplementation = functions.get( name );
+        if ( oldImplementation == null )
+        {
+            functions.put( name, function );
+        }
+        else
+        {
+            if ( overrideCurrentImplementation )
+            {
+                functions.put( name, function );
+            }
+            else
+            {
+                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                        "Unable to register function, because the name `%s` is already in use.", name );
+            }
+        }
+    }
+
+    private void validateSignature( String descriptiveName, List<FieldSignature> fields, String fieldType )
             throws ProcedureException
     {
         Set<String> names = new HashSet<>();
-        for ( ProcedureSignature.FieldSignature field : fields )
+        for ( FieldSignature field : fields )
         {
             if ( !names.add( field.name() ) )
             {
                 throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                         "Procedure `%s` cannot be registered, because it contains a duplicated " + fieldType + " field, '%s'. " +
-                        "You need to rename or remove one of the duplicate fields.", signature.toString(), field.name() );
+                        "You need to rename or remove one of the duplicate fields.", descriptiveName, field.name() );
             }
         }
     }
 
-    public ProcedureSignature get( ProcedureSignature.ProcedureName name ) throws ProcedureException
+    public ProcedureSignature procedure( QualifiedName name ) throws ProcedureException
     {
         CallableProcedure proc = procedures.get( name );
         if ( proc == null )
@@ -93,7 +133,17 @@ public class ProcedureRegistry
         return proc.signature();
     }
 
-    public RawIterator<Object[],ProcedureException> call( CallableProcedure.Context ctx, ProcedureSignature.ProcedureName name, Object[] input )
+    public FunctionSignature function(QualifiedName name ) throws ProcedureException
+    {
+        CallableFunction func = functions.get( name );
+        if ( func == null )
+        {
+            throw noSuchFunction( name );
+        }
+        return func.signature();
+    }
+
+    public RawIterator<Object[],ProcedureException> callProcedure( Context ctx, QualifiedName name, Object[] input )
             throws ProcedureException
     {
         CallableProcedure proc = procedures.get( name );
@@ -104,7 +154,18 @@ public class ProcedureRegistry
         return proc.apply( ctx, input );
     }
 
-    private ProcedureException noSuchProcedure( ProcedureSignature.ProcedureName name )
+    public Object callFunction( Context ctx, QualifiedName name, Object[] input )
+            throws ProcedureException
+    {
+        CallableFunction func = functions.get( name );
+        if ( func == null )
+        {
+            throw noSuchFunction( name );
+        }
+        return func.apply( ctx, input );
+    }
+
+    private ProcedureException noSuchProcedure( QualifiedName name )
     {
         return new ProcedureException( Status.Procedure.ProcedureNotFound,
                 "There is no procedure with the name `%s` registered for this database instance. " +
@@ -112,8 +173,22 @@ public class ProcedureRegistry
                 "procedure is properly deployed.", name );
     }
 
-    public Set<ProcedureSignature> getAll()
+    private ProcedureException noSuchFunction( QualifiedName name )
+    {
+        return new ProcedureException( Status.Procedure.ProcedureNotFound,
+                "There is no function with the name `%s` registered for this database instance. " +
+                "Please ensure you've spelled the function name correctly and that the " +
+                "function is properly deployed.", name );
+    }
+
+    public Set<ProcedureSignature> getAllProcedures()
     {
         return procedures.values().stream().map( CallableProcedure::signature ).collect( Collectors.toSet());
+    }
+
+    public Set<FunctionSignature> getAllFunctions()
+    {
+
+        return functions.values().stream().map( CallableFunction::signature ).collect( Collectors.toSet() );
     }
 }

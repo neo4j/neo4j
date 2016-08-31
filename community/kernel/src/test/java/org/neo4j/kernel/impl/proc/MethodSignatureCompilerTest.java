@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
+import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 

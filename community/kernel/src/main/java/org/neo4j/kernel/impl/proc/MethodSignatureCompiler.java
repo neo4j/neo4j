@@ -28,7 +28,7 @@ import java.util.Optional;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
+import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.impl.proc.TypeMappers.NeoValueConverter;
 import org.neo4j.procedure.Name;
 

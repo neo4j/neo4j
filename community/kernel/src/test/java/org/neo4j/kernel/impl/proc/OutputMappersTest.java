@@ -26,8 +26,8 @@ import org.junit.rules.ExpectedException;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
 
 import static java.util.Arrays.asList;
@@ -85,7 +85,7 @@ public class OutputMappersTest
         // Then
         assertThat(
                 mapper.signature(),
-                contains( new ProcedureSignature.FieldSignature( "name", Neo4jTypes.NTString ) )
+                contains( new FieldSignature( "name", Neo4jTypes.NTString ) )
         );
         assertThat(
                 asList( mapper.apply( new SingleStringFieldRecord( "hello, world!" ) ) ),
@@ -102,7 +102,7 @@ public class OutputMappersTest
         // Then
         assertThat(
                 mapper.signature(),
-                contains( new ProcedureSignature.FieldSignature( "includeMe", Neo4jTypes.NTString ) )
+                contains( new FieldSignature( "includeMe", Neo4jTypes.NTString ) )
         );
         assertThat(
                 asList( mapper.apply( new RecordWithStaticFields( "hello, world!" ) ) ),

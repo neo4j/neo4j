@@ -33,6 +33,7 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.logging.NullLog;
@@ -72,7 +73,7 @@ public class ProcedureJarLoaderTest
         assertThat( signatures, contains(
                 procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ));
 
-        assertThat( asList( procedures.get( 0 ).apply( new CallableProcedure.BasicContext(), new Object[0] ) ),
+        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0] ) ),
                 contains( IsEqual.equalTo( new Object[]{1337L} )) );
     }
 
@@ -93,7 +94,7 @@ public class ProcedureJarLoaderTest
                         .out( "someNumber", NTInteger )
                         .build() ));
 
-        assertThat( asList(procedures.get( 0 ).apply( new CallableProcedure.BasicContext(), new Object[]{42L} ) ),
+        assertThat( asList(procedures.get( 0 ).apply( new BasicContext(), new Object[]{42L} ) ),
                 contains( IsEqual.equalTo( new Object[]{42L} )) );
     }
 

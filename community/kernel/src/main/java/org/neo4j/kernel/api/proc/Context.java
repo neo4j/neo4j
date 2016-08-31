@@ -17,30 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.dbms;
+package org.neo4j.kernel.api.proc;
 
-import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.api.security.AuthSubject;
 
 /**
- * Defines all types of system-oriented operations - i.e. those which do not read from or write to the graph - that can be done from the {@link KernelAPI}.
- * An example of this is changing a user's password
+ * The context in which a procedure is invoked. This is a read-only map-like structure. For instance, a read-only transactional procedure might have
+ * access to the current statement it is being invoked in through this.
+ *
+ * The context is entirely defined by the caller of the procedure, so what is available in the context depends on the context of the call.
  */
-public interface DbmsOperations
+public interface Context
 {
-    //=================================================
-    //== PROCEDURE OPERATIONS ==
-    //=================================================
+    Key<KernelTransaction>
+            KERNEL_TRANSACTION = Key.key( "KernelTransaction", KernelTransaction.class );
+    Key<AuthSubject> AUTH_SUBJECT = Key.key( "AuthSubject", AuthSubject.class );
+    Key<Thread> THREAD = Key.key( "Thread", Thread.class );
 
-    /** Invoke a DBMS procedure by name */
-    RawIterator<Object[],ProcedureException> procedureCallDbms( QualifiedName name, Object[] input )
-            throws ProcedureException;
-
-    interface Factory
-    {
-        DbmsOperations newInstance( KernelTransaction tx );
-    }
+    <T> T get( Key<T> key ) throws ProcedureException;
 }

@@ -198,7 +198,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       QualifiedProcedureName(Seq.empty, "foo"),
       inputSignature = IndexedSeq.empty,
       deprecationInfo = None,
-      outputSignature = Some(IndexedSeq(FieldSignature("all", CTInteger)))
+      outputSignature = Some(IndexedSeq(FieldSignature("all", CTInteger))),
+      accessMode = ProcedureReadOnlyAccess(Array.empty)
     )
     val parsedStatement = parser.parse(query.replace("\r\n", "\n"))
     val mkException = new SyntaxExceptionCreator(query, Some(pos))

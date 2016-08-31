@@ -29,7 +29,9 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -61,7 +63,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // When
         ProcedureSignature found = readOperationsInNewTransaction()
-                .procedureGet( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ) );
+                .procedureGet( new QualifiedName( new String[]{"example"}, "exampleProc" ) );
 
         // Then
         assertThat( found, equalTo( signature ) );
@@ -106,7 +108,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[], ProcedureException> found = readOperationsInNewTransaction()
-                .procedureCallRead( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ), new Object[]{ 1337 } );
+                .procedureCallRead( new QualifiedName( new String[]{"example"}, "exampleProc" ), new Object[]{ 1337 } );
 
         // Then
         assertThat( asList( found ), contains( equalTo( new Object[]{1337} ) ) );

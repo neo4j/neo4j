@@ -24,18 +24,17 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.kernel.api.proc.FieldSignature;
+import org.neo4j.kernel.api.proc.FunctionSignature;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.kernel.api.proc.FunctionSignature.functionSignature;
 
-public class ProcedureSignatureTest
+public class FunctionSignatureTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
-    private final ProcedureSignature signature = procedureSignature( "asd" )
+    private final FunctionSignature signature = functionSignature( "asd" )
             .in( "a", Neo4jTypes.NTAny ).build();
 
     @Test
@@ -59,21 +58,10 @@ public class ProcedureSignatureTest
     }
 
     @Test
-    public void shouldHonorVoidInEquals()
-    {
-        ProcedureSignature sig1 = procedureSignature( "foo" ).in( "a", Neo4jTypes.NTAny ).build();
-        ProcedureSignature sig2 = procedureSignature( "foo" ).in( "a", Neo4jTypes.NTAny ).out( ProcedureSignature.VOID ).build();
-        ProcedureSignature sig2clone = procedureSignature( "foo" ).in( "a", Neo4jTypes.NTAny ).out( ProcedureSignature.VOID ).build();
-
-        assertEquals( sig2, sig2clone );
-        assertNotEquals( sig1, sig2 );
-    }
-
-    @Test
     public void toStringShouldMatchCypherSyntax() throws Throwable
     {
         // When
-        String toStr = procedureSignature( "org", "myProcedure" )
+        String toStr = functionSignature( "org", "myProcedure" )
                 .in( "inputArg", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
                 .out( "outputArg", Neo4jTypes.NTNumber )
                 .build()
@@ -81,21 +69,5 @@ public class ProcedureSignatureTest
 
         // Then
         assertEquals( "org.myProcedure(inputArg :: LIST? OF STRING?) :: (outputArg :: NUMBER?)", toStr );
-    }
-
-    @Test
-    public void toStringForVoidProcedureShouldMatchCypherSyntax() throws Throwable
-    {
-        // Given
-        ProcedureSignature proc = procedureSignature( "org", "myProcedure" )
-                .in( "inputArg", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
-                .out( ProcedureSignature.VOID )
-                .build();
-
-        // When
-        String toStr = proc.toString();
-
-        // Then
-        assertEquals( "org.myProcedure(inputArg :: LIST? OF STRING?) :: VOID", toStr );
     }
 }

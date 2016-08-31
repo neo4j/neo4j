@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.logging.NullLog;
@@ -72,7 +73,7 @@ public class ReflectiveProcedureWithArgumentsTest
         CallableProcedure procedure = compile( ClassWithProcedureWithSimpleArgs.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = procedure.apply( new CallableProcedure.BasicContext(), new Object[]{"Pontus", 35L} );
+        RawIterator<Object[],ProcedureException> out = procedure.apply( new BasicContext(), new Object[]{"Pontus", 35L} );
 
         // Then
         List<Object[]> collect = asList( out );
@@ -86,7 +87,7 @@ public class ReflectiveProcedureWithArgumentsTest
         CallableProcedure procedure = compile( ClassWithProcedureWithGenericArgs.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = procedure.apply( new CallableProcedure.BasicContext(), new Object[]{
+        RawIterator<Object[],ProcedureException> out = procedure.apply( new BasicContext(), new Object[]{
                 Arrays.asList( "Roland", "Eddie", "Susan", "Jake" ),
                 Arrays.asList( 1000L, 23L, 29L, 12L )} );
 

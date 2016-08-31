@@ -28,7 +28,6 @@ import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.procedure.Context;
 
 /**
@@ -59,7 +58,7 @@ public class FieldInjections
             this.provider = provider;
         }
 
-        void apply( CallableProcedure.Context ctx, Object object ) throws ProcedureException
+        void apply( org.neo4j.kernel.api.proc.Context ctx, Object object ) throws ProcedureException
         {
             try
             {

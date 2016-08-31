@@ -17,30 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.dbms;
+package org.neo4j.kernel.api.proc;
 
-import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.KernelTransaction;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
- * Defines all types of system-oriented operations - i.e. those which do not read from or write to the graph - that can be done from the {@link KernelAPI}.
- * An example of this is changing a user's password
+ * Not thread safe. Basic context backed by a map.
  */
-public interface DbmsOperations
+public class BasicContext implements Context
 {
-    //=================================================
-    //== PROCEDURE OPERATIONS ==
-    //=================================================
+    private final Map<String, Object> values = new HashMap<>();
 
-    /** Invoke a DBMS procedure by name */
-    RawIterator<Object[],ProcedureException> procedureCallDbms( QualifiedName name, Object[] input )
-            throws ProcedureException;
-
-    interface Factory
+    @Override
+    public <T> T get( Key<T> key ) throws ProcedureException
     {
-        DbmsOperations newInstance( KernelTransaction tx );
+        Object o = values.get( key.name() );
+        if( o == null ) {
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "There is no `%s` in the current procedure call context.", key.name() );
+        }
+        return (T) o;
+    }
+
+    public <T> void put( Key<T> key, T value )
+    {
+        values.put( key.name(), value );
     }
 }

@@ -36,8 +36,9 @@ import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -56,7 +57,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     public ClusterOverviewProcedure( CoreTopologyService discoveryService,
             LeaderLocator leaderLocator, LogProvider logProvider )
     {
-        super( procedureSignature( new ProcedureSignature.ProcedureName( PROCEDURE_NAMESPACE, PROCEDURE_NAME ) )
+        super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME ) )
                 .out( "id", Neo4jTypes.NTString ).out( "address", Neo4jTypes.NTString )
                 .out( "role", Neo4jTypes.NTString ).build() );
         this.discoveryService = discoveryService;

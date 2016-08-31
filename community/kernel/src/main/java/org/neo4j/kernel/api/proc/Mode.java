@@ -19,30 +19,18 @@
  */
 package org.neo4j.kernel.api.proc;
 
-import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-
-public interface CallableProcedure
+/**
+ * The procedure mode affects how the procedure will execute, and which capabilities
+ * it requires.
+ */
+public enum Mode
 {
-    ProcedureSignature signature();
-    RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException;
-
-    abstract class BasicProcedure implements CallableProcedure
-    {
-        private final ProcedureSignature signature;
-
-        protected BasicProcedure( ProcedureSignature signature )
-        {
-            this.signature = signature;
-        }
-
-        @Override
-        public ProcedureSignature signature()
-        {
-            return signature;
-        }
-
-        @Override
-        public abstract RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException;
-    }
+    /** This procedure will only perform read operations against the graph */
+    READ_ONLY,
+    /** This procedure may perform both read and write operations against the graph */
+    READ_WRITE,
+    /** This procedure will perform operations against the schema */
+    SCHEMA_WRITE,
+    /** This procedure will perform system operations - i.e. not against the graph */
+    DBMS
 }

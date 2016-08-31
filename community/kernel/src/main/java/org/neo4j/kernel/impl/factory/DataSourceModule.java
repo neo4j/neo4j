@@ -84,9 +84,9 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.kernel.api.proc.CallableProcedure.Context.AUTH_SUBJECT;
-import static org.neo4j.kernel.api.proc.CallableProcedure.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTGeometry;
+import static org.neo4j.kernel.api.proc.Context.AUTH_SUBJECT;
+import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPoint;

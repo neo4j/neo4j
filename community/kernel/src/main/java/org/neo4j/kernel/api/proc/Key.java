@@ -19,30 +19,16 @@
  */
 package org.neo4j.kernel.api.proc;
 
-import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-
-public interface CallableProcedure
+/**
+ * We use this little wrapper to get some basic type checking and help us remember which type of object we should get out for a given key.
+ * @param <T>
+ */
+public interface Key<T>
 {
-    ProcedureSignature signature();
-    RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException;
+    String name();
 
-    abstract class BasicProcedure implements CallableProcedure
+    static <T> Key<T> key( String name, Class<T> type )
     {
-        private final ProcedureSignature signature;
-
-        protected BasicProcedure( ProcedureSignature signature )
-        {
-            this.signature = signature;
-        }
-
-        @Override
-        public ProcedureSignature signature()
-        {
-            return signature;
-        }
-
-        @Override
-        public abstract RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException;
+        return () -> name;
     }
 }

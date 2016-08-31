@@ -31,14 +31,14 @@ import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
-import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
 
-public class ProcedureGDSFactory implements ThrowingFunction<CallableProcedure.Context,GraphDatabaseService,ProcedureException>
+public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDatabaseService,ProcedureException>
 {
     private Config config;
     private final File storeDir;
@@ -66,10 +66,10 @@ public class ProcedureGDSFactory implements ThrowingFunction<CallableProcedure.C
     }
 
     @Override
-    public GraphDatabaseService apply( CallableProcedure.Context context ) throws ProcedureException
+    public GraphDatabaseService apply( Context context ) throws ProcedureException
     {
-        KernelTransaction transaction = context.get( CallableProcedure.Context.KERNEL_TRANSACTION );
-        Thread owningThread = context.get( CallableProcedure.Context.THREAD );
+        KernelTransaction transaction = context.get( Context.KERNEL_TRANSACTION );
+        Thread owningThread = context.get( Context.THREAD );
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
         facade.init( new ProcedureGDBFacadeSPI( owningThread, transaction, queryExecutor, storeDir, resolver,
                 AutoIndexing.UNSUPPORTED, storeId, availability, urlValidator ), config );

@@ -35,9 +35,11 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.kernel.api.proc.Mode;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
-import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
+import org.neo4j.kernel.api.proc.FieldSignature;
+import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Description;
@@ -105,27 +107,27 @@ public class ReflectiveProcedureCompiler
     private ReflectiveProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method )
             throws ProcedureException, IllegalAccessException
     {
-        ProcedureName procName = extractName( procDefinition, method );
+        QualifiedName procName = extractName( procDefinition, method );
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         OutputMapper outputMapper = outputMappers.mapper( method );
         MethodHandle procedureMethod = lookup.unreflect( method );
         List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
-        ProcedureSignature.Mode mode = ProcedureSignature.Mode.READ_ONLY;
+        Mode mode = Mode.READ_ONLY;
         Optional<String> description = description( method );
         Procedure procedure = method.getAnnotation( Procedure.class );
         if ( procedure.mode().equals( Procedure.Mode.DBMS ) )
         {
-            mode = ProcedureSignature.Mode.DBMS;
+            mode = Mode.DBMS;
         }
         else if ( procedure.mode().equals( Procedure.Mode.SCHEMA ) )
         {
-            mode = ProcedureSignature.Mode.SCHEMA_WRITE;
+            mode = Mode.SCHEMA_WRITE;
         }
         else if ( procedure.mode().equals( Procedure.Mode.WRITE ) )
         {
-            mode = ProcedureSignature.Mode.READ_WRITE;
+            mode = Mode.READ_WRITE;
         }
         if ( method.isAnnotationPresent( PerformsWrites.class ) )
         {
@@ -136,7 +138,7 @@ public class ReflectiveProcedureCompiler
             }
             else
             {
-                mode = ProcedureSignature.Mode.READ_WRITE;
+                mode = Mode.READ_WRITE;
             }
         }
 
@@ -185,7 +187,7 @@ public class ReflectiveProcedureCompiler
         }
     }
 
-    private ProcedureName extractName( Class<?> procDefinition, Method m )
+    private QualifiedName extractName( Class<?> procDefinition, Method m )
     {
         String valueName = m.getAnnotation( Procedure.class ).value();
         String definedName = m.getAnnotation( Procedure.class ).name();
@@ -195,19 +197,19 @@ public class ReflectiveProcedureCompiler
             String[] split = procName.split( "\\." );
             if( split.length == 1)
             {
-                return new ProcedureName( new String[0], split[0] );
+                return new QualifiedName( new String[0], split[0] );
             }
             else
             {
                 int lastElement = split.length - 1;
-                return new ProcedureName( Arrays.copyOf(split, lastElement ), split[lastElement] );
+                return new QualifiedName( Arrays.copyOf(split, lastElement ), split[lastElement] );
             }
         }
         Package pkg = procDefinition.getPackage();
         // Package is null if class is in root package
         String[] namespace = pkg == null ? new String[0] : pkg.getName().split( "\\." );
         String name = m.getName();
-        return new ProcedureName( namespace, name );
+        return new QualifiedName( namespace, name );
     }
 
     private static class ReflectiveProcedure implements CallableProcedure

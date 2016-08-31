@@ -22,9 +22,12 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher._
 import org.neo4j.kernel.api.exceptions.ProcedureException
-import org.neo4j.kernel.api.proc.CallableProcedure.{BasicProcedure, Context}
+import org.neo4j.kernel.api.proc.CallableFunction.BasicFunction
+import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.ProcedureSignature._
-import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature}
+import org.neo4j.kernel.api.proc._
+import FunctionSignature._
+import org.neo4j.kernel.api.proc.{Context, Neo4jTypes, ProcedureSignature, FunctionSignature}
 
 abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -51,6 +54,16 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
           RawIterator.of[Array[AnyRef], ProcedureException](Array(value))
+      }
+    }
+
+  protected def registerFunctionReturningSingleValue(value: AnyRef) =
+    registerFunction("my.first.value") { builder =>
+      val builder = functionSignature(Array("my", "first"), "value")
+      builder.out("out", Neo4jTypes.NTAny)
+
+      new BasicFunction(builder.build) {
+        override def apply(ctx: Context, input: Array[AnyRef]): AnyRef = value
       }
     }
 

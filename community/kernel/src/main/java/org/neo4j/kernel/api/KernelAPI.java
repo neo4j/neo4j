@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.proc.CallableFunction;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.security.AccessMode;
 
@@ -73,7 +74,15 @@ public interface KernelAPI
      * Register a procedure that should be available from this kernel. This is not a transactional method, the procedure is not
      * durably stored, and is not propagated in a cluster.
      *
-     * @param signature signature of the procedure
+     * @param procedure procedure to register
      */
-    void registerProcedure( CallableProcedure signature ) throws ProcedureException;
+    void registerProcedure( CallableProcedure procedure ) throws ProcedureException;
+
+    /**
+     * Register a function that should be available from this kernel. This is not a transactional method, the function is not
+     * durably stored, and is not propagated in a cluster.
+     *
+     * @param function function to register
+     */
+    void registerFunction( CallableFunction function ) throws ProcedureException;
 }
