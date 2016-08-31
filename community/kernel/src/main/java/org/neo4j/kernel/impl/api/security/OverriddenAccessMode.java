@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.security;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AuthSubject;
 
 public class OverriddenAccessMode implements AccessMode
 {
@@ -76,6 +77,27 @@ public class OverriddenAccessMode implements AccessMode
         else
         {
             return originalMode.name() + " restricted to " + overriddenMode.name();
+        }
+    }
+
+    public String username()
+    {
+        return getUsernameFromAccessMode( originalMode );
+    }
+
+    public static String getUsernameFromAccessMode( AccessMode accessMode )
+    {
+        if ( accessMode instanceof AuthSubject )
+        {
+            return ((AuthSubject) accessMode).username();
+        }
+        else if ( accessMode instanceof OverriddenAccessMode )
+        {
+            return ((OverriddenAccessMode) accessMode).username();
+        }
+        else
+        {
+            return ""; // Should never clash with a valid username
         }
     }
 }

@@ -41,6 +41,7 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
+import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Procedure.Mode.DBMS;
 
 public class AuthProcedures
@@ -162,9 +163,9 @@ public class AuthProcedures
     {
         EnterpriseAuthSubject enterpriseSubject = EnterpriseAuthSubject.castOrFail( authSubject );
         EnterpriseUserManager userManager = enterpriseSubject.getUserManager();
-        return Stream.of( new UserResult( enterpriseSubject.name(),
-                userManager.getRoleNamesForUser( enterpriseSubject.name() ),
-                userManager.getUser( enterpriseSubject.name() ).getFlags() ) );
+        return Stream.of( new UserResult( enterpriseSubject.username(),
+                userManager.getRoleNamesForUser( enterpriseSubject.username() ),
+                userManager.getUser( enterpriseSubject.username() ).getFlags() ) );
     }
 
     @Procedure( name = "dbms.security.listUsers", mode = DBMS )
@@ -235,7 +236,7 @@ public class AuthProcedures
         return countTransactionByUsername(
                     getActiveTransactions().stream()
                         .filter( tx -> !tx.terminationReason().isPresent() )
-                        .map( tx -> tx.mode().name() )
+                        .map( tx -> getUsernameFromAccessMode( tx.mode() ) )
                 );
     }
 
@@ -283,7 +284,7 @@ public class AuthProcedures
         long terminatedCount = 0;
         for ( KernelTransactionHandle tx : getActiveTransactions() )
         {
-            if ( tx.mode().name().equals( username ) && !tx.isUnderlyingTransaction( this.tx ) )
+            if ( getUsernameFromAccessMode( tx.mode() ).equals( username ) && !tx.isUnderlyingTransaction( this.tx ) )
             {
                 boolean marked = tx.markForTermination( Status.Transaction.Terminated );
                 if ( marked )

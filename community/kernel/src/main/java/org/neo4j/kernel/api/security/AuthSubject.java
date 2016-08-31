@@ -49,6 +49,11 @@ public interface AuthSubject extends AccessMode
     boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException;
 
     /**
+     * @return A string representing the primary principal of this subject
+     */
+    String username();
+
+    /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
      */
     AuthSubject ANONYMOUS = new AuthSubject()
@@ -112,6 +117,12 @@ public interface AuthSubject extends AccessMode
         {
             return "<anonymous>";
         }
+
+        @Override
+        public String username()
+        {
+            return ""; // Should never clash with a valid username
+        }
     };
 
     /**
@@ -153,6 +164,12 @@ public interface AuthSubject extends AccessMode
         public String name()
         {
             return "<auth disabled>";
+        }
+
+        @Override
+        public String username()
+        {
+            return ""; // Should never clash with a valid username
         }
 
         @Override

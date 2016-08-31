@@ -148,6 +148,12 @@ public class BasicAuthSubject implements AuthSubject
     @Override
     public String name()
     {
+        return username();
+    }
+
+    @Override
+    public String username()
+    {
         return user.name();
     }
 }

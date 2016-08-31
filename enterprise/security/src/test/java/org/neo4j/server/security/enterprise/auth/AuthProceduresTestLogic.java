@@ -30,6 +30,7 @@ import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.lang.String.format;
@@ -124,6 +125,28 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 
         write1.closeAndAssertSuccess();
         write2.closeAndAssertSuccess();
+    }
+
+    @Test
+    public void shouldListRestrictedTransaction()
+    {
+        final DoubleLatch doubleLatch = new DoubleLatch( 2 );
+
+        ClassWithProcedures.setTestLatch( new ClassWithProcedures.LatchedRunnables( doubleLatch, () -> {}, () -> {} ) );
+
+        new Thread( () -> assertEmpty( writeSubject, "CALL test.waitForLatch()" ) ).start();
+        doubleLatch.start();
+        try
+        {
+            assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
+                    r -> assertKeyIsMap( r, "username", "activeTransactions",
+                            map( "adminSubject", "1", "writeSubject", "1" ) ) );
+        }
+        finally
+        {
+            doubleLatch.finish();
+            doubleLatch.awaitFinish();
+        }
     }
 
     //---------- terminate transactions for user -----------
@@ -258,6 +281,29 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 
         assertSuccess( adminSubject, "MATCH (n:Test) RETURN n.name AS name",
                 r -> assertKeyIs( r, "name", "writeSubject-node" ) );
+    }
+
+    @Test
+    public void shouldTerminateRestrictedTransaction()
+    {
+        final DoubleLatch doubleLatch = new DoubleLatch( 2 );
+
+        ClassWithProcedures.setTestLatch( new ClassWithProcedures.LatchedRunnables( doubleLatch, () -> {}, () -> {} ) );
+
+        new Thread( () -> assertFail( writeSubject, "CALL test.waitForLatch()", "Explicitly terminated by the user." ) )
+                .start();
+
+        doubleLatch.start();
+        try
+        {
+            assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )",
+                    r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "writeSubject", "1" ) ) );
+        }
+        finally
+        {
+            doubleLatch.finish();
+            doubleLatch.awaitFinish();
+        }
     }
 
     //---------- change user password -----------

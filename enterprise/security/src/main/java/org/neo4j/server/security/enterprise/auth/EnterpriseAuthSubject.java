@@ -146,6 +146,17 @@ public class EnterpriseAuthSubject implements AuthSubject
     @Override
     public String name()
     {
+        String username = username();
+        if ( username.isEmpty() )
+        {
+            return "<missing_principal>";
+        }
+        return username;
+    }
+
+    @Override
+    public String username()
+    {
         Object principal = shiroSubject.getPrincipal();
         if ( principal != null )
         {
@@ -153,7 +164,7 @@ public class EnterpriseAuthSubject implements AuthSubject
         }
         else
         {
-            return "<missing_principal>";
+            return ""; // Should never clash with a valid username
         }
     }
 
