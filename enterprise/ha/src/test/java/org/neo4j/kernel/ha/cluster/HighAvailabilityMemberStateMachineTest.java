@@ -507,7 +507,7 @@ public class HighAvailabilityMemberStateMachineTest
 
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );
         when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new TransactionId( 0, 0, 0 ) );
-        SwitchToSlave switchToSlave = new SwitchToSlave( new File( "" ), NullLogService.getInstance(),
+        SwitchToSlaveNew switchToSlave = new SwitchToSlaveNew( new File( "" ), NullLogService.getInstance(),
                 mock( FileSystemAbstraction.class ),
                 config, dependencyResolver,
                 mock( HaIdGeneratorFactory.class ),

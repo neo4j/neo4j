@@ -24,7 +24,6 @@ import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.internal.matchers.Any;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -35,7 +34,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.DependencyResolver;
@@ -76,6 +74,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
+import org.neo4j.kernel.impl.util.StoreUtil;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -102,7 +101,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -358,7 +356,7 @@ public class BackupServiceIT
 
         // then
         assertFalse( "Temp directory was not removed as expected",
-                fileSystem.fileExists( new File( backupDir, StoreCopyClient.TEMP_COPY_DIRECTORY_NAME ) ) );
+                fileSystem.fileExists( new File( backupDir, StoreUtil.TEMP_COPY_DIRECTORY_NAME ) ) );
     }
 
     @Test
