@@ -45,7 +45,7 @@ case class QualifiedProcedureName(namespace: Seq[String], name: String) {
 case class CypherValue(value: AnyRef, cypherType: CypherType)
 case class FieldSignature(name: String, typ: CypherType, default: Option[CypherValue] = None)
 
-sealed trait ProcedureAccessMode
+sealed trait  ProcedureAccessMode
 
 case class ProcedureReadOnlyAccess(allowed: Array[String]) extends ProcedureAccessMode
 case class ProcedureReadWriteAccess(allowed: Array[String]) extends ProcedureAccessMode
