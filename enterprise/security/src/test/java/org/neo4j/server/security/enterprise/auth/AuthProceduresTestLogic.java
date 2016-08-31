@@ -19,13 +19,10 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,7 +61,6 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.A
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
-import static org.neo4j.test.matchers.CommonMatchers.itemsMatchingExactlyOneOf;
 
 public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 {
@@ -187,36 +183,6 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         {
             doubleLatch.finishAndWaitForAllToFinish();
         }
-    }
-
-    @Test
-    public void shouldListQueries() throws Throwable
-    {
-        DoubleLatch latch = new DoubleLatch( 3, true );
-        long startTime = System.currentTimeMillis();
-        ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> read2 = new ThreadedTransactionCreate<>( neo, latch );
-
-        String q1 = read1.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
-        String q2 = read2.execute( threading, readSubject, "UNWIND [4,5,6] AS y RETURN y" );
-        latch.startAndWaitForAllToStart();
-
-        assertSuccess( adminSubject, "CALL dbms.listQueries()", r ->
-        {
-            Set<Map<String,Object>> maps = r.stream().collect( Collectors.toSet() );
-
-            Matcher<Map<String,Object>> matcher1 = listedQuery( startTime, q1 );
-            Matcher<Map<String,Object>> matcher2 = listedQuery( startTime, q2 );
-
-            assertThat( maps, itemsMatchingExactlyOneOf( matcher1, matcher2 ) );
-        } );
-
-        read1.finish();
-        read2.finish();
-        latch.finishAndWaitForAllToFinish();
-
-        read1.closeAndAssertSuccess();
-        read2.closeAndAssertSuccess();
     }
 
     //---------- terminate transactions for user -----------
@@ -1298,48 +1264,5 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( connection, eventuallyReceives( msgSuccess() ) );
         return connection;
-    }
-
-    //---------- matchers-----------
-
-    private Matcher<Map<String,Object>> listedQuery( long startTime, String query )
-    {
-        return allOf(
-                hasQuery( query ),
-                hasUsername( "readSubject" ),
-                hasQueryId(),
-                hasStartTimeAfter( startTime ),
-                hasNoParameters()
-        );
-    }
-    @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasQuery( String query )
-    {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "query" ), equalTo( query ) );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasUsername( String username )
-    {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "username" ), equalTo( username ) );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasQueryId()
-    {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "queryId" ), anyOf( (Matcher) isA( Integer.class ), isA( Long.class ) ) );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasStartTimeAfter( long base )
-    {
-        // TODO
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "startTime" ), allOf( isA( Long.class ), greaterThanOrEqualTo( base ) ) );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasNoParameters()
-    {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "parameters" ), equalTo ( Collections.emptyMap() ) );
     }
 }

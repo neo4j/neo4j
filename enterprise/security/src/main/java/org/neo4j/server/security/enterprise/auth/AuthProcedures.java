@@ -262,40 +262,6 @@ public class AuthProcedures
                 );
     }
 
-    @Procedure( name = "dbms.listQueries", mode = DBMS )
-    public Stream<QueryStatusResult> listQueries()
-            throws InvalidArgumentsException, IOException
-    {
-        try ( Statement statement = tx.acquireStatement() )
-        {
-            // Expected to always succeed
-            ExecutingQuery ownQuery = statement.metaOperations().executingQueries().findFirst().get();
-            DependencyResolver resolver = graph.getDependencyResolver();
-            KernelTransactions kernelTransactions = resolver.resolveDependency( KernelTransactions.class );
-            Set<ExecutingQuery> executingQueries = kernelTransactions.executingQueries();
-            executingQueries.removeIf( isEqual( ownQuery ) );
-            return executingQueries.stream().map( this::queryStatusResult );
-        }
-    }
-
-    private QueryStatusResult queryStatusResult( ExecutingQuery q )
-    {
-        return new QueryStatusResult(
-            q.queryId(),
-            q.authSubjectName(),
-            q.queryText(),
-            q.queryParameters(),
-            q.startTime()
-        );
-    }
-
-    @Procedure( name = "dbms.listQueriesForUser", mode = DBMS )
-    public Stream<QueryStatusResult> listQueriesForUser( @Name( "username") String username )
-            throws InvalidArgumentsException, IOException
-    {
-        throw new NotImplementedException();
-    }
-
     @Procedure( name = "dbms.security.terminateTransactionsForUser", mode = DBMS )
     public Stream<TransactionTerminationResult> terminateTransactionsForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
