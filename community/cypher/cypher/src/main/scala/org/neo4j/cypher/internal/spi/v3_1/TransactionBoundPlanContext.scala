@@ -135,22 +135,19 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
     val ks = tc.statement.readOperations().procedureGet(kn)
     val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue))).toIndexedSeq
     val output = if (ks.isVoid) None else Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))).toIndexedSeq)
-    val mode = asCypherProcMode(ks.mode())
-    val deprecationInfo = if (ks.deprecated().isPresent())
-      Option(ks.deprecated().get())
-    else
-      None
+    val deprecationInfo = asOption(ks.deprecated())
+    val mode = asCypherProcMode(ks.mode(), ks.allowed())
 
     ProcedureSignature(name, input, output, deprecationInfo, mode)
   }
 
   private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 
-  private def asCypherProcMode(mode: KernelProcedureSignature.Mode): ProcedureAccessMode = mode match {
-    case KernelProcedureSignature.Mode.READ_ONLY => ProcedureReadOnlyAccess
-    case KernelProcedureSignature.Mode.READ_WRITE => ProcedureReadWriteAccess
-    case KernelProcedureSignature.Mode.SCHEMA_WRITE => ProcedureSchemaWriteAccess
-    case KernelProcedureSignature.Mode.DBMS => ProcedureDbmsAccess
+  private def asCypherProcMode(mode: KernelProcedureSignature.Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
+    case KernelProcedureSignature.Mode.READ_ONLY => ProcedureReadOnlyAccess(allowed)
+    case KernelProcedureSignature.Mode.READ_WRITE => ProcedureReadWriteAccess(allowed)
+    case KernelProcedureSignature.Mode.SCHEMA_WRITE => ProcedureSchemaWriteAccess(allowed)
+    case KernelProcedureSignature.Mode.DBMS => ProcedureDbmsAccess(allowed)
     case _ => throw new CypherExecutionException(
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null )
   }

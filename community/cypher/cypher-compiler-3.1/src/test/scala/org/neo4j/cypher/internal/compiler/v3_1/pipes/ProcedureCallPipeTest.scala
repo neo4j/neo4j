@@ -33,6 +33,7 @@ class ProcedureCallPipeTest
     with AstConstructionTestSupport {
 
   val procedureName = QualifiedProcedureName(List.empty, "foo")
+  val emptyStringArray = Array.empty[String]
 
   test("should execute read-only procedure calls") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
@@ -41,14 +42,14 @@ class ProcedureCallPipeTest
     val pipe = ProcedureCallPipe(
       source = lhs,
       name = procedureName,
-      callMode = LazyReadOnlyCallMode,
+      callMode = LazyReadOnlyCallMode(emptyStringArray),
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
       resultIndices = Seq(0 -> "r")
     )()(newMonitor)
 
-    val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadOnlyAccess)
+    val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
 
     pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
       ExecutionContext.from("a" ->1, "r" -> "take 1/1"),
@@ -64,14 +65,14 @@ class ProcedureCallPipeTest
     val pipe = ProcedureCallPipe(
       source = lhs,
       name = procedureName,
-      callMode = EagerReadWriteCallMode,
+      callMode = EagerReadWriteCallMode(emptyStringArray),
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
       resultIndices = Seq(0 -> "r")
     )()(newMonitor)
 
-    val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadWriteAccess)
+    val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))
     pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
       ExecutionContext.from("a" -> 1, "r" -> "take 1/1"),
       ExecutionContext.from("a" -> 2, "r" -> "take 1/2"),
@@ -86,14 +87,14 @@ class ProcedureCallPipeTest
     val pipe = ProcedureCallPipe(
       source = lhs,
       name = procedureName,
-      callMode = EagerReadWriteCallMode,
+      callMode = EagerReadWriteCallMode(emptyStringArray),
       argExprs = Seq(Variable("a")),
       rowProcessing = PassThroughRow,
       resultSymbols = Seq.empty,
       resultIndices = Seq.empty
     )()(newMonitor)
 
-    val qtx = new FakeQueryContext(procedureName, _ => Iterator.empty, ProcedureReadWriteAccess)
+    val qtx = new FakeQueryContext(procedureName, _ => Iterator.empty, ProcedureReadWriteAccess(emptyStringArray))
     pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
       ExecutionContext.from("a" -> 1),
       ExecutionContext.from("a" -> 2)
@@ -113,17 +114,17 @@ class ProcedureCallPipeTest
                          expectedAccessMode: ProcedureAccessMode) extends QueryContext with QueryContextAdaptation {
     override def isGraphKernelResultValue(v: Any): Boolean = false
 
-    override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]) = {
-      expectedAccessMode should equal(ProcedureReadOnlyAccess)
-      doIt(name, args)
+    override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]) = {
+      expectedAccessMode should equal(ProcedureReadOnlyAccess(emptyStringArray))
+      doIt(name, args, allowed)
     }
 
-    override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
-      expectedAccessMode should equal(ProcedureReadWriteAccess)
-      doIt(name, args)
+    override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
+      expectedAccessMode should equal(ProcedureReadWriteAccess(emptyStringArray))
+      doIt(name, args, allowed)
     }
 
-    private def doIt(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
+    private def doIt(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
       name should equal(procedureName)
       args.length should be(1)
       result(args)

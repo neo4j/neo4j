@@ -246,7 +246,7 @@ public class ConstraintIndexCreatorTest
                 }
 
                 @Override
-                public Revertable restrict( AccessMode read )
+                public Revertable overrideWith( AccessMode read )
                 {
                     return null;
                 }

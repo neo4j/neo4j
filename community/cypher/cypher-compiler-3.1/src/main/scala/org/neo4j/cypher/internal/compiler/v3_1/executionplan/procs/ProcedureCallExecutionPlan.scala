@@ -70,7 +70,6 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                           input: Seq[Any], planType: ExecutionMode) = {
     val descriptionGenerator = () => createNormalPlan
     val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-    val columns = signature.outputSignature.map(_.toList.map(_.name)).getOrElse(List.empty)
     new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input, resultIndices, descriptionGenerator, planType)
   }
 
@@ -79,7 +78,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     // close all statements
     taskCloser.close(success = true)
     val columns = signature.outputSignature.map(_.seq.map(_.name).toList).getOrElse(List.empty)
-    new ExplainExecutionResult(columns, createNormalPlan, READ_ONLY, notifications)
+    ExplainExecutionResult(columns, createNormalPlan, READ_ONLY, notifications)
   }
 
   private def createProfiledExecutionResult(ctx: QueryContext, taskCloser: TaskCloser,
@@ -87,7 +86,6 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     val rowCounter = Counter()
     val descriptionGenerator = createProfilePlanGenerator(rowCounter)
     val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-    val columns = signature.outputSignature.map(_.toList.map(_.name)).getOrElse(List.empty)
     new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input, resultIndices, descriptionGenerator, planType) {
       override protected def executeCall: Iterator[Array[AnyRef]] = rowCounter.track(super.executeCall)
     }

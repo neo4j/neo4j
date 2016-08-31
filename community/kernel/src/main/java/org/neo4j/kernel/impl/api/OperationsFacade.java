@@ -1437,7 +1437,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
 
-        try ( KernelTransaction.Revertable revertable = tx.restrict( mode ) )
+        try ( KernelTransaction.Revertable revertable = tx.overrideWith( mode ) )
         {
             CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
             ctx.put( CallableProcedure.Context.KERNEL_TRANSACTION, tx );

@@ -138,8 +138,8 @@ public class TopLevelTransaction implements InternalTransaction
     }
 
     @Override
-    public KernelTransaction.Revertable restrict( AccessMode mode )
+    public KernelTransaction.Revertable overrideWith( AccessMode mode )
     {
-        return transaction.restrict( mode );
+        return transaction.overrideWith( mode );
     }
 }

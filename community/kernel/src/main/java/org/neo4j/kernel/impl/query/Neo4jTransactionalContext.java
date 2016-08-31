@@ -174,7 +174,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public KernelTransaction.Revertable restrictCurrentTransaction( AccessMode accessMode )
     {
-        return transaction.restrict( accessMode );
+        return transaction.overrideWith( accessMode );
     }
 
     @Override

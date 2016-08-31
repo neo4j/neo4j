@@ -20,12 +20,18 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+
+import static java.util.stream.Collectors.toSet;
 
 public class EnterpriseAuthSubject implements AuthSubject
 {
@@ -74,6 +80,14 @@ public class EnterpriseAuthSubject implements AuthSubject
         {
             shiroSubject.setAuthenticationResult( AuthenticationResult.SUCCESS );
         }
+    }
+
+    @Override
+    public boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException
+    {
+        Set<String> roleNamesForUser = getUserManager().getRoleNamesForUser( name() );
+        Set<String> allowedRoleNames = Stream.of( roleNames ).collect( toSet() );
+        return roleNamesForUser.stream().anyMatch( allowedRoleNames::contains );
     }
 
     public EnterpriseUserManager getUserManager()

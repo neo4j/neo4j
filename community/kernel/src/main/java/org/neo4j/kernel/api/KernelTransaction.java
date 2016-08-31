@@ -206,8 +206,9 @@ public interface KernelTransaction extends AutoCloseable
      */
     long getCommitTime();
 
-    Revertable restrict( AccessMode mode );
+    Revertable overrideWith( AccessMode mode );
 
+    @FunctionalInterface
     interface Revertable extends AutoCloseable
     {
         @Override

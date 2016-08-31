@@ -32,7 +32,12 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
+import static java.lang.String.format;
+
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -744,6 +749,96 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertFalse( "Should not have role architect", userHasRole( "readSubject", ARCHITECT ) );
     }
 
+    //---------- create role -----------
+
+    @Test
+    public void shouldCreateRole() throws Exception
+    {
+        assertEmpty( adminSubject, "CALL dbms.security.createRole('new_role')" );
+        userManager.getRole( "new_role" );
+    }
+
+    @Test
+    public void shouldNotCreateRoleIfInvalidRoleName() throws Exception
+    {
+        assertFail( adminSubject, "CALL dbms.security.createRole('')", "The provided role name is empty." );
+        assertFail( adminSubject, "CALL dbms.security.createRole('&%ss!')",
+                "Role name '&%ss!' contains illegal characters. Use simple ascii characters and numbers." );
+        assertFail( adminSubject, "CALL dbms.security.createRole('åäöø')",
+                "Role name 'åäöø' contains illegal characters. Use simple ascii characters and numbers" );
+    }
+
+    @Test
+    public void shouldNotCreateExistingRole() throws Exception
+    {
+        assertFail( adminSubject, format( "CALL dbms.security.createRole('%s')", ARCHITECT),
+                "The specified role 'architect' already exists" );
+        assertEmpty( adminSubject, "CALL dbms.security.createRole('new_role')" );
+        assertFail( adminSubject, "CALL dbms.security.createRole('new_role')",
+                "The specified role 'new_role' already exists" );
+    }
+
+    @Test
+    public void shouldNotAllowNonAdminCreateRole() throws Exception
+    {
+        testFailCreateRole( pwdSubject, CHANGE_PWD_ERR_MSG );
+        testFailCreateRole( readSubject, PERMISSION_DENIED );
+        testFailCreateRole( writeSubject, PERMISSION_DENIED );
+        testFailCreateRole( schemaSubject, PERMISSION_DENIED );
+    }
+
+    //---------- delete role -----------
+
+    @Test
+    public void shouldThrowIfTryingToDeletePredefinedRole() throws Exception
+    {
+        testFailDeleteRole( adminSubject, ADMIN,
+                format( "'%s' is a predefined role and can not be deleted.", ADMIN ) );
+        testFailDeleteRole( adminSubject, ARCHITECT,
+                format( "'%s' is a predefined role and can not be deleted.", ARCHITECT ) );
+        testFailDeleteRole( adminSubject, PUBLISHER,
+                format( "'%s' is a predefined role and can not be deleted.", PUBLISHER ) );
+        testFailDeleteRole( adminSubject, READER,
+                format( "'%s' is a predefined role and can not be deleted.", READER ) );
+    }
+
+    @Test
+    public void shouldThrowIfNonAdminTryingToDeleteRole() throws Exception
+    {
+        assertEmpty( adminSubject, format("CALL dbms.security.createRole('%s')", "new_role" ) );
+        testFailDeleteRole( schemaSubject, "new_role", PERMISSION_DENIED);
+        testFailDeleteRole( writeSubject, "new_role", PERMISSION_DENIED);
+        testFailDeleteRole( readSubject, "new_role", PERMISSION_DENIED);
+        testFailDeleteRole( noneSubject, "new_role", PERMISSION_DENIED);
+    }
+
+    @Test
+    public void shouldThrowIfDeletingNonExistentRole()
+    {
+        testFailDeleteRole( adminSubject, "nonExistent", "Role 'nonExistent' does not exist." );
+    }
+
+    @Test
+    public void shouldDeleteRole() throws Exception
+    {
+        neo.getManager().newRole( "new_role" );
+        assertEmpty( adminSubject, format("CALL dbms.security.deleteRole('%s')", "new_role") );
+
+        assertThat( userManager.getAllRoleNames(), not( contains( "new_role" ) ) );
+    }
+
+    @Test
+    public void deletingRoleAssignedToSelfShouldWork() throws Exception
+    {
+        assertEmpty( adminSubject, format( "CALL dbms.security.createRole('%s')", "new_role" ) );
+        assertEmpty( adminSubject, format( "CALL dbms.security.addRoleToUser('%s', '%s')", "new_role", "adminSubject" ) );
+        assertThat( userManager.getRoleNamesForUser( "adminSubject" ), hasItem( "new_role" ) );
+
+        assertEmpty( this.adminSubject, format( "CALL dbms.security.deleteRole('%s')", "new_role" ) );
+        assertThat( userManager.getRoleNamesForUser( "adminSubject" ), not( hasItem( "new_role" ) ) );
+        assertThat( userManager.getAllRoleNames(), not( contains( "new_role" ) ) );
+    }
+
     //---------- list users -----------
 
     @Test
@@ -1043,7 +1138,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         userThread.execute( threading, subject );
         userThread.barrier.await();
 
-        assertEmpty( adminSubject, "CALL " + String.format(procedure, neo.nameOf( subject ) ) );
+        assertEmpty( adminSubject, "CALL " + format(procedure, neo.nameOf( subject ) ) );
 
         assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
                 r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );

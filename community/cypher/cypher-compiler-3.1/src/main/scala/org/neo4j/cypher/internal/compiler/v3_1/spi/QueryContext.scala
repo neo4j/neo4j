@@ -156,13 +156,13 @@ trait QueryContext extends TokenContext {
 
   def lockRelationships(relIds: Long*)
 
-  def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
-  def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
-  def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
-  def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
   // Check if a runtime value is a node, relationship, path or some such value returned from
   // other query context values by calling down to the underlying database

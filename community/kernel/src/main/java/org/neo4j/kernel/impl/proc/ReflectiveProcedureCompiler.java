@@ -72,7 +72,7 @@ public class ReflectiveProcedureCompiler
     {
         try
         {
-            List<Method> procedureMethods = asList( procDefinition.getDeclaredMethods() ).stream()
+            List<Method> procedureMethods = Arrays.stream( procDefinition.getDeclaredMethods() )
                     .filter( m -> m.isAnnotationPresent( Procedure.class ) )
                     .collect( Collectors.toList() );
 
@@ -154,7 +154,7 @@ public class ReflectiveProcedureCompiler
 
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(),
-                        mode, deprecated, description );
+                        mode, deprecated, procedure.allowed(), description );
 
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }

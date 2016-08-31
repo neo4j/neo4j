@@ -41,6 +41,14 @@ public interface AuthSubject extends AccessMode
     void setPassword( String password, boolean requirePasswordChange ) throws IOException, InvalidArgumentsException;
 
     /**
+     * Determines whether this subject is allowed to execute a procedure with the parameter string in its procedure annotation.
+     * @param roleNames
+     * @return
+     * @throws InvalidArgumentsException
+     */
+    boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException;
+
+    /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
      */
     AuthSubject ANONYMOUS = new AuthSubject()
@@ -61,6 +69,12 @@ public interface AuthSubject extends AccessMode
                 throws IOException, InvalidArgumentsException
         {
             throw new AuthorizationViolationException( "Anonymous cannot change password" );
+        }
+
+        @Override
+        public boolean allowsProcedureWith( String[] roleNames )
+        {
+            return false;
         }
 
         @Override
@@ -156,6 +170,12 @@ public interface AuthSubject extends AccessMode
         public void setPassword( String password, boolean requirePasswordChange )
                 throws IOException, InvalidArgumentsException
         {
+        }
+
+        @Override
+        public boolean allowsProcedureWith( String[] roleNames )
+        {
+            return true;
         }
     };
 }
