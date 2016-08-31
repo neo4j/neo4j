@@ -519,12 +519,6 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<String> auth_manager = setting( "unsupported.dbms.security.auth_manager", STRING, "" );
 
-    @Internal
-    public static final Setting<File> security_log_filename = derivedSetting("dbms.security.log_path",
-            logs_directory,
-            ( logs ) -> new File( logs, "security.log" ),
-            PATH );
-
     // Bolt Settings
 
     @Description("Default network interface to listen for incoming connections. " +

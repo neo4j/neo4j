@@ -29,6 +29,8 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.shiro.realm.Realm;
+
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -45,9 +47,9 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.time.Clocks;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.security_log_filename;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.server.security.auth.BasicAuthManagerFactory.getUserRepository;
+import static org.neo4j.server.security.enterprise.auth.SecuritySettings.security_log_filename;
 
 /**
  * Wraps EnterpriseAuthManager and exposes it as a Service
