@@ -21,6 +21,8 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.time.Clock;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -30,6 +32,7 @@ import java.util.function.Consumer;
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
 import org.apache.shiro.cache.Cache;
 import org.apache.shiro.cache.CacheException;
+import org.apache.shiro.cache.CacheManager;
 
 import org.neo4j.helpers.collection.Pair;
 
@@ -43,7 +46,7 @@ public class AuthCache<K, V> implements Cache<K,V>
     private long lastValidation;
     private final ExecutorService executorService;
 
-    public AuthCache( Clock clock, long ttl, long maxCapacity )
+    AuthCache( Clock clock, long ttl, long maxCapacity )
     {
         this.clock = clock;
         this.TTL = ttl;
@@ -163,5 +166,32 @@ public class AuthCache<K, V> implements Cache<K,V>
     int innerSize()
     {
         return cacheMap.size();
+    }
+
+    static class Manager implements CacheManager
+    {
+        private final Map<String,Cache<?,?>> cacheMap;
+        private final Clock clock;
+        private final long ttl;
+        private final long maxCapacity;
+
+        Manager( Clock clock, long ttl, long maxCapacity )
+        {
+            this.clock = clock;
+            this.ttl = ttl;
+            this.maxCapacity = maxCapacity;
+            cacheMap = new HashMap<>();
+        }
+
+        @Override
+        public <K, V> Cache<K,V> getCache( String s ) throws CacheException
+        {
+            if ( !cacheMap.containsKey( s ) )
+            {
+                cacheMap.put( s, new AuthCache<K,V>( clock, ttl, maxCapacity ) );
+            }
+            //noinspection unchecked
+            return (Cache<K,V>) cacheMap.get( s );
+        }
     }
 }

@@ -23,6 +23,7 @@ import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authz.AuthorizationInfo;
+import org.apache.shiro.cache.MemoryConstrainedCacheManager;
 import org.apache.shiro.realm.Realm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.junit.Before;
@@ -60,7 +61,7 @@ public class InternalFlatFileRealmTest
 
         List<Realm> realms = listOf( testRealm );
 
-        authManager = new MultiRealmAuthManager( testRealm, realms );
+        authManager = new MultiRealmAuthManager( testRealm, realms, new MemoryConstrainedCacheManager() );
         authManager.init();
         authManager.start();
 

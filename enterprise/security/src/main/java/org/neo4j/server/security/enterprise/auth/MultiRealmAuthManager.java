@@ -24,7 +24,6 @@ import org.apache.shiro.authc.ExcessiveAttemptsException;
 import org.apache.shiro.authc.pam.ModularRealmAuthenticator;
 import org.apache.shiro.authc.pam.UnsupportedTokenException;
 import org.apache.shiro.cache.CacheManager;
-import org.apache.shiro.cache.MemoryConstrainedCacheManager;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.realm.CachingRealm;
 import org.apache.shiro.realm.Realm;
@@ -45,16 +44,16 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
     private final DefaultSecurityManager securityManager;
     private final CacheManager cacheManager;
 
-    public MultiRealmAuthManager( EnterpriseUserManager userManager, Collection<Realm> realms )
+    MultiRealmAuthManager( EnterpriseUserManager userManager, Collection<Realm> realms, CacheManager cacheManager )
     {
         this.userManager = userManager;
         this.realms = realms;
+        this.cacheManager = cacheManager;
+
         securityManager = new DefaultSecurityManager( realms );
         securityManager.setSubjectFactory( new ShiroSubjectFactory() );
         ((ModularRealmAuthenticator) securityManager.getAuthenticator())
                 .setAuthenticationStrategy( new ShiroAuthenticationStrategy() );
-
-        cacheManager = new MemoryConstrainedCacheManager();
     }
 
     @Override

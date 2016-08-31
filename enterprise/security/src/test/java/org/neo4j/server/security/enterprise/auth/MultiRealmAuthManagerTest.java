@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.apache.shiro.cache.MemoryConstrainedCacheManager;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,10 +50,7 @@ import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 public class MultiRealmAuthManagerTest
 {
     private InMemoryUserRepository users;
-    private InMemoryRoleRepository roles;
     private AuthenticationStrategy authStrategy;
-    private PasswordPolicy passwordPolicy;
-    private InternalFlatFileRealm internalFlatFileRealm;
     private MultiRealmAuthManager manager;
     private EnterpriseUserManager userManager;
 
@@ -60,12 +58,11 @@ public class MultiRealmAuthManagerTest
     public void setUp() throws Throwable
     {
         users = new InMemoryUserRepository();
-        roles = new InMemoryRoleRepository();
         authStrategy = mock( AuthenticationStrategy.class );
-        passwordPolicy = mock( PasswordPolicy.class );
 
-        internalFlatFileRealm = new InternalFlatFileRealm( users, roles, passwordPolicy, authStrategy );
-        manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ));
+        InternalFlatFileRealm internalFlatFileRealm =
+                new InternalFlatFileRealm( users, new InMemoryRoleRepository(), mock( PasswordPolicy.class ), authStrategy );
+        manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ), new MemoryConstrainedCacheManager() );
         manager.init();
         userManager = manager.getUserManager();
     }

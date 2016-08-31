@@ -78,7 +78,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
             // TODO: Load pluggable realms
         }
 
-        return new MultiRealmAuthManager( internalRealm, realms );
+        return new MultiRealmAuthManager( internalRealm, realms, new AuthCache.Manager( Clocks.systemClock(), 100, 100 ) );
     }
 
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider )
