@@ -31,8 +31,11 @@ class CoreTopologyListenerService
         listeners.add( listener );
     }
 
-    void notifyListeners()
+    void notifyListeners( ClusterTopology clusterTopology )
     {
-        listeners.forEach( CoreTopologyService.Listener::onCoreTopologyChange );
+        for ( CoreTopologyService.Listener listener : listeners )
+        {
+            listener.onCoreTopologyChange( clusterTopology );
+        }
     }
 }
