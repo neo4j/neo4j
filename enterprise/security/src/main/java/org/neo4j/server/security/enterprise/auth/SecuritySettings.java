@@ -26,7 +26,9 @@ import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
+import static org.neo4j.kernel.configuration.Settings.LONG;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
@@ -140,4 +142,12 @@ public class SecuritySettings
                   "E.g. group1=role1;group2=role2;group3=role3,role4,role5" )
     public static Setting<String> ldap_authorization_group_to_role_mapping =
             setting( "dbms.security.realms.ldap.authorization.group_to_role_mapping", STRING, NO_DEFAULT );
+
+    @Description( "The time to live (TTL) for cached authentication and authorization info." )
+    public static Setting<Long> auth_caching_ttl =
+            setting( "dbms.security.realms.auth_caching_ttl", DURATION, "10m" );
+
+    @Description( "The maximum capacity for authentication and authorization caches (respectively)." )
+    public static Setting<Long> auth_cache_max_capacity =
+            setting( "dbms.security.realms.auth_cache_max_capacity", LONG, "10000" );
 }
