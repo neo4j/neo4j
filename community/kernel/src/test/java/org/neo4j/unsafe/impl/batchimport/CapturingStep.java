@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
@@ -30,7 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 public class CapturingStep<T> extends ProcessorStep<T>
 {
-    private final List<T> receivedBatches = new ArrayList<>();
+    private final List<T> receivedBatches = Collections.synchronizedList( new ArrayList<>() );
 
     public CapturingStep( StageControl control, String name, Configuration config,
             StatsProvider... additionalStatsProvider )
@@ -38,7 +39,7 @@ public class CapturingStep<T> extends ProcessorStep<T>
         super( control, name, config, 1, additionalStatsProvider );
     }
 
-    public Iterable<T> receivedBatches()
+    public List<T> receivedBatches()
     {
         return receivedBatches;
     }

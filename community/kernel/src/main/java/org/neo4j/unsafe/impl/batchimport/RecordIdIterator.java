@@ -62,7 +62,7 @@ public interface RecordIdIterator
         return backwards( store.getNumberOfReservedLowIds(), store.getHighId(), config );
     }
 
-    static class Forwards extends PrimitiveLongBaseIterator implements RecordIdIterator
+    class Forwards extends PrimitiveLongBaseIterator implements RecordIdIterator
     {
         private final long lowIncluded;
         private final long highExcluded;
@@ -73,7 +73,8 @@ public interface RecordIdIterator
 
         public Forwards( long lowIncluded, long highExcluded, Configuration config )
         {
-            this.lowIncluded = this.nextId = lowIncluded;
+            this.lowIncluded = lowIncluded;
+            this.nextId = lowIncluded;
             this.highExcluded = highExcluded;
             this.batchSize = config.batchSize();
         }
@@ -119,7 +120,7 @@ public interface RecordIdIterator
         }
     }
 
-    static class Backwards extends PrimitiveLongBaseIterator implements RecordIdIterator
+    class Backwards extends PrimitiveLongBaseIterator implements RecordIdIterator
     {
         private final int batchSize;
         private final long lowIncluded;
@@ -134,7 +135,10 @@ public interface RecordIdIterator
         {
             this.lowIncluded = lowIncluded;
             this.batchSize = config.batchSize();
-            this.highExcluded = this.nextId = this.nextRoofId = this.floorId = highExcluded;
+            this.highExcluded = highExcluded;
+            this.nextId = highExcluded;
+            this.nextRoofId = highExcluded;
+            this.floorId = highExcluded;
         }
 
         @Override

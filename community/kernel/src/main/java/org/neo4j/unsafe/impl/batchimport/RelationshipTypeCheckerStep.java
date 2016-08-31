@@ -28,6 +28,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
@@ -36,12 +39,15 @@ import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 
+import static java.lang.Thread.currentThread;
+
 /**
  * Counts relationships per type to later be able to provide all types, even sorted in descending order
  * of number of relationships per type.
  */
 public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
+    private static final Function<Object,MutableLong> NEW_MUTABLE_LONG = type -> new MutableLong();
     private static final Comparator<Map.Entry<Object,MutableLong>> SORT_BY_COUNT_DESC =
             (e1,e2) -> Long.compare( e2.getValue().longValue(), e1.getValue().longValue() );
     private static final Comparator<Map.Entry<Object,MutableLong>> SORT_BY_ID_DESC =
@@ -60,22 +66,10 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
     @Override
     protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender ) throws Throwable
     {
-        Map<Object,MutableLong> types = typeCheckers.get( Thread.currentThread() );
-        if ( types == null )
-        {
-            typeCheckers.put( Thread.currentThread(), types = new HashMap<>() );
-        }
-
-        for ( InputRelationship relationship : batch.input )
-        {
-            Object type = relationship.typeAsObject();
-            MutableLong count = types.get( type );
-            if ( count == null )
-            {
-                types.put( type, count = new MutableLong() );
-            }
-            count.increment();
-        }
+        Map<Object,MutableLong> typeMap = typeCheckers.computeIfAbsent( currentThread(), ( t ) -> new HashMap<>() );
+        Stream.of( batch.input )
+              .map( InputRelationship::typeAsObject )
+              .forEach( type -> typeMap.computeIfAbsent( type, NEW_MUTABLE_LONG ).increment() );
         sender.send( batch );
     }
 
@@ -84,18 +78,9 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
     protected void done()
     {
         Map<Object,MutableLong> mergedTypes = new HashMap<>();
-        for ( Map<Object,MutableLong> localTypes : typeCheckers.values() )
-        {
-            for ( Map.Entry<Object,MutableLong> localType : localTypes.entrySet() )
-            {
-                MutableLong count = mergedTypes.get( localType.getKey() );
-                if ( count == null )
-                {
-                    mergedTypes.put( localType.getKey(), count = new MutableLong() );
-                }
-                count.add( localType.getValue().longValue() );
-            }
-        }
+        typeCheckers.forEach( (thread,localTypes) ->
+            localTypes.forEach( (type,localCount) ->
+                mergedTypes.computeIfAbsent( type, t -> new MutableLong() ).add( localCount.longValue() ) ) );
 
         sortedTypes = mergedTypes.entrySet().toArray( new Map.Entry[mergedTypes.size()] );
         if ( sortedTypes.length > 0 )

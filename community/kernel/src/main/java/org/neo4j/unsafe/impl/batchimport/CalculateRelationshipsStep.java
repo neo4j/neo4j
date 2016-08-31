@@ -34,7 +34,6 @@ public class CalculateRelationshipsStep extends ProcessorStep<Batch<InputRelatio
 {
     private final RelationshipStore relationshipStore;
     private long numberOfRelationships;
-    private long maxSpecific;
 
     public CalculateRelationshipsStep( StageControl control, Configuration config, RelationshipStore relationshipStore )
     {
@@ -53,7 +52,7 @@ public class CalculateRelationshipsStep extends ProcessorStep<Batch<InputRelatio
     protected void done()
     {
         long highestId = relationshipStore.getHighId() + numberOfRelationships;
-        relationshipStore.setHighestPossibleIdInUse( Math.max( highestId, maxSpecific ) );
+        relationshipStore.setHighestPossibleIdInUse( highestId );
         super.done();
     }
 }

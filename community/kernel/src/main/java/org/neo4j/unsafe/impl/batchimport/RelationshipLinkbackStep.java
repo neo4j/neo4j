@@ -26,6 +26,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.ForkedProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
+
 /**
  * Links relationship chains together, the "prev" pointers of them. "next" pointers are set when
  * initially creating the relationship records. Setting prev pointers at that time would incur
@@ -84,7 +86,7 @@ public class RelationshipLinkbackStep extends ForkedProcessorStep<RelationshipRe
                 {
                     long prevRel = cache.getAndPutRelationship( record.getFirstNode(),
                             Direction.BOTH, record.getId(), false );
-                    if ( prevRel == -1 )
+                    if ( prevRel == ID_NOT_FOUND )
                     {   // First one
                         record.setFirstInFirstChain( true );
                         record.setFirstInSecondChain( true );
@@ -105,7 +107,7 @@ public class RelationshipLinkbackStep extends ForkedProcessorStep<RelationshipRe
                 {
                     long firstPrevRel = cache.getAndPutRelationship( record.getFirstNode(),
                             Direction.OUTGOING, record.getId(), false );
-                    if ( firstPrevRel == -1 )
+                    if ( firstPrevRel == ID_NOT_FOUND )
                     {   // First one
                         record.setFirstInFirstChain( true );
                         firstPrevRel = cache.getCount( record.getFirstNode(), Direction.OUTGOING );
@@ -123,7 +125,7 @@ public class RelationshipLinkbackStep extends ForkedProcessorStep<RelationshipRe
                 {
                     long secondPrevRel = cache.getAndPutRelationship( record.getSecondNode(),
                             Direction.INCOMING, record.getId(), false );
-                    if ( secondPrevRel == -1 )
+                    if ( secondPrevRel == ID_NOT_FOUND )
                     {   // First one
                         record.setFirstInSecondChain( true );
                         secondPrevRel = cache.getCount( record.getSecondNode(), Direction.INCOMING );

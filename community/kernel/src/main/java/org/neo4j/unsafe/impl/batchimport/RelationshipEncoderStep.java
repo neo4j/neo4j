@@ -53,7 +53,7 @@ public class RelationshipEncoderStep extends ForkedProcessorStep<Batch<InputRela
             RelationshipRecord relationship = batch.records[i];
             long startNode = relationship.getFirstNode();
             long endNode = relationship.getSecondNode();
-            if ( startNode == -1 || endNode == -1 )
+            if ( !relationship.inUse() )
             {   // This means that we here have a relationship that refers to missing nodes.
                 // It also means that we tolerate some amount of bad relationships and CalculateDenseNodesStep
                 // already have reported this to the bad collector.

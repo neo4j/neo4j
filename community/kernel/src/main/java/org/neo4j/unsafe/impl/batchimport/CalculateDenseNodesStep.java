@@ -27,6 +27,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.ForkedProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
+
 /**
  * Increments counts for each visited relationship, once for start node and once for end node
  * (unless for loops). This to be able to determine which nodes are dense before starting to import relationships.
@@ -53,8 +55,8 @@ public class CalculateDenseNodesStep extends ForkedProcessorStep<Batch<InputRela
             long startNodeId = batch.ids[idIndex++];
             long endNodeId = batch.ids[idIndex++];
             processNodeId( id, processors, startNodeId, relationship, relationship.startNode() );
-            if ( startNodeId != endNodeId ||            // avoid counting loops twice
-                 startNodeId == -1 || endNodeId == -1 ) // although always collect bad relationships
+            if ( startNodeId != endNodeId ||                 // avoid counting loops twice
+                 startNodeId == ID_NOT_FOUND ) // although always collect bad relationships
             {
                 // Loops only counts as one
                 processNodeId( id, processors, endNodeId, relationship, relationship.endNode() );
@@ -65,9 +67,9 @@ public class CalculateDenseNodesStep extends ForkedProcessorStep<Batch<InputRela
     private void processNodeId( int id, int processors, long nodeId,
             InputRelationship relationship, Object inputId )
     {
-        if ( nodeId == -1 )
+        if ( nodeId == ID_NOT_FOUND )
         {
-            if ( id == 0 )
+            if ( id == MAIN )
             {
                 // Only let the processor with id=0 (which always exists) report the bad relationships
                 badCollector.collectBadRelationship( relationship, inputId );

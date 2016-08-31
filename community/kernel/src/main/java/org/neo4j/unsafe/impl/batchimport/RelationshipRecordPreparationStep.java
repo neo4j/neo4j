@@ -28,6 +28,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
+
 /**
  * Creates and initializes {@link RelationshipRecord} batches to later be filled with actual data
  * and pointers. This is a separate step to remove work from main step.
@@ -54,7 +56,7 @@ public class RelationshipRecordPreparationStep extends ProcessorStep<Batch<Input
             InputRelationship batchRelationship = batch.input[i];
             long startNodeId = batch.ids[idIndex++];
             long endNodeId = batch.ids[idIndex++];
-            if ( startNodeId == -1 || endNodeId == -1 )
+            if ( startNodeId == ID_NOT_FOUND || endNodeId == ID_NOT_FOUND )
             {
                 relationship.setInUse( false );
             }
