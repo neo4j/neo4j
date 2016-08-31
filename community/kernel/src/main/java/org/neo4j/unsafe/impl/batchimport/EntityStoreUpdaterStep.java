@@ -64,6 +64,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
     private final IoMonitor ioMonitor;
     private final PropertyCreator propertyCreator;
     private final Monitor monitor;
+    private long highestId;
 
     // Reusable instances for less GC
     private final BatchingPropertyRecordAccess propertyRecords = new BatchingPropertyRecordAccess();
@@ -133,7 +134,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
             }
             propertyBlockCursor += propertyBlockCount;
         }
-        entityStore.setHighestPossibleIdInUse( highestId );
+        this.highestId = highestId;
 
         // Write all the created property records.
         for ( PropertyRecord propertyRecord : propertyRecords.records() )
@@ -192,5 +193,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         // and bytes written. NodeStage and CalculateDenseNodesStage can be run in parallel so if
         // NodeStage completes before CalculateDenseNodesStage then we want to stop the time in the I/O monitor.
         ioMonitor.stop();
+
+        entityStore.setHighestPossibleIdInUse( highestId );
     }
 }

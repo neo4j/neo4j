@@ -27,7 +27,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
 /**
  * Reads all records from {@link RelationshipStore} and process the counts in them. Uses a {@link NodeLabelsCache}
- * previously populated by f.ex {@link ProcessNodeCountsDataStep}.
+ * previously populated by f.ex {@link NodeCountsStage}.
  */
 public class RelationshipCountsStage extends Stage
 {

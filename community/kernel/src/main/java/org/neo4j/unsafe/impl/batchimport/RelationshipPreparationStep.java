@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.Arrays;
-
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -54,8 +52,6 @@ public class RelationshipPreparationStep extends ProcessorStep<Batch<InputRelati
             ids[i*2] = idMapper.get( batchRelationship.startNode(), batchRelationship.startNodeGroup() );
             ids[i*2+1] = idMapper.get( batchRelationship.endNode(), batchRelationship.endNodeGroup() );
         }
-        batch.sortedIds = ids.clone();
-        Arrays.sort( batch.sortedIds );
         sender.send( batch );
     }
 }

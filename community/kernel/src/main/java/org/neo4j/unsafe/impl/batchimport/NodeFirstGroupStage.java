@@ -26,7 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
-import static org.neo4j.unsafe.impl.batchimport.RecordIdIteration.allIn;
+import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
 
 /**
  * Updates dense nodes with which will be the {@link NodeRecord#setNextRel(long) first group} to point to,
@@ -38,7 +38,7 @@ public class NodeFirstGroupStage extends Stage
             RecordStore<NodeRecord> nodeStore, ByteArray cache )
     {
         super( "Node --> Group", config );
-        add( new ReadRecordsStep<>( control(), config, groupStore, allIn( groupStore ) ) );
+        add( new ReadRecordsStep<>( control(), config, groupStore, allIn( groupStore, config ) ) );
         add( new NodeSetFirstGroupStep( control(), config, nodeStore, cache ) );
         add( new UpdateRecordsStep<>( control(), config, nodeStore ) );
     }

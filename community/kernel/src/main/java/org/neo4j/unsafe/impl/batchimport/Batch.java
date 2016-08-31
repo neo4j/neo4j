@@ -45,8 +45,6 @@ public class Batch<INPUT,RECORD extends PrimitiveRecord>
     // using the same index as the record. So it's a collective size suitable for complete looping
     // over the batch.
     public PropertyBlock[] propertyBlocks;
-    // Used by ParallelizeByNodeIdStep to help determine any two batches have any id in common
-    public long[] sortedIds;
     // Used by relationship staged to query idMapper and store ids here
     public long[] ids;
     public boolean parallelizableWithPrevious;

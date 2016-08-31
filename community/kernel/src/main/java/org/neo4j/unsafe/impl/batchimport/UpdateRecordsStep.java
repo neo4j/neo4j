@@ -53,14 +53,16 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     @Override
     protected void process( RECORD[] batch, BatchSender sender ) throws Throwable
     {
+        int recordsUpdatedInThisBatch = 0;
         for ( RECORD record : batch )
         {
             if ( record != null && record.inUse() && !IdValidator.isReservedId( record.getId() ) )
             {
                 update( record );
+                recordsUpdatedInThisBatch++;
             }
         }
-        recordsUpdated += batch.length;
+        recordsUpdated += recordsUpdatedInThisBatch;
     }
 
     protected void update( RECORD record ) throws Throwable

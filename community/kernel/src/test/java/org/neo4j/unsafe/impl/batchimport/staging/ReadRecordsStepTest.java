@@ -26,16 +26,23 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.unsafe.impl.batchimport.StoreWithReservedId;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
-import static org.neo4j.unsafe.impl.batchimport.RecordIdIteration.allIn;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.withBatchSize;
+import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
 
 public class ReadRecordsStepTest
 {
@@ -44,11 +51,14 @@ public class ReadRecordsStepTest
     {
         long highId = 5;
         int batchSize = (int) highId;
+        org.neo4j.unsafe.impl.batchimport.Configuration config = withBatchSize( DEFAULT, batchSize );
         NodeStore store = StoreWithReservedId.newNodeStoreMock( highId );
         when( store.getHighId() ).thenReturn( highId );
+        when( store.getRecordsPerPage() ).thenReturn( 10 );
 
-        ReadRecordsStep<NodeRecord> step = new ReadRecordsStep<>( mock( StageControl.class ), DEFAULT,
-                store, allIn( store ) );
+        ReadRecordsStep<NodeRecord> step = new ReadRecordsStep<>( mock( StageControl.class ), config,
+                store, allIn( store, config ) );
+        step.start( 0 );
 
         Object batch = step.nextBatchOrNull( 0, batchSize );
 
@@ -59,8 +69,98 @@ public class ReadRecordsStepTest
         assertFalse( "Batch contains record with reserved id " + Arrays.toString( records ), hasRecordWithReservedId );
     }
 
+    @Test
+    public void shouldContinueThroughBigIdHoles() throws Exception
+    {
+        // GIVEN
+        NodeStore store = mock( NodeStore.class );
+        long highId = 100L;
+        when( store.getHighId() ).thenReturn( highId );
+        when( store.newRecord() ).thenReturn( new NodeRecord( -1 ) );
+        org.neo4j.unsafe.impl.batchimport.Configuration config = withBatchSize( DEFAULT, 10 );
+        when( store.newRecordCursor( any( NodeRecord.class ) ) ).thenAnswer( invocation ->
+        {
+            return new ControlledRecordCursor<>( (NodeRecord) invocation.getArguments()[0], record ->
+            {
+                record.setInUse( record.getId() < config.batchSize() || record.getId() >= highId - config.batchSize()/2 );
+                return record.inUse() && record.getId() < highId;
+            } );
+        } );
+        ReadRecordsStep<NodeRecord> step = new ReadRecordsStep<>( mock( StageControl.class ),
+                config, store, allIn( store, config ) );
+        step.start( 0 );
+
+        // WHEN
+        NodeRecord[] first = (NodeRecord[]) step.nextBatchOrNull( 0, config.batchSize() );
+        NodeRecord[] second = (NodeRecord[]) step.nextBatchOrNull( 1, config.batchSize() );
+        NodeRecord[] third = (NodeRecord[]) step.nextBatchOrNull( 2, config.batchSize() );
+
+        // THEN
+        assertEquals( config.batchSize(), first.length );
+        assertEquals( 0L, first[0].getId() );
+        assertEquals( first[0].getId() + config.batchSize() - 1, first[first.length-1].getId() );
+
+        assertEquals( config.batchSize()/2, second.length );
+        assertEquals( highId - 1, second[second.length-1].getId() );
+
+        assertNull( third );
+    }
+
     private static Predicate<NodeRecord> recordWithReservedId()
     {
         return record -> record.getId() == IdGeneratorImpl.INTEGER_MINUS_ONE;
+    }
+
+    private static class ControlledRecordCursor<RECORD extends AbstractBaseRecord> implements RecordCursor<RECORD>
+    {
+        private final RECORD record;
+        private final Predicate<RECORD> populator;
+
+        public ControlledRecordCursor( RECORD record, Predicate<RECORD> populator )
+        {
+            this.record = record;
+            this.populator = populator;
+        }
+
+        @Override
+        public void close()
+        {   // Nothing to close
+        }
+
+        @Override
+        public RECORD get()
+        {
+            return record;
+        }
+
+        @Override
+        public RecordCursor<RECORD> acquire( long id, RecordLoad mode )
+        {
+            return this;
+        }
+
+        @Override
+        public void placeAt( long id, RecordLoad mode )
+        {   // Don't care about this, we only care about next(id) in this class
+        }
+
+        @Override
+        public boolean next()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean next( long id )
+        {
+            record.setId( id );
+            return populator.test( record );
+        }
+
+        @Override
+        public boolean next( long id, RECORD record, RecordLoad mode )
+        {
+            throw new UnsupportedOperationException();
+        }
     }
 }

@@ -27,6 +27,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
+import static org.neo4j.unsafe.impl.batchimport.Configuration.withBatchSize;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
 
@@ -64,7 +65,9 @@ public class RelationshipGroupDefragmenter
                 RecordStore<RelationshipGroupRecord> toStore = neoStore.getRelationshipGroupStore();
 
                 // Count all nodes, how many groups each node has each
-                executeStage( new CountGroupsStage( config, fromStore, groupCache ) );
+                Configuration groupConfig =
+                        withBatchSize( config, neoStore.getRelationshipGroupStore().getRecordsPerPage() );
+                executeStage( new CountGroupsStage( groupConfig, fromStore, groupCache ) );
                 long fromNodeId = 0;
                 long toNodeId = 0;
                 while ( fromNodeId < highNodeId )
@@ -73,9 +76,9 @@ public class RelationshipGroupDefragmenter
                     // Groups that doesn't fit in this round will be included in consecutive rounds.
                     toNodeId = groupCache.prepare( fromNodeId );
                     // Cache those groups
-                    executeStage( new ScanAndCacheGroupsStage( config, fromStore, groupCache ) );
+                    executeStage( new ScanAndCacheGroupsStage( groupConfig, fromStore, groupCache ) );
                     // And write them in sequential order in the store
-                    executeStage( new WriteGroupsStage( config, groupCache, toStore ) );
+                    executeStage( new WriteGroupsStage( groupConfig, groupCache, toStore ) );
 
                     // Make adjustments for the next iteration
                     fromNodeId = toNodeId;
@@ -84,7 +87,8 @@ public class RelationshipGroupDefragmenter
                 // Now update nodes to point to the new groups
                 ByteArray groupCountCache = groupCache.getGroupCountCache();
                 groupCountCache.clear();
-                executeStage( new NodeFirstGroupStage( config, toStore, neoStore.getNodeStore(), groupCountCache ) );
+                Configuration nodeConfig = withBatchSize( config, neoStore.getNodeStore().getRecordsPerPage() );
+                executeStage( new NodeFirstGroupStage( nodeConfig, toStore, neoStore.getNodeStore(), groupCountCache ) );
             }
             catch ( Throwable t )
             {

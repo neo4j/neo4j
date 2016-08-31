@@ -69,16 +69,17 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
     private static final int NODE_CHANGED_MASKS = DENSE_NODE_CHANGED_MASK | SPARSE_NODE_CHANGED_MASK;
     private static final int COUNT_MASK = ~NODE_CHANGED_MASKS;
 
-    private final ByteArray array;
+    private ByteArray array;
     private byte[] chunkChangedArray;
     private final int denseNodeThreshold;
     private final RelGroupCache relGroupCache;
-    private long highId;
+    private long highNodeId;
     // This cache participates in scans backwards and forwards, marking entities as changed in the process.
     // When going forward (forward==true) changes are marked with a set bit, a cleared bit when going bachwards.
     // This way there won't have to be a clearing of the change bits in between the scans.
     private volatile boolean forward = true;
     private final int chunkSize;
+    private final NumberArrayFactory arrayFactory;
 
     public NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold )
     {
@@ -87,8 +88,8 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 
     NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold, int chunkSize, long base )
     {
+        this.arrayFactory = arrayFactory;
         this.chunkSize = chunkSize;
-        this.array = arrayFactory.newDynamicByteArray( chunkSize, minusOneBytes( ID_AND_COUNT_SIZE ) );
         this.denseNodeThreshold = denseNodeThreshold;
         this.relGroupCache = new RelGroupCache( arrayFactory, chunkSize, base );
     }
@@ -135,13 +136,14 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
      */
     public void setHighNodeId( long nodeId )
     {
-        this.highId = nodeId;
+        this.highNodeId = nodeId;
+        this.array = arrayFactory.newByteArray( highNodeId, minusOneBytes( ID_AND_COUNT_SIZE ) );
         this.chunkChangedArray = new byte[chunkOf( nodeId ) + 1];
     }
 
     public long getHighNodeId()
     {
-        return this.highId;
+        return this.highNodeId;
     }
 
     private static int getCount( ByteArray array, long index, int offset )
@@ -525,7 +527,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         @Override
         public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
         {
-            array.acceptMemoryStatsVisitor( visitor );
+            nullSafeMemoryStatsVisitor( array, visitor );
         }
     }
 
@@ -544,8 +546,16 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
     @Override
     public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
     {
-        array.acceptMemoryStatsVisitor( visitor );
+        nullSafeMemoryStatsVisitor( array, visitor );
         relGroupCache.acceptMemoryStatsVisitor( visitor );
+    }
+
+    static void nullSafeMemoryStatsVisitor( MemoryStatsVisitor.Visitable visitable, MemoryStatsVisitor visitor )
+    {
+        if ( visitable != null )
+        {
+            visitable.acceptMemoryStatsVisitor( visitor );
+        }
     }
 
     private static int changeMask( boolean dense )
@@ -571,7 +581,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
     {
         long mask = changeMask( denseNodes );
         byte chunkMask = chunkChangeMask( denseNodes );
-        for ( long nodeId = 0; nodeId < highId; )
+        for ( long nodeId = 0; nodeId < highNodeId; )
         {
             if ( !chunkHasChange( nodeId, chunkMask ) )
             {
@@ -580,7 +590,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             }
 
             ByteArray chunk = array.at( nodeId );
-            for ( int i = 0; i < chunkSize && nodeId < highId; i++, nodeId++ )
+            for ( int i = 0; i < chunkSize && nodeId < highNodeId; i++, nodeId++ )
             {
                 if ( isDense( chunk, nodeId ) == denseNodes && nodeIsChanged( chunk, nodeId, mask ) )
                 {

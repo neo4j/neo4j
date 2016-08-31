@@ -66,7 +66,8 @@ public class DynamicProcessorAssignerTest
         // and it rounds down. So there's room for assigning one more.
         DynamicProcessorAssigner assigner = new DynamicProcessorAssigner( config, 3 );
 
-        ControlledStep<?> slowStep = spy( stepWithStats( "slow", 1, avg_processing_time, 10L, done_batches, 10L ) );
+        ControlledStep<?> slowStep = spy( stepWithStats( "slow", 1, avg_processing_time, 6L, done_batches, 10L )
+                .setProcessors( 2 ) );
         ControlledStep<?> fastStep = spy( stepWithStats( "fast", 0, avg_processing_time, 2L, done_batches, 10L )
                 .setProcessors( 2 ) );
 
@@ -133,8 +134,8 @@ public class DynamicProcessorAssignerTest
 
         // GIVEN
         Configuration config = movingAverageConfig( 10 );
-        DynamicProcessorAssigner assigner = new DynamicProcessorAssigner( config, 5 );
-        Step<?> wayFastest = stepWithStats( "wayFastest", 0, avg_processing_time, 0L, done_batches, 20L );
+        DynamicProcessorAssigner assigner = new DynamicProcessorAssigner( config, 3 );
+        Step<?> wayFastest = stepWithStats( "wayFastest", 0, avg_processing_time, 50L, done_batches, 20L );
         Step<?> fast = spy( stepWithStats( "fast", 0, avg_processing_time, 100L, done_batches, 20L )
                 .setProcessors( 3 ) );
         Step<?> slow = stepWithStats( "slow", 1, avg_processing_time, 220L, done_batches, 20L );

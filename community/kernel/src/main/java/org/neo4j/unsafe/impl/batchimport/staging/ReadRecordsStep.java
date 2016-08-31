@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.unsafe.impl.batchimport.RecordIdIterator;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
@@ -43,7 +44,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends IoProduc
     protected final RECORD record;
     protected final RecordCursor<RECORD> cursor;
     protected final long highId;
-    private final PrimitiveLongIterator ids;
+    private final RecordIdIterator ids;
     private final Class<RECORD> klass;
     private final int recordSize;
     // volatile since written by processing threads and read by execution monitor
@@ -51,7 +52,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends IoProduc
 
     @SuppressWarnings( "unchecked" )
     public ReadRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
-            PrimitiveLongIterator ids )
+            RecordIdIterator ids )
     {
         super( control, config );
         this.store = store;
@@ -73,26 +74,26 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends IoProduc
     @Override
     protected Object nextBatchOrNull( long ticket, int batchSize )
     {
-        if ( !ids.hasNext() )
+        PrimitiveLongIterator ids;
+        while ( (ids = this.ids.nextBatch()) != null )
         {
-            return null;
-        }
-
-        RECORD[] batch = (RECORD[]) Array.newInstance( klass, batchSize );
-        int i = 0;
-        while ( i < batchSize && ids.hasNext() )
-        {
-            if ( cursor.next( ids.next() ) && !IdValidator.isReservedId( record.getId() ) )
+            RECORD[] batch = (RECORD[]) Array.newInstance( klass, batchSize );
+            int i = 0;
+            while ( ids.hasNext() )
             {
-                RECORD newRecord = (RECORD) record.clone();
-                batch[i] = newRecord;
-                i++;
+                if ( cursor.next( ids.next() ) && !IdValidator.isReservedId( record.getId() ) )
+                {
+                    batch[i++] = (RECORD) record.clone();
+                }
+            }
+
+            if ( i > 0 )
+            {
+                count += i;
+                return i == batchSize ? batch : Arrays.copyOf( batch, i );
             }
         }
-
-        count += i;
-        batch = i == batchSize ? batch : Arrays.copyOf( batch, i );
-        return batch.length > 0 ? batch : null;
+        return null;
     }
 
     @Override

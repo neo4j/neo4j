@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
 
 /**
  * Links the {@code previous} fields in {@link RelationshipRecord relationship records}. This is done after
@@ -50,7 +51,7 @@ public class RelationshipLinkbackProcessor implements RecordProcessor<Relationsh
             {
                 long prevRel = cache.getAndPutRelationship( record.getFirstNode(),
                         Direction.BOTH, record.getId(), false );
-                if ( prevRel == -1 )
+                if ( prevRel == ID_NOT_FOUND )
                 {   // First one
                     record.setFirstInFirstChain( true );
                     record.setFirstInSecondChain( true );
@@ -68,7 +69,7 @@ public class RelationshipLinkbackProcessor implements RecordProcessor<Relationsh
             {
                 long firstPrevRel = cache.getAndPutRelationship( record.getFirstNode(),
                         Direction.OUTGOING, record.getId(), false );
-                if ( firstPrevRel == -1 )
+                if ( firstPrevRel == ID_NOT_FOUND )
                 {   // First one
                     record.setFirstInFirstChain( true );
                     firstPrevRel = cache.getCount( record.getFirstNode(), Direction.OUTGOING );
@@ -83,7 +84,7 @@ public class RelationshipLinkbackProcessor implements RecordProcessor<Relationsh
             {
                 long secondPrevRel = cache.getAndPutRelationship( record.getSecondNode(),
                         Direction.INCOMING, record.getId(), false );
-                if ( secondPrevRel == -1 )
+                if ( secondPrevRel == ID_NOT_FOUND )
                 {   // First one
                     record.setFirstInSecondChain( true );
                     secondPrevRel = cache.getCount( record.getSecondNode(), Direction.INCOMING );

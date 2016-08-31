@@ -217,7 +217,7 @@ public class DataFactories
             {
                 if ( !singletonEntries.containsKey( type ) )
                 {
-                    throw new MissingHeaderException( type );
+                    throw new MissingHeaderException( type, entries );
                 }
             }
         }

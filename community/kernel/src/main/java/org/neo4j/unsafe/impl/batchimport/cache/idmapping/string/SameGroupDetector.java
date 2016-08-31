@@ -21,6 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.Arrays;
 
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
+
 /**
  * Used by {@link EncodingIdMapper} to help detect collisions of encoded values within the same group.
  * Same values for different groups are not considered collisions.
@@ -47,7 +49,7 @@ class SameGroupDetector
             add( dataIndexA, groupIdA );
         }
 
-        long collision = -1;
+        long collision = ID_NOT_FOUND;
         for ( int i = 0; i < cursor; i++ )
         {
             long dataIndexAtCursor = seen[i++];

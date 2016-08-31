@@ -20,10 +20,18 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.helpers.progress.ProgressListener;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
+/**
+ * After {@link IdMapper#prepare(InputIterable, Collector, ProgressListener)} any duplicate input ids have been
+ * detected, i.e. also duplicate imported nodes. This stage makes one pass over those duplicate node ids
+ * and deletes from from the store(s).
+ */
 public class DeleteDuplicateNodesStage extends Stage
 {
     public DeleteDuplicateNodesStage( Configuration config, PrimitiveLongIterator duplicateNodeIds,

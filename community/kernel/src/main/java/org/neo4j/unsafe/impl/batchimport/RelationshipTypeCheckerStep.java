@@ -19,14 +19,17 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.apache.commons.lang3.mutable.MutableLong;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -36,19 +39,22 @@ import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 
+import static java.lang.Thread.currentThread;
+
 /**
  * Counts relationships per type to later be able to provide all types, even sorted in descending order
  * of number of relationships per type.
  */
 public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
-    private static final Comparator<Map.Entry<Object,AtomicLong>> SORT_BY_COUNT_DESC =
-            (e1,e2) -> Long.compare( e2.getValue().get(), e1.getValue().get() );
-    private static final Comparator<Map.Entry<Object,AtomicLong>> SORT_BY_ID_DESC =
+    private static final Function<Object,MutableLong> NEW_MUTABLE_LONG = type -> new MutableLong();
+    private static final Comparator<Map.Entry<Object,MutableLong>> SORT_BY_COUNT_DESC =
+            (e1,e2) -> Long.compare( e2.getValue().longValue(), e1.getValue().longValue() );
+    private static final Comparator<Map.Entry<Object,MutableLong>> SORT_BY_ID_DESC =
             (e1,e2) -> Integer.compare( (Integer)e2.getKey(), (Integer)e1.getKey() );
-    private final ConcurrentMap<Object,AtomicLong> allTypes = new ConcurrentHashMap<>();
+    private final Map<Thread,Map<Object,MutableLong>> typeCheckers = new ConcurrentHashMap<>();
     private final BatchingRelationshipTypeTokenRepository typeTokenRepository;
-    private Map.Entry<Object,AtomicLong>[] sortedTypes;
+    private Map.Entry<Object,MutableLong>[] sortedTypes;
 
     public RelationshipTypeCheckerStep( StageControl control, Configuration config,
             BatchingRelationshipTypeTokenRepository typeTokenRepository )
@@ -60,17 +66,10 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
     @Override
     protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender ) throws Throwable
     {
-        for ( InputRelationship relationship : batch.input )
-        {
-            Object type = relationship.typeAsObject();
-            AtomicLong count = allTypes.get( type );
-            if ( count == null )
-            {
-                AtomicLong existing = allTypes.putIfAbsent( type, count = new AtomicLong() );
-                count = existing != null ? existing : count;
-            }
-            count.incrementAndGet();
-        }
+        Map<Object,MutableLong> typeMap = typeCheckers.computeIfAbsent( currentThread(), ( t ) -> new HashMap<>() );
+        Stream.of( batch.input )
+              .map( InputRelationship::typeAsObject )
+              .forEach( type -> typeMap.computeIfAbsent( type, NEW_MUTABLE_LONG ).increment() );
         sender.send( batch );
     }
 
@@ -78,10 +77,15 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
     @Override
     protected void done()
     {
-        sortedTypes = allTypes.entrySet().toArray( new Map.Entry[allTypes.size()] );
+        Map<Object,MutableLong> mergedTypes = new HashMap<>();
+        typeCheckers.forEach( (thread,localTypes) ->
+            localTypes.forEach( (type,localCount) ->
+                mergedTypes.computeIfAbsent( type, t -> new MutableLong() ).add( localCount.longValue() ) ) );
+
+        sortedTypes = mergedTypes.entrySet().toArray( new Map.Entry[mergedTypes.size()] );
         if ( sortedTypes.length > 0 )
         {
-            Comparator<Map.Entry<Object,AtomicLong>> comparator = sortedTypes[0].getKey() instanceof Integer ?
+            Comparator<Map.Entry<Object,MutableLong>> comparator = sortedTypes[0].getKey() instanceof Integer ?
                     SORT_BY_ID_DESC : SORT_BY_COUNT_DESC;
             Arrays.sort( sortedTypes, comparator );
         }
@@ -116,9 +120,9 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
     public Object[] getRelationshipTypes( long belowOrEqualToThreshold )
     {
         List<Object> result = new ArrayList<>();
-        for ( Map.Entry<Object,AtomicLong> candidate : sortedTypes )
+        for ( Map.Entry<Object,MutableLong> candidate : sortedTypes )
         {
-            if ( candidate.getValue().get() <= belowOrEqualToThreshold )
+            if ( candidate.getValue().longValue() <= belowOrEqualToThreshold )
             {
                 result.add( candidate.getKey() );
             }

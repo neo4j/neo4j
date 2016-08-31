@@ -24,6 +24,7 @@ import org.neo4j.kernel.configuration.Config;
 import static java.lang.Math.min;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
 /**
@@ -52,6 +53,8 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
      */
     long pageCacheMemory();
 
+    int pageSize();
+
     class Default
             extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Default
             implements Configuration
@@ -69,6 +72,27 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         {
             return Integer.parseInt( dense_node_threshold.getDefaultValue() );
         }
+
+        private static int calculateOptimalPageSize( long memorySize, int numberOfPages )
+        {
+            int pageSize = (int) mebiBytes( 8 );
+            int lowest = (int) kibiBytes( 8 );
+            while ( pageSize > lowest )
+            {
+                if ( memorySize / pageSize >= numberOfPages )
+                {
+                    return pageSize;
+                }
+                pageSize >>>= 1;
+            }
+            return lowest;
+        }
+
+        @Override
+        public int pageSize()
+        {
+            return calculateOptimalPageSize( pageCacheMemory(), 60 );
+        }
     }
 
     Configuration DEFAULT = new Default();
@@ -79,6 +103,11 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
     {
         private final Configuration defaults;
         private final Config config;
+
+        public Overridden( Configuration defaults )
+        {
+            this( defaults, Config.empty() );
+        }
 
         public Overridden( Configuration defaults, Config config )
         {
@@ -109,5 +138,23 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         {
             return defaults.movingAverageSize();
         }
+
+        @Override
+        public int pageSize()
+        {
+            return defaults.pageSize();
+        }
+    }
+
+    public static Configuration withBatchSize( Configuration config, int batchSize )
+    {
+        return new Overridden( config )
+        {
+            @Override
+            public int batchSize()
+            {
+                return batchSize;
+            }
+        };
     }
 }

@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongPredicate;
 
-import org.neo4j.graphdb.Resource;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
@@ -54,7 +53,6 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     private final Configuration config;
     private final LongPredicate catchUp = queueSizeThreshold -> queuedBatches.get() <= queueSizeThreshold;
     protected final AtomicLong begunBatches = new AtomicLong();
-    private final LongPredicate rightBeginTicket = ticket -> begunBatches.get() == ticket;
 
     // Time stamp for when we processed the last queued batch received from upstream.
     // Useful for tracking how much time we spend waiting for batches from upstream.
@@ -93,25 +91,16 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
             sender.initialize( ticket );
             try
             {
-                // If we're ordering tickets we will force calls to #permit to be ordered by ticket
-                // since grabbing a permit may include locking.
-                if ( guarantees( ORDER_PROCESS ) )
+                begunBatches.incrementAndGet();
+                long startTime1 = nanoTime();
+                process( batch, sender );
+                if ( downstream == null )
                 {
-                    await( rightBeginTicket, ticket, healthChecker, park );
+                    // No batches were emmitted so we couldn't track done batches in that way.
+                    // We can see that we're the last step so increment here instead
+                    doneBatches.incrementAndGet();
                 }
-                try ( Resource precondition = permit( batch ) )
-                {
-                    begunBatches.incrementAndGet();
-                    long startTime1 = nanoTime();
-                    process( batch, sender );
-                    if ( downstream == null )
-                    {
-                        // No batches were emmitted so we couldn't track done batches in that way.
-                        // We can see that we're the last step so increment here instead
-                        doneBatches.incrementAndGet();
-                    }
-                    totalProcessingTime.add( nanoTime() - startTime1 - sender.sendTime );
-                }
+                totalProcessingTime.add( nanoTime() - startTime1 - sender.sendTime );
 
                 decrementQueue();
                 checkNotifyEndDownstream();
@@ -122,16 +111,6 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
             }
         } );
         return idleTime;
-    }
-
-    /**
-     * Called before {@link #process(Object, BatchSender) processing} and time measurement starts.
-     * Coordination with other processors should happen in here.
-     * If total ordering is enabled then calls will arrive in order of ticket.
-     */
-    protected Resource permit( T batch ) throws Throwable
-    {
-        return Resource.EMPTY;
     }
 
     private void decrementQueue()

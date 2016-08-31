@@ -21,72 +21,128 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
-import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
-import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
 public class CalculateDenseNodesStepTest
 {
-    /**
-     * Batches are provided to {@link CalculateDenseNodesStep} in batches where each id all is of the same radix.
-     * This test asserts that, regardless of how many processors are assigned to the step there cannot be
-     * two processors processing multiple batches with ids of the same radix concurrently.
-     */
     @Test
-    public void shouldPreventMultipleConcurrentProcessorsForAnyGivenRadixBatchSparse() throws Exception
+    public void shouldNotProcessLoopsTwice() throws Exception
     {
         // GIVEN
-        StageControl control = new StageControl()
+        NodeRelationshipCache cache = mock( NodeRelationshipCache.class );
+        try ( CalculateDenseNodesStep step = new CalculateDenseNodesStep( mock( StageControl.class ),
+                DEFAULT, cache, mock( Collector.class ) ) )
         {
-            @Override
-            public void panic( Throwable cause )
+            step.processors( 4 );
+            step.start( 0 );
+
+            // WHEN
+            Batch<InputRelationship,RelationshipRecord> batch = batch(
+                    relationship( 1, 5 ),
+                    relationship( 3, 10 ),
+                    relationship( 2, 2 ), // <-- the loop
+                    relationship( 4, 1 ) );
+            step.receive( 0, batch );
+            step.endOfUpstream();
+            while ( !step.isCompleted() )
             {
-                cause.printStackTrace();
+                // wait
             }
-        };
-        Configuration config = Configuration.DEFAULT;
-        NodeRelationshipCache cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, -1 );
-        Step<long[]> step = new CalculateDenseNodesStep( control, config, cache );
-        step.start( 0 );
-        step.processors( 100 );
 
-        // WHEN sending many batches, all which "happens" to have ids of the same radix, in fact
-        // this test "happens" to send the same batch of ids over and over, which actually may happen in read life,
-        // although it's an extreme case.
-        long[] ids = batchOfIdsWithRadix( 3 );
-        int numberOfBatches = 100;
-        for ( int i = 0; i < numberOfBatches; i++ )
-        {
-            step.receive( i, ids );
-        }
-        step.endOfUpstream();
-        waitUntilCompleted( step );
-
-        // THEN
-        for ( long id : ids )
-        {
-            assertEquals( numberOfBatches, cache.getCount( id, null /*shouldn't be used here anyway*/ ) );
+            // THEN
+            verify( cache, times( 2 ) ).incrementCount( eq( 1L ) );
+            verify( cache, times( 1 ) ).incrementCount( eq( 2L ) );
+            verify( cache, times( 1 ) ).incrementCount( eq( 3L ) );
+            verify( cache, times( 1 ) ).incrementCount( eq( 4L ) );
+            verify( cache, times( 1 ) ).incrementCount( eq( 5L ) );
+            verify( cache, times( 1 ) ).incrementCount( eq( 10L ) );
         }
     }
 
-    private void waitUntilCompleted( Step<?> step ) throws InterruptedException
+    @Test
+    public void shouldCollectBadRelationships() throws Exception
     {
-        while ( !step.isCompleted() )
+        // GIVEN
+        NodeRelationshipCache cache = mock( NodeRelationshipCache.class );
+        Collector collector = mock( Collector.class );
+        try ( CalculateDenseNodesStep step = new CalculateDenseNodesStep( mock( StageControl.class ),
+                DEFAULT, cache, collector ) )
         {
-            Thread.sleep( 1 );
+            step.processors( 4 );
+            step.start( 0 );
+
+            // WHEN
+            Batch<InputRelationship,RelationshipRecord> batch = batch(
+                    relationship( 1, 5 ),
+                    relationship( 3, 10 ),
+                    relationship( "a", 2, -1, 2 ),     // <-- bad relationship with missing start node
+                    relationship( 2, "b", 2, -1 ),     // <-- bad relationship with missing end node
+                    relationship( "c", "d", -1, -1 ) );// <-- bad relationship with missing start and end node
+            step.receive( 0, batch );
+            step.endOfUpstream();
+            while ( !step.isCompleted() )
+            {
+                //wait
+            }
+
+            // THEN
+            verify( collector, times( 1 ) ).collectBadRelationship( any( InputRelationship.class ), eq( "a" ) );
+            verify( collector, times( 1 ) ).collectBadRelationship( any( InputRelationship.class ), eq( "b" ) );
+            verify( collector, times( 1 ) ).collectBadRelationship( any( InputRelationship.class ), eq( "c" ) );
+            verify( collector, times( 1 ) ).collectBadRelationship( any( InputRelationship.class ), eq( "d" ) );
         }
     }
 
-    private long[] batchOfIdsWithRadix( int radixOutOfTen )
+    private Batch<InputRelationship,RelationshipRecord> batch( Data... relationships )
     {
-        long[] ids = new long[1_000];
-        for ( int i = 0; i < ids.length; i++ )
+        Batch<InputRelationship,RelationshipRecord> batch = new Batch<>( new InputRelationship[relationships.length] );
+        batch.ids = new long[relationships.length * 2];
+        for ( int i = 0; i < relationships.length; i++ )
         {
-            ids[i] = i*10 + radixOutOfTen;
+            batch.input[i] = new InputRelationship( "test", i, i, NO_PROPERTIES, null, relationships[i].startNode,
+                    relationships[i].endNode, "TYPE", null );
+            batch.ids[i*2] = relationships[i].startNodeId;
+            batch.ids[i*2 + 1] = relationships[i].endNodeId;
         }
-        return ids;
+        return batch;
+    }
+
+    private static Data relationship( Object startNode, Object endNode, long startNodeId, long endNodeId )
+    {
+        return new Data( startNode, endNode, startNodeId, endNodeId );
+    }
+
+    private static Data relationship( long startNodeId, long endNodeId )
+    {
+        return new Data( startNodeId, endNodeId, startNodeId, endNodeId );
+    }
+
+    private static class Data
+    {
+        private final long startNodeId;
+        private final long endNodeId;
+        private final Object startNode;
+        private final Object endNode;
+
+        Data( Object startNode, Object endNode, long startNodeId, long endNodeId )
+        {
+            this.startNode = startNode;
+            this.endNode = endNode;
+            this.startNodeId = startNodeId;
+            this.endNodeId = endNodeId;
+        }
     }
 }

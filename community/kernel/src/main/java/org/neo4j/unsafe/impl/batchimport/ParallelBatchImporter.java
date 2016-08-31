@@ -56,10 +56,14 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.Math.max;
+import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+
+import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.withBatchSize;
 import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
@@ -156,18 +160,10 @@ public class ParallelBatchImporter implements BatchImporter
             // Stage 1 -- nodes, properties, labels
             NodeStage nodeStage = new NodeStage( config, writeMonitor,
                     nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
-                    storeUpdateMonitor, memoryUsageStats );
-
-            // Stage 2 -- calculate dense node threshold
-            CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( config,
-                    relationships, nodeRelationshipCache, idMapper, badCollector, inputCache, neoStore );
-
-            // Execute stages 1 and 2 in parallel or sequentially?
+                    storeUpdateMonitor, nodeRelationshipCache, memoryUsageStats );
+            executeStages( nodeStage );
             if ( idMapper.needsPreparation() )
-            {   // The id mapper of choice needs preparation in order to get ids from it,
-                // So we need to execute the node stage first as it fills the id mapper and prepares it in the end,
-                // before executing any stage that needs ids from the id mapper, for example calc dense node stage.
-                executeStages( nodeStage );
+            {
                 executeStages( new IdMapperPreparationStage( config, idMapper, cachedNodes,
                         badCollector, memoryUsageStats ) );
                 PrimitiveLongIterator duplicateNodeIds = badCollector.leftOverDuplicateNodesIds();
@@ -175,25 +171,21 @@ public class ParallelBatchImporter implements BatchImporter
                 {
                     executeStages( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore ) );
                 }
-                executeStages( calculateDenseNodesStage );
             }
-            else
-            {   // The id mapper of choice doesn't need any preparation, so we can go ahead and execute
-                // the node and calc dense node stages in parallel.
-                executeStages( nodeStage, calculateDenseNodesStage );
-            }
-            // At this point we know how many nodes we have, so we tell the cache that instead of having the
-            // cache keeping track of that in a the face of concurrent updates.
-            nodeRelationshipCache.setHighNodeId( neoStore.getNodeStore().getHighId() );
+
+            // Stage 2 -- calculate dense node threshold
+            CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage(
+                    withBatchSize( config, config.batchSize()*10 ),
+                    relationships, nodeRelationshipCache, idMapper, badCollector, inputCache, neoStore );
+            executeStages( calculateDenseNodesStage );
 
             importRelationships( nodeRelationshipCache, storeUpdateMonitor, neoStore, writeMonitor,
                     idMapper, cachedRelationships, inputCache,
                     calculateDenseNodesStage.getRelationshipTypes( Long.MAX_VALUE ),
-                    // Is batch size a good measure for considering a group of relationships a minority?
-                    calculateDenseNodesStage.getRelationshipTypes( config.batchSize() ) );
+                    calculateDenseNodesStage.getRelationshipTypes( 100 ) );
 
             // Release this potentially really big piece of cached data
-            long memoryWeCanHoldForCertain = totalMemoryUsageOf( idMapper, nodeRelationshipCache );
+            long peakMemoryUsage = totalMemoryUsageOf( idMapper, nodeRelationshipCache );
             long highNodeId = nodeRelationshipCache.getHighNodeId();
             idMapper.close();
             idMapper = null;
@@ -201,7 +193,7 @@ public class ParallelBatchImporter implements BatchImporter
             nodeRelationshipCache = null;
 
             new RelationshipGroupDefragmenter( config, executionMonitor ).run(
-                    max( max( memoryWeCanHoldForCertain, highNodeId * 4), mebiBytes( 1 ) ), neoStore, highNodeId );
+                    max( max( peakMemoryUsage, highNodeId * 4 ), mebiBytes( 1 ) ), neoStore, highNodeId );
 
             // Stage 6 -- count nodes per label and labels per node
             nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
@@ -215,7 +207,11 @@ public class ParallelBatchImporter implements BatchImporter
 
             // We're done, do some final logging about it
             long totalTimeMillis = currentTimeMillis() - startTime;
-            executionMonitor.done( totalTimeMillis, storeUpdateMonitor.toString() );
+            executionMonitor.done( totalTimeMillis,
+                    format( "%n" ) +
+                    storeUpdateMonitor.toString() +
+                    format( "%n" ) +
+                    "Peak memory usage: " + bytes( peakMemoryUsage ) );
             log.info( "Import completed, took " + Format.duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
             hasBadEntries = badCollector.badEntries() > 0;
             if ( hasBadEntries )
@@ -282,6 +278,9 @@ public class ParallelBatchImporter implements BatchImporter
                 inputCache );
 
         long nextRelationshipId = 0;
+        Configuration relationshipConfig = withBatchSize( config,
+                neoStore.getRelationshipStore().getRecordsPerPage() );
+        Configuration nodeConfig = withBatchSize( config, neoStore.getNodeStore().getRecordsPerPage() );
         for ( int i = 0; perTypeIterator.hasNext(); i++ )
         {
             // Stage 3a -- relationships, properties
@@ -292,18 +291,21 @@ public class ParallelBatchImporter implements BatchImporter
             InputIterator<InputRelationship> perType = perTypeIterator.next();
             String topic = " [:" + currentType + "] (" +
                     (i+1) + "/" + allRelationshipTypes.length + ")";
-            final RelationshipStage relationshipStage = new RelationshipStage( topic, config, writeMonitor,
-                    perType, idMapper, neoStore, nodeRelationshipCache, storeUpdateMonitor, nextRelationshipId );
+            final RelationshipStage relationshipStage = new RelationshipStage( topic, config,
+                    writeMonitor, perType, idMapper, neoStore, nodeRelationshipCache,
+                    storeUpdateMonitor, nextRelationshipId );
             executeStages( relationshipStage );
 
             // Stage 4a -- set node nextRel fields for dense nodes
-            executeStages( new NodeFirstRelationshipStage( topic, config, neoStore.getNodeStore(),
+            executeStages( new NodeFirstRelationshipStage( topic, nodeConfig, neoStore.getNodeStore(),
                     neoStore.getTemporaryRelationshipGroupStore(), nodeRelationshipCache, true/*dense*/,
                     currentTypeId ) );
 
             // Stage 5a -- link relationship chains together for dense nodes
             nodeRelationshipCache.setForwardScan( false );
-            executeStages( new RelationshipLinkbackStage( topic, config, neoStore.getRelationshipStore(),
+            executeStages( new RelationshipLinkbackStage( topic,
+                    relationshipConfig,
+                    neoStore.getRelationshipStore(),
                     nodeRelationshipCache, nextRelationshipId,
                     relationshipStage.getNextRelationshipId(), true/*dense*/ ) );
             nextRelationshipId = relationshipStage.getNextRelationshipId();
@@ -313,12 +315,12 @@ public class ParallelBatchImporter implements BatchImporter
         String topic = " Sparse";
         nodeRelationshipCache.setForwardScan( true );
         // Stage 4b -- set node nextRel fields for sparse nodes
-        executeStages( new NodeFirstRelationshipStage( topic, config, neoStore.getNodeStore(),
+        executeStages( new NodeFirstRelationshipStage( topic, nodeConfig, neoStore.getNodeStore(),
                 neoStore.getTemporaryRelationshipGroupStore(), nodeRelationshipCache, false/*sparse*/, -1 ) );
 
         // Stage 5b -- link relationship chains together for sparse nodes
         nodeRelationshipCache.setForwardScan( false );
-        executeStages( new RelationshipLinkbackStage( topic, config, neoStore.getRelationshipStore(),
+        executeStages( new RelationshipLinkbackStage( topic, relationshipConfig, neoStore.getRelationshipStore(),
                 nodeRelationshipCache, 0, nextRelationshipId, false/*sparse*/ ) );
 
         if ( minorityRelationshipTypes.length > 0 )

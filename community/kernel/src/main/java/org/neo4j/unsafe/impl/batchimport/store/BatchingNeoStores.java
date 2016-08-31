@@ -70,8 +70,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_thresho
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.StoreType.RELATIONSHIP_GROUP;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -111,7 +109,7 @@ public class BatchingNeoStores implements AutoCloseable
         // 30 is the minimum number of pages the page cache wants to keep free at all times.
         // Having less than that might result in an evicted page will reading, which would mean
         // unnecessary re-reading. Having slightly more leaves some leg room.
-        int pageSize = calculateOptimalPageSize( mappedMemory, 60 /*pages*/ );
+        int pageSize = config.pageSize();
         this.neo4jConfig = new Config( stringMap( dbConfig.getParams(),
                 dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
                 pagecache_memory.name(), valueOf( mappedMemory ),
@@ -165,21 +163,6 @@ public class BatchingNeoStores implements AutoCloseable
         life.start();
         labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
                 HighestSelectionStrategy.getInstance() ).getLabelScanStore() );
-    }
-
-    static int calculateOptimalPageSize( long memorySize, int numberOfPages )
-    {
-        int pageSize = (int) mebiBytes( 8 );
-        int lowest = (int) kibiBytes( 8 );
-        while ( pageSize > lowest )
-        {
-            if ( memorySize / pageSize >= numberOfPages )
-            {
-                return pageSize;
-            }
-            pageSize >>>= 1;
-        }
-        return lowest;
     }
 
     private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogProvider log,

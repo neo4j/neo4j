@@ -124,12 +124,18 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     public void submit( Task<LOCAL> task )
     {
         assertHealthy();
-        while ( !queue.offer( task ) )
-        {   // Then just stay here and try
-            parkAWhile();
-            assertHealthy();
+        try
+        {
+            while ( !queue.offer( task, 10, MILLISECONDS ) )
+            {   // Then just stay here and try
+                assertHealthy();
+            }
+            notifyProcessors();
         }
-        notifyProcessors();
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override
@@ -175,6 +181,12 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         {
             parkAWhile();
         }
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        return shutDown;
     }
 
     private boolean anyAlive()
