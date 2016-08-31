@@ -62,13 +62,15 @@ public class DumpCommand implements AdminCommand
         @Override
         public Optional<String> arguments()
         {
-            return Optional.of( "" );
+            return Optional.of( "--database=<database> --to=<destination-path>" );
         }
 
         @Override
         public String description()
         {
-            return "";
+            return "Dump a database into a single-file archive. The archive can be used by the load command. " +
+                    "<destination-path> can be a file or directory (in which case a file called <database>.dump will " +
+                    "be created). It is not possible to dump a database that is mounted in a running Neo4j server.";
         }
 
         @Override
