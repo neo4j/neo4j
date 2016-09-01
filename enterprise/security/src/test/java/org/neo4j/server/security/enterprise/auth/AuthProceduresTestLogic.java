@@ -23,6 +23,7 @@ import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -39,6 +40,7 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.lang.String.format;
+import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
@@ -188,10 +190,11 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     }
 
     @Test
-    public void shouldListQueries() throws Throwable
+    public void shouldListAllQueriesWhenRunningAsAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
-        long startTime = System.currentTimeMillis();
+        String startTime = OffsetDateTime.now().format( ISO_OFFSET_DATE_TIME );
+
         ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
         ThreadedTransactionCreate<S> read2 = new ThreadedTransactionCreate<>( neo, latch );
 
@@ -218,10 +221,10 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     }
 
     @Test
-    public void shouldOnlyListOwnQueriesWhenNotAdmin() throws Throwable
+    public void shouldOnlyListOwnQueriesWhenNotRunningAsAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
-        long startTime = System.currentTimeMillis();
+        String startTime = OffsetDateTime.now().format( ISO_OFFSET_DATE_TIME );
         ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
         ThreadedTransactionCreate<S> read2 = new ThreadedTransactionCreate<>( neo, latch );
 
@@ -1321,7 +1324,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     }
 
     //---------- matchers-----------
-    private Matcher<Map<String,Object>> listedQuery( long startTime, String username, String query )
+    private Matcher<Map<String,Object>> listedQuery( String startTime, String username, String query )
     {
         return allOf(
                 hasQuery( query ),
@@ -1350,10 +1353,9 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     }
 
     @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasStartTimeAfter( long base )
+    private Matcher<Map<String, Object>> hasStartTimeAfter( String base )
     {
-        // TODO
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "startTime" ), allOf( isA( Long.class ), greaterThanOrEqualTo( base ) ) );
+        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "startTime" ), allOf( greaterThanOrEqualTo( base ) ) );
     }
 
     @SuppressWarnings( "unchecked" )

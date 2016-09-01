@@ -20,6 +20,9 @@
 package org.neo4j.kernel.enterprise.builtinprocs;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -34,6 +37,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 
+import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static org.neo4j.procedure.Procedure.Mode.DBMS;
 
 public class BuiltInProcedures
@@ -85,7 +89,7 @@ public class BuiltInProcedures
         public final String username;
         public final String query;
         public final Map<String,Object> parameters;
-        public final long startTime;
+        public final String startTime;
 
         QueryStatusResult( long queryId, String username, String query, Map<String,Object> parameters, long startTime )
         {
@@ -93,7 +97,10 @@ public class BuiltInProcedures
             this.username = username;
             this.query = query;
             this.parameters = parameters;
-            this.startTime = startTime;
+            this.startTime = OffsetDateTime.ofInstant(
+                Instant.ofEpochMilli( startTime ),
+                ZoneId.systemDefault()
+            ).format( ISO_OFFSET_DATE_TIME );
         }
     }
 }
