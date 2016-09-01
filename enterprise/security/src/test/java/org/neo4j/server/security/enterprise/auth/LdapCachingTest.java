@@ -98,13 +98,13 @@ public class LdapCachingTest
     {
         // Given
         authManager.login( authToken( "mike", "123" ) );
-        assertThat( "Test realm did not receive a call", testRealm.wasAuthenticated(), is( true ) );
+        assertThat( "Test realm did not receive a call", testRealm.takeAuthenticationFlag(), is( true ) );
 
         // When
         authManager.login( authToken( "mike", "123" ) );
 
         // Then
-        assertThat( "Test realm received a call", testRealm.wasAuthenticated(), is( false ) );
+        assertThat( "Test realm received a call", testRealm.takeAuthenticationFlag(), is( false ) );
     }
 
     @Test
@@ -113,13 +113,13 @@ public class LdapCachingTest
         // Given
         EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
         mike.allowsReads();
-        assertThat( "Test realm did not receive a call", testRealm.wasAuthorized(), is( true ) );
+        assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
         mike.allowsWrites();
 
         // Then
-        assertThat( "Test realm received a call", testRealm.wasAuthorized(), is( false ) );
+        assertThat( "Test realm received a call", testRealm.takeAuthorizationFlag(), is( false ) );
     }
 
     @Test
@@ -128,21 +128,21 @@ public class LdapCachingTest
         // Given
         EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
         mike.allowsReads();
-        assertThat( "Test realm did not receive a call", testRealm.wasAuthorized(), is( true ) );
+        assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
         fakeTicker.advance( 99, TimeUnit.MILLISECONDS );
         mike.allowsWrites();
 
         // Then
-        assertThat( "Test realm received a call", testRealm.wasAuthorized(), is( false ) );
+        assertThat( "Test realm received a call", testRealm.takeAuthorizationFlag(), is( false ) );
 
         // When
         fakeTicker.advance( 2, TimeUnit.MILLISECONDS );
         mike.allowsWrites();
 
         // Then
-        assertThat( "Test realm did not received a call", testRealm.wasAuthorized(), is( true ) );
+        assertThat( "Test realm did not received a call", testRealm.takeAuthorizationFlag(), is( true ) );
     }
 
     @Test
@@ -151,39 +151,39 @@ public class LdapCachingTest
         // Given
         Map<String,Object> mike = authToken( "mike", "123" );
         authManager.login( mike );
-        assertThat( "Test realm did not receive a call", testRealm.wasAuthenticated(), is( true ) );
+        assertThat( "Test realm did not receive a call", testRealm.takeAuthenticationFlag(), is( true ) );
 
         // When
         fakeTicker.advance( 99, TimeUnit.MILLISECONDS );
         authManager.login( mike );
 
         // Then
-        assertThat( "Test realm received a call", testRealm.wasAuthenticated(), is( false ) );
+        assertThat( "Test realm received a call", testRealm.takeAuthenticationFlag(), is( false ) );
 
         // When
         fakeTicker.advance( 2, TimeUnit.MILLISECONDS );
         authManager.login( mike );
 
         // Then
-        assertThat( "Test realm did not received a call", testRealm.wasAuthenticated(), is( true ) );
+        assertThat( "Test realm did not received a call", testRealm.takeAuthenticationFlag(), is( true ) );
     }
 
     private class TestRealm extends LdapRealm
     {
-        private boolean authenticated = false;
-        private boolean authorized = false;
+        private boolean authenticationFlag = false;
+        private boolean authorizationFlag = false;
 
-        boolean wasAuthenticated()
+        boolean takeAuthenticationFlag()
         {
-            boolean t = authenticated;
-            authenticated = false;
+            boolean t = authenticationFlag;
+            authenticationFlag = false;
             return t;
         }
 
-        boolean wasAuthorized()
+        boolean takeAuthorizationFlag()
         {
-            boolean t = authorized;
-            authorized = false;
+            boolean t = authorizationFlag;
+            authorizationFlag = false;
             return t;
         }
 
@@ -209,7 +209,7 @@ public class LdapCachingTest
         @Override
         protected AuthenticationInfo doGetAuthenticationInfo( AuthenticationToken token ) throws AuthenticationException
         {
-            authenticated = true;
+            authenticationFlag = true;
             return new AuthenticationInfo()
             {
                 @Override
@@ -229,7 +229,7 @@ public class LdapCachingTest
         @Override
         protected AuthorizationInfo doGetAuthorizationInfo( PrincipalCollection principals )
         {
-            authorized = true;
+            authorizationFlag = true;
             return new AuthorizationInfo()
             {
                 @Override

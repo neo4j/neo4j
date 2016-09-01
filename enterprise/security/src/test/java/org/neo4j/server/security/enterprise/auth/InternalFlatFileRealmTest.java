@@ -73,13 +73,13 @@ public class InternalFlatFileRealmTest
     {
         // Given
         authManager.login( authToken( "mike", "123" ) );
-        assertThat( "Test realm did not receive a call", testRealm.wasAuthenticated(), is( true ) );
+        assertThat( "Test realm did not receive a call", testRealm.takeAuthenticationFlag(), is( true ) );
 
         // When
         authManager.login( authToken( "mike", "123" ) );
 
         // Then
-        assertThat( "Test realm did not receive a call", testRealm.wasAuthenticated(), is( true ) );
+        assertThat( "Test realm did not receive a call", testRealm.takeAuthenticationFlag(), is( true ) );
     }
 
     @Test
@@ -88,31 +88,31 @@ public class InternalFlatFileRealmTest
         // Given
         EnterpriseAuthSubject mike = authManager.login( authToken( "mike", "123" ) );
         mike.allowsReads();
-        assertThat( "Test realm did not receive a call", testRealm.wasAuthorized(), is( true ) );
+        assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
         mike.allowsWrites();
 
         // Then
-        assertThat( "Test realm did not receive a call", testRealm.wasAuthorized(), is( true ) );
+        assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
     }
 
     private class TestRealm extends InternalFlatFileRealm
     {
-        private boolean authenticated = false;
-        private boolean authorized = false;
+        private boolean authenticationFlag = false;
+        private boolean authorizationFlag = false;
 
-        boolean wasAuthenticated()
+        boolean takeAuthenticationFlag()
         {
-            boolean t = authenticated;
-            authenticated = false;
+            boolean t = authenticationFlag;
+            authenticationFlag = false;
             return t;
         }
 
-        boolean wasAuthorized()
+        boolean takeAuthorizationFlag()
         {
-            boolean t = authorized;
-            authorized = false;
+            boolean t = authorizationFlag;
+            authorizationFlag = false;
             return t;
         }
 
@@ -137,14 +137,14 @@ public class InternalFlatFileRealmTest
         @Override
         protected AuthenticationInfo doGetAuthenticationInfo( AuthenticationToken token ) throws AuthenticationException
         {
-            authenticated = true;
+            authenticationFlag = true;
             return super.doGetAuthenticationInfo( token );
         }
 
         @Override
         protected AuthorizationInfo doGetAuthorizationInfo( PrincipalCollection principals )
         {
-            authorized = true;
+            authorizationFlag = true;
             return super.doGetAuthorizationInfo( principals );
         }
     }
