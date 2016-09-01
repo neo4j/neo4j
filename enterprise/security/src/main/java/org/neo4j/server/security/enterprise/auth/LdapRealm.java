@@ -21,6 +21,7 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
+import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
@@ -53,7 +54,10 @@ import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
+import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
+import javax.naming.ldap.StartTlsRequest;
+import javax.naming.ldap.StartTlsResponse;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.configuration.Config;
@@ -71,6 +75,7 @@ public class LdapRealm extends JndiLdapRealm
 
     private Boolean authenticationEnabled;
     private Boolean authorizationEnabled;
+    private Boolean useStartTls;
     private String userSearchBase;
     private String userSearchFilter;
     private List<String> membershipAttributeNames;
@@ -98,7 +103,89 @@ public class LdapRealm extends JndiLdapRealm
             LdapContextFactory ldapContextFactory )
             throws NamingException
     {
-        return authenticationEnabled ? super.queryForAuthenticationInfo( token, ldapContextFactory ) : null;
+        if ( authenticationEnabled )
+        {
+            JndiLdapContextFactory jndiLdapContextFactory = (JndiLdapContextFactory) ldapContextFactory;
+            // TODO: Maybe change this to security event log once we have it
+            log.debug( "Authenticating user '%s' against LDAP server '%s'%s", token.getPrincipal(),
+                    jndiLdapContextFactory.getUrl(),
+                    useStartTls ? " using StartTLS" : "" );
+            try
+            {
+                return useStartTls ? queryForAuthenticationInfoUsingStartTls( token, ldapContextFactory ) :
+                       super.queryForAuthenticationInfo( token, ldapContextFactory );
+            }
+            catch ( Exception e )
+            {
+                // TODO: Maybe change this to security event log once we have it
+                log.debug( "Authentication exception: [%s] %s",  e.getClass().getName(), e.getMessage() );
+                throw e;
+            }
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    protected AuthenticationInfo queryForAuthenticationInfoUsingStartTls( AuthenticationToken token,
+            LdapContextFactory ldapContextFactory ) throws NamingException
+    {
+        Object principal = getLdapPrincipal(token);
+        Object credentials = token.getCredentials();
+
+        LdapContext ctx = null;
+
+        try {
+            ctx = getLdapContextUsingStartTls( ldapContextFactory, principal, credentials );
+
+            return createAuthenticationInfo(token, principal, credentials, ctx);
+        }
+        finally
+        {
+            LdapUtils.closeContext( ctx );
+        }
+    }
+
+    private LdapContext getLdapContextUsingStartTls( LdapContextFactory ldapContextFactory,
+            Object principal, Object credentials ) throws NamingException
+    {
+        JndiLdapContextFactory jndiLdapContextFactory = (JndiLdapContextFactory) ldapContextFactory;
+        Hashtable<String, Object> env = new Hashtable<>();
+        env.put( Context.INITIAL_CONTEXT_FACTORY, jndiLdapContextFactory.getContextFactoryClassName() );
+        env.put( Context.PROVIDER_URL, jndiLdapContextFactory.getUrl() );
+
+        LdapContext ctx = null;
+
+        try
+        {
+            ctx = new InitialLdapContext( env, null );
+
+            StartTlsRequest startTlsRequest = new StartTlsRequest();
+            StartTlsResponse tls = (StartTlsResponse) ctx.extendedOperation( startTlsRequest );
+
+            tls.negotiate();
+
+            ctx.addToEnvironment( Context.SECURITY_AUTHENTICATION,
+                    jndiLdapContextFactory.getAuthenticationMechanism() );
+            ctx.addToEnvironment( Context.SECURITY_PRINCIPAL, principal );
+            ctx.addToEnvironment( Context.SECURITY_CREDENTIALS, credentials );
+
+            ctx.reconnect( ctx.getConnectControls() );
+
+            return ctx;
+        }
+        catch ( IOException e )
+        {
+            LdapUtils.closeContext( ctx );
+            log.error( "Failed to negotiate TLS connection", e );
+            throw new CommunicationException( e.getMessage() );
+        }
+        catch ( Throwable throwable )
+        {
+            LdapUtils.closeContext( ctx );
+            throw throwable;
+        }
     }
 
     @Override
@@ -112,7 +199,8 @@ public class LdapRealm extends JndiLdapRealm
             if ( useSystemAccountForAuthorization )
             {
                 // Perform context search using the system context
-                LdapContext ldapContext = ldapContextFactory.getSystemLdapContext();
+                LdapContext ldapContext = useStartTls ? getSystemLdapContextUsingStartTls( ldapContextFactory ) :
+                                          ldapContextFactory.getSystemLdapContext();
 
                 Set<String> roleNames;
                 try
@@ -142,12 +230,22 @@ public class LdapRealm extends JndiLdapRealm
         return null;
     }
 
+    private LdapContext getSystemLdapContextUsingStartTls( LdapContextFactory ldapContextFactory )
+            throws NamingException
+    {
+        JndiLdapContextFactory jndiLdapContextFactory = (JndiLdapContextFactory) ldapContextFactory;
+        return getLdapContextUsingStartTls( ldapContextFactory, jndiLdapContextFactory.getSystemUsername(),
+                jndiLdapContextFactory.getSystemPassword() );
+    }
+
     @Override
     protected AuthenticationInfo createAuthenticationInfo( AuthenticationToken token, Object ldapPrincipal,
             Object ldapCredentials, LdapContext ldapContext )
             throws NamingException
     {
         // NOTE: This will be called only if authentication with the ldap context was successful
+        // TODO: Change this to security event log once we have it
+        log.debug( "Successfully authenticated user '%s' through LDAP", token.getPrincipal() );
 
         // If authorization is enabled but useSystemAccountForAuthorization is disabled, we should perform
         // the search for groups directly here while the user's authenticated ldap context is open.
@@ -170,6 +268,20 @@ public class LdapRealm extends JndiLdapRealm
         String username = (String) getAvailablePrincipal( principals );
 
         authorizationInfoCache.remove( username );
+    }
+
+    @Override
+    protected AuthorizationInfo doGetAuthorizationInfo( PrincipalCollection principals )
+    {
+        try
+        {
+            return super.doGetAuthorizationInfo( principals );
+        }
+        catch ( AuthorizationException e )
+        {
+            log.error( "%s Caused by: %s", e.getMessage(), e.getCause().getMessage() );
+            throw e;
+        }
     }
 
     private void cacheAuthorizationInfo( String username, Set<String> roleNames )
@@ -199,7 +311,7 @@ public class LdapRealm extends JndiLdapRealm
     private void configureRealm( Config config )
     {
         JndiLdapContextFactory contextFactory = new JndiLdapContextFactory();
-        contextFactory.setUrl( "ldap://" + config.get( SecuritySettings.ldap_server ) );
+        contextFactory.setUrl( parseLdapServerUrl( config.get( SecuritySettings.ldap_server ) ) );
         contextFactory.setAuthenticationMechanism( config.get( SecuritySettings.ldap_auth_mechanism ) );
         contextFactory.setReferral( config.get( SecuritySettings.ldap_referral ) );
         contextFactory.setSystemUsername( config.get( SecuritySettings.ldap_system_username ) );
@@ -215,6 +327,7 @@ public class LdapRealm extends JndiLdapRealm
 
         authenticationEnabled = config.get( SecuritySettings.ldap_authentication_enabled );
         authorizationEnabled = config.get( SecuritySettings.ldap_authorization_enabled );
+        useStartTls = config.get( SecuritySettings.ldap_use_starttls );
 
         userSearchBase = config.get( SecuritySettings.ldap_authorization_user_search_base );
         userSearchFilter = config.get( SecuritySettings.ldap_authorization_user_search_filter );
@@ -222,6 +335,12 @@ public class LdapRealm extends JndiLdapRealm
         useSystemAccountForAuthorization = config.get( SecuritySettings.ldap_authorization_use_system_account );
         groupToRoleMapping =
                 parseGroupToRoleMapping( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) );
+    }
+
+    private String parseLdapServerUrl( String rawLdapServer )
+    {
+        return (rawLdapServer == null) ? null :
+               rawLdapServer.contains( "://" ) ? rawLdapServer : "ldap://" + rawLdapServer;
     }
 
     Map<String,Collection<String>> parseGroupToRoleMapping( String groupToRoleMappingString )

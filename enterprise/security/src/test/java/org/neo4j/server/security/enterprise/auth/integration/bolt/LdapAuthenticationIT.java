@@ -29,11 +29,19 @@ import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.annotations.LoadSchema;
 import org.apache.directory.server.core.integ.AbstractLdapTestUnit;
 import org.apache.directory.server.core.integ.FrameworkRunner;
+import org.apache.directory.server.ldap.handlers.extended.StartTlsHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Map;
+import java.util.function.Consumer;
+
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
@@ -46,10 +54,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.security.enterprise.auth.SecuritySettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
@@ -75,17 +79,22 @@ import static org.neo4j.helpers.collection.MapUtil.map;
         },
         loadedSchemas = {
                 @LoadSchema( name = "nis", enabled = true ),
-                @LoadSchema( name = "posix", enabled = false )
         } )
 @CreateLdapServer(
-        transports = { @CreateTransport( protocol = "LDAP", port = 10389, address = "0.0.0.0" ) },
+        transports = { @CreateTransport( protocol = "LDAP", port = 10389, address = "0.0.0.0" ),
+                       @CreateTransport( protocol = "LDAPS", port = 10636, address = "0.0.0.0", ssl = true )
+        },
+
         saslMechanisms = {
                 @SaslMechanism( name = "DIGEST-MD5", implClass = org.apache.directory.server.ldap.handlers.sasl
                         .digestMD5.DigestMd5MechanismHandler.class ),
-                @SaslMechanism( name = "CRAM-MD5", implClass = org.apache.directory.server.ldap.handlers.sasl
+                @SaslMechanism( name  = "CRAM-MD5", implClass = org.apache.directory.server.ldap.handlers.sasl
                         .cramMD5.CramMd5MechanismHandler.class )
         },
-        saslHost = "0.0.0.0"
+        saslHost = "0.0.0.0",
+        extendedOpHandlers = { StartTlsHandler.class },
+        keyStore = "target/test-classes/neo4j_ldap_test_keystore.jks",
+        certificatePassword = "secret"
 )
 @ApplyLdifFiles( "ldap_test_data.ldif" )
 public class LdapAuthenticationIT extends AbstractLdapTestUnit
@@ -330,21 +339,222 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         } );
 
         // Then
-        //--------------------------
         // First login as the admin user 'neo4j' and create the internal user 'neo' with role 'reader'
         testCreateReaderUser();
 
-        //--------------------------
         // Then login user 'neo' with LDAP and test that internal authorization gives correct permission
         reconnect();
 
         testAuthWithReaderUser();
     }
 
+    //------------------------------------------------------------------
+    // Embedded secure LDAP tests
+    // NOTE: These can potentially mess up the environment for any subsequent tests relying on the
+    //       default Java key/trust stores
+
+    @Test
+    public void shouldBeAbleToLoginAndAuthorizeReaderWithLdapOnlyUsingLDAPS() throws Throwable
+    {
+        getLdapServer().setConfidentialityRequired( true );
+
+        try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
+        {
+            // When
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+                settings.put( SecuritySettings.ldap_server, "ldaps://localhost:10636" );
+            } ) );
+
+            // Then
+            testAuthWithReaderUser();
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextUsingLDAPS() throws Throwable
+    {
+        getLdapServer().setConfidentialityRequired( true );
+
+        try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
+        {
+            // When
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+                settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+                settings.put( SecuritySettings.ldap_server, "ldaps://localhost:10636" );
+            } ) );
+
+            // Then
+            testAuthWithReaderUser();
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToLoginAndAuthorizeReaderWithLdapOnlyUsingStartTls() throws Throwable
+    {
+        getLdapServer().setConfidentialityRequired( true );
+
+        try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
+        {
+            // When
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+                settings.put( SecuritySettings.ldap_server, "localhost:10389" );
+                settings.put( SecuritySettings.ldap_use_starttls, "true" );
+            } ) );
+
+            // Then
+            testAuthWithReaderUser();
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToLoginAndAuthorizeReaderWithLdapUserContextUsingStartTls() throws Throwable
+    {
+        getLdapServer().setConfidentialityRequired( true );
+
+        try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
+        {
+            // When
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+                settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+                settings.put( SecuritySettings.ldap_server, "localhost:10389" );
+                settings.put( SecuritySettings.ldap_use_starttls, "true" );
+            } ) );
+
+            // Then
+            testAuthWithReaderUser();
+        }
+    }
+
+    //------------------------------------------------------------------
+    // Active Directory tests on EC2
+    // NOTE: These rely on an external server and are not executed by automated testing
+    //       They are here as a convenience for running local testing.
+
+    //@Test
+    public void shouldNotBeAbleToLoginUnknownUserOnEC2() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2NotUsingSystemAccountSettings );
+
+        assertAuthFail( "unknown", "abc123ABC123" );
+    }
+
+    //@Test
+    public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextOnEC2() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2NotUsingSystemAccountSettings );
+
+        assertAuth( "neo", "abc123ABC123" );
+        assertReadSucceeds();
+        assertWriteFails( "neo" );
+    }
+
+    //@Test
+    public void shouldBeAbleToLoginAndAuthorizeReaderOnEC2() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2UsingSystemAccountSettings );
+
+        assertAuth( "neo", "abc123ABC123" );
+        assertReadSucceeds();
+        assertWriteFails( "neo" );
+    }
+
+    //@Test
+    public void shouldBeAbleToLoginAndAuthorizePublisherWithUserLdapContextOnEC2() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2NotUsingSystemAccountSettings );
+
+        assertAuth( "tank", "abc123ABC123" );
+        assertWriteSucceeds();
+    }
+
+    //@Test
+    public void shouldBeAbleToLoginAndAuthorizePublisherOnEC2() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2UsingSystemAccountSettings );
+
+        assertAuth( "tank", "abc123ABC123" );
+        assertWriteSucceeds();
+    }
+
+    //@Test
+    public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContextOnEC2() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2NotUsingSystemAccountSettings );
+
+        assertAuth( "smith", "abc123ABC123" );
+        assertReadFails( "smith" );
+    }
+
+    //@Test
+    public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserOnEC2() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2UsingSystemAccountSettings );
+
+        assertAuth( "smith", "abc123ABC123" );
+        assertReadFails( "smith" );
+    }
+
+    //------------------------------------------------------------------
+    // Secure Active Directory tests on EC2
+    // NOTE: These tests does not work together with EmbeddedTestCertificates used in the embedded secure LDAP tests!
+    //       (This is because the embedded tests override the Java default key/trust store locations using
+    //        system properties that will not be re-read)
+
+    //@Test
+    public void shouldBeAbleToLoginAndAuthorizeReaderUsingLdapsOnEC2() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2UsingSystemAccountSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_server, "ldaps://henrik.neohq.net:636" );
+        }) );
+
+        assertAuth( "neo", "abc123ABC123" );
+        assertReadSucceeds();
+        assertWriteFails( "neo" );
+    }
+
+    //@Test
+    public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextUsingLDAPSOnEC2() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2NotUsingSystemAccountSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_server, "ldaps://henrik.neohq.net:636" );
+        }) );
+
+        assertAuth( "neo", "abc123ABC123" );
+        assertReadSucceeds();
+        assertWriteFails( "neo" );
+    }
+
+    //@Test
+    public void shouldBeAbleToLoginAndAuthorizeReaderUsingStartTlsOnEC2() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2UsingSystemAccountSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_use_starttls, "true" );
+        }) );
+
+        assertAuth( "neo", "abc123ABC123" );
+        assertReadSucceeds();
+        assertWriteFails( "neo" );
+    }
+
+    //@Test
+    public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextUsingStartTlsOnEC2() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2NotUsingSystemAccountSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_use_starttls, "true" );
+        }) );
+
+        assertAuth( "neo", "abc123ABC123" );
+        assertReadSucceeds();
+        assertWriteFails( "neo" );
+    }
+
+    //-------------------------------------------------------------------------
+
     @Before
     public void setup()
     {
         this.client = cf.newInstance();
+        getLdapServer().setConfidentialityRequired( false );
     }
 
     @After
@@ -457,6 +667,54 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized, "The client is unauthorized due to authentication failure." ) ) );
     }
 
+    protected void assertReadSucceeds() throws Exception
+    {
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+    }
+
+    protected void assertReadFails( String username ) throws Exception
+    {
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives(
+                msgFailure( Status.Security.Forbidden,
+                        String.format( "Read operations are not allowed for '%s'.", username ) ) ) );
+    }
+
+    protected void assertWriteSucceeds() throws Exception
+    {
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "CREATE ()" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+    }
+
+    protected void assertWriteFails( String username ) throws Exception
+    {
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "CREATE ()" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives(
+                msgFailure( Status.Security.Forbidden,
+                        String.format( "Write operations are not allowed for '%s'.", username ) ) ) );
+    }
+
     private Consumer<Map<Setting<?>,String>> ldapOnlyAuthSettings = settings ->
     {
         settings.put( SecuritySettings.internal_authentication_enabled, "false" );
@@ -464,4 +722,84 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
         settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
     };
+
+    private Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2Settings = settings -> {
+        //settings.put( SecuritySettings.ldap_server, "ec2-176-34-79-113.eu-west-1.compute.amazonaws.com:389" );
+        settings.put( SecuritySettings.ldap_server, "henrik.neohq.net:389" );
+        settings.put( SecuritySettings.ldap_user_dn_template, "cn={0},cn=Users,dc=neo4j,dc=com" );
+        settings.put( SecuritySettings.ldap_authorization_user_search_base, "cn=Users,dc=neo4j,dc=com" );
+        settings.put( SecuritySettings.ldap_authorization_user_search_filter, "(&(objectClass=*)(CN={0}))" );
+        settings.put( SecuritySettings.ldap_authorization_group_membership_attribute_names, "memberOf" );
+        settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping,
+                "'CN=Neo4j Read Only,CN=Users,DC=neo4j,DC=com'=reader;" +
+                "CN=Neo4j Read-Write,CN=Users,DC=neo4j,DC=com=publisher;" +
+                "CN=Neo4j Schema Manager,CN=Users,DC=neo4j,DC=com=architect;" +
+                "CN=Neo4j Administrator,CN=Users,DC=neo4j,DC=com=admin"
+        );
+    };
+
+    private Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2NotUsingSystemAccountSettings =
+            activeDirectoryOnEc2Settings.andThen( settings -> {
+                settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+            } );
+
+    private Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2UsingSystemAccountSettings =
+            activeDirectoryOnEc2Settings.andThen( settings -> {
+                settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
+                settings.put( SecuritySettings.ldap_system_username, "Petra Selmer" );
+                settings.put( SecuritySettings.ldap_system_password, "S0uthAfrica" );
+            } );
+
+    //-------------------------------------------------------------------------
+    // TLS helper
+    private class EmbeddedTestCertificates implements AutoCloseable
+    {
+        private static final String KEY_STORE = "javax.net.ssl.keyStore";
+        private static final String KEY_STORE_PASSWORD = "javax.net.ssl.keyStorePassword";
+        private static final String TRUST_STORE = "javax.net.ssl.trustStore";
+        private static final String TRUST_STORE_PASSWORD = "javax.net.ssl.trustStorePassword";
+
+        private final String keyStore = System.getProperty( KEY_STORE );
+        private final String keyStorePassword = System.getProperty( KEY_STORE_PASSWORD );
+        private final String trustStore = System.getProperty( TRUST_STORE );
+        private final String trustStorePassword = System.getProperty( TRUST_STORE_PASSWORD );
+
+        public EmbeddedTestCertificates()
+        {
+            File keyStoreFile = fileFromResources( "/neo4j_ldap_test_keystore.jks" );
+            String keyStorePath = keyStoreFile.getAbsolutePath();
+
+            System.setProperty( KEY_STORE, keyStorePath );
+            System.setProperty( KEY_STORE_PASSWORD, "secret" );
+            System.setProperty( TRUST_STORE, keyStorePath );
+            System.setProperty( TRUST_STORE_PASSWORD, "secret" );
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            resetProperty( KEY_STORE, keyStore );
+            resetProperty( KEY_STORE_PASSWORD, keyStorePassword );
+            resetProperty( TRUST_STORE, trustStore );
+            resetProperty( TRUST_STORE_PASSWORD, trustStorePassword );
+        }
+
+        private File fileFromResources( String path )
+        {
+            URL url = getClass().getResource( path );
+            return new File( url.getFile() );
+        }
+
+        private void resetProperty( String property, String value )
+        {
+            if ( property != null )
+            {
+                System.clearProperty( property );
+            }
+            else
+            {
+                System.setProperty( property, value );
+            }
+        }
+    }
 }
