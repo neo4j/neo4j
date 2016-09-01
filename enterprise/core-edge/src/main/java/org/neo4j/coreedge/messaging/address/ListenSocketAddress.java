@@ -19,47 +19,11 @@
  */
 package org.neo4j.coreedge.messaging.address;
 
-import java.net.InetSocketAddress;
-import java.util.Objects;
-
-public class ListenSocketAddress
+public class ListenSocketAddress extends SocketAddress
 {
-    private final InetSocketAddress address;
 
-    public ListenSocketAddress( InetSocketAddress address )
+    public ListenSocketAddress( String address )
     {
-        this.address = address;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        ListenSocketAddress that = (ListenSocketAddress) o;
-        return Objects.equals( address, that.address );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( address );
-    }
-
-    public InetSocketAddress socketAddress()
-    {
-        return address;
-    }
-
-    @Override
-    public String toString()
-    {
-        return address.getHostName() + ":" + address.getPort();
+        super( address );
     }
 }

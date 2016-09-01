@@ -20,21 +20,42 @@
 package org.neo4j.coreedge.messaging.address;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 import static java.lang.String.format;
-
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
-public class AdvertisedSocketAddressTest
+@RunWith( value = Parameterized.class )
+public class SocketAddressTest
 {
+    private Class instanceOf;
+
+    public SocketAddressTest( Class instanceOf )
+    {
+        this.instanceOf = instanceOf;
+    }
+
+    @Parameterized.Parameters
+    public static Collection getParameters()
+    {
+        Object[] parameters = new Object[]{AdvertisedSocketAddress.class, ListenSocketAddress.class};
+        return Arrays.asList( parameters );
+    }
+
     @Test
     public void shouldCreateAdvertisedSocketAddressWithLeadingWhitespace() throws Exception
     {
         // given
-        AdvertisedSocketAddress address = new AdvertisedSocketAddress( whitespace( 1 ) + "localhost:9999" );
+        SocketAddress address = instanceOf == AdvertisedSocketAddress.class ?
+                                new AdvertisedSocketAddress( whitespace( 1 ) + "localhost:9999" ) :
+                                new ListenSocketAddress( whitespace( 1 ) + "localhost:9999" );
 
         // when
         String string = address.toString();
@@ -47,7 +68,9 @@ public class AdvertisedSocketAddressTest
     public void shouldCreateAdvertisedSocketAddressWithTrailingWhitespace() throws Exception
     {
         // given
-        AdvertisedSocketAddress address = new AdvertisedSocketAddress( "localhost:9999" + whitespace( 1 ) );
+        SocketAddress address = instanceOf == AdvertisedSocketAddress.class ?
+                                new AdvertisedSocketAddress( "localhost:9999" + whitespace( 1 ) ) :
+                                new ListenSocketAddress( "localhost:9999" + whitespace( 1 ) );
 
         // when
         String string = address.toString();
@@ -62,14 +85,16 @@ public class AdvertisedSocketAddressTest
         String address = "localhost:" + whitespace( 1 ) + "9999";
         try
         {
-            new AdvertisedSocketAddress( address );
+            SocketAddress socketAddress =
+                    instanceOf == AdvertisedSocketAddress.class ? new AdvertisedSocketAddress( address )
+                                                                : new ListenSocketAddress( address );
             fail( "Should have thrown an exception" );
         }
         catch ( IllegalArgumentException e )
         {
-            assertThat( e.getMessage(),
-                    containsString( format( "Cannot initialize AdvertisedSocketAddress for %s. Whitespace " +
-                            "characters cause unresolvable ambiguity.", address ) ) );
+            assertThat( e.getMessage(), containsString(
+                    format( "Cannot initialize %s for %s. Whitespace " +
+                            "characters cause unresolvable ambiguity.", instanceOf.getSimpleName(), address ) ) );
         }
     }
 
@@ -79,14 +104,16 @@ public class AdvertisedSocketAddressTest
         String address = "localhost:";
         try
         {
-            new AdvertisedSocketAddress( address );
+            SocketAddress socketAddress =
+                    instanceOf == AdvertisedSocketAddress.class ? new AdvertisedSocketAddress( address )
+                                                                : new ListenSocketAddress( address );
             fail( "Should have thrown an exception" );
         }
         catch ( IllegalArgumentException e )
         {
-            assertThat( e.getMessage(),
-                    containsString( format( "AdvertisedSocketAddress can only be created with hostname:port. " +
-                            "%s is not acceptable", address ) ) );
+            assertThat( e.getMessage(), containsString(
+                    format( "%s can only be created with hostname:port. " + "%s is not acceptable",
+                            instanceOf.getSimpleName(), address ) ) );
         }
     }
 
