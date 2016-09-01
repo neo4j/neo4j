@@ -616,7 +616,6 @@ public class Settings
         };
     }
 
-
     public static final Function<String, Long> BYTES = new Function<String, Long>()
     {
         @Override
