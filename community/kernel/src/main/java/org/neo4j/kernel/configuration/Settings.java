@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.File;
 import java.net.InetAddress;
 import java.net.URI;
@@ -34,6 +32,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
+
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
@@ -46,7 +46,8 @@ import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.Character.isDigit;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.advertised_hostname;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_advertised_hostname;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.io.fs.FileUtils.fixSeparatorsInPath;
 
 /**
@@ -554,23 +555,61 @@ public class Settings
         }
     };
 
-    public static final Function<String, AdvertisedSocketAddress> ADVERTISED_SOCKET_ADDRESS = new Function<String,
-            AdvertisedSocketAddress>()
+    public static final Function<String, AdvertisedSocketAddress> ADVERTISED_SOCKET_ADDRESS =
+            new Function<String, AdvertisedSocketAddress>()
+            {
+                @Override
+                public AdvertisedSocketAddress apply( String value )
+                {
+                    return new AdvertisedSocketAddress( value );
+                }
+
+                @Override
+                public String toString()
+                {
+                    return "a socket address";
+                }
+            };
+
+    public static Setting<ListenSocketAddress> listenAddress( String name, int defaultPort )
     {
-        @Override
-        public AdvertisedSocketAddress apply( String value )
+        return new Setting<ListenSocketAddress>()
         {
-            return new AdvertisedSocketAddress( value );
-        }
+            @Override
+            public String name()
+            {
+                return name;
+            }
 
-        @Override
-        public String toString()
-        {
-            return "a socket address";
-        }
-    };
+            @Override
+            public String getDefaultValue()
+            {
+                return default_listen_address.getDefaultValue() + ":" + defaultPort;
+            }
 
-    public static Setting<AdvertisedSocketAddress> advertisedAddress( String name, Setting<ListenSocketAddress> listenSocketAddressSetting )
+            @Override
+            public ListenSocketAddress from( Configuration config )
+            {
+                return config.get( this );
+            }
+
+            @Override
+            public ListenSocketAddress apply( Function<String, String> config )
+            {
+                String value = config.apply( name );
+                if ( value != null )
+                {
+                    return new ListenSocketAddress( value );
+                }
+
+                String hostname = default_listen_address.apply( config );
+
+                return new ListenSocketAddress( hostname, defaultPort );
+            }
+        };
+    }
+
+    public static Setting<AdvertisedSocketAddress> advertisedAddress( String name, Setting<ListenSocketAddress> listenAddressSetting )
     {
         return new Setting<AdvertisedSocketAddress>()
         {
@@ -583,8 +622,8 @@ public class Settings
             @Override
             public String getDefaultValue()
             {
-                return advertised_hostname.getDefaultValue() + LISTEN_SOCKET_ADDRESS.apply( listenSocketAddressSetting.getDefaultValue() )
-                        .socketAddress().getPort();
+                return default_advertised_hostname.getDefaultValue() + ":" +
+                        LISTEN_SOCKET_ADDRESS.apply( listenAddressSetting.getDefaultValue() ).socketAddress().getPort();
             }
 
             @Override
@@ -602,8 +641,8 @@ public class Settings
                     return new AdvertisedSocketAddress( value );
                 }
 
-                String hostname = advertised_hostname.apply( config );
-                ListenSocketAddress listenSocketAddress = listenSocketAddressSetting.apply( config );
+                String hostname = default_advertised_hostname.apply( config );
+                ListenSocketAddress listenSocketAddress = listenAddressSetting.apply( config );
 
                 return new AdvertisedSocketAddress( hostname + ":" + listenSocketAddress.socketAddress().getPort() );
             }

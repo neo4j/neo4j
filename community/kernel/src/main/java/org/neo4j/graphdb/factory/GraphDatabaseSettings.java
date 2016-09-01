@@ -69,6 +69,7 @@ import static org.neo4j.kernel.configuration.Settings.hostnameSetting;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.legacyFallback;
 import static org.neo4j.kernel.configuration.Settings.list;
+import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
@@ -515,8 +516,18 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<String> auth_manager = setting( "unsupported.dbms.security.auth_manager", STRING, "" );
 
-    @Description("Default hostname for use when the server advertises its network addresses.")
-    public static final Setting<String> advertised_hostname = setting( "dbms.network.advertised_hostname", STRING, "localhost" );
+    @Description("Default hostname or IP address the server uses advertise itself its connectors. " +
+            "To advertise a specific hostname or IP address for a specific connector, " +
+            "specify the advertised address property for the specific connector.")
+    public static final Setting<String> default_advertised_hostname =
+            setting( "dbms.connectors.default_advertised_hostname", STRING, "localhost" );
+
+    @Description("Default network interface to listen for incoming connections. " +
+            "To listen for connections on all interfaces, use \"0.0.0.0\". " +
+            "To bind specific connectors to a specific network interfaces, " +
+            "specify the listen address properties for the specific connector.")
+    public static final Setting<String> default_listen_address =
+            setting( "dbms.connectors.default_listen_address", STRING, "localhost" );
 
     // Bolt Settings
 
@@ -584,7 +595,7 @@ public abstract class GraphDatabaseSettings
             super(key, ConnectorType.BOLT.name() );
             encryption_level = group.scope(
                     setting( "tls_level", options( EncryptionLevel.class ), OPTIONAL.name() ));
-            Setting<ListenSocketAddress> legacyAddressSetting = setting( "address", LISTEN_SOCKET_ADDRESS, "localhost:7687" );
+            Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", 7687 );
             Setting<ListenSocketAddress> advertisedAddressSetting = legacyFallback( legacyAddressSetting,
                     setting( "listen_address", LISTEN_SOCKET_ADDRESS, NO_DEFAULT ) );
 
@@ -645,7 +656,7 @@ public abstract class GraphDatabaseSettings
         {
             super( key, ConnectorType.HTTP.name() );
             encryption = group.scope( setting( "encryption", options( Encryption.class ), Encryption.NONE.name() ) );
-            Setting<ListenSocketAddress> legacyAddressSetting = setting( "address", LISTEN_SOCKET_ADDRESS, "localhost:7474" );
+            Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", 7474 );
             Setting<ListenSocketAddress> advertisedAddressSetting = legacyFallback( legacyAddressSetting,
                     setting( "listen_address", LISTEN_SOCKET_ADDRESS, NO_DEFAULT ) );
 

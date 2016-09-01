@@ -32,12 +32,12 @@ import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.LISTEN_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.MANDATORY;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.list;
+import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
@@ -84,7 +84,7 @@ public class CoreEdgeClusterSettings
 
     @Description("Network interface and port for the transaction shipping server to listen on.")
     public static final Setting<ListenSocketAddress> transaction_listen_address =
-            setting( "core_edge.transaction_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:6000" );
+            listenAddress( "core_edge.transaction_listen_address", 6000 );
 
     @Description("Hostname/IP address and port for the transaction shipping server to listen on.")
     public static final Setting<AdvertisedSocketAddress> transaction_advertised_address =
@@ -92,7 +92,7 @@ public class CoreEdgeClusterSettings
 
     @Description("Network interface and port for the RAFT server to listen on.")
     public static final Setting<ListenSocketAddress> raft_listen_address =
-            setting( "core_edge.raft_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:7000" );
+            listenAddress( "core_edge.raft_listen_address", 7000 );
 
     @Description("Hostname/IP address and port for the RAFT server to listen on.")
     public static final Setting<AdvertisedSocketAddress> raft_advertised_address =
@@ -100,7 +100,7 @@ public class CoreEdgeClusterSettings
 
     @Description("Host and port to bind the cluster member discovery management communication.")
     public static final Setting<ListenSocketAddress> discovery_listen_address =
-            setting( "core_edge.discovery_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5000" );
+            listenAddress( "core_edge.discovery_listen_address", 5000 );
 
     @Description("Advertised cluster member discovery management communication.")
     public static final Setting<AdvertisedSocketAddress> discovery_advertised_address =
