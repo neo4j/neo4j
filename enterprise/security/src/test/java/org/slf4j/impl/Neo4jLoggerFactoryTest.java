@@ -55,7 +55,7 @@ public class Neo4jLoggerFactoryTest
     }
 
     @Test
-    public void shouldSupporIsDebugEnabled()
+    public void shouldSupportIsDebugEnabled()
     {
         // Given
         StaticLoggerBinder.setNeo4jLogProvider( neo4jLogProvider );
@@ -74,7 +74,7 @@ public class Neo4jLoggerFactoryTest
     }
 
     @Test
-    public void shouldSupporDebug()
+    public void shouldSupportDebug()
     {
         // Given
         StaticLoggerBinder.setNeo4jLogProvider( neo4jLogProvider );
@@ -94,7 +94,7 @@ public class Neo4jLoggerFactoryTest
     }
 
     @Test
-    public void shouldSupporDebugWithMarkerIgnored()
+    public void shouldSupportDebugWithMarkerIgnored()
     {
         // Given
         StaticLoggerBinder.setNeo4jLogProvider( neo4jLogProvider );
@@ -114,7 +114,7 @@ public class Neo4jLoggerFactoryTest
     }
 
     @Test
-    public void shouldSupporInfo()
+    public void shouldSupportInfo()
     {
         // Given
         StaticLoggerBinder.setNeo4jLogProvider( neo4jLogProvider );
@@ -134,7 +134,7 @@ public class Neo4jLoggerFactoryTest
     }
 
     @Test
-    public void shouldSupporInfoWithMarkerIgnored()
+    public void shouldSupportInfoWithMarkerIgnored()
     {
         // Given
         StaticLoggerBinder.setNeo4jLogProvider( neo4jLogProvider );
@@ -154,7 +154,7 @@ public class Neo4jLoggerFactoryTest
     }
 
     @Test
-    public void shouldSupporWarn()
+    public void shouldSupportWarn()
     {
         // Given
         StaticLoggerBinder.setNeo4jLogProvider( neo4jLogProvider );
@@ -174,7 +174,7 @@ public class Neo4jLoggerFactoryTest
     }
 
     @Test
-    public void shouldSupporWarnWithMarkerIgnored()
+    public void shouldSupportWarnWithMarkerIgnored()
     {
         // Given
         StaticLoggerBinder.setNeo4jLogProvider( neo4jLogProvider );
@@ -194,7 +194,7 @@ public class Neo4jLoggerFactoryTest
     }
 
     @Test
-    public void shouldSupporError()
+    public void shouldSupportError()
     {
         // Given
         StaticLoggerBinder.setNeo4jLogProvider( neo4jLogProvider );
@@ -214,7 +214,7 @@ public class Neo4jLoggerFactoryTest
     }
 
     @Test
-    public void shouldSupporErrorWithMarkerIgnored()
+    public void shouldSupportErrorWithMarkerIgnored()
     {
         // Given
         StaticLoggerBinder.setNeo4jLogProvider( neo4jLogProvider );
@@ -234,7 +234,7 @@ public class Neo4jLoggerFactoryTest
     }
 
     @Test
-    public void shouldSupporChangingLogProvider()
+    public void shouldSupportChangingLogProvider()
     {
         // Given
         LogProvider neo4jLogProvider2 = mock( LogProvider.class );
