@@ -19,56 +19,37 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
-import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.lang.String.format;
-import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.isA;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+import static org.neo4j.server.security.auth.AuthProceduresIT.assertKeyIsMap;
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSION_DENIED;
 import static org.neo4j.server.security.enterprise.auth.InternalFlatFileRealm.IS_SUSPENDED;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
-import static org.neo4j.test.matchers.CommonMatchers.itemsMatchingExactlyOneOf;
 
-public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
+public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
     private static final String PWD_CHANGE = PASSWORD_CHANGE_REQUIRED.name().toLowerCase();
 
@@ -127,295 +108,6 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertFail( readSubject, "CALL dbms.security.changePassword( '' )", "A password cannot be empty." );
         assertFail( readSubject, "CALL dbms.security.changePassword( '123' )",
                 "Old password and new password cannot be the same." );
-    }
-
-    //---------- list running transactions -----------
-
-    @Test
-    public void shouldListSelfTransaction()
-    {
-        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
-                r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
-    }
-
-    @Test
-    public void shouldNotListTransactionsIfNotAdmin()
-    {
-        assertFail( noneSubject, "CALL dbms.security.listTransactions()", PERMISSION_DENIED );
-        assertFail( readSubject, "CALL dbms.security.listTransactions()", PERMISSION_DENIED );
-        assertFail( writeSubject, "CALL dbms.security.listTransactions()", PERMISSION_DENIED );
-        assertFail( schemaSubject, "CALL dbms.security.listTransactions()", PERMISSION_DENIED );
-    }
-
-    @Test
-    public void shouldListTransactions() throws Throwable
-    {
-        DoubleLatch latch = new DoubleLatch( 3 );
-        ThreadedTransactionCreate<S> write1 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> write2 = new ThreadedTransactionCreate<>( neo, latch );
-
-        String q1 = write1.execute( threading, writeSubject );
-        String q2 = write2.execute( threading, writeSubject );
-        latch.startAndWaitForAllToStart();
-
-        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
-                r -> assertKeyIsMap( r, "username", "activeTransactions",
-                        map( "adminSubject", "1", "writeSubject", "2" ) ) );
-
-        latch.finishAndWaitForAllToFinish();
-
-        write1.closeAndAssertSuccess();
-        write2.closeAndAssertSuccess();
-    }
-
-    @Test
-    public void shouldListRestrictedTransaction()
-    {
-        final DoubleLatch doubleLatch = new DoubleLatch( 2 );
-
-        ClassWithProcedures.setTestLatch( new ClassWithProcedures.LatchedRunnables( doubleLatch, () -> {}, () -> {} ) );
-
-        new Thread( () -> assertEmpty( writeSubject, "CALL test.waitForLatch()" ) ).start();
-        doubleLatch.startAndWaitForAllToStart();
-        try
-        {
-            assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
-                    r -> assertKeyIsMap( r, "username", "activeTransactions",
-                            map( "adminSubject", "1", "writeSubject", "1" ) ) );
-        }
-        finally
-        {
-            doubleLatch.finishAndWaitForAllToFinish();
-        }
-    }
-
-    @Test
-    public void shouldListAllQueriesWhenRunningAsAdmin() throws Throwable
-    {
-        DoubleLatch latch = new DoubleLatch( 3, true );
-        String startTime = OffsetDateTime.now().format( ISO_OFFSET_DATE_TIME );
-
-        ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> read2 = new ThreadedTransactionCreate<>( neo, latch );
-
-        String q1 = read1.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
-        String q2 = read2.execute( threading, readSubject, "UNWIND [4,5,6] AS y RETURN y" );
-        latch.startAndWaitForAllToStart();
-
-        String query = "CALL dbms.listQueries()";
-        assertSuccess( adminSubject, query, r ->
-        {
-            Set<Map<String,Object>> maps = r.stream().collect( Collectors.toSet() );
-
-            Matcher<Map<String,Object>> thisQuery = listedQuery( startTime, "adminSubject", query );
-            Matcher<Map<String,Object>> matcher1 = listedQuery( startTime, "readSubject", q1 );
-            Matcher<Map<String,Object>> matcher2 = listedQuery( startTime, "readSubject", q2 );
-
-            assertThat( maps, itemsMatchingExactlyOneOf( matcher1, matcher2, thisQuery ) );
-        } );
-
-        latch.finishAndWaitForAllToFinish();
-
-        read1.closeAndAssertSuccess();
-        read2.closeAndAssertSuccess();
-    }
-
-    @Test
-    public void shouldOnlyListOwnQueriesWhenNotRunningAsAdmin() throws Throwable
-    {
-        DoubleLatch latch = new DoubleLatch( 3, true );
-        String startTime = OffsetDateTime.now().format( ISO_OFFSET_DATE_TIME );
-        ThreadedTransactionCreate<S> read1 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> read2 = new ThreadedTransactionCreate<>( neo, latch );
-
-        String q1 = read1.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
-        String ignored = read2.execute( threading, writeSubject, "UNWIND [4,5,6] AS y RETURN y" );
-        latch.startAndWaitForAllToStart();
-
-        String query = "CALL dbms.listQueries()";
-        assertSuccess( readSubject, query, r ->
-        {
-            Set<Map<String,Object>> maps = r.stream().collect( Collectors.toSet() );
-
-            Matcher<Map<String,Object>> thisQuery = listedQuery( startTime, "readSubject", query );
-            Matcher<Map<String,Object>> queryMatcher = listedQuery( startTime, "readSubject", q1 );
-
-            assertThat( maps, itemsMatchingExactlyOneOf( queryMatcher, thisQuery ) );
-        } );
-
-        latch.finishAndWaitForAllToFinish();
-
-        read1.closeAndAssertSuccess();
-        read2.closeAndAssertSuccess();
-    }
-
-
-    //---------- terminate transactions for user -----------
-
-    @Test
-    public void shouldTerminateTransactionForUser() throws Throwable
-    {
-        DoubleLatch latch = new DoubleLatch( 2 );
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
-        write.execute( threading, writeSubject );
-        latch.startAndWaitForAllToStart();
-
-        assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )",
-                r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "writeSubject", "1" ) ) );
-
-        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
-                r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
-
-        latch.finishAndWaitForAllToFinish();
-
-        write.closeAndAssertTransactionTermination();
-
-        assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
-    }
-
-    @Test
-    public void shouldTerminateOnlyGivenUsersTransaction() throws Throwable
-    {
-        DoubleLatch latch = new DoubleLatch( 3 );
-        ThreadedTransactionCreate<S> schema = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
-
-        schema.execute( threading, schemaSubject );
-        write.execute( threading, writeSubject );
-        latch.startAndWaitForAllToStart();
-
-        assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'schemaSubject' )",
-                r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "schemaSubject", "1" ) ) );
-
-        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
-                r ->  assertKeyIsMap( r, "username", "activeTransactions",
-                        map( "adminSubject", "1", "writeSubject", "1" ) ) );
-
-        latch.finishAndWaitForAllToFinish();
-
-        schema.closeAndAssertTransactionTermination();
-        write.closeAndAssertSuccess();
-
-        assertSuccess( adminSubject, "MATCH (n:Test) RETURN n.name AS name",
-                r -> assertKeyIs( r, "name", "writeSubject-node" ) );
-    }
-
-    @Test
-    public void shouldTerminateAllTransactionsForGivenUser() throws Throwable
-    {
-        DoubleLatch latch = new DoubleLatch( 3 );
-        ThreadedTransactionCreate<S> schema1 = new ThreadedTransactionCreate<>( neo, latch );
-        ThreadedTransactionCreate<S> schema2 = new ThreadedTransactionCreate<>( neo, latch );
-
-        schema1.execute( threading, schemaSubject );
-        schema2.execute( threading, schemaSubject );
-        latch.startAndWaitForAllToStart();
-
-        assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'schemaSubject' )",
-                r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "schemaSubject", "2" ) ) );
-
-        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
-                r ->  assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
-
-        latch.finishAndWaitForAllToFinish();
-
-        schema1.closeAndAssertTransactionTermination();
-        schema2.closeAndAssertTransactionTermination();
-
-        assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
-    }
-
-    @Test
-    public void shouldNotTerminateTerminationTransaction() throws InterruptedException, ExecutionException
-    {
-        assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'adminSubject' )",
-                r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "adminSubject", "0" ) ) );
-        assertSuccess( readSubject, "CALL dbms.security.terminateTransactionsForUser( 'readSubject' )",
-                r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "readSubject", "0" ) ) );
-    }
-
-    @Test
-    public void shouldTerminateSelfTransactionsExceptTerminationTransactionIfAdmin() throws Throwable
-    {
-        shouldTerminateSelfTransactionsExceptTerminationTransaction( adminSubject );
-    }
-
-    @Test
-    public void shouldTerminateSelfTransactionsExceptTerminationTransactionIfNotAdmin() throws Throwable
-    {
-        shouldTerminateSelfTransactionsExceptTerminationTransaction( writeSubject );
-    }
-
-    private void shouldTerminateSelfTransactionsExceptTerminationTransaction( S subject ) throws Throwable
-    {
-        DoubleLatch latch = new DoubleLatch( 2 );
-        ThreadedTransactionCreate<S> create = new ThreadedTransactionCreate<>( neo, latch );
-        create.execute( threading, subject );
-
-        latch.startAndWaitForAllToStart();
-
-        String subjectName = neo.nameOf( subject );
-        assertSuccess( subject, "CALL dbms.security.terminateTransactionsForUser( '" + subjectName + "' )",
-                r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( subjectName, "1" ) ) );
-
-        latch.finishAndWaitForAllToFinish();
-
-        create.closeAndAssertTransactionTermination();
-
-        assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
-    }
-
-    @Test
-    public void shouldNotTerminateTransactionsIfNonExistentUser() throws InterruptedException, ExecutionException
-    {
-        assertFail( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'Petra' )", "User 'Petra' does not exist" );
-        assertFail( adminSubject, "CALL dbms.security.terminateTransactionsForUser( '' )", "User '' does not exist" );
-    }
-
-    @Test
-    public void shouldNotTerminateTransactionsIfNotAdmin() throws Throwable
-    {
-        DoubleLatch latch = new DoubleLatch( 2 );
-        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo, latch );
-        write.execute( threading, writeSubject );
-        latch.startAndWaitForAllToStart();
-
-        assertFail( noneSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
-        assertFail( pwdSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )", CHANGE_PWD_ERR_MSG );
-        assertFail( readSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
-        assertFail( schemaSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
-
-        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
-                r -> assertKeyIs( r, "username", "adminSubject", "writeSubject" ) );
-
-        latch.finishAndWaitForAllToFinish();
-
-        write.closeAndAssertSuccess();
-
-        assertSuccess( adminSubject, "MATCH (n:Test) RETURN n.name AS name",
-                r -> assertKeyIs( r, "name", "writeSubject-node" ) );
-    }
-
-    @Test
-    public void shouldTerminateRestrictedTransaction()
-    {
-        final DoubleLatch doubleLatch = new DoubleLatch( 2 );
-
-        ClassWithProcedures.setTestLatch( new ClassWithProcedures.LatchedRunnables( doubleLatch, () -> {}, () -> {} ) );
-
-        new Thread( () -> assertFail( writeSubject, "CALL test.waitForLatch()", "Explicitly terminated by the user." ) )
-                .start();
-
-        doubleLatch.startAndWaitForAllToStart();
-        try
-        {
-            assertSuccess( adminSubject, "CALL dbms.security.terminateTransactionsForUser( 'writeSubject' )",
-                    r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "writeSubject", "1" ) ) );
-        }
-        finally
-        {
-            doubleLatch.finishAndWaitForAllToFinish();
-        }
     }
 
     //---------- change user password -----------
@@ -1288,79 +980,9 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertEmpty( schemaSubject, "CALL dbms.security.changePassword( '321' )" );
     }
 
-    // --------------------- helpers -----------------------
-
-    private void shouldTerminateTransactionsForUser( S subject, String procedure ) throws Throwable
+    @Override
+    protected ThreadingRule threading()
     {
-        DoubleLatch latch = new DoubleLatch( 2 );
-        ThreadedTransactionCreate<S> userThread = new ThreadedTransactionCreate<>( neo, latch );
-        userThread.execute( threading, subject );
-        latch.startAndWaitForAllToStart();
-
-        assertEmpty( adminSubject, "CALL " + format(procedure, neo.nameOf( subject ) ) );
-
-        assertSuccess( adminSubject, "CALL dbms.security.listTransactions()",
-                r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
-
-        latch.finishAndWaitForAllToFinish();
-
-        userThread.closeAndAssertTransactionTermination();
-
-        assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
-    }
-
-    private TransportConnection startBoltSession( String username, String password ) throws Exception
-    {
-        TransportConnection connection = new SocketConnection();
-        HostnamePort address = new HostnamePort( "localhost:7687" );
-        Map<String,Object> authToken = map( "principal", username, "credentials", password, "scheme", "basic" );
-
-        connection.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( init( "TestClient/1.1", authToken ) ) );
-
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( connection, eventuallyReceives( msgSuccess() ) );
-        return connection;
-    }
-
-    //---------- matchers-----------
-    private Matcher<Map<String,Object>> listedQuery( String startTime, String username, String query )
-    {
-        return allOf(
-                hasQuery( query ),
-                hasUsername( username ),
-                hasQueryId(),
-                hasStartTimeAfter( startTime ),
-                hasNoParameters()
-        );
-    }
-    @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasQuery( String query )
-    {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "query" ), equalTo( query ) );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasUsername( String username )
-    {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "username" ), equalTo( username ) );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasQueryId()
-    {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "queryId" ), anyOf( (Matcher) isA( Integer.class ), isA( Long.class ) ) );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasStartTimeAfter( String base )
-    {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "startTime" ), allOf( greaterThanOrEqualTo( base ) ) );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasNoParameters()
-    {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "parameters" ), equalTo ( Collections.emptyMap() ) );
+        return threading;
     }
 }

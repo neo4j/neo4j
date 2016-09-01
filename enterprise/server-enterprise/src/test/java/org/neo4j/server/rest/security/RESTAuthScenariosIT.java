@@ -21,18 +21,18 @@ package org.neo4j.server.rest.security;
 
 import org.junit.Rule;
 
-import org.neo4j.server.security.enterprise.auth.AuthScenariosLogic;
+import org.neo4j.server.security.enterprise.auth.AuthScenariosInteractionTestBase;
 import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
-public class NeoFullRESTScenariosIT extends AuthScenariosLogic<RESTSubject>
+public class RESTAuthScenariosIT extends AuthScenariosInteractionTestBase<RESTSubject>
 {
     @Rule
     public SuppressOutput suppressOutput = suppressAll();
 
-    public NeoFullRESTScenariosIT()
+    public RESTAuthScenariosIT()
     {
         super();
         CHANGE_PWD_ERR_MSG = "User is required to change their password.";
@@ -43,6 +43,6 @@ public class NeoFullRESTScenariosIT extends AuthScenariosLogic<RESTSubject>
     @Override
     protected NeoInteractionLevel<RESTSubject> setUpNeoServer() throws Throwable
     {
-        return new NeoFullRESTInteraction();
+        return new RESTInteraction();
     }
 }

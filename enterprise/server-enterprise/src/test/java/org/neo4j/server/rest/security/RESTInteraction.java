@@ -29,7 +29,6 @@ import org.codehaus.jackson.node.TextNode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
@@ -59,14 +58,14 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.Encr
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
-public class NeoFullRESTInteraction extends CommunityServerTestBase implements NeoInteractionLevel<RESTSubject>
+class RESTInteraction extends CommunityServerTestBase implements NeoInteractionLevel<RESTSubject>
 {
-    String COMMIT_PATH = "db/data/transaction/commit";
-    String POST = "POST";
+    private String COMMIT_PATH = "db/data/transaction/commit";
+    private String POST = "POST";
 
     EnterpriseAuthManager authManager;
 
-    public NeoFullRESTInteraction() throws IOException
+    RESTInteraction() throws IOException
     {
         server = EnterpriseServerBuilder.server()
                 .withProperty( boltConnector( "0" ).enabled.name(), "true" )
@@ -211,18 +210,18 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
         return "";
     }
 
-    protected String commitURL()
+    private String commitURL()
     {
         return server.baseUri().resolve( COMMIT_PATH ).toString();
     }
 
-    class RESTResult implements ResourceIterator<Map<String,Object>>
+    private class RESTResult implements ResourceIterator<Map<String,Object>>
     {
         private JsonNode data;
         private JsonNode columns;
         private int index = 0;
 
-        public RESTResult( JsonNode fullResult )
+        RESTResult( JsonNode fullResult )
         {
             this.data = fullResult.get( "data" );
             this.columns = fullResult.get( "columns" );
@@ -244,7 +243,7 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
         public Map<String,Object> next()
         {
             JsonNode row = data.get( index++ ).get( "row" );
-            TreeMap<String,Object> map = new TreeMap();
+            TreeMap<String,Object> map = new TreeMap<>();
             for ( int i = 0; i < columns.size(); i++ )
             {
                 String key = columns.get( i ).asText();
@@ -270,7 +269,7 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
         else if ( valueNode instanceof ArrayNode )
         {
             ArrayNode aNode = (ArrayNode) valueNode;
-            ArrayList<String> listValue = new ArrayList( aNode.size() );
+            ArrayList<String> listValue = new ArrayList<>( aNode.size() );
             for ( int j = 0; j < aNode.size(); j++ )
             {
                 listValue.add( aNode.get( j ).asText() );
@@ -297,7 +296,7 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
 
     private Map<String,Object> mapValue( Iterator<String> columns, JsonNode node )
     {
-        TreeMap<String,Object> map = new TreeMap();
+        TreeMap<String,Object> map = new TreeMap<>();
         while ( columns.hasNext() )
         {
             String key = columns.next();

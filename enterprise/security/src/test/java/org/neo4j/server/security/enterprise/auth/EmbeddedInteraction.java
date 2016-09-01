@@ -40,18 +40,18 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.Encr
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
-public class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSubject>
+public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSubject>
 {
     private GraphDatabaseFacade db;
     private MultiRealmAuthManager manager;
     private EnterpriseUserManager userManager;
 
-    NeoShallowEmbeddedInteraction() throws Throwable
+    EmbeddedInteraction() throws Throwable
     {
         this(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabaseBuilder());
     }
 
-    public NeoShallowEmbeddedInteraction( GraphDatabaseBuilder builder ) throws Throwable
+    public EmbeddedInteraction( GraphDatabaseBuilder builder ) throws Throwable
     {
         builder.setConfig( boltConnector( "0" ).enabled, "true" );
         builder.setConfig( boltConnector( "0" ).encryption_level, OPTIONAL.name() );

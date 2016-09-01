@@ -22,7 +22,6 @@ package org.neo4j.server.security.enterprise.auth;
 import org.junit.Rule;
 import org.junit.Test;
 
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -32,15 +31,14 @@ import org.neo4j.test.rule.concurrent.ThreadingRule;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
-
 import static org.junit.Assert.fail;
-import static org.neo4j.server.security.enterprise.auth.AuthProcedures.*;
+import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSION_DENIED;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
 
-public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
+public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
@@ -766,5 +764,11 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         neo.assertAuthenticated( subject );
         testSuccessfulRead( subject, 3 );
         assertFail( subject, "CALL dbms.security.changeUserPassword('Craig', '123')", PERMISSION_DENIED );
+    }
+
+    @Override
+    protected ThreadingRule threading()
+    {
+        return threading;
     }
 }
