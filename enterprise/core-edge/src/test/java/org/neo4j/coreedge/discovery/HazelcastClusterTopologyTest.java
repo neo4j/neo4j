@@ -19,6 +19,11 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import com.hazelcast.client.impl.MemberImpl;
+import com.hazelcast.core.Member;
+import com.hazelcast.nio.Address;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,14 +32,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import com.hazelcast.client.impl.MemberImpl;
-import com.hazelcast.core.Member;
-import com.hazelcast.nio.Address;
-import org.junit.Test;
-
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
@@ -44,7 +44,6 @@ import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.buildMemberAttributes;
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.extractMemberAttributes;
 
@@ -70,9 +69,9 @@ public class HazelcastClusterTopologyTest
         // then
         assertEquals( memberId, extracted.first() );
         CoreAddresses addresses = extracted.other();
-        assertEquals( new AdvertisedSocketAddress( "tx:1001" ), addresses.getCatchupServer() );
-        assertEquals( new AdvertisedSocketAddress( "raft:2001" ), addresses.getRaftServer() );
-        assertEquals( new AdvertisedSocketAddress( "bolt:3001" ), addresses.getBoltServer() );
+        assertEquals( new SocketAddress( "tx:1001" ), addresses.getCatchupServer() );
+        assertEquals( new SocketAddress( "raft:2001" ), addresses.getRaftServer() );
+        assertEquals( new SocketAddress( "bolt:3001" ), addresses.getBoltServer() );
     }
 
     @Test
@@ -104,9 +103,9 @@ public class HazelcastClusterTopologyTest
         for ( int i = 0; i < 5; i++ )
         {
             CoreAddresses coreAddresses = coreMemberMap.get( coreMembers.get( i ) );
-            assertEquals( new AdvertisedSocketAddress( "tx:" + (i + 1) ), coreAddresses.getCatchupServer() );
-            assertEquals( new AdvertisedSocketAddress( "raft:" + (i + 1) ), coreAddresses.getRaftServer() );
-            assertEquals( new AdvertisedSocketAddress( "bolt:" + (i + 1) ), coreAddresses.getBoltServer() );
+            assertEquals( new SocketAddress( "tx:" + (i + 1) ), coreAddresses.getCatchupServer() );
+            assertEquals( new SocketAddress( "raft:" + (i + 1) ), coreAddresses.getRaftServer() );
+            assertEquals( new SocketAddress( "bolt:" + (i + 1) ), coreAddresses.getBoltServer() );
         }
     }
 

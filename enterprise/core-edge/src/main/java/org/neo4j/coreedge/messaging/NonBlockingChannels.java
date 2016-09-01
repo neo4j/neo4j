@@ -22,11 +22,11 @@ package org.neo4j.coreedge.messaging;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 
 public class NonBlockingChannels
 {
-    private final ConcurrentHashMap<AdvertisedSocketAddress, NonBlockingChannel> lazyChannelMap =
+    private final ConcurrentHashMap<SocketAddress, NonBlockingChannel> lazyChannelMap =
             new ConcurrentHashMap<>();
 
     public int size()
@@ -34,12 +34,12 @@ public class NonBlockingChannels
         return lazyChannelMap.size();
     }
 
-    public NonBlockingChannel get( AdvertisedSocketAddress to )
+    public NonBlockingChannel get( SocketAddress to )
     {
         return lazyChannelMap.get( to );
     }
 
-    public NonBlockingChannel putIfAbsent( AdvertisedSocketAddress to, NonBlockingChannel timestampedLazyChannel )
+    public NonBlockingChannel putIfAbsent( SocketAddress to, NonBlockingChannel timestampedLazyChannel )
     {
         return lazyChannelMap.putIfAbsent( to, timestampedLazyChannel );
     }
@@ -49,7 +49,7 @@ public class NonBlockingChannels
         return lazyChannelMap.values();
     }
 
-    public void remove( AdvertisedSocketAddress address )
+    public void remove( SocketAddress address )
     {
         lazyChannelMap.remove( address );
     }

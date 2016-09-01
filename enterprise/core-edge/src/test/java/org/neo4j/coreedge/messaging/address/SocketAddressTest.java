@@ -22,19 +22,18 @@ package org.neo4j.coreedge.messaging.address;
 import org.junit.Test;
 
 import static java.lang.String.format;
-
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
-public class AdvertisedSocketAddressTest
+public class SocketAddressTest
 {
     @Test
     public void shouldCreateAdvertisedSocketAddressWithLeadingWhitespace() throws Exception
     {
         // given
-        AdvertisedSocketAddress address = new AdvertisedSocketAddress( whitespace( 1 ) + "localhost:9999" );
+        SocketAddress address = new SocketAddress( whitespace( 1 ) + "localhost:9999" );
 
         // when
         String string = address.toString();
@@ -47,7 +46,7 @@ public class AdvertisedSocketAddressTest
     public void shouldCreateAdvertisedSocketAddressWithTrailingWhitespace() throws Exception
     {
         // given
-        AdvertisedSocketAddress address = new AdvertisedSocketAddress( "localhost:9999" + whitespace( 1 ) );
+        SocketAddress address = new SocketAddress( "localhost:9999" + whitespace( 1 ) );
 
         // when
         String string = address.toString();
@@ -62,13 +61,13 @@ public class AdvertisedSocketAddressTest
         String address = "localhost:" + whitespace( 1 ) + "9999";
         try
         {
-            new AdvertisedSocketAddress( address );
+            new SocketAddress( address );
             fail( "Should have thrown an exception" );
         }
         catch ( IllegalArgumentException e )
         {
             assertThat( e.getMessage(),
-                    containsString( format( "Cannot initialize AdvertisedSocketAddress for %s. Whitespace " +
+                    containsString( format( "Cannot initialize SocketAddress for %s. Whitespace " +
                             "characters cause unresolvable ambiguity.", address ) ) );
         }
     }
@@ -79,13 +78,13 @@ public class AdvertisedSocketAddressTest
         String address = "localhost:";
         try
         {
-            new AdvertisedSocketAddress( address );
+            new SocketAddress( address );
             fail( "Should have thrown an exception" );
         }
         catch ( IllegalArgumentException e )
         {
             assertThat( e.getMessage(),
-                    containsString( format( "AdvertisedSocketAddress can only be created with hostname:port. " +
+                    containsString( format( "SocketAddress can only be created with hostname:port. " +
                             "%s is not acceptable", address ) ) );
         }
     }

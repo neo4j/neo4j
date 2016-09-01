@@ -19,14 +19,14 @@
  */
 package org.neo4j.coreedge.messaging;
 
-import java.net.InetSocketAddress;
-
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.junit.Test;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import java.net.InetSocketAddress;
+
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
@@ -38,7 +38,7 @@ public class IdleChannelReaperHandlerTest
     public void shouldRemoveChannelViaCallback() throws Exception
     {
         // given
-        AdvertisedSocketAddress address = new AdvertisedSocketAddress( "localhost:1984" );
+        SocketAddress address = new SocketAddress( "localhost:1984" );
         NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
         nonBlockingChannels.putIfAbsent( address, mock( NonBlockingChannel.class) );
 

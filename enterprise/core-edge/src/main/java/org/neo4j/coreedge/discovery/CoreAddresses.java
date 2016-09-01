@@ -19,33 +19,33 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 
 public class CoreAddresses
 {
-    private final AdvertisedSocketAddress raftServer;
-    private final AdvertisedSocketAddress catchupServer;
-    private final AdvertisedSocketAddress boltServer;
+    private final SocketAddress raftServer;
+    private final SocketAddress catchupServer;
+    private final SocketAddress boltServer;
 
-    public CoreAddresses( AdvertisedSocketAddress raftServer, AdvertisedSocketAddress catchupServer,
-            AdvertisedSocketAddress boltServer )
+    public CoreAddresses( SocketAddress raftServer, SocketAddress catchupServer,
+            SocketAddress boltServer )
     {
         this.raftServer = raftServer;
         this.catchupServer = catchupServer;
         this.boltServer = boltServer;
     }
 
-    public AdvertisedSocketAddress getRaftServer()
+    public SocketAddress getRaftServer()
     {
         return raftServer;
     }
 
-    public AdvertisedSocketAddress getCatchupServer()
+    public SocketAddress getCatchupServer()
     {
         return catchupServer;
     }
 
-    public AdvertisedSocketAddress getBoltServer()
+    public SocketAddress getBoltServer()
     {
         return boltServer;
     }

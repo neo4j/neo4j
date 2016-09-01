@@ -19,14 +19,6 @@
  */
 package org.neo4j.coreedge.catchup;
 
-import java.time.Clock;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -35,11 +27,19 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
+import java.time.Clock;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.messaging.CatchUpRequest;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -53,7 +53,7 @@ public class CatchUpClient extends LifecycleAdapter
     private final TopologyService discoveryService;
     private final Clock clock;
 
-    private final Map<AdvertisedSocketAddress, CatchUpChannel> idleChannels = new HashMap<>();
+    private final Map<SocketAddress, CatchUpChannel> idleChannels = new HashMap<>();
     private final Set<CatchUpChannel> activeChannels = new HashSet<>();
     private final Log log;
 
@@ -109,7 +109,7 @@ public class CatchUpClient extends LifecycleAdapter
 
     private synchronized CatchUpChannel acquireChannel( MemberId memberId ) throws NoKnownAddressesException
     {
-        AdvertisedSocketAddress catchUpAddress =
+        SocketAddress catchUpAddress =
                 discoveryService.currentTopology().coreAddresses( memberId ).getCatchupServer();
         CatchUpChannel channel = idleChannels.remove( catchUpAddress );
         if ( channel == null )
@@ -123,10 +123,10 @@ public class CatchUpClient extends LifecycleAdapter
     private class CatchUpChannel
     {
         private final TrackingResponseHandler handler;
-        private final AdvertisedSocketAddress destination;
+        private final SocketAddress destination;
         private Channel nettyChannel;
 
-        CatchUpChannel( AdvertisedSocketAddress destination )
+        CatchUpChannel( SocketAddress destination )
         {
             this.destination = destination;
             handler = new TrackingResponseHandler( new CatchUpResponseAdaptor(), clock );

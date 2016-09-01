@@ -19,14 +19,14 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import java.util.function.Function;
-
 import com.hazelcast.client.HazelcastClientNotActiveException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 
+import java.util.function.Function;
+
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -34,14 +34,13 @@ import org.neo4j.logging.LogProvider;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.EDGE_SERVER_BOLT_ADDRESS_MAP_NAME;
 
 class HazelcastClient extends LifecycleAdapter implements TopologyService
 {
     public static final RenewableTimeoutService.TimeoutName REFRESH_EDGE = () -> "Refresh Edge";
     private final Log log;
-    private final AdvertisedSocketAddress boltAddress;
+    private final SocketAddress boltAddress;
     private final HazelcastConnector connector;
     private final RenewableTimeoutService renewableTimeoutService;
     private HazelcastInstance hazelcastInstance;
@@ -49,7 +48,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     private final long edgeTimeToLiveTimeout;
     private final long edgeRefreshRate;
 
-    HazelcastClient( HazelcastConnector connector, LogProvider logProvider, AdvertisedSocketAddress boltAddress,
+    HazelcastClient( HazelcastConnector connector, LogProvider logProvider, SocketAddress boltAddress,
                      RenewableTimeoutService renewableTimeoutService, long edgeTimeToLiveTimeout, long edgeRefreshRate )
     {
         this.connector = connector;

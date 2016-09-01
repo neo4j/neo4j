@@ -23,29 +23,29 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.EndOfStreamException;
 import org.neo4j.coreedge.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.coreedge.messaging.EndOfStreamException;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.fail;
 
-public class AdvertisedSocketAddressMarshallingTest
+public class SocketAddressMarshallingTest
 {
     @Test
     public void shouldMarshalAndUnmarshalFromChannel() throws Exception
     {
         // given
         ByteBuf buffer = Unpooled.buffer( 2_000 );
-        AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal marshal =
-                new AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal();
+        SocketAddress sent = new SocketAddress( "test-hostname:1234" );
+        SocketAddress.SocketAddressChannelMarshal marshal =
+                new SocketAddress.SocketAddressChannelMarshal();
 
         // when
         marshal.marshal( sent, new NetworkFlushableChannelNetty4( buffer ) );
-        AdvertisedSocketAddress received = marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) );
+        SocketAddress received = marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) );
 
         // then
         assertNotSame( sent, received );
@@ -57,9 +57,9 @@ public class AdvertisedSocketAddressMarshallingTest
     {
         // given
         ByteBuf buffer = Unpooled.buffer( 2_000 );
-        AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal marshal =
-                new AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal();
+        SocketAddress sent = new SocketAddress( "test-hostname:1234" );
+        SocketAddress.SocketAddressChannelMarshal marshal =
+                new SocketAddress.SocketAddressChannelMarshal();
 
         // when
         marshal.marshal( sent, new NetworkFlushableChannelNetty4( buffer ) );

@@ -19,18 +19,18 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 
 public class EdgeAddresses
 {
-    private final AdvertisedSocketAddress boltAddress;
+    private final SocketAddress boltAddress;
 
-    public EdgeAddresses( AdvertisedSocketAddress boltAddress )
+    public EdgeAddresses( SocketAddress boltAddress )
     {
         this.boltAddress = boltAddress;
     }
 
-    public AdvertisedSocketAddress getBoltAddress()
+    public SocketAddress getBoltAddress()
     {
         return boltAddress;
     }

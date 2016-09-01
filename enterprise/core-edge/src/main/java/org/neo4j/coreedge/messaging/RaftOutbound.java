@@ -28,7 +28,7 @@ import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.coreedge.messaging.address.UnknownAddressMonitor;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
@@ -38,11 +38,11 @@ import static java.util.stream.Collectors.toList;
 public class RaftOutbound implements Outbound<MemberId, RaftMessage>
 {
     private final CoreTopologyService discoveryService;
-    private final Outbound<AdvertisedSocketAddress,Message> outbound;
+    private final Outbound<SocketAddress,Message> outbound;
     private final LocalDatabase localDatabase;
     private final UnknownAddressMonitor unknownAddressMonitor;
 
-    public RaftOutbound( CoreTopologyService discoveryService, Outbound<AdvertisedSocketAddress,Message> outbound,
+    public RaftOutbound( CoreTopologyService discoveryService, Outbound<SocketAddress,Message> outbound,
             LocalDatabase localDatabase, LogProvider logProvider, long logThresholdMillis )
     {
         this.discoveryService = discoveryService;

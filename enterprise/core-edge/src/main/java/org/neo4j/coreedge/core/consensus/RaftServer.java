@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.core.consensus;
 
-import java.util.concurrent.TimeUnit;
-
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -35,12 +33,14 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.coreedge.VersionDecoder;
 import org.neo4j.coreedge.VersionPrepender;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
 import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
 import org.neo4j.coreedge.messaging.Inbound;
-import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.coreedge.messaging.marshalling.ChannelMarshal;
 import org.neo4j.coreedge.messaging.marshalling.RaftMessageDecoder;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -52,7 +52,7 @@ import static java.lang.String.format;
 
 public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.StoreIdAwareMessage>
 {
-    private final ListenSocketAddress listenAddress;
+    private final SocketAddress listenAddress;
     private final Log log;
     private final LogProvider logProvider;
     private final ChannelMarshal<ReplicatedContent> marshal;
@@ -62,7 +62,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
-    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, ListenSocketAddress listenAddress,
+    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, SocketAddress listenAddress,
                        LogProvider logProvider )
     {
         this.marshal = marshal;

@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
@@ -47,9 +47,9 @@ public class DiscoveredMemberRepositoryTest
         DiscoveredMemberRepository discoveredMemberRepositoryA =
                 new DiscoveredMemberRepository( testDirectory.directory(), fileSystem, NullLogProvider.getInstance() );
 
-        Set<AdvertisedSocketAddress> members =
-                set( new AdvertisedSocketAddress( "localhost:5003" ), new AdvertisedSocketAddress( "localhost:5004" ),
-                        new AdvertisedSocketAddress( "localhost:5005" ) );
+        Set<SocketAddress> members =
+                set( new SocketAddress( "localhost:5003" ), new SocketAddress( "localhost:5004" ),
+                        new SocketAddress( "localhost:5005" ) );
 
         discoveredMemberRepositoryA.store( members );
 

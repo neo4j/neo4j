@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Set;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -48,13 +48,13 @@ public class DiscoveredMemberRepository
         this.log = logProvider.getLog( getClass() );
     }
 
-    public synchronized Set<AdvertisedSocketAddress> previouslyDiscoveredMembers()
+    public synchronized Set<SocketAddress> previouslyDiscoveredMembers()
     {
         if ( fileSystem.fileExists( file ) )
         {
             try ( BufferedReader reader = new BufferedReader( fileSystem.openAsReader( file, UTF_8 ) ) )
             {
-                return reader.lines().map( AdvertisedSocketAddress::new ).collect( toSet() );
+                return reader.lines().map( SocketAddress::new ).collect( toSet() );
             }
             catch ( IOException e )
             {
@@ -65,11 +65,11 @@ public class DiscoveredMemberRepository
         return emptySet();
     }
 
-    public synchronized void store( Set<AdvertisedSocketAddress> discoveredMembers )
+    public synchronized void store( Set<SocketAddress> discoveredMembers )
     {
         try ( PrintWriter writer = new PrintWriter( fileSystem.openAsWriter( file, UTF_8, false ) ) )
         {
-            for ( AdvertisedSocketAddress member : discoveredMembers )
+            for ( SocketAddress member : discoveredMembers )
             {
                 writer.println( member.toString() );
             }

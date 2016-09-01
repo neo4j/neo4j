@@ -32,12 +32,12 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
 
-public class AdvertisedSocketAddress
+public class SocketAddress
 {
     private final String address;
     private static final Pattern pattern = Pattern.compile( "(.+):(\\d+)" );
 
-    public AdvertisedSocketAddress( String address )
+    public SocketAddress( String address )
     {
         this.address = validate( address );
     }
@@ -46,20 +46,20 @@ public class AdvertisedSocketAddress
     {
         if ( address == null )
         {
-            throw new IllegalArgumentException( "AdvertisedSocketAddress cannot be null" );
+            throw new IllegalArgumentException( "SocketAddress cannot be null" );
         }
 
         address = address.trim();
 
         if ( address.contains( " " ) )
         {
-            throw new IllegalArgumentException( format( "Cannot initialize AdvertisedSocketAddress for %s. Whitespace" +
+            throw new IllegalArgumentException( format( "Cannot initialize SocketAddress for %s. Whitespace" +
                     " characters cause unresolvable ambiguity.", address ) );
         }
 
         if ( !pattern.matcher( address ).matches() )
         {
-            throw new IllegalArgumentException( format( "AdvertisedSocketAddress can only be created with " +
+            throw new IllegalArgumentException( format( "SocketAddress can only be created with " +
                     "hostname:port. %s is not acceptable", address ) );
         }
 
@@ -77,7 +77,7 @@ public class AdvertisedSocketAddress
         {
             return false;
         }
-        AdvertisedSocketAddress that = (AdvertisedSocketAddress) o;
+        SocketAddress that = (SocketAddress) o;
         return Objects.equals( address, that.address );
     }
 
@@ -98,19 +98,19 @@ public class AdvertisedSocketAddress
         return new InetSocketAddress( split[0], Integer.valueOf( split[1] ) );
     }
 
-    public static class AdvertisedSocketAddressChannelMarshal extends SafeChannelMarshal<AdvertisedSocketAddress>
+    public static class SocketAddressChannelMarshal extends SafeChannelMarshal<SocketAddress>
     {
         @Override
-        public void marshal( AdvertisedSocketAddress address, WritableChannel channel ) throws IOException
+        public void marshal( SocketAddress address, WritableChannel channel ) throws IOException
         {
             StringMarshal.marshal( channel, address.address );
         }
 
         @Override
-        public AdvertisedSocketAddress unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
+        public SocketAddress unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
         {
             String host = StringMarshal.unmarshal( channel );
-            return new AdvertisedSocketAddress( host );
+            return new SocketAddress( host );
         }
     }
 }
