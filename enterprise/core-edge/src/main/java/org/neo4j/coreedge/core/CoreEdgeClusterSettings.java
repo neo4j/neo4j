@@ -19,12 +19,10 @@
  */
 package org.neo4j.coreedge.core;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.function.Function;
 
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
-import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.kernel.configuration.Internal;
@@ -43,14 +41,13 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description("Settings for Core-Edge Clusters")
 public class CoreEdgeClusterSettings
 {
-    private static final Function<String, ListenSocketAddress> LISTEN_SOCKET_ADDRESS = new Function<String,
-            ListenSocketAddress>()
+    private static final Function<String, AdvertisedSocketAddress> LISTEN_SOCKET_ADDRESS = new Function<String,
+            AdvertisedSocketAddress>()
     {
         @Override
-        public ListenSocketAddress apply( String value )
+        public AdvertisedSocketAddress apply( String value )
         {
-            String[] split = value.trim().split( ":" );
-            return new ListenSocketAddress( new InetSocketAddress( split[0], Integer.valueOf( split[1] ) ) );
+            return new AdvertisedSocketAddress( value );
         }
 
         @Override
@@ -115,7 +112,7 @@ public class CoreEdgeClusterSettings
             setting( "core_edge.expected_core_cluster_size", INTEGER, "3" );
 
     @Description("Network interface and port for the transaction shipping server to listen on.")
-    public static final Setting<ListenSocketAddress> transaction_listen_address =
+    public static final Setting<AdvertisedSocketAddress> transaction_listen_address =
             setting( "core_edge.transaction_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:6000" );
 
     @Description("Hostname/IP address and port for the transaction shipping server to listen on.")
@@ -123,7 +120,7 @@ public class CoreEdgeClusterSettings
             setting( "core_edge.transaction_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:6000" );
 
     @Description("Network interface and port for the RAFT server to listen on.")
-    public static final Setting<ListenSocketAddress> raft_listen_address =
+    public static final Setting<AdvertisedSocketAddress> raft_listen_address =
             setting( "core_edge.raft_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:7000" );
 
     @Description("Hostname/IP address and port for the RAFT server to listen on.")
@@ -131,7 +128,7 @@ public class CoreEdgeClusterSettings
             setting( "core_edge.raft_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7000" );
 
     @Description("Host and port to bind the cluster member discovery management communication.")
-    public static final Setting<ListenSocketAddress> discovery_listen_address =
+    public static final Setting<AdvertisedSocketAddress> discovery_listen_address =
             setting( "core_edge.discovery_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5000" );
 
     @Description("A comma-separated list of other members of the cluster to join.")
