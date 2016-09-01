@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -99,8 +99,8 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
     private void notifyMembershipChange( ClusterTopology clusterTopology )
     {
-        Set<AdvertisedSocketAddress> members = hazelcastInstance.getCluster().getMembers().stream()
-                .map( member -> new AdvertisedSocketAddress(
+        Set<SocketAddress> members = hazelcastInstance.getCluster().getMembers().stream()
+                .map( member -> new SocketAddress(
                         String.format( "%s:%d", member.getSocketAddress().getHostName(),
                                 member.getSocketAddress().getPort() ) ) ).collect( Collectors.toSet() );
         discoveredMemberRepository.store( members );
@@ -144,14 +144,14 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
         tcpIpConfig.setEnabled( true );
 
-        List<AdvertisedSocketAddress> initialMembers =
+        List<SocketAddress> initialMembers =
                 config.get( CoreEdgeClusterSettings.initial_discovery_members );
-        for ( AdvertisedSocketAddress address : initialMembers )
+        for ( SocketAddress address : initialMembers )
         {
             tcpIpConfig.addMember( address.toString() );
         }
-        Set<AdvertisedSocketAddress> previouslySeenMembers = discoveredMemberRepository.previouslyDiscoveredMembers();
-        for ( AdvertisedSocketAddress seenAddress : previouslySeenMembers )
+        Set<SocketAddress> previouslySeenMembers = discoveredMemberRepository.previouslyDiscoveredMembers();
+        for ( SocketAddress seenAddress : previouslySeenMembers )
         {
             tcpIpConfig.addMember( seenAddress.toString() );
         }
@@ -159,7 +159,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
                 initialMembers, previouslySeenMembers ) );
 
         NetworkConfig networkConfig = new NetworkConfig();
-        AdvertisedSocketAddress hazelcastAddress = config.get( CoreEdgeClusterSettings.discovery_listen_address );
+        SocketAddress hazelcastAddress = config.get( CoreEdgeClusterSettings.discovery_listen_address );
         networkConfig.setPort( hazelcastAddress.socketAddress().getPort() );
         networkConfig.setJoin( joinConfig );
 

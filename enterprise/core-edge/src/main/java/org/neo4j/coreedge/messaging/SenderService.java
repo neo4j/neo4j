@@ -19,18 +19,18 @@
  */
 package org.neo4j.coreedge.messaging;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.coreedge.messaging.monitoring.MessageQueueMonitor;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -41,7 +41,7 @@ import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
-public class SenderService extends LifecycleAdapter implements Outbound<AdvertisedSocketAddress,Message>
+public class SenderService extends LifecycleAdapter implements Outbound<SocketAddress,Message>
 {
     private NonBlockingChannels nonBlockingChannels;
 
@@ -69,7 +69,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     }
 
     @Override
-    public void send( AdvertisedSocketAddress to, Message message )
+    public void send( SocketAddress to, Message message )
     {
         serviceLock.readLock().lock();
         try
@@ -88,7 +88,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     }
 
     @Override
-    public void send( AdvertisedSocketAddress to, Collection<Message> messages )
+    public void send( SocketAddress to, Collection<Message> messages )
     {
         serviceLock.readLock().lock();
         try
@@ -107,7 +107,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
         }
     }
 
-    private NonBlockingChannel channel( AdvertisedSocketAddress to )
+    private NonBlockingChannel channel( SocketAddress to )
     {
         MessageQueueMonitor monitor = monitors.newMonitor( MessageQueueMonitor.class, NonBlockingChannel.class );
         NonBlockingChannel nonBlockingChannel = nonBlockingChannels.get( to );

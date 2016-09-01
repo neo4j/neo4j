@@ -31,7 +31,7 @@ import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.log.segmented.FileNames;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -53,7 +53,7 @@ public class CoreClusterMember
     private CoreGraphDatabase database;
 
     public CoreClusterMember( int serverId, int clusterSize,
-                              List<AdvertisedSocketAddress> addresses,
+                              List<SocketAddress> addresses,
                               DiscoveryServiceFactory discoveryServiceFactory,
                               String recordFormat,
                               File parentDir,
@@ -66,7 +66,7 @@ public class CoreClusterMember
         int raftPort = 7000 + serverId;
         int boltPort = 8000 + serverId;
 
-        String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
+        String initialMembers = addresses.stream().map( SocketAddress::toString ).collect( joining( "," ) );
 
         config.put( "dbms.mode", "CORE" );
         config.put( CoreEdgeClusterSettings.initial_discovery_members.name(), initialMembers );

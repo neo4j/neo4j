@@ -24,15 +24,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.coreedge.core.consensus.LeaderLocator;
+import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
-import org.neo4j.coreedge.core.consensus.LeaderLocator;
-import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -70,7 +70,7 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
         try
         {
             MemberId leader = leaderLocator.getLeader();
-            AdvertisedSocketAddress leaderAddress =
+            SocketAddress leaderAddress =
                     discoveryService.currentTopology().coreAddresses( leader ).getBoltServer();
             writeEndpoints = writeEndpoints( leaderAddress );
         }
@@ -87,7 +87,7 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
         return wrapUpEndpoints( writeEndpoints, readEndpoints );
     }
 
-    private Set<ReadWriteEndPoint> writeEndpoints( AdvertisedSocketAddress leader )
+    private Set<ReadWriteEndPoint> writeEndpoints( SocketAddress leader )
     {
         return Stream.of( leader ).map( ReadWriteEndPoint::write ).collect( Collectors.toSet() );
     }
@@ -103,9 +103,9 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
     {
         ClusterTopology clusterTopology = discoveryService.currentTopology();
 
-        Stream<AdvertisedSocketAddress> readEdge = clusterTopology.edgeMemberAddresses().stream()
+        Stream<SocketAddress> readEdge = clusterTopology.edgeMemberAddresses().stream()
                 .map( EdgeAddresses::getBoltAddress );
-        Stream<AdvertisedSocketAddress> readCore = clusterTopology.coreMemberAddresses().stream()
+        Stream<SocketAddress> readCore = clusterTopology.coreMemberAddresses().stream()
                 .map( CoreAddresses::getBoltServer );
 
         return Stream.concat( readEdge, readCore ).map( ReadWriteEndPoint::read )
@@ -119,7 +119,7 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
 
     private static class ReadWriteEndPoint
     {
-        private final AdvertisedSocketAddress address;
+        private final SocketAddress address;
         private final Type type;
 
         public String address()
@@ -132,18 +132,18 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
             return type.toString().toUpperCase();
         }
 
-        ReadWriteEndPoint( AdvertisedSocketAddress address, Type type )
+        ReadWriteEndPoint( SocketAddress address, Type type )
         {
             this.address = address;
             this.type = type;
         }
 
-        public static ReadWriteEndPoint write( AdvertisedSocketAddress address )
+        public static ReadWriteEndPoint write( SocketAddress address )
         {
             return new ReadWriteEndPoint( address, Type.WRITE );
         }
 
-        public static ReadWriteEndPoint read( AdvertisedSocketAddress address )
+        public static ReadWriteEndPoint read( SocketAddress address )
         {
             return new ReadWriteEndPoint( address, Type.READ );
         }

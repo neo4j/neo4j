@@ -54,7 +54,7 @@ import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequest;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshotRequestHandler;
 import org.neo4j.coreedge.identity.StoreId;
 import org.neo4j.coreedge.logging.ExceptionLoggingHandler;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -77,7 +77,7 @@ public class CatchupServer extends LifecycleAdapter
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
     private final CoreState coreState;
-    private final AdvertisedSocketAddress listenAddress;
+    private final SocketAddress listenAddress;
 
     private EventLoopGroup workerGroup;
     private Channel channel;
@@ -91,7 +91,7 @@ public class CatchupServer extends LifecycleAdapter
                           Supplier<NeoStoreDataSource> dataSourceSupplier,
                           Supplier<CheckPointer> checkPointerSupplier,
                           CoreState coreState,
-                          AdvertisedSocketAddress listenAddress, Monitors monitors )
+                          SocketAddress listenAddress, Monitors monitors )
     {
         this.coreState = coreState;
         this.listenAddress = listenAddress;

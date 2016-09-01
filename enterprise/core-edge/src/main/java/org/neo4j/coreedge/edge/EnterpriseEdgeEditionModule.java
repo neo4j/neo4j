@@ -42,7 +42,7 @@ import org.neo4j.coreedge.core.state.machines.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.discovery.procedures.EdgeRoleProcedure;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.coreedge.messaging.routing.ConnectToRandomCoreMember;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -242,10 +242,10 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         dependencies.satisfyDependency( createSessionTracker() );
     }
 
-    public static AdvertisedSocketAddress extractBoltAddress( Config config )
+    public static SocketAddress extractBoltAddress( Config config )
     {
         HostnamePort address = config.get( GraphDatabaseSettings.bolt_advertised_address );
-        return new AdvertisedSocketAddress( address.toString() );
+        return new SocketAddress( address.toString() );
     }
 
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,

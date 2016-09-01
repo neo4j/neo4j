@@ -22,11 +22,11 @@ package org.neo4j.coreedge.discovery;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.neo4j.coreedge.identity.ClusterId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.edge.EnterpriseEdgeEditionModule;
+import org.neo4j.coreedge.identity.ClusterId;
+import org.neo4j.coreedge.identity.MemberId;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -97,9 +97,9 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
 
     private static CoreAddresses extractAddresses( Config config )
     {
-        AdvertisedSocketAddress raftAddress = config.get( CoreEdgeClusterSettings.raft_advertised_address );
-        AdvertisedSocketAddress transactionSource = config.get( CoreEdgeClusterSettings.transaction_advertised_address );
-        AdvertisedSocketAddress boltAddress = EnterpriseEdgeEditionModule.extractBoltAddress( config );
+        SocketAddress raftAddress = config.get( CoreEdgeClusterSettings.raft_advertised_address );
+        SocketAddress transactionSource = config.get( CoreEdgeClusterSettings.transaction_advertised_address );
+        SocketAddress boltAddress = EnterpriseEdgeEditionModule.extractBoltAddress( config );
 
         return new CoreAddresses( raftAddress, transactionSource, boltAddress );
     }

@@ -22,7 +22,7 @@ package org.neo4j.coreedge.core;
 import java.util.List;
 import java.util.function.Function;
 
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.kernel.configuration.Internal;
@@ -41,29 +41,12 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description("Settings for Core-Edge Clusters")
 public class CoreEdgeClusterSettings
 {
-    private static final Function<String, AdvertisedSocketAddress> LISTEN_SOCKET_ADDRESS = new Function<String,
-            AdvertisedSocketAddress>()
+    private static final Function<String,SocketAddress> SOCKET_ADDRESS = new Function<String,SocketAddress>()
     {
         @Override
-        public AdvertisedSocketAddress apply( String value )
+        public SocketAddress apply( String value )
         {
-            return new AdvertisedSocketAddress( value );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "a socket address";
-        }
-    };
-
-    private static final Function<String, AdvertisedSocketAddress> ADVERTISED_SOCKET_ADDRESS = new Function<String,
-            AdvertisedSocketAddress>()
-    {
-        @Override
-        public AdvertisedSocketAddress apply( String value )
-        {
-            return new AdvertisedSocketAddress( value );
+            return new SocketAddress( value );
         }
 
         @Override
@@ -112,28 +95,28 @@ public class CoreEdgeClusterSettings
             setting( "core_edge.expected_core_cluster_size", INTEGER, "3" );
 
     @Description("Network interface and port for the transaction shipping server to listen on.")
-    public static final Setting<AdvertisedSocketAddress> transaction_listen_address =
-            setting( "core_edge.transaction_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:6000" );
+    public static final Setting<SocketAddress> transaction_listen_address =
+            setting( "core_edge.transaction_listen_address", SOCKET_ADDRESS, "0.0.0.0:6000" );
 
     @Description("Hostname/IP address and port for the transaction shipping server to listen on.")
-    public static final Setting<AdvertisedSocketAddress> transaction_advertised_address =
-            setting( "core_edge.transaction_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:6000" );
+    public static final Setting<SocketAddress> transaction_advertised_address =
+            setting( "core_edge.transaction_advertised_address", SOCKET_ADDRESS, "localhost:6000" );
 
     @Description("Network interface and port for the RAFT server to listen on.")
-    public static final Setting<AdvertisedSocketAddress> raft_listen_address =
-            setting( "core_edge.raft_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:7000" );
+    public static final Setting<SocketAddress> raft_listen_address =
+            setting( "core_edge.raft_listen_address", SOCKET_ADDRESS, "0.0.0.0:7000" );
 
     @Description("Hostname/IP address and port for the RAFT server to listen on.")
-    public static final Setting<AdvertisedSocketAddress> raft_advertised_address =
-            setting( "core_edge.raft_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7000" );
+    public static final Setting<SocketAddress> raft_advertised_address =
+            setting( "core_edge.raft_advertised_address", SOCKET_ADDRESS, "localhost:7000" );
 
     @Description("Host and port to bind the cluster member discovery management communication.")
-    public static final Setting<AdvertisedSocketAddress> discovery_listen_address =
-            setting( "core_edge.discovery_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5000" );
+    public static final Setting<SocketAddress> discovery_listen_address =
+            setting( "core_edge.discovery_listen_address", SOCKET_ADDRESS, "0.0.0.0:5000" );
 
     @Description("A comma-separated list of other members of the cluster to join.")
-    public static final Setting<List<AdvertisedSocketAddress>> initial_discovery_members =
-            setting( "core_edge.initial_discovery_members", list( ",", ADVERTISED_SOCKET_ADDRESS ), MANDATORY );
+    public static final Setting<List<SocketAddress>> initial_discovery_members =
+            setting( "core_edge.initial_discovery_members", list( ",", SOCKET_ADDRESS ), MANDATORY );
 
     @Description("Prevents the network middleware from dumping its own logs. Defaults to true.")
     public static final Setting<Boolean> disable_middleware_logging =

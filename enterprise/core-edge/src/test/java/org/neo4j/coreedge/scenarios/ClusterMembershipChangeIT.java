@@ -28,7 +28,7 @@ import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.procedures.DiscoverEndpointAcquisitionServersProcedure;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -55,7 +55,7 @@ public class ClusterMembershipChangeIT
         // when
         Cluster cluster = clusterRule.withNumberOfEdgeMembers( 0 ).startCluster();
 
-        List<AdvertisedSocketAddress> onlyServerZero = singletonList( Cluster.socketAddressForServer( 0 ) );
+        List<SocketAddress> onlyServerZero = singletonList( Cluster.socketAddressForServer( 0 ) );
 
         // then
         cluster.addCoreMemberWithIdAndInitialMembers( 3, onlyServerZero ).start();

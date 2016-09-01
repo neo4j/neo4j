@@ -46,7 +46,7 @@ import org.neo4j.coreedge.core.consensus.roles.Role;
 import org.neo4j.coreedge.core.state.machines.id.IdGenerationException;
 import org.neo4j.coreedge.core.state.machines.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.edge.EdgeGraphDatabase;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -88,7 +88,7 @@ public class Cluster
         {
             coreServerIds.add( i );
         }
-        List<AdvertisedSocketAddress> initialHosts = buildAddresses( coreServerIds );
+        List<SocketAddress> initialHosts = buildAddresses( coreServerIds );
         createCoreMembers( noOfCoreMembers, initialHosts, coreParams, instanceCoreParams, recordFormat );
         createEdgeMembers( noOfEdgeMembers, initialHosts, edgeParams, instanceEdgeParams, recordFormat );
     }
@@ -144,7 +144,7 @@ public class Cluster
     }
 
     public CoreClusterMember addCoreMemberWithIdAndInitialMembers( int memberId,
-            List<AdvertisedSocketAddress> initialMembers )
+            List<SocketAddress> initialMembers )
     {
         CoreClusterMember coreClusterMember = new  CoreClusterMember( memberId, defaultClusterSize, initialMembers,
                 discoveryServiceFactory, StandardV3_0.NAME, parentDir,
@@ -155,7 +155,7 @@ public class Cluster
 
     public EdgeClusterMember addEdgeMemberWithIdAndRecordFormat( int memberId, String recordFormat )
     {
-        List<AdvertisedSocketAddress> hazelcastAddresses = buildAddresses( coreMembers.keySet() );
+        List<SocketAddress> hazelcastAddresses = buildAddresses( coreMembers.keySet() );
         EdgeClusterMember member = new EdgeClusterMember( parentDir, memberId, discoveryServiceFactory,
                 hazelcastAddresses, stringMap(), emptyMap(), recordFormat );
         edgeMembers.put( memberId, member );
@@ -312,7 +312,7 @@ public class Cluster
 
     private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams, Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
-        List<AdvertisedSocketAddress> advertisedAddress = buildAddresses( coreMembers.keySet() );
+        List<SocketAddress> advertisedAddress = buildAddresses( coreMembers.keySet() );
         CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, defaultClusterSize, advertisedAddress,
                 discoveryServiceFactory, recordFormat, parentDir,
                 extraParams, instanceExtraParams );
@@ -381,9 +381,9 @@ public class Cluster
                         LockSessionExpired;
     }
 
-    private static List<AdvertisedSocketAddress> buildAddresses( Set<Integer> coreServerIds )
+    private static List<SocketAddress> buildAddresses( Set<Integer> coreServerIds )
     {
-        List<AdvertisedSocketAddress> addresses = new ArrayList<>();
+        List<SocketAddress> addresses = new ArrayList<>();
         for ( Integer i : coreServerIds )
         {
             addresses.add( socketAddressForServer( i ) );
@@ -391,13 +391,13 @@ public class Cluster
         return addresses;
     }
 
-    public static AdvertisedSocketAddress socketAddressForServer( int id )
+    public static SocketAddress socketAddressForServer( int id )
     {
-        return new AdvertisedSocketAddress( "localhost:" + (5000 + id) );
+        return new SocketAddress( "localhost:" + (5000 + id) );
     }
 
     private void createCoreMembers( final int noOfCoreMembers,
-                                    List<AdvertisedSocketAddress> addresses, Map<String, String> extraParams,
+                                    List<SocketAddress> addresses, Map<String, String> extraParams,
                                     Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
     {
 
@@ -448,7 +448,7 @@ public class Cluster
     }
 
     private void createEdgeMembers( int noOfEdgeMembers,
-                                    final List<AdvertisedSocketAddress> coreMemberAddresses,
+                                    final List<SocketAddress> coreMemberAddresses,
                                     Map<String, String> extraParams,
                                     Map<String, IntFunction<String>> instanceExtraParams,
                                     String recordFormat )

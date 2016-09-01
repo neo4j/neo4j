@@ -33,7 +33,7 @@ import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
@@ -82,7 +82,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
 
         for ( MemberId memberId : coreMembers )
         {
-            AdvertisedSocketAddress boltServerAddress = null;
+            SocketAddress boltServerAddress = null;
             try
             {
                 boltServerAddress = clusterTopology.coreAddresses( memberId ).getBoltServer();
@@ -109,11 +109,11 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     {
         private static final UUID ZERO_ID = new UUID( 0, 0 );
 
-        private final AdvertisedSocketAddress address;
+        private final SocketAddress address;
         private final Role role;
         private final UUID identifier;
 
-        public AdvertisedSocketAddress address()
+        public SocketAddress address()
         {
             return address;
         }
@@ -128,12 +128,12 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             return identifier == null ? ZERO_ID : identifier;
         }
 
-        ReadWriteEndPoint( AdvertisedSocketAddress address, Role role )
+        ReadWriteEndPoint( SocketAddress address, Role role )
         {
             this( address, role, null );
         }
 
-        ReadWriteEndPoint( AdvertisedSocketAddress address, Role role, UUID identifier )
+        ReadWriteEndPoint( SocketAddress address, Role role, UUID identifier )
         {
             this.address = address;
             this.role = role;

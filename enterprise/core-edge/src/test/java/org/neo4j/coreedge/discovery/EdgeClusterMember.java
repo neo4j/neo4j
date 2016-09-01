@@ -26,7 +26,7 @@ import java.util.function.IntFunction;
 
 import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.edge.EdgeGraphDatabase;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.coreedge.messaging.address.SocketAddress;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.logging.Level;
@@ -42,13 +42,13 @@ public class EdgeClusterMember
     private EdgeGraphDatabase database;
 
     EdgeClusterMember( File parentDir, int memberId, DiscoveryServiceFactory discoveryServiceFactory,
-                       List<AdvertisedSocketAddress> coreMemberHazelcastAddresses,
+                       List<SocketAddress> coreMemberHazelcastAddresses,
                        Map<String, String> extraParams,
                        Map<String, IntFunction<String>> instanceExtraParams,
                        String recordFormat )
     {
         String initialHosts = coreMemberHazelcastAddresses.stream()
-                .map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
+                .map( SocketAddress::toString ).collect( joining( "," ) );
 
         config.put( "dbms.mode", "EDGE" );
         config.put( CoreEdgeClusterSettings.initial_discovery_members.name(), initialHosts );
