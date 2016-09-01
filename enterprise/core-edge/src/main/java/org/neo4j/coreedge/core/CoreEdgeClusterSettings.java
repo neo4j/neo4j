@@ -25,8 +25,10 @@ import java.util.function.Function;
 
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Internal;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -76,6 +78,52 @@ public class CoreEdgeClusterSettings
         }
     };
 
+    private static Setting<AdvertisedSocketAddress> advertisedAddress( String name, Setting<ListenSocketAddress> listenSocketAddressSetting )
+    {
+        return new Setting<AdvertisedSocketAddress>()
+        {
+            @Override
+            public String name()
+            {
+                return name;
+            }
+
+            @Override
+            public String getDefaultValue()
+            {
+                return "localhost" + LISTEN_SOCKET_ADDRESS.apply( listenSocketAddressSetting.getDefaultValue() )
+                        .socketAddress().getPort();
+            }
+
+            @Override
+            public AdvertisedSocketAddress from( Configuration config )
+            {
+                return config.get( this );
+            }
+
+            @Override
+            public AdvertisedSocketAddress apply( Function<String, String> config )
+            {
+                String value = config.apply( name );
+                if ( value != null )
+                {
+                    return new AdvertisedSocketAddress( value );
+                }
+
+                String hostname = GraphDatabaseSettings.advertised_hostname.apply( config );
+                ListenSocketAddress listenSocketAddress = listenSocketAddressSetting.apply( config );
+
+                return new AdvertisedSocketAddress( hostname + ":" + listenSocketAddress.socketAddress().getPort() );
+            }
+
+            @Override
+            public String toString()
+            {
+                return "a socket address advertised for connecting to this server";
+            }
+        };
+    }
+
     @Description("Time out for a new member to catch up")
     public static final Setting<Long> join_catch_up_timeout =
             setting( "core_edge.join_catch_up_timeout", DURATION, "10m" );
@@ -120,7 +168,7 @@ public class CoreEdgeClusterSettings
 
     @Description("Hostname/IP address and port for the transaction shipping server to listen on.")
     public static final Setting<AdvertisedSocketAddress> transaction_advertised_address =
-            setting( "core_edge.transaction_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:6000" );
+            advertisedAddress( "core_edge.transaction_advertised_address", transaction_listen_address );
 
     @Description("Network interface and port for the RAFT server to listen on.")
     public static final Setting<ListenSocketAddress> raft_listen_address =
@@ -128,7 +176,7 @@ public class CoreEdgeClusterSettings
 
     @Description("Hostname/IP address and port for the RAFT server to listen on.")
     public static final Setting<AdvertisedSocketAddress> raft_advertised_address =
-            setting( "core_edge.raft_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7000" );
+            advertisedAddress( "core_edge.raft_advertised_address", raft_listen_address );
 
     @Description("Host and port to bind the cluster member discovery management communication.")
     public static final Setting<ListenSocketAddress> discovery_listen_address =

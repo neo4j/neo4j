@@ -69,11 +69,10 @@ public class CoreClusterMember
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
         config.put( "dbms.mode", "CORE" );
+        config.put( GraphDatabaseSettings.advertised_hostname.name(), "localhost" );
         config.put( CoreEdgeClusterSettings.initial_discovery_members.name(), initialMembers );
         config.put( CoreEdgeClusterSettings.discovery_listen_address.name(), "127.0.0.1:" + hazelcastPort );
-        config.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "localhost:" + txPort );
         config.put( CoreEdgeClusterSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
-        config.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "localhost:" + raftPort );
         config.put( CoreEdgeClusterSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
         config.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
         config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );

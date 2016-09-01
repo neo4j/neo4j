@@ -54,6 +54,7 @@ import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
+import static org.neo4j.kernel.configuration.Settings.hostnameSetting;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.matches;
@@ -501,6 +502,9 @@ public abstract class GraphDatabaseSettings
 
     @Internal
     public static final Setting<String> auth_manager = setting( "unsupported.dbms.security.auth_manager", STRING, "" );
+
+    @Description("Default hostname for use when the server advertises its network addresses.")
+    public static final Setting<String> advertised_hostname = hostnameSetting( "dbms.network.advertised_hostname" );
 
     // Bolt Settings
 
