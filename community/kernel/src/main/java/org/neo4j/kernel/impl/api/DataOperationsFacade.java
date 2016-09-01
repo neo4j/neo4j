@@ -1462,7 +1462,6 @@ public class DataOperationsFacade
         queryRegistrationOperations().registerExecutingQuery( statement, executingQuery );
     }
 
-
     @Override
     public void unregisterExecutingQuery( ExecutingQuery executingQuery )
     {

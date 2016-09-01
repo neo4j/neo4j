@@ -175,7 +175,6 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         read2.closeAndAssertSuccess();
     }
 
-
     //---------- terminate transactions for user -----------
 
     @Test
@@ -383,7 +382,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasNoParameters()
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "parameters" ), equalTo ( Collections.emptyMap() ) );
+        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "parameters" ), equalTo( Collections.emptyMap() ) );
     }
 
     @Override
