@@ -9,7 +9,7 @@ import java.util.Collections;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.MetaDataOperations;
+import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -33,7 +33,7 @@ public class Neo4jTransactionalContextTest
         KernelTransaction.Type transactionType = null;
         AccessMode transactionMode = null;
         Statement initialStatement = mock( Statement.class );
-        MetaDataOperations initialMeta = mock( MetaDataOperations.class );
+        QueryRegistryOperations initialQueryRegistry = mock( QueryRegistryOperations.class );
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
         PropertyContainerLocker locker = null;
         ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
@@ -42,15 +42,15 @@ public class Neo4jTransactionalContextTest
         KernelTransaction secondKTX = mock( KernelTransaction.class );
         InternalTransaction secondTransaction = mock( InternalTransaction.class );
         Statement secondStatement = mock( Statement.class );
-        MetaDataOperations secondMeta = mock( MetaDataOperations.class );
+        QueryRegistryOperations secondQueryRegistry = mock( QueryRegistryOperations.class );
 
         when( executingQuery.queryText() ).thenReturn( "X" );
         when( executingQuery.queryParameters() ).thenReturn( Collections.emptyMap() );
-        when( initialStatement.metaOperations() ).thenReturn( initialMeta );
+        when( initialStatement.queryRegistration() ).thenReturn( initialQueryRegistry );
         when( graph.beginTransaction( transactionType, transactionMode ) ).thenReturn( secondTransaction );
         when( txBridge.getKernelTransactionBoundToThisThread( true ) ).thenReturn( initialKTX, secondKTX );
         when( txBridge.get() ).thenReturn( secondStatement );
-        when( secondStatement.metaOperations() ).thenReturn( secondMeta );
+        when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
         Neo4jTransactionalContext context = new Neo4jTransactionalContext(
                 graph, initialTransaction, transactionType, transactionMode, initialStatement, executingQuery,
@@ -61,7 +61,7 @@ public class Neo4jTransactionalContextTest
         context.commitAndRestartTx();
 
         // Then
-        InOrder order = Mockito.inOrder( txBridge, initialTransaction, initialMeta, initialKTX, secondMeta, secondKTX );
+        InOrder order = Mockito.inOrder( txBridge, initialTransaction, initialQueryRegistry, initialKTX, secondQueryRegistry, secondKTX );
 
         // (1) Unbind old
         order.verify( txBridge ).getKernelTransactionBoundToThisThread( true );
@@ -69,13 +69,13 @@ public class Neo4jTransactionalContextTest
 
         // (2) Register and unbind new
         order.verify( txBridge ).get();
-        order.verify( secondMeta ).registerExecutingQuery( executingQuery );
+        order.verify( secondQueryRegistry ).registerExecutingQuery( executingQuery );
         order.verify( txBridge ).getKernelTransactionBoundToThisThread( true );
         order.verify( txBridge ).unbindTransactionFromCurrentThread();
 
         // (3) Rebind, unregister, and close old
         order.verify( txBridge ).bindTransactionToCurrentThread( initialKTX );
-        order.verify( initialMeta ).unregisterExecutingQuery( executingQuery );
+        order.verify( initialQueryRegistry ).unregisterExecutingQuery( executingQuery );
         order.verify( initialTransaction ).success();
         order.verify( initialTransaction ).close();
 

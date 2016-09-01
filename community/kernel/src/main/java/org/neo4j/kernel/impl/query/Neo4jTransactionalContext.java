@@ -26,7 +26,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.MetaDataOperations;
+import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
@@ -66,7 +66,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
             initialTransaction.transactionType(),
             initialTransaction.mode(),
             initialStatement,
-            initialStatement.metaOperations().startQueryExecution( queryText, queryParameters ),
+            initialStatement.queryRegistration().startQueryExecution( queryText, queryParameters ),
             locker,
             graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ),
             graph.getDependencyResolver().resolveDependency( DbmsOperations.Factory.class )
@@ -114,7 +114,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         {
             try
             {
-                statement.metaOperations().unregisterExecutingQuery( executingQuery );
+                statement.queryRegistration().unregisterExecutingQuery( executingQuery );
                 statement.close();
 
                 if ( success )
@@ -139,19 +139,19 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public void commitAndRestartTx()
     {
-        MetaDataOperations oldMetaDataOperations = statement.metaOperations();
+        QueryRegistryOperations oldQueryRegistryOperations = statement.queryRegistration();
         InternalTransaction oldTransaction = transaction;
         KernelTransaction oldKernelTx = txBridge.getKernelTransactionBoundToThisThread( true );
         txBridge.unbindTransactionFromCurrentThread();
 
         transaction = graph.beginTransaction( transactionType, mode );
         statement = txBridge.get();
-        statement.metaOperations().registerExecutingQuery( executingQuery );
+        statement.queryRegistration().registerExecutingQuery( executingQuery );
         KernelTransaction kernelTx = txBridge.getKernelTransactionBoundToThisThread( true );
         txBridge.unbindTransactionFromCurrentThread();
 
         txBridge.bindTransactionToCurrentThread( oldKernelTx );
-        oldMetaDataOperations.unregisterExecutingQuery( executingQuery );
+        oldQueryRegistryOperations.unregisterExecutingQuery( executingQuery );
         oldTransaction.success();
         oldTransaction.close();
 
@@ -163,10 +163,10 @@ public class Neo4jTransactionalContext implements TransactionalContext
     {
         // close the old statement reference after the statement has been "upgraded"
         // to either a schema data or a schema statement, so that the locks are "handed over".
-        statement.metaOperations().unregisterExecutingQuery( executingQuery );
+        statement.queryRegistration().unregisterExecutingQuery( executingQuery );
         statement.close();
         statement = txBridge.get();
-        statement.metaOperations().registerExecutingQuery( executingQuery );
+        statement.queryRegistration().registerExecutingQuery( executingQuery );
     }
 
     @Override

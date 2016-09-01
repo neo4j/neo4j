@@ -60,14 +60,14 @@ import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.LockingStatementOperations;
 import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.StackingMetaDataOperations;
+import org.neo4j.kernel.impl.api.StackingQueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.operations.MetaDataOperations;
+import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -978,13 +978,13 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations( storeReadLayer,
                 autoIndexing, constraintIndexCreator,
                 legacyIndexStore );
-        MetaDataOperations metaDataOperations =
-                new StackingMetaDataOperations( StackingMetaDataOperations.LAST_QUERY_ID );
+        QueryRegistrationOperations queryRegistrationOperations =
+                new StackingQueryRegistrationOperations( StackingQueryRegistrationOperations.LAST_QUERY_ID );
 
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
                 new SchemaStateConcern( updateableSchemaState ), null, stateHandlingContext, stateHandlingContext,
-                stateHandlingContext, metaDataOperations );
+                stateHandlingContext, queryRegistrationOperations );
         // + Constraints
         ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations =
                 new ConstraintEnforcingEntityOperations( constraintSemantics, parts.entityWriteOperations(), parts.entityReadOperations(),

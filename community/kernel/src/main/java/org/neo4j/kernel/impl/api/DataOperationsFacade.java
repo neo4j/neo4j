@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
@@ -83,7 +84,7 @@ import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
 import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
-import org.neo4j.kernel.impl.api.operations.MetaDataOperations;
+import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -96,7 +97,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 public class DataOperationsFacade
-        implements ReadOperations, DataWriteOperations, SchemaWriteOperations, org.neo4j.kernel.api.MetaDataOperations
+        implements ReadOperations, DataWriteOperations, SchemaWriteOperations, QueryRegistryOperations
 {
     private final KernelTransaction tx;
     private final KernelStatement statement;
@@ -152,9 +153,9 @@ public class DataOperationsFacade
         return operations.schemaWriteOperations();
     }
 
-    final MetaDataOperations metaStatementOperations()
+    final QueryRegistrationOperations queryRegistrationOperations()
     {
-        return operations.metaStatementOperations();
+        return operations.queryRegistrationOperations();
     }
 
     final SchemaStateOperations schemaState()
@@ -1444,21 +1445,21 @@ public class DataOperationsFacade
     public Stream<ExecutingQuery> executingQueries()
     {
         statement.assertOpen();
-        return metaStatementOperations().executingQueries( statement );
+        return queryRegistrationOperations().executingQueries( statement );
     }
 
     @Override
     public ExecutingQuery startQueryExecution( String queryText, Map<String,Object> queryParameters )
     {
         statement.assertOpen();
-        return metaStatementOperations().startQueryExecution( statement, queryText, queryParameters );
+        return queryRegistrationOperations().startQueryExecution( statement, queryText, queryParameters );
     }
 
     @Override
     public void registerExecutingQuery( ExecutingQuery executingQuery )
     {
         statement.assertOpen();
-        metaStatementOperations().registerExecutingQuery( statement, executingQuery );
+        queryRegistrationOperations().registerExecutingQuery( statement, executingQuery );
     }
 
 
@@ -1466,7 +1467,7 @@ public class DataOperationsFacade
     public void unregisterExecutingQuery( ExecutingQuery executingQuery )
     {
         statement.assertOpen();
-        metaStatementOperations().unregisterExecutingQuery( statement, executingQuery );
+        queryRegistrationOperations().unregisterExecutingQuery( statement, executingQuery );
     }
 
     // </Meta>

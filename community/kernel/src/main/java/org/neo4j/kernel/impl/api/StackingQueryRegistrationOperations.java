@@ -23,16 +23,16 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.ExecutingQuery;
-import org.neo4j.kernel.impl.api.operations.MetaDataOperations;
+import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 
-public class StackingMetaDataOperations implements MetaDataOperations
+public class StackingQueryRegistrationOperations implements QueryRegistrationOperations
 {
     public static final MonotonicCounter LAST_QUERY_ID = MonotonicCounter.newAtomicMonotonicCounter();
 
     private final MonotonicCounter lastQueryId;
 
-    public StackingMetaDataOperations( MonotonicCounter lastQueryId )
+    public StackingQueryRegistrationOperations( MonotonicCounter lastQueryId )
     {
         this.lastQueryId = lastQueryId;
     }

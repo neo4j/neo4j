@@ -25,7 +25,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
-import org.neo4j.kernel.api.MetaDataOperations;
+import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -127,7 +127,7 @@ public class KernelStatement implements TxStateHolder, Statement
     }
 
     @Override
-    public MetaDataOperations metaOperations()
+    public QueryRegistryOperations queryRegistration()
     {
         return facade;
     }

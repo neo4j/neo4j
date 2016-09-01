@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.MetaDataOperations;
+import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -387,7 +387,7 @@ public class AwaitIndexProcedureTest
         }
 
         @Override
-        public MetaDataOperations metaOperations()
+        public QueryRegistryOperations queryRegistration()
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
