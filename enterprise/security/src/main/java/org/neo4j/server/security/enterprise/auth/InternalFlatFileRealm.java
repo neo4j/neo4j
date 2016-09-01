@@ -63,7 +63,6 @@ import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.Strings.escape;
 
 /**
  * Shiro realm wrapping FileUserRepository and FileRoleRepository
@@ -84,22 +83,21 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
     private final AuthenticationStrategy authenticationStrategy;
     private final boolean authenticationEnabled;
     private final boolean authorizationEnabled;
-    private final Log securityLog;
     private final Map<String,SimpleRole> roles;
     private final JobScheduler jobScheduler;
     private JobScheduler.JobHandle reloadJobHandle;
 
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
-            JobScheduler jobScheduler, Log securityLog )
+            JobScheduler jobScheduler )
     {
         this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true,
-                jobScheduler, securityLog );
+                jobScheduler );
     }
 
     InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
-            boolean authenticationEnabled, boolean authorizationEnabled, JobScheduler jobScheduler, Log securityLog )
+            boolean authenticationEnabled, boolean authorizationEnabled, JobScheduler jobScheduler )
     {
         super();
 
@@ -112,7 +110,6 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
         this.jobScheduler = jobScheduler;
         setAuthenticationCachingEnabled( false );
         setAuthorizationCachingEnabled( false );
-        this.securityLog = securityLog;
         setCredentialsMatcher( new AllowAllCredentialsMatcher() );
         setRolePermissionResolver( new RolePermissionResolver()
             {
@@ -371,26 +368,16 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
     public User newUser( String username, String initialPassword, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        try
-        {
-            passwordPolicy.validatePassword( initialPassword );
+        passwordPolicy.validatePassword( initialPassword );
 
-            User user = new User.Builder()
-                    .withName( username )
-                    .withCredentials( Credential.forPassword( initialPassword ) )
-                    .withRequiredPasswordChange( requirePasswordChange )
-                    .build();
-            userRepository.create( user );
+        User user = new User.Builder()
+                .withName( username )
+                .withCredentials( Credential.forPassword( initialPassword ) )
+                .withRequiredPasswordChange( requirePasswordChange )
+                .build();
+        userRepository.create( user );
 
-            securityLog.info( "User created: `%s`" + (requirePasswordChange ? " (password change required)" : ""),
-                    escape( username ) );
-            return user;
-        }
-        catch ( InvalidArgumentsException e )
-        {
-            securityLog.error( "User creation failed for user `%s`: %s", escape( username ), e.getMessage() );
-            throw e;
-        }
+        return user;
     }
 
     @Override
@@ -449,29 +436,20 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
         assertValidRoleName( roleName );
         assertValidUsername( username );
 
-        try
+        synchronized ( this )
         {
-            synchronized ( this )
+            getUser( username );
+            RoleRecord role = getRole( roleName );
+            RoleRecord newRole = role.augment().withUser( username ).build();
+            try
             {
-                getUser( username );
-                RoleRecord role = getRole( roleName );
-                RoleRecord newRole = role.augment().withUser( username ).build();
-                try
-                {
-                    roleRepository.update( role, newRole );
-                }
-                catch ( ConcurrentModificationException e )
-                {
-                    // Try again
-                    addRoleToUser( roleName, username );
-                }
+                roleRepository.update( role, newRole );
             }
-            securityLog.info( "Role `%s` added to user `%s`", escape( roleName ), escape( username ) );
-        }
-        catch ( InvalidArgumentsException e )
-        {
-            securityLog.error( "Role `%s` not added to user `%s`: %s", escape( roleName ), escape( username ), e.getMessage() );
-            throw e;
+            catch ( ConcurrentModificationException e )
+            {
+                // Try again
+                addRoleToUser( roleName, username );
+            }
         }
         clearCachedAuthorizationInfoForUser( username );
     }
@@ -482,32 +460,23 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
         assertValidRoleName( roleName );
         assertValidUsername( username );
 
-        try
+        synchronized ( this )
         {
-            synchronized ( this )
-            {
-                getUser( username );
-                RoleRecord role = getRole( roleName );
+            getUser( username );
+            RoleRecord role = getRole( roleName );
 
-                RoleRecord newRole = role.augment().withoutUser( username ).build();
-                try
-                {
-                    roleRepository.update( role, newRole );
-                    securityLog.info( "Role `%s` removed from user `%s`", escape( roleName ), escape( username ) );
-                }
-                catch ( ConcurrentModificationException e )
-                {
-                    // Try again
-                    removeRoleFromUser( roleName, username );
-                }
+            RoleRecord newRole = role.augment().withoutUser( username ).build();
+            try
+            {
+                roleRepository.update( role, newRole );
+            }
+            catch ( ConcurrentModificationException e )
+            {
+                // Try again
+                removeRoleFromUser( roleName, username );
             }
         }
-        catch ( InvalidArgumentsException e )
-        {
-            securityLog.error( "Role `%s` not removed from user `%s`: %s", escape( roleName ), escape( username ),
-                    e.getMessage() );
-            throw e;
-        }
+
         clearCachedAuthorizationInfoForUser( username );
     }
 
@@ -515,29 +484,21 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
     public boolean deleteUser( String username ) throws IOException, InvalidArgumentsException
     {
         boolean result = false;
-        try
+        synchronized ( this )
         {
-            synchronized ( this )
+            User user = getUser( username );
+            if ( userRepository.delete( user ) )
             {
-                User user = getUser( username );
-                if ( userRepository.delete( user ) )
-                {
-                    removeUserFromAllRoles( username );
-                    result = true;
-                }
-                else
-                {
-                    // We should not get here, but if we do the assert will fail and give a nice error msg
-                    getUser( username );
-                }
+                removeUserFromAllRoles( username );
+                result = true;
             }
-            clearCacheForUser( username );
-            securityLog.info( "User deleted: `%s`", escape( username ) );
+            else
+            {
+                // We should not get here, but if we do the assert will fail and give a nice error msg
+                getUser( username );
+            }
         }
-        catch ( InvalidArgumentsException e )
-        {
-            securityLog.error( "User deletion failed for user `%s`: %s", escape( username ), e.getMessage() );
-        }
+        clearCacheForUser( username );
         return result;
     }
 
@@ -556,38 +517,28 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
     public void setUserPassword( String username, String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
+        User existingUser = getUser( username );
+
+        passwordPolicy.validatePassword( password );
+
+        if ( existingUser.credentials().matchesPassword( password ) )
+        {
+            throw new InvalidArgumentsException( "Old password and new password cannot be the same." );
+        }
+
         try
         {
-            User existingUser = getUser( username );
-
-            passwordPolicy.validatePassword( password );
-
-            if ( existingUser.credentials().matchesPassword( password ) )
-            {
-                throw new InvalidArgumentsException( "Old password and new password cannot be the same." );
-            }
-
-            try
-            {
-                User updatedUser = existingUser.augment()
-                        .withCredentials( Credential.forPassword( password ) )
-                        .withRequiredPasswordChange( requirePasswordChange )
-                        .build();
-                userRepository.update( existingUser, updatedUser );
-            }
-            catch ( ConcurrentModificationException e )
-            {
-                // try again
-                setUserPassword( username, password, requirePasswordChange );
-            }
+            User updatedUser = existingUser.augment()
+                    .withCredentials( Credential.forPassword( password ) )
+                    .withRequiredPasswordChange( requirePasswordChange )
+                    .build();
+            userRepository.update( existingUser, updatedUser );
         }
-        catch ( InvalidArgumentsException e )
+        catch ( ConcurrentModificationException e )
         {
-            securityLog.error( "Password not changed for user `%s`: %s", escape( username ), e.getMessage() );
-            throw e;
+            // try again
+            setUserPassword( username, password, requirePasswordChange );
         }
-
-        securityLog.info( "Password changed for user `%s`.", escape( username ) );
 
         clearCacheForUser( username );
     }

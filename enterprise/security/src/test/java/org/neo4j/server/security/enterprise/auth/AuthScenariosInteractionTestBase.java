@@ -114,27 +114,36 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         neo.getLocalGraph().shutdown();
 
         // assert on log content
-        List<String> allLines = readFullLog();
+        FullLog log = new FullLog();
 
-        assertThat( allLines, hasItem( containsString( "Login fail for user `mats`" ) ) );
-        assertThat( allLines, hasItem( containsString( "User created: `mats`" ) ) );
-        assertThat( allLines, hasItem( containsString( "Login success for user `mats`" ) ) );
-        assertThat( allLines, hasItem( containsString( "Role `reader` added to user `mats`" ) ) );
-        assertThat( allLines, hasItem( containsString( "User `mats` tried to change password for user `neo4j`" ) ) );
-        assertThat( allLines, hasItem( containsString( "Password not changed for user `mats`" ) ) );
-        assertThat( allLines, hasItem( containsString( "Password changed for user `mats`" ) ) );
-        assertThat( allLines, hasItem( containsString( "Role `reader` removed from user `mats`" ) ) );
-        assertThat( allLines, hasItem( containsString( "User deleted: `mats`" ) ) );
+        log.assertHasLine( "mats", "logged in" );
+        log.assertHasLine( "adminSubject", "created user `mats`" );
+        log.assertHasLine( "mats", "logged in" );
+        log.assertHasLine( "adminSubject", "added role `reader` to user `mats`" );
+        log.assertHasLine( "mats", "tried to change password for user `neo4j`: " + PERMISSION_DENIED);
+        log.assertHasLine( "mats", "tried to change own password: A password cannot be empty.");
+        log.assertHasLine( "mats", "changed own password");
+        log.assertHasLine( "adminSubject", "removed role `reader` from user `mats`");
+        log.assertHasLine( "adminSubject", "deleted user `mats`");
     }
 
-    private List<String> readFullLog() throws IOException
+    private class FullLog
     {
-        List<String> lines = new ArrayList<>();
-        BufferedReader bufferedReader = new BufferedReader(
-                neo.fileSystem().openAsReader( new File( securityLog.getAbsolutePath() ), Charsets.UTF_8 ) );
-        lines.add( bufferedReader.readLine() );
-        bufferedReader.lines().forEach( lines::add );
-        return lines;
+        List<String> lines;
+
+        FullLog() throws IOException
+        {
+            lines = new ArrayList<>();
+            BufferedReader bufferedReader = new BufferedReader(
+                    neo.fileSystem().openAsReader( new File( securityLog.getAbsolutePath() ), Charsets.UTF_8 ) );
+            lines.add( bufferedReader.readLine() );
+            bufferedReader.lines().forEach( lines::add );
+        }
+
+        void assertHasLine( String subject, String msg )
+        {
+            assertThat( lines, hasItem( containsString( "[" + subject + "]: " + msg ) ) );
+        }
     }
 
     /*

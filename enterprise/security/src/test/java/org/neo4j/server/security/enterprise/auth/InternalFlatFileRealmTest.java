@@ -36,13 +36,7 @@ import java.util.List;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
-import java.io.IOException;
-
-import com.sun.org.apache.regexp.internal.RE;
-import org.junit.Before;
-import org.junit.Test;
-
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
@@ -84,7 +78,8 @@ public class InternalFlatFileRealmTest
 
         List<Realm> realms = listOf( testRealm );
 
-        authManager = new MultiRealmAuthManager( testRealm, realms, new MemoryConstrainedCacheManager(), actualLog );
+        authManager = new MultiRealmAuthManager( testRealm, realms, new MemoryConstrainedCacheManager(),
+                new SecurityLog( actualLog ) );
         authManager.init();
         authManager.start();
 
@@ -128,10 +123,8 @@ public class InternalFlatFileRealmTest
         public TestRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
                 AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler, Log securityLog )
         {
-            super( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true,
-                    jobScheduler, securityLog );
+            super( userRepository, roleRepository, passwordPolicy, authenticationStrategy, jobScheduler, securityLog );
         }
-
 
         boolean takeAuthenticationFlag()
         {
@@ -275,11 +268,11 @@ public class InternalFlatFileRealmTest
     public void shouldLogPasswordChanges() throws IOException, InvalidArgumentsException
     {
         // Given
-        realm.newUser( "andres", "neo4j", true );
+        testRealm.newUser( "andres", "neo4j", true );
         log.clear();
 
         // When
-        realm.setUserPassword( "andres", "longerPassword", false );
+        testRealm.setUserPassword( "andres", "longerPassword", false );
 
         // Then
         log.assertExactly( info( "Password changed for user `%s`.", "andres" ) );
@@ -289,13 +282,13 @@ public class InternalFlatFileRealmTest
     public void shouldLogFailureToChangePassword() throws IOException, InvalidArgumentsException
     {
         // Given
-        realm.newUser( "andres", "neo4j", true );
+        testRealm.newUser( "andres", "neo4j", true );
         log.clear();
 
         // When
-        catchInvalidArguments( () -> realm.setUserPassword( "andres", "neo4j", false ) );
-        catchInvalidArguments( () -> realm.setUserPassword( "andres", "", false ) );
-        catchInvalidArguments( () -> realm.setUserPassword( "notAndres", "good password", false ) );
+        catchInvalidArguments( () -> testRealm.setUserPassword( "andres", "neo4j", false ) );
+        catchInvalidArguments( () -> testRealm.setUserPassword( "andres", "", false ) );
+        catchInvalidArguments( () -> testRealm.setUserPassword( "notAndres", "good password", false ) );
 
         // Then
         log.assertExactly(

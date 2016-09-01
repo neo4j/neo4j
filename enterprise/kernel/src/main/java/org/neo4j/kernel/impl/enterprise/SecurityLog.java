@@ -25,11 +25,13 @@ import java.io.OutputStream;
 import java.util.function.Consumer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
+import static org.neo4j.helpers.Strings.escape;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.security_log_filename;
 
@@ -39,10 +41,15 @@ public class SecurityLog implements Log
 
     SecurityLog( Config config, FileSystemAbstraction fileSystem )
     {
-        inner = createLog( config, fileSystem );
+        this( createLog( config, fileSystem ) );
     }
 
-    private Log createLog( Config config, FileSystemAbstraction fileSystem )
+    public SecurityLog( Log log )
+    {
+        inner = log;
+    }
+
+    private static Log createLog( Config config, FileSystemAbstraction fileSystem )
     {
         FormattedLog.Builder builder = FormattedLog.withUTCTimeZone();
         File logFile = config.get( security_log_filename );
@@ -56,6 +63,11 @@ public class SecurityLog implements Log
             throw new AssertionError( "File not possible to create", e );
         }
         return builder.toOutputStream( ouputStream );
+    }
+
+    private static String withSubject( AuthSubject subject, String msg )
+    {
+        return "[" + escape( subject.username() ) + "]: " + msg;
     }
 
     @Override
@@ -88,6 +100,11 @@ public class SecurityLog implements Log
         inner.debug( format, arguments );
     }
 
+    public void debug( AuthSubject subject, String format, Object... arguments )
+    {
+        inner.debug( withSubject( subject, format ), arguments );
+    }
+
     @Override
     public Logger infoLogger()
     {
@@ -110,6 +127,16 @@ public class SecurityLog implements Log
     public void info( String format, Object... arguments )
     {
         inner.info( format, arguments );
+    }
+
+    public void info( AuthSubject subject, String format, Object... arguments )
+    {
+        inner.info( withSubject( subject, format ), arguments );
+    }
+
+    public void info( AuthSubject subject, String format )
+    {
+        inner.info( withSubject( subject, format ) );
     }
 
     @Override
@@ -136,6 +163,11 @@ public class SecurityLog implements Log
         inner.warn( format, arguments );
     }
 
+    public void warn( AuthSubject subject, String format, Object... arguments )
+    {
+        inner.warn( withSubject( subject, format ), arguments );
+    }
+
     @Override
     public Logger errorLogger()
     {
@@ -158,6 +190,11 @@ public class SecurityLog implements Log
     public void error( String format, Object... arguments )
     {
         inner.error( format, arguments );
+    }
+
+    public void error( AuthSubject subject, String format, Object... arguments )
+    {
+        inner.error( withSubject( subject, format ), arguments );
     }
 
     @Override

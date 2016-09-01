@@ -33,6 +33,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -92,7 +93,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 
         return new MultiRealmAuthManager( internalRealm, realms,
                 new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity ),
-                securityLog );
+                (SecurityLog) securityLog );
     }
 
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,
