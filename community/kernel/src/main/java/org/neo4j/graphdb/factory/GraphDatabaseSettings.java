@@ -584,10 +584,13 @@ public abstract class GraphDatabaseSettings
             super(key, ConnectorType.BOLT.name() );
             encryption_level = group.scope(
                     setting( "tls_level", options( EncryptionLevel.class ), OPTIONAL.name() ));
-            Setting<ListenSocketAddress> legacyAddress = setting( "address", LISTEN_SOCKET_ADDRESS, "localhost:7687" );
-            this.address = group.scope( legacyAddress );
-            listen_address = group.scope( legacyFallback( legacyAddress, setting( "listen_address", LISTEN_SOCKET_ADDRESS, NO_DEFAULT ) ) );
-            advertised_address = group.scope( advertisedAddress( "advertised_address", listen_address ) );
+            Setting<ListenSocketAddress> legacyAddressSetting = setting( "address", LISTEN_SOCKET_ADDRESS, "localhost:7687" );
+            Setting<ListenSocketAddress> advertisedAddressSetting = legacyFallback( legacyAddressSetting,
+                    setting( "listen_address", LISTEN_SOCKET_ADDRESS, NO_DEFAULT ) );
+
+            this.address = group.scope( legacyAddressSetting );
+            this.listen_address = group.scope( advertisedAddressSetting );
+            this.advertised_address = group.scope( advertisedAddress( "advertised_address", this.listen_address ) );
         }
 
         public enum EncryptionLevel
@@ -645,9 +648,10 @@ public abstract class GraphDatabaseSettings
             Setting<ListenSocketAddress> legacyAddressSetting = setting( "address", LISTEN_SOCKET_ADDRESS, "localhost:7474" );
             Setting<ListenSocketAddress> advertisedAddressSetting = legacyFallback( legacyAddressSetting,
                     setting( "listen_address", LISTEN_SOCKET_ADDRESS, NO_DEFAULT ) );
+
             this.address = group.scope( legacyAddressSetting );
             this.listen_address = group.scope( advertisedAddressSetting );
-            advertised_address = group.scope( advertisedAddress( "advertised_address", advertisedAddressSetting ) );
+            this.advertised_address = group.scope( advertisedAddress( "advertised_address", advertisedAddressSetting ) );
         }
 
         public enum Encryption

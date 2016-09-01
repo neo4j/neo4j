@@ -20,19 +20,19 @@
 package org.neo4j.coreedge.core;
 
 import java.util.List;
-import java.util.function.Function;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Internal;
 
+import static org.neo4j.kernel.configuration.Settings.ADVERTISED_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.Settings.LISTEN_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.MANDATORY;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
@@ -44,38 +44,6 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description("Settings for Core-Edge Clusters")
 public class CoreEdgeClusterSettings
 {
-    private static final Function<String, ListenSocketAddress> LISTEN_SOCKET_ADDRESS = new Function<String,
-            ListenSocketAddress>()
-    {
-        @Override
-        public ListenSocketAddress apply( String value )
-        {
-            return new ListenSocketAddress( value );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "a socket address";
-        }
-    };
-
-    private static final Function<String, AdvertisedSocketAddress> ADVERTISED_SOCKET_ADDRESS = new Function<String,
-            AdvertisedSocketAddress>()
-    {
-        @Override
-        public AdvertisedSocketAddress apply( String value )
-        {
-            return new AdvertisedSocketAddress( value );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "a socket address";
-        }
-    };
-
     @Description("Time out for a new member to catch up")
     public static final Setting<Long> join_catch_up_timeout =
             setting( "core_edge.join_catch_up_timeout", DURATION, "10m" );
