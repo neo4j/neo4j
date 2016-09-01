@@ -44,6 +44,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.DISCOVERY_SERVER;
+
 class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService, MembershipListener
 {
     private final Config config;
@@ -101,9 +103,8 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private void notifyMembershipChange( ClusterTopology clusterTopology )
     {
         Set<AdvertisedSocketAddress> members = hazelcastInstance.getCluster().getMembers().stream()
-                .map( member -> new AdvertisedSocketAddress(
-                        String.format( "%s:%d", member.getSocketAddress().getHostName(),
-                                member.getSocketAddress().getPort() ) ) ).collect( Collectors.toSet() );
+                .map( member -> new AdvertisedSocketAddress( member.getStringAttribute( DISCOVERY_SERVER ) ) )
+                .collect( Collectors.toSet() );
         discoveredMemberRepository.store( members );
         listenerService.notifyListeners( clusterTopology );
     }
