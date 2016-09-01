@@ -78,7 +78,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
             // TODO: Load pluggable realms
         }
 
-        long ttl = config.get( SecuritySettings.auth_caching_ttl );
+        long ttl = config.get( SecuritySettings.auth_cache_ttl );
         long maxCapacity = config.get( SecuritySettings.auth_cache_max_capacity );
 
         return new MultiRealmAuthManager( internalRealm, realms, new AuthCache.Manager( Clocks.systemClock(), ttl, maxCapacity ) );

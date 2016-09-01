@@ -143,9 +143,10 @@ public class SecuritySettings
     public static Setting<String> ldap_authorization_group_to_role_mapping =
             setting( "dbms.security.realms.ldap.authorization.group_to_role_mapping", STRING, NO_DEFAULT );
 
-    @Description( "The time to live (TTL) for cached authentication and authorization info." )
-    public static Setting<Long> auth_caching_ttl =
-            setting( "dbms.security.realms.auth_caching_ttl", DURATION, "10m" );
+    @Description( "The time to live (TTL) for cached authentication and authorization info. Setting the TTL to 0 will" +
+            " disable auth caching." )
+    public static Setting<Long> auth_cache_ttl =
+            setting( "dbms.security.realms.auth_cache_ttl", DURATION, "10m" );
 
     @Description( "The maximum capacity for authentication and authorization caches (respectively)." )
     public static Setting<Long> auth_cache_max_capacity =
