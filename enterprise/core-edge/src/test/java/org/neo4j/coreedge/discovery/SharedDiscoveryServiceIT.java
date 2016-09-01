@@ -89,7 +89,7 @@ public class SharedDiscoveryServiceIT
 
     private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory disoveryServiceFactory, Set<MemberId> expectedTargetSet ) throws ExecutionException, InterruptedException
     {
-        CoreTopologyService topologyService = disoveryServiceFactory.coreTopologyService( config(), member, mock( DiscoveredMemberRepository.class ), logProvider );
+        CoreTopologyService topologyService = disoveryServiceFactory.coreTopologyService( config(), member, logProvider );
         return sharedClientStarter( topologyService, expectedTargetSet );
     }
 

@@ -51,8 +51,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     private ClusterId clusterId;
 
     @Override
-    public CoreTopologyService coreTopologyService( Config config, MemberId myself,
-            DiscoveredMemberRepository discoveredMemberRepository, LogProvider logProvider )
+    public CoreTopologyService coreTopologyService( Config config, MemberId myself, LogProvider logProvider )
     {
         SharedDiscoveryCoreClient sharedDiscoveryCoreClient = new SharedDiscoveryCoreClient( this, myself, logProvider, config );
         sharedDiscoveryCoreClient.onTopologyChange( currentTopology( sharedDiscoveryCoreClient ) );

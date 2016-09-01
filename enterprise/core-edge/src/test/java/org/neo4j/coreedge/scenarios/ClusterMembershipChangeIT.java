@@ -19,8 +19,8 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import org.junit.Ignore;
 import org.junit.Rule;
-import org.junit.Test;
 
 import java.util.List;
 
@@ -49,7 +49,7 @@ public class ClusterMembershipChangeIT
     public final ClusterRule clusterRule = new ClusterRule( getClass() ).withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() )
             .withNumberOfCoreMembers( 3 );
 
-    @Test
+    @Ignore( "Incomplete, HC will hang waiting for others to join." )
     public void newMemberNotInInitialMembersConfig() throws Throwable
     {
         // when
