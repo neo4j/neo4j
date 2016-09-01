@@ -19,32 +19,47 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.util.concurrent.TimeUnit;
-
+import com.google.common.testing.FakeTicker;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.time.Clocks;
-import org.neo4j.time.FakeClock;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-public class AuthCacheTest
+public class ShiroCaffeineCacheTest
 {
-    private AuthCache<Integer,String> cache;
-    private FakeClock fakeClock;
+    private ShiroCaffeineCache<Integer,String> cache;
+    private FakeTicker fakeTicker;
+    private long TTL = 100;
 
     @Before
     public void setUp()
     {
-        fakeClock = Clocks.fakeClock();
-        cache = new AuthCache<>( fakeClock, 100, 5 );
+        fakeTicker = new FakeTicker();
+        cache = new ShiroCaffeineCache<>( fakeTicker::read, TTL, 5 );
+    }
+
+    @Test
+    public void shouldFailToCreateAuthCacheForTTLZero()
+    {
+        try
+        {
+            new ShiroCaffeineCache<>( fakeTicker::read, 0, 5 );
+            fail("Expected IllegalArgumentException for a TTL of 0");
+        }
+        catch ( IllegalArgumentException e )
+        {
+            assertThat( e.getMessage(), containsString( "TTL must be larger than zero." ) );
+        }
+        catch ( Throwable t )
+        {
+            fail("Expected IllegalArgumentException for a TTL of 0");
+        }
     }
 
     @Test
@@ -65,7 +80,7 @@ public class AuthCacheTest
     {
         assertNull( cache.put( 1, "first" ));
         assertThat( cache.put( 1, "second" ), equalTo( "first" ) );
-        fakeClock.forward( 101, MILLISECONDS );
+        fakeTicker.advance( TTL + 1, MILLISECONDS );
         assertNull( cache.put( 1, "third" ) );
     }
 
@@ -109,7 +124,7 @@ public class AuthCacheTest
     public void shouldNotListExpiredValues()
     {
         cache.put( 1, "1" );
-        fakeClock.forward( 1000, TimeUnit.SECONDS );
+        fakeTicker.advance( TTL + 1, MILLISECONDS );
         cache.put( 2, "foo" );
 
         assertThat( cache.values(), containsInAnyOrder( "foo" ) );
@@ -119,7 +134,7 @@ public class AuthCacheTest
     public void shouldNotGetExpiredValues()
     {
         cache.put( 1, "1" );
-        fakeClock.forward( 1000, TimeUnit.SECONDS );
+        fakeTicker.advance( TTL + 1, MILLISECONDS );
         cache.put( 2, "foo" );
 
         assertThat( cache.get( 1 ), equalTo( null ) );
@@ -130,20 +145,10 @@ public class AuthCacheTest
     public void shouldNotGetKeysForExpiredValues()
     {
         cache.put( 1, "1" );
-        fakeClock.forward( 1000, TimeUnit.SECONDS );
+        fakeTicker.advance( TTL + 1, MILLISECONDS );
         cache.put( 2, "foo" );
 
         assertThat( cache.keys(), containsInAnyOrder( 2 ) );
-    }
-
-    @Test
-    public void shouldNotCountExpiredValues()
-    {
-        cache.put( 1, "1" );
-        fakeClock.forward( 1000, TimeUnit.SECONDS );
-        cache.put( 2, "foo" );
-
-        assertThat( cache.size(), equalTo( 1 ) );
     }
 
     @Test
@@ -163,43 +168,7 @@ public class AuthCacheTest
     public void shouldGetValueAfterTimePassed()
     {
         cache.put( 1, "foo" );
-        fakeClock.forward( 99, MILLISECONDS );
+        fakeTicker.advance( TTL - 1, MILLISECONDS );
         assertThat( cache.get( 1 ), equalTo( "foo" ) );
-    }
-
-    @Test
-    public void shouldNotRevalidateTooOften()
-    {
-        cache.put( 1, "1" );
-        fakeClock.forward( 99, MILLISECONDS );
-        // request size, calls validate
-        assertThat( cache.size(), equalTo( 1 ) );
-        cache.put( 2, "2" );
-        fakeClock.forward( 2, MILLISECONDS );
-        // request size, doesn't revalidate
-        assertThat( cache.size(), equalTo( 2 ) );
-        // enough time passed
-        fakeClock.forward( 4, MILLISECONDS );
-        // request size, revalidates before yielding
-        assertThat( cache.size(), equalTo( 1 ) );
-    }
-
-    @Test
-    public void shouldValidateCacheOnGetAsync()
-    {
-        cache.put( 1, "1" );
-        cache.put( 2, "2" );
-        cache.put( 3, "3" );
-        cache.put( 4, "4" );
-        cache.put( 5, "5" );
-        fakeClock.forward( 101, MILLISECONDS );
-        cache.put( 2, "6" );
-
-        assertThat( cache.innerSize(), equalTo( 5 ) );
-        cache.get( 100, validated ->
-        {
-            assertTrue( validated );
-            assertThat( cache.innerSize(), equalTo( 1 ) );
-        } );
     }
 }

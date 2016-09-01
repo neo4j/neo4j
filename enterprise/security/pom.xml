@@ -67,6 +67,11 @@
       <artifactId>shiro-core</artifactId>
       <version>1.2.4</version>
     </dependency>
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+      <version>2.3.3</version>
+    </dependency>
 
     <!-- Test dependencies -->
     <dependency>
@@ -181,10 +186,12 @@
       <artifactId>jetty-server</artifactId>
       <scope>test</scope>
     </dependency>
-      <dependency>
-          <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-          <artifactId>concurrentlinkedhashmap-lru</artifactId>
-      </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava-testlib</artifactId>
+      <version>19.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 </project>

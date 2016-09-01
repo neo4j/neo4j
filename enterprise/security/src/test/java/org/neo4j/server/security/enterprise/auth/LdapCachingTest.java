@@ -19,13 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.time.Clock;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
+import com.google.common.testing.FakeTicker;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
@@ -37,6 +31,13 @@ import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Clock;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
@@ -44,12 +45,9 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.time.Clocks;
-import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
@@ -58,7 +56,7 @@ public class LdapCachingTest
 {
     private MultiRealmAuthManager authManager;
     private TestRealm testRealm;
-    private FakeClock fakeClock;
+    private FakeTicker fakeTicker;
 
     @Before
     public void setup() throws Throwable
@@ -75,8 +73,9 @@ public class LdapCachingTest
 
         List<Realm> realms = listOf( internalFlatFileRealm, testRealm );
 
-        fakeClock = Clocks.fakeClock();
-        authManager = new MultiRealmAuthManager( internalFlatFileRealm, realms, new AuthCache.Manager( fakeClock, 100, 10 ) );
+        fakeTicker = new FakeTicker();
+        authManager = new MultiRealmAuthManager( internalFlatFileRealm, realms,
+                new ShiroCaffeineCache.Manager( fakeTicker::read, 100, 10) );
         authManager.init();
         authManager.start();
 
@@ -132,14 +131,14 @@ public class LdapCachingTest
         assertThat( "Test realm did not receive a call", testRealm.wasAuthorized(), is( true ) );
 
         // When
-        fakeClock.forward( 99, TimeUnit.MILLISECONDS );
+        fakeTicker.advance( 99, TimeUnit.MILLISECONDS );
         mike.allowsWrites();
 
         // Then
         assertThat( "Test realm received a call", testRealm.wasAuthorized(), is( false ) );
 
         // When
-        fakeClock.forward( 2, TimeUnit.MILLISECONDS );
+        fakeTicker.advance( 2, TimeUnit.MILLISECONDS );
         mike.allowsWrites();
 
         // Then
@@ -155,14 +154,14 @@ public class LdapCachingTest
         assertThat( "Test realm did not receive a call", testRealm.wasAuthenticated(), is( true ) );
 
         // When
-        fakeClock.forward( 99, TimeUnit.MILLISECONDS );
+        fakeTicker.advance( 99, TimeUnit.MILLISECONDS );
         authManager.login( mike );
 
         // Then
         assertThat( "Test realm received a call", testRealm.wasAuthenticated(), is( false ) );
 
         // When
-        fakeClock.forward( 2, TimeUnit.MILLISECONDS );
+        fakeTicker.advance( 2, TimeUnit.MILLISECONDS );
         authManager.login( mike );
 
         // Then
