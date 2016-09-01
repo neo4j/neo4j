@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -72,6 +73,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.kernel.api.proc.FunctionSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -546,6 +548,19 @@ public class OperationsFacade
     {
         statement.assertOpen();
         return procedures.procedure( name );
+    }
+
+    @Override
+    public Optional<FunctionSignature> functionGet( QualifiedName name )
+    {
+        statement.assertOpen();
+        return procedures.function( name );
+    }
+
+    @Override
+    public Object functionCallRead( QualifiedName name, Object[] input ) throws ProcedureException
+    {
+        return callFunction( name, input, AccessMode.Static.READ );
     }
 
     @Override
@@ -1073,6 +1088,13 @@ public class OperationsFacade
         // FIXME: should this be AccessMode.Static.WRITE instead?
         return callProcedure( name, input, AccessMode.Static.FULL );
     }
+
+    @Override
+    public Object functionCallWrite( QualifiedName name, Object[] input ) throws ProcedureException
+    {
+        // FIXME: should this be AccessMode.Static.WRITE instead?
+        return callFunction( name, input, AccessMode.Static.FULL );
+    }
     // </DataWrite>
 
     // <SchemaWrite>
@@ -1141,6 +1163,12 @@ public class OperationsFacade
     public RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input ) throws ProcedureException
     {
         return callProcedure( name, input, AccessMode.Static.FULL );
+    }
+
+    @Override
+    public Object functionCallSchema( QualifiedName name, Object[] input ) throws ProcedureException
+    {
+        return callFunction( name, input, AccessMode.Static.FULL );
     }
 
     // </SchemaWrite>
@@ -1491,6 +1519,22 @@ public class OperationsFacade
             return procedures.callProcedure( ctx, name, input );
         }
     }
+
+    private Object callFunction(
+            QualifiedName name, Object[] input, AccessMode mode )
+            throws ProcedureException
+    {
+        statement.assertOpen();
+
+        try ( KernelTransaction.Revertable revertable = tx.overrideWith( mode ) )
+        {
+            BasicContext ctx = new BasicContext();
+            ctx.put( Context.KERNEL_TRANSACTION, tx );
+            ctx.put( Context.THREAD, Thread.currentThread() );
+            return procedures.callFunction( ctx, name, input );
+        }
+    }
+
 
     // </Procedures>
 }

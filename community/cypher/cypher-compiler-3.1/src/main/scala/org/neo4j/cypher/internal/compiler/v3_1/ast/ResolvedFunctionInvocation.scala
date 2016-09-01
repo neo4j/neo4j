@@ -19,39 +19,39 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.ast
 
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{UserDefinedFunctionSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedProcedureName}
+import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_1._
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
-import org.neo4j.cypher.internal.frontend.v3_1.ast.functions.UnresolvedFunction
-import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-object ResolvedUserDefinedFunctionInvocation {
-  def apply(signatureLookup: QualifiedProcedureName => Option[UserDefinedFunctionSignature])(unresolved: FunctionInvocation): ResolvedUserDefinedFunctionInvocation = {
+object ResolvedFunctionInvocation {
+
+  def apply(signatureLookup: QualifiedName => Option[UserDefinedFunctionSignature])(unresolved: FunctionInvocation): ResolvedFunctionInvocation = {
     val position = unresolved.position
-    val name = QualifiedProcedureName(unresolved)
+    val name = QualifiedName(unresolved)
     val signature = signatureLookup(name)
-    ResolvedUserDefinedFunctionInvocation(name, signature, unresolved.args)(position)
+    ResolvedFunctionInvocation(name, signature, unresolved.args)(position)
   }
 }
 
 /**
   * A ResolvedUserDefinedInvocation is a user-defined function where the signature
   * has been resolve, i.e. verified that it exists in the database
+  *
   * @param qualifiedName The qualified name of the function.
   * @param fcnSignature Either `Some(signature)` if the signature was resolved, or
   *                     `None` if the function didn't exist
   * @param callArguments The argument list to the function
   * @param position The position in the original query string.
   */
-case class ResolvedUserDefinedFunctionInvocation(qualifiedName: QualifiedProcedureName,
-                                                 fcnSignature: Option[UserDefinedFunctionSignature],
-                                                 callArguments: IndexedSeq[Expression])
-                                                (val position: InputPosition)
+case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
+                                      fcnSignature: Option[UserDefinedFunctionSignature],
+                                      callArguments: IndexedSeq[Expression])
+                                     (val position: InputPosition)
   extends Expression with UserDefined {
 
-  def coerceArguments: ResolvedUserDefinedFunctionInvocation = fcnSignature match {
+  def coerceArguments: ResolvedFunctionInvocation = fcnSignature match {
     case Some(signature) =>
     val optInputFields = signature.inputSignature.map(Some(_)).toStream ++ Stream.continually(None)
     val coercedArguments =

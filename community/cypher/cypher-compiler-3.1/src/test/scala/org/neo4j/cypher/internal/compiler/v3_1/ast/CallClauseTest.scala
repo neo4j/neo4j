@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.ast
 
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedProcedureName}
+import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
@@ -29,7 +29,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 
   val ns = Namespace(List("my", "proc"))(pos)
   val name = ProcedureName("foo")(pos)
-  val qualifiedName = QualifiedProcedureName(ns.parts, name.name)
+  val qualifiedName = QualifiedName(ns.parts, name.name)
 
   test("should resolve CALL my.proc.foo") {
     val unresolved = UnresolvedCall(ns, name, None, None)(pos)
@@ -51,7 +51,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       )(pos)
     )
 
-    QualifiedProcedureName(unresolved) should equal(resolved.qualifiedName)
+    QualifiedName(unresolved) should equal(resolved.qualifiedName)
     resolved.callResultTypes should equal(Seq("x" -> CTInteger, "y" -> CTList(CTNode)))
     resolved.callResultIndices should equal(Seq(0 -> "x", 1 -> "y"))
   }
@@ -76,7 +76,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       )(pos)
     )
 
-    QualifiedProcedureName(unresolved) should equal(resolved.qualifiedName)
+    QualifiedName(unresolved) should equal(resolved.qualifiedName)
     resolved.callResultTypes should equal(Seq.empty)
     resolved.callResultIndices should equal(Seq.empty)
   }
@@ -101,7 +101,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       )(pos)
     )
 
-    QualifiedProcedureName(unresolved) should equal(resolved.qualifiedName)
+    QualifiedName(unresolved) should equal(resolved.qualifiedName)
     resolved.callResultTypes should equal(Seq("x" -> CTInteger, "y" -> CTList(CTNode)))
     resolved.callResultIndices should equal(Seq(0 -> "x", 1 -> "y"))
   }
@@ -126,7 +126,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       )(pos)
     )
 
-    QualifiedProcedureName(unresolved) should equal(resolved.qualifiedName)
+    QualifiedName(unresolved) should equal(resolved.qualifiedName)
     resolved.callResultTypes should equal(Seq("x" -> CTInteger, "y" -> CTList(CTNode)))
     resolved.callResultIndices should equal(Seq(0 -> "x", 1 -> "y"))
   }
@@ -151,7 +151,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       )(pos)
     )
 
-    QualifiedProcedureName(unresolved) should equal(resolved.qualifiedName)
+    QualifiedName(unresolved) should equal(resolved.qualifiedName)
     resolved.callResultTypes should equal(Seq.empty)
     resolved.callResultIndices should equal(Seq.empty)
   }

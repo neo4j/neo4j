@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{AllEffects, Proced
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.{CollectionSupport, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.Signature
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{ProcedureSignature, QualifiedProcedureName}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{ProcedureSignature, QualifiedName}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 
 object ProcedureCallRowProcessing {
@@ -39,7 +39,7 @@ case object FlatMapAndAppendToRow extends ProcedureCallRowProcessing
 case object PassThroughRow extends ProcedureCallRowProcessing
 
 case class ProcedureCallPipe(source: Pipe,
-                             name: QualifiedProcedureName,
+                             name: QualifiedName,
                              callMode: ProcedureCallMode,
                              argExprs: Seq[Expression],
                              rowProcessing: ProcedureCallRowProcessing,
@@ -73,7 +73,7 @@ case class ProcedureCallPipe(source: Pipe,
 
     input flatMap { input =>
       val argValues = argExprs.map(arg => converter.asDeepJavaValue(arg(input)(state)))
-      val results = callMode.call(qtx, name, argValues)
+      val results = callMode.callProcedure(qtx, name, argValues)
       results map { resultValues =>
         resultIndices foreach { case (k, v) =>
           val javaValue = resultValues(k)
@@ -92,7 +92,7 @@ case class ProcedureCallPipe(source: Pipe,
     val qtx = state.query
     input map { input =>
       val argValues = argExprs.map(arg => converter.asDeepJavaValue(arg(input)(state)))
-      val results = callMode.call(qtx, name, argValues)
+      val results = callMode.callProcedure(qtx, name, argValues)
       // the iterator here should be empty; we'll drain just in case
       while (results.hasNext) results.next()
       input
@@ -101,7 +101,7 @@ case class ProcedureCallPipe(source: Pipe,
 
   override def planDescriptionWithoutCardinality: InternalPlanDescription = {
     PlanDescriptionImpl(this.id, "ProcedureCall", SingleChild(source.planDescription), Seq(
-      Signature(QualifiedProcedureName(name.namespace, name.name), argExprs, resultSymbols)
+      Signature(QualifiedName(name.namespace, name.name), argExprs, resultSymbols)
     ), variables)
   }
 

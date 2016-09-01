@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.LazyReadOnlyCallMode
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanningTestSupport, _}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedProcedureName}
+import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
@@ -879,7 +878,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("CALL foo() YIELD all RETURN all") {
     val signature = ProcedureSignature(
-      QualifiedProcedureName(Seq.empty, "foo"),
+      QualifiedName(Seq.empty, "foo"),
       inputSignature = IndexedSeq.empty,
       deprecationInfo = None,
       outputSignature = Some(IndexedSeq(FieldSignature("all", CTInteger))),

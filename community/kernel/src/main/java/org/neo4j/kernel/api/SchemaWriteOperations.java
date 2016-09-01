@@ -67,4 +67,6 @@ public interface SchemaWriteOperations extends TokenWriteOperations
 
     /** Invoke a schema procedure by name */
     RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] input ) throws ProcedureException;
+
+    Object functionCallSchema( QualifiedName name, Object[] input ) throws ProcedureException;
 }

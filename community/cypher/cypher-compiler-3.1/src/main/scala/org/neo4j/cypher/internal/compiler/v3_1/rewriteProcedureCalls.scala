@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1
 
-import org.neo4j.cypher.internal.compiler.v3_1.ast.{ResolvedCall, ResolvedUserDefinedFunctionInvocation}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{ProcedureSignature, QualifiedProcedureName, UserDefinedFunctionSignature}
+import org.neo4j.cypher.internal.compiler.v3_1.ast.{ResolvedCall, ResolvedFunctionInvocation}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{ProcedureSignature, QualifiedName, UserDefinedFunctionSignature}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
 
@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
 // turns unresolved calls into resolved calls
 object rewriteProcedureCalls {
 
-  def apply(procSignatureLookup: QualifiedProcedureName => ProcedureSignature,
-            funcSignatureLookup: QualifiedProcedureName => Option[UserDefinedFunctionSignature]) = {
+  def apply(procSignatureLookup: QualifiedName => ProcedureSignature,
+            funcSignatureLookup: QualifiedName => Option[UserDefinedFunctionSignature]) = {
 
     // rewriter that amends unresolved procedure calls with procedure signature information
     val resolveCalls = bottomUp(Rewriter.lift {
@@ -41,7 +41,7 @@ object rewriteProcedureCalls {
         coerced
 
       case function: FunctionInvocation if function.needsToBeResolved =>
-          val resolved = ResolvedUserDefinedFunctionInvocation(funcSignatureLookup)(function)
+          val resolved = ResolvedFunctionInvocation(funcSignatureLookup)(function)
 
           // We coerce here to ensure that the semantic check run after this rewriter assigns a type
           // to the coercion expression

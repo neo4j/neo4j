@@ -24,7 +24,7 @@ import java.util
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalQueryType, ProcedureCallMode, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{QualifiedProcedureName, InternalResultVisitor, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultVisitor, QualifiedName, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, InternalQueryStatistics, ProfileMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_1.ProfilerStatisticsNotReadyException
 
@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ProfilerStatisticsNotReadyExcepti
   */
 class ProcedureExecutionResult[E <: Exception](context: QueryContext,
                                                taskCloser: TaskCloser,
-                                               name: QualifiedProcedureName,
+                                               name: QualifiedName,
                                                callMode: ProcedureCallMode,
                                                args: Seq[Any],
                                                indexResultNameMappings: Seq[(Int, String)],
@@ -55,7 +55,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
   private final val executionResults = executeCall
 
   // The signature mode is taking care of eagerization
-  protected def executeCall = callMode.call(context, name, args)
+  protected def executeCall = callMode.callProcedure(context, name, args)
 
   override protected def createInner = new util.Iterator[util.Map[String, Any]]() {
     override def next(): util.Map[String, Any] =

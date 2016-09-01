@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,9 +35,9 @@ import org.neo4j.kernel.api.proc.CallableFunction;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.FunctionSignature;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.QualifiedName;
 
 public class ProcedureRegistry
 {
@@ -87,7 +89,7 @@ public class ProcedureRegistry
 
         String descriptiveName = signature.toString();
         validateSignature( descriptiveName, signature.inputSignature(), "input" );
-        validateSignature( descriptiveName, signature.outputSignature(), "output" );
+        validateSignature( descriptiveName, Collections.singletonList(signature.outputSignature()), "output" );
 
         CallableFunction oldImplementation = functions.get( name );
         if ( oldImplementation == null )
@@ -133,14 +135,14 @@ public class ProcedureRegistry
         return proc.signature();
     }
 
-    public FunctionSignature function(QualifiedName name ) throws ProcedureException
+    public Optional<FunctionSignature> function( QualifiedName name )
     {
         CallableFunction func = functions.get( name );
         if ( func == null )
         {
-            throw noSuchFunction( name );
+            return Optional.empty();
         }
-        return func.signature();
+        return Optional.of( func.signature() );
     }
 
     public RawIterator<Object[],ProcedureException> callProcedure( Context ctx, QualifiedName name, Object[] input )

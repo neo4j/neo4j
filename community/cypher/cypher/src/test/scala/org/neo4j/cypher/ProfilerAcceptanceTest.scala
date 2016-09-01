@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Argument, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, QualifiedProcedureName}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, QualifiedName}
 import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
@@ -67,7 +67,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(1)(result)("ProcedureCall")
     assertRows(2)(result)("ProcedureCall")
     getPlanDescriptions(result, Seq("ProcedureCall")).foreach { plan =>
-      val Signature(QualifiedProcedureName(namespaces, procName), _, returnSignature) = plan.arguments.collectFirst {
+      val Signature(QualifiedName(namespaces, procName), _, returnSignature) = plan.arguments.collectFirst {
         case x: Signature => x
       }.getOrElse(fail("expected a procedure signature"))
 
@@ -87,7 +87,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(1)(result)("ProcedureCall")
     assertRows(2)(result)("ProcedureCall")
     getPlanDescriptions(result, Seq("ProcedureCall")).foreach { plan =>
-      val Signature(QualifiedProcedureName(namespaces, procName), _, returnSignature) = plan.arguments.collectFirst {
+      val Signature(QualifiedName(namespaces, procName), _, returnSignature) = plan.arguments.collectFirst {
         case x: Signature => x
       }.getOrElse(fail("expected a procedure signature"))
 

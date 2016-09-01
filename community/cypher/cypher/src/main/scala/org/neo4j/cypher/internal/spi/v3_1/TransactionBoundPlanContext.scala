@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.api.proc
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
-import org.neo4j.kernel.api.proc.{ProcedureSignature => KernelProcedureSignature, Mode, QualifiedName, Neo4jTypes}
+import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProcedureSignature, QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.impl.proc.Neo4jValue
 
 import scala.collection.JavaConverters._
@@ -131,8 +131,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
 
   val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
-  override def procedureSignature(name: QualifiedProcedureName) = {
-    val kn = new QualifiedName(name.namespace.asJava, name.name)
+  override def procedureSignature(name: QualifiedName) = {
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val ks = tc.statement.readOperations().procedureGet(kn)
     val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue))).toIndexedSeq
     val output = if (ks.isVoid) None else Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))).toIndexedSeq)
@@ -142,8 +142,22 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
     ProcedureSignature(name, input, output, deprecationInfo, mode)
   }
 
-  //TODE wire down to kernel
-  override def functionSignature(name: QualifiedProcedureName): Option[UserDefinedFunctionSignature] = None
+  override def functionSignature(name: QualifiedName): Option[UserDefinedFunctionSignature] = {
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val maybeFunction = tc.statement.readOperations().functionGet(kn)
+    if (maybeFunction.isPresent) {
+      val ks = maybeFunction.get
+      val input = ks.inputSignature().asScala
+        .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
+        .toIndexedSeq
+      val output = FieldSignature(ks.outputSignature().name(), asCypherType(ks.outputSignature().neo4jType()))
+      val deprecationInfo = asOption(ks.deprecated())
+      val mode = asCypherProcMode(ks.mode(), ks.allowed())
+
+      Some(UserDefinedFunctionSignature(name, input, output, deprecationInfo, mode))
+    }
+    else None
+  }
 
   private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 

@@ -38,6 +38,8 @@ public interface DbmsOperations
     /** Invoke a DBMS procedure by name */
     RawIterator<Object[],ProcedureException> procedureCallDbms( QualifiedName name, Object[] input )
             throws ProcedureException;
+   Object functionCallDbms( QualifiedName name, Object[] input )
+            throws ProcedureException;
 
     interface Factory
     {

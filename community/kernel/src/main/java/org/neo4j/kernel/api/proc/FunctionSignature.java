@@ -30,47 +30,35 @@ import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
 import static java.util.Collections.unmodifiableList;
 
 /**
- * This describes the signature of a procedure, made up of its namespace, name, and input/output description.
- * Procedure uniqueness is currently *only* on the namespace/name level - no procedure overloading allowed (yet).
+ * This describes the signature of a function, made up of its namespace, name, and input/output description.
+ * Function uniqueness is currently *only* on the namespace/name level - no function overloading allowed (yet).
  */
 public class FunctionSignature
 {
     private final QualifiedName name;
     private final List<FieldSignature> inputSignature;
-    private final List<FieldSignature> outputSignature;
+    private final FieldSignature outputSignature;
     private final Mode mode;
+    private final String[] allowed;
     private final Optional<String> deprecated;
     private final Optional<String> description;
 
-    /**
-     * The procedure mode affects how the procedure will execute, and which capabilities
-     * it requires.
-     */
-    public enum Mode
-    {
-        /** This procedure will only perform read operations against the graph */
-        READ_ONLY,
-        /** This procedure may perform both read and write operations against the graph */
-        READ_WRITE,
-        /** This procedure will perform operations against the schema */
-        SCHEMA_WRITE,
-        /** This procedure will perform system operations - i.e. not against the graph */
-        DBMS
-    }
 
     public FunctionSignature( QualifiedName name,
             List<FieldSignature> inputSignature,
-            List<FieldSignature> outputSignature,
+            FieldSignature outputSignature,
             Mode mode,
             Optional<String> deprecated,
+            String[] allowed,
             Optional<String> description )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
-        this.outputSignature = unmodifiableList( outputSignature );
+        this.outputSignature = outputSignature;
         this.mode = mode;
         this.deprecated = deprecated;
         this.description = description;
+        this.allowed = allowed;
     }
 
     public QualifiedName name()
@@ -93,7 +81,7 @@ public class FunctionSignature
         return inputSignature;
     }
 
-    public List<FieldSignature> outputSignature()
+    public FieldSignature outputSignature()
     {
         return outputSignature;
     }
@@ -102,6 +90,8 @@ public class FunctionSignature
     {
         return description;
     }
+
+    public String[] allowed() { return allowed; }
 
     @Override
     public boolean equals( Object o )
@@ -127,7 +117,7 @@ public class FunctionSignature
     public String toString()
     {
         String strInSig = inputSignature == null ? "..." : Iterables.toString( inputSignature, ", " );
-            String strOutSig = outputSignature == null ? "..." : Iterables.toString( outputSignature, ", " );
+            String strOutSig = outputSignature == null ? "..." : outputSignature.toString();
             return String.format( "%s(%s) :: (%s)", name, strInSig, strOutSig );
     }
 
@@ -135,8 +125,9 @@ public class FunctionSignature
     {
         private final QualifiedName name;
         private final List<FieldSignature> inputSignature = new LinkedList<>();
-        private List<FieldSignature> outputSignature = new LinkedList<>();
+        private FieldSignature outputSignature;
         private Mode mode = Mode.READ_ONLY;
+        private String[] allowed = new String[0];
         private Optional<String> deprecated = Optional.empty();
         private Optional<String> description = Optional.empty();
 
@@ -173,19 +164,19 @@ public class FunctionSignature
         /** Define an output field */
         public Builder out( String name, AnyType type )
         {
-            outputSignature.add( new FieldSignature( name, type ) );
+            outputSignature = new FieldSignature( name, type );
             return this;
         }
 
-        public Builder out( List<FieldSignature> fields )
+        public Builder allowed( String[] allowed )
         {
-            outputSignature = fields;
+            this.allowed = allowed;
             return this;
         }
 
         public FunctionSignature build()
         {
-            return new FunctionSignature(name, inputSignature, outputSignature, mode, deprecated, description );
+            return new FunctionSignature(name, inputSignature, outputSignature, mode, deprecated, allowed, description );
         }
     }
 

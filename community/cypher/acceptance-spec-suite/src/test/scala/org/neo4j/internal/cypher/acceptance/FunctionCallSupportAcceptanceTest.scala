@@ -21,26 +21,45 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.util
 
-import org.neo4j.cypher._
-
 class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
 
-  ignore("should fail if calling procedure via rule planner") {
-    an [InternalException] shouldBe thrownBy(execute(
-      "CYPHER planner=rule CALL db.labels() YIELD label RETURN *"
-    ))
-  }
-
-  ignore("should return correctly typed map result (even if converting to and from scala representation internally)") {
+  test("should return correctly typed map result (even if converting to and from scala representation internally)") {
     val value = new util.HashMap[String, Any]()
     value.put("name", "Cypher")
     value.put("level", 9001)
 
-    registerFunctionReturningSingleValue(value)
+    registerUserFunction(value)
 
     // Using graph execute to get a Java value
     graph.execute("RETURN my.first.value()").stream().toArray.toList should equal(List(
+      java.util.Collections.singletonMap("my.first.value()", value)
+    ))
+  }
+
+  test("should return correctly typed list result (even if converting to and from scala representation internally)") {
+    val value = new util.ArrayList[Any]()
+    value.add("Norris")
+    value.add("Strange")
+
+    registerUserFunction(value)
+
+    // Using graph execute to get a Java value
+    graph.execute("RETURN my.first.value() AS out").stream().toArray.toList should equal(List(
       java.util.Collections.singletonMap("out", value)
+    ))
+  }
+
+  test("should return correctly typed stream result (even if converting to and from scala representation internally)") {
+    val value = new util.ArrayList[Any]()
+    value.add("Norris")
+    value.add("Strange")
+    val stream = value.stream()
+
+    registerUserFunction(stream)
+
+    // Using graph execute to get a Java value
+    graph.execute("RETURN my.first.value() AS out").stream().toArray.toList should equal(List(
+      java.util.Collections.singletonMap("out", stream)
     ))
   }
 }

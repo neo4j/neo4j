@@ -129,17 +129,29 @@ class ExceptionTranslatingQueryContextFor3_1(val inner: QueryContext) extends Qu
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
     translateException(inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callReadOnlyProcedure(name, args, allowed))
 
-  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callReadWriteProcedure(name, args, allowed))
 
-  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callSchemaWriteProcedure(name, args, allowed))
 
-  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callDbmsProcedure(name, args, allowed))
+
+  override def callReadOnlyFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+    translateException(inner.callReadOnlyFunction(name, args, allowed))
+
+  override def callReadWriteFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+    translateException(inner.callReadWriteFunction(name, args, allowed))
+
+  override def callSchemaWriteFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+    translateException(inner.callSchemaWriteFunction(name, args, allowed))
+
+  override def callDbmsFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+    translateException(inner.callDbmsFunction(name, args, allowed))
 
   override def isGraphKernelResultValue(v: Any): Boolean =
     translateException(inner.isGraphKernelResultValue(v))

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -44,8 +45,9 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.api.proc.FunctionSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -555,9 +557,15 @@ public interface ReadOperations
     /** Fetch a procedure given its signature. */
     ProcedureSignature procedureGet( QualifiedName name ) throws ProcedureException;
 
+    /** Fetch a function given its signature, or <code>empty</code> if no such function exists*/
+    Optional<FunctionSignature> functionGet( QualifiedName name );
+
     /** Fetch all registered procedures */
     Set<ProcedureSignature> proceduresGetAll();
 
     /** Invoke a read-only procedure by name */
     RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] input ) throws ProcedureException;
+
+    /** Invoke a read-only procedure by name */
+   Object functionCallRead( QualifiedName name, Object[] input ) throws ProcedureException;
 }

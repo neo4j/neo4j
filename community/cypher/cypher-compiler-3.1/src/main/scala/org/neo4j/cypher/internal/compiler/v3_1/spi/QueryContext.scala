@@ -156,13 +156,20 @@ trait QueryContext extends TokenContext {
 
   def lockRelationships(relIds: Long*)
 
-  def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
+  def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
-  def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
+  def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
-  def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
+  def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
-  def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
+  def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
+
+  def callReadOnlyFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef
+
+  def callReadWriteFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef
+  def callSchemaWriteFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef
+
+  def callDbmsFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef
 
   // Check if a runtime value is a node, relationship, path or some such value returned from
   // other query context values by calling down to the underlying database

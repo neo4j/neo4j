@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_1.spi
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{FunctionInvocation, UnresolvedCall}
-import org.neo4j.cypher.internal.frontend.v3_1.ast.functions.UnresolvedFunction
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 
-case class ProcedureSignature(name: QualifiedProcedureName,
+case class ProcedureSignature(name: QualifiedName,
                               inputSignature: IndexedSeq[FieldSignature],
                               outputSignature: Option[IndexedSeq[FieldSignature]],
                               deprecationInfo: Option[String],
@@ -34,20 +33,20 @@ case class ProcedureSignature(name: QualifiedProcedureName,
   def isVoid = outputSignature.isEmpty
 }
 
-case class UserDefinedFunctionSignature(name: QualifiedProcedureName,
-                              inputSignature: IndexedSeq[FieldSignature],
-                              outputFields: IndexedSeq[FieldSignature],
-                              deprecationInfo: Option[String],
-                              accessMode: ProcedureAccessMode)
+case class UserDefinedFunctionSignature(name: QualifiedName,
+                                        inputSignature: IndexedSeq[FieldSignature],
+                                        outputField: FieldSignature,
+                                        deprecationInfo: Option[String],
+                                        accessMode: ProcedureAccessMode)
 
-object QualifiedProcedureName {
-  def apply(unresolved: UnresolvedCall): QualifiedProcedureName =
-    QualifiedProcedureName(unresolved.procedureNamespace.parts, unresolved.procedureName.name)
-  def apply(unresolved: FunctionInvocation): QualifiedProcedureName =
-    QualifiedProcedureName(unresolved.namespace.parts, unresolved.functionName.name)
+object QualifiedName {
+  def apply(unresolved: UnresolvedCall): QualifiedName =
+    QualifiedName(unresolved.procedureNamespace.parts, unresolved.procedureName.name)
+  def apply(unresolved: FunctionInvocation): QualifiedName =
+    QualifiedName(unresolved.namespace.parts, unresolved.functionName.name)
 }
 
-case class QualifiedProcedureName(namespace: Seq[String], name: String) {
+case class QualifiedName(namespace: Seq[String], name: String) {
   override def toString = (namespace :+ name).mkString(".")
 }
 

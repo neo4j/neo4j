@@ -48,16 +48,6 @@ public class FunctionSignatureTest
     }
 
     @Test
-    public void outputSignatureShouldNotBeModifiable() throws Throwable
-    {
-        // Expect
-        exception.expect( UnsupportedOperationException.class );
-
-        // When
-        signature.outputSignature().add( new FieldSignature( "b", Neo4jTypes.NTAny ) );
-    }
-
-    @Test
     public void toStringShouldMatchCypherSyntax() throws Throwable
     {
         // When

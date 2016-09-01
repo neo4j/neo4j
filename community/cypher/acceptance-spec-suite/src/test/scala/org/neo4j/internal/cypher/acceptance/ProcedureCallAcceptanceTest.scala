@@ -24,10 +24,9 @@ import org.neo4j.cypher._
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableFunction.BasicFunction
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
+import org.neo4j.kernel.api.proc.FunctionSignature._
 import org.neo4j.kernel.api.proc.ProcedureSignature._
-import org.neo4j.kernel.api.proc._
-import FunctionSignature._
-import org.neo4j.kernel.api.proc.{Context, Neo4jTypes, ProcedureSignature, FunctionSignature}
+import org.neo4j.kernel.api.proc.{Context, Neo4jTypes, ProcedureSignature}
 
 abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -57,7 +56,7 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
       }
     }
 
-  protected def registerFunctionReturningSingleValue(value: AnyRef) =
+  protected def registerUserFunction(value: AnyRef) =
     registerFunction("my.first.value") { builder =>
       val builder = functionSignature(Array("my", "first"), "value")
       builder.out("out", Neo4jTypes.NTAny)

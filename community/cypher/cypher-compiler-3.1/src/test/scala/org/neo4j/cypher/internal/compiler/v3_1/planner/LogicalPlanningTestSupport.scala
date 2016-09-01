@@ -187,15 +187,15 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     nonIndexedLabelWarningThreshold = 10000
   )
 
-  def buildPlannerQuery(query: String, lookup: Option[QualifiedProcedureName => ProcedureSignature] = None) = {
+  def buildPlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None) = {
     val queries: Seq[PlannerQuery] = buildPlannerUnionQuery(query, lookup).queries
     queries.head
   }
 
-  def buildPlannerUnionQuery(query: String, procLookup: Option[QualifiedProcedureName => ProcedureSignature] = None,
-                             fcnLookup: Option[QualifiedProcedureName => Option[UserDefinedFunctionSignature]] = None) = {
+  def buildPlannerUnionQuery(query: String, procLookup: Option[QualifiedName => ProcedureSignature] = None,
+                             fcnLookup: Option[QualifiedName => Option[UserDefinedFunctionSignature]] = None) = {
     val signature = ProcedureSignature(
-      QualifiedProcedureName(Seq.empty, "foo"),
+      QualifiedName(Seq.empty, "foo"),
       inputSignature = IndexedSeq.empty,
       deprecationInfo = None,
       outputSignature = Some(IndexedSeq(FieldSignature("all", CTInteger))),

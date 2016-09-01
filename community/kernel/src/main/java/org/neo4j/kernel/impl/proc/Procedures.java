@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.proc;
 
 import java.io.File;
+import java.util.Optional;
 import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
@@ -29,9 +30,9 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableFunction;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.FunctionSignature;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -148,7 +149,7 @@ public class Procedures extends LifecycleAdapter
         return registry.procedure( name );
     }
 
-    public FunctionSignature function( QualifiedName name ) throws ProcedureException
+    public Optional<FunctionSignature> function( QualifiedName name )
     {
         return registry.function( name );
     }

@@ -55,6 +55,20 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
         return procedures.callProcedure( ctx, name, input );
     }
 
+    @Override
+    public Object functionCallDbms( QualifiedName name,
+            Object[] input ) throws ProcedureException
+    {
+        BasicContext ctx = new BasicContext();
+        ctx.put( Context.KERNEL_TRANSACTION, transaction );
+        if ( transaction.mode() instanceof AuthSubject )
+        {
+            AuthSubject subject = (AuthSubject) transaction.mode();
+            ctx.put( Context.AUTH_SUBJECT, subject );
+        }
+        return procedures.callFunction( ctx, name, input );
+    }
+
     public static class Factory implements DbmsOperations.Factory
     {
         private final Procedures procedures;
