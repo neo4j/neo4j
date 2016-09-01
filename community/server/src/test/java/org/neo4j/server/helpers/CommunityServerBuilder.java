@@ -32,6 +32,7 @@ import java.util.Properties;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -55,13 +56,12 @@ import org.neo4j.time.Clocks;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.httpConnector;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class CommunityServerBuilder
 {
     protected final LogProvider logProvider;
-    private HostnamePort address = new HostnamePort( "localhost", 7474 );
+    private ListenSocketAddress address = new ListenSocketAddress( "localhost", 7474 );
     private String maxThreads = null;
     private String dataDir = null;
     private String managementUri = "/db/manage/";
@@ -280,7 +280,7 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder onAddress( HostnamePort address )
+    public CommunityServerBuilder onAddress( ListenSocketAddress address )
     {
         this.address = address;
         return this;

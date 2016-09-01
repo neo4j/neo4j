@@ -25,7 +25,7 @@ import java.net.ServerSocket;
 
 import org.junit.Test;
 
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -41,9 +41,9 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException, InterruptedException
     {
-        HostnamePort contestedAddress = new HostnamePort( "localhost", 9999 );
+        ListenSocketAddress contestedAddress = new ListenSocketAddress( "localhost", 9999 );
         try ( ServerSocket ignored = new ServerSocket(
-                contestedAddress.getPort(), 0, InetAddress.getByName( contestedAddress.getHost() ) ) )
+                contestedAddress.getPort(), 0, InetAddress.getByName( contestedAddress.getHostname() ) ) )
         {
             AssertableLogProvider logProvider = new AssertableLogProvider();
             CommunityNeoServer server = CommunityServerBuilder.server( logProvider )
