@@ -60,6 +60,7 @@ class HazelcastClusterTopology
     static final String CLUSTER_UUID = "cluster_uuid";
     static final String MEMBER_UUID = "member_uuid";
     static final String TRANSACTION_SERVER = "transaction_server";
+    static final String DISCOVERY_SERVER = "discovery_server";
     static final String RAFT_SERVER = "raft_server";
     static final String BOLT_SERVER = "bolt_server";
 
@@ -179,8 +180,12 @@ class HazelcastClusterTopology
         MemberAttributeConfig memberAttributeConfig = new MemberAttributeConfig();
         memberAttributeConfig.setStringAttribute( MEMBER_UUID, myself.getUuid().toString() );
 
-        AdvertisedSocketAddress transactionSource = config.get( CoreEdgeClusterSettings
-                .transaction_advertised_address );
+        AdvertisedSocketAddress discoveryAddress =
+                config.get( CoreEdgeClusterSettings.discovery_advertised_address );
+        memberAttributeConfig.setStringAttribute( DISCOVERY_SERVER, discoveryAddress.toString() );
+
+        AdvertisedSocketAddress transactionSource =
+                config.get( CoreEdgeClusterSettings.transaction_advertised_address );
         memberAttributeConfig.setStringAttribute( TRANSACTION_SERVER, transactionSource.toString() );
 
         AdvertisedSocketAddress raftAddress = config.get( CoreEdgeClusterSettings.raft_advertised_address );

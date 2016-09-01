@@ -583,7 +583,7 @@ public class Settings
             @Override
             public String getDefaultValue()
             {
-                return "localhost" + LISTEN_SOCKET_ADDRESS.apply( listenSocketAddressSetting.getDefaultValue() )
+                return advertised_hostname.getDefaultValue() + LISTEN_SOCKET_ADDRESS.apply( listenSocketAddressSetting.getDefaultValue() )
                         .socketAddress().getPort();
             }
 
