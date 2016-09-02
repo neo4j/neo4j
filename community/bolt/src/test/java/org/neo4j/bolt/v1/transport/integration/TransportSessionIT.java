@@ -54,11 +54,13 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
+import static org.neo4j.bolt.v1.messaging.message.AckFailureMessage.ackFailure;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.hasNotification;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgIgnored;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
@@ -137,7 +139,7 @@ public class TransportSessionIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, TransportTestUtil.eventuallyReceives(
+        assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(
                         allOf( hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) ),
@@ -146,6 +148,37 @@ public class TransportSessionIT
                 msgRecord( eqRecord( equalTo( 2L ), equalTo( 4L ) ) ),
                 msgRecord( eqRecord( equalTo( 3L ), equalTo( 9L ) ) ),
                 msgSuccess() ) );
+    }
+
+    @Test
+    public void shouldBeAbleToRunQueryAfterAckFailure() throws Throwable
+    {
+        // Given
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", emptyMap() ),
+                        run( "INVALID" ),
+                        pullAll() ) );
+
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives(
+                msgSuccess(),
+                msgFailure( Status.Statement.SyntaxError,
+                        "Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))\n" +
+                        "\"INVALID\"\n" +
+                        " ^"),
+                msgIgnored()));
+
+        // When
+        client.send( TransportTestUtil.chunk( ackFailure(), run("RETURN 1"), pullAll()) );
+
+        // Then
+        assertThat( client, eventuallyReceives(
+                msgSuccess(),
+                msgSuccess(),
+                msgRecord( eqRecord( equalTo(1L) ) ),
+                msgSuccess()));
     }
 
     @Test
@@ -160,7 +193,7 @@ public class TransportSessionIT
                         pullAll() ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, TransportTestUtil.eventuallyReceives(
+        assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) ),
                         hasKey( "result_available_after" ) ) ),
@@ -173,7 +206,7 @@ public class TransportSessionIT
                 pullAll() ) );
 
         // Then
-        assertThat( client, TransportTestUtil.eventuallyReceives(
+        assertThat( client, eventuallyReceives(
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) ),
                         hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( Matchers.equalTo( "Test" ) ) ),
@@ -194,7 +227,7 @@ public class TransportSessionIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, TransportTestUtil.eventuallyReceives(
+        assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(  allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
                         hasKey( "result_available_after" ) ) )));
@@ -209,7 +242,7 @@ public class TransportSessionIT
         assertThat( client,
                 eventuallyReceives(bytes(0x00, 0x08, 0xB1, 0x71,  0x91,
                         0xB3, 0x4E,  0x00, 0x90, 0xA0, 0x00, 0x00) ));
-        assertThat(client, TransportTestUtil.eventuallyReceives( msgSuccess()));
+        assertThat(client, eventuallyReceives( msgSuccess()));
     }
 
     @Test
@@ -225,7 +258,7 @@ public class TransportSessionIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, TransportTestUtil.eventuallyReceives(
+        assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) ),
                         hasKey( "result_available_after" ) ) ) ) );
@@ -242,17 +275,7 @@ public class TransportSessionIT
         assertThat( client,
                 eventuallyReceives( bytes( 0x00, 0x0B, 0xB1, 0x71, 0x91,
                         0xB5, 0x52, 0x00, 0x00, 0x01, 0x81, 0x54, 0xA0, 0x00,0x00  ) ) );
-        assertThat( client, TransportTestUtil.eventuallyReceives( msgSuccess() ) );
-    }
-
-    private byte[] bytes( int...ints )
-    {
-        byte[] bytes = new byte[ints.length];
-        for ( int i = 0; i < ints.length; i++ )
-        {
-            bytes[i] = (byte) ints[i];
-        }
-        return bytes;
+        assertThat( client, eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
@@ -266,7 +289,7 @@ public class TransportSessionIT
                         run( "CREATE (n)" ),
                         pullAll() ) );
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, TransportTestUtil.eventuallyReceives(
+        assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 msgSuccess() ) );
@@ -278,7 +301,7 @@ public class TransportSessionIT
                         pullAll() ) );
 
         // Then
-        assertThat( client, TransportTestUtil.eventuallyReceives(
+        assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( 1L ) ) ),
                 msgSuccess( allOf( hasEntry( is( "type" ), equalTo(  "r" ) ),
@@ -298,7 +321,7 @@ public class TransportSessionIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, TransportTestUtil.eventuallyReceives(
+        assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 hasNotification(
@@ -325,7 +348,7 @@ public class TransportSessionIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, TransportTestUtil.eventuallyReceives(
+        assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) ),
                         hasKey( "result_available_after" ) )),
@@ -355,12 +378,22 @@ public class TransportSessionIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, TransportTestUtil.eventuallyReceives(
+        assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(  allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n.binary" ) ) ),
                         hasKey( "result_available_after" ) ) ),
                 msgRecord(eqRecord( nullValue() )),
                 msgFailure( Status.Request.Invalid, "Byte array is not yet supported in Bolt")) );
+    }
+
+    private byte[] bytes( int...ints )
+    {
+        byte[] bytes = new byte[ints.length];
+        for ( int i = 0; i < ints.length; i++ )
+        {
+            bytes[i] = (byte) ints[i];
+        }
+        return bytes;
     }
 
     @Before

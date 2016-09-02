@@ -21,8 +21,8 @@
 package org.neo4j.bolt.v1.runtime;
 
 import org.junit.Test;
+
 import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.bolt.testing.NullResponseHandler;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -318,6 +318,24 @@ public class BoltStateMachineTest
 
         // When
         machine.run( "ROLLBACK", EMPTY_PARAMS, nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
+
+        // Then
+        assertThat( machine, inState( FAILED ) );
+    }
+
+    @Test
+    public void testFailOnNestedTransactions() throws Throwable
+    {
+        // Given
+        BoltStateMachine machine = newMachine( READY );
+
+        // Given there is a running transaction
+        machine.run( "BEGIN", EMPTY_PARAMS, nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
+
+        // When
+        machine.run( "BEGIN", EMPTY_PARAMS, nullResponseHandler() );
         machine.discardAll( nullResponseHandler() );
 
         // Then
