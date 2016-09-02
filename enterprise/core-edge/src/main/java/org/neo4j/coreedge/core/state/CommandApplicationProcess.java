@@ -259,6 +259,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
     @Override
     public synchronized void stop() throws InterruptedException, IOException
     {
+        log.info( "CommandApplicationProcess stopping" );
         applier.sync( true );
         flush();
     }

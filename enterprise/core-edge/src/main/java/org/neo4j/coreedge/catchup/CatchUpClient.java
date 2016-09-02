@@ -178,6 +178,7 @@ public class CatchUpClient extends LifecycleAdapter
     @Override
     public void stop() throws Throwable
     {
+        log.info( "CatchUpClient stopping" );
         try
         {
             idleChannels.values().forEach( CatchUpChannel::close );

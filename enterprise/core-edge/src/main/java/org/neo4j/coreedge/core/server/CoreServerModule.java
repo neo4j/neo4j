@@ -137,7 +137,7 @@ public class CoreServerModule
         dependencies.satisfyDependency( coreState );
 
         life.add( new PruningScheduler( coreState, platformModule.jobScheduler,
-                config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ) ) );
+                config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ), logProvider ) );
 
         int queueSize = config.get( CoreEdgeClusterSettings.raft_in_queue_size );
         int maxBatch = config.get( CoreEdgeClusterSettings.raft_in_queue_max_batch );
@@ -154,7 +154,7 @@ public class CoreServerModule
                 joinCatchupTimeout, consensusModule.raftMachine(), logProvider );
 
         life.add( new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
-                batchingMessageHandler ) );
+                batchingMessageHandler, logProvider ) );
 
         loggingRaftInbound.registerHandler( batchingMessageHandler );
 

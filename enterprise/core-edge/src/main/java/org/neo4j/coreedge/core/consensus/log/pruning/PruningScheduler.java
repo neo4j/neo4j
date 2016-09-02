@@ -29,6 +29,8 @@ import org.neo4j.function.Predicates;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class PruningScheduler extends LifecycleAdapter
 {
@@ -66,6 +68,7 @@ public class PruningScheduler extends LifecycleAdapter
             }
         }
     };
+    private final Log log;
 
     private volatile JobScheduler.JobHandle handle;
     private volatile boolean stopped;
@@ -79,11 +82,13 @@ public class PruningScheduler extends LifecycleAdapter
         }
     };
 
-    public PruningScheduler( LogPruner logPruner, JobScheduler scheduler, long recurringPeriodMillis )
+    public PruningScheduler( LogPruner logPruner, JobScheduler scheduler, long recurringPeriodMillis, LogProvider
+            logProvider )
     {
         this.logPruner = logPruner;
         this.scheduler = scheduler;
         this.recurringPeriodMillis = recurringPeriodMillis;
+        log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -95,6 +100,7 @@ public class PruningScheduler extends LifecycleAdapter
     @Override
     public void stop() throws Throwable
     {
+        log.info( "PruningScheduler stopping" );
         stopped = true;
         if ( handle != null )
         {

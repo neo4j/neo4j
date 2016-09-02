@@ -19,8 +19,11 @@
  */
 package org.neo4j.coreedge.core.consensus;
 
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Invokes the supplied task continuously when started. The supplied task
@@ -32,14 +35,16 @@ public class ContinuousJob extends LifecycleAdapter
     private final JobScheduler scheduler;
     private final JobScheduler.Group group;
     private final Runnable task;
+    private final Log log;
 
     private JobScheduler.JobHandle jobHandle;
 
-    public ContinuousJob( JobScheduler scheduler, JobScheduler.Group group, Runnable task )
+    public ContinuousJob( JobScheduler scheduler, JobScheduler.Group group, Runnable task, LogProvider logProvider )
     {
         this.scheduler = scheduler;
         this.group = group;
         this.task = task;
+        log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -52,6 +57,7 @@ public class ContinuousJob extends LifecycleAdapter
     @Override
     public void stop() throws Throwable
     {
+        log.info( "ContinuousJob " + group.name() + " stopping" );
         abortableJob.keepRunning = false;
         jobHandle.waitTermination();
     }

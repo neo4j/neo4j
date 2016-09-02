@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
 import org.neo4j.coreedge.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.coreedge.messaging.routing.CoreMemberSelectionException;
@@ -211,6 +212,7 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
     @Override
     public void stop() throws IOException, InterruptedException
     {
+        log.info( "CoreState stopping" );
         applicationProcess.stop();
     }
 

@@ -80,6 +80,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     @Override
     public synchronized void stop() throws Throwable
     {
+        log.info( "RaftServer stopping and unbinding from " + listenAddress );
         try
         {
             channel.close().sync();

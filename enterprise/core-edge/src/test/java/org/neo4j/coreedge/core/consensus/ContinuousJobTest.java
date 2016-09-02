@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.util.JobScheduler.Group;
 import org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.lessThan;
@@ -48,7 +49,7 @@ public class ContinuousJobTest
         Runnable task = latch::countDown;
 
         Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
-        ContinuousJob continuousJob = new ContinuousJob( scheduler, jobGroup, task );
+        ContinuousJob continuousJob = new ContinuousJob( scheduler, jobGroup, task, NullLogProvider.getInstance() );
 
         // when
         try ( Lifespan ignored = new Lifespan( scheduler, continuousJob ) )
@@ -70,7 +71,7 @@ public class ContinuousJobTest
         };
 
         Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
-        ContinuousJob continuousJob = new ContinuousJob( scheduler, jobGroup, task );
+        ContinuousJob continuousJob = new ContinuousJob( scheduler, jobGroup, task, NullLogProvider.getInstance() );
 
         // when
         long startTime = System.currentTimeMillis();

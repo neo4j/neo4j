@@ -106,6 +106,8 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     @Override
     public void stop()
     {
+        log.info( String.format( "HazelcastCoreTopologyService stopping and unbinding from %s",
+                config.get( CoreEdgeClusterSettings.discovery_listen_address ) ) );
         try
         {
             hazelcastInstance.getCluster().removeMembershipListener( membershipRegistrationId );

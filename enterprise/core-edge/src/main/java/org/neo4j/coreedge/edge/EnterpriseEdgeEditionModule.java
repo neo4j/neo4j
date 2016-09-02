@@ -204,7 +204,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 TransactionIdStore.class ),
                 writableCommitProcess, databaseHealthSupplier, platformModule.monitors, logProvider );
         ContinuousJob txApplyJob = new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group(
-                "tx-applier", NEW_THREAD ), batchingTxApplier );
+                "tx-applier", NEW_THREAD ), batchingTxApplier, logProvider );
 
         DelayedRenewableTimeoutService txPullerTimeoutService = new DelayedRenewableTimeoutService( clock
                 , logProvider );

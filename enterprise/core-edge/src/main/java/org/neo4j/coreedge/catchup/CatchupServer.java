@@ -170,6 +170,7 @@ public class CatchupServer extends LifecycleAdapter
     @Override
     public synchronized void stop() throws Throwable
     {
+        log.info( "CatchupServer stopping and unbinding from " + listenAddress );
         try
         {
             channel.close().sync();

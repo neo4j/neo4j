@@ -39,6 +39,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
+
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 
@@ -51,7 +53,7 @@ public class PruningSchedulerTest
     public void shouldScheduleTheCheckPointerJobOnStart() throws Throwable
     {
         // given
-        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L );
+        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, NullLogProvider.getInstance() );
 
         assertNull( jobScheduler.getJob() );
 
@@ -68,7 +70,7 @@ public class PruningSchedulerTest
     public void shouldRescheduleTheJobAfterARun() throws Throwable
     {
         // given
-        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L );
+        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, NullLogProvider.getInstance() );
 
         assertNull( jobScheduler.getJob() );
 
@@ -91,7 +93,7 @@ public class PruningSchedulerTest
     public void shouldNotRescheduleAJobWhenStopped() throws Throwable
     {
         // given
-        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L );
+        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, NullLogProvider.getInstance() );
 
         assertNull( jobScheduler.getJob() );
 
@@ -109,7 +111,7 @@ public class PruningSchedulerTest
     @Test
     public void stoppedJobCantBeInvoked() throws Throwable
     {
-        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 10L );
+        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 10L, NullLogProvider.getInstance() );
         scheduler.start();
         jobScheduler.runJob();
 
@@ -142,7 +144,7 @@ public class PruningSchedulerTest
             }
         };
 
-        final PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L );
+        final PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, NullLogProvider.getInstance() );
 
         // when
         scheduler.start();
