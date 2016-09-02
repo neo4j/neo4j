@@ -30,7 +30,6 @@ import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 import com.hazelcast.instance.GroupProperties;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -147,19 +146,18 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
         tcpIpConfig.setEnabled( true );
 
-        List<AdvertisedSocketAddress> initialMembers = config.get( CoreEdgeClusterSettings.initial_discovery_members );
-        Set<AdvertisedSocketAddress> previouslySeenMembers = discoveredMemberRepository.previouslyDiscoveredMembers();
-
-        Set<AdvertisedSocketAddress> members = new LinkedHashSet<>();
-        members.addAll( initialMembers );
-        members.addAll( previouslySeenMembers );
-
-        for ( AdvertisedSocketAddress address : members )
+        List<AdvertisedSocketAddress> initialMembers =
+                config.get( CoreEdgeClusterSettings.initial_discovery_members );
+        for ( AdvertisedSocketAddress address : initialMembers )
         {
             tcpIpConfig.addMember( address.toString() );
         }
-
-        log.info( String.format( "Discovering cluster with initial members: %s and previously discovered members: %s",
+        Set<AdvertisedSocketAddress> previouslySeenMembers = discoveredMemberRepository.previouslyDiscoveredMembers();
+        for ( AdvertisedSocketAddress seenAddress : previouslySeenMembers )
+        {
+            tcpIpConfig.addMember( seenAddress.toString() );
+        }
+        log.info( String.format( "Discovering cluster with initial members: %s and previously seen members: %s",
                 initialMembers, previouslySeenMembers ) );
 
         NetworkConfig networkConfig = new NetworkConfig();
