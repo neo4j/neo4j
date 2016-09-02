@@ -42,6 +42,7 @@ import static org.mockito.Mockito.mock;
 
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSION_DENIED;
+import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
 
@@ -120,6 +121,15 @@ public class AuthProceduresLoggingTest
     }
 
     @Test
+    public void shouldLogUnauthorizedCreatingUser() throws Throwable
+    {
+        authProcedures.authSubject = matsSubject;
+        catchAuthorizationViolation( () -> authProcedures.createUser( "andres", "", true ) );
+
+        log.assertExactly( error( "[mats]: tried to create user `%s`: %s", "andres", PERMISSION_DENIED ) );
+    }
+
+    @Test
     public void shouldLogDeletingUser() throws Throwable
     {
         authProcedures.createUser( "andres", "el password", false );
@@ -136,6 +146,15 @@ public class AuthProceduresLoggingTest
         catchInvalidArguments( () -> authProcedures.deleteUser( "andres" ) );
 
         log.assertExactly( error( "[admin]: tried to delete user `%s`: %s", "andres", "User 'andres' does not exist." ) );
+    }
+
+    @Test
+    public void shouldLogUnauthorizedDeleteUser() throws Throwable
+    {
+        authProcedures.authSubject = matsSubject;
+        catchAuthorizationViolation( () -> authProcedures.deleteUser( ADMIN ) );
+
+        log.assertExactly( error( "[mats]: tried to delete user `%s`: %s", ADMIN, PERMISSION_DENIED ) );
     }
 
     @Test
@@ -158,6 +177,15 @@ public class AuthProceduresLoggingTest
         log.assertExactly(
                 info( "[admin]: created user `%s`", "mats" ),
                 error( "[admin]: tried to add role `%s` to user `%s`: %s", "null", "mats", "Role 'null' does not exist." ) );
+    }
+
+    @Test
+    public void shouldLogUnauthorizedAddingRole() throws Throwable
+    {
+        authProcedures.authSubject = matsSubject;
+        catchAuthorizationViolation( () -> authProcedures.addRoleToUser( ADMIN, "mats" ) );
+
+        log.assertExactly( error( "[mats]: tried to add role `%s` to user `%s`: %s", ADMIN, "mats", PERMISSION_DENIED ) );
     }
 
     @Test
@@ -192,6 +220,15 @@ public class AuthProceduresLoggingTest
                 error( "[admin]: tried to remove role `%s` from user `%s`: %s", "notReader", "mats", "Role 'notReader' does not exist." ),
                 error( "[admin]: tried to remove role `%s` from user `%s`: %s", READER, "notMats", "User 'notMats' does not exist." )
         );
+    }
+
+    @Test
+    public void shouldLogUnauthorizedRemovingRole() throws Throwable
+    {
+        authProcedures.authSubject = matsSubject;
+        catchAuthorizationViolation( () -> authProcedures.removeRoleFromUser( ADMIN, ADMIN ) );
+
+        log.assertExactly( error( "[mats]: tried to remove role `%s` from user `%s`: %s", ADMIN, ADMIN, PERMISSION_DENIED ) );
     }
 
     @Test
@@ -253,7 +290,7 @@ public class AuthProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogUnauthorizedFailureToChangePassword() throws Throwable
+    public void shouldLogUnauthorizedChangePassword() throws Throwable
     {
         // Given
         authProcedures.createUser( "andres", "neo4j", true );
