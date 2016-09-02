@@ -121,23 +121,16 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
     @Override
     public synchronized void persistStoreData( STATE state ) throws IOException
     {
-        try
+        if ( numberOfEntriesWrittenInActiveFile >= numberOfEntriesBeforeRotation )
         {
-            if ( numberOfEntriesWrittenInActiveFile >= numberOfEntriesBeforeRotation )
-            {
-                switchStoreFile();
-                numberOfEntriesWrittenInActiveFile = 0;
-            }
-
-            marshal.marshal( state, currentStoreChannel );
-            currentStoreChannel.prepareForFlush().flush();
-
-            numberOfEntriesWrittenInActiveFile++;
+            switchStoreFile();
+            numberOfEntriesWrittenInActiveFile = 0;
         }
-        catch ( IOException e )
-        {
-            throw e;
-        }
+
+        marshal.marshal( state, currentStoreChannel );
+        currentStoreChannel.prepareForFlush().flush();
+
+        numberOfEntriesWrittenInActiveFile++;
     }
 
     void switchStoreFile() throws IOException
