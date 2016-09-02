@@ -134,10 +134,10 @@ public class AuthProceduresIT
     @Test
     public void shouldNotCreateUserIfInvalidUsername() throws Exception
     {
-        assertFail( admin, "CALL dbms.security.createUser('', '1234', true)", "The provided user name is empty." );
+        assertFail( admin, "CALL dbms.security.createUser('', '1234', true)", "The provided username is empty." );
         assertFail( admin, "CALL dbms.security.createUser('&%ss!', '1234', true)",
-                "User name '&%ss!' contains illegal characters." );
-        assertFail( admin, "CALL dbms.security.createUser('&%ss!', '', true)", "User name '&%ss!' contains illegal characters." );
+                "Username '&%ss!' contains illegal characters." );
+        assertFail( admin, "CALL dbms.security.createUser('&%ss!', '', true)", "Username '&%ss!' contains illegal characters." );
     }
 
     @Test

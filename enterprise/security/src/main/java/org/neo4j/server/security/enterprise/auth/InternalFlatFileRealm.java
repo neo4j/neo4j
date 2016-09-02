@@ -368,6 +368,7 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
     public User newUser( String username, String initialPassword, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
+        userRepository.assertValidUsername( username );
         passwordPolicy.validatePassword( initialPassword );
 
         User user = new User.Builder()
@@ -383,10 +384,10 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
     @Override
     public RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException
     {
-        assertValidRoleName( roleName );
+        roleRepository.assertValidRoleName( roleName );
         for ( String username : usernames )
         {
-            assertValidUsername( username );
+            userRepository.assertValidUsername( username );
         }
 
         SortedSet<String> userSet = new TreeSet<>( Arrays.asList( usernames ) );
@@ -433,8 +434,8 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
     @Override
     public void addRoleToUser( String roleName, String username ) throws IOException, InvalidArgumentsException
     {
-        assertValidRoleName( roleName );
-        assertValidUsername( username );
+        roleRepository.assertValidRoleName( roleName );
+        userRepository.assertValidUsername( username );
 
         synchronized ( this )
         {
@@ -457,8 +458,8 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
     @Override
     public void removeRoleFromUser( String roleName, String username ) throws IOException, InvalidArgumentsException
     {
-        assertValidRoleName( roleName );
-        assertValidUsername( username );
+        roleRepository.assertValidRoleName( roleName );
+        userRepository.assertValidUsername( username );
 
         synchronized ( this )
         {
@@ -627,32 +628,6 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
         {
             // Try again
             removeUserFromAllRoles( username );
-        }
-    }
-
-    private void assertValidUsername( String name ) throws InvalidArgumentsException
-    {
-        if ( name.isEmpty() )
-        {
-            throw new InvalidArgumentsException( "The provided user name is empty." );
-        }
-        if ( !userRepository.isValidUsername( name ) )
-        {
-            throw new InvalidArgumentsException(
-                    "User name '" + name + "' contains illegal characters. Use simple ascii characters and numbers." );
-        }
-    }
-
-    private void assertValidRoleName( String name ) throws InvalidArgumentsException
-    {
-        if ( name.isEmpty() )
-        {
-            throw new InvalidArgumentsException( "The provided role name is empty." );
-        }
-        if ( !roleRepository.isValidRoleName( name ) )
-        {
-            throw new InvalidArgumentsException(
-                    "Role name '" + name + "' contains illegal characters. Use simple ascii characters and numbers." );
         }
     }
 

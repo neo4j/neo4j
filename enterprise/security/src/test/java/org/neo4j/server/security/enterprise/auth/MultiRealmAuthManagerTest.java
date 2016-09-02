@@ -114,7 +114,7 @@ public class MultiRealmAuthManagerTest
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.SUCCESS ) );
-        logProvider.assertExactly( info( "Login success for user `%s`", "jake" ) );
+        logProvider.assertExactly( info( "[jake]: logged in" ) );
     }
 
     @Test
@@ -131,7 +131,8 @@ public class MultiRealmAuthManagerTest
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ) );
-        logProvider.assertExactly( error( "Login fail for user `%s` - too many failed attempts.", "jake" ) );
+        logProvider.assertExactly(
+                error( "[%s]: failed to log in: too many failed attempts", "jake" ) );
     }
 
     @Test
@@ -147,7 +148,7 @@ public class MultiRealmAuthManagerTest
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
-        logProvider.assertExactly( info( "Login success for user `%s`", "jake" ) );
+        logProvider.assertExactly( info( "[jake]: logged in" ) );
     }
 
     @Test
@@ -162,7 +163,7 @@ public class MultiRealmAuthManagerTest
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.FAILURE ) );
-        logProvider.assertExactly( error( "Login fail for user `%s`", "unknown" ) );
+        logProvider.assertExactly( error( "[%s]: failed to log in: invalid principal or credentials", "unknown" ) );
     }
 
     @Test
@@ -177,7 +178,7 @@ public class MultiRealmAuthManagerTest
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.FAILURE ) );
-        logProvider.assertExactly( error( "Login fail for user `%s`", "unknown\\n\\t\\r\\\"haxx0r\\\"" ) );
+        logProvider.assertExactly( error( "[%s]: failed to log in: invalid principal or credentials", "unknown\n\t\r\"haxx0r\"" ) );
     }
 
     @Test
@@ -387,8 +388,8 @@ public class MultiRealmAuthManagerTest
         authSubject = manager.login( authToken( "neo", "hello, world!" ) );
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
         logProvider.assertExactly(
-                info( "Login success for user `%s`", "neo" ),
-                info( "Login success for user `%s`", "neo" ) );
+                info( "[neo]: logged in" ),
+                info( "[neo]: logged in" ) );
     }
 
     @Test
@@ -568,6 +569,11 @@ public class MultiRealmAuthManagerTest
         assertFalse( subject.allowsReads() );
         assertFalse( subject.allowsWrites() );
         assertFalse( subject.allowsSchemaWrites() );
+    }
+
+    private AssertableLogProvider.LogMatcher info( String message )
+    {
+        return inLog( this.getClass() ).info( message );
     }
 
     private AssertableLogProvider.LogMatcher info( String message, String... arguments )

@@ -95,6 +95,8 @@ class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplie
         }
         catch ( UnsupportedTokenException e )
         {
+            // TODO: add test for this case
+            securityLog.error( "Unknown user failed to log in: %s", e.getMessage() );
             throw new InvalidAuthTokenException( e.getCause().getMessage() );
         }
         catch ( ExcessiveAttemptsException e )
@@ -102,13 +104,13 @@ class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplie
             // NOTE: We only get this with single (internal) realm authentication
             subject = new StandardEnterpriseAuthSubject( this,
                     new ShiroSubject( securityManager, AuthenticationResult.TOO_MANY_ATTEMPTS ) );
-            securityLog.info( subject, "Login fail for user `%s` - too many failed attempts." );
+            securityLog.error( "[%s]: failed to log in: too many failed attempts", token.getPrincipal().toString() );
         }
         catch ( AuthenticationException e )
         {
             subject = new StandardEnterpriseAuthSubject( this,
                     new ShiroSubject( securityManager, AuthenticationResult.FAILURE ) );
-            securityLog.info( subject, "Login fail for user `%s`" );
+            securityLog.error( "[%s]: failed to log in: invalid principal or credentials", token.getPrincipal().toString() );
         }
 
         return subject;
