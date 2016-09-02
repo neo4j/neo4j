@@ -96,7 +96,7 @@ class BindingService extends LifecycleAdapter
             }
             else
             {
-                throw new TimeoutException( "Failed binding to cluster in time." );
+                throw new TimeoutException( "Failed binding to cluster in time. Last topology was: " + topology );
             }
         }
 

@@ -59,7 +59,7 @@ public class ClusteringModule
         topologyService = discoveryServiceFactory.coreTopologyService( config, myself, discoveredMemberRepository,
                 logProvider );
         BindingService bindingService = new BindingService( clusterIdStorage, topologyService, logProvider,
-                Clocks.systemClock(), () -> sleep( 100 ), 60000 );
+                Clocks.systemClock(), () -> sleep( 100 ), 300_000 );
 
         life.add( topologyService );
         life.add( bindingService );
