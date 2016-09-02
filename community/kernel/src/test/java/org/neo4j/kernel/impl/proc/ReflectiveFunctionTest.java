@@ -218,13 +218,15 @@ public class ReflectiveFunctionTest
     }
 
     @Test
-    public void shouldAllowOverridingFunctionNameWithoutNamespace() throws Throwable
+    public void shouldNotAllowOverridingFunctionNameWithoutNamespace() throws Throwable
     {
-        // When
-        CallableFunction proc = compile( FunctionWithSingleName.class ).get( 0 );
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "It is not allowed to define functions in the root namespace please use a " +
+                                 "namespace, e.g. `@Function(\"org.example.com.singleName\")" );
 
-        // Then
-        assertEquals("singleName", proc.signature().name().toString() );
+        // When
+        compile( FunctionWithSingleName.class ).get( 0 );
     }
 
     @Test
@@ -253,7 +255,7 @@ public class ReflectiveFunctionTest
         List<CallableFunction> funcs = procedureCompiler.compileFunction( FunctionWithDeprecation.class );
 
         // Then
-        verify( log ).warn( "Use of @Function(deprecatedBy) without @Deprecated in badFunc" );
+        verify( log ).warn( "Use of @Function(deprecatedBy) without @Deprecated in org.neo4j.kernel.impl.proc.badFunc" );
         verifyNoMoreInteractions( log );
         for ( CallableFunction func : funcs )
         {
@@ -404,11 +406,6 @@ public class ReflectiveFunctionTest
             return null;
         }
 
-        @Function("singleName")
-        public Object blahDoesntMatterEither()
-        {
-            return null;
-        }
     }
 
     public static class FunctionWithSingleName
@@ -422,20 +419,20 @@ public class ReflectiveFunctionTest
 
     public static class FunctionWithDeprecation
     {
-        @Function("newFunc")
+        @Function
         public Object newFunc()
         {
             return null;
         }
 
         @Deprecated
-        @Function(value = "oldFunc", deprecatedBy = "newFunc")
+        @Function(deprecatedBy = "newFunc")
         public String oldFunc()
         {
             return null;
         }
 
-        @Function(value = "badFunc", deprecatedBy = "newFunc")
+        @Function(deprecatedBy = "newFunc")
         public Object badFunc()
         {
             return null;

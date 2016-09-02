@@ -183,7 +183,6 @@ public class FunctionIT
         }
     }
 
-
     @Test
     public void shouldCallFunctionWithNodeReturn() throws Throwable
     {
@@ -580,7 +579,6 @@ public class FunctionIT
             assertFalse( res.hasNext() );
         }
     }
-
 
     @Test
     public void shouldBeAbleToPerformWritesOnNodesReturnedFromReadOnlyFunction() throws Throwable
@@ -1084,14 +1082,12 @@ public class FunctionIT
             return (String) db.execute( "RETURN  org.neo4j.procedure.schemaFunction() AS result" ).next().get("result");
         }
 
-
         @Function
         public String shutdown()
         {
             db.shutdown();
             return "oh no!";
         }
-
 
         @Function( mode = WRITE )
         public String unsupportedFunction()
@@ -1120,14 +1116,12 @@ public class FunctionIT
                     .getOrDefault( "p", null );
         }
 
-
         @Description( "This is a description" )
         @Function( mode = WRITE )
         public Node nodeWithDescription( Node node )
         {
             return node;
         }
-
 
         @Function
         public String readOnlyTryingToWriteSchema()

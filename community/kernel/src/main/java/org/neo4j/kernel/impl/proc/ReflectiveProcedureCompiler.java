@@ -189,6 +189,12 @@ public class ReflectiveProcedureCompiler
         String definedName = method.getAnnotation( Function.class ).name();
         QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
 
+        if (procName.namespace() == null || procName.namespace().length == 0)
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "It is not allowed to define functions in the root namespace please use a namespace, e.g. `@Function(\"org.example.com.%s\")",
+                    procName.name() );
+        }
         List<Neo4jTypes.AnyType> inputSignature = inputSignatureDeterminer.inputTypesFor( method );
         Class<?> returnType = method.getReturnType();
         TypeMappers.NeoValueConverter valueConverter = typeMappers.converterFor( returnType );
