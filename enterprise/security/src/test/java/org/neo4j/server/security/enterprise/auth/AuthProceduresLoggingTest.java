@@ -436,6 +436,51 @@ public class AuthProceduresLoggingTest
         log.assertExactly( error("[mats]: tried to create role `%s`: %s", "role", PERMISSION_DENIED) );
     }
 
+    @Test
+    public void shouldLogDeletingRole() throws Exception
+    {
+        // Given
+        authProcedures.createRole( "foo" );
+        log.clear();
+
+        // When
+        authProcedures.deleteRole( "foo" );
+
+        // Then
+        log.assertExactly( info( "[admin]: deleted role `%s`", "foo" ) );
+    }
+
+    @Test
+    public void shouldLogFailureToDeleteRole() throws Exception
+    {
+        // When
+        catchInvalidArguments( () -> authProcedures.deleteRole( null ) );
+        catchInvalidArguments( () -> authProcedures.deleteRole( "" ) );
+        catchInvalidArguments( () -> authProcedures.deleteRole( "foo" ) );
+        catchInvalidArguments( () -> authProcedures.deleteRole( ADMIN ) );
+
+        // Then
+        log.assertExactly(
+                error( "[admin]: tried to delete role `%s`: %s", null, "Role 'null' does not exist." ),
+                error( "[admin]: tried to delete role `%s`: %s", "", "Role '' does not exist." ),
+                error( "[admin]: tried to delete role `%s`: %s", "foo", "Role 'foo' does not exist." ),
+                error( "[admin]: tried to delete role `%s`: %s", ADMIN, "'admin' is a predefined role and can not be deleted." )
+        );
+    }
+
+    @Test
+    public void shouldLogUnauthorizedDeletingRole() throws Exception
+    {
+        // Given
+        authProcedures.authSubject = matsSubject;
+
+        // When
+        catchAuthorizationViolation( () -> authProcedures.deleteRole( ADMIN ) );
+
+        // Then
+        log.assertExactly( error( "[mats]: tried to delete role `%s`: %s", ADMIN, PERMISSION_DENIED ) );
+    }
+
     private void catchInvalidArguments( ThrowingAction<Exception> f ) throws Exception
     {
         Assert.assertException( f, InvalidArgumentsException.class, "" );

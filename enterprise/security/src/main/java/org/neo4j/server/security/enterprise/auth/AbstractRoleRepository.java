@@ -62,7 +62,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     @Override
     public RoleRecord getRoleByName( String roleName )
     {
-        return rolesByName.get( roleName );
+        return roleName == null ? null : rolesByName.get( roleName );
     }
 
     @Override

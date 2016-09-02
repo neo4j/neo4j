@@ -378,7 +378,7 @@ public class AuthProcedures
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to delete role `%s`. %s", roleName, e.getMessage() );
+            securityLog.error( authSubject, "tried to delete role `%s`: %s", roleName, e.getMessage() );
             throw e;
         }
     }
