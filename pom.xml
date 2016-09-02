@@ -34,8 +34,8 @@
     <hsqldb.version>2.3.2</hsqldb.version>
     <test.runner.jvm.settings>-Xmx1G -XX:MaxPermSize=128M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -XX:-OmitStackTraceInFastThrow</test.runner.jvm.settings>
     <doclint-groups>reference</doclint-groups>
-    <git.commit.id.branch>unknown-branch-${project.version}</git.commit.id.branch>
-    <git.commit.id>unknown-commit</git.commit.id>
+    <git.branch>unknown-branch-${project.version}</git.branch>
+    <git.commit>unknown-commit</git.commit>
   </properties>
 
   <modules>
@@ -86,8 +86,8 @@
                     </loadresource>
                     <mkdir dir="target/generated-sources/version/org/neo4j/${version-dir}/" />
                     <property name="build.number" value="${env.BUILD_NUMBER}" />
-                    <property name="git.branch" value="${git.commit.id.branch}" />
-                    <property name="git.commit" value="${git.commit.id}" />
+                    <property name="git.branch" value="${git.branch}" />
+                    <property name="git.commit" value="${git.commit}" />
                     <echo file="target/generated-sources/version/org/neo4j/${version-dir}/ComponentVersion.java">package org.neo4j.${the-package};
 
 import org.neo4j.kernel.Version;
@@ -267,7 +267,7 @@ public class ComponentVersion extends Version
      export GIT_BRANCH
      export GIT_COMMIT
      GIT_BRANCH=$(git rev-parse - -abbrev-ref HEAD)
-     GIT_COMMIT=$(git rev-parse - -short HEAD)
+     GIT_COMMIT=$(git rev-parse HEAD)
     -->
     <profile>
       <id>attach-git-info-branch</id>
@@ -278,7 +278,7 @@ public class ComponentVersion extends Version
         </property>
       </activation>
       <properties>
-        <git.commit.id.describe>${env.GIT_BRANCH}</git.commit.id.describe>
+        <git.branch>${env.GIT_BRANCH}</git.branch>
       </properties>
     </profile>
     <profile>
@@ -290,7 +290,7 @@ public class ComponentVersion extends Version
         </property>
       </activation>
       <properties>
-        <git.commit.id.describe>${env.GIT_COMMIT}</git.commit.id.describe>
+        <git.commit>${env.GIT_COMMIT}</git.commit>
       </properties>
     </profile>
 
