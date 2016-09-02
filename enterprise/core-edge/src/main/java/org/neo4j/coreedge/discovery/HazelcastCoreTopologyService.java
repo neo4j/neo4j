@@ -48,16 +48,18 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private final MemberId myself;
     private final Log log;
     private final CoreTopologyListenerService listenerService;
+    private final Log userLog;
     private String membershipRegistrationId;
 
     private HazelcastInstance hazelcastInstance;
 
-    HazelcastCoreTopologyService( Config config, MemberId myself, LogProvider logProvider )
+    HazelcastCoreTopologyService( Config config, MemberId myself, LogProvider logProvider, LogProvider userLogProvider )
     {
         this.config = config;
         this.myself = myself;
         this.listenerService = new CoreTopologyListenerService();
         this.log = logProvider.getLog( getClass() );
+        this.userLog = userLogProvider.getLog( getClass() );
     }
 
     @Override
@@ -149,7 +151,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         MemberAttributeConfig memberAttributeConfig = HazelcastClusterTopology.buildMemberAttributes( myself, config );
 
         c.setMemberAttributeConfig( memberAttributeConfig );
-
+        userLog.info( "Waiting for other members to join cluster before continuing..." );
         return Hazelcast.newHazelcastInstance( c );
     }
 

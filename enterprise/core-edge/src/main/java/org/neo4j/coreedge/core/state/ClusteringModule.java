@@ -46,13 +46,14 @@ public class ClusteringModule
         LifeSupport life = platformModule.life;
         Config config = platformModule.config;
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
+        LogProvider userLogProvider = platformModule.logging.getUserLogProvider();
         Dependencies dependencies = platformModule.dependencies;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
 
         SimpleStorage<ClusterId> clusterIdStorage = new SimpleStorage<>( fileSystem, clusterStateDirectory,
                 CLUSTER_ID_NAME, new ClusterId.Marshal(), logProvider );
 
-        topologyService = discoveryServiceFactory.coreTopologyService( config, myself, logProvider );
+        topologyService = discoveryServiceFactory.coreTopologyService( config, myself, logProvider, userLogProvider );
         BindingService bindingService = new BindingService( clusterIdStorage, topologyService, logProvider,
                 Clocks.systemClock(), () -> sleep( 100 ), 300_000 );
 

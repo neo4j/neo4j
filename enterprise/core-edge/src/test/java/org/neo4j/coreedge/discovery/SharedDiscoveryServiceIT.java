@@ -55,6 +55,7 @@ public class SharedDiscoveryServiceIT
     private static final long RUN_TIME_MS = 1000;;
 
     private NullLogProvider logProvider = NullLogProvider.getInstance();
+    private NullLogProvider userLogProvider = NullLogProvider.getInstance();
 
     @Test(timeout = TIMEOUT_MS)
     public void shouldDiscoverCompleteTargetSetWithoutDeadlocks() throws Exception
@@ -89,7 +90,8 @@ public class SharedDiscoveryServiceIT
 
     private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory disoveryServiceFactory, Set<MemberId> expectedTargetSet ) throws ExecutionException, InterruptedException
     {
-        CoreTopologyService topologyService = disoveryServiceFactory.coreTopologyService( config(), member, logProvider );
+        CoreTopologyService topologyService = disoveryServiceFactory.coreTopologyService( config(), member,
+                logProvider, userLogProvider );
         return sharedClientStarter( topologyService, expectedTargetSet );
     }
 
