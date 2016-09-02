@@ -33,6 +33,7 @@ import java.time.Clock;
 import java.util.List;
 
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;

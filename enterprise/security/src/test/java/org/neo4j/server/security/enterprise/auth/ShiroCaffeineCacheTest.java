@@ -41,7 +41,7 @@ public class ShiroCaffeineCacheTest
     public void setUp()
     {
         fakeTicker = new FakeTicker();
-        cache = new ShiroCaffeineCache<>( fakeTicker::read, TTL, 5 );
+        cache = new ShiroCaffeineCache<>( fakeTicker::read, Runnable::run, TTL, 5 );
     }
 
     @Test
@@ -49,7 +49,7 @@ public class ShiroCaffeineCacheTest
     {
         try
         {
-            new ShiroCaffeineCache<>( fakeTicker::read, 0, 5 );
+            new ShiroCaffeineCache<>( fakeTicker::read, Runnable::run, 0, 5 );
             fail("Expected IllegalArgumentException for a TTL of 0");
         }
         catch ( IllegalArgumentException e )
@@ -161,7 +161,7 @@ public class ShiroCaffeineCacheTest
         cache.put( 5, "five" );
         cache.put( 6, "six" );
 
-        assertThat( cache.keys().size(), equalTo( 5 ) );
+        assertThat( cache.size(), equalTo( 5 ) );
     }
 
     @Test

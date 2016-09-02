@@ -30,14 +30,20 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 class ShiroCaffeineCache<K, V> implements Cache<K,V>
 {
     private final com.github.benmanes.caffeine.cache.Cache<K,V> caffCache;
 
     ShiroCaffeineCache( Ticker ticker, long ttl, int maxCapacity )
+    {
+        this( ticker, ForkJoinPool.commonPool(), ttl, maxCapacity );
+    }
+
+    ShiroCaffeineCache( Ticker ticker, Executor maintenanceExecutor, long ttl, int maxCapacity )
     {
         if ( ttl <= 0 )
         {
@@ -46,6 +52,7 @@ class ShiroCaffeineCache<K, V> implements Cache<K,V>
         caffCache = Caffeine.newBuilder()
                 .maximumSize( maxCapacity )
                 .expireAfterWrite( ttl, TimeUnit.MILLISECONDS )
+                .executor( maintenanceExecutor )
                 .ticker( ticker )
                 .build();
     }

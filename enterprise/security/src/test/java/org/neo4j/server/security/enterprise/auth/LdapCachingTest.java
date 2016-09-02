@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
