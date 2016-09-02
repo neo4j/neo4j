@@ -57,7 +57,7 @@ public class ClusteringModule
                 Clocks.systemClock(), () -> sleep( 100 ), 300_000 );
 
         life.add( topologyService );
-        life.add( bindingService );
+//        life.add( bindingService );
 
         dependencies.satisfyDependency( topologyService ); // for tests
     }
