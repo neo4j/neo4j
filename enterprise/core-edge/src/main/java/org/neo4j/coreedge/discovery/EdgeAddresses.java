@@ -34,4 +34,10 @@ public class EdgeAddresses
     {
         return boltAddress;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "EdgeAddresses{boltAddress=%s}", boltAddress );
+    }
 }
