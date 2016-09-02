@@ -39,9 +39,8 @@ public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDete
     private final MutableDouble shortestSoFar;
     private final double epsilon;
 
-    public DijkstraBranchCollisionDetector( Evaluator evaluator,
-            CostEvaluator costEvaluator,
-            org.apache.commons.lang3.mutable.MutableDouble shortestSoFar, double epsilon, Predicate<Path> pathPredicate )
+    public DijkstraBranchCollisionDetector( Evaluator evaluator, CostEvaluator costEvaluator,
+            MutableDouble shortestSoFar, double epsilon, Predicate<Path> pathPredicate )
     {
         super( evaluator, pathPredicate );
         this.costEvaluator = costEvaluator;

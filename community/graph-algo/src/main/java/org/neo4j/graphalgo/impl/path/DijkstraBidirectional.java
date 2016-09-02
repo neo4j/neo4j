@@ -109,8 +109,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
     private Traverser traverser( Node start, final Node end, PathInterest interest )
     {
         final MutableDouble shortestSoFar = new MutableDouble( Double.MAX_VALUE );
-        final org.apache.commons.lang3.mutable.MutableDouble
-                startSideShortest = new org.apache.commons.lang3.mutable.MutableDouble( 0 );
+        final MutableDouble startSideShortest = new MutableDouble( 0 );
         final MutableDouble endSideShortest = new MutableDouble( 0 );
         PathExpander dijkstraExpander = new DijkstraBidirectionalPathExpander( expander, shortestSoFar, true,
                 startSideShortest, endSideShortest, epsilon);
@@ -166,7 +165,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         private final boolean stopAfterLowestCost;
 
         DijkstraBidirectionalPathExpander( PathExpander source, MutableDouble shortestSoFar,
-                boolean stopAfterLowestCost, org.apache.commons.lang3.mutable.MutableDouble thisSideShortest, MutableDouble otherSideShortest,
+                boolean stopAfterLowestCost, MutableDouble thisSideShortest, MutableDouble otherSideShortest,
                 double epsilon )
         {
             this.source = source;
