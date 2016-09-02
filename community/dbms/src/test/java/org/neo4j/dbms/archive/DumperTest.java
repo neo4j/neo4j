@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -37,6 +38,7 @@ import static java.util.Collections.emptySet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 public class DumperTest
 {
@@ -112,6 +114,8 @@ public class DumperTest
     @Test
     public void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsNotWritable() throws IOException
     {
+        assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
+
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
         Files.createDirectories( archive.getParent() );

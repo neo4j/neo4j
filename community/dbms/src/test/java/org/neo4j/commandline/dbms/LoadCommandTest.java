@@ -26,7 +26,6 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,6 +40,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 
 import static org.hamcrest.Matchers.containsString;
@@ -85,9 +85,14 @@ public class LoadCommandTest
     public void shouldCalculateTheDatabaseDirectoryFromConfig()
             throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
     {
-        Files.write( configDir.resolve( "neo4j.conf" ), asList( data_directory.name() + "=/some/data/dir" ) );
+        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
+        Path databaseDir = dataDir.resolve( "databases/foo.db" );
+        Files.createDirectories( databaseDir );
+        Files.write( configDir.resolve( "neo4j.conf" ),
+                asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
+
         execute( "foo.db" );
-        verify( loader ).load( any(), eq( Paths.get( "/some/data/dir/databases/foo.db" ) ) );
+        verify( loader ).load( any(), eq( databaseDir ) );
     }
 
     @Test

@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.Random;
 
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -40,6 +41,7 @@ import static java.util.Collections.emptySet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 
@@ -160,6 +162,8 @@ public class LoaderTest
     public void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryIsNotWritable()
             throws IOException, IncorrectFormat
     {
+        assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
+
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         Path destination = testDirectory.directory( "subdir/the-destination" ).toPath();
         Files.createDirectories( destination.getParent() );

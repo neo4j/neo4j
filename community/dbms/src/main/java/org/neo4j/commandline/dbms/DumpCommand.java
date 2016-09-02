@@ -137,16 +137,7 @@ public class DumpCommand implements AdminCommand
 
     private Path calculateArchive( String database, Path to )
     {
-        Path archive;
-        if ( Files.exists( to ) && Files.isDirectory( to ) )
-        {
-            archive = to.resolve( database + ".dump" );
-        }
-        else
-        {
-            archive = to;
-        }
-        return archive;
+        return Files.isDirectory( to ) ? to.resolve( database + ".dump" ) : to;
     }
 
     private Closeable withLock( Path databaseDirectory ) throws CommandFailed

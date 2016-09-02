@@ -62,7 +62,7 @@ public class Loader
         }
         catch ( IOException e )
         {
-            throw new IncorrectFormat(archive, e );
+            throw new IncorrectFormat( archive, e );
         }
     }
 
@@ -92,6 +92,7 @@ public class Loader
         }
         catch ( IOException e )
         {
+            input.close();
             throw new IncorrectFormat( archive, e );
         }
         return new TarArchiveInputStream( compressor );

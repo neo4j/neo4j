@@ -149,11 +149,17 @@ public class LoadCommand implements AdminCommand
     {
         try
         {
-            new StoreLocker( new DefaultFileSystemAbstraction() ).checkLock( databaseDirectory.toFile() );
+            StoreLocker storeLocker = new StoreLocker( new DefaultFileSystemAbstraction() );
+            storeLocker.checkLock( databaseDirectory.toFile() );
+            storeLocker.release();
         }
         catch ( StoreLockException e )
         {
             throw new CommandFailed( "the database is in use -- stop Neo4j and try again", e );
+        }
+        catch ( IOException e )
+        {
+            wrapIOException( e );
         }
     }
 
