@@ -94,12 +94,9 @@ public class CoreStateApplier
             if ( cancelTasks )
             {
                 status.cancelled = true;
-                applier.shutdownNow();
             }
-            else
-            {
-                applier.shutdown();
-            }
+
+            applier.shutdown();
 
             while ( !applier.awaitTermination( 1, MINUTES ) )
             {
