@@ -64,14 +64,14 @@ public class AuthProcedures
     }
 
     @Deprecated
-    @Description( "Change the current users password. Deprecated by dbms.security.changePassword." )
+    @Description( "Change the current user's password. Deprecated by dbms.security.changePassword." )
     @Procedure( name = "dbms.changePassword", mode = DBMS, deprecatedBy = "dbms.security.changePassword" )
     public void changePasswordDeprecated( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
         authSubject.setPassword( password, false );
     }
 
-    @Description( "Change the current users password." )
+    @Description( "Change the current user's password." )
     @Procedure( name = "dbms.security.changePassword", mode = DBMS )
     public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {

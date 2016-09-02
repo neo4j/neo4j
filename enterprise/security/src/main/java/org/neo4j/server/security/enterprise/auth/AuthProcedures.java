@@ -71,7 +71,7 @@ public class AuthProcedures
         adminSubject.getUserManager().newUser( username, password, requirePasswordChange );
     }
 
-    @Description( "Change the current users password." )
+    @Description( "Change the current user's password." )
     @Procedure( name = "dbms.security.changeUserPassword", mode = DBMS )
     public void changeUserPassword(
             @Name( "username" ) String username,
