@@ -59,7 +59,7 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
   protected def registerUserFunction(value: AnyRef) =
     registerFunction("my.first.value") { builder =>
       val builder = functionSignature(Array("my", "first"), "value")
-      builder.out("out", Neo4jTypes.NTAny)
+      builder.out(Neo4jTypes.NTAny)
 
       new BasicFunction(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef]): AnyRef = value

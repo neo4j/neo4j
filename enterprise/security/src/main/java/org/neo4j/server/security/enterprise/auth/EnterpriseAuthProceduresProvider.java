@@ -37,7 +37,7 @@ public class EnterpriseAuthProceduresProvider extends Service implements Procedu
     {
         try
         {
-            procedures.register( AuthProcedures.class, true );
+            procedures.registerProcedure( AuthProcedures.class, true );
         }
         catch ( KernelException e )
         {

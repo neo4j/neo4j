@@ -37,7 +37,7 @@ public class AuthProceduresProvider extends Service implements ProceduresProvide
     {
         try
         {
-            procedures.register( AuthProcedures.class );
+            procedures.registerProcedure( AuthProcedures.class );
         }
         catch ( KernelException e )
         {

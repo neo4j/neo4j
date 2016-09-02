@@ -34,8 +34,8 @@ case class ProcedureSignature(name: QualifiedName,
 }
 
 case class UserDefinedFunctionSignature(name: QualifiedName,
-                                        inputSignature: IndexedSeq[FieldSignature],
-                                        outputField: FieldSignature,
+                                        inputSignature: IndexedSeq[CypherType],
+                                        outputType: CypherType,
                                         deprecationInfo: Option[String],
                                         accessMode: ProcedureAccessMode)
 

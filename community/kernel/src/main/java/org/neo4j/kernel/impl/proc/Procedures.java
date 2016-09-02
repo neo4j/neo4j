@@ -106,20 +106,41 @@ public class Procedures extends LifecycleAdapter
      * Register a new procedure defined with annotations on a java class.
      * @param proc the procedure class
      */
-    public void register( Class<?> proc ) throws KernelException
+    public void registerProcedure( Class<?> proc ) throws KernelException
     {
-        register( proc, false );
+        registerProcedure( proc, false );
     }
 
     /**
      * Register a new procedure defined with annotations on a java class.
      * @param proc the procedure class
      */
-    public void register( Class<?> proc, boolean overrideCurrentImplementation ) throws KernelException
+    public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation ) throws KernelException
     {
-        for ( CallableProcedure procedure : compiler.compile( proc ) )
+        for ( CallableProcedure procedure : compiler.compileProcedure( proc ) )
         {
             register( procedure, overrideCurrentImplementation );
+        }
+    }
+
+    /**
+     * Register a new function defined with annotations on a java class.
+     * @param func the function class
+     */
+    public void registerFunction( Class<?> func ) throws KernelException
+    {
+        registerFunction( func, false );
+    }
+
+    /**
+     * Register a new function defined with annotations on a java class.
+     * @param func the function class
+     */
+    public void registerFunction( Class<?> func, boolean overrideCurrentImplementation ) throws KernelException
+    {
+        for ( CallableFunction function : compiler.compileFunction( func ) )
+        {
+            register( function, overrideCurrentImplementation );
         }
     }
 
@@ -179,10 +200,17 @@ public class Procedures extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
+
         ProcedureJarLoader loader = new ProcedureJarLoader( compiler, log );
-        for ( CallableProcedure procedure : loader.loadProceduresFromDir( pluginDir ) )
+        ProcedureJarLoader.Callables callables = loader.loadProceduresFromDir( pluginDir );
+        for ( CallableProcedure procedure : callables.procedures() )
         {
             register( procedure );
+        }
+
+        for ( CallableFunction function : callables.functions() )
+        {
+            register( function );
         }
 
         // And register built-in procedures

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.ast
 
+import org.neo4j.cypher.internal.frontend.v3_1.ast.functions.UnresolvedFunction
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, SemanticChecking, SemanticError, _}
 
 case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart)(val position: InputPosition)
@@ -42,13 +43,17 @@ sealed trait QueryPart extends ASTNode with ASTPhrase with SemanticCheckable {
 case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart {
   assert(clauses.nonEmpty)
 
-  override def containsUpdates =
+  override def containsUpdates = {
     clauses.exists {
       case call: UserDefined => !call.containsNoUpdates
       case _: UpdateClause => true
-      case _               => false
+      case other => other.exists {
+        //If the function is unresolved it might contain updates, we will know for sure after rewrite
+        case call: FunctionInvocation if call.function == UnresolvedFunction => true
+        case call: UserDefined => !call.containsNoUpdates
+      }
     }
-
+  }
   override def returnColumns = clauses.last.returnColumns
 
   override def semanticCheck =

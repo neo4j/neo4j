@@ -45,7 +45,7 @@ import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.procedure.Procedure.Mode.READ;
+import static org.neo4j.procedure.Mode.READ;
 
 public class BuiltInProcedures
 {

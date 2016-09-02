@@ -66,7 +66,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithOneProcedure.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProcedures( jar );
+        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -84,7 +84,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithProcedureWithArgument.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProcedures( jar );
+        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -105,7 +105,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProcedures( jar );
+        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -144,7 +144,7 @@ public class ProcedureJarLoaderTest
         createJarFor( ClassWithAnotherProcedure.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( tmpdir.getRoot() );
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( tmpdir.getRoot() ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );

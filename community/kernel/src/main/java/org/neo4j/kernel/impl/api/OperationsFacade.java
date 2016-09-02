@@ -1534,7 +1534,5 @@ public class OperationsFacade
             return procedures.callFunction( ctx, name, input );
         }
     }
-
-
     // </Procedures>
 }

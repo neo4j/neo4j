@@ -24,29 +24,26 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
+import java.util.Optional;
 
-import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableFunction;
-import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.FunctionSignature;
 import org.neo4j.kernel.api.proc.Key;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.procedure.Function;
+import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.PerformsWrites;
-import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.FunctionSignature.functionSignature;
 import static org.neo4j.kernel.api.proc.Key.key;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class FunctionsTest
 {
@@ -54,7 +51,10 @@ public class FunctionsTest
     public ExpectedException exception = ExpectedException.none();
 
     private final Procedures procs = new Procedures();
-    private final FunctionSignature signature = functionSignature( "org", "myproc" ).build();
+    private final FunctionSignature signature =
+            functionSignature( "org", "myproc" )
+                    .out( Neo4jTypes.NTAny)
+                    .build();
     private final CallableFunction function = function( signature );
 
     @Test
@@ -64,23 +64,23 @@ public class FunctionsTest
         procs.register( function );
 
         // Then
-        assertThat( procs.function( signature.name() ), equalTo( signature ) );
+        assertThat( procs.function( signature.name() ).get(), equalTo( signature ) );
     }
 
     @Test
     public void shouldGetAllRegisteredProcedures() throws Throwable
     {
         // When
-        procs.register( function( functionSignature( "org", "myproc1" ).build() ) );
-        procs.register( function( functionSignature( "org", "myproc2" ).build() ) );
-        procs.register( function( functionSignature( "org", "myproc3" ).build() ) );
+        procs.register( function( functionSignature( "org", "myproc1" ).out(Neo4jTypes.NTAny).build() ) );
+        procs.register( function( functionSignature( "org", "myproc2" ).out(Neo4jTypes.NTAny).build() ) );
+        procs.register( function( functionSignature( "org", "myproc3" ).out(Neo4jTypes.NTAny).build() ) );
 
         // Then
         List<FunctionSignature> signatures = Iterables.asList( procs.getAllFunctions() );
         assertThat( signatures, containsInAnyOrder(
-                functionSignature( "org", "myproc1" ).build(),
-                functionSignature( "org", "myproc2" ).build(),
-                functionSignature( "org", "myproc3" ).build() ) );
+                functionSignature( "org", "myproc1" ).out(Neo4jTypes.NTAny).build(),
+                functionSignature( "org", "myproc2" ).out(Neo4jTypes.NTAny).build(),
+                functionSignature( "org", "myproc3" ).out(Neo4jTypes.NTAny).build() ) );
     }
 
     @Test
@@ -128,42 +128,10 @@ public class FunctionsTest
     }
 
     @Test
-    public void shouldNotAllowDuplicateFieldNamesInInput() throws Throwable
-    {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Procedure `asd(a :: ANY?, a :: ANY?) :: ()` cannot be " +
-                                 "registered, because it contains a duplicated input field, 'a'. " +
-                                 "You need to rename or remove one of the duplicate fields." );
-
-        // When
-        procs.register( functionWithSignature( functionSignature( "asd" ).in( "a", NTAny ).in( "a", NTAny ).build() ) );
-    }
-
-    @Test
-    public void shouldNotAllowDuplicateFieldNamesInOutput() throws Throwable
-    {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Procedure `asd() :: (a :: ANY?, a :: ANY?)` cannot be registered, " +
-                                 "because it contains a duplicated output field, 'a'. " +
-                                 "You need to rename or remove one of the duplicate fields." );
-
-        // When
-        procs.register( functionWithSignature( functionSignature( "asd" ).out( "a", NTAny ).out( "a", NTAny ).build() ) );
-    }
-
-    @Test
     public void shouldSignalNonExistingProcedure() throws Throwable
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "There is no function with the name `org.myproc` registered for this " +
-                                 "database instance. Please ensure you've spelled the " +
-                                 "function name correctly and that the function is properly deployed." );
-
         // When
-        procs.function( signature.name() );
+        assertThat(procs.function( signature.name() ), is( Optional.empty()));
     }
 
     @Test
@@ -189,88 +157,6 @@ public class FunctionsTest
 
         // Then
         assertThat( result, equalTo("hello, world" ) );
-    }
-
-    //TODO uncomment once we have a function compiler in place
-
-//    @Test
-//    public void shouldFailCompileProcedureWithReadConflict() throws Throwable
-//    {
-//        exception.expect( ProcedureException.class );
-//        exception.expectMessage( "Conflicting function annotation, cannot use PerformsWrites and mode" );
-//        procs.register( ProcedureWithReadConflictAnnotation.class );
-//    }
-//
-//    @Test
-//    public void shouldFailCompileProcedureWithWriteConflict() throws Throwable
-//    {
-//        exception.expect( ProcedureException.class );
-//        exception.expectMessage( "Conflicting function annotation, cannot use PerformsWrites and mode" );
-//        procs.register( ProcedureWithWriteConflictAnnotation.class );
-//    }
-//
-//    @Test
-//    public void shouldFailCompileProcedureWithSchemaConflict() throws Throwable
-//    {
-//        exception.expect( ProcedureException.class );
-//        exception.expectMessage( "Conflicting function annotation, cannot use PerformsWrites and mode" );
-//        procs.register( ProcedureWithSchemaConflictAnnotation.class );
-//    }
-//
-//    @Test
-//    public void shouldFailCompileProcedureWithDBMSConflict() throws Throwable
-//    {
-//        exception.expect( ProcedureException.class );
-//        exception.expectMessage( "Conflicting function annotation, cannot use PerformsWrites and mode" );
-//        procs.register( ProcedureWithDBMSConflictAnnotation.class );
-//    }
-//
-//    public static class ProcedureWithReadConflictAnnotation
-//    {
-//        @PerformsWrites
-//        @Procedure( mode = Procedure.Mode.READ )
-//        public void shouldCompile()
-//        {
-//        }
-//    }
-//
-//    public static class ProcedureWithWriteConflictAnnotation
-//    {
-//        @PerformsWrites
-//        @Procedure( mode = Procedure.Mode.WRITE )
-//        public void shouldCompileToo()
-//        {
-//        }
-//    }
-//
-//    public static class ProcedureWithDBMSConflictAnnotation
-//    {
-//        @PerformsWrites
-//        @Procedure( mode = Procedure.Mode.DBMS )
-//        public void shouldNotCompile()
-//        {
-//        }
-//    }
-//
-//    public static class ProcedureWithSchemaConflictAnnotation
-//    {
-//        @PerformsWrites
-//        @Procedure( mode = Procedure.Mode.SCHEMA )
-//        public void shouldNotCompile()
-//        {
-//        }
-//    }
-
-    private CallableFunction.BasicFunction functionWithSignature( final FunctionSignature signature )
-    {
-        return new CallableFunction.BasicFunction(signature)
-        {
-            @Override
-            public Object apply( Context ctx, Object[] input ) throws ProcedureException
-            {
-                return null;
-            }
-        };
     }
 
     private CallableFunction function( FunctionSignature signature )

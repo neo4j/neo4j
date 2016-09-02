@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 
@@ -193,7 +194,7 @@ public class ProceduresTest
     {
         exception.expect( ProcedureException.class );
         exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
-        procs.register( ProcedureWithReadConflictAnnotation.class );
+        procs.registerProcedure( ProcedureWithReadConflictAnnotation.class );
     }
 
     @Test
@@ -201,7 +202,7 @@ public class ProceduresTest
     {
         exception.expect( ProcedureException.class );
         exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
-        procs.register( ProcedureWithWriteConflictAnnotation.class );
+        procs.registerProcedure( ProcedureWithWriteConflictAnnotation.class );
     }
 
     @Test
@@ -209,7 +210,7 @@ public class ProceduresTest
     {
         exception.expect( ProcedureException.class );
         exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
-        procs.register( ProcedureWithSchemaConflictAnnotation.class );
+        procs.registerProcedure( ProcedureWithSchemaConflictAnnotation.class );
     }
 
     @Test
@@ -217,13 +218,13 @@ public class ProceduresTest
     {
         exception.expect( ProcedureException.class );
         exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
-        procs.register( ProcedureWithDBMSConflictAnnotation.class );
+        procs.registerProcedure( ProcedureWithDBMSConflictAnnotation.class );
     }
 
     public static class ProcedureWithReadConflictAnnotation
     {
         @PerformsWrites
-        @Procedure( mode = Procedure.Mode.READ )
+        @Procedure( mode = Mode.READ )
         public void shouldCompile()
         {
         }
@@ -232,7 +233,7 @@ public class ProceduresTest
     public static class ProcedureWithWriteConflictAnnotation
     {
         @PerformsWrites
-        @Procedure( mode = Procedure.Mode.WRITE )
+        @Procedure( mode = Mode.WRITE )
         public void shouldCompileToo()
         {
         }
@@ -241,7 +242,7 @@ public class ProceduresTest
     public static class ProcedureWithDBMSConflictAnnotation
     {
         @PerformsWrites
-        @Procedure( mode = Procedure.Mode.DBMS )
+        @Procedure( mode = Mode.DBMS )
         public void shouldNotCompile()
         {
         }
@@ -250,7 +251,7 @@ public class ProceduresTest
     public static class ProcedureWithSchemaConflictAnnotation
     {
         @PerformsWrites
-        @Procedure( mode = Procedure.Mode.SCHEMA )
+        @Procedure( mode = Mode.SCHEMA )
         public void shouldNotCompile()
         {
         }

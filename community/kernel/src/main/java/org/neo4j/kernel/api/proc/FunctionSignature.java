@@ -36,17 +36,16 @@ import static java.util.Collections.unmodifiableList;
 public class FunctionSignature
 {
     private final QualifiedName name;
-    private final List<FieldSignature> inputSignature;
-    private final FieldSignature outputSignature;
+    private final List<Neo4jTypes.AnyType> inputSignature;
+    private final Neo4jTypes.AnyType type;
     private final Mode mode;
     private final String[] allowed;
     private final Optional<String> deprecated;
     private final Optional<String> description;
 
-
     public FunctionSignature( QualifiedName name,
-            List<FieldSignature> inputSignature,
-            FieldSignature outputSignature,
+            List<Neo4jTypes.AnyType> inputSignature,
+            Neo4jTypes.AnyType type,
             Mode mode,
             Optional<String> deprecated,
             String[] allowed,
@@ -54,7 +53,7 @@ public class FunctionSignature
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
-        this.outputSignature = outputSignature;
+        this.type = type;
         this.mode = mode;
         this.deprecated = deprecated;
         this.description = description;
@@ -76,14 +75,14 @@ public class FunctionSignature
         return deprecated;
     }
 
-    public List<FieldSignature> inputSignature()
+    public List<Neo4jTypes.AnyType> inputSignature()
     {
         return inputSignature;
     }
 
-    public FieldSignature outputSignature()
+    public Neo4jTypes.AnyType outputType()
     {
-        return outputSignature;
+        return type;
     }
 
     public Optional<String> description()
@@ -104,7 +103,7 @@ public class FunctionSignature
         return
                 name.equals( that.name ) &&
                 inputSignature.equals( that.inputSignature ) &&
-                outputSignature.equals( that.outputSignature );
+                type.equals( that.type );
     }
 
     @Override
@@ -117,15 +116,15 @@ public class FunctionSignature
     public String toString()
     {
         String strInSig = inputSignature == null ? "..." : Iterables.toString( inputSignature, ", " );
-            String strOutSig = outputSignature == null ? "..." : outputSignature.toString();
+            String strOutSig = type == null ? "..." : type.toString();
             return String.format( "%s(%s) :: (%s)", name, strInSig, strOutSig );
     }
 
     public static class Builder
     {
         private final QualifiedName name;
-        private final List<FieldSignature> inputSignature = new LinkedList<>();
-        private FieldSignature outputSignature;
+        private final List<Neo4jTypes.AnyType> inputSignature = new LinkedList<>();
+        private Neo4jTypes.AnyType outputType;
         private Mode mode = Mode.READ_ONLY;
         private String[] allowed = new String[0];
         private Optional<String> deprecated = Optional.empty();
@@ -155,16 +154,16 @@ public class FunctionSignature
         }
 
         /** Define an input field */
-        public Builder in( String name, AnyType type )
+        public Builder in( AnyType type )
         {
-            inputSignature.add( new FieldSignature( name, type) );
+            inputSignature.add( type );
             return this;
         }
 
         /** Define an output field */
-        public Builder out( String name, AnyType type )
+        public Builder out( AnyType type )
         {
-            outputSignature = new FieldSignature( name, type );
+            outputType = type;
             return this;
         }
 
@@ -176,7 +175,11 @@ public class FunctionSignature
 
         public FunctionSignature build()
         {
-            return new FunctionSignature(name, inputSignature, outputSignature, mode, deprecated, allowed, description );
+            if (outputType == null)
+            {
+                throw new IllegalStateException( "output type must be set" );
+            }
+            return new FunctionSignature(name, inputSignature, outputType, mode, deprecated, allowed, description );
         }
     }
 

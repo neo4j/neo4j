@@ -223,7 +223,7 @@ public class GraphDatabaseServiceExecuteTest
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         Procedures procedures =
                 ((GraphDatabaseAPI) graphDb).getDependencyResolver().resolveDependency( Procedures.class );
-        procedures.register( PointProcs.class );
+        procedures.registerProcedure( PointProcs.class );
 
         // when calling procedure that produces a point
         Result result = graphDb.execute(
@@ -243,7 +243,7 @@ public class GraphDatabaseServiceExecuteTest
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         Procedures procedures =
                 ((GraphDatabaseAPI) graphDb).getDependencyResolver().resolveDependency( Procedures.class );
-        procedures.register( PointProcs.class );
+        procedures.registerProcedure( PointProcs.class );
 
         // when calling procedure that produces a point
         Result result = graphDb.execute(

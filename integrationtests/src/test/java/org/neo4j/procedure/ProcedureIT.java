@@ -76,8 +76,8 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.procedure.Procedure.Mode.SCHEMA;
-import static org.neo4j.procedure.Procedure.Mode.WRITE;
+import static org.neo4j.procedure.Mode.SCHEMA;
+import static org.neo4j.procedure.Mode.WRITE;
 
 public class ProcedureIT
 {

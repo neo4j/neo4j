@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,19 +35,22 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.proc.CallableFunction;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Mode;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.FieldSignature;
+import org.neo4j.kernel.api.proc.FunctionSignature;
+import org.neo4j.kernel.api.proc.Mode;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Description;
+import org.neo4j.procedure.Function;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
@@ -61,16 +65,52 @@ public class ReflectiveProcedureCompiler
     private final MethodSignatureCompiler inputSignatureDeterminer;
     private final FieldInjections fieldInjections;
     private final Log log;
+    private final TypeMappers typeMappers;
 
     public ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry components, Log log )
     {
-        inputSignatureDeterminer = new MethodSignatureCompiler(typeMappers);
+        inputSignatureDeterminer = new MethodSignatureCompiler( typeMappers );
         outputMappers = new OutputMappers( typeMappers );
         this.fieldInjections = new FieldInjections( components );
         this.log = log;
+        this.typeMappers = typeMappers;
     }
 
-    public List<CallableProcedure> compile( Class<?> procDefinition ) throws KernelException
+    public List<CallableFunction> compileFunction( Class<?> fcnDefinition ) throws KernelException
+    {
+        try
+        {
+            List<Method> procedureMethods = Arrays.stream( fcnDefinition.getDeclaredMethods() )
+                    .filter( m -> m.isAnnotationPresent( Function.class ) )
+                    .collect( Collectors.toList() );
+
+            if ( procedureMethods.isEmpty() )
+            {
+                return emptyList();
+            }
+
+            MethodHandle constructor = constructor( fcnDefinition );
+
+            ArrayList<CallableFunction> out = new ArrayList<>( procedureMethods.size() );
+            for ( Method method : procedureMethods )
+            {
+                out.add( compileFunction( fcnDefinition, constructor, method ) );
+            }
+            out.sort( ( a, b ) -> a.signature().name().toString().compareTo( b.signature().name().toString() ) );
+            return out;
+        }
+        catch ( KernelException e )
+        {
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
+                    "Failed to compile function defined in `%s`: %s", fcnDefinition.getSimpleName(), e.getMessage() );
+        }
+    }
+
+    public List<CallableProcedure> compileProcedure( Class<?> procDefinition ) throws KernelException
     {
         try
         {
@@ -78,7 +118,7 @@ public class ReflectiveProcedureCompiler
                     .filter( m -> m.isAnnotationPresent( Procedure.class ) )
                     .collect( Collectors.toList() );
 
-            if( procedureMethods.isEmpty() )
+            if ( procedureMethods.isEmpty() )
             {
                 return emptyList();
             }
@@ -90,10 +130,10 @@ public class ReflectiveProcedureCompiler
             {
                 out.add( compileProcedure( procDefinition, constructor, method ) );
             }
-            out.sort( (a,b) -> a.signature().name().toString().compareTo( b.signature().name().toString() ) );
+            out.sort( ( a, b ) -> a.signature().name().toString().compareTo( b.signature().name().toString() ) );
             return out;
         }
-        catch( KernelException e )
+        catch ( KernelException e )
         {
             throw e;
         }
@@ -107,31 +147,21 @@ public class ReflectiveProcedureCompiler
     private ReflectiveProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method )
             throws ProcedureException, IllegalAccessException
     {
-        QualifiedName procName = extractName( procDefinition, method );
+        String valueName = method.getAnnotation( Procedure.class ).value();
+        String definedName = method.getAnnotation( Procedure.class ).name();
+        QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         OutputMapper outputMapper = outputMappers.mapper( method );
         MethodHandle procedureMethod = lookup.unreflect( method );
         List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
-        Mode mode = Mode.READ_ONLY;
         Optional<String> description = description( method );
         Procedure procedure = method.getAnnotation( Procedure.class );
-        if ( procedure.mode().equals( Procedure.Mode.DBMS ) )
-        {
-            mode = Mode.DBMS;
-        }
-        else if ( procedure.mode().equals( Procedure.Mode.SCHEMA ) )
-        {
-            mode = Mode.SCHEMA_WRITE;
-        }
-        else if ( procedure.mode().equals( Procedure.Mode.WRITE ) )
-        {
-            mode = Mode.READ_WRITE;
-        }
+        Mode mode = mode( procedure.mode() );
         if ( method.isAnnotationPresent( PerformsWrites.class ) )
         {
-            if ( !procedure.mode().equals( Procedure.Mode.DEFAULT ) )
+            if ( !procedure.mode().equals( org.neo4j.procedure.Mode.DEFAULT ) )
             {
                 throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                         "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
@@ -142,17 +172,8 @@ public class ReflectiveProcedureCompiler
             }
         }
 
-        String deprecatedBy = procedure.deprecatedBy().trim();
-        Optional<String> deprecated = Optional.empty();
-        if ( method.isAnnotationPresent( Deprecated.class ) )
-        {
-            deprecated = Optional.of( deprecatedBy );
-        }
-        else if ( !deprecatedBy.isEmpty() )
-        {
-            log.warn( "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
-            deprecated = Optional.of( deprecatedBy );
-        }
+        Optional<String> deprecated = deprecated( method, procedure::deprecatedBy,
+                "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
 
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(),
@@ -161,13 +182,74 @@ public class ReflectiveProcedureCompiler
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
 
-    private Optional<String> description(Method method)
+    private ReflectiveFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method )
+            throws ProcedureException, IllegalAccessException
     {
-        if (method.isAnnotationPresent( Description.class ))
+        String valueName = method.getAnnotation( Function.class ).value();
+        String definedName = method.getAnnotation( Function.class ).name();
+        QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
+
+        List<Neo4jTypes.AnyType> inputSignature = inputSignatureDeterminer.inputTypesFor( method );
+        Class<?> returnType = method.getReturnType();
+        TypeMappers.NeoValueConverter valueConverter = typeMappers.converterFor( returnType );
+        MethodHandle procedureMethod = lookup.unreflect( method );
+        List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
+
+        Optional<String> description = description( method );
+        Function function = method.getAnnotation( Function.class );
+        Mode mode = mode( function.mode() );
+
+        Optional<String> deprecated = deprecated( method, function::deprecatedBy,
+                "Use of @Function(deprecatedBy) without @Deprecated in " + procName );
+
+        FunctionSignature signature =
+                new FunctionSignature( procName, inputSignature, valueConverter.type(),
+                        mode, deprecated, function.allowed(), description );
+
+        return new ReflectiveFunction( signature, constructor, procedureMethod, valueConverter, setters );
+    }
+
+    private Optional<String> deprecated( Method method, Supplier<String> supplier, String warning )
+    {
+        String deprecatedBy = supplier.get();
+        Optional<String> deprecated = Optional.empty();
+        if ( method.isAnnotationPresent( Deprecated.class ) )
+        {
+            deprecated = Optional.of( deprecatedBy );
+        }
+        else if ( !deprecatedBy.isEmpty() )
+        {
+            log.warn( warning );
+            deprecated = Optional.of( deprecatedBy );
+        }
+
+        return deprecated;
+    }
+
+    private Mode mode( org.neo4j.procedure.Mode incoming )
+    {
+        switch ( incoming )
+        {
+        case DBMS:
+            return Mode.DBMS;
+        case SCHEMA:
+            return Mode.SCHEMA_WRITE;
+        case WRITE:
+            return Mode.READ_WRITE;
+        default:
+            return Mode.READ_ONLY;
+
+        }
+    }
+
+    private Optional<String> description( Method method )
+    {
+        if ( method.isAnnotationPresent( Description.class ) )
         {
             return Optional.of( method.getAnnotation( Description.class ).value() );
         }
-        else {
+        else
+        {
             return Optional.empty();
         }
     }
@@ -187,22 +269,20 @@ public class ReflectiveProcedureCompiler
         }
     }
 
-    private QualifiedName extractName( Class<?> procDefinition, Method m )
+    private QualifiedName extractName( Class<?> procDefinition, Method m, String valueName, String definedName )
     {
-        String valueName = m.getAnnotation( Procedure.class ).value();
-        String definedName = m.getAnnotation( Procedure.class ).name();
         String procName = (definedName.trim().isEmpty() ? valueName : definedName);
-        if( procName.trim().length() > 0 )
+        if ( procName.trim().length() > 0 )
         {
             String[] split = procName.split( "\\." );
-            if( split.length == 1)
+            if ( split.length == 1 )
             {
                 return new QualifiedName( new String[0], split[0] );
             }
             else
             {
                 int lastElement = split.length - 1;
-                return new QualifiedName( Arrays.copyOf(split, lastElement ), split[lastElement] );
+                return new QualifiedName( Arrays.copyOf( split, lastElement ), split[lastElement] );
             }
         }
         Package pkg = procDefinition.getPackage();
@@ -212,23 +292,49 @@ public class ReflectiveProcedureCompiler
         return new QualifiedName( namespace, name );
     }
 
-    private static class ReflectiveProcedure implements CallableProcedure
+    private abstract static class ReflectiveBase
     {
-        private final ProcedureSignature signature;
-        private final MethodHandle constructor;
-        private final MethodHandle procedureMethod;
-        private final OutputMapper outputMapper;
-        private final List<FieldInjections.FieldSetter> fieldSetters;
+        protected final MethodHandle constructor;
+        protected final MethodHandle procedureMethod;
+        protected final List<FieldInjections.FieldSetter> fieldSetters;
 
-        public ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
-                                    MethodHandle procedureMethod, OutputMapper outputMapper,
+        protected ReflectiveBase( MethodHandle constructor, MethodHandle procedureMethod,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
-            this.signature = signature;
             this.constructor = constructor;
             this.procedureMethod = procedureMethod;
-            this.outputMapper = outputMapper;
             this.fieldSetters = fieldSetters;
+        }
+
+        protected void inject( Context ctx, Object object ) throws ProcedureException
+        {
+            for ( FieldInjections.FieldSetter setter : fieldSetters )
+            {
+                setter.apply( ctx, object );
+            }
+        }
+
+        protected Object[] args( int numberOfDeclaredArguments, Object cls, Object[] input )
+        {
+            Object[] args = new Object[numberOfDeclaredArguments + 1];
+            args[0] = cls;
+            System.arraycopy( input, 0, args, 1, numberOfDeclaredArguments );
+            return args;
+        }
+    }
+
+    private static class ReflectiveProcedure extends ReflectiveBase implements CallableProcedure
+    {
+        protected final ProcedureSignature signature;
+        private final OutputMapper outputMapper;
+
+        public ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
+                MethodHandle procedureMethod, OutputMapper outputMapper,
+                List<FieldInjections.FieldSetter> fieldSetters )
+        {
+            super( constructor, procedureMethod, fieldSetters );
+            this.signature = signature;
+            this.outputMapper = outputMapper;
         }
 
         @Override
@@ -238,14 +344,16 @@ public class ReflectiveProcedureCompiler
         }
 
         @Override
-        public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+        public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
         {
-            // For now, create a new instance of the class for each invocation. In the future, we'd like to keep instances local to
+            // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
+            // instances local to
             // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
             try
             {
                 int numberOfDeclaredArguments = signature.inputSignature().size();
-                if (numberOfDeclaredArguments != input.length) {
+                if ( numberOfDeclaredArguments != input.length )
+                {
                     throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
                             "Procedure `%s` takes %d arguments but %d was provided.",
                             signature.name(),
@@ -254,13 +362,10 @@ public class ReflectiveProcedureCompiler
 
                 Object cls = constructor.invoke();
                 //API injection
-                for ( FieldInjections.FieldSetter setter : fieldSetters )
-                {
-                    setter.apply( ctx, cls );
-                }
-                Object[] args = new Object[numberOfDeclaredArguments + 1];
-                args[0] = cls;
-                System.arraycopy( input, 0, args, 1, numberOfDeclaredArguments );
+                inject( ctx, cls );
+
+                // Call the method
+                Object[] args = args( numberOfDeclaredArguments, cls, input );
 
                 Object rs = procedureMethod.invokeWithArguments( args );
 
@@ -305,7 +410,7 @@ public class ReflectiveProcedureCompiler
                 {
                     return out.hasNext();
                 }
-                catch( RuntimeException e )
+                catch ( RuntimeException e )
                 {
                     throw new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
                             "Failed to call procedure `%s`: %s", signature, e.getMessage() );
@@ -320,10 +425,75 @@ public class ReflectiveProcedureCompiler
                     Object record = out.next();
                     return outputMapper.apply( record );
                 }
-                catch( RuntimeException e )
+                catch ( RuntimeException e )
                 {
                     throw new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
                             "Failed to call procedure `%s`: %s", signature, e.getMessage() );
+                }
+            }
+        }
+    }
+
+    private static class ReflectiveFunction extends ReflectiveBase implements CallableFunction
+    {
+
+        private final TypeMappers.NeoValueConverter valueConverter;
+        private final FunctionSignature signature;
+
+        public ReflectiveFunction( FunctionSignature signature, MethodHandle constructor,
+                MethodHandle procedureMethod, TypeMappers.NeoValueConverter outputMapper,
+                List<FieldInjections.FieldSetter> fieldSetters )
+        {
+            super( constructor, procedureMethod, fieldSetters );
+            this.signature = signature;
+            this.valueConverter = outputMapper;
+        }
+
+        @Override
+        public FunctionSignature signature()
+        {
+            return signature;
+        }
+
+        @Override
+        public Object apply( Context ctx, Object[] input ) throws ProcedureException
+        {
+            // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
+            // instances local to
+            // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
+            try
+            {
+                int numberOfDeclaredArguments = signature.inputSignature().size();
+                if ( numberOfDeclaredArguments != input.length )
+                {
+                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                            "Function `%s` takes %d arguments but %d was provided.",
+                            signature.name(),
+                            numberOfDeclaredArguments, input.length );
+                }
+
+                Object cls = constructor.invoke();
+                //API injection
+                inject( ctx, cls );
+
+                // Call the method
+                Object[] args = args( numberOfDeclaredArguments, cls, input );
+
+                Object rs = procedureMethod.invokeWithArguments( args );
+
+                return valueConverter.toNeoValue( rs );
+            }
+            catch ( Throwable throwable )
+            {
+                if ( throwable instanceof Status.HasStatus )
+                {
+                    throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
+                            throwable.getMessage() );
+                }
+                else
+                {
+                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
+                            "Failed to invoke function `%s`: %s", signature.name(), "Caused by: " + throwable );
                 }
             }
         }

@@ -36,7 +36,7 @@ object ResolvedFunctionInvocation {
 }
 
 /**
-  * A ResolvedUserDefinedInvocation is a user-defined function where the signature
+  * A ResolvedFunctionInvocation is a user-defined function where the signature
   * has been resolve, i.e. verified that it exists in the database
   *
   * @param qualifiedName The qualified name of the function.
@@ -59,7 +59,7 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
         .zip(optInputFields)
         .map {
           case (arg, optField) =>
-            optField.map { field => CoerceTo(arg, field.typ) }.getOrElse(arg)
+            optField.map { field => CoerceTo(arg, field) }.getOrElse(arg)
         }
     copy(callArguments = coercedArguments)(position)
     case None => this
@@ -69,15 +69,12 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
     case None => SemanticError(s"Unknown function '$qualifiedName'", position)
     case Some(signature) =>
       val expectedNumArgs = signature.inputSignature.length
-      val usedDefaultArgs = signature.inputSignature.drop(callArguments.length).flatMap(_.default)
-      val actualNumArgs = callArguments.length + usedDefaultArgs.length
+      val actualNumArgs = callArguments.length
 
       if (expectedNumArgs == actualNumArgs) {
-        //this zip is fine since it will only verify provided args in callArguments
-        //default values are checked at load time
         signature.inputSignature.zip(callArguments).map {
           case (field, arg) =>
-            arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
+            arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.covariant)
         }.foldLeft(success)(_ chain _)
       } else {
         error(_: SemanticState,

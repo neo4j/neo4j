@@ -29,6 +29,7 @@ import java.util.Optional;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.FieldSignature;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.impl.proc.TypeMappers.NeoValueConverter;
 import org.neo4j.procedure.Name;
 
@@ -43,6 +44,19 @@ public class MethodSignatureCompiler
     public MethodSignatureCompiler( TypeMappers typeMappers )
     {
         this.typeMappers = typeMappers;
+    }
+
+    public List<Neo4jTypes.AnyType> inputTypesFor( Method method ) throws ProcedureException
+    {
+        Type[] types = method.getGenericParameterTypes();
+        List<Neo4jTypes.AnyType> neoTypes = new ArrayList<>(types.length);
+        for ( Type type : types )
+        {
+            NeoValueConverter valueConverter = typeMappers.converterFor( type );
+            neoTypes.add( valueConverter.type() );
+        }
+
+        return neoTypes;
     }
 
     public List<FieldSignature> signatureFor( Method method ) throws ProcedureException

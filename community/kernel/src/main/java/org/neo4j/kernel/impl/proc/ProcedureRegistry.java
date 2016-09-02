@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -86,10 +85,6 @@ public class ProcedureRegistry
     {
         FunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
-
-        String descriptiveName = signature.toString();
-        validateSignature( descriptiveName, signature.inputSignature(), "input" );
-        validateSignature( descriptiveName, Collections.singletonList(signature.outputSignature()), "output" );
 
         CallableFunction oldImplementation = functions.get( name );
         if ( oldImplementation == null )

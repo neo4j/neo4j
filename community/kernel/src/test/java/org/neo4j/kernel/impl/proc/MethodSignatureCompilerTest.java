@@ -28,8 +28,9 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.FieldSignature;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.procedure.Function;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
@@ -77,6 +78,21 @@ public class MethodSignatureCompilerTest
         }
     }
 
+    public static class ClassWithFunctionWithSimpleArgs
+    {
+        @Function
+        public String echo( String in)
+        {
+            return in;
+        }
+
+        @Function
+        public String echoWithInvalidType( UnmappableRecord in)
+        {
+            return "echo";
+        }
+    }
+
     @Test
     public void shouldMapSimpleRecordWithString() throws Throwable
     {
@@ -89,6 +105,17 @@ public class MethodSignatureCompilerTest
     }
 
     @Test
+    public void shouldMapSimpleFunctionWithString() throws Throwable
+    {
+        // When
+        Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echo", String.class );
+        List<Neo4jTypes.AnyType> signature = new MethodSignatureCompiler( new TypeMappers() ).inputTypesFor( echo );
+
+        // THen
+        assertThat(signature, contains( Neo4jTypes.NTString));
+    }
+
+    @Test
     public void shouldGiveHelpfulErrorOnUnmappable() throws Throwable
     {
         // Given
@@ -98,7 +125,7 @@ public class MethodSignatureCompilerTest
         exception.expect( ProcedureException.class );
         exception.expectMessage( String.format("Argument `name` at position 0 in `echoWithInvalidType` with%n" +
                                  "type `UnmappableRecord` cannot be converted to a Neo4j type: Don't know how to map " +
-                                 "`class org.neo4j.kernel.impl.proc.MethodSignatureCompilerTest$UnmappableRecord` to " +
+                                 "`org.neo4j.kernel.impl.proc.MethodSignatureCompilerTest$UnmappableRecord` to " +
                                  "the Neo4j Type System.%n" +
                                  "Please refer to to the documentation for full details.%n" +
                                  "For your reference, known types are:" ));

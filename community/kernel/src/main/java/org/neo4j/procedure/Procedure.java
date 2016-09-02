@@ -149,8 +149,4 @@ public @interface Procedure
      */
     String[] allowed() default {};
 
-    enum Mode
-    {
-        READ, WRITE, SCHEMA, DBMS, DEFAULT
-    }
 }

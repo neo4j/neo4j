@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.ProcedureCallMode
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.RuntimeScalaValueConverter
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_1.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_1.spi.UserDefinedFunctionSignature
@@ -35,17 +35,19 @@ case class FunctionInvocation(signature: UserDefinedFunctionSignature, arguments
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
    val query = state.query
 
-    val result = callMode.callFunction(query, signature.name, arguments)
-
     val isGraphKernelResultValue = query.isGraphKernelResultValue _
+    val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue, state.typeConverter.asPublicType)
     val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, state.typeConverter.asPrivateType)
+    val argValues = arguments.map(arg => converter.asDeepJavaValue(arg(ctx)(state)))
+    val result = callMode.callFunction(query, signature.name, argValues)
+
     scalaValues.asDeepScalaValue(result)
   }
 
   override def rewrite(f: (Expression) => Expression) =
     f(FunctionInvocation(signature, arguments.map(a => a.rewrite(f))))
 
-  override def calculateType(symbols: SymbolTable) = signature.outputField.typ
+  override def calculateType(symbols: SymbolTable) = signature.outputType
 
   override def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
 

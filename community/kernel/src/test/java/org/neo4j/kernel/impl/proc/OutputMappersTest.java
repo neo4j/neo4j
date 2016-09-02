@@ -116,7 +116,7 @@ public class OutputMappersTest
         // Expect
         exception.expect( ProcedureException.class );
         exception.expectMessage(
-                "Field `wat` in record `UnmappableRecord` cannot be converted to a Neo4j type: Don't know how to map `class org.neo4j.kernel.impl.proc" +
+                "Field `wat` in record `UnmappableRecord` cannot be converted to a Neo4j type: Don't know how to map `org.neo4j.kernel.impl.proc" +
                 ".OutputMappersTest$UnmappableRecord`" );
 
         // When

@@ -32,7 +32,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import static org.neo4j.procedure.Procedure.Mode.DBMS;
+import static org.neo4j.procedure.Mode.DBMS;
 
 public class AuthProcedures
 {
