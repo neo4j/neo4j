@@ -161,7 +161,7 @@ public class ShiroCaffeineCacheTest
         cache.put( 5, "five" );
         cache.put( 6, "six" );
 
-        assertThat( cache.keys(), containsInAnyOrder( 2, 3, 4, 5, 6 ) );
+        assertThat( cache.keys().size(), equalTo( 5 ) );
     }
 
     @Test

@@ -31,10 +31,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 class ShiroCaffeineCache<K, V> implements Cache<K,V>
 {
-    private final com.github.benmanes.caffeine.cache.Cache<K,V> cacheMap;
+    private final com.github.benmanes.caffeine.cache.Cache<K,V> caffCache;
 
     ShiroCaffeineCache( Ticker ticker, long ttl, int maxCapacity )
     {
@@ -42,7 +43,7 @@ class ShiroCaffeineCache<K, V> implements Cache<K,V>
         {
             throw new IllegalArgumentException( "TTL must be larger than zero." );
         }
-        cacheMap = Caffeine.newBuilder()
+        caffCache = Caffeine.newBuilder()
                 .maximumSize( maxCapacity )
                 .expireAfterWrite( ttl, TimeUnit.MILLISECONDS )
                 .ticker( ticker )
@@ -52,52 +53,48 @@ class ShiroCaffeineCache<K, V> implements Cache<K,V>
     @Override
     public V get( K key ) throws CacheException
     {
-        return cacheMap.getIfPresent( key );
+        return caffCache.getIfPresent( key );
     }
 
     @Override
     public V put( K key, V value ) throws CacheException
     {
-        V oldValue = cacheMap.getIfPresent( key );
-        cacheMap.put( key, value );
-        return oldValue;
+        return caffCache.asMap().put( key, value );
     }
 
     @Override
     public V remove( K key ) throws CacheException
     {
-        V oldValue = cacheMap.getIfPresent( key );
-        cacheMap.invalidate( key );
-        return oldValue;
+        return caffCache.asMap().remove( key );
     }
 
     @Override
     public void clear() throws CacheException
     {
-        cacheMap.invalidateAll();
+        caffCache.invalidateAll();
     }
 
     @Override
     public int size()
     {
-        return Math.toIntExact( cacheMap.estimatedSize() );
+        return caffCache.asMap().size();
     }
 
     @Override
     public Set<K> keys()
     {
-        return cacheMap.asMap().keySet();
+        return caffCache.asMap().keySet();
     }
 
     @Override
     public Collection<V> values()
     {
-        return cacheMap.asMap().values();
+        return caffCache.asMap().values();
     }
 
     static class Manager implements CacheManager
     {
-        private final Map<String,Cache<?,?>> cacheMap;
+        private final Map<String,Cache<?,?>> caches;
         private final Ticker ticker;
         private final long ttl;
         private final int maxCapacity;
@@ -107,24 +104,21 @@ class ShiroCaffeineCache<K, V> implements Cache<K,V>
             this.ticker = ticker;
             this.ttl = ttl;
             this.maxCapacity = maxCapacity;
-            cacheMap = new HashMap<>();
+            caches = new HashMap<>();
         }
 
         @Override
         public <K, V> Cache<K,V> getCache( String s ) throws CacheException
         {
-            if ( !cacheMap.containsKey( s ) )
-            {
-                cacheMap.put( s, ttl <= 0 ? new NullCache() : new ShiroCaffeineCache<K,V>( ticker, ttl, maxCapacity ) );
-            }
             //noinspection unchecked
-            return (Cache<K,V>) cacheMap.get( s );
+            return (Cache<K,V>) caches.computeIfAbsent( s, ignored -> ttl <= 0 ?
+                    new NullCache() :
+                    new ShiroCaffeineCache<K,V>( ticker, ttl, maxCapacity ) );
         }
     }
 
     private static class NullCache<K, V> implements Cache<K, V>
     {
-
         @Override
         public V get( K key ) throws CacheException
         {
