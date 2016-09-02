@@ -54,7 +54,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     @Override
     public User getUserByName( String username )
     {
-        return usersByName.get( username );
+        return username == null ? null : usersByName.get( username );
     }
 
     @Override

@@ -193,7 +193,7 @@ public class AuthProcedures
         kickoutUser( username, "deletion" );
     }
 
-    void kickoutUser( String username, String reason )
+    private void kickoutUser( String username, String reason )
     {
         try
         {
@@ -203,7 +203,7 @@ public class AuthProcedures
         catch ( Exception e )
         {
             securityLog.error( authSubject, "failed to terminate running transaction and bolt connections for " +
-                    "user `%s` following %s. %s", username, reason, e.getMessage() );
+                    "user `%s` following %s: %s", username, reason, e.getMessage() );
             throw e;
         }
     }
@@ -287,7 +287,7 @@ public class AuthProcedures
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to list users. %s", e.getMessage() );
+            securityLog.error( authSubject, "tried to list users: %s", e.getMessage() );
             throw e;
         }
     }
@@ -310,7 +310,7 @@ public class AuthProcedures
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to list roles. %s", e.getMessage() );
+            securityLog.error( authSubject, "tried to list roles: %s", e.getMessage() );
             throw e;
         }
     }
@@ -327,7 +327,7 @@ public class AuthProcedures
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to list roles for user `%s`. %s", username, e.getMessage() );
+            securityLog.error( authSubject, "tried to list roles for user `%s`: %s", username, e.getMessage() );
             throw e;
         }
     }
@@ -344,7 +344,7 @@ public class AuthProcedures
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to list users for role `%s`. %s", roleName, e.getMessage() );
+            securityLog.error( authSubject, "tried to list users for role `%s`: %s", roleName, e.getMessage() );
             throw e;
         }
     }
@@ -507,12 +507,13 @@ public class AuthProcedures
     private StandardEnterpriseAuthSubject ensureSelfOrAdminAuthSubject( String username ) throws InvalidArgumentsException
     {
         StandardEnterpriseAuthSubject subject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-        subject.getUserManager().getUser( username );
 
         if ( subject.isAdmin() || subject.doesUsernameMatch( username ) )
         {
+            subject.getUserManager().getUser( username );
             return subject;
         }
+
         throw new AuthorizationViolationException( PERMISSION_DENIED );
     }
 

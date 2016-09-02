@@ -36,7 +36,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
-import org.neo4j.test.assertion.Assert;
 
 import static org.mockito.Mockito.mock;
 
@@ -45,10 +44,11 @@ import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSIO
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
+import static org.neo4j.test.assertion.Assert.assertException;
 
 public class AuthProceduresLoggingTest
 {
-    private AuthProcedures authProcedures;
+    private TestAuthProcedures authProcedures;
     private AssertableLogProvider log = null;
     private AuthSubject matsSubject = null;
 
@@ -481,14 +481,115 @@ public class AuthProceduresLoggingTest
         log.assertExactly( error( "[mats]: tried to delete role `%s`: %s", ADMIN, PERMISSION_DENIED ) );
     }
 
+    @Test
+    public void shouldLogIfUnexpectedErrorTerminatingTransactions() throws Exception
+    {
+        // Given
+        authProcedures.createUser( "johan", "neo4j", false );
+        authProcedures.failTerminateTransaction();
+        log.clear();
+
+        // When
+        assertException( () -> authProcedures.deleteUser( "johan" ), RuntimeException.class, "Unexpected error" );
+
+        // Then
+        log.assertExactly(
+                info( "[admin]: deleted user `%s`", "johan" ),
+                error( "[admin]: failed to terminate running transaction and bolt connections for user `%s` following %s: %s",
+                        "johan", "deletion", "Unexpected error" )
+        );
+    }
+
+    @Test
+    public void shouldLogUnauthorizedListUsers() throws Exception
+    {
+        // Given
+        authProcedures.authSubject = matsSubject;
+
+        // When
+        catchAuthorizationViolation( () -> authProcedures.listUsers() );
+
+        log.assertExactly( error( "[mats]: tried to list users: %s", PERMISSION_DENIED ) );
+    }
+
+    @Test
+    public void shouldLogUnauthorizedListRoles() throws Exception
+    {
+        // Given
+        authProcedures.authSubject = matsSubject;
+
+        // When
+        catchAuthorizationViolation( () -> authProcedures.listRoles() );
+
+        log.assertExactly( error( "[mats]: tried to list roles: %s", PERMISSION_DENIED ) );
+    }
+
+    @Test
+    public void shouldLogFailureToListRolesForUser() throws Exception
+    {
+        // Given
+
+        // When
+        catchInvalidArguments( () -> authProcedures.listRolesForUser( null ) );
+        catchInvalidArguments( () -> authProcedures.listRolesForUser( "" ) );
+        catchInvalidArguments( () -> authProcedures.listRolesForUser( "nonExistent" ) );
+
+        log.assertExactly(
+                error( "[admin]: tried to list roles for user `%s`: %s", null, "User 'null' does not exist." ),
+                error( "[admin]: tried to list roles for user `%s`: %s", "", "User '' does not exist." ),
+                error( "[admin]: tried to list roles for user `%s`: %s", "nonExistent", "User 'nonExistent' does not exist." )
+        );
+    }
+
+    @Test
+    public void shouldLogUnauthorizedListRolesForUser() throws Exception
+    {
+        // Given
+        authProcedures.authSubject = matsSubject;
+
+        // When
+        catchAuthorizationViolation( () -> authProcedures.listRolesForUser( "user" ) );
+
+        log.assertExactly( error( "[mats]: tried to list roles for user `%s`: %s", "user", PERMISSION_DENIED ) );
+    }
+
+    @Test
+    public void shouldLogFailureToListUsersForRole() throws Exception
+    {
+        // Given
+
+        // When
+        catchInvalidArguments( () -> authProcedures.listUsersForRole( null ) );
+        catchInvalidArguments( () -> authProcedures.listUsersForRole( "" ) );
+        catchInvalidArguments( () -> authProcedures.listUsersForRole( "nonExistent" ) );
+
+        log.assertExactly(
+                error( "[admin]: tried to list users for role `%s`: %s", null, "Role 'null' does not exist." ),
+                error( "[admin]: tried to list users for role `%s`: %s", "", "Role '' does not exist." ),
+                error( "[admin]: tried to list users for role `%s`: %s", "nonExistent", "Role 'nonExistent' does not exist." )
+        );
+    }
+
+    @Test
+    public void shouldLogUnauthorizedListUsersForRole() throws Exception
+    {
+        // Given
+        authProcedures.authSubject = matsSubject;
+
+        // When
+        catchAuthorizationViolation( () -> authProcedures.listUsersForRole( "role" ) );
+
+        log.assertExactly( error( "[mats]: tried to list users for role `%s`: %s", "role", PERMISSION_DENIED ) );
+    }
+
     private void catchInvalidArguments( ThrowingAction<Exception> f ) throws Exception
     {
-        Assert.assertException( f, InvalidArgumentsException.class, "" );
+        assertException( f, InvalidArgumentsException.class, "" );
     }
 
     private void catchAuthorizationViolation( ThrowingAction<Exception> f ) throws Exception
     {
-        Assert.assertException( f, AuthorizationViolationException.class, "" );
+        assertException( f, AuthorizationViolationException.class, "" );
     }
 
     private AssertableLogProvider.LogMatcher info( String message, String... arguments )
@@ -563,14 +664,20 @@ public class AuthProceduresLoggingTest
 
     private static class TestAuthProcedures extends AuthProcedures
     {
-        @Override
-        void kickoutUser( String username, String reason )
+        private boolean failTerminateTransactions = false;
+
+        void failTerminateTransaction()
         {
+            failTerminateTransactions = true;
         }
 
         @Override
         Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
         {
+            if ( failTerminateTransactions )
+            {
+                throw new RuntimeException( "Unexpected error" );
+            }
             return Stream.empty();
         }
 
