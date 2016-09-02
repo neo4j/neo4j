@@ -39,7 +39,7 @@ public class AuthProcedures
     @Context
     public AuthSubject authSubject;
 
-    @Description( "Create a user." )
+    @Description( "Create a new user." )
     @Procedure( name = "dbms.security.createUser", mode = DBMS )
     public void createUser(
             @Name( "username" ) String username,
@@ -51,7 +51,7 @@ public class AuthProcedures
         subject.getAuthManager().newUser( username, password, requirePasswordChange );
     }
 
-    @Description( "Delete the user." )
+    @Description( "Delete the specified user." )
     @Procedure( name = "dbms.security.deleteUser", mode = DBMS )
     public void deleteUser( @Name( "username" ) String username ) throws InvalidArgumentsException, IOException
     {
@@ -64,20 +64,21 @@ public class AuthProcedures
     }
 
     @Deprecated
-    @Description( "Change the user password. Deprecated by dbms.security.changePassword." )
+    @Description( "Change the current users password. Deprecated by dbms.security.changePassword." )
     @Procedure( name = "dbms.changePassword", mode = DBMS, deprecatedBy = "dbms.security.changePassword" )
     public void changePasswordDeprecated( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
         authSubject.setPassword( password, false );
     }
 
-    @Description( "Change the user password." )
+    @Description( "Change the current users password." )
     @Procedure( name = "dbms.security.changePassword", mode = DBMS )
     public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
         authSubject.setPassword( password, false );
     }
 
+    @Description( "Show the current user." )
     @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
     {
@@ -88,6 +89,7 @@ public class AuthProcedures
             ) );
     }
 
+    @Description( "List all local users." )
     @Procedure( name = "dbms.security.listUsers", mode = DBMS )
     public Stream<UserResult> listUsers() throws InvalidArgumentsException, IOException
     {
