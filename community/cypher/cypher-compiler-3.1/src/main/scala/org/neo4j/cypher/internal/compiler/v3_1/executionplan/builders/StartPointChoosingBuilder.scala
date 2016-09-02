@@ -19,16 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders
 
+import org.neo4j.cypher.internal.compiler.v3_1.commands.{ShortestPath, _}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.Predicate
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{MatchPattern, PartiallySolvedQuery, PlanBuilder}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_1.commands._
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.ExecutionPlanInProgress
-import org.neo4j.cypher.internal.compiler.v3_1.commands.ShortestPath
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlanInProgress, MatchPattern, PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.PipeMonitor
+import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 
 /*
-This builder is concerned with finding queries without start items and without index hints, and
+This builder is concerned with finding stream without start items and without index hints, and
 choosing a start point to use.
 
 To do this, three things are done.

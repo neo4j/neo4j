@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.AnyInCollection
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Collection, Variable, Property}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Collection, Property, Variable}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.{Equals, HasLabel}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.{UnresolvedLabel, UnresolvedProperty}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
@@ -119,7 +119,7 @@ class NodeFetchStrategyTest extends CypherFunSuite {
     inner.run()
   }
 
-  test("should select schema index for range queries") {
+  test("should select schema index for range stream") {
     object inner extends AstConstructionTestSupport {
 
       def run(): Unit = {

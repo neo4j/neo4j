@@ -354,7 +354,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("aggregation inside looping queries is not allowed") {
+  test("aggregation inside looping stream is not allowed") {
 
     val mess = "Can't use aggregating expressions inside of expressions executing over lists"
     executeAndEnsureError(

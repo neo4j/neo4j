@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.enterprise;
 
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.enterprise.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
@@ -31,6 +33,7 @@ import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 
@@ -40,6 +43,13 @@ import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
  */
 public class EnterpriseEditionModule extends CommunityEditionModule
 {
+    @Override
+    public void registerProcedures( Procedures procedures ) throws KernelException
+    {
+        super.registerProcedures( procedures );
+        procedures.register( BuiltInProcedures.class );
+    }
+
     public EnterpriseEditionModule( PlatformModule platformModule )
     {
         super( platformModule );

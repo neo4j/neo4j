@@ -20,6 +20,14 @@
 
 package org.neo4j.server.security.enterprise.auth;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
@@ -41,14 +49,6 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
@@ -74,22 +74,22 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
     }
 
     @Override
-    public EnterpriseUserManager getManager()
+    public EnterpriseUserManager getLocalUserManager()
     {
         return authManager.getUserManager();
     }
 
     @Override
-    public GraphDatabaseFacade getGraph()
+    public GraphDatabaseFacade getLocalGraph()
     {
         return (GraphDatabaseFacade) server.graphDatabaseService();
     }
 
     @Override
-    public InternalTransaction startTransactionAsUser( BoltSubject subject ) throws Throwable
+    public InternalTransaction beginLocalTransactionAsUser( BoltSubject subject ) throws Throwable
     {
         AuthSubject authSubject = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
-        return getGraph().beginTransaction( KernelTransaction.Type.explicit, authSubject );
+        return getLocalGraph().beginTransaction( KernelTransaction.Type.explicit, authSubject );
     }
 
     @Override

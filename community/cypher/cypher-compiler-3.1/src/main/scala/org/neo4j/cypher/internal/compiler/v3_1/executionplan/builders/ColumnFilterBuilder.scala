@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.{PipeMonitor, Pipe, ColumnFilterPipe}
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{PlanBuilder, PartiallySolvedQuery, ExecutionPlanInProgress}
-import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v3_1.commands.{AllVariables, ReturnItem, ReturnColumn}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.{AllVariables, ReturnColumn, ReturnItem}
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.{ColumnFilterPipe, Pipe, PipeMonitor}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 
 /**
  * This class should get rid of any extra columns built up while building the execution plan, that weren't in the
- * queries return clause.
+ * stream return clause.
  */
 class ColumnFilterBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {

@@ -21,6 +21,11 @@ package org.neo4j.kernel.api;
 
 import java.util.Map;
 
+import static java.lang.String.format;
+
+/**
+ * Represents a currently running query.
+ */
 public class ExecutingQuery
 {
     private final long queryId;
@@ -30,15 +35,14 @@ public class ExecutingQuery
     private final Map<String, Object> queryParameters;
     private final long startTime;
 
-    // TODO: Metadata
-
-    public ExecutingQuery( long queryId, String authSubjectName, String queryText, Map<String,Object> queryParameters )
+    public ExecutingQuery( long queryId, String authSubjectName, String queryText, Map<String,Object>
+            queryParameters, long startTime )
     {
         this.queryId = queryId;
         this.authSubjectName = authSubjectName;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
-        this.startTime = System.currentTimeMillis();
+        this.startTime = startTime;
     }
 
     @Override
@@ -90,17 +94,11 @@ public class ExecutingQuery
         return startTime;
     }
 
-    @SuppressWarnings( "StringBufferReplaceableByString" )
     @Override
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder( "ExecutingQuery{" );
-        sb.append( "queryId=" ).append( queryId );
-        sb.append( ", authSubjectName='" ).append( authSubjectName ).append( '\'' );
-        sb.append( ", queryText='" ).append( queryText ).append( '\'' );
-        sb.append( ", queryParameters=" ).append( queryParameters );
-        sb.append( ", startTime=" ).append( startTime );
-        sb.append( '}' );
-        return sb.toString();
+        return format(
+                "ExecutingQuery{queryId=%d, authSubjectName='%s', queryText='%s', queryParameters=%s, startTime=%d}",
+                queryId, authSubjectName, queryText, queryParameters, startTime );
     }
 }

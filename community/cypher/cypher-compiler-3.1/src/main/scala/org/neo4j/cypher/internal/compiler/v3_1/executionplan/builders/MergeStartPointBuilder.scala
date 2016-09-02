@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.PipeMonitor
 
 /*
-This builder is concerned with finding queries that use MERGE, and finds a way to try to find matching nodes
+This builder is concerned with finding stream that use MERGE, and finds a way to try to find matching nodes
  */
 
 class MergeStartPointBuilder extends PlanBuilder {

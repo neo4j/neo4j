@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.stream.Stream;
-
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -63,7 +61,7 @@ public class KernelStatement implements TxStateHolder, Statement
     private final TxStateHolder txStateHolder;
     private final StorageStatement storeStatement;
     private final KernelTransactionImplementation transaction;
-    private final DataOperationsFacade facade;
+    private final OperationsFacade facade;
     private StatementLocks statementLocks;
     private int referenceCount;
     private volatile ExecutingQueryList executingQueryList;
@@ -79,7 +77,7 @@ public class KernelStatement implements TxStateHolder, Statement
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
         this.storeStatement = storeStatement;
-        this.facade = new DataOperationsFacade( transaction, this, operations, procedures );
+        this.facade = new OperationsFacade( transaction, this, operations, procedures );
         this.executingQueryList = ExecutingQueryList.EMPTY;
     }
 
@@ -185,7 +183,7 @@ public class KernelStatement implements TxStateHolder, Statement
         return statementLocks;
     }
 
-    final void acquire()
+    public final void acquire()
     {
         if ( referenceCount++ == 0 )
         {
@@ -212,9 +210,9 @@ public class KernelStatement implements TxStateHolder, Statement
         return transaction.mode().name();
     }
 
-    final Stream<ExecutingQuery> executingQueries()
+    final ExecutingQueryList executingQueryList()
     {
-        return executingQueryList.queries();
+        return executingQueryList;
     }
 
     final void startQueryExecution( ExecutingQuery query )
@@ -227,7 +225,7 @@ public class KernelStatement implements TxStateHolder, Statement
         this.executingQueryList = executingQueryList.remove( executingQuery );
     }
 
-    /* only public for tests */ public final StorageStatement getStoreStatement()
+    /* only public for tests */ public StorageStatement getStoreStatement()
     {
         return storeStatement;
     }

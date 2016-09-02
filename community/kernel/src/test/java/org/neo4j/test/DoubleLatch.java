@@ -24,10 +24,10 @@ import java.util.concurrent.TimeUnit;
 
 public class DoubleLatch
 {
-    private static final int FIVE_MINUTES = 5 * 60 * 1000;
+    private static final long FIVE_MINUTES = TimeUnit.MINUTES.toMillis( 5 );
     private final CountDownLatch startSignal;
     private final CountDownLatch finishSignal;
-    private final boolean uninterruptedWaiting;
+    private final boolean awaitUninterruptibly;
 
     public DoubleLatch()
     {
@@ -39,28 +39,28 @@ public class DoubleLatch
         this( numberOfContestants, false );
     }
 
-    public DoubleLatch( int numberOfContestants, boolean uninterruptedWaiting )
+    public DoubleLatch( int numberOfContestants, boolean awaitUninterruptibly )
     {
         this.startSignal = new CountDownLatch( numberOfContestants );
         this.finishSignal = new CountDownLatch( numberOfContestants );
-        this.uninterruptedWaiting = uninterruptedWaiting;
+        this.awaitUninterruptibly = awaitUninterruptibly;
     }
 
     public void waitForAllToStart()
     {
-        awaitLatch( startSignal, uninterruptedWaiting );
+        awaitLatch( startSignal, awaitUninterruptibly );
     }
 
     public void startAndWaitForAllToStart()
     {
         startSignal.countDown();
-        awaitLatch( startSignal, uninterruptedWaiting );
+        awaitLatch( startSignal, awaitUninterruptibly );
     }
 
     public void startAndWaitForAllToStartAndFinish()
     {
         startAndWaitForAllToStart();
-        awaitLatch( finishSignal, uninterruptedWaiting );
+        awaitLatch( finishSignal, awaitUninterruptibly );
     }
 
     public void finish()
@@ -75,7 +75,7 @@ public class DoubleLatch
 
     public void waitForAllToFinish()
     {
-        awaitLatch( finishSignal, uninterruptedWaiting );
+        awaitLatch( finishSignal, awaitUninterruptibly );
     }
 
     public static void awaitLatch( CountDownLatch latch )

@@ -176,7 +176,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
       null
     }
     val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
-    //run with compiled to find new queries that are able to run with compiled runtime
+    //run with compiled to find new stream that are able to run with compiled runtime
     //we cannot set it to default at the db-level since we cannot combine compiled and rule
     val idpResult = executeWithCostPlannerOnly(s"CYPHER runtime=compiled $queryText", params: _*)
 

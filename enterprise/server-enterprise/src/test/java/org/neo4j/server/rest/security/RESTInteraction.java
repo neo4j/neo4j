@@ -82,22 +82,22 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
     }
 
     @Override
-    public EnterpriseUserManager getManager()
+    public EnterpriseUserManager getLocalUserManager()
     {
         return authManager.getUserManager();
     }
 
     @Override
-    public GraphDatabaseFacade getGraph()
+    public GraphDatabaseFacade getLocalGraph()
     {
         return server.getDatabase().getGraph();
     }
 
     @Override
-    public InternalTransaction startTransactionAsUser( RESTSubject subject ) throws Throwable
+    public InternalTransaction beginLocalTransactionAsUser( RESTSubject subject ) throws Throwable
     {
         AuthSubject authSubject = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
-        return getGraph().beginTransaction( KernelTransaction.Type.explicit, authSubject );
+        return getLocalGraph().beginTransaction( KernelTransaction.Type.explicit, authSubject );
     }
 
     @Override

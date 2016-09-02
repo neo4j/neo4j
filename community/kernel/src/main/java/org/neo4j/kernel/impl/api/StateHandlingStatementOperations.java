@@ -1615,7 +1615,7 @@ public class StateHandlingStatementOperations implements
             // that still are referenced by a legacy index will be added for removal in this transaction.
             // Ideally we'd want to include start/end node too, but we can't since the relationship doesn't exist.
             // So we do the "normal" remove call on the legacy index transaction changes. The downside is that
-            // Some queries on this transaction state that include start/end nodes might produce invalid results.
+            // Some stream on this transaction state that include start/end nodes might produce invalid results.
             statement.legacyIndexTxState().relationshipChanges( indexName ).remove( relationship );
         }
     }

@@ -60,9 +60,9 @@ public class ThreadedTransactionCreate<S>
                     {
                         try
                         {
-                            try ( InternalTransaction tx = neo.startTransactionAsUser( subject ) )
+                            try ( InternalTransaction tx = neo.beginLocalTransactionAsUser( subject ) )
                             {
-                                Result result = neo.getGraph().execute( query );
+                                Result result = neo.getLocalGraph().execute( query );
                                 latch.startAndWaitForAllToStart();
                                 latch.finishAndWaitForAllToFinish();
                                 result.close();

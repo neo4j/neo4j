@@ -79,7 +79,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
 
     @Test
     @Title( "Retrieve query metadata" )
-    @Documented("By passing in an additional GET parameter when you execute Cypher queries, metadata about the " +
+    @Documented("By passing in an additional GET parameter when you execute Cypher stream, metadata about the " +
                 "query will be returned, such as how many labels were added or removed by the query.")
     @Graph( nodes = { @NODE( name = "I", setNameProperty = true, labels = { @LABEL( "Director" ) } ) } )
     public void testQueryStatistics() throws JsonParseException
@@ -152,7 +152,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
 
     @Test
     @Title("Use parameters")
-    @Documented( "Cypher supports queries with parameters which are submitted as JSON." )
+    @Documented( "Cypher supports stream with parameters which are submitted as JSON." )
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void send_queries_with_parameters() throws Exception {
         data.get();
@@ -264,7 +264,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     }
 
     @Test
-    @Documented( "When sending queries that\n" +
+    @Documented( "When sending stream that\n" +
                  "return nested results like list and maps,\n" +
                  "these will get serialized into nested JSON representations\n" +
                  "according to their types." )
@@ -337,7 +337,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     }
 
     @Test
-    @Title( "Send queries with errors" )
+    @Title( "Send stream with errors" )
     @Documented( "This example shows what happens if you misspell an identifier." )
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void send_queries_with_errors() throws Exception {

@@ -671,7 +671,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldDeleteRole() throws Exception
     {
-        neo.getManager().newRole( "new_role" );
+        neo.getLocalUserManager().newRole( "new_role" );
         assertEmpty( adminSubject, format("CALL dbms.security.deleteRole('%s')", "new_role") );
 
         assertThat( userManager.getAllRoleNames(), not( contains( "new_role" ) ) );

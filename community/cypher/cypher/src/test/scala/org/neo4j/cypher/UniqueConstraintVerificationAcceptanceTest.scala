@@ -20,10 +20,10 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
-
-import collection.JavaConverters._
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
-import org.neo4j.kernel.impl.api.DataOperationsFacade
+import org.neo4j.kernel.impl.api.OperationsFacade
+
+import scala.collection.JavaConverters._
 
 class UniqueConstraintVerificationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CollectionSupport {
 
@@ -35,7 +35,7 @@ class UniqueConstraintVerificationAcceptanceTest extends ExecutionEngineFunSuite
 
     //THEN
     graph.inTx {
-      context: DataOperationsFacade =>
+      context: OperationsFacade =>
         val prop = context.propertyKeyGetForName("propertyKey")
         val label = context.labelGetForName("Label")
 
@@ -54,7 +54,7 @@ class UniqueConstraintVerificationAcceptanceTest extends ExecutionEngineFunSuite
 
     // THEN
     graph.inTx {
-      context: DataOperationsFacade =>
+      context: OperationsFacade =>
         val prop = context.propertyKeyGetForName("name")
         val label = context.labelGetForName("Person")
 
@@ -75,7 +75,7 @@ class UniqueConstraintVerificationAcceptanceTest extends ExecutionEngineFunSuite
 
     // THEN
     graph.inTx {
-      context: DataOperationsFacade =>
+      context: OperationsFacade =>
         val prop = context.propertyKeyGetForName("name")
         val label = context.labelGetForName("Person")
 
@@ -94,7 +94,7 @@ class UniqueConstraintVerificationAcceptanceTest extends ExecutionEngineFunSuite
 
     //THEN
     graph.inTx {
-      context: DataOperationsFacade =>
+      context: OperationsFacade =>
         val prop = context.propertyKeyGetForName("propertyKey")
         val label = context.labelGetForName("Label")
 
@@ -123,7 +123,7 @@ class UniqueConstraintVerificationAcceptanceTest extends ExecutionEngineFunSuite
     }
 
     graph.inTx {
-      context: DataOperationsFacade =>
+      context: OperationsFacade =>
         val prop = context.propertyKeyGetForName("id")
         val label = context.labelGetForName("Person")
 

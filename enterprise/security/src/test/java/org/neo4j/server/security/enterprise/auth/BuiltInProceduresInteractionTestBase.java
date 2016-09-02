@@ -45,7 +45,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.server.security.auth.AuthProceduresIT.assertKeyIsMap;
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSION_DENIED;
-import static org.neo4j.test.matchers.CommonMatchers.itemsMatchingExactlyOneOf;
+import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
 
 public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
@@ -137,7 +137,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             Matcher<Map<String,Object>> matcher1 = listedQuery( startTime, "readSubject", q1 );
             Matcher<Map<String,Object>> matcher2 = listedQuery( startTime, "readSubject", q2 );
 
-            assertThat( maps, itemsMatchingExactlyOneOf( matcher1, matcher2, thisQuery ) );
+            assertThat( maps, matchesOneToOneInAnyOrder( matcher1, matcher2, thisQuery ) );
         } );
 
         latch.finishAndWaitForAllToFinish();
@@ -166,7 +166,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             Matcher<Map<String,Object>> thisQuery = listedQuery( startTime, "readSubject", query );
             Matcher<Map<String,Object>> queryMatcher = listedQuery( startTime, "readSubject", q1 );
 
-            assertThat( maps, itemsMatchingExactlyOneOf( queryMatcher, thisQuery ) );
+            assertThat( maps, matchesOneToOneInAnyOrder( queryMatcher, thisQuery ) );
         } );
 
         latch.finishAndWaitForAllToFinish();

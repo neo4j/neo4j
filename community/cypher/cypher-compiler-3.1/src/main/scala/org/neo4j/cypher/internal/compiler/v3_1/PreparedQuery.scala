@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, Rewriter, Scope, 
 // A prepared query captures all information that has been derived so far as part
 // of this processing
 //
-// Currently there are two types of prepared queries:
+// Currently there are two types of prepared stream:
 //
 // - PreparedQuerySyntax (can be constructed without db access)
 // - PreparedQuerySemantics (construction may requires db access for resolving procedure signatures)

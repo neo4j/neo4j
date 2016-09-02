@@ -47,7 +47,7 @@ class DistinctBuilder extends PlanBuilder {
     plan.query.returns.flatMap(_.token.expressions(plan.pipe.symbols)).toMap
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
-      plan.query.aggregateToDo &&                  //The parser marks DISTINCT queries as aggregates. Revisit?
+      plan.query.aggregateToDo &&                  //The parser marks DISTINCT stream as aggregates. Revisit?
       plan.query.aggregation.isEmpty &&            //It's an aggregate query without aggregate expressions
       plan.query.readyToAggregate &&
       plan.query.returns.exists {

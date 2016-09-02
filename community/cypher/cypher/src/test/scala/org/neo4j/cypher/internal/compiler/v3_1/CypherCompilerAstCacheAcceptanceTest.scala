@@ -119,7 +119,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }
 
-  test("should cache easily parametrized queries") {
+  test("should cache easily parametrized stream") {
     val compiler = createCompiler()
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)

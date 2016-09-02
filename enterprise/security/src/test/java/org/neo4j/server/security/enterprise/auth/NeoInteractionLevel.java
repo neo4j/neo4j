@@ -31,11 +31,11 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 public interface NeoInteractionLevel<S>
 {
-    EnterpriseUserManager getManager();
+    EnterpriseUserManager getLocalUserManager();
 
-    GraphDatabaseFacade getGraph();
+    GraphDatabaseFacade getLocalGraph();
 
-    InternalTransaction startTransactionAsUser( S subject ) throws Throwable;
+    InternalTransaction beginLocalTransactionAsUser( S subject ) throws Throwable;
 
     /*
      * The returned String is empty if the query executed as expected, and contains an error msg otherwise

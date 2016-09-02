@@ -88,10 +88,10 @@ public class QueryLoggerIT
         EmbeddedInteraction db = new EmbeddedInteraction( databaseBuilder );
 
         // create users
-        db.getManager().newUser( "mats", "neo4j", false );
-        db.getManager().newUser( "andres", "neo4j", false );
-        db.getManager().addRoleToUser( "architect", "mats" );
-        db.getManager().addRoleToUser( "reader", "andres" );
+        db.getLocalUserManager().newUser( "mats", "neo4j", false );
+        db.getLocalUserManager().newUser( "andres", "neo4j", false );
+        db.getLocalUserManager().addRoleToUser( "architect", "mats" );
+        db.getLocalUserManager().addRoleToUser( "reader", "andres" );
 
         EnterpriseAuthSubject mats = db.login( "mats", "neo4j" );
 
@@ -194,7 +194,7 @@ public class QueryLoggerIT
         executeQueryAndShutdown( database );
 
         List<String> lines = readAllLines( logFilename );
-        assertTrue( "Should not have any queries logged since query log is disabled", lines.isEmpty() );
+        assertTrue( "Should not have any stream logged since query log is disabled", lines.isEmpty() );
     }
 
     @Test

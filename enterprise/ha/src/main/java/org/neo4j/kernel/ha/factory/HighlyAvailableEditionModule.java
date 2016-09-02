@@ -62,6 +62,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
@@ -140,6 +141,7 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.TransactionId;
@@ -855,6 +857,12 @@ public class HighlyAvailableEditionModule
                 return config.get( HaSettings.ha_server );
             }
         };
+    }
+
+    @Override
+    public void registerProcedures( Procedures procedures ) throws KernelException
+    {
+        // TODO
     }
 
     @Override

@@ -126,18 +126,18 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> cypher_hints_error = setting( "cypher.hints_error", BOOLEAN, FALSE );
 
     @Description( "This setting is associated with performance optimization. Set this to `true` in situations where " +
-                  "it is preferable to have any queries using the 'shortestPath' function terminate as soon as " +
+                  "it is preferable to have any stream using the 'shortestPath' function terminate as soon as " +
                   "possible with no answer, rather than potentially running for a long time attempting to find an " +
                   "answer (even if there is no path to be found). " +
-                  "For most queries, the 'shortestPath' algorithm will return the correct answer very quickly. However " +
+                  "For most stream, the 'shortestPath' algorithm will return the correct answer very quickly. However " +
                   "there are some cases where it is possible that the fast bidirectional breadth-first search " +
                   "algorithm will find no results even if they exist. This can happen when the predicates in the " +
                   "`WHERE` clause applied to 'shortestPath' cannot be applied to each step of the traversal, and can " +
                   "only be applied to the entire path. When the query planner detects these special cases, it will " +
                   "plan to perform an exhaustive depth-first search if the fast algorithm finds no paths. However, " +
                   "the exhaustive search may be orders of magnitude slower than the fast algorithm. If it is critical " +
-                  "that queries terminate as soon as possible, it is recommended that this option be set to `true`, " +
-                  "which means that Neo4j will never consider using the exhaustive search for shortestPath queries. " +
+                  "that stream terminate as soon as possible, it is recommended that this option be set to `true`, " +
+                  "which means that Neo4j will never consider using the exhaustive search for shortestPath stream. " +
                   "However, please note that if no paths are found, an error will be thrown at run time, which will " +
                   "need to be handled by the application." )
     public static final Setting<Boolean> forbid_exhaustive_shortestpath = setting(
@@ -260,7 +260,7 @@ public abstract class GraphDatabaseSettings
                   "best effort in Enterprise Edition. " +
                   "An IO is in this case a 8 KiB (mostly sequential) write. Limiting the write IO in " +
                   "this way will leave more bandwidth in the IO subsystem to service random-read IOs, " +
-                  "which is important for the response time of queries when the database cannot fit " +
+                  "which is important for the response time of stream when the database cannot fit " +
                   "entirely in memory. The only drawback of this setting is that longer checkpoint times " +
                   "may lead to slightly longer recovery times in case of a database or system crash. " +
                   "A lower number means lower IO pressure, and consequently longer checkpoint times. " +
@@ -457,7 +457,7 @@ public abstract class GraphDatabaseSettings
     @Description( "Relationship count threshold for considering a node to be dense" )
     public static final Setting<Integer> dense_node_threshold = setting( "dbms.relationship_grouping_threshold", INTEGER, "50", min(1) );
 
-    @Description( "Log executed queries that takes longer than the configured threshold. "
+    @Description( "Log executed stream that takes longer than the configured threshold. "
             + "_NOTE: This feature is only available in the Neo4j Enterprise Edition_." )
     public static final Setting<Boolean> log_queries = setting("dbms.logs.query.enabled", BOOLEAN, FALSE );
 
@@ -470,11 +470,11 @@ public abstract class GraphDatabaseSettings
             ( logs ) -> new File( logs, "query.log" ),
             PATH );
 
-    @Description( "Log parameters for executed queries that took longer than the configured threshold." )
+    @Description( "Log parameters for executed stream that took longer than the configured threshold." )
     public static final Setting<Boolean> log_queries_parameter_logging_enabled = setting( "dbms.logs.query.parameter_logging_enabled", BOOLEAN, TRUE );
 
     @Description("If the execution of query takes more time than this threshold, the query is logged - " +
-                 "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
+                 "provided query logging is enabled. Defaults to 0 seconds, that is all stream are logged.")
     public static final Setting<Long> log_queries_threshold = setting("dbms.logs.query.threshold", DURATION, "0s");
 
     @Description( "The file size in bytes at which the query log will auto-rotate. If set to zero then no rotation " +

@@ -518,7 +518,7 @@ public class BoltConnectionIT
 
         // Then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.SemanticError ) );
-        // "Executing queries that use periodic commit in an open transaction is not possible."
+        // "Executing stream that use periodic commit in an open transaction is not possible."
     }
 
     @Test

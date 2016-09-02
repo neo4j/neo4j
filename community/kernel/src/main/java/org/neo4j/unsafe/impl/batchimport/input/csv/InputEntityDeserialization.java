@@ -70,7 +70,7 @@ public abstract class InputEntityDeserialization<ENTITY extends InputEntity> imp
             if ( value != null && value.getClass().isArray() && Array.getLength( value ) == 0 )
             {
                 // Extractor will return empty arrays for fields that are empty. We don't need to
-                // store empty arrays as properties on entities since queries handle this while reading
+                // store empty arrays as properties on entities since stream handle this while reading
                 // instead, more efficient overall.
                 break;
             }

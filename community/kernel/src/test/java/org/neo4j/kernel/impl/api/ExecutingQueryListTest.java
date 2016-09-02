@@ -37,7 +37,7 @@ public class ExecutingQueryListTest
     public void removingTheLastQueryReturnsAnEmptyList()
     {
         // Given
-        ExecutingQuery aQuery = new ExecutingQuery( 1, "me", "query", Collections.emptyMap() );
+        ExecutingQuery aQuery = createExecutingQuery( 1, "query" );
         ExecutingQueryList list = ExecutingQueryList.EMPTY.push( aQuery );
 
         // When
@@ -51,11 +51,11 @@ public class ExecutingQueryListTest
     public void addingQueriesKeepsInsertOrder()
     {
         // Given
-        ExecutingQuery query1 = new ExecutingQuery( 1, "me", "query1", Collections.emptyMap() );
-        ExecutingQuery query2 = new ExecutingQuery( 2, "me", "query2", Collections.emptyMap() );
-        ExecutingQuery query3 = new ExecutingQuery( 3, "me", "query3", Collections.emptyMap() );
-        ExecutingQuery query4 = new ExecutingQuery( 4, "me", "query4", Collections.emptyMap() );
-        ExecutingQuery query5 = new ExecutingQuery( 5, "me", "query5", Collections.emptyMap() );
+        ExecutingQuery query1 = createExecutingQuery( 1, "query1" );
+        ExecutingQuery query2 = createExecutingQuery( 2, "query2" );
+        ExecutingQuery query3 = createExecutingQuery( 3, "query3" );
+        ExecutingQuery query4 = createExecutingQuery( 4, "query4" );
+        ExecutingQuery query5 = createExecutingQuery( 5, "query5" );
 
         ExecutingQueryList list = ExecutingQueryList.EMPTY
                 .push( query1 )
@@ -65,21 +65,21 @@ public class ExecutingQueryListTest
                 .push( query5 );
 
         // When
-        List<ExecutingQuery> result = list.queries().collect( Collectors.toList() );
+        List<ExecutingQuery> result = list.stream().collect( Collectors.toList() );
 
         // Then
-        assertThat( result, equalTo( asList( query1, query2, query3, query4, query5 ) ) );
+        assertThat( result, equalTo( asList( query5, query4, query3, query2, query1 ) ) );
     }
 
     @Test
     public void removingQueryInTheMiddleKeepsOrder()
     {
         // Given
-        ExecutingQuery query1 = new ExecutingQuery( 1, "me", "query1", Collections.emptyMap() );
-        ExecutingQuery query2 = new ExecutingQuery( 2, "me", "query2", Collections.emptyMap() );
-        ExecutingQuery query3 = new ExecutingQuery( 3, "me", "query3", Collections.emptyMap() );
-        ExecutingQuery query4 = new ExecutingQuery( 4, "me", "query4", Collections.emptyMap() );
-        ExecutingQuery query5 = new ExecutingQuery( 5, "me", "query5", Collections.emptyMap() );
+        ExecutingQuery query1 = createExecutingQuery( 1, "query1" );
+        ExecutingQuery query2 = createExecutingQuery( 2, "query2" );
+        ExecutingQuery query3 = createExecutingQuery( 3, "query3" );
+        ExecutingQuery query4 = createExecutingQuery( 4, "query4" );
+        ExecutingQuery query5 = createExecutingQuery( 5, "query5" );
 
         ExecutingQueryList list = ExecutingQueryList.EMPTY
                 .push( query1 )
@@ -89,10 +89,14 @@ public class ExecutingQueryListTest
                 .push( query5 );
 
         // When
-        list.remove( query3 );
-        List<ExecutingQuery> result = list.queries().collect( Collectors.toList() );
+        List<ExecutingQuery> result = list.remove( query3 ).stream().collect( Collectors.toList() );
 
         // Then
-        assertThat( result, equalTo( asList( query1, query2, query4, query5 ) ) );
+        assertThat( result, equalTo( asList( query5, query4, query2, query1 ) ) );
+    }
+
+    private ExecutingQuery createExecutingQuery( int queryId, String query )
+    {
+        return new ExecutingQuery( queryId, "me", query, Collections.emptyMap(), 10 );
     }
 }

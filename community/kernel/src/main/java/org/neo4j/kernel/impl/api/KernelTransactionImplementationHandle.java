@@ -43,6 +43,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final KernelTransactionImplementation tx;
     private final AccessMode mode;
     private final Status terminationReason;
+    private final ExecutingQueryList executingQueries;
 
     KernelTransactionImplementationHandle( KernelTransactionImplementation tx )
     {
@@ -52,6 +53,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.localStartTime = tx.localStartTime();
         this.mode = tx.mode();
         this.terminationReason = tx.getReasonIfTerminated();
+        this.executingQueries = tx.executingQueries();
         this.tx = tx;
     }
 
@@ -106,8 +108,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     @Override
     public Stream<ExecutingQuery> executingQueries()
     {
-        KernelStatement statement = tx.tryAcquireStatement();
-        return statement == null ? Stream.empty() : statement.queryRegistration().executingQueries();
+        return executingQueries.stream();
     }
 
     @Override

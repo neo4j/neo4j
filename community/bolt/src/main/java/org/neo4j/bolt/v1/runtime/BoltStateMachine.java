@@ -451,7 +451,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
          * The FAILED state occurs when a recoverable error is encountered.
          * This might be something like a Cypher SyntaxError or
          * ConstraintViolation. To exit the FAILED state, either a RESET
-         * or and ACK_FAILURE must be issued. All queries will be IGNORED
+         * or and ACK_FAILURE must be issued. All stream will be IGNORED
          * until this is done.
          */
         FAILED

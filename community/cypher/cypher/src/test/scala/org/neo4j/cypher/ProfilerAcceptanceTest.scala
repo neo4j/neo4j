@@ -217,7 +217,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(0)(result)("EmptyResult")
   }
 
-  test("tracks graph global queries") {
+  test("tracks graph global stream") {
     createNode()
 
     //GIVEN
@@ -317,7 +317,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
   }
 
-  test ("should support profiling union queries") {
+  test ("should support profiling union stream") {
     val result = profileWithAllPlanners("return 1 as A union return 2 as A")
     result.toSet should equal(Set(Map("A" -> 1), Map("A" -> 2)))
   }
@@ -327,7 +327,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.toList.head("A") should equal(1)
   }
 
-  test("should support profiling optional match queries") {
+  test("should support profiling optional match stream") {
     createLabeledNode(Map("x" -> 1), "Label")
     val result = profileWithAllPlannersAndRuntimes("match (a:Label {x: 1}) optional match (a)-[:REL]->(b) return a.x as A, b.x as B").toList.head
     result("A") should equal(1)

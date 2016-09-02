@@ -115,8 +115,8 @@ public class LuceneDocumentStructure
     }
 
     /**
-     * Range queries are always inclusive, in order to do exclusive range queries the result must be filtered after the
-     * fact. The reason we can't do inclusive range queries is that longs are coerced to doubles in the index.
+     * Range stream are always inclusive, in order to do exclusive range stream the result must be filtered after the
+     * fact. The reason we can't do inclusive range stream is that longs are coerced to doubles in the index.
      */
     public static NumericRangeQuery<Double> newInclusiveNumericRangeSeekQuery( Number lower, Number upper )
     {
@@ -210,7 +210,7 @@ public class LuceneDocumentStructure
     }
 
     /**
-     * Simple implementation of prefix query that mimics old lucene way of handling prefix queries.
+     * Simple implementation of prefix query that mimics old lucene way of handling prefix stream.
      * According to benchmarks this implementation is faster then
      * {@link org.apache.lucene.search.PrefixQuery} because we do not construct automaton  which is
      * extremely expensive.

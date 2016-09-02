@@ -426,10 +426,10 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
     private long pollNumNodes()
     {
         long nodeCount = 0;
-        try ( Transaction tx = neo.getGraph().beginTx() )
+        try ( Transaction tx = neo.getLocalGraph().beginTx() )
         {
             Statement statement =
-                    neo.getGraph().getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get();
+                    neo.getLocalGraph().getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get();
             nodeCount = statement.readOperations().countsForNode( -1 );
             tx.success();
         }

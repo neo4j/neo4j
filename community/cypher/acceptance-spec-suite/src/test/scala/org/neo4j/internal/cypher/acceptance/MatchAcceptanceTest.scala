@@ -340,7 +340,7 @@ return p""")
 
   // Not TCK material -- indexes
 
-  test("should handle queries that cant be index solved because expressions lack dependencies") {
+  test("should handle stream that cant be index solved because expressions lack dependencies") {
     // given
     val a = createLabeledNode(Map("property" -> 42), "Label")
     val b = createLabeledNode(Map("property" -> 42), "Label")
@@ -358,7 +358,7 @@ return p""")
     result.toList should equal (List(Map("a" -> a, "b" -> b)))
   }
 
-  test("should handle queries that cant be index solved because expressions lack dependencies with two disjoin patterns") {
+  test("should handle stream that cant be index solved because expressions lack dependencies with two disjoin patterns") {
     // given
     val a = createLabeledNode(Map("property" -> 42), "Label")
     val b = createLabeledNode(Map("property" -> 42), "Label")
@@ -378,7 +378,7 @@ return p""")
     ))
   }
 
-  test("should use the index for property existence queries (with exists) for cost when asked for it") {
+  test("should use the index for property existence stream (with exists) for cost when asked for it") {
     // given
     val n = createLabeledNode(Map("email" -> "me@mine"), "User")
     val m = createLabeledNode(Map("email" -> "you@yours"), "User")
@@ -393,7 +393,7 @@ return p""")
     result.executionPlanDescription().toString should include("NodeIndexScan")
   }
 
-  test("should use the index for property existence queries (with IS NOT NULL) for cost when asked for it") {
+  test("should use the index for property existence stream (with IS NOT NULL) for cost when asked for it") {
     // given
     val n = createLabeledNode(Map("email" -> "me@mine"), "User")
     val m = createLabeledNode(Map("email" -> "you@yours"), "User")
@@ -420,7 +420,7 @@ return p""")
     Seq(n, m, p)
   }
 
-  test("should use the index for property existence queries when cardinality prefers it") {
+  test("should use the index for property existence stream when cardinality prefers it") {
     // given
     val nodes = setupIndexScanTest()
 
@@ -432,7 +432,7 @@ return p""")
     result.executionPlanDescription().toString should include("NodeIndexScan")
   }
 
-  test("should not use the index for property existence queries when cardinality does not prefer it") {
+  test("should not use the index for property existence stream when cardinality does not prefer it") {
     // given
     val nodes = setupIndexScanTest()
 
@@ -444,7 +444,7 @@ return p""")
     result.executionPlanDescription().toString should include("NodeByLabelScan")
   }
 
-  test("should not use the index for property existence queries when property value predicate exists") {
+  test("should not use the index for property existence stream when property value predicate exists") {
     // given
     val nodes = setupIndexScanTest()
 
@@ -457,7 +457,7 @@ return p""")
     result.executionPlanDescription().toString should not include "NodeIndexScan"
   }
 
-  test("should use the index for property existence queries for rule when asked for it") {
+  test("should use the index for property existence stream for rule when asked for it") {
     // given
     val n = createLabeledNode(Map("email" -> "me@mine"), "User")
     val m = createLabeledNode(Map("email" -> "you@yours"), "User")
@@ -472,7 +472,7 @@ return p""")
     result.executionPlanDescription().toString should include("SchemaIndex")
   }
 
-  test("should not use the index for property existence queries for rule when not asking for it") {
+  test("should not use the index for property existence stream for rule when not asking for it") {
     // given
     val n = createLabeledNode(Map("email" -> "me@mine"), "User")
     val m = createLabeledNode(Map("email" -> "you@yours"), "User")

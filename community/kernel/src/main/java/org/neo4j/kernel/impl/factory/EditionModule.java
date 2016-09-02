@@ -25,6 +25,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -56,10 +57,7 @@ import static java.util.Collections.singletonMap;
  */
 public abstract class EditionModule
 {
-    public void registerProcedures( Procedures procedures )
-    {
-        // do nothing
-    }
+    public abstract void registerProcedures( Procedures procedures ) throws KernelException;
 
     public IdGeneratorFactory idGeneratorFactory;
     public IdTypeConfigurationProvider idTypeConfigurationProvider;

@@ -109,9 +109,9 @@ abstract class ProcedureInteractionTestBase<S>
     {
         Neo4jWithSocket.cleanupTemporaryTestFiles();
         neo = setUpNeoServer();
-        neo.getGraph().getDependencyResolver().resolveDependency( Procedures.class )
+        neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class )
                 .register( ClassWithProcedures.class );
-        userManager = neo.getManager();
+        userManager = neo.getLocalUserManager();
 
         userManager.newUser( "noneSubject", "abc", false );
         userManager.newUser( "pwdSubject", "abc", true );
@@ -420,7 +420,7 @@ abstract class ProcedureInteractionTestBase<S>
         return connection;
     }
 
-    private static class CountResult
+    public static class CountResult
     {
         public final String count;
 
@@ -430,7 +430,7 @@ abstract class ProcedureInteractionTestBase<S>
         }
     }
 
-    static class ClassWithProcedures
+    public static class ClassWithProcedures
     {
         @Context
         public GraphDatabaseService db;

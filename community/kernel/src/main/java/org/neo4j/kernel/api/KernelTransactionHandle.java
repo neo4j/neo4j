@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -94,7 +93,7 @@ public interface KernelTransactionHandle
     boolean isUnderlyingTransaction( KernelTransaction tx );
 
     /**
-     * @return a list of all queries currently executing that use the underlying transaction
+     * @return a list of all stream currently executing that use the underlying transaction
      */
     Stream<ExecutingQuery> executingQueries();
 }

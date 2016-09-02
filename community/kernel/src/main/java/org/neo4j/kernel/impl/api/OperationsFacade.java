@@ -96,7 +96,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
-public class DataOperationsFacade
+public class OperationsFacade
         implements ReadOperations, DataWriteOperations, SchemaWriteOperations, QueryRegistryOperations
 {
     private final KernelTransaction tx;
@@ -104,7 +104,7 @@ public class DataOperationsFacade
     private final StatementOperationParts operations;
     private final Procedures procedures;
 
-    DataOperationsFacade( KernelTransaction tx, KernelStatement statement,
+    OperationsFacade( KernelTransaction tx, KernelStatement statement,
                       StatementOperationParts operations, Procedures procedures )
     {
         this.tx = tx;

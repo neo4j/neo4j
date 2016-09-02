@@ -22,12 +22,37 @@ package org.neo4j.kernel.api;
 import java.util.Map;
 import java.util.stream.Stream;
 
+
+/**
+ * Tracks currently running stream. This is used for listing currently running stream and to make it possible to
+ * terminate a query, not matter which or how many transactions it's working in.
+ *
+ * If a query uses multiple transactions (think of PERIODIC COMMIT), the query needs to be registered to all
+ * transactions it uses.
+ */
 public interface QueryRegistryOperations
 {
+    /**
+     * List of all currently running stream in this transaction. An user can have multiple stream running
+     * simultaneously on the same transaction.
+     */
     Stream<ExecutingQuery> executingQueries();
 
+    /**
+     * Registers a query, and creates the ExecutingQuery object for it.
+     */
     ExecutingQuery startQueryExecution( String queryText, Map<String, Object> queryParameters );
 
+    /**
+     * Registers an already known query to a this transaction.
+     *
+     * This is used solely for supporting PERIODIC COMMIT which requires committing and starting new transactions
+     * and associating the same ExecutingQuery with those new transactions.
+     */
     void registerExecutingQuery( ExecutingQuery executingQuery );
+
+    /**
+     * Disassociates a query with this transaction/
+     */
     void unregisterExecutingQuery( ExecutingQuery executingQuery );
 }

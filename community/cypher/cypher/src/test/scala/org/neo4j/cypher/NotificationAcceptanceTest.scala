@@ -176,7 +176,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.notifications shouldBe empty
   }
 
-  test("Warnings should work on potentially cached queries") {
+  test("Warnings should work on potentially cached stream") {
     val resultWithoutExplain = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-->(b), (c)-->(d) return *")
     val resultWithExplain = executeWithAllPlannersAndRuntimesAndCompatibilityMode("explain match (a)-->(b), (c)-->(d) return *")
 

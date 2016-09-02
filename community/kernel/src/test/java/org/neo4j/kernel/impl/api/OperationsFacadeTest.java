@@ -52,7 +52,7 @@ public class OperationsFacadeTest
     @Mock
     private SchemaReadOperations schemaReadOperations;
     @InjectMocks
-    private DataOperationsFacade operationsFacade;
+    private OperationsFacade operationsFacade;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

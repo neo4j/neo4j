@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Effects, _}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.{IsMap, CollectionSupport}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_1.{ParameterWrongTypeException, CypherTypeException}
+import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
 import scala.collection.Map
@@ -63,7 +63,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
 
     /*
-     Parameters coming in from the outside in queries using parameters like this:
+     Parameters coming in from the outside in stream using parameters like this:
 
      CREATE (n {param})
 

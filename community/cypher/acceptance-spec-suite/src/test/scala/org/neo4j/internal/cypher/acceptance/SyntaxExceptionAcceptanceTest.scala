@@ -118,7 +118,7 @@ class SyntaxExceptionAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("handles multiline queries") {
+  test("handles multiline stream") {
     test(
       """start
          a=node(0),

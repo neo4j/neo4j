@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.time.Clock;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -31,16 +32,18 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
     public static final MonotonicCounter LAST_QUERY_ID = MonotonicCounter.newAtomicMonotonicCounter();
 
     private final MonotonicCounter lastQueryId;
+    private final Clock clock;
 
-    public StackingQueryRegistrationOperations( MonotonicCounter lastQueryId )
+    public StackingQueryRegistrationOperations( MonotonicCounter lastQueryId, Clock clock )
     {
         this.lastQueryId = lastQueryId;
+        this.clock = clock;
     }
 
     @Override
     public Stream<ExecutingQuery> executingQueries( KernelStatement statement)
     {
-        return statement.executingQueries();
+        return statement.executingQueryList().stream();
     }
 
     @Override
@@ -53,7 +56,9 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
     public ExecutingQuery startQueryExecution(
             KernelStatement statement, String queryText, Map<String,Object> queryParameters )
     {
-        ExecutingQuery executingQuery = createExecutingQuery( statement, queryText, queryParameters );
+        long queryId = lastQueryId.incrementAndGet();
+        ExecutingQuery executingQuery =
+                new ExecutingQuery( queryId, statement.authSubjectName(), queryText, queryParameters, clock.millis() );
         statement.startQueryExecution( executingQuery );
         return executingQuery;
     }
@@ -62,15 +67,6 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
     public void unregisterExecutingQuery( KernelStatement statement, ExecutingQuery executingQuery )
     {
         statement.stopQueryExecution( executingQuery );
-    }
-
-    private ExecutingQuery createExecutingQuery(
-            KernelStatement statement,
-            String queryText,
-            Map<String,Object> queryParameters )
-    {
-        long queryId = lastQueryId.incrementAndGet();
-        return new ExecutingQuery( queryId, statement.authSubjectName(), queryText, queryParameters );
     }
 
 }

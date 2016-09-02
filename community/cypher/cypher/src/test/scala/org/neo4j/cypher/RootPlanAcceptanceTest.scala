@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_1._
-import scala.collection.JavaConverters._
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -57,7 +56,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
-  test("should report RULE if we ask it for UNION queries") {
+  test("should report RULE if we ask it for UNION stream") {
     given(
       """MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-(m:Person)
         |RETURN p UNION MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-()-[:FRIEND_OF]-(m:Person) RETURN p"""

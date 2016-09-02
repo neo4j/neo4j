@@ -43,7 +43,7 @@ object rewriteProcedureCalls {
     resolveCalls andThen fakeStandaloneCallDeclarations
   }
 
-  // Current procedure calling syntax allows simplified short-hand syntax for queries
+  // Current procedure calling syntax allows simplified short-hand syntax for stream
   // that only consist of a standalone procedure call. In all other cases attempts to
   // use the simplified syntax lead to errors during semantic checking.
   //

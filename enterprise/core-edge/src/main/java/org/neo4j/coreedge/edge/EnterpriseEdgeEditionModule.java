@@ -104,6 +104,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
     @Override
     public void registerProcedures( Procedures procedures )
     {
+        // TODO
         try
         {
             procedures.register( new EdgeRoleProcedure() );

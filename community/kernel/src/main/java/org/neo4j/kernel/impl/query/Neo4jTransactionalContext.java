@@ -139,6 +139,17 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public void commitAndRestartTx()
     {
+       /*
+        * This method is use by the Cypher runtime to cater for PERIODIC COMMIT, which allows a single query to
+        * periodically, after x number of rows, to commit a transaction and spawn a new one.
+        *
+        * To still keep track of the running stream after switching transactions, we need to open the new transaction
+        * before closing the old one. This way, a query will not disappear and appear when switching transactions.
+        *
+        * Since our transactions are thread bound, we must first unbind the old transaction from the thread before
+        * creating a new one. And then we need to do that thread switching again to close the old transaction.
+        */
+
         QueryRegistryOperations oldQueryRegistryOperations = statement.queryRegistration();
         InternalTransaction oldTransaction = transaction;
         KernelTransaction oldKernelTx = txBridge.getKernelTransactionBoundToThisThread( true );

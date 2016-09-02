@@ -17,25 +17,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.enterprise.builtinprocs;
+package org.neo4j.server.rest.security;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.factory.ProceduresProvider;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.junit.Rule;
 
-import static org.neo4j.kernel.builtinprocs.BuiltInProceduresProvider.actuallyRegisterProcedures;
+import org.neo4j.server.security.enterprise.auth.BuiltInProceduresInteractionTestBase;
+import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
+import org.neo4j.test.rule.SuppressOutput;
 
-@Service.Implementation( ProceduresProvider.class )
-public class BuiltInProceduresProvider extends Service implements ProceduresProvider
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
+
+public class RESTBuiltInProceduresInteractionTest extends BuiltInProceduresInteractionTestBase<RESTSubject>
 {
-    public BuiltInProceduresProvider()
+    @Rule
+    public SuppressOutput suppressOutput = suppressAll();
+
+    public RESTBuiltInProceduresInteractionTest()
     {
-        super( "built-in-enterprise-procedures-provider" );
+        super();
+        CHANGE_PWD_ERR_MSG = "User is required to change their password.";
+        PWD_CHANGE_CHECK_FIRST = true;
+        IS_EMBEDDED = false;
     }
 
     @Override
-    public void registerProcedures( Procedures procedures )
+    public NeoInteractionLevel<RESTSubject> setUpNeoServer() throws Throwable
     {
-        actuallyRegisterProcedures( procedures, BuiltInProcedures.class );
+        return new RESTInteraction();
     }
 }

@@ -34,11 +34,12 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.AccessMode
-import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation}
+import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation, StatementOperationParts}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
+import org.neo4j.storageengine.api.StorageStatement
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
@@ -47,7 +48,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   var graph: GraphDatabaseCypherService = null
   var outerTx: InternalTransaction = null
-  var statement: Statement = null
+  var statement: KernelStatement = null
   val indexSearchMonitor = mock[IndexSearchMonitor]
   val locker = mock[PropertyContainerLocker]
 
@@ -57,31 +58,33 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     outerTx = mock[InternalTransaction]
     val kernelTransaction = mock[KernelTransactionImplementation]
     when(kernelTransaction.mode()).thenReturn(AccessMode.Static.FULL)
-    statement = new KernelStatement(kernelTransaction, null, null, null, new Procedures())
+    val storeStatement = mock[StorageStatement]
+    val operations = mock[StatementOperationParts](RETURNS_DEEP_STUBS)
+    statement = new KernelStatement(kernelTransaction, null, operations, storeStatement, new Procedures())
+    statement.acquire()
   }
 
   override def afterEach() {
     graph.getGraphDatabaseService.shutdown()
   }
 
-  test("should_mark_transaction_successful_if_successful") {
+  test("should mark transaction successful if successful") {
     // GIVEN
     when(outerTx.failure()).thenThrow(new AssertionError("Shouldn't be called"))
-    val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, outerTx, statement, "X", Collections.emptyMap(), locker))
+    val tc = new Neo4jTransactionalContext(graph, outerTx, KernelTransaction.Type.`implicit`, AccessMode.Static.FULL,
+      statement, null, locker, null, null)
+    val transactionalContext = new TransactionalContextWrapperv3_1(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
-
     // WHEN
     context.transactionalContext.close(success = true)
 
     // THEN
-    verify(outerTx).transactionType()
-    verify(outerTx).mode()
     verify(outerTx).success()
     verify(outerTx).close()
     verifyNoMoreInteractions(outerTx)
   }
 
-  test("should_mark_transaction_failed_if_not_successful") {
+  test("should mark transaction failed if not successful") {
     // GIVEN
     when(outerTx.success()).thenThrow(new AssertionError("Shouldn't be called"))
     val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, outerTx, statement, "X", Collections.emptyMap(), locker))
@@ -97,7 +100,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     verifyNoMoreInteractions(outerTx)
   }
 
-  test("should_return_fresh_but_equal_iterators") {
+  test("should return fresh but equal iterators") {
     // GIVEN
     val relTypeName = "LINK"
     val node = createMiniGraph(relTypeName)

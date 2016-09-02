@@ -21,7 +21,13 @@ package org.neo4j.kernel.enterprise.api.security;
 
 import org.neo4j.kernel.api.security.AuthSubject;
 
+/**
+ * A logged in user.
+ */
 public interface EnterpriseAuthSubject extends AuthSubject
 {
+    /**
+     * Enterprise has the concept of users being admins.
+     */
     boolean isAdmin();
 }

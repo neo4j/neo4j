@@ -152,7 +152,7 @@ public class QueryContext
     }
 
     /**
-     * Changes the the default operator used between terms in compound queries,
+     * Changes the the default operator used between terms in compound stream,
      * default is OR.
      *
      * @param defaultOperator The new operator to use.
@@ -165,7 +165,7 @@ public class QueryContext
     }
 
     /**
-     * Returns the default operator used between terms in compound queries.
+     * Returns the default operator used between terms in compound stream.
      *
      * @return the default {@link Operator} specified with
      *         {@link #defaultOperator} or "OR" if none specified.
@@ -242,7 +242,7 @@ public class QueryContext
      * @param key the property key to query.
      * @param from the low end of the range (inclusive)
      * @param to the high end of the range (inclusive)
-     * @return a {@link QueryContext} to do numeric range queries with.
+     * @return a {@link QueryContext} to do numeric range stream with.
      */
     public static QueryContext numericRange( String key, Number from, Number to )
     {
@@ -264,7 +264,7 @@ public class QueryContext
      * or not.
      * @param includeTo whether or not {@code to} (the higher bound) is inclusive
      * or not.
-     * @return a {@link QueryContext} to do numeric range queries with.
+     * @return a {@link QueryContext} to do numeric range stream with.
      */
     public static QueryContext numericRange( String key, Number from, Number to,
             boolean includeFrom, boolean includeTo )

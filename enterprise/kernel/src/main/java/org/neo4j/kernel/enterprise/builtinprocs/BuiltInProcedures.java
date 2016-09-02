@@ -33,7 +33,6 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 
@@ -43,7 +42,7 @@ import static org.neo4j.procedure.Procedure.Mode.DBMS;
 public class BuiltInProcedures
 {
     @Context
-    public GraphDatabaseAPI graph;
+    public DependencyResolver resolver;
 
     @Context
     public KernelTransaction tx;
@@ -61,7 +60,6 @@ public class BuiltInProcedures
 
     private KernelTransactions getKernelTransactions()
     {
-        DependencyResolver resolver = graph.getDependencyResolver();
         return resolver.resolveDependency( KernelTransactions.class );
     }
 

@@ -27,12 +27,12 @@ import org.neo4j.test.rule.SuppressOutput;
 
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
-public class RESTAuthScenariosIT extends AuthScenariosInteractionTestBase<RESTSubject>
+public class RESTAuthScenariosInteractionTest extends AuthScenariosInteractionTestBase<RESTSubject>
 {
     @Rule
     public SuppressOutput suppressOutput = suppressAll();
 
-    public RESTAuthScenariosIT()
+    public RESTAuthScenariosInteractionTest()
     {
         super();
         CHANGE_PWD_ERR_MSG = "User is required to change their password.";

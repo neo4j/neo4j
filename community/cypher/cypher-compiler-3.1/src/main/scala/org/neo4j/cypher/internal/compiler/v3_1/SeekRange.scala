@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1
 
-import org.neo4j.cypher.internal.frontend.v3_1.{Bounds, Bound}
+import org.neo4j.cypher.internal.frontend.v3_1.{Bound, Bounds}
 
 /*
   Seek ranges describe intervals. In practice they are used to summarize all inequalities over the
@@ -175,7 +175,7 @@ final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[
   PrefixRange is used to describe intervals on string values for prefix search.
 
   This is practical for two reasons:
-  - It directly maps on prefix queries of index implementations
+  - It directly maps on prefix stream of index implementations
   - It removes the need to construct a proper upper bound value for an interval that
   would describe the prefix search (which can be difficult due to unicode issues)
 */

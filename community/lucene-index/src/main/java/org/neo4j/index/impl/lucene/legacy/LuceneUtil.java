@@ -85,7 +85,7 @@ public abstract class LuceneUtil
      * or not.
      * @param includeTo whether or not {@code to} (the higher bound) is inclusive
      * or not.
-     * @return a {@link Query} to do numeric range queries with.
+     * @return a {@link Query} to do numeric range stream with.
      */
     public static Query rangeQuery( String key, Number from, Number to,
             boolean includeFrom, boolean includeTo )

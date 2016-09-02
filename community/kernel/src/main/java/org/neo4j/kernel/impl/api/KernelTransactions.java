@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
@@ -203,11 +202,11 @@ public class KernelTransactions extends LifecycleAdapter
     }
 
     /**
-     * Give an approximate set of all currently executing queries.
+     * Give an approximate set of all currently executing stream.
      * This is not guaranteed to be exact, as a query may stop and start while this set is gathered, or even
      * switch the transaction used (in case of PERIODIC COMMIT).
      *
-     * @return the (approximate) set of currently executing queries.
+     * @return the (approximate) set of currently executing stream.
      */
     public Set<ExecutingQuery> executingQueries() {
         return allTransactions.stream()
