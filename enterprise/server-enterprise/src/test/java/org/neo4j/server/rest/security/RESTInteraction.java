@@ -94,10 +94,11 @@ class RESTInteraction extends CommunityServerTestBase implements NeoInteractionL
     }
 
     @Override
-    public InternalTransaction beginLocalTransactionAsUser( RESTSubject subject ) throws Throwable
+    public InternalTransaction beginLocalTransactionAsUser( RESTSubject subject, KernelTransaction.Type txType ) throws
+            Throwable
     {
         AuthSubject authSubject = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
-        return getLocalGraph().beginTransaction( KernelTransaction.Type.explicit, authSubject );
+        return getLocalGraph().beginTransaction( txType, authSubject );
     }
 
     @Override

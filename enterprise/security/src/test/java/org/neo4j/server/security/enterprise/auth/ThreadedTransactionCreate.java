@@ -21,8 +21,10 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.NamedFunction;
@@ -52,6 +54,12 @@ public class ThreadedTransactionCreate<S>
 
     String execute( ThreadingRule threading, S subject, String query )
     {
+        return execute( threading, subject, KernelTransaction.Type.explicit, new AtomicBoolean( false ), query );
+    }
+
+    String execute( ThreadingRule threading, S subject, KernelTransaction.Type txType, AtomicBoolean drain, String
+            query )
+    {
         NamedFunction<S, Throwable> startTransaction =
                 new NamedFunction<S, Throwable>( "start-transaction-" + query.hashCode() )
                 {
@@ -60,10 +68,11 @@ public class ThreadedTransactionCreate<S>
                     {
                         try
                         {
-                            try ( InternalTransaction tx = neo.beginLocalTransactionAsUser( subject ) )
+                            try ( InternalTransaction tx = neo.beginLocalTransactionAsUser( subject, txType ) )
                             {
                                 Result result = neo.getLocalGraph().execute( query );
                                 latch.startAndWaitForAllToStart();
+                                while (drain.get() && result.hasNext()) result.next();
                                 latch.finishAndWaitForAllToFinish();
                                 result.close();
                                 tx.success();
@@ -87,7 +96,7 @@ public class ThreadedTransactionCreate<S>
         Throwable exceptionInOtherThread = join();
         if ( exceptionInOtherThread != null )
         {
-            fail( "Expected no exception in ThreadedCreate, got '"+exceptionInOtherThread.getMessage()+"'" );
+            throw new AssertionError( "Expected no exception in ThreadCreate, but got one.", exceptionInOtherThread );
         }
     }
 

@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class Neo4jTransactionalContextTest
@@ -81,7 +82,9 @@ public class Neo4jTransactionalContextTest
         context.commitAndRestartTx();
 
         // Then
-        InOrder order = Mockito.inOrder( txBridge, initialTransaction, initialQueryRegistry, initialKTX, secondQueryRegistry, secondKTX );
+        Object[] mocks =
+                {txBridge, initialTransaction, initialQueryRegistry, initialKTX, secondQueryRegistry, secondKTX};
+        InOrder order = Mockito.inOrder( mocks );
 
         // (1) Unbind old
         order.verify( txBridge ).getKernelTransactionBoundToThisThread( true );
@@ -98,8 +101,10 @@ public class Neo4jTransactionalContextTest
         order.verify( initialQueryRegistry ).unregisterExecutingQuery( executingQuery );
         order.verify( initialTransaction ).success();
         order.verify( initialTransaction ).close();
+        order.verify( txBridge ).unbindTransactionFromCurrentThread();
 
         // (4) Rebind new
         order.verify( txBridge ).bindTransactionToCurrentThread( secondKTX );
+        verifyNoMoreInteractions( mocks );
     }
 }

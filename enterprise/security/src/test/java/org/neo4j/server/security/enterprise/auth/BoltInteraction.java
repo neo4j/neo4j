@@ -86,10 +86,11 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
     }
 
     @Override
-    public InternalTransaction beginLocalTransactionAsUser( BoltSubject subject ) throws Throwable
+    public InternalTransaction beginLocalTransactionAsUser( BoltSubject subject, KernelTransaction.Type txType )
+            throws Throwable
     {
         AuthSubject authSubject = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
-        return getLocalGraph().beginTransaction( KernelTransaction.Type.explicit, authSubject );
+        return getLocalGraph().beginTransaction( txType, authSubject );
     }
 
     @Override

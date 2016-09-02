@@ -166,6 +166,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         oldTransaction.success();
         oldTransaction.close();
 
+        txBridge.unbindTransactionFromCurrentThread();
         txBridge.bindTransactionToCurrentThread( kernelTx );
     }
 

@@ -77,9 +77,10 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSu
     public GraphDatabaseFacade getLocalGraph() { return db; }
 
     @Override
-    public InternalTransaction beginLocalTransactionAsUser( EnterpriseAuthSubject subject ) throws Throwable
+    public InternalTransaction beginLocalTransactionAsUser( EnterpriseAuthSubject subject,
+            KernelTransaction.Type txType ) throws Throwable
     {
-        return db.beginTransaction( KernelTransaction.Type.explicit, subject );
+        return db.beginTransaction( txType, subject );
     }
 
     @Override
