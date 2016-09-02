@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import org.apache.commons.lang3.mutable.MutableDouble;
+
 import java.util.Collections;
 import java.util.function.Predicate;
 
@@ -48,7 +50,6 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
-import org.neo4j.kernel.impl.util.MutableDouble;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -179,8 +180,8 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         public Iterable<Relationship> expand( Path path, BranchState<Double> state )
         {
             double thisState = state.getState();
-            thisSideShortest.value = thisState;
-            if ( NoneStrictMath.compare( thisState + otherSideShortest.value, shortestSoFar.value, epsilon ) > 0 &&
+            thisSideShortest.setValue( thisState );
+            if ( NoneStrictMath.compare( thisState + otherSideShortest.doubleValue(), shortestSoFar.doubleValue(), epsilon ) > 0 &&
                  stopAfterLowestCost )
             {
                 return Collections.emptyList();

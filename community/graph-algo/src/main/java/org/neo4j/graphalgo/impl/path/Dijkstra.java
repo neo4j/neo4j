@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import org.apache.commons.lang3.mutable.MutableDouble;
+
 import java.util.Collections;
 import java.util.Iterator;
 
@@ -42,7 +44,6 @@ import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
-import org.neo4j.kernel.impl.util.MutableDouble;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.neo4j.graphalgo.impl.util.PathInterestFactory.single;
@@ -218,7 +219,7 @@ public class Dijkstra implements PathFinder<WeightedPath>
         protected final boolean stopAfterLowestCost;
 
         DijkstraPathExpander( final PathExpander source,
-                MutableDouble shortestSoFar, double epsilon, boolean stopAfterLowestCost )
+                org.apache.commons.lang3.mutable.MutableDouble shortestSoFar, double epsilon, boolean stopAfterLowestCost )
         {
             this.source = source;
             this.shortestSoFar = shortestSoFar;
@@ -229,7 +230,7 @@ public class Dijkstra implements PathFinder<WeightedPath>
         @Override
         public Iterable<Relationship> expand( Path path, BranchState<Double> state )
         {
-            if ( NoneStrictMath.compare( state.getState(), shortestSoFar.value, epsilon ) > 0 && stopAfterLowestCost )
+            if ( NoneStrictMath.compare( state.getState(), shortestSoFar.doubleValue(), epsilon ) > 0 && stopAfterLowestCost )
             {
                 return Collections.emptyList();
             }
@@ -266,7 +267,7 @@ public class Dijkstra implements PathFinder<WeightedPath>
             }
             if ( path.endNode().equals( endNode ) )
             {
-                shortestSoFar.value = Math.min( shortestSoFar.value, nextState );
+                shortestSoFar.setValue( Math.min( shortestSoFar.doubleValue(), nextState ) );
                 return Evaluation.INCLUDE_AND_PRUNE;
             }
             return Evaluation.EXCLUDE_AND_CONTINUE;

@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
+import org.apache.commons.lang3.mutable.MutableDouble;
+
 import java.util.function.Predicate;
 
 import org.neo4j.graphalgo.CostEvaluator;
@@ -26,7 +28,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.impl.traversal.StandardBranchCollisionDetector;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.kernel.impl.util.MutableDouble;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 /**
@@ -38,8 +39,7 @@ public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDete
     private final MutableDouble shortestSoFar;
     private final double epsilon;
 
-    public DijkstraBranchCollisionDetector( Evaluator evaluator,
-            CostEvaluator costEvaluator,
+    public DijkstraBranchCollisionDetector( Evaluator evaluator, CostEvaluator costEvaluator,
             MutableDouble shortestSoFar, double epsilon, Predicate<Path> pathPredicate )
     {
         super( evaluator, pathPredicate );
@@ -63,8 +63,8 @@ public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDete
 
         Path (s) -...- (c) weight x
         path (s) -...- (a) weight x
-        path (d) -...- (y) weight y
-        path (b) -...- (y) weight y
+        path (d) -...- (t) weight y
+        path (b) -...- (t) weight y
         rel (c) - (b) weight z
         rel (a) - (b) weight z
         rel (a) - (d) weight z
@@ -86,11 +86,11 @@ public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDete
 
         double cost = new WeightedPathImpl( costEvaluator, path ).weight();
 
-        if ( cost < shortestSoFar.value )
+        if ( cost < shortestSoFar.doubleValue() )
         {
-            shortestSoFar.value = cost;
+            shortestSoFar.setValue( cost );
         }
-        if ( NoneStrictMath.compare( cost, shortestSoFar.value, epsilon ) <= 0 )
+        if ( NoneStrictMath.compare( cost, shortestSoFar.doubleValue(), epsilon ) <= 0 )
         {
             return true;
         }
