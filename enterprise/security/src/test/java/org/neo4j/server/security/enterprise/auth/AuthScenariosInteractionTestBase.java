@@ -123,8 +123,8 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         log.assertHasLine( "mats", "logged in" );
         log.assertHasLine( "adminSubject", "added role `reader` to user `mats`" );
         log.assertHasLine( "mats", "tried to change password for user `neo4j`: " + PERMISSION_DENIED);
-        log.assertHasLine( "mats", "tried to change own password: A password cannot be empty.");
-        log.assertHasLine( "mats", "changed own password");
+        log.assertHasLine( "mats", "tried to change password: A password cannot be empty.");
+        log.assertHasLine( "mats", "changed password");
         log.assertHasLine( "adminSubject", "removed role `reader` from user `mats`");
         log.assertHasLine( "adminSubject", "deleted user `mats`");
     }

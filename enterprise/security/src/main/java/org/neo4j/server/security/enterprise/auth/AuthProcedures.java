@@ -80,7 +80,8 @@ public class AuthProcedures
         {
             StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
             adminSubject.getUserManager().newUser( username, password, requirePasswordChange );
-            securityLog.info( authSubject, "created user `%s`", username );
+            securityLog.info( authSubject, "created user `%s`%s", username,
+                    requirePasswordChange ? ", with password change required" : "" );
         }
         catch ( Exception e )
         {
@@ -90,6 +91,27 @@ public class AuthProcedures
     }
 
     @Description( "Change the current user's password." )
+    @Procedure( name = "dbms.security.changePassword", mode = DBMS )
+    public void changePassword(
+            @Name( "password" ) String password,
+            @Name( value = "requirePasswordChange", defaultValue = "false"  ) boolean requirePasswordChange
+    )
+            throws InvalidArgumentsException, IOException
+    {
+        try
+        {
+            authSubject.setPassword( password, requirePasswordChange );
+            securityLog.info( authSubject, "changed password%s",
+                    requirePasswordChange ? ", with password change required" : "" );
+        }
+        catch ( Exception e )
+        {
+            securityLog.error( authSubject, "tried to change password: %s", e.getMessage() );
+            throw e;
+        }
+    }
+
+    @Description( "Change the given user's password." )
     @Procedure( name = "dbms.security.changeUserPassword", mode = DBMS )
     public void changeUserPassword(
             @Name( "username" ) String username,
@@ -104,9 +126,10 @@ public class AuthProcedures
             StandardEnterpriseAuthSubject enterpriseSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
             if ( enterpriseSubject.doesUsernameMatch( username ) )
             {
-                ownOrOther = "own password";
+                ownOrOther = "password";
                 enterpriseSubject.setPassword( newPassword, requirePasswordChange );
-                securityLog.info( authSubject, "changed own password" );
+                securityLog.info( authSubject, "changed password%s",
+                        requirePasswordChange ? ", with password change required" : "" );
             }
             else if ( !enterpriseSubject.isAdmin() )
             {
@@ -117,7 +140,8 @@ public class AuthProcedures
                 enterpriseSubject.getUserManager().setUserPassword( username, newPassword, requirePasswordChange );
                 terminateTransactionsForValidUser( username );
                 terminateConnectionsForValidUser( username );
-                securityLog.info( authSubject, "changed password for user `%s`", username );
+                securityLog.info( authSubject, "changed password for user `%s`%s", username,
+                        requirePasswordChange ? ", with password change required" : "" );
             }
         }
         catch ( Exception e )

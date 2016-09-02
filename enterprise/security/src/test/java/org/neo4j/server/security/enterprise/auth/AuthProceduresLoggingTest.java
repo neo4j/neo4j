@@ -83,8 +83,9 @@ public class AuthProceduresLoggingTest
         authProcedures.createUser( "mats", "el password", false );
 
         log.assertExactly(
-                info( "[admin]: created user `%s`", "andres" ),
-                info( "[admin]: created user `%s`", "mats" ) );
+                info( "[admin]: created user `%s`%s", "andres", ", with password change required" ),
+                info( "[admin]: created user `%s`%s", "mats", "" )
+            );
     }
 
     @Test
@@ -121,7 +122,7 @@ public class AuthProceduresLoggingTest
         authProcedures.deleteUser( "andres" );
 
         log.assertExactly(
-                info( "[admin]: created user `%s`", "andres" ),
+                info( "[admin]: created user `%s`%s", "andres", "" ),
                 info( "[admin]: deleted user `%s`", "andres" ) );
     }
 
@@ -149,7 +150,7 @@ public class AuthProceduresLoggingTest
         authProcedures.addRoleToUser( ARCHITECT, "mats" );
 
         log.assertExactly(
-                info( "[admin]: created user `%s`", "mats" ),
+                info( "[admin]: created user `%s`%s", "mats", "" ),
                 info( "[admin]: added role `%s` to user `%s`", ARCHITECT, "mats" ) );
     }
 
@@ -160,7 +161,7 @@ public class AuthProceduresLoggingTest
         catchInvalidArguments( () -> authProcedures.addRoleToUser( "null", "mats" ) );
 
         log.assertExactly(
-                info( "[admin]: created user `%s`", "mats" ),
+                info( "[admin]: created user `%s`%s", "mats", "" ),
                 error( "[admin]: tried to add role `%s` to user `%s`: %s", "null", "mats", "Role 'null' does not exist." ) );
     }
 
@@ -217,26 +218,33 @@ public class AuthProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogPasswordChanges() throws IOException, InvalidArgumentsException
+    public void shouldLogUserPasswordChanges() throws IOException, InvalidArgumentsException
     {
         // Given
         authProcedures.createUser( "mats", "neo4j", true );
         log.clear();
 
         // When
-        authProcedures.changeUserPassword( "mats", "longerPassword", false );
+        authProcedures.changeUserPassword( "mats", "longPassword", false );
+        authProcedures.changeUserPassword( "mats", "longerPassword", true );
         authProcedures.authSubject = matsSubject;
         authProcedures.changeUserPassword( "mats", "evenLongerPassword", false );
 
+        authProcedures.changePassword( "superLongPassword", false );
+        authProcedures.changePassword( "infinitePassword", true );
+
         // Then
         log.assertExactly(
-                info( "[admin]: changed password for user `%s`", "mats" ),
-                info( "[mats]: changed own password" )
+                info( "[admin]: changed password for user `%s`%s", "mats", "" ),
+                info( "[admin]: changed password for user `%s`%s", "mats", ", with password change required" ),
+                info( "[mats]: changed password%s", "" ),
+                info( "[mats]: changed password%s", "" ),
+                info( "[mats]: changed password%s", ", with password change required" )
         );
     }
 
     @Test
-    public void shouldLogFailureToChangePassword() throws Throwable
+    public void shouldLogFailureToChangeUserPassword() throws Throwable
     {
         // Given
         authProcedures.createUser( "andres", "neo4j", true );
@@ -267,10 +275,17 @@ public class AuthProceduresLoggingTest
         catchInvalidArguments( () -> authProcedures.changeUserPassword( "mats", "neo4j", false ) );
         catchInvalidArguments( () -> authProcedures.changeUserPassword( "mats", "", false ) );
 
+        catchInvalidArguments( () -> authProcedures.changePassword( null, false ) );
+        catchInvalidArguments( () -> authProcedures.changePassword( "", false ) );
+        catchInvalidArguments( () -> authProcedures.changePassword( "neo4j", false ) );
+
         // Then
         log.assertExactly(
-                error( "[mats]: tried to change %s: %s", "own password", "Old password and new password cannot be the same." ),
-                error( "[mats]: tried to change %s: %s", "own password", "A password cannot be empty." )
+                error( "[mats]: tried to change %s: %s", "password", "Old password and new password cannot be the same." ),
+                error( "[mats]: tried to change %s: %s", "password", "A password cannot be empty." ),
+                error( "[mats]: tried to change password: %s", "A password cannot be empty." ),
+                error( "[mats]: tried to change password: %s", "A password cannot be empty." ),
+                error( "[mats]: tried to change password: %s", "Old password and new password cannot be the same." )
         );
     }
 

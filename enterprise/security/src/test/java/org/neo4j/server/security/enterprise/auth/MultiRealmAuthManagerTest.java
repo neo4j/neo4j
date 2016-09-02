@@ -51,6 +51,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.Strings.escape;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
@@ -195,7 +197,8 @@ public class MultiRealmAuthManagerTest
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.FAILURE ) );
-        logProvider.assertExactly( error( "[%s]: failed to log in: invalid principal or credentials", "unknown\n\t\r\"haxx0r\"" ) );
+        logProvider.assertExactly( error( "[%s]: failed to log in: invalid principal or credentials",
+                escape( "unknown\n\t\r\"haxx0r\"" ) ) );
     }
 
     @Test
@@ -241,15 +244,8 @@ public class MultiRealmAuthManagerTest
         manager.start();
 
         // When
-        try
-        {
-            userManager.deleteUser( "unknown" );
-            fail("Should throw exception on deleting unknown user");
-        }
-        catch ( InvalidArgumentsException e )
-        {
-            e.getMessage().equals( "User 'unknown' does not exist" );
-        }
+        assertException( () -> userManager.deleteUser( "unknown" ),
+                InvalidArgumentsException.class, "User 'unknown' does not exist" );
 
         // Then
         assertNotNull( users.getUserByName( "jake" ) );
