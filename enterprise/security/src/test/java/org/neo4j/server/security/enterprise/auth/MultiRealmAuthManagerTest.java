@@ -27,10 +27,12 @@ import org.junit.Test;
 import java.util.Collections;
 
 import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.enterprise.SecurityLog;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -49,8 +51,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
+import static org.neo4j.test.assertion.Assert.assertException;
 
 public class MultiRealmAuthManagerTest
 {
@@ -70,7 +74,7 @@ public class MultiRealmAuthManagerTest
 
         InternalFlatFileRealm internalFlatFileRealm =
                 new InternalFlatFileRealm( users, new InMemoryRoleRepository(), mock( PasswordPolicy.class ),
-                        authStrategy, mock( JobScheduler.class ), log );
+                        authStrategy, mock( JobScheduler.class ) );
 
         manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ),
                 new MemoryConstrainedCacheManager(), new SecurityLog( log ) );
@@ -118,7 +122,7 @@ public class MultiRealmAuthManagerTest
     }
 
     @Test
-    public void shouldReturnTooManyAttemptsWhenThatIsAppropiate() throws Throwable
+    public void shouldReturnTooManyAttemptsWhenThatIsAppropriate() throws Throwable
     {
         // Given
         users.create( newUser( "jake", "abc123" , true ) );
@@ -149,6 +153,19 @@ public class MultiRealmAuthManagerTest
         // Then
         assertThat( result, equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
         logProvider.assertExactly( info( "[jake]: logged in" ) );
+    }
+
+    @Test
+    public void shouldFailWhenAuthTokenIsInvalid() throws Throwable
+    {
+        manager.start();
+
+        assertException( () -> manager.login( map( AuthToken.SCHEME_KEY, "supercool", AuthToken.PRINCIPAL, "neo4j" ) ),
+                InvalidAuthTokenException.class, "does not support authentication token" );
+        assertException( () -> manager.login( map( "key", "value" ) ),
+                InvalidAuthTokenException.class, "does not support authentication token" );
+        assertException( () -> manager.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, "neo4j" ) ),
+                InvalidAuthTokenException.class, "The value associated with the key `credentials` must be a String but was: null" );
     }
 
     @Test
