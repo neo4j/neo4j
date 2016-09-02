@@ -306,6 +306,57 @@ public class AuthProceduresLoggingTest
         );
     }
 
+    @Test
+    public void shouldLogSuspendUser() throws Throwable
+    {
+        // Given
+        authProcedures.createUser( "mats", "neo4j", false );
+        log.clear();
+
+        // When
+        authProcedures.suspendUser( "mats" );
+        authProcedures.suspendUser( "mats" );
+
+        // Then
+        log.assertExactly(
+                info( "[admin]: suspended user `%s`", "mats" ),
+                info( "[admin]: suspended user `%s`", "mats" )
+        );
+    }
+
+    @Test
+    public void shouldLogFailureToSuspendUser() throws Throwable
+    {
+        // Given
+        authProcedures.createUser( "mats", "neo4j", false );
+        log.clear();
+
+        // When
+        catchInvalidArguments( () -> authProcedures.suspendUser( "notMats" ) );
+        catchInvalidArguments( () -> authProcedures.suspendUser( ADMIN ) );
+
+        // Then
+        log.assertExactly(
+                error( "[admin]: tried to suspend user `%s`: %s", "notMats", "User 'notMats' does not exist." ),
+                error( "[admin]: tried to suspend user `%s`: %s", "admin", "Suspending yourself (user 'admin') is not allowed." )
+        );
+    }
+
+    @Test
+    public void shouldLogUnauthorizedSuspendUser() throws Throwable
+    {
+        // Given
+        authProcedures.authSubject = matsSubject;
+
+        // When
+        catchAuthorizationViolation( () -> authProcedures.suspendUser( ADMIN ) );
+
+        // Then
+        log.assertExactly(
+                error( "[mats]: tried to suspend user `%s`: %s", "admin", PERMISSION_DENIED )
+        );
+    }
+
     private void catchInvalidArguments( CheckedFunction f ) throws Throwable
     {
         try { f.apply(); } catch (InvalidArgumentsException e) { /*ignore*/ }
