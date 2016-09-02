@@ -63,8 +63,8 @@ public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDete
 
         Path (s) -...- (c) weight x
         path (s) -...- (a) weight x
-        path (d) -...- (y) weight y
-        path (b) -...- (y) weight y
+        path (d) -...- (t) weight y
+        path (b) -...- (t) weight y
         rel (c) - (b) weight z
         rel (a) - (b) weight z
         rel (a) - (d) weight z
