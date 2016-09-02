@@ -186,8 +186,7 @@ public class Dijkstra implements PathFinder<WeightedPath>
         }
         else
         {
-            org.apache.commons.lang3.mutable.MutableDouble
-                    shortestSoFar = new org.apache.commons.lang3.mutable.MutableDouble( Double.MAX_VALUE );
+            MutableDouble shortestSoFar = new MutableDouble( Double.MAX_VALUE );
             dijkstraExpander = new DijkstraPathExpander( expander, shortestSoFar, epsilon,
                     interest.stopAfterLowestCost() );
             dijkstraEvaluator = new DijkstraEvaluator( shortestSoFar, end, costEvaluator );
