@@ -99,7 +99,8 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         // for REST, login doesn't happen until the subject does something
         neo.executeQuery( mats, "UNWIND [] AS i RETURN 1", Collections.emptyMap(), r -> {} );
         assertEmpty( adminSubject, "CALL dbms.security.createUser('mats', 'neo4j', false)" );
-//        assertEmpty( adminSubject, "CALL dbms.security.createRole('role1')" );
+        assertEmpty( adminSubject, "CALL dbms.security.createRole('role1')" );
+        assertEmpty( adminSubject, "CALL dbms.security.deleteRole('role1')" );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('reader', 'mats')" );
         mats = neo.login( "mats", "neo4j" );
         assertEmpty( mats, "MATCH (n) WHERE id(n) < 0 RETURN 1" );
@@ -107,7 +108,6 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertFail( mats, "CALL dbms.security.changeUserPassword('mats', '')", "A password cannot be empty." );
         assertEmpty( mats, "CALL dbms.security.changeUserPassword('mats', 'hackerPassword')" );
         assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('reader', 'mats')" );
-//        assertEmpty( adminSubject, "CALL dbms.security.deleteRole('role1')" );
         assertEmpty( adminSubject, "CALL dbms.security.deleteUser('mats')" );
 
         // flush log
@@ -118,6 +118,8 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
 
         log.assertHasLine( "mats", "logged in" );
         log.assertHasLine( "adminSubject", "created user `mats`" );
+        log.assertHasLine( "adminSubject", "created role `role1`" );
+        log.assertHasLine( "adminSubject", "deleted role `role1`" );
         log.assertHasLine( "mats", "logged in" );
         log.assertHasLine( "adminSubject", "added role `reader` to user `mats`" );
         log.assertHasLine( "mats", "tried to change password for user `neo4j`: " + PERMISSION_DENIED);

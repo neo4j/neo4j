@@ -26,6 +26,7 @@ import org.apache.shiro.mgt.SecurityManager;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
@@ -35,6 +36,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
+import org.neo4j.test.assertion.Assert;
 
 import static org.mockito.Mockito.mock;
 
@@ -86,14 +88,21 @@ public class AuthProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogCreatingUserWithBadPassword() throws Throwable
+    public void shouldLogFailureToCreateUser() throws Throwable
     {
+        catchInvalidArguments( () -> authProcedures.createUser( null, "pw", true ) );
+        catchInvalidArguments( () -> authProcedures.createUser( "", "pw", true ) );
         catchInvalidArguments( () -> authProcedures.createUser( "andres", "", true ) );
         catchInvalidArguments( () -> authProcedures.createUser( "mats", null, true ) );
+        catchInvalidArguments( () -> authProcedures.createUser( "neo4j", "nonEmpty", true ) );
 
         log.assertExactly(
+                error( "[admin]: tried to create user `%s`: %s", null, "The provided username is empty." ),
+                error( "[admin]: tried to create user `%s`: %s", "", "The provided username is empty." ),
                 error( "[admin]: tried to create user `%s`: %s", "andres", "A password cannot be empty." ),
-                error( "[admin]: tried to create user `%s`: %s", "mats", "A password cannot be empty." ) );
+                error( "[admin]: tried to create user `%s`: %s", "mats", "A password cannot be empty." ),
+                error( "[admin]: tried to create user `%s`: %s", "neo4j", "The specified user 'neo4j' already exists." )
+        );
     }
 
     @Test
@@ -381,14 +390,60 @@ public class AuthProceduresLoggingTest
         );
     }
 
-    private void catchInvalidArguments( CheckedFunction f ) throws Throwable
+    @Test
+    public void shouldLogCreatingRole() throws Throwable
     {
-        try { f.apply(); } catch (InvalidArgumentsException e) { /*ignore*/ }
+        // When
+        authProcedures.createRole( "role" );
+
+        // Then
+        log.assertExactly( info( "[admin]: created role `%s`", "role" ) );
     }
 
-    private void catchAuthorizationViolation( CheckedFunction f ) throws Throwable
+    @Test
+    public void shouldLogFailureToCreateRole() throws Throwable
     {
-        try { f.apply(); } catch (AuthorizationViolationException e) { /*ignore*/ }
+        // Given
+        authProcedures.createRole( "role" );
+        log.clear();
+
+        // When
+        catchInvalidArguments( () -> authProcedures.createRole( null ) );
+        catchInvalidArguments( () -> authProcedures.createRole( "" ) );
+        catchInvalidArguments( () -> authProcedures.createRole( "role" ) );
+        catchInvalidArguments( () -> authProcedures.createRole( "!@#$" ) );
+
+        // Then
+        log.assertExactly(
+                error( "[admin]: tried to create role `%s`: %s", null, "The provided role name is empty." ),
+                error( "[admin]: tried to create role `%s`: %s", "", "The provided role name is empty." ),
+                error( "[admin]: tried to create role `%s`: %s", "role", "The specified role 'role' already exists." ),
+                error( "[admin]: tried to create role `%s`: %s", "!@#$",
+                        "Role name '!@#$' contains illegal characters. Use simple ascii characters and numbers." )
+        );
+    }
+
+    @Test
+    public void shouldLogUnauthorizedCreateRole() throws Exception
+    {
+        // Given
+        authProcedures.authSubject = matsSubject;
+
+        // When
+        catchAuthorizationViolation( () -> authProcedures.createRole( "role" ) );
+
+        // Then
+        log.assertExactly( error("[mats]: tried to create role `%s`: %s", "role", PERMISSION_DENIED) );
+    }
+
+    private void catchInvalidArguments( ThrowingAction<Exception> f ) throws Exception
+    {
+        Assert.assertException( f, InvalidArgumentsException.class, "" );
+    }
+
+    private void catchAuthorizationViolation( ThrowingAction<Exception> f ) throws Exception
+    {
+        Assert.assertException( f, AuthorizationViolationException.class, "" );
     }
 
     private AssertableLogProvider.LogMatcher info( String message, String... arguments )
@@ -403,11 +458,6 @@ public class AuthProceduresLoggingTest
     private AssertableLogProvider.LogMatcher error( String message, String... arguments )
     {
         return inLog( this.getClass() ).error( message, arguments );
-    }
-
-    @FunctionalInterface
-    private interface CheckedFunction {
-        void apply() throws Throwable;
     }
 
     private static class TestAuthSubject extends EnterpriseAuthSubject
