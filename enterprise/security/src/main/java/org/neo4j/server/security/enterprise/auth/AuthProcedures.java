@@ -252,7 +252,7 @@ public class AuthProcedures
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to activate user `%s`. %s", username, e.getMessage() );
+            securityLog.error( authSubject, "tried to activate user `%s`: %s", username, e.getMessage() );
             throw e;
         }
     }

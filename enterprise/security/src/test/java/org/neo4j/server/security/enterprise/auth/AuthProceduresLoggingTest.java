@@ -35,8 +35,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
-import org.neo4j.server.security.auth.PasswordPolicy;
-import org.neo4j.server.security.auth.UserRepository;
 
 import static org.mockito.Mockito.mock;
 
@@ -63,37 +61,15 @@ public class AuthProceduresLoggingTest
         authProcedures = new TestAuthProcedures();
         authProcedures.authSubject = adminSubject;
         authProcedures.securityLog = new SecurityLog( log.getLog( getClass() ) );
-        GraphDatabaseAPI api = mock( GraphDatabaseAPI.class );
-        authProcedures.graph = api;
-    }
-
-    private static class TestAuthProcedures extends AuthProcedures
-    {
-        @Override
-        void kickoutUser( String username, String reason )
-        {
-        }
-
-        @Override
-        Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
-        {
-            return Stream.empty();
-        }
-
-        @Override
-        Stream<ConnectionResult> terminateConnectionsForValidUser( String username )
-        {
-            return Stream.empty();
-        }
+        authProcedures.graph = mock( GraphDatabaseAPI.class );
     }
 
     private EnterpriseUserManager getUserManager() throws Throwable
     {
-        InMemoryRoleRepository roles = new InMemoryRoleRepository();
-        PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
-        UserRepository users = new InMemoryUserRepository();
-        AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
-        InternalFlatFileRealm realm = new InternalFlatFileRealm( users, roles, passwordPolicy, authStrategy );
+        InternalFlatFileRealm realm = new InternalFlatFileRealm( new InMemoryUserRepository(),
+                new InMemoryRoleRepository(),
+                new BasicPasswordPolicy(),
+                mock( AuthenticationStrategy.class ) );
         realm.start(); // creates default user and roles
         return realm;
     }
@@ -357,6 +333,54 @@ public class AuthProceduresLoggingTest
         );
     }
 
+    @Test
+    public void shouldLogActivateUser() throws Throwable
+    {
+        // Given
+        authProcedures.createUser( "mats", "neo4j", false );
+        authProcedures.suspendUser( "mats" );
+        log.clear();
+
+        // When
+        authProcedures.activateUser( "mats", false );
+        authProcedures.activateUser( "mats", false );
+
+        // Then
+        log.assertExactly(
+                info( "[admin]: activated user `%s`", "mats" ),
+                info( "[admin]: activated user `%s`", "mats" )
+        );
+    }
+
+    @Test
+    public void shouldLogFailureToActivateUser() throws Throwable
+    {
+        // When
+        catchInvalidArguments( () -> authProcedures.activateUser( "notMats", false ) );
+        catchInvalidArguments( () -> authProcedures.activateUser( ADMIN, false ) );
+
+        // Then
+        log.assertExactly(
+                error( "[admin]: tried to activate user `%s`: %s", "notMats", "User 'notMats' does not exist." ),
+                error( "[admin]: tried to activate user `%s`: %s", ADMIN, "Activating yourself (user 'admin') is not allowed." )
+        );
+    }
+
+    @Test
+    public void shouldLogUnauthorizedActivateUser() throws Throwable
+    {
+        // Given
+        authProcedures.authSubject = matsSubject;
+
+        // When
+        catchAuthorizationViolation( () -> authProcedures.activateUser( "admin", true ) );
+
+        // Then
+        log.assertExactly(
+                error( "[mats]: tried to activate user `%s`: %s", "admin", PERMISSION_DENIED )
+        );
+    }
+
     private void catchInvalidArguments( CheckedFunction f ) throws Throwable
     {
         try { f.apply(); } catch (InvalidArgumentsException e) { /*ignore*/ }
@@ -439,6 +463,26 @@ public class AuthProceduresLoggingTest
         public Object getPrincipal()
         {
             return name;
+        }
+    }
+
+    private static class TestAuthProcedures extends AuthProcedures
+    {
+        @Override
+        void kickoutUser( String username, String reason )
+        {
+        }
+
+        @Override
+        Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
+        {
+            return Stream.empty();
+        }
+
+        @Override
+        Stream<ConnectionResult> terminateConnectionsForValidUser( String username )
+        {
+            return Stream.empty();
         }
     }
 
