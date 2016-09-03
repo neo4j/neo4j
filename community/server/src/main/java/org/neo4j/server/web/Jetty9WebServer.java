@@ -354,7 +354,14 @@ public class Jetty9WebServer implements WebServer
         }
         catch( BindException e )
         {
-            throw new PortBindException( jettyAddress, e );
+            if ( jettyHttpsAddress.isPresent() )
+            {
+                throw new PortBindException( jettyAddress, jettyHttpsAddress.get(), e );
+            }
+            else
+            {
+                throw new PortBindException( jettyAddress, e );
+            }
         }
     }
 
