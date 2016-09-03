@@ -40,12 +40,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.coreedge.discovery.procedures.DiscoverEndpointAcquisitionServersProcedureTest.addresses;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class ClusterOverviewProcedureTest
 {
     @Test
-    public void shouldRecommendTheCoreLeaderForWriteAndEdgeForRead() throws Exception
+    public void shouldProvideOverivewOfCoreAndEdgeServers() throws Exception
     {
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
@@ -59,7 +60,7 @@ public class ClusterOverviewProcedureTest
         coreMembers.put( follower1, DiscoverEndpointAcquisitionServersProcedureTest.coreAddresses( 1 ) );
         coreMembers.put( follower2, DiscoverEndpointAcquisitionServersProcedureTest.coreAddresses( 2 ) );
 
-        Set<EdgeAddresses> edges = DiscoverEndpointAcquisitionServersProcedureTest.addresses( 4, 5 );
+        Set<EdgeAddresses> edges = addresses( 4, 5 );
 
         final ClusterTopology clusterTopology = new ClusterTopology( null, false, coreMembers, edges );
         when( topologyService.currentTopology() ).thenReturn( clusterTopology );
