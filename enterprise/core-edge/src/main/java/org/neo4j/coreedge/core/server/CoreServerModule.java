@@ -153,9 +153,6 @@ public class CoreServerModule
         membershipWaiterLifecycle = new MembershipWaiterLifecycle( membershipWaiter,
                 joinCatchupTimeout, consensusModule.raftMachine(), logProvider );
 
-        life.add( new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
-                batchingMessageHandler, logProvider ) );
-
         loggingRaftInbound.registerHandler( batchingMessageHandler );
 
         CatchupServer catchupServer = new CatchupServer( logProvider, localDatabase,
@@ -165,6 +162,8 @@ public class CoreServerModule
                 coreState, config.get( CoreEdgeClusterSettings.transaction_listen_address ), platformModule.monitors );
 
         life.add( coreState );
+        life.add( new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
+                batchingMessageHandler, logProvider ) );
         life.add( raftServer );
         life.add( catchupServer );
     }
