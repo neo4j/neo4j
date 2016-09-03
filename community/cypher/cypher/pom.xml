@@ -293,10 +293,6 @@
           <groupId>net.sf.opencsv</groupId>
           <artifactId>opencsv</artifactId>
         </exclusion>
-	      <exclusion>
-          <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-          <artifactId>concurrentlinkedhashmap-lru</artifactId>
-	      </exclusion>
       </exclusions>
     </dependency>
 
@@ -330,11 +326,6 @@
     </dependency>
 
     <!-- other -->
-
-    <dependency>
-      <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-      <artifactId>concurrentlinkedhashmap-lru</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>com.google.code.findbugs</groupId>

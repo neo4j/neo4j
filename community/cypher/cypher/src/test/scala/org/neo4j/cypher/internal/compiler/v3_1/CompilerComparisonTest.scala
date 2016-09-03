@@ -294,13 +294,13 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   private def ronjaCompiler(plannerName: CostBasedPlannerName, metricsFactoryInput: MetricsFactory = SimpleMetricsFactory)(graph: GraphDatabaseQueryService): CypherCompiler = {
     val kernelMonitors = new KernelMonitors()
-    val monitors = new WrappedMonitors3_1(kernelMonitors)
+    val monitors = WrappedMonitors3_1(kernelMonitors)
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(metricsFactoryInput)
-    val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
+    val queryPlanner = DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
     val planner = CostBasedPipeBuilderFactory.create(
       monitors = monitors,
       metricsFactory = metricsFactory,
@@ -313,36 +313,36 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       updateStrategy = None,
       publicTypeConverter = identity
     )
-    val pipeBuilder = new SilentFallbackPlanBuilder(
+    val pipeBuilder = SilentFallbackPlanBuilder(
       new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer, typeConverter = IdentityTypeConverter),
       planner, planBuilderMonitor)
     val execPlanBuilder =
       new ExecutionPlanBuilder(graph, clock, pipeBuilder, new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
-    val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
+    val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](100)
     val cacheHitMonitor = monitors.newMonitor[CypherCacheHitMonitor[Statement]](monitorTag)
     val cacheFlushMonitor =
       monitors.newMonitor[CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]]](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheHitMonitor)
 
-    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors)
+    CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors)
   }
 
   private def legacyCompiler(graph: GraphDatabaseQueryService): CypherCompiler = {
     val kernelMonitors = new KernelMonitors()
-    val monitors = new WrappedMonitors3_1(kernelMonitors)
+    val monitors = WrappedMonitors3_1(kernelMonitors)
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
     val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer, typeConverter = IdentityTypeConverter)
     val execPlanBuilder =
       new ExecutionPlanBuilder(graph, clock, pipeBuilder, new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
-    val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
+    val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](100)
     val cacheHitMonitor = monitors.newMonitor[CypherCacheHitMonitor[Statement]](monitorTag)
     val cacheFlushMonitor =
       monitors.newMonitor[CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]]](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheHitMonitor)
 
-    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors)
+    CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors)
   }
 
   case class QueryExecutionResult(compiler: String, dbHits: Option[Long], plan: InternalPlanDescription) {

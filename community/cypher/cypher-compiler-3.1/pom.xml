@@ -163,9 +163,11 @@
     </dependency>
 
     <dependency>
-      <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-      <artifactId>concurrentlinkedhashmap-lru</artifactId>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+      <version>2.3.3</version>
     </dependency>
+
 
     <dependency>
       <groupId>org.apache.commons</groupId>
