@@ -59,6 +59,7 @@ public class ContinuousJob extends LifecycleAdapter
     {
         log.info( "ContinuousJob " + group.name() + " stopping" );
         abortableJob.keepRunning = false;
+        jobHandle.cancel( true );
         jobHandle.waitTermination();
     }
 
