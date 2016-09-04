@@ -29,6 +29,7 @@ import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 
 import java.util.List;
 
@@ -142,6 +143,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         networkConfig.setJoin( joinConfig );
 
         com.hazelcast.config.Config c = new com.hazelcast.config.Config();
+        c.setProperty( GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS, "10000" );
         c.setProperty( GroupProperties.PROP_INITIAL_MIN_CLUSTER_SIZE,
                 String.valueOf( minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize() ) );
         c.setProperty( GroupProperties.PROP_LOGGING_TYPE, "none" );
