@@ -53,4 +53,22 @@ public class MemoryManagerTest
         }
         // Also asserts that no OutOfMemoryError is thrown.
     }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void alignmentCannotBeZero() throws Exception
+    {
+        new MemoryManager( 8192, 0 );
+    }
+
+    @Test
+    public void mustBeAbleToAllocateSlabsLargerThanGrabSize() throws Exception
+    {
+        MemoryManager mman = new MemoryManager( 32 * 1024 * 1024, 1 );
+        long page1 = mman.allocateAligned( UnsafeUtil.pageSize() );
+        long largeBlock = mman.allocateAligned( 1024 * 1024 ); // 1 MiB
+        long page2 = mman.allocateAligned( UnsafeUtil.pageSize() );
+        assertThat( page1, is( not( 0L ) ) );
+        assertThat( largeBlock, is( not( 0L ) ) );
+        assertThat( page2, is( not( 0L ) ) );
+    }
 }

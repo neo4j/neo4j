@@ -51,6 +51,10 @@ public final class MemoryManager
      */
     public MemoryManager( long expectedMaxMemory, long alignment )
     {
+        if ( alignment == 0 )
+        {
+            throw new IllegalArgumentException( "Alignment cannot be zero" );
+        }
         this.memoryReserve = expectedMaxMemory;
         this.alignment = alignment;
     }
@@ -62,6 +66,22 @@ public final class MemoryManager
      */
     public synchronized long allocateAligned( long bytes )
     {
+        if ( bytes > GRAB_SIZE )
+        {
+            // This is a huge allocation. Put it in its own slab and keep any existing slab at the head.
+            Slab nextSlab = slabs == null? null : slabs.next;
+            Slab allocationSlab = new Slab( nextSlab, bytes, alignment );
+            if ( !allocationSlab.canAllocate( bytes ) )
+            {
+                allocationSlab.free();
+                allocationSlab = new Slab( nextSlab, bytes + alignment, alignment );
+            }
+            long allocation = allocationSlab.allocate( bytes );
+            slabs = slabs == null? allocationSlab : slabs.setNext( allocationSlab );
+            memoryReserve -= bytes;
+            return allocation;
+        }
+
         if ( slabs == null || !slabs.canAllocate( bytes ) )
         {
             long slabGrab = Math.min( GRAB_SIZE, memoryReserve );
@@ -115,6 +135,15 @@ public final class MemoryManager
             nextAlignedPointer = nextAligned( address );
         }
 
+        Slab( Slab next, long address, long limit, long alignMask, long nextAlignedPointer )
+        {
+            this.next = next;
+            this.address = address;
+            this.limit = limit;
+            this.alignMask = alignMask;
+            this.nextAlignedPointer = nextAlignedPointer;
+        }
+
         private long nextAligned( long pointer )
         {
             if ( (pointer & ~alignMask) == pointer )
@@ -124,21 +153,35 @@ public final class MemoryManager
             return (pointer + alignMask) & ~alignMask;
         }
 
-        public long allocate( long bytes )
+        long allocate( long bytes )
         {
             long allocation = nextAlignedPointer;
             nextAlignedPointer = nextAligned( nextAlignedPointer + bytes );
             return allocation;
         }
 
-        public void free()
+        void free()
         {
             UnsafeUtil.free( address );
         }
 
-        public boolean canAllocate( long bytes )
+        boolean canAllocate( long bytes )
         {
             return nextAlignedPointer + bytes <= limit;
+        }
+
+        Slab setNext( Slab slab )
+        {
+            return new Slab( slab, address, limit, alignMask, nextAlignedPointer );
+        }
+
+        @Override
+        public String toString()
+        {
+            long size = limit - address;
+            long reserve = nextAlignedPointer > limit? 0 : limit - nextAlignedPointer;
+            double use = (1.0 - reserve / ((double) size)) * 100.0;
+            return String.format( "Slab[size = %d bytes, reserve = %d bytes, use = %5.2f %%]", size, reserve, use );
         }
     }
 }
