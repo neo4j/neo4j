@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.core;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.function.Function;
 
@@ -49,8 +48,7 @@ public class CoreEdgeClusterSettings
         @Override
         public ListenSocketAddress apply( String value )
         {
-            String[] split = value.trim().split( ":" );
-            return new ListenSocketAddress( new InetSocketAddress( split[0], Integer.valueOf( split[1] ) ) );
+            return new ListenSocketAddress( value );
         }
 
         @Override

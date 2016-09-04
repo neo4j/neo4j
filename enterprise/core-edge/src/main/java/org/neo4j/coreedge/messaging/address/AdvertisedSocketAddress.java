@@ -20,9 +20,6 @@
 package org.neo4j.coreedge.messaging.address;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.Objects;
-import java.util.regex.Pattern;
 
 import org.neo4j.coreedge.core.state.storage.SafeChannelMarshal;
 import org.neo4j.coreedge.messaging.EndOfStreamException;
@@ -30,72 +27,12 @@ import org.neo4j.coreedge.messaging.marshalling.StringMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
-import static java.lang.String.format;
-
-public class AdvertisedSocketAddress
+public class AdvertisedSocketAddress extends SocketAddress
 {
-    private final String address;
-    private static final Pattern pattern = Pattern.compile( "(.+):(\\d+)" );
 
     public AdvertisedSocketAddress( String address )
     {
-        this.address = validate( address );
-    }
-
-    private String validate( String address )
-    {
-        if ( address == null )
-        {
-            throw new IllegalArgumentException( "AdvertisedSocketAddress cannot be null" );
-        }
-
-        address = address.trim();
-
-        if ( address.contains( " " ) )
-        {
-            throw new IllegalArgumentException( format( "Cannot initialize AdvertisedSocketAddress for %s. Whitespace" +
-                    " characters cause unresolvable ambiguity.", address ) );
-        }
-
-        if ( !pattern.matcher( address ).matches() )
-        {
-            throw new IllegalArgumentException( format( "AdvertisedSocketAddress can only be created with " +
-                    "hostname:port. %s is not acceptable", address ) );
-        }
-
-        return address;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        AdvertisedSocketAddress that = (AdvertisedSocketAddress) o;
-        return Objects.equals( address, that.address );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( address );
-    }
-
-    public String toString()
-    {
-        return address;
-    }
-
-    public InetSocketAddress socketAddress()
-    {
-        String[] split = address.split( ":" );
-        return new InetSocketAddress( split[0], Integer.valueOf( split[1] ) );
+        super( address );
     }
 
     public static class AdvertisedSocketAddressChannelMarshal extends SafeChannelMarshal<AdvertisedSocketAddress>
