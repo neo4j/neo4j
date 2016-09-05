@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngine;
 
 public class CommitProcessSwitcher extends AbstractComponentSwitcher<TransactionCommitProcess>
@@ -38,16 +39,18 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
     private final Master master;
     private final RequestContextFactory requestContextFactory;
     private final DependencyResolver dependencyResolver;
+    private final MasterTransactionCommitProcess.Monitor monitor;
 
     public CommitProcessSwitcher( TransactionPropagator txPropagator, Master master,
             DelegateInvocationHandler<TransactionCommitProcess> delegate, RequestContextFactory requestContextFactory,
-            DependencyResolver dependencyResolver )
+            Monitors monitors, DependencyResolver dependencyResolver )
     {
         super( delegate );
         this.txPropagator = txPropagator;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.dependencyResolver = dependencyResolver;
+        this.monitor = monitors.newMonitor( MasterTransactionCommitProcess.Monitor.class );
     }
 
     @Override
@@ -63,9 +66,7 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
                 dependencyResolver.resolveDependency( TransactionAppender.class ),
                 dependencyResolver.resolveDependency( StorageEngine.class ) );
 
-        return new MasterTransactionCommitProcess(
-                commitProcess,
-                txPropagator,
-                dependencyResolver.resolveDependency( IntegrityValidator.class ) );
+        IntegrityValidator validator = dependencyResolver.resolveDependency( IntegrityValidator.class );
+        return new MasterTransactionCommitProcess( commitProcess, txPropagator, validator, monitor );
     }
 }

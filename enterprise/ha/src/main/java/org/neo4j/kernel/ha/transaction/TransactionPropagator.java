@@ -163,12 +163,12 @@ public class TransactionPropagator implements Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         this.slaveCommitters = Executors.newCachedThreadPool( new NamedThreadFactory( "slave-committer" ) );
         desiredReplicationFactor = config.getTxPushFactor();
@@ -176,17 +176,23 @@ public class TransactionPropagator implements Lifecycle
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         this.slaveCommitters.shutdown();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
     }
 
-    public void committed( long txId, int authorId )
+    /**
+     *
+     * @param txId transaction id to replicate
+     * @param authorId author id for such transaction id
+     * @return the number of missed replicas (e.g., desired replication factor - number of successful replications)
+     */
+    public int committed( long txId, int authorId )
     {
         int replicationFactor = desiredReplicationFactor;
         // If the author is not this instance, then we need to push to one less - the committer already has it
@@ -198,94 +204,100 @@ public class TransactionPropagator implements Lifecycle
 
         if ( replicationFactor == 0 )
         {
-            return;
+            return replicationFactor;
         }
         Collection<ReplicationContext> committers = new HashSet<>();
-        try
+
+        // TODO: Move this logic into {@link CommitPusher}
+        // Commit at the configured amount of slaves in parallel.
+        int successfulReplications = 0;
+        Iterator<Slave> slaveList = filter( replicationStrategy.prioritize( slaves.getSlaves() ).iterator(), authorId );
+        CompletionNotifier notifier = new CompletionNotifier();
+
+        // Start as many initial committers as needed
+        for ( int i = 0; i < replicationFactor && slaveList.hasNext(); i++ )
         {
-            // TODO: Move this logic into {@link CommitPusher}
-            // Commit at the configured amount of slaves in parallel.
-            int successfulReplications = 0;
-            Iterator<Slave> slaveList = filter( replicationStrategy.prioritize( slaves.getSlaves() ).iterator(),
-                    authorId );
-            CompletionNotifier notifier = new CompletionNotifier();
-
-            // Start as many initial committers as needed
-            for ( int i = 0; i < replicationFactor && slaveList.hasNext(); i++ )
-            {
-                Slave slave = slaveList.next();
-                Callable<Void> slaveCommitter = slaveCommitter( slave, txId, notifier );
-                committers.add( new ReplicationContext( slaveCommitters.submit( slaveCommitter ), slave ) );
-            }
-
-            // Wait for them and perhaps spawn new ones for failing committers until we're done
-            // or until we have no more slaves to try out.
-            Collection<ReplicationContext> toAdd = new ArrayList<>();
-            Collection<ReplicationContext> toRemove = new ArrayList<>();
-            while ( !committers.isEmpty() && successfulReplications < replicationFactor )
-            {
-                toAdd.clear();
-                toRemove.clear();
-                for ( ReplicationContext context : committers )
-                {
-                    if ( !context.future.isDone() )
-                    {
-                        continue;
-                    }
-
-                    if ( isSuccessful( context ) )
-                    // This committer was successful, increment counter
-                    {
-                        successfulReplications++;
-                    }
-                    else if ( slaveList.hasNext() )
-                    // This committer failed, spawn another one
-                    {
-                        Slave newSlave = slaveList.next();
-                        Callable<Void> slaveCommitter = slaveCommitter( newSlave, txId, notifier );
-                        toAdd.add( new ReplicationContext( slaveCommitters.submit( slaveCommitter ), newSlave ) );
-                    }
-                    toRemove.add( context );
-                }
-
-                // Incorporate the results into committers collection
-                if ( !toAdd.isEmpty() )
-                {
-                    committers.addAll( toAdd );
-                }
-                if ( !toRemove.isEmpty() )
-                {
-                    committers.removeAll( toRemove );
-                }
-
-                if ( !committers.isEmpty() )
-                // There are committers doing work right now, so go and wait for
-                // any of the committers to be done so that we can reevaluate
-                // the situation again.
-                {
-                    notifier.waitForAnyCompletion();
-                }
-            }
-
-            // We did the best we could, have we committed successfully on enough slaves?
-            if ( !(successfulReplications >= replicationFactor) )
-            {
-                pushedToTooFewSlaveLogger.info( "Transaction " + txId + " couldn't commit on enough slaves, desired " +
-                        replicationFactor + ", but could only commit at " + successfulReplications );
-            }
+            Slave slave = slaveList.next();
+            Callable<Void> slaveCommitter = slaveCommitter( slave, txId, notifier );
+            committers.add( new ReplicationContext( slaveCommitters.submit( slaveCommitter ), slave ) );
         }
-        catch ( Throwable t )
+
+        // Wait for them and perhaps spawn new ones for failing committers until we're done
+        // or until we have no more slaves to try out.
+        Collection<ReplicationContext> toAdd = new ArrayList<>();
+        Collection<ReplicationContext> toRemove = new ArrayList<>();
+        while ( !committers.isEmpty() && successfulReplications < replicationFactor )
         {
-            log.error( "Unknown error commit master transaction at slave", t );
-        }
-        finally
-        {
-            // Cancel all ongoing committers in the executor
+            toAdd.clear();
+            toRemove.clear();
             for ( ReplicationContext context : committers )
             {
-                context.future.cancel( false );
+                if ( !context.future.isDone() )
+                {
+                    continue;
+                }
+
+                if ( isSuccessful( context ) )
+                // This committer was successful, increment counter
+                {
+                    successfulReplications++;
+                }
+                else if ( slaveList.hasNext() )
+                // This committer failed, spawn another one
+                {
+                    Slave newSlave = slaveList.next();
+                    Callable<Void> slaveCommitter;
+                    try
+                    {
+                        slaveCommitter = slaveCommitter( newSlave, txId, notifier );
+                    }
+                    catch ( Throwable t )
+                    {
+                        log.error( "Unknown error commit master transaction at slave", t );
+                        return desiredReplicationFactor /* missed them all :( */;
+                    }
+                    finally
+                    {
+                        // Cancel all ongoing committers in the executor
+                        for ( ReplicationContext committer : committers )
+                        {
+                            committer.future.cancel( false );
+                        }
+                    }
+
+                    toAdd.add( new ReplicationContext( slaveCommitters.submit( slaveCommitter ), newSlave ) );
+                }
+                toRemove.add( context );
+            }
+
+            // Incorporate the results into committers collection
+            if ( !toAdd.isEmpty() )
+            {
+                committers.addAll( toAdd );
+            }
+            if ( !toRemove.isEmpty() )
+            {
+                committers.removeAll( toRemove );
+            }
+
+            if ( !committers.isEmpty() )
+            // There are committers doing work right now, so go and wait for
+            // any of the committers to be done so that we can reevaluate
+            // the situation again.
+            {
+                notifier.waitForAnyCompletion();
             }
         }
+
+        // We did the best we could, have we committed successfully on enough slaves?
+        if ( successfulReplications < replicationFactor )
+        {
+            pushedToTooFewSlaveLogger
+                    .info( "Transaction " + txId + " couldn't commit on enough slaves, desired " + replicationFactor +
+                            ", but could only commit at " + successfulReplications );
+        }
+
+        return replicationFactor - successfulReplications;
     }
 
     private Iterator<Slave> filter( Iterator<Slave> slaves, final Integer externalAuthorServerId )

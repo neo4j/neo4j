@@ -27,12 +27,14 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.TransactionTemplate;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -98,7 +100,11 @@ public class TxPushStrategyConfigIT
     {
         ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.round_robin );
 
-        long txId = getLastTx( cluster.getMaster() );
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        Monitors monitors = master.getDependencyResolver().resolveDependency( Monitors.class );
+        AtomicInteger totalMissedReplicas = new AtomicInteger();
+        monitors.addMonitorListener( (MasterTransactionCommitProcess.Monitor) totalMissedReplicas::addAndGet );
+        long txId = getLastTx( master );
         int count = 15;
         for ( int i = 0; i < count; i++ )
         {
@@ -114,11 +120,13 @@ public class TxPushStrategyConfigIT
         }
 
         assertEquals( txId + count, max );
-        assertTrue( "There should be members with transactions in the cluster", min != -1 );
-        assertTrue( "There should be members with transactions in the cluster", max != -1 );
+        assertTrue( "There should be members with transactions in the cluster", min != -1 && max != -1 );
+
+        int minLaggingBehindThreshold = 1 /* this is the value without errors */ +
+                totalMissedReplicas.get() /* let's consider the missed replications */;
         assertThat( "There should at most be a txId gap of 1 among the cluster members since the transaction pushing " +
-                "goes in a round robin fashion. min:" + min + ", max:" + max,
-                (int) (max - min), lessThanOrEqualTo( 1 ) );
+                        "goes in a round robin fashion. min:" + min + ", max:" + max, (int) (max - min),
+                lessThanOrEqualTo( minLaggingBehindThreshold ) );
     }
 
     @Test
@@ -193,7 +201,7 @@ public class TxPushStrategyConfigIT
         return cluster;
     }
 
-    private void mapMachineIds(final  ManagedCluster cluster )
+    private void mapMachineIds( ManagedCluster cluster )
     {
         machineIds = new InstanceId[cluster.size()];
         machineIds[0] = cluster.getServerId( cluster.getMaster() );

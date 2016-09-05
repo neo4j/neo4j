@@ -33,29 +33,40 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
  */
 public class MasterTransactionCommitProcess implements TransactionCommitProcess
 {
+    private final TransactionCommitProcess inner;
     private final TransactionPropagator txPropagator;
     private final IntegrityValidator validator;
-    private final TransactionCommitProcess inner;
+    private final Monitor monitor;
 
-    public MasterTransactionCommitProcess( TransactionCommitProcess commitProcess,
-                                           TransactionPropagator txPropagator,
-                                           IntegrityValidator validator )
+    public interface Monitor
+    {
+        void missedReplicas( int number );
+    }
+
+    public MasterTransactionCommitProcess( TransactionCommitProcess commitProcess, TransactionPropagator txPropagator,
+            IntegrityValidator validator, Monitor monitor )
     {
         this.inner = commitProcess;
         this.txPropagator = txPropagator;
         this.validator = validator;
+        this.monitor = monitor;
     }
 
     @Override
-    public long commit( TransactionToApply batch, CommitEvent commitEvent,
-                        TransactionApplicationMode mode ) throws TransactionFailureException
+    public long commit( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode )
+            throws TransactionFailureException
     {
         validate( batch );
 
         long result = inner.commit( batch, commitEvent, mode );
 
         // Assuming all the transactions come from the same author
-        txPropagator.committed( result, batch.transactionRepresentation().getAuthorId() );
+        int missedReplicas = txPropagator.committed( result, batch.transactionRepresentation().getAuthorId() );
+
+        if ( missedReplicas > 0 )
+        {
+            monitor.missedReplicas( missedReplicas );
+        }
 
         return result;
     }
