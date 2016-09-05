@@ -20,8 +20,15 @@
 package org.neo4j.backup;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-import org.neo4j.backup.BackupClient.BackupRequestType;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.monitor.RequestMonitor;
@@ -29,72 +36,74 @@ import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.jboss.netty.buffer.ChannelBuffers.EMPTY_BUFFER;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
+@RunWith( Parameterized.class )
 public class BackupProtocolTest
 {
+    private final NullLogProvider logProvider = NullLogProvider.getInstance();
+    private final ByteCounterMonitor byteCounterMonitor = mock( ByteCounterMonitor.class );
+    private final RequestMonitor requestMonitor = mock( RequestMonitor.class );
+    private final ResponseUnpacker responseUnpacker = mock( ResponseUnpacker.class );
+
+    @Parameterized.Parameter()
+    public boolean forensics;
+
+    @Parameterized.Parameters( name = "forensics={0}")
+    public static Collection<Boolean> params()
+    {
+        return Arrays.asList( Boolean.TRUE, Boolean.FALSE );
+    }
+
     @Test
     public void shouldGatherForensicsInFullBackupRequest() throws Exception
     {
-        shouldGatherForensicsInFullBackupRequest( true );
-    }
-
-    @Test
-    public void shouldSkipGatheringForensicsInFullBackupRequest() throws Exception
-    {
-        shouldGatherForensicsInFullBackupRequest( false );
-    }
-
-    @Test
-    public void shouldHandleNoForensicsSpecifiedInFullBackupRequest() throws Exception
-    {
-        TheBackupInterface backup = mock( TheBackupInterface.class );
-        RequestContext ctx = new RequestContext( 0, 1, 0, -1, 12 );
-        BackupRequestType.FULL_BACKUP.getTargetCaller().call( backup, ctx, EMPTY_BUFFER, null );
-        verify( backup ).fullBackup( any( StoreWriter.class ), eq( false ) );
-    }
-
-    private void shouldGatherForensicsInFullBackupRequest( boolean forensics ) throws Exception
-    {
         // GIVEN
-        Response<Void> response = Response.EMPTY;
-        StoreId storeId = response.getStoreId();
-        String host = "localhost";
-        int port = BackupServer.DEFAULT_PORT;
-        LifeSupport life = new LifeSupport();
+        StoreId storeId = Response.EMPTY.getStoreId();
+        HostnamePort hostnamePort = new HostnamePort( "localhost", BackupServer.DEFAULT_PORT );
 
-        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-        BackupClient client = life.add( new BackupClient( host, port, null, NullLogProvider.getInstance(), storeId, 1000,
-                mock( ResponseUnpacker.class ), mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ), reader ) );
-        ControlledBackupInterface backup = new ControlledBackupInterface();
-        life.add( new BackupServer( backup, new HostnamePort( host, port ), NullLogProvider.getInstance(), mock( ByteCounterMonitor.class ),
-                mock( RequestMonitor.class )) );
-        life.start();
-
-        try
+        AtomicBoolean repeat = new AtomicBoolean();
+        AtomicInteger attempts = new AtomicInteger();
+        do
         {
-            // WHEN
-            StoreWriter writer = mock( StoreWriter.class );
-            client.fullBackup( writer, forensics );
+            BackupClient client =
+                    new BackupClient( hostnamePort.getHost(), hostnamePort.getPort(), null, logProvider, storeId, 1000,
+                            responseUnpacker, byteCounterMonitor, requestMonitor, new VersionAwareLogEntryReader<>() );
+            ControlledBackupInterface backup = new ControlledBackupInterface();
+            BackupServer backupServer =
+                    new BackupServer( backup, hostnamePort, logProvider, byteCounterMonitor, requestMonitor );
 
-            // THEN
-            assertEquals( forensics, backup.receivedForensics.booleanValue() );
+            repeat.set( false );
+
+            try ( Lifespan life = new Lifespan( client, backupServer ) )
+            {
+                // WHEN
+                StoreWriter writer = mock( StoreWriter.class );
+                client.fullBackup( writer, forensics );
+
+                // THEN
+                assertEquals( forensics, backup.receivedForensics );
+            }
+            catch ( ComException ex )
+            {
+                // let's try again
+                repeat.set( true );
+                attempts.incrementAndGet();
+            }
         }
-        finally
+        while ( repeat.get() && attempts.get() < 5 );
+
+        if ( repeat.get() )
         {
-            life.shutdown();
+            fail( "Always failed after " + attempts.get() + "attempts." );
         }
     }
 
