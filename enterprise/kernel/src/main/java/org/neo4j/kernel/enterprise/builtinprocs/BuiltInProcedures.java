@@ -20,10 +20,12 @@
 package org.neo4j.kernel.enterprise.builtinprocs;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -35,12 +37,19 @@ import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.time.Clocks;
 
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.procedure.Procedure.Mode.DBMS;
 
 public class BuiltInProcedures
 {
+    public static Clock clock = Clocks.systemClock();
+
     @Context
     public DependencyResolver resolver;
 
@@ -76,7 +85,8 @@ public class BuiltInProcedures
                 q.authSubjectName(),
                 q.queryText(),
                 q.queryParameters(),
-                q.startTime()
+                q.startTime(),
+                clock.instant().minusMillis( q.startTime() ).toEpochMilli()
         );
     }
 
@@ -88,17 +98,34 @@ public class BuiltInProcedures
         public final String query;
         public final Map<String,Object> parameters;
         public final String startTime;
+        public final String elapsedTime;
 
-        QueryStatusResult( long queryId, String username, String query, Map<String,Object> parameters, long startTime )
+        QueryStatusResult( long queryId, String username, String query, Map<String,Object> parameters,
+                long startTime, long elapsedTime )
         {
             this.queryId = queryId;
             this.username = username;
             this.query = query;
             this.parameters = parameters;
-            this.startTime = OffsetDateTime.ofInstant(
+            this.startTime = formatTime( startTime );
+            this.elapsedTime = formatInterval( elapsedTime );
+        }
+
+        private static String formatTime( final long startTime )
+        {
+            return OffsetDateTime.ofInstant(
                 Instant.ofEpochMilli( startTime ),
                 ZoneId.systemDefault()
             ).format( ISO_OFFSET_DATE_TIME );
+        }
+
+        private static String formatInterval( final long l )
+        {
+            final long hr = MILLISECONDS.toHours( l );
+            final long min = MILLISECONDS.toMinutes( l - HOURS.toMillis( hr ) );
+            final long sec = MILLISECONDS.toSeconds( l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) );
+            final long ms = l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) - SECONDS.toMillis( sec );
+            return String.format( "%02d:%02d:%02d.%03d", hr, min, sec, ms );
         }
     }
 }
