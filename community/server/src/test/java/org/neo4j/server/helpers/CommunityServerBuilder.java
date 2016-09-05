@@ -62,6 +62,7 @@ public class CommunityServerBuilder
 {
     protected final LogProvider logProvider;
     private HostnamePort address = new HostnamePort( "localhost", 7474 );
+    private HostnamePort httpsAddress = new HostnamePort( "localhost", 7473 );
     private String maxThreads = null;
     private String dataDir = null;
     private String managementUri = "/db/manage/";
@@ -182,7 +183,7 @@ public class CommunityServerBuilder
         {
             properties.put( httpConnector("https").type.name(), "HTTP" );
             properties.put( httpConnector("https").enabled.name(), "true" );
-            properties.put( httpConnector("https").address.name(), "localhost:7473" );
+            properties.put( httpConnector("https").address.name(), httpsAddress.toString() );
             properties.put( httpConnector("https").encryption.name(), "TLS" );
         }
 
@@ -283,6 +284,12 @@ public class CommunityServerBuilder
     public CommunityServerBuilder onAddress( HostnamePort address )
     {
         this.address = address;
+        return this;
+    }
+
+    public CommunityServerBuilder onHttpsAddress( HostnamePort address )
+    {
+        this.httpsAddress = address;
         return this;
     }
 
