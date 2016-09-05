@@ -114,22 +114,15 @@ public class CoreStateMachinesModule
         LogService logging = platformModule.logging;
         LogProvider logProvider = logging.getInternalLogProvider();
 
-        try
-        {
-            lockTokenState = life.add(
-                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, LOCK_TOKEN_NAME,
-                            new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() ),
-                            config.get( replicated_lock_token_state_size ), logProvider ) );
+        lockTokenState = life.add(
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, LOCK_TOKEN_NAME,
+                        new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() ),
+                        config.get( replicated_lock_token_state_size ), logProvider ) );
 
-            idAllocationState = life.add(
-                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, ID_ALLOCATION_NAME,
-                            new IdAllocationState.Marshal(),
-                            config.get( id_alloc_state_size ), logProvider ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        idAllocationState = life.add(
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, ID_ALLOCATION_NAME,
+                        new IdAllocationState.Marshal(),
+                        config.get( id_alloc_state_size ), logProvider ) );
 
         ReplicatedIdAllocationStateMachine idAllocationStateMachine =
                 new ReplicatedIdAllocationStateMachine( idAllocationState );

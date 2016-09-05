@@ -59,16 +59,9 @@ public class ReplicationModule
         LifeSupport life = platformModule.life;
 
         DurableStateStorage<GlobalSessionTrackerState> sessionTrackerStorage;
-        try
-        {
-            sessionTrackerStorage = life.add( new DurableStateStorage<>( fileSystem, clusterStateDirectory,
-                    SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new MemberId.Marshal() ),
-                    config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ), logProvider ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        sessionTrackerStorage = life.add( new DurableStateStorage<>( fileSystem, clusterStateDirectory,
+                SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new MemberId.Marshal() ),
+                config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ), logProvider ) );
 
         sessionTracker = new SessionTracker( sessionTrackerStorage );
 
