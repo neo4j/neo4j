@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
+import java.io.IOException;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -37,6 +39,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.Log;
 
 /**
@@ -87,11 +90,13 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     }
 
     @Override
-    protected Log authManagerLog( Config config, FileSystemAbstraction fileSystem )
+    protected Log authManagerLog( Config config, FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
+            throws IOException
     {
         if (securityLog == null)
         {
-            securityLog = new SecurityLog( config, fileSystem );
+            securityLog = new SecurityLog( config, fileSystem,
+                    jobScheduler.executor( JobScheduler.Groups.internalLogRotation ) );
         }
         return securityLog;
     }

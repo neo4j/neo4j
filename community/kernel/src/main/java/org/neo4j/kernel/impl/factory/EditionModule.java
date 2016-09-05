@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import java.io.IOException;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
@@ -63,7 +65,9 @@ public abstract class EditionModule
 {
     public abstract void registerProcedures( Procedures procedures ) throws KernelException;
 
-    protected Log authManagerLog( Config config, FileSystemAbstraction fileSystem ) {
+    protected Log authManagerLog( Config config, FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
+            throws IOException
+    {
         return NullLog.getInstance();
     }
 
@@ -124,20 +128,31 @@ public abstract class EditionModule
         }
 
         String key = config.get( GraphDatabaseSettings.auth_manager );
+        Log authManagerLog;
+        try
+        {
+            authManagerLog = authManagerLog( config, fileSystem, jobScheduler );
+        }
+        catch ( IOException ioe ){
+            logging.getInternalLog( GraphDatabaseFacadeFactory.class ).warn( "Unable to create log for auth-manager. " +
+                    "Auth logging turned off." );
+            authManagerLog = NullLog.getInstance();
+        }
+
         for ( AuthManager.Factory candidate : Service.load( AuthManager.Factory.class ) )
         {
             String candidateId = candidate.getKeys().iterator().next();
             try
             {
                 return candidate.newInstance( config, logging.getUserLogProvider(),
-                        authManagerLog( config, fileSystem ), fileSystem, jobScheduler );
+                        authManagerLog, fileSystem, jobScheduler );
             }
             catch ( Exception e )
             {
                 logging.getInternalLog( GraphDatabaseFacadeFactory.class )
                         .info( "No auth manager implementation specified, defaulting to '" + candidateId + "'" );
                 return candidate.newInstance( config, logging.getUserLogProvider(),
-                        authManagerLog( config, fileSystem ), fileSystem, jobScheduler );
+                        authManagerLog, fileSystem, jobScheduler );
             }
         }
 
