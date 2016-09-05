@@ -174,8 +174,8 @@ public interface KernelTransaction extends AutoCloseable
     long startTime();
 
     /**
-     * Timeout for transaction.
-     * @return transaction timeout
+     * Timeout for transaction in milliseconds.
+     * @return transaction timeout in milliseconds.
      */
     long timeout();
 
