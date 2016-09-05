@@ -103,23 +103,23 @@ object Function {
 abstract class Function extends SemanticChecking {
   def name: String
 
-  def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+  def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.UserFunctionInvocation): SemanticCheck =
     when(invocation.distinct) {
       SemanticError(s"Invalid use of DISTINCT with function '$name'", invocation.position)
     } chain invocation.arguments.semanticCheck(ctx) chain semanticCheck(ctx, invocation)
 
-  protected def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck
+  protected def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.UserFunctionInvocation): SemanticCheck
 
-  protected def checkArgs(invocation: ast.FunctionInvocation, n: Int): Option[SemanticError] =
+  protected def checkArgs(invocation: ast.UserFunctionInvocation, n: Int): Option[SemanticError] =
     Vector(checkMinArgs(invocation, n), checkMaxArgs(invocation, n)).flatten.headOption
 
-  protected def checkMaxArgs(invocation: ast.FunctionInvocation, n: Int): Option[SemanticError] =
+  protected def checkMaxArgs(invocation: ast.UserFunctionInvocation, n: Int): Option[SemanticError] =
     if (invocation.arguments.length > n)
       Some(SemanticError(s"Too many parameters for function '$name'", invocation.position))
     else
       None
 
-  protected def checkMinArgs(invocation: ast.FunctionInvocation, n: Int): Option[SemanticError] =
+  protected def checkMinArgs(invocation: ast.UserFunctionInvocation, n: Int): Option[SemanticError] =
     if (invocation.arguments.length < n)
       Some(SemanticError(s"Insufficient parameters for function '$name'", invocation.position))
     else
@@ -127,11 +127,11 @@ abstract class Function extends SemanticChecking {
 
   def asFunctionName(implicit position: InputPosition) = FunctionName(name)(position)
 
-  def asInvocation(argument: ast.Expression, distinct: Boolean = false)(implicit position: InputPosition): FunctionInvocation =
-    FunctionInvocation(asFunctionName, distinct = distinct, IndexedSeq(argument))(position)
+  def asInvocation(argument: ast.Expression, distinct: Boolean = false)(implicit position: InputPosition): UserFunctionInvocation =
+    UserFunctionInvocation(asFunctionName, distinct = distinct, IndexedSeq(argument))(position)
 
-  def asInvocation(lhs: ast.Expression, rhs: ast.Expression)(implicit position: InputPosition): FunctionInvocation =
-    FunctionInvocation(asFunctionName, distinct = false, IndexedSeq(lhs, rhs))(position)
+  def asInvocation(lhs: ast.Expression, rhs: ast.Expression)(implicit position: InputPosition): UserFunctionInvocation =
+    UserFunctionInvocation(asFunctionName, distinct = false, IndexedSeq(lhs, rhs))(position)
 }
 
 
@@ -142,11 +142,11 @@ trait SimpleTypedFunction { self: Function =>
 
   private lazy val signatureLengths = signatures.map(_.argumentTypes.length)
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.UserFunctionInvocation): SemanticCheck =
     checkMinArgs(invocation, signatureLengths.min) chain checkMaxArgs(invocation, signatureLengths.max) chain
     checkTypes(invocation)
 
-  private def checkTypes(invocation: ast.FunctionInvocation): SemanticCheck = s => {
+  private def checkTypes(invocation: ast.UserFunctionInvocation): SemanticCheck = s => {
     val initSignatures = signatures.filter(_.argumentTypes.length == invocation.arguments.length)
 
     val (remainingSignatures: Seq[Signature], result) = invocation.arguments.foldLeft((initSignatures, SemanticCheckResult.success(s))) {
@@ -178,7 +178,7 @@ trait SimpleTypedFunction { self: Function =>
 
 
 abstract class AggregatingFunction extends Function {
-  override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+  override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.UserFunctionInvocation): SemanticCheck =
     when(ctx == ast.Expression.SemanticContext.Simple) {
       SemanticError(s"Invalid use of aggregating function $name(...) in this context", invocation.position)
     } chain invocation.arguments.semanticCheck(ctx) chain semanticCheck(ctx, invocation)

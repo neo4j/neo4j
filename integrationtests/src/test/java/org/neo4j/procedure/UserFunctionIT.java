@@ -78,7 +78,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.procedure.Mode.WRITE;
 
-public class FunctionIT
+public class UserFunctionIT
 {
     @Rule
     public TemporaryFolder plugins = new TemporaryFolder();
@@ -652,25 +652,25 @@ public class FunctionIT
         @Context
         public Log log;
 
-        @Function
+        @UserFunction
         public long integrationTestMe()
         {
             return 1337L;
         }
 
-        @Function
+        @UserFunction
         public long simpleArgument( long someValue )
         {
             return someValue;
         }
 
-        @Function
+        @UserFunction
         public long nodeListArgument( List<Node> nodes )
         {
             return nodes.size();
         }
 
-        @Function
+        @UserFunction
         public long delegatingFunction( long someValue )
         {
             return (long) db
@@ -678,7 +678,7 @@ public class FunctionIT
                     .next().get( "result" );
         }
 
-        @Function
+        @UserFunction
         public long recursiveSum( long order )
         {
             if ( order == 0L )
@@ -695,63 +695,63 @@ public class FunctionIT
             }
         }
 
-        @Function
+        @UserFunction
         public long genericArguments( List<List<String>> stringList, List<List<List<Long>>> longList )
         {
             return stringList.size() + longList.size();
         }
 
-        @Function
+        @UserFunction
         public long mapArgument( Map<String,Object> map )
         {
             return map.size();
         }
 
-        @Function
+        @UserFunction
         public Node node( @Name( "id" ) long id )
         {
             return db.getNodeById( id );
         }
 
-        @Function
+        @UserFunction
         public double squareDouble( double value )
         {
             return value * value;
         }
 
-        @Function
+        @UserFunction
         public double avgNumberList( List<Number> list )
         {
             return list.stream().reduce( ( l, r ) -> l.doubleValue() + r.doubleValue() ).orElse( 0.0d ).doubleValue() /
                    list.size();
         }
 
-        @Function
+        @UserFunction
         public double avgDoubleList(  List<Double> list )
         {
             return list.stream().reduce( ( l, r ) -> l + r ).orElse( 0.0d ) / list.size();
         }
 
-        @Function
+        @UserFunction
         public long squareLong( long value )
         {
             return value * value;
         }
 
-        @Function
+        @UserFunction
         public long throwsExceptionInStream()
         {
             throw new RuntimeException( "Kaboom" );
         }
 
-        @Function
+        @UserFunction
         public long indexOutOfBounds()
         {
             int[] ints = {1, 2, 3};
             return ints[4];
         }
 
-        @Function
+        @UserFunction
         public List<String> listCoolPeopleInDatabase()
         {
             return db.findNodes( label( "Person" ) )
@@ -760,7 +760,7 @@ public class FunctionIT
                     .collect( Collectors.toList() );
         }
 
-        @Function
+        @UserFunction
         public long logAround()
         {
             log.debug( "1" );
@@ -770,19 +770,19 @@ public class FunctionIT
             return 1337L;
         }
 
-        @Function
+        @UserFunction
         public Node  readOnlyTryingToWrite()
         {
             return db.createNode();
         }
 
-        @Function
+        @UserFunction
         public Node readOnlyCallingWriteFunction()
         {
             return (Node) db.execute( "RETURN org.neo4j.procedure.writingFunction() AS node" ).next().get("node");
         }
 
-        @Function
+        @UserFunction
         public long readOnlyCallingWriteProcedure()
         {
             db.execute( "CALL org.neo4j.procedure.writingProcedure()" );
@@ -795,14 +795,14 @@ public class FunctionIT
             db.createNode();
         }
 
-        @Function
+        @UserFunction
         public String shutdown()
         {
             db.shutdown();
             return "oh no!";
         }
 
-        @Function
+        @UserFunction
         public String unsupportedFunction()
         {
             jobs.submit( () -> {
@@ -820,7 +820,7 @@ public class FunctionIT
             return "why!?";
         }
 
-        @Function
+        @UserFunction
         public Path nodePaths( Node node )
         {
             return (Path) db
@@ -830,13 +830,13 @@ public class FunctionIT
         }
 
         @Description( "This is a description" )
-        @Function
+        @UserFunction
         public Node nodeWithDescription( Node node )
         {
             return node;
         }
 
-        @Function
+        @UserFunction
         public String readOnlyTryingToWriteSchema()
         {
             db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );

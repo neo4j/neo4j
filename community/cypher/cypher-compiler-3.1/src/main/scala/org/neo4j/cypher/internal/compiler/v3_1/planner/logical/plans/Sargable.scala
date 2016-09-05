@@ -38,7 +38,7 @@ object WithSeekableArgs {
 
 object AsIdSeekable {
   def unapply(v: Any) = v match {
-    case WithSeekableArgs(func@FunctionInvocation(_, _, _, IndexedSeq(ident: Variable)), rhs)
+    case WithSeekableArgs(func@UserFunctionInvocation(_, _, _, IndexedSeq(ident: Variable)), rhs)
       if func.function == functions.Id && !rhs.dependencies(ident) =>
       Some(IdSeekable(func, ident, rhs))
     case _ =>
@@ -59,7 +59,7 @@ object AsPropertySeekable {
 object AsPropertyScannable {
   def unapply(v: Any): Option[Scannable[Expression]] = v match {
 
-    case func@FunctionInvocation(_, _, _, IndexedSeq(property@Property(ident: Variable, _)))
+    case func@UserFunctionInvocation(_, _, _, IndexedSeq(property@Property(ident: Variable, _)))
       if func.function == functions.Exists =>
       Some(ExplicitlyPropertyScannable(func, ident, property))
 
@@ -85,7 +85,7 @@ object AsPropertyScannable {
   private def partialPropertyPredicate[P <: Expression](predicate: P, lhs: Expression) = lhs match {
     case property@Property(ident: Variable, _) =>
       PartialPredicate.ifNotEqual(
-        FunctionInvocation(FunctionName(functions.Exists.name)(predicate.position), property)(predicate.position),
+        UserFunctionInvocation(FunctionName(functions.Exists.name)(predicate.position), property)(predicate.position),
         predicate
       ).map(ImplicitlyPropertyScannable(_, ident, property))
 
@@ -130,8 +130,8 @@ sealed trait EqualitySeekable[T <: Expression] extends Seekable[T] {
   def args: SeekableArgs
 }
 
-case class IdSeekable(expr: FunctionInvocation, ident: Variable, args: SeekableArgs)
-  extends EqualitySeekable[FunctionInvocation] {
+case class IdSeekable(expr: UserFunctionInvocation, ident: Variable, args: SeekableArgs)
+  extends EqualitySeekable[UserFunctionInvocation] {
 
   def dependencies = args.dependencies
 }
@@ -182,8 +182,8 @@ sealed trait Scannable[+T <: Expression] extends Sargable[T] {
   def propertyKey = property.propertyKey
 }
 
-case class ExplicitlyPropertyScannable(expr: FunctionInvocation, ident: Variable, property: Property)
-  extends Scannable[FunctionInvocation]
+case class ExplicitlyPropertyScannable(expr: UserFunctionInvocation, ident: Variable, property: Property)
+  extends Scannable[UserFunctionInvocation]
 
 case class ImplicitlyPropertyScannable[+T <: Expression](expr: PartialPredicate[T], ident: Variable, property: Property)
   extends Scannable[PartialPredicate[T]]

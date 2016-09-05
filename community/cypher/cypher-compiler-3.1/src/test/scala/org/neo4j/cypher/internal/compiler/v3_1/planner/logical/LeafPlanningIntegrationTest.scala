@@ -300,8 +300,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE exists(n.prop) AND n.prop = 42 RETURN n"
 
     plan.plan should equal(
-      Selection(Seq(FunctionInvocation(FunctionName("exists") _, Property(varFor("n"), PropertyKeyName("prop") _) _) _),
-        NodeIndexSeek(
+      Selection(Seq(UserFunctionInvocation(FunctionName("exists") _, Property(varFor("n"), PropertyKeyName("prop") _) _) _),
+                NodeIndexSeek(
           "n",
           LabelToken("Awesome", LabelId(0)),
           PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),

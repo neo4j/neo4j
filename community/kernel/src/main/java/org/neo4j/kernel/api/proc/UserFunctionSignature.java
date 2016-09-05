@@ -33,7 +33,7 @@ import static java.util.Collections.unmodifiableList;
  * This describes the signature of a function, made up of its namespace, name, and input/output description.
  * Function uniqueness is currently *only* on the namespace/name level - no function overloading allowed (yet).
  */
-public class FunctionSignature
+public class UserFunctionSignature
 {
     private final QualifiedName name;
     private final List<Neo4jTypes.AnyType> inputSignature;
@@ -42,7 +42,7 @@ public class FunctionSignature
     private final Optional<String> deprecated;
     private final Optional<String> description;
 
-    public FunctionSignature( QualifiedName name,
+    public UserFunctionSignature( QualifiedName name,
             List<Neo4jTypes.AnyType> inputSignature,
             Neo4jTypes.AnyType type,
             Optional<String> deprecated,
@@ -90,7 +90,7 @@ public class FunctionSignature
         if ( this == o ) { return true; }
         if ( o == null || getClass() != o.getClass() ) { return false; }
 
-        FunctionSignature that = (FunctionSignature) o;
+        UserFunctionSignature that = (UserFunctionSignature) o;
 
         return
                 name.equals( that.name ) &&
@@ -158,13 +158,13 @@ public class FunctionSignature
             return this;
         }
 
-        public FunctionSignature build()
+        public UserFunctionSignature build()
         {
             if (outputType == null)
             {
                 throw new IllegalStateException( "output type must be set" );
             }
-            return new FunctionSignature(name, inputSignature, outputType, deprecated, allowed, description );
+            return new UserFunctionSignature(name, inputSignature, outputType, deprecated, allowed, description );
         }
     }
 

@@ -30,9 +30,9 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.procedure.Function;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UserFunction;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -80,13 +80,13 @@ public class MethodSignatureCompilerTest
 
     public static class ClassWithFunctionWithSimpleArgs
     {
-        @Function
+        @UserFunction
         public String echo( String in)
         {
             return in;
         }
 
-        @Function
+        @UserFunction
         public String echoWithInvalidType( UnmappableRecord in)
         {
             return "echo";

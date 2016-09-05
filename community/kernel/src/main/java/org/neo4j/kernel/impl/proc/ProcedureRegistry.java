@@ -30,18 +30,18 @@ import java.util.stream.Collectors;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.CallableFunction;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.FunctionSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.api.proc.UserFunctionSignature;
 
 public class ProcedureRegistry
 {
     private final Map<QualifiedName,CallableProcedure> procedures = new HashMap<>();
-    private final Map<QualifiedName,CallableFunction> functions = new HashMap<>();
+    private final Map<QualifiedName,CallableUserFunction> functions = new HashMap<>();
 
     /**
      * Register a new procedure.
@@ -81,12 +81,12 @@ public class ProcedureRegistry
      *
      * @param function the function.
      */
-    public void register( CallableFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
+    public void register( CallableUserFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
     {
-        FunctionSignature signature = function.signature();
+        UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
 
-        CallableFunction oldImplementation = functions.get( name );
+        CallableUserFunction oldImplementation = functions.get( name );
         if ( oldImplementation == null )
         {
             functions.put( name, function );
@@ -130,9 +130,9 @@ public class ProcedureRegistry
         return proc.signature();
     }
 
-    public Optional<FunctionSignature> function( QualifiedName name )
+    public Optional<UserFunctionSignature> function( QualifiedName name )
     {
-        CallableFunction func = functions.get( name );
+        CallableUserFunction func = functions.get( name );
         if ( func == null )
         {
             return Optional.empty();
@@ -154,7 +154,7 @@ public class ProcedureRegistry
     public Object callFunction( Context ctx, QualifiedName name, Object[] input )
             throws ProcedureException
     {
-        CallableFunction func = functions.get( name );
+        CallableUserFunction func = functions.get( name );
         if ( func == null )
         {
             throw noSuchFunction( name );
@@ -183,9 +183,9 @@ public class ProcedureRegistry
         return procedures.values().stream().map( CallableProcedure::signature ).collect( Collectors.toSet());
     }
 
-    public Set<FunctionSignature> getAllFunctions()
+    public Set<UserFunctionSignature> getAllFunctions()
     {
 
-        return functions.values().stream().map( CallableFunction::signature ).collect( Collectors.toSet() );
+        return functions.values().stream().map( CallableUserFunction::signature ).collect( Collectors.toSet() );
     }
 }

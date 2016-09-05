@@ -64,5 +64,5 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
 
 trait ProcedureSignatureResolver {
   def procedureSignature(name: QualifiedName): ProcedureSignature
-  def functionSignature(name: QualifiedName): Option[UserDefinedFunctionSignature]
+  def functionSignature(name: QualifiedName): Option[UserFunctionSignature]
 }

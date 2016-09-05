@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{Aggregation, LogicalPlan, Projection}
+import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aggregatingMap: Map[String, Expression] = Map("count(*)" -> CountStar()(pos))
 
   val propExp: Expression = Property(varFor("n"), PropertyKeyName("prop")(pos))(pos)
-  val countExp: Expression = FunctionInvocation(FunctionName("count")(pos), propExp)(pos)
+  val countExp: Expression = UserFunctionInvocation(FunctionName("count")(pos), propExp)(pos)
   val aggregatingMap2: Map[String, Expression] = Map("count(n.prop)" -> countExp)
 
   val propExp2: Expression = Property(varFor("n"), PropertyKeyName("bar")(pos))(pos)

@@ -35,7 +35,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
 
   val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess(Array.empty[String]))
   val procLookup: (QualifiedName) => ProcedureSignature = _ => signature
-  val fcnLookup: (QualifiedName) => Option[UserDefinedFunctionSignature] = _ => None
+  val fcnLookup: (QualifiedName) => Option[UserFunctionSignature] = _ => None
 
   test("should resolve standalone procedure calls") {
     val unresolved = UnresolvedCall(ns, name, None, None)(pos)

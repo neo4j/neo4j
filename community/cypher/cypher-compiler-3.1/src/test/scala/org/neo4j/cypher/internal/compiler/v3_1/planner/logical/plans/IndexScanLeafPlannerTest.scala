@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast._
-import org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 import org.neo4j.cypher.internal.compiler.v3_1.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.indexScanLeafPlanner
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{functions, _}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -32,7 +31,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
   val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _) _
 
-  val existsPredicate: Expression = FunctionInvocation(FunctionName(functions.Exists.name) _, property) _
+  val existsPredicate: Expression = UserFunctionInvocation(FunctionName(functions.Exists.name) _, property) _
   val startsWithPredicate: Expression = StartsWith(property, StringLiteral("") _) _
   val ltPredicate: Expression = LessThan(property, SignedDecimalIntegerLiteral("12") _) _
   val neqPredicate: Expression = NotEquals(property, SignedDecimalIntegerLiteral("12") _) _

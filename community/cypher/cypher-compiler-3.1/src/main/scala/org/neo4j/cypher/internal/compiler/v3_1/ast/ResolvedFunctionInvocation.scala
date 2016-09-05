@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast._
 
 object ResolvedFunctionInvocation {
 
-  def apply(signatureLookup: QualifiedName => Option[UserDefinedFunctionSignature])(unresolved: FunctionInvocation): ResolvedFunctionInvocation = {
+  def apply(signatureLookup: QualifiedName => Option[UserFunctionSignature])(unresolved: UserFunctionInvocation): ResolvedFunctionInvocation = {
     val position = unresolved.position
     val name = QualifiedName(unresolved)
     val signature = signatureLookup(name)
@@ -46,7 +46,7 @@ object ResolvedFunctionInvocation {
   * @param position The position in the original query string.
   */
 case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
-                                      fcnSignature: Option[UserDefinedFunctionSignature],
+                                      fcnSignature: Option[UserFunctionSignature],
                                       callArguments: IndexedSeq[Expression])
                                      (val position: InputPosition)
   extends Expression {

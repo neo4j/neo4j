@@ -32,7 +32,7 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.api.proc.{FunctionSignature, CallableFunction, CallableProcedure, ProcedureSignature}
+import org.neo4j.kernel.api.proc.{CallableProcedure, CallableUserFunction, ProcedureSignature, UserFunctionSignature}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.monitoring
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -229,17 +229,17 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     proc
   }
 
-  def registerFunction[T <: CallableFunction](qualifiedName: String)(f: FunctionSignature.Builder => T): T = {
+  def registerUserDefinedFunction[T <: CallableUserFunction](qualifiedName: String)(f: UserFunctionSignature.Builder => T): T = {
     val parts = qualifiedName.split('.')
     val namespace = parts.reverse.tail.reverse
     val name = parts.last
-    registerFunction(namespace: _*)(name)(f)
+    registerUserFunction(namespace: _*)(name)(f)
   }
 
-  def registerFunction[T <: CallableFunction](namespace: String*)(name: String)(f: FunctionSignature.Builder => T): T = {
-    val builder = FunctionSignature.functionSignature(namespace.toArray, name)
+  def registerUserFunction[T <: CallableUserFunction](namespace: String*)(name: String)(f: UserFunctionSignature.Builder => T): T = {
+    val builder = UserFunctionSignature.functionSignature(namespace.toArray, name)
     val func = f(builder)
-    kernelAPI.registerFunction(func)
+    kernelAPI.registerUserFunction(func)
     func
   }
 

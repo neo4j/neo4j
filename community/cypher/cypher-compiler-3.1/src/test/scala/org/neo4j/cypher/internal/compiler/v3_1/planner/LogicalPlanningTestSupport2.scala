@@ -156,7 +156,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       override def procedureSignature(name: QualifiedName): ProcedureSignature = ???
 
-      override def functionSignature(name: QualifiedName): Option[UserDefinedFunctionSignature] = ???
+      override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = ???
     }
 
     def planFor(queryString: String): SemanticPlan = {

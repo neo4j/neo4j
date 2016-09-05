@@ -37,8 +37,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
-import org.neo4j.kernel.api.proc.CallableFunction;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -196,7 +196,7 @@ public class ConstraintIndexCreatorTest
         }
 
         @Override
-        public void registerFunction( CallableFunction function ) throws ProcedureException
+        public void registerUserFunction( CallableUserFunction function ) throws ProcedureException
         {
             throw new UnsupportedOperationException();
         }

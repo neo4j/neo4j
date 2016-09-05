@@ -51,7 +51,7 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def procedureSignature(name: QualifiedName): ProcedureSignature =
     translateException(inner.procedureSignature(name))
 
-  override def functionSignature(name: QualifiedName): Option[UserDefinedFunctionSignature] =
+  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
     translateException(inner.functionSignature(name))
 
   override def hasIndexRule(labelName: String): Boolean =

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{SemanticError, ast}
 case object Exists extends Function {
   def name = "EXISTS"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.UserFunctionInvocation) =
     checkArgs(invocation, 1) ifOkChain {
       invocation.arguments.head.expectType(CTAny.covariant) chain
         (invocation.arguments.head match {

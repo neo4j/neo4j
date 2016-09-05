@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{ContainerIndex, Function}
-import org.neo4j.cypher.internal.frontend.v3_1.symbols._
+import org.neo4j.cypher.internal.frontend.v3_1.ast.Function
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticError, ast}
 
 /*
@@ -30,6 +29,6 @@ import org.neo4j.cypher.internal.frontend.v3_1.{SemanticError, ast}
 case object Has extends Function {
   def name = "HAS"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.UserFunctionInvocation) =
     SemanticError(s"HAS is no longer supported in Cypher, please use EXISTS instead", invocation.position)
 }

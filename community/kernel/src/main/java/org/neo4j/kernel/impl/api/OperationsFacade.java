@@ -73,9 +73,9 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.FunctionSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -551,7 +551,7 @@ public class OperationsFacade
     }
 
     @Override
-    public Optional<FunctionSignature> functionGet( QualifiedName name )
+    public Optional<UserFunctionSignature> functionGet( QualifiedName name )
     {
         statement.assertOpen();
         return procedures.function( name );

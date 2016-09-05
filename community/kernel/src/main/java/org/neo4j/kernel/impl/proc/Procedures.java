@@ -27,12 +27,12 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.CallableFunction;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.FunctionSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -79,7 +79,7 @@ public class Procedures extends LifecycleAdapter
      * Register a new function. This method must not be called concurrently with {@link #procedure(QualifiedName)}.
      * @param function the fucntion.
      */
-    public void register( CallableFunction function ) throws ProcedureException
+    public void register( CallableUserFunction function ) throws ProcedureException
     {
         register( function, false );
     }
@@ -88,7 +88,7 @@ public class Procedures extends LifecycleAdapter
      * Register a new procedure. This method must not be called concurrently with {@link #procedure(QualifiedName)}.
      * @param function the function.
      */
-    public void register( CallableFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
+    public void register( CallableUserFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
     {
         registry.register( function, overrideCurrentImplementation );
     }
@@ -138,7 +138,7 @@ public class Procedures extends LifecycleAdapter
      */
     public void registerFunction( Class<?> func, boolean overrideCurrentImplementation ) throws KernelException
     {
-        for ( CallableFunction function : compiler.compileFunction( func ) )
+        for ( CallableUserFunction function : compiler.compileFunction( func ) )
         {
             register( function, overrideCurrentImplementation );
         }
@@ -170,7 +170,7 @@ public class Procedures extends LifecycleAdapter
         return registry.procedure( name );
     }
 
-    public Optional<FunctionSignature> function( QualifiedName name )
+    public Optional<UserFunctionSignature> function( QualifiedName name )
     {
         return registry.function( name );
     }
@@ -180,7 +180,7 @@ public class Procedures extends LifecycleAdapter
         return registry.getAllProcedures();
     }
 
-    public Set<FunctionSignature> getAllFunctions()
+    public Set<UserFunctionSignature> getAllFunctions()
     {
         return registry.getAllFunctions();
     }
@@ -208,7 +208,7 @@ public class Procedures extends LifecycleAdapter
             register( procedure );
         }
 
-        for ( CallableFunction function : callables.functions() )
+        for ( CallableUserFunction function : callables.functions() )
         {
             register( function );
         }

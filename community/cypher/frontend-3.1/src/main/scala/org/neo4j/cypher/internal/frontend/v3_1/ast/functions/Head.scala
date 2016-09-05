@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{TypeGenerator, ast}
 case object Head extends Function {
   def name = "head"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.UserFunctionInvocation) =
     checkArgs(invocation, 1) ifOkChain {
       invocation.arguments.head.expectType(CTList(CTAny).covariant) chain
       invocation.specifyType(possibleInnerTypes(invocation.arguments.head))

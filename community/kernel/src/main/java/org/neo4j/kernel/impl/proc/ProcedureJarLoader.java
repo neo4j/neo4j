@@ -33,8 +33,8 @@ import java.util.zip.ZipInputStream;
 import org.neo4j.collection.PrefetchingRawIterator;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.proc.CallableFunction;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.logging.Log;
 
 import static java.util.stream.Collectors.toList;
@@ -163,14 +163,14 @@ public class ProcedureJarLoader
     public static class Callables
     {
         private final List<CallableProcedure> procedures = new ArrayList<>();
-        private final List<CallableFunction> functions = new ArrayList<>();
+        private final List<CallableUserFunction> functions = new ArrayList<>();
 
         public void add( CallableProcedure proc )
         {
             procedures.add( proc );
         }
 
-        public void add( CallableFunction func )
+        public void add( CallableUserFunction func )
         {
             functions.add( func );
         }
@@ -180,7 +180,7 @@ public class ProcedureJarLoader
             return procedures;
         }
 
-        public List<CallableFunction> functions()
+        public List<CallableUserFunction> functions()
         {
             return functions;
         }
@@ -190,7 +190,7 @@ public class ProcedureJarLoader
             procedures.addAll( callableProcedures );
         }
 
-        public void addAllFunctions( List<CallableFunction> callableFunctions )
+        public void addAllFunctions( List<CallableUserFunction> callableFunctions )
         {
             functions.addAll( callableFunctions );
         }

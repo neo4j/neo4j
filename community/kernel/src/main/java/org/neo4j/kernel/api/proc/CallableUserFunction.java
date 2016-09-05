@@ -21,22 +21,22 @@ package org.neo4j.kernel.api.proc;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 
-public interface CallableFunction
+public interface CallableUserFunction
 {
-    FunctionSignature signature();
+    UserFunctionSignature signature();
     Object apply( Context ctx, Object[] input ) throws ProcedureException;
 
-    abstract class BasicFunction implements CallableFunction
+    abstract class BasicUserFunction implements CallableUserFunction
     {
-        private final FunctionSignature signature;
+        private final UserFunctionSignature signature;
 
-        protected BasicFunction( FunctionSignature signature )
+        protected BasicUserFunction( UserFunctionSignature signature )
         {
             this.signature = signature;
         }
 
         @Override
-        public FunctionSignature signature()
+        public UserFunctionSignature signature()
         {
             return signature;
         }

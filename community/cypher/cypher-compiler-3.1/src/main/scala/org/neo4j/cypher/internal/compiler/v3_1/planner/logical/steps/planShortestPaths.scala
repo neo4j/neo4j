@@ -46,8 +46,8 @@ case object planShortestPaths {
 
     val (safePredicates, needFallbackPredicates) = predicates.partition {
       // TODO: Once we support node predicates we should enable all NONE and ALL predicates as safe predicates
-      case NoneIterablePredicate(_, f@FunctionInvocation(_, _, _, _)) if f.function == Nodes => false
-      case AllIterablePredicate(_, f@FunctionInvocation(_, _, _, _)) if f.function == Nodes => false
+      case NoneIterablePredicate(_, f@UserFunctionInvocation(_, _, _, _)) if f.function == Nodes => false
+      case AllIterablePredicate(_, f@UserFunctionInvocation(_, _, _, _)) if f.function == Nodes => false
       case NoneIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
       case AllIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
       case _ => false
@@ -127,7 +127,7 @@ case object planShortestPaths {
     // Plan Sort and Limit
     val pos = shortestPath.expr.position
     val pathVariable = Variable(pathName.name)(pos)
-    val lengthOfPath = FunctionInvocation(FunctionName(Length.name)(pos), pathVariable)(pos)
+    val lengthOfPath = UserFunctionInvocation(FunctionName(Length.name)(pos), pathVariable)(pos)
     val columnName = FreshIdNameGenerator.name(pos)
 
     val rhsProjMap = Map(columnName -> lengthOfPath)

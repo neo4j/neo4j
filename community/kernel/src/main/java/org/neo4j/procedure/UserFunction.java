@@ -102,7 +102,7 @@ import java.lang.annotation.Target;
  */
 @Target( ElementType.METHOD )
 @Retention( RetentionPolicy.RUNTIME )
-public @interface Function
+public @interface UserFunction
 {
     /**
      * The namespace and name for the function, as a period-separated

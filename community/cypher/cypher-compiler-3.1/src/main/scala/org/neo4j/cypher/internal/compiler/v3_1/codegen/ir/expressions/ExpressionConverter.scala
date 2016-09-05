@@ -158,7 +158,7 @@ object ExpressionConverter {
 
       case ast.Not(inner) => Not(callback(inner))
 
-      case f: ast.FunctionInvocation => functionConverter(f, callback)
+      case f: ast.UserFunctionInvocation => functionConverter(f, callback)
 
       case other => throw new CantCompileQueryException(s"Expression of $other not yet supported")
     }

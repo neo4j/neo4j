@@ -35,21 +35,21 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.CallableFunction;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.FunctionSignature;
 import org.neo4j.kernel.api.proc.Mode;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Description;
-import org.neo4j.procedure.Function;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UserFunction;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
@@ -76,12 +76,12 @@ public class ReflectiveProcedureCompiler
         this.typeMappers = typeMappers;
     }
 
-    public List<CallableFunction> compileFunction( Class<?> fcnDefinition ) throws KernelException
+    public List<CallableUserFunction> compileFunction( Class<?> fcnDefinition ) throws KernelException
     {
         try
         {
             List<Method> procedureMethods = Arrays.stream( fcnDefinition.getDeclaredMethods() )
-                    .filter( m -> m.isAnnotationPresent( Function.class ) )
+                    .filter( m -> m.isAnnotationPresent( UserFunction.class ) )
                     .collect( Collectors.toList() );
 
             if ( procedureMethods.isEmpty() )
@@ -91,7 +91,7 @@ public class ReflectiveProcedureCompiler
 
             MethodHandle constructor = constructor( fcnDefinition );
 
-            ArrayList<CallableFunction> out = new ArrayList<>( procedureMethods.size() );
+            ArrayList<CallableUserFunction> out = new ArrayList<>( procedureMethods.size() );
             for ( Method method : procedureMethods )
             {
                 out.add( compileFunction( fcnDefinition, constructor, method ) );
@@ -182,17 +182,17 @@ public class ReflectiveProcedureCompiler
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
 
-    private ReflectiveFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method )
+    private ReflectiveUserFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method )
             throws ProcedureException, IllegalAccessException
     {
-        String valueName = method.getAnnotation( Function.class ).value();
-        String definedName = method.getAnnotation( Function.class ).name();
+        String valueName = method.getAnnotation( UserFunction.class ).value();
+        String definedName = method.getAnnotation( UserFunction.class ).name();
         QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
 
         if (procName.namespace() == null || procName.namespace().length == 0)
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "It is not allowed to define functions in the root namespace please use a namespace, e.g. `@Function(\"org.example.com.%s\")",
+                    "It is not allowed to define functions in the root namespace please use a namespace, e.g. `@UserFunction(\"org.example.com.%s\")",
                     procName.name() );
         }
         List<Neo4jTypes.AnyType> inputSignature = inputSignatureDeterminer.inputTypesFor( method );
@@ -202,15 +202,15 @@ public class ReflectiveProcedureCompiler
         List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
         Optional<String> description = description( method );
-        Function function = method.getAnnotation( Function.class );
+        UserFunction function = method.getAnnotation( UserFunction.class );
 
         Optional<String> deprecated = deprecated( method, function::deprecatedBy,
-                "Use of @Function(deprecatedBy) without @Deprecated in " + procName );
+                "Use of @UserFunction(deprecatedBy) without @Deprecated in " + procName );
 
-        FunctionSignature signature =
-                new FunctionSignature( procName, inputSignature, valueConverter.type(), deprecated, function.allowed(), description );
+        UserFunctionSignature signature =
+                new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated, function.allowed(), description );
 
-        return new ReflectiveFunction( signature, constructor, procedureMethod, valueConverter, setters );
+        return new ReflectiveUserFunction( signature, constructor, procedureMethod, valueConverter, setters );
     }
 
     private Optional<String> deprecated( Method method, Supplier<String> supplier, String warning )
@@ -438,13 +438,13 @@ public class ReflectiveProcedureCompiler
         }
     }
 
-    private static class ReflectiveFunction extends ReflectiveBase implements CallableFunction
+    private static class ReflectiveUserFunction extends ReflectiveBase implements CallableUserFunction
     {
 
         private final TypeMappers.NeoValueConverter valueConverter;
-        private final FunctionSignature signature;
+        private final UserFunctionSignature signature;
 
-        public ReflectiveFunction( FunctionSignature signature, MethodHandle constructor,
+        public ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
                 MethodHandle procedureMethod, TypeMappers.NeoValueConverter outputMapper,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
@@ -454,7 +454,7 @@ public class ReflectiveProcedureCompiler
         }
 
         @Override
-        public FunctionSignature signature()
+        public UserFunctionSignature signature()
         {
             return signature;
         }

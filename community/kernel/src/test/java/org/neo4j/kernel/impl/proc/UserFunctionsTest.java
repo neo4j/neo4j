@@ -29,33 +29,30 @@ import java.util.Optional;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
-import org.neo4j.kernel.api.proc.CallableFunction;
+import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.FunctionSignature;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.procedure.Function;
-import org.neo4j.procedure.Mode;
-import org.neo4j.procedure.PerformsWrites;
+import org.neo4j.kernel.api.proc.UserFunctionSignature;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.api.proc.FunctionSignature.functionSignature;
 import static org.neo4j.kernel.api.proc.Key.key;
+import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
 
-public class FunctionsTest
+public class UserFunctionsTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
     private final Procedures procs = new Procedures();
-    private final FunctionSignature signature =
+    private final UserFunctionSignature signature =
             functionSignature( "org", "myproc" )
                     .out( Neo4jTypes.NTAny)
                     .build();
-    private final CallableFunction function = function( signature );
+    private final CallableUserFunction function = function( signature );
 
     @Test
     public void shouldGetRegisteredProcedure() throws Throwable
@@ -76,7 +73,7 @@ public class FunctionsTest
         procs.register( function( functionSignature( "org", "myproc3" ).out(Neo4jTypes.NTAny).build() ) );
 
         // Then
-        List<FunctionSignature> signatures = Iterables.asList( procs.getAllFunctions() );
+        List<UserFunctionSignature> signatures = Iterables.asList( procs.getAllFunctions() );
         assertThat( signatures, containsInAnyOrder(
                 functionSignature( "org", "myproc1" ).out(Neo4jTypes.NTAny).build(),
                 functionSignature( "org", "myproc2" ).out(Neo4jTypes.NTAny).build(),
@@ -140,7 +137,7 @@ public class FunctionsTest
         // Given
         Key<String> someKey = key("someKey", String.class);
 
-        procs.register( new CallableFunction.BasicFunction( signature )
+        procs.register( new CallableUserFunction.BasicUserFunction( signature )
         {
             @Override
             public Object apply( Context ctx, Object[] input ) throws ProcedureException
@@ -159,9 +156,9 @@ public class FunctionsTest
         assertThat( result, equalTo("hello, world" ) );
     }
 
-    private CallableFunction function( FunctionSignature signature )
+    private CallableUserFunction function( UserFunctionSignature signature )
     {
-        return new CallableFunction.BasicFunction( signature )
+        return new CallableUserFunction.BasicUserFunction( signature )
         {
             @Override
             public Object apply( Context ctx, Object[] input )

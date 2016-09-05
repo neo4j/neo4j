@@ -21,8 +21,8 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.proc.CallableFunction;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.security.AccessMode;
 
 /**
@@ -84,5 +84,5 @@ public interface KernelAPI
      *
      * @param function function to register
      */
-    void registerFunction( CallableFunction function ) throws ProcedureException;
+    void registerUserFunction( CallableUserFunction function ) throws ProcedureException;
 }

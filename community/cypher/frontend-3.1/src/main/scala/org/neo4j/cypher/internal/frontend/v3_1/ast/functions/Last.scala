@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheck, TypeGenerator, as
 case object Last extends Function {
   def name = "last"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.UserFunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) ifOkChain {
       invocation.arguments.head.expectType(CTList(CTAny).covariant) chain
       invocation.specifyType(possibleInnerTypes(invocation.arguments.head))

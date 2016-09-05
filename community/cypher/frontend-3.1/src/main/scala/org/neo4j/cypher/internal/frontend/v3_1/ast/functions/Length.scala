@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{FunctionInvocation, Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{Function, SimpleTypedFunction, UserFunctionInvocation}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.LengthOnNonPathNotification
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
+import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheckResult, SemanticState}
 
 case object Length extends Function with SimpleTypedFunction {
   def name = "length"
@@ -35,10 +35,10 @@ case object Length extends Function with SimpleTypedFunction {
     Signature(Vector(CTPath), CTInteger)
   )
 
-  override def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation) =
+  override def semanticCheck(ctx: SemanticContext, invocation: UserFunctionInvocation) =
     super.semanticCheck(ctx, invocation) chain checkForInvalidUsage(ctx, invocation)
 
-  def checkForInvalidUsage(ctx: SemanticContext, invocation: FunctionInvocation) = (originalState: SemanticState) => {
+  def checkForInvalidUsage(ctx: SemanticContext, invocation: UserFunctionInvocation) = (originalState: SemanticState) => {
     val newState = invocation.args.foldLeft(originalState) {
       case (state, expr) if state.expressionType(expr).actual != CTPath.invariant =>
         state.addNotification(LengthOnNonPathNotification(expr.position))

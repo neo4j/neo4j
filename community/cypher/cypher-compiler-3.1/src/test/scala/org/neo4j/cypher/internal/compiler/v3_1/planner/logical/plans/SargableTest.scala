@@ -65,7 +65,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("IdSeekable works") {
-    val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA)_
+    val leftExpr: UserFunctionInvocation = UserFunctionInvocation(FunctionName("id") _, nodeA)_
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Variable])
     val expr: Equals = Equals(leftExpr, expr2) _
 
@@ -80,7 +80,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("IdSeekable does not match if rhs depends on lhs variable") {
-    val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA)_
+    val leftExpr: UserFunctionInvocation = UserFunctionInvocation(FunctionName("id") _, nodeA)_
     Mockito.when(expr2.dependencies).thenReturn(Set(nodeA))
     val expr: Equals = Equals(leftExpr, expr2) _
 
@@ -90,7 +90,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("IdSeekable does not match if function is not the id function") {
-    val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("rand") _, nodeA)_
+    val leftExpr: UserFunctionInvocation = UserFunctionInvocation(FunctionName("rand") _, nodeA)_
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Variable])
     val expr: Equals = Equals(leftExpr, expr2) _
 
@@ -143,7 +143,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("PropertyScannable works") {
     val propertyExpr: Property = Property(nodeA, PropertyKeyName("name")_)_
-    val expr: FunctionInvocation = FunctionInvocation(FunctionName("exists") _, propertyExpr)_
+    val expr: UserFunctionInvocation = UserFunctionInvocation(FunctionName("exists") _, propertyExpr)_
 
     assertMatches(expr) {
       case AsPropertyScannable(scannable) =>

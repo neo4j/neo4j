@@ -22,10 +22,10 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher._
 import org.neo4j.kernel.api.exceptions.ProcedureException
-import org.neo4j.kernel.api.proc.CallableFunction.BasicFunction
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
-import org.neo4j.kernel.api.proc.FunctionSignature._
-import org.neo4j.kernel.api.proc.ProcedureSignature._
+import org.neo4j.kernel.api.proc.CallableUserFunction.BasicUserFunction
+import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
+import org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature
 import org.neo4j.kernel.api.proc.{Context, Neo4jTypes, ProcedureSignature}
 
 abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
@@ -57,11 +57,11 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
     }
 
   protected def registerUserFunction(value: AnyRef) =
-    registerFunction("my.first.value") { builder =>
+    registerUserDefinedFunction("my.first.value") { builder =>
       val builder = functionSignature(Array("my", "first"), "value")
       builder.out(Neo4jTypes.NTAny)
 
-      new BasicFunction(builder.build) {
+      new BasicUserFunction(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef]): AnyRef = value
       }
     }

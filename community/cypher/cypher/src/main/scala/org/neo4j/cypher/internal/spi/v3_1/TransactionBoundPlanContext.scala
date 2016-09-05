@@ -142,7 +142,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
     ProcedureSignature(name, input, output, deprecationInfo, mode)
   }
 
-  override def functionSignature(name: QualifiedName): Option[UserDefinedFunctionSignature] = {
+  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val maybeFunction = tc.statement.readOperations().functionGet(kn)
     if (maybeFunction.isPresent) {
@@ -153,7 +153,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
       val output = asCypherType(ks.outputType())
       val deprecationInfo = asOption(ks.deprecated())
 
-      Some(UserDefinedFunctionSignature(name, input, output, deprecationInfo, ProcedureReadOnlyAccess(ks.allowed())))
+      Some(UserFunctionSignature(name, input, output, deprecationInfo, ProcedureReadOnlyAccess(ks.allowed())))
     }
     else None
   }

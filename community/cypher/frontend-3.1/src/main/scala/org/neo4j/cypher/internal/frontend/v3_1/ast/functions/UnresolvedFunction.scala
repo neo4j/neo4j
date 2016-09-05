@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
+import org.neo4j.cypher.internal.frontend.v3_1.SemanticCheckResult
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheckResult, InputPosition, SemanticError}
 
 case object UnresolvedFunction extends Function {
   def name = "UNKNOWN"
 
   //we cannot do a full semantic check until we have resolved the function call.
-  override protected def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation) = SemanticCheckResult.success
+  override protected def semanticCheck(ctx: SemanticContext, invocation: UserFunctionInvocation) = SemanticCheckResult.success
 }

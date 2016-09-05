@@ -41,7 +41,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // given
     val variable: Variable = Variable("n")_
     val expr = In(
-      FunctionInvocation(FunctionName("id")_, distinct = false, Array(variable))_,
+      UserFunctionInvocation(FunctionName("id")_, distinct = false, Array(variable))_,
       Collection(
         Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
       )_
@@ -77,7 +77,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // given
     val variable: Variable = Variable("n")_
     val expr = In(
-      FunctionInvocation(FunctionName("id")_, variable)_,
+      UserFunctionInvocation(FunctionName("id")_, variable)_,
       Variable("arr")_
     )_
     val qg = QueryGraph(
@@ -110,7 +110,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // given match (n) where id(n) in arr
     val variable: Variable = Variable("n")_
     val expr = In(
-      FunctionInvocation(FunctionName("id")_, variable)_,
+      UserFunctionInvocation(FunctionName("id")_, variable)_,
       Variable("arr")_
     )_
     val qg = QueryGraph(
@@ -141,7 +141,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // given match (n) where id(n) in arr
     val variable: Variable = Variable("n")_
     val expr = In(
-      FunctionInvocation(FunctionName("id")_, variable)_,
+      UserFunctionInvocation(FunctionName("id")_, variable)_,
       Variable("arr")_
     )_
     val qg = QueryGraph(
@@ -172,7 +172,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // given
     val rIdent: Variable = Variable("r")_
     val expr = In(
-      FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
+      UserFunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
       Collection(
         Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
       )_
@@ -210,7 +210,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // given
     val rIdent: Variable = Variable("r")_
     val expr = In(
-      FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
+      UserFunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
       Collection(
         Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
       )_
@@ -247,7 +247,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // given
     val rIdent: Variable = Variable("r")_
     val expr = In(
-      FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
+      UserFunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
       Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
     )_
     val from = IdName("from")
@@ -283,7 +283,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // then
     resultPlans should equal(
       Seq(Selection(
-        Seq(Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_),
+        Seq(Equals(UserFunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_),
         UndirectedRelationshipByIdSeek(IdName("r"), ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), from, end, Set.empty)(solved)
       )(solved))
     )
@@ -293,7 +293,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // given
     val rIdent: Variable = Variable("r")_
     val expr = In(
-      FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
+      UserFunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
       Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
     )_
     val from = IdName("from")
@@ -332,8 +332,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       Seq(Selection(
         Seq(
           Ors(Set(
-            Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)(pos),
-            Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("Y")_)(pos)
+            Equals(UserFunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)(pos),
+            Equals(UserFunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("Y")_)(pos)
           ))_
         ),
         UndirectedRelationshipByIdSeek(IdName("r"), ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), from, end, Set.empty)(solved)

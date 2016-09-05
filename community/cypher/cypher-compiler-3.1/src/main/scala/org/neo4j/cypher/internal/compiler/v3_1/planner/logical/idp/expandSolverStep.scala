@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_1.ast._
 
 case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
 
@@ -83,16 +83,16 @@ object expandSolverStep {
               (variable, innerPredicate) -> all
             //MATCH p = ... WHERE all(n in nodes(p)... or all(r in relationships(p)
             case all@AllIterablePredicate(FilterScope(variable, Some(innerPredicate)),
-                                          FunctionInvocation(_, FunctionName(fname), false,
-                                                             Seq(PathExpression(
+                                          UserFunctionInvocation(_, FunctionName(fname), false,
+                                                                 Seq(PathExpression(
                                                              NodePathStep(startNode, MultiRelationshipPathStep(rel, _, NilPathStep) ))) ))
               if (fname  == "nodes" || fname == "relationships") && startNode.name == nodeId.name && rel.name == patternRel.name.name =>
               (variable, innerPredicate) -> all
 
             //MATCH p = ... WHERE all(n in nodes(p)... or all(r in relationships(p)
             case none@NoneIterablePredicate(FilterScope(variable, Some(innerPredicate)),
-                                          FunctionInvocation(_, FunctionName(fname), false,
-                                                             Seq(PathExpression(
+                                            UserFunctionInvocation(_, FunctionName(fname), false,
+                                                                   Seq(PathExpression(
                                                              NodePathStep(startNode, MultiRelationshipPathStep(rel, _, NilPathStep) ))) ))
               if (fname  == "nodes" || fname == "relationships") && startNode.name == nodeId.name && rel.name == patternRel.name.name =>
               (variable, Not(innerPredicate)(innerPredicate.position)) -> none

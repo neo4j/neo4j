@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.compiler.v3_1.executionplan.ProcedureCallMode
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_1.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_1.spi.UserDefinedFunctionSignature
+import org.neo4j.cypher.internal.compiler.v3_1.spi.UserFunctionSignature
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 
-case class FunctionInvocation(signature: UserDefinedFunctionSignature, arguments: IndexedSeq[Expression])
+case class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
   extends Expression with GraphElementPropertyFunctions {
 
   private val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)

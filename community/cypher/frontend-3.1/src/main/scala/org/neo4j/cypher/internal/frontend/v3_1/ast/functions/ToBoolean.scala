@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Function, FunctionInvocation}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{Function, UserFunctionInvocation}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheck, SemanticCheckResult, SemanticError, SemanticState}
 
@@ -28,13 +28,13 @@ case object ToBoolean extends Function {
 
   def name = "toBoolean"
 
-  override protected def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation): SemanticCheck =
+  override protected def semanticCheck(ctx: SemanticContext, invocation: UserFunctionInvocation): SemanticCheck =
     checkMinArgs(invocation, 1) ifOkChain
       checkMaxArgs(invocation, 1) ifOkChain
       checkTypeOfArgument(invocation) ifOkChain
       invocation.specifyType(CTBoolean)
 
-  private def checkTypeOfArgument(invocation: FunctionInvocation): SemanticCheck = (s: SemanticState) => {
+  private def checkTypeOfArgument(invocation: UserFunctionInvocation): SemanticCheck = (s: SemanticState) => {
     val argument = invocation.args.head
     val specifiedType = s.expressionType(argument).specified
     val correctType = Seq(CTString, CTBoolean, CTAny).foldLeft(false) {

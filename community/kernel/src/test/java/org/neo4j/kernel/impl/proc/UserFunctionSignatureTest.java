@@ -23,17 +23,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.kernel.api.proc.FunctionSignature;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.kernel.api.proc.UserFunctionSignature;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.api.proc.FunctionSignature.functionSignature;
+import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
 
-public class FunctionSignatureTest
+public class UserFunctionSignatureTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
-    private final FunctionSignature signature =
+    private final UserFunctionSignature signature =
             functionSignature( "asd" ).in( Neo4jTypes.NTAny ).out( Neo4jTypes.NTAny ).build();
 
     @Test

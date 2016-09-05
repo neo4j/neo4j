@@ -193,7 +193,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def buildPlannerUnionQuery(query: String, procLookup: Option[QualifiedName => ProcedureSignature] = None,
-                             fcnLookup: Option[QualifiedName => Option[UserDefinedFunctionSignature]] = None) = {
+                             fcnLookup: Option[QualifiedName => Option[UserFunctionSignature]] = None) = {
     val signature = ProcedureSignature(
       QualifiedName(Seq.empty, "foo"),
       inputSignature = IndexedSeq.empty,

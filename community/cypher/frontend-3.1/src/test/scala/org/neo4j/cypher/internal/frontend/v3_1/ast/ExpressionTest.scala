@@ -94,7 +94,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       varFor("x"),
       PatternExpression(pat),
       None,
-      Some(FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, varFor("x"))_)_)
+      Some(UserFunctionInvocation(FunctionName("head")_, UserFunctionInvocation(FunctionName("nodes")_, varFor("x"))_)_)
     )_
 
     expr.dependencies should equal(Set(varFor("n"), varFor("k")))
@@ -171,8 +171,8 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       )_
     )_)
 
-    val callNodes: Expression = FunctionInvocation(FunctionName("nodes") _, varFor("x"))_
-    val callHead: Expression = FunctionInvocation(FunctionName("head") _, callNodes) _
+    val callNodes: Expression = UserFunctionInvocation(FunctionName("nodes") _, varFor("x"))_
+    val callHead: Expression = UserFunctionInvocation(FunctionName("head") _, callNodes) _
 
     // extract(x IN (n)-->(k) | head(nodes(x)) )
     val expr: Expression = ExtractExpression(

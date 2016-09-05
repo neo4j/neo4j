@@ -34,12 +34,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
-import org.neo4j.kernel.api.proc.CallableFunction;
+import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
-import org.neo4j.procedure.Function;
+import org.neo4j.procedure.UserFunction;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -51,9 +51,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.kernel.api.proc.FunctionSignature.functionSignature;
+import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
 
-public class ReflectiveFunctionTest
+public class ReflectiveUserFunctionTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -74,7 +74,7 @@ public class ReflectiveFunctionTest
         // Given
         Log log = spy( Log.class );
         components.register( Log.class, (ctx) -> log );
-        CallableFunction function = procedureCompiler.compileFunction( LoggingFunction.class ).get( 0 );
+        CallableUserFunction function = procedureCompiler.compileFunction( LoggingFunction.class ).get( 0 );
 
         // When
         function.apply( new BasicContext(), new Object[0] );
@@ -90,7 +90,7 @@ public class ReflectiveFunctionTest
     public void shouldCompileFunction() throws Throwable
     {
         // When
-        List<CallableFunction> function = compile( SingleReadOnlyFunction.class );
+        List<CallableUserFunction> function = compile( SingleReadOnlyFunction.class );
 
         // Then
         assertEquals( 1, function.size() );
@@ -104,7 +104,7 @@ public class ReflectiveFunctionTest
     public void shouldRunSimpleReadOnlyFunction() throws Throwable
     {
         // Given
-        CallableFunction func = compile( SingleReadOnlyFunction.class ).get( 0 );
+        CallableUserFunction func = compile( SingleReadOnlyFunction.class ).get( 0 );
 
         // When
         Object out = func.apply( new BasicContext(), new Object[0] );
@@ -117,7 +117,7 @@ public class ReflectiveFunctionTest
     public void shouldIgnoreClassesWithNoFunctions() throws Throwable
     {
         // When
-        List<CallableFunction> functions = compile( PrivateConstructorButNoFunctions.class );
+        List<CallableUserFunction> functions = compile( PrivateConstructorButNoFunctions.class );
 
         // Then
         assertEquals( 0, functions.size() );
@@ -127,9 +127,9 @@ public class ReflectiveFunctionTest
     public void shouldRunClassWithMultipleFunctionsDeclared() throws Throwable
     {
         // Given
-        List<CallableFunction> compiled = compile( ReflectiveFunctionTest.MultiFunction.class );
-        CallableFunction bananaPeople = compiled.get( 0 );
-        CallableFunction coolPeople = compiled.get( 1 );
+        List<CallableUserFunction> compiled = compile( ReflectiveUserFunctionTest.MultiFunction.class );
+        CallableUserFunction bananaPeople = compiled.get( 0 );
+        CallableUserFunction coolPeople = compiled.get( 1 );
 
         // When
         Object coolOut = coolPeople.apply( new BasicContext(), new Object[0] );
@@ -211,7 +211,7 @@ public class ReflectiveFunctionTest
     public void shouldAllowOverridingProcedureName() throws Throwable
     {
         // When
-        CallableFunction proc = compile( FunctionWithOverriddenName.class ).get( 0 );
+        CallableUserFunction proc = compile( FunctionWithOverriddenName.class ).get( 0 );
 
         // Then
         assertEquals("org.mystuff.thisisActuallyTheName", proc.signature().name().toString() );
@@ -223,7 +223,7 @@ public class ReflectiveFunctionTest
         // Expect
         exception.expect( ProcedureException.class );
         exception.expectMessage( "It is not allowed to define functions in the root namespace please use a " +
-                                 "namespace, e.g. `@Function(\"org.example.com.singleName\")" );
+                                 "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")" );
 
         // When
         compile( FunctionWithSingleName.class ).get( 0 );
@@ -233,7 +233,7 @@ public class ReflectiveFunctionTest
     public void shouldGiveHelpfulErrorOnNullMessageException() throws Throwable
     {
         // Given
-        CallableFunction proc = compile( FunctionThatThrowsNullMsgExceptionAtInvocation.class ).get( 0 );
+        CallableUserFunction proc = compile( FunctionThatThrowsNullMsgExceptionAtInvocation.class ).get( 0 );
 
         // Expect
         exception.expect( ProcedureException.class );
@@ -252,12 +252,12 @@ public class ReflectiveFunctionTest
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, log );
 
         // When
-        List<CallableFunction> funcs = procedureCompiler.compileFunction( FunctionWithDeprecation.class );
+        List<CallableUserFunction> funcs = procedureCompiler.compileFunction( FunctionWithDeprecation.class );
 
         // Then
-        verify( log ).warn( "Use of @Function(deprecatedBy) without @Deprecated in org.neo4j.kernel.impl.proc.badFunc" );
+        verify( log ).warn( "Use of @UserFunction(deprecatedBy) without @Deprecated in org.neo4j.kernel.impl.proc.badFunc" );
         verifyNoMoreInteractions( log );
-        for ( CallableFunction func : funcs )
+        for ( CallableUserFunction func : funcs )
         {
             String name = func.signature().name().name();
             func.apply( new BasicContext(), new Object[0] );
@@ -282,7 +282,7 @@ public class ReflectiveFunctionTest
         @Context
         public Log log;
 
-        @Function
+        @UserFunction
         public long logAround()
         {
             log.debug( "1" );
@@ -295,7 +295,7 @@ public class ReflectiveFunctionTest
 
     public static class SingleReadOnlyFunction
     {
-        @Function
+        @UserFunction
         public List<String> listCoolPeople()
         {
             return Arrays.asList("Bonnie", "Clyde");
@@ -304,7 +304,7 @@ public class ReflectiveFunctionTest
 
     public static class FunctionWithVoidOutput
     {
-        @Function
+        @UserFunction
         public void voidOutput()
         {
         }
@@ -312,13 +312,13 @@ public class ReflectiveFunctionTest
 
     public static class MultiFunction
     {
-        @Function
+        @UserFunction
         public List<String> listCoolPeople()
         {
             return Arrays.asList("Bonnie", "Clyde");
         }
 
-        @Function
+        @UserFunction
         public Map<String, Object> listBananaOwningPeople()
         {
             HashMap<String,Object> map = new HashMap<>();
@@ -334,7 +334,7 @@ public class ReflectiveFunctionTest
 
         }
 
-        @Function
+        @UserFunction
         public List<String> listCoolPeople()
         {
             return Arrays.asList("Bonnie", "Clyde");
@@ -343,7 +343,7 @@ public class ReflectiveFunctionTest
 
     public static class FunctionWithInvalidOutput
     {
-        @Function
+        @UserFunction
         public char[] test( )
         {
             return "Testing".toCharArray();
@@ -355,7 +355,7 @@ public class ReflectiveFunctionTest
         @Context
         public static GraphDatabaseService gdb;
 
-        @Function
+        @UserFunction
         public Object test( )
         {
             return null;
@@ -364,7 +364,7 @@ public class ReflectiveFunctionTest
 
     public static class FunctionThatThrowsNullMsgExceptionAtInvocation
     {
-        @Function
+        @UserFunction
         public String throwsAtInvocation( )
         {
             throw new IndexOutOfBoundsException();
@@ -378,7 +378,7 @@ public class ReflectiveFunctionTest
 
         }
 
-        @Function
+        @UserFunction
         public List<String> listCoolPeople()
         {
             return Arrays.asList("Bonnie", "Clyde");
@@ -400,7 +400,7 @@ public class ReflectiveFunctionTest
 
     public static class FunctionWithOverriddenName
     {
-        @Function("org.mystuff.thisisActuallyTheName")
+        @UserFunction("org.mystuff.thisisActuallyTheName")
         public Object somethingThatShouldntMatter()
         {
             return null;
@@ -410,7 +410,7 @@ public class ReflectiveFunctionTest
 
     public static class FunctionWithSingleName
     {
-        @Function("singleName")
+        @UserFunction("singleName")
         public String blahDoesntMatterEither()
         {
             return null;
@@ -419,27 +419,27 @@ public class ReflectiveFunctionTest
 
     public static class FunctionWithDeprecation
     {
-        @Function
+        @UserFunction
         public Object newFunc()
         {
             return null;
         }
 
         @Deprecated
-        @Function(deprecatedBy = "newFunc")
+        @UserFunction(deprecatedBy = "newFunc")
         public String oldFunc()
         {
             return null;
         }
 
-        @Function(deprecatedBy = "newFunc")
+        @UserFunction(deprecatedBy = "newFunc")
         public Object badFunc()
         {
             return null;
         }
     }
 
-    private List<CallableFunction> compile( Class<?> clazz ) throws KernelException
+    private List<CallableUserFunction> compile( Class<?> clazz ) throws KernelException
     {
         return procedureCompiler.compileFunction( clazz );
     }

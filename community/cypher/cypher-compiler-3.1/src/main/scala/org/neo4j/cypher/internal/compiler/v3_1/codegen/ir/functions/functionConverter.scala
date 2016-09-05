@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast
 
 object functionConverter {
 
-  def apply(fcn: ast.FunctionInvocation, callback: ast.Expression => CodeGenExpression)
+  def apply(fcn: ast.UserFunctionInvocation, callback: ast.Expression => CodeGenExpression)
            (implicit context: CodeGenContext): CodeGenExpression = fcn.function match {
 
     // id(n)

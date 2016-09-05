@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, SemanticDirec
 import org.neo4j.graphdb.Direction
 
 object ExpressionConverters {
-  def toCommandExpression(expression: ast.Function, invocation: ast.FunctionInvocation): CommandExpression =
+  def toCommandExpression(expression: ast.Function, invocation: ast.UserFunctionInvocation): CommandExpression =
     expression match {
       case Abs => commandexpressions.AbsFunction(toCommandExpression(invocation.arguments.head))
       case Acos => commandexpressions.AcosFunction(toCommandExpression(invocation.arguments.head))
@@ -259,7 +259,7 @@ object ExpressionConverters {
     case e: ast.Divide => commandexpressions.Divide(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
     case e: ast.Modulo => commandexpressions.Modulo(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
     case e: ast.Pow => commandexpressions.Pow(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
-    case e: ast.FunctionInvocation => toCommandExpression(e.function, e)
+    case e: ast.UserFunctionInvocation => toCommandExpression(e.function, e)
     case e: ast.CountStar => commandexpressions.CountStar()
     case e: ast.Property => toCommandProperty(e)
     case e: ast.Parameter => toCommandParameter(e)

@@ -35,7 +35,7 @@ object AsDynamicPropertyNonSeekable {
 object AsDynamicPropertyNonScannable {
   def unapply(v: Any) = v match {
 
-    case func@FunctionInvocation(_, _, _, IndexedSeq(ContainerIndex(variable: Variable, _)))
+    case func@UserFunctionInvocation(_, _, _, IndexedSeq(ContainerIndex(variable: Variable, _)))
       if  func.function == functions.Exists =>
       Some(variable)
 

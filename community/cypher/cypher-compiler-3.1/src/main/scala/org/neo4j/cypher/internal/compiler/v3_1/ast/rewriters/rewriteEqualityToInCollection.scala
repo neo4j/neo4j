@@ -32,7 +32,7 @@ case object rewriteEqualityToInCollection extends Rewriter {
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     // id(a) = value => id(a) IN [value]
-    case predicate@Equals(func@FunctionInvocation(_, _, _, IndexedSeq(idExpr)), idValueExpr)
+    case predicate@Equals(func@UserFunctionInvocation(_, _, _, IndexedSeq(idExpr)), idValueExpr)
       if func.function == functions.Id =>
       In(func, Collection(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
 

@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheck, SemanticError, as
 case object Reduce extends Function {
   def name = "reduce"
 
-  override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+  override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.UserFunctionInvocation): SemanticCheck =
     semanticCheck(ctx, invocation)
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.UserFunctionInvocation): SemanticCheck =
     SemanticError(s"${name}(...) requires '| expression' (an accumulation expression)", invocation.position)
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.spi
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{FunctionInvocation, UnresolvedCall}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{UnresolvedCall, UserFunctionInvocation}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 
 case class ProcedureSignature(name: QualifiedName,
@@ -33,16 +33,16 @@ case class ProcedureSignature(name: QualifiedName,
   def isVoid = outputSignature.isEmpty
 }
 
-case class UserDefinedFunctionSignature(name: QualifiedName,
-                                        inputSignature: IndexedSeq[CypherType],
-                                        outputType: CypherType,
-                                        deprecationInfo: Option[String],
-                                        accessMode: ProcedureReadOnlyAccess)
+case class UserFunctionSignature(name: QualifiedName,
+                                 inputSignature: IndexedSeq[CypherType],
+                                 outputType: CypherType,
+                                 deprecationInfo: Option[String],
+                                 accessMode: ProcedureReadOnlyAccess)
 
 object QualifiedName {
   def apply(unresolved: UnresolvedCall): QualifiedName =
     QualifiedName(unresolved.procedureNamespace.parts, unresolved.procedureName.name)
-  def apply(unresolved: FunctionInvocation): QualifiedName =
+  def apply(unresolved: UserFunctionInvocation): QualifiedName =
     QualifiedName(unresolved.namespace.parts, unresolved.functionName.name)
 }
 
