@@ -271,7 +271,7 @@ public class TransactionStateMachine implements StatementProcessor
                         else if( spi.isPeriodicCommit( statement ) )
                         {
                             throw new QueryExecutionKernelException( new InvalidSemanticsException(
-                                    "Executing stream that use periodic commit in an " +
+                                    "Executing queries that use periodic commit in an " +
                                             "open transaction is not possible." ) );
                         }
                         else

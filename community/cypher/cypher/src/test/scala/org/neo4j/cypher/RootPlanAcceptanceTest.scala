@@ -56,7 +56,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
-  test("should report RULE if we ask it for UNION stream") {
+  test("should report RULE if we ask it for UNION queries") {
     given(
       """MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-(m:Person)
         |RETURN p UNION MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-()-[:FRIEND_OF]-(m:Person) RETURN p"""

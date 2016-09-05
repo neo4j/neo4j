@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 
 /**
  * This class should get rid of any extra columns built up while building the execution plan, that weren't in the
- * stream return clause.
+ * queries return clause.
  */
 class ColumnFilterBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {

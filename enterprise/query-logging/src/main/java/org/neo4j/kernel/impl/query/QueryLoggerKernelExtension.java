@@ -160,7 +160,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             }
             if ( oldTime != null || oldQuery != null )
             {
-                log.error( "Concurrent stream for session %s: \"%s\" @ %s and \"%s\" @ %s",
+                log.error( "Concurrent queries for session %s: \"%s\" @ %s and \"%s\" @ %s",
                         session.toString(), oldQuery, oldTime, query, startTime );
             }
         }

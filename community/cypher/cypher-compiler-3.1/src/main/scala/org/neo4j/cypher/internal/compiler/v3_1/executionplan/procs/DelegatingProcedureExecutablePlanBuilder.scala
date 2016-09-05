@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.TypeSpec
 
 /**
-  * This planner takes on stream that requires no planning such as procedures and schema commands
+  * This planner takes on queries that requires no planning such as procedures and schema commands
   *
   * @param delegate The plan builder to delegate to
   */

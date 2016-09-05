@@ -359,8 +359,8 @@ object ClauseConverters {
 
     /*
     When encountering a WITH that is not an event horizon, and we have no optional matches in the current QueryGraph,
-    we simply continue building on the current PlannerQuery. Our ASTRewriters rewrite stream in such a way that
-    a lot of stream have these WITH clauses.
+    we simply continue building on the current PlannerQuery. Our ASTRewriters rewrite queries in such a way that
+    a lot of queries have these WITH clauses.
 
     Handles: ... WITH * [WHERE <predicate>] ...
      */
@@ -467,7 +467,7 @@ object ClauseConverters {
       val nonHints = items.collect { case Left(item) => item }
 
       if (nonHints.nonEmpty) {
-        // all other start stream is delegated to legacy planner
+        // all other start queries is delegated to legacy planner
         throw new CantHandleQueryException()
       }
 

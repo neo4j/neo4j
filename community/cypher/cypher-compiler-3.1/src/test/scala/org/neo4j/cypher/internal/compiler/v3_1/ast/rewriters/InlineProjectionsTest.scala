@@ -290,7 +290,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   // FIXME: 2014-4-30 Stefan: This is not yet supported by the inline rewriter
-  test("should refuse to inline stream containing update clauses by throwing CantHandleQueryException") {
+  test("should refuse to inline queries containing update clauses by throwing CantHandleQueryException") {
     evaluating {
       projectionInlinedAst(
         """CREATE (n)

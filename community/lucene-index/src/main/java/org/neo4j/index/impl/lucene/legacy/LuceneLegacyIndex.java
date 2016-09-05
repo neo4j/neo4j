@@ -91,8 +91,8 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
      *
      * Adds key/value to the {@code entity} in this index. Added values are
      * searchable within the transaction, but composite {@code AND}
-     * stream aren't guaranteed to return added values correctly within that
-     * transaction. When the transaction has been committed all such stream
+     * queries aren't guaranteed to return added values correctly within that
+     * transaction. When the transaction has been committed all such queries
      * are guaranteed to return correct results.
      *
      * @param key the key in the key/value pair to associate with the entity.
@@ -149,9 +149,9 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
      *
      * Removes key/value to the {@code entity} in this index. Removed values
      * are excluded within the transaction, but composite {@code AND}
-     * stream aren't guaranteed to exclude removed values correctly within
+     * queries aren't guaranteed to exclude removed values correctly within
      * that transaction. When the transaction has been committed all such
-     * stream are guaranteed to return correct results.
+     * queries are guaranteed to return correct results.
      *
      * @param entityId the entity (i.e {@link Node} or {@link Relationship})
      * to dissociate the key/value pair from.

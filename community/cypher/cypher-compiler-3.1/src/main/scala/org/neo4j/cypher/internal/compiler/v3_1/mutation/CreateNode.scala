@@ -63,7 +63,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
 
     /*
-     Parameters coming in from the outside in stream using parameters like this:
+     Parameters coming in from the outside in queries using parameters like this:
 
      CREATE (n {param})
 

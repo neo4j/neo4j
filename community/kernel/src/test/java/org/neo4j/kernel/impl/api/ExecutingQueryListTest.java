@@ -65,7 +65,7 @@ public class ExecutingQueryListTest
                 .push( query5 );
 
         // When
-        List<ExecutingQuery> result = list.stream().collect( Collectors.toList() );
+        List<ExecutingQuery> result = list.queries().collect( Collectors.toList() );
 
         // Then
         assertThat( result, equalTo( asList( query5, query4, query3, query2, query1 ) ) );
@@ -89,7 +89,7 @@ public class ExecutingQueryListTest
                 .push( query5 );
 
         // When
-        List<ExecutingQuery> result = list.remove( query3 ).stream().collect( Collectors.toList() );
+        List<ExecutingQuery> result = list.remove( query3 ).queries().collect( Collectors.toList() );
 
         // Then
         assertThat( result, equalTo( asList( query5, query4, query2, query1 ) ) );

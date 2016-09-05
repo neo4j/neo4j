@@ -190,7 +190,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
 
   def containsAggregation: Boolean = aggregation.nonEmpty || tail.exists(_.containsAggregation)
 
-  /* This methods is used to rewrite the stream from the end of the query line to the beginning of it */
+  /* This methods is used to rewrite the queries from the end of the query line to the beginning of it */
   def rewriteFromTheTail(f: PartiallySolvedQuery => PartiallySolvedQuery): PartiallySolvedQuery =
     f(copy(tail = tail.map(_.rewriteFromTheTail(f))))
 

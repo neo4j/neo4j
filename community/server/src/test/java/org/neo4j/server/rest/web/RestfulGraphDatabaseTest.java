@@ -1602,7 +1602,7 @@ public class RestfulGraphDatabaseTest
         {
             Map<?, ?> map = (Map<?, ?>) item;
             String indexedUri = (String) map.get( "indexed" );
-            assertNull( indexedUri ); // stream can not return a sensible index
+            assertNull( indexedUri ); // queries can not return a sensible index
             // uri
             String selfUri = (String) map.get( "self" );
             assertNotNull( selfUri );
@@ -1641,7 +1641,7 @@ public class RestfulGraphDatabaseTest
         {
             Map<?, ?> map = (Map<?, ?>) item;
             String indexedUri = (String) map.get( "indexed" );
-            assertNull( indexedUri ); // stream can not return a sensible index
+            assertNull( indexedUri ); // queries can not return a sensible index
             // uri
             String selfUri = (String) map.get( "self" );
             assertNotNull( selfUri );

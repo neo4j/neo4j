@@ -67,7 +67,7 @@ public enum NotificationCode
     JOIN_HINT_UNSUPPORTED(
         SeverityLevel.WARNING,
         Status.Statement.JoinHintUnsupportedWarning,
-        "Using RULE planner is unsupported for stream with join hints, please use COST planner instead"
+        "Using RULE planner is unsupported for queries with join hints, please use COST planner instead"
     ),
     LENGTH_ON_NON_PATH(
         SeverityLevel.WARNING,

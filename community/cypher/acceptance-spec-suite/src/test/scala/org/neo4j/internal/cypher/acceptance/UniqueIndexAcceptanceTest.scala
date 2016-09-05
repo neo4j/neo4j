@@ -104,7 +104,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     result shouldNot use("NodeUniqueIndexSeek(Locking)")
   }
 
-  test("should use locking unique index for merge stream") {
+  test("should use locking unique index for merge queries") {
     //GIVEN
     createLabeledNode(Map("name" -> "Andres"), "Person")
     graph.createConstraint("Person", "name")
@@ -117,7 +117,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     result should use("NodeUniqueIndexSeek(Locking)")
   }
 
-  test("should use locking unique index for mixed read write stream") {
+  test("should use locking unique index for mixed read write queries") {
     //GIVEN
     createLabeledNode(Map("name" -> "Andres"), "Person")
     graph.createConstraint("Person", "name")

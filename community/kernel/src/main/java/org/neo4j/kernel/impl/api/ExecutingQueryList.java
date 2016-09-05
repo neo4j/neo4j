@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.ExecutingQuery;
 
 interface ExecutingQueryList
 {
-    Stream<ExecutingQuery> stream();
+    Stream<ExecutingQuery> queries();
 
     ExecutingQueryList push( ExecutingQuery newExecutingQuery );
 
@@ -45,7 +45,7 @@ interface ExecutingQueryList
         }
 
         @Override
-        public Stream<ExecutingQuery> stream()
+        public Stream<ExecutingQuery> queries()
         {
             Stream.Builder<ExecutingQuery> builder = Stream.builder();
             ExecutingQueryList entry = this;
@@ -82,7 +82,7 @@ interface ExecutingQueryList
     class Empty implements ExecutingQueryList
     {
         @Override
-        public Stream<ExecutingQuery> stream()
+        public Stream<ExecutingQuery> queries()
         {
             return Stream.empty();
         }

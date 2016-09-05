@@ -194,7 +194,7 @@ public class QueryLoggerIT
         executeQueryAndShutdown( database );
 
         List<String> lines = readAllLines( logFilename );
-        assertTrue( "Should not have any stream logged since query log is disabled", lines.isEmpty() );
+        assertTrue( "Should not have any queries logged since query log is disabled", lines.isEmpty() );
     }
 
     @Test

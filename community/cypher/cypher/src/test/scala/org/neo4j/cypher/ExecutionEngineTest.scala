@@ -849,7 +849,7 @@ order by a.COL1""")
     result.toList shouldBe empty
   }
 
-  test("should be able to prettify stream") {
+  test("should be able to prettify queries") {
     val query = "match (n)-->(x) return n"
 
     eengine.prettify(query) should equal(String.format("MATCH (n)-->(x)%nRETURN n"))
@@ -960,7 +960,7 @@ order by a.COL1""")
     result("count") should equal(1)
   }
 
-  test("should not mind rewriting NOT stream") {
+  test("should not mind rewriting NOT queries") {
     val result = updateWithBothPlannersAndCompatibilityMode(" create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
     result.toList should equal(List(Map("A" -> true, "B" -> true, "C" -> true, "D" -> false)))
   }

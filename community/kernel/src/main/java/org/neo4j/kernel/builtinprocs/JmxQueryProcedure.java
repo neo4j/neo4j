@@ -100,7 +100,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         catch ( MalformedObjectNameException e )
         {
             throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                  "'%s' is an invalid JMX name pattern. Valid stream should use" +
+                  "'%s' is an invalid JMX name pattern. Valid queries should use" +
                   "the syntax outlined in the javax.management.ObjectName API documentation." +
                   "For instance, try 'org.neo4j:*' to find all JMX beans of the 'org.neo4j' " +
                   "domain, or '*:*' to find every JMX bean.", query );

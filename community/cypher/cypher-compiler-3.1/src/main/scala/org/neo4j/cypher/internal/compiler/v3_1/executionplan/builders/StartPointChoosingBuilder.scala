@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.pipes.PipeMonitor
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 
 /*
-This builder is concerned with finding stream without start items and without index hints, and
+This builder is concerned with finding queries without start items and without index hints, and
 choosing a start point to use.
 
 To do this, three things are done.

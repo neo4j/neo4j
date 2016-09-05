@@ -108,7 +108,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     @Override
     public Stream<ExecutingQuery> executingQueries()
     {
-        return executingQueries.stream();
+        return executingQueries.queries();
     }
 
     @Override

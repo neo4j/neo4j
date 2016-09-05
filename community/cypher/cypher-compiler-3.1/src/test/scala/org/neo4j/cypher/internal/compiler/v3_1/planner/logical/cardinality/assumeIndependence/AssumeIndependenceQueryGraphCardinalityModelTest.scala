@@ -29,7 +29,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
   import ABCD._
   import org.scalatest.prop.TableDrivenPropertyChecks._
 
-  test("all stream") {
+  test("all queries") {
     val queries = Table.apply[String, Double](
       ("query", "expected cardinality"),
       "MATCH (n)"

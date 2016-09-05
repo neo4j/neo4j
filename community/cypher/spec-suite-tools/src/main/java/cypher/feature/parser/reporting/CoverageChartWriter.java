@@ -107,7 +107,7 @@ public class CoverageChartWriter
             return cached;
         }
         JFreeChart chart = ChartFactory
-                .createBarChart( "Spec suite tag distribution", "Tags", "Occurrences in stream",
+                .createBarChart( "Spec suite tag distribution", "Tags", "Occurrences in queries",
                         createCategoryDataset( data ) );
 
         // styling

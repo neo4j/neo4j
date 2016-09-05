@@ -47,7 +47,7 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     }
   }
 
-  test("records stream and its observed values") {
+  test("records queries and its observed values") {
     val snapshot = MutableGraphStatisticsSnapshot()
     val instrumentedStatistics = InstrumentedGraphStatistics(graphStatistics(), snapshot)
     instrumentedStatistics.nodesWithLabelCardinality(None)

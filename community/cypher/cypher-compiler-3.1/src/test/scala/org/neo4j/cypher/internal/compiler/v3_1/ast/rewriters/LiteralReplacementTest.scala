@@ -93,7 +93,7 @@ class LiteralReplacementTest extends CypherFunSuite  {
     )
   }
 
-  test("should not rewrite stream that already have params in them") {
+  test("should not rewrite queries that already have params in them") {
     assertRewrite(
       "CREATE (a:Person {name:'Jakub', age:{age} })",
       "CREATE (a:Person {name:'Jakub', age:{age} })",

@@ -293,7 +293,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     inner.run()
   }
 
-  test("should pick any index available for range stream") {
+  test("should pick any index available for range queries") {
     object inner extends AstConstructionTestSupport {
 
       def run() = {

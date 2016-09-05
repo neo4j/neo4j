@@ -202,11 +202,11 @@ public class KernelTransactions extends LifecycleAdapter
     }
 
     /**
-     * Give an approximate set of all currently executing stream.
+     * Give an approximate set of all currently executing queries.
      * This is not guaranteed to be exact, as a query may stop and start while this set is gathered, or even
      * switch the transaction used (in case of PERIODIC COMMIT).
      *
-     * @return the (approximate) set of currently executing stream.
+     * @return the (approximate) set of currently executing 209.
      */
     public Set<ExecutingQuery> executingQueries() {
         return allTransactions.stream()

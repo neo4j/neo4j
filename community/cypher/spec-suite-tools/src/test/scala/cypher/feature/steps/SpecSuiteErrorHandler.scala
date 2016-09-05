@@ -163,7 +163,7 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal(INVALID_AGGREGATION)
     else if (msg.matches(semanticError("Expression in WITH must be aliased \\(use AS\\)")))
       detail should equal(NO_EXPRESSION_ALIAS)
-    else if (msg.matches(semanticError("All sub stream in an UNION must have the same column names")))
+    else if (msg.matches(semanticError("All sub queries in an UNION must have the same column names")))
       detail should equal(DIFFERENT_COLUMNS_IN_UNION)
     else if (msg.matches(semanticError("DELETE doesn't support removing labels from a node. Try REMOVE.")))
       detail should equal(INVALID_DELETE)

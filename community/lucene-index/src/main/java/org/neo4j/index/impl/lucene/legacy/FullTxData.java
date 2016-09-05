@@ -75,7 +75,7 @@ class FullTxData extends TxData
      * {
      *     __all__: "1"
      * }
-     * where stream would (if there are any orphans at all stored) include the "all orphans" value ("1") as
+     * where queries would (if there are any orphans at all stored) include the "all orphans" value ("1") as
      * well as any specific key which is pulled out from the incoming query.
      */
     private static final String ORPHANS_KEY = "__all__";
@@ -284,7 +284,7 @@ class FullTxData extends TxData
 
     private String extractTermField( Query query )
     {
-        // Try common types of stream
+        // Try common types of queries
         if ( query instanceof TermQuery )
         {
             return ((TermQuery)query).getTerm().field();
@@ -347,8 +347,8 @@ class FullTxData extends TxData
         }
         catch ( UnsupportedOperationException ue )
         {
-            // TODO This is for "*" stream and such. Lucene doesn't seem
-            // to be able/willing to rewrite such stream.
+            // TODO This is for "*" queries and such. Lucene doesn't seem
+            // to be able/willing to rewrite such queries.
             // Just ignore the orphans then... OK?
         }
         return terms.isEmpty() ? null : terms.iterator().next().field();

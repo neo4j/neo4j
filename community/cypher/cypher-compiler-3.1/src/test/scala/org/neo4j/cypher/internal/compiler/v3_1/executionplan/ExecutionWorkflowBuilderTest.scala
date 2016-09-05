@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
   val PlannerName = IDPPlannerName
 
-  test("produces eager results for updating stream") {
+  test("produces eager results for updating queries") {
     // GIVEN
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
@@ -48,7 +48,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     result.asInstanceOf[PipeExecutionResult].result shouldBe a[EagerResultIterator]
   }
 
-  test("produces lazy results for non-updating stream") {
+  test("produces lazy results for non-updating queries") {
     // GIVEN
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
@@ -65,7 +65,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     result.asInstanceOf[PipeExecutionResult].result should not be an[EagerResultIterator]
   }
 
-  test("produces explain results for EXPLAIN stream") {
+  test("produces explain results for EXPLAIN queries") {
     // GIVEN
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)

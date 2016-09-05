@@ -119,7 +119,7 @@ class NodeFetchStrategyTest extends CypherFunSuite {
     inner.run()
   }
 
-  test("should select schema index for range stream") {
+  test("should select schema index for range queries") {
     object inner extends AstConstructionTestSupport {
 
       def run(): Unit = {

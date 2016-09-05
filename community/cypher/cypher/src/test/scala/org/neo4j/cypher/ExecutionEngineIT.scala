@@ -42,7 +42,7 @@ import scala.collection.immutable.Map
 
 class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
-  test("by default when using cypher 2.3 some stream should default to COST") {
+  test("by default when using cypher 2.3 some queries should default to COST") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
@@ -60,7 +60,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
   }
 
-  test("by default when using cypher 3.0 some stream should default to COST") {
+  test("by default when using cypher 3.0 some queries should default to COST") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
@@ -78,7 +78,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
   }
 
-  test("by default when using cypher 3.1 some stream should default to COST") {
+  test("by default when using cypher 3.1 some queries should default to COST") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()

@@ -431,7 +431,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       result.executionPlanDescription() should includeOnlyOneHashJoinOn("c")
     }
 
-    test(s"$plannerName should be able to use join hints for stream with var length pattern") {
+    test(s"$plannerName should be able to use join hints for queries with var length pattern") {
       val a = createLabeledNode(Map("prop" -> "foo"), "Foo")
       val b = createNode()
       val c = createNode()

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.EstimatedRows
 
 /**
- * Runs the 14 LDBC stream and checks so that the result is what is expected.
+ * Runs the 14 LDBC queries and checks so that the result is what is expected.
  */
 class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
   import org.neo4j.cypher.LdbcQueries._

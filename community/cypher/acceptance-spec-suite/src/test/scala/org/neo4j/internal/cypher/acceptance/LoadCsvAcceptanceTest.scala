@@ -422,7 +422,7 @@ class LoadCsvAcceptanceTest
     result.toList should equal(List(Map("field" -> "something")))
   }
 
-  test("eager stream should be handled correctly") {
+  test("eager queries should be handled correctly") {
     val urls = csvUrls({
       writer =>
         writer.println("id,title,country,year")

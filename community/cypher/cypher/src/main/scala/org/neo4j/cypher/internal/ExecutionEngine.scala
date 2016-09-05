@@ -118,7 +118,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
   private def parsePreParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
     parsedQueries.get(preParsedQuery.statementWithVersionAndPlanner).getOrElse {
       val parsedQuery = compiler.parseQuery(preParsedQuery, tracer)
-      //don't cache failed stream
+      //don't cache failed queries
       if (!parsedQuery.hasErrors) parsedQueries.put(preParsedQuery.statementWithVersionAndPlanner, parsedQuery)
       parsedQuery
     }
