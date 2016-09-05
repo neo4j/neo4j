@@ -224,6 +224,9 @@ public class MuninnPageCache implements PageCache
         long expectedMaxMemory = ((long) maxPages) * cachePageSize; // cast to long prevents overflow
         MemoryManager memoryManager = new MemoryManager( expectedMaxMemory, alignment );
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
+
+//        PageList pages = new PageList( maxPages, cachePageSize, memoryManager, victimPage );
+
         Object pageList = null;
         int pageIndex = maxPages;
         while ( pageIndex-- > 0 )

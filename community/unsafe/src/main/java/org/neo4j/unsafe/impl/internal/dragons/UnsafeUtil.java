@@ -33,7 +33,6 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -282,6 +281,14 @@ public final class UnsafeUtil
     }
 
     /**
+     * Orders loads and stores before the fence, with loads and stores after the fence.
+     */
+    public static void fullFence()
+    {
+        unsafe.fullFence();
+    }
+
+    /**
      * Atomically compare the current value of the given long field with the expected value, and if they are the
      * equal, set the field to the updated value and return true. Otherwise return false.
      * <p>
@@ -466,38 +473,44 @@ public final class UnsafeUtil
 
     private static void doCheckAccess( long pointer, int size )
     {
-        long now = System.nanoTime();
         Map.Entry<Long,Long> fentry = pointers.floorEntry( pointer + size );
         Map.Entry<Long,Long> centry = pointers.ceilingEntry( pointer );
         if ( fentry == null || fentry.getKey() + fentry.getValue() < pointer + size )
         {
-            long faddr = fentry == null ? 0 : fentry.getKey();
-            long fsize = fentry == null ? 0 : fentry.getValue();
-            long foffset = pointer - (faddr + fsize);
-            long caddr = centry == null ? 0 : centry.getKey();
-            long csize = centry == null ? 0 : centry.getValue();
-            long coffset = caddr - (pointer + size);
-            boolean floorIsNearest = foffset < coffset;
-            long naddr = floorIsNearest ? faddr : caddr;
-            long nsize = floorIsNearest ? fsize : csize;
-            long noffset = floorIsNearest ? foffset : coffset;
-            List<FreeTrace> recentFrees = Arrays.stream( freeTraces )
-                                                .filter( Objects::nonNull )
-                                                .filter( trace -> trace.contains( pointer ) )
-                                                .sorted()
-                                                .collect( Collectors.toList() );
-            AssertionError error = new AssertionError( format(
-                    "Bad access at address 0x%x with size %s, nearest valid allocation is " +
-                    "0x%x (%s bytes, off by %s bytes). " +
-                    "Recent relevant frees (of %s) are attached as suppressed exceptions.",
-                    pointer, size, naddr, nsize, noffset, freeTraceCounter.get() ) );
-            for ( FreeTrace recentFree : recentFrees )
-            {
-                recentFree.referenceTime = now;
-                error.addSuppressed( recentFree );
-            }
-            throw error;
+            throwBadAccess( pointer, size, fentry, centry );
         }
+    }
+
+    private static void throwBadAccess( long pointer, int size, Map.Entry<Long,Long> fentry,
+                                        Map.Entry<Long,Long> centry )
+    {
+        long now = System.nanoTime();
+        long faddr = fentry == null ? 0 : fentry.getKey();
+        long fsize = fentry == null ? 0 : fentry.getValue();
+        long foffset = pointer - (faddr + fsize);
+        long caddr = centry == null ? 0 : centry.getKey();
+        long csize = centry == null ? 0 : centry.getValue();
+        long coffset = caddr - (pointer + size);
+        boolean floorIsNearest = foffset < coffset;
+        long naddr = floorIsNearest ? faddr : caddr;
+        long nsize = floorIsNearest ? fsize : csize;
+        long noffset = floorIsNearest ? foffset : coffset;
+        List<FreeTrace> recentFrees = Arrays.stream( freeTraces )
+                                            .filter( trace -> trace != null )
+                                            .filter( trace -> trace.contains( pointer ) )
+                                            .sorted()
+                                            .collect( Collectors.toList() );
+        AssertionError error = new AssertionError( format(
+                "Bad access to address 0x%x with size %s, nearest valid allocation is " +
+                "0x%x (%s bytes, off by %s bytes). " +
+                "Recent relevant frees (of %s) are attached as suppressed exceptions.",
+                pointer, size, naddr, nsize, noffset, freeTraceCounter.get() ) );
+        for ( FreeTrace recentFree : recentFrees )
+        {
+            recentFree.referenceTime = now;
+            error.addSuppressed( recentFree );
+        }
+        throw error;
     }
 
     /**

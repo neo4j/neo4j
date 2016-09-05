@@ -48,7 +48,7 @@ public class SequenceLockStressIT
     @Rule
     public RepeatRule repeatRule = new RepeatRule();
 
-    private SequenceLock lock = new SequenceLock();
+    private SequenceLock lock = new OnHeapSequenceLock();
 
     @RepeatRule.Repeat( times = 20 )
     @Test
@@ -217,8 +217,7 @@ public class SequenceLockStressIT
         for ( int i = 0; i < 30000; i++ )
         {
             test.unlockExclusiveAndTakeWriteLockMustBeAtomic();
-            test.lock = new SequenceLock();
+            test.lock = new OnHeapSequenceLock();
         }
-
     }
 }

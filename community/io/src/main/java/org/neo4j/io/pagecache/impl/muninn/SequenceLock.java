@@ -48,7 +48,7 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
  * never block. If a write or flush lock is currently held, the attempt to take the exclusive lock will fail, and
  * the exclusive lock will likewise prevent write and flush locks from being taken.
  */
-public class SequenceLock
+public abstract class SequenceLock
 {
     /*
      * Bits for counting concurrent write-locks. We use 17 bits because our pages are most likely 8192 bytes, and
@@ -83,25 +83,11 @@ public class SequenceLock
     private static final long FAE_MASK = FLS_MASK + EXL_MASK; // "flush and/or exclusive" mask
     private static final long UNL_MASK = FAE_MASK + CNT_MASK; // unlocked mask
 
-    private static final long STATE = UnsafeUtil.getFieldOffset( SequenceLock.class, "state" );
+    protected abstract long getState();
 
-    @SuppressWarnings( "unused" ) // accessed via unsafe
-    private volatile long state;
+    protected abstract boolean compareAndSetState( long expect, long update );
 
-    private long getState()
-    {
-        return state;
-    }
-
-    private boolean compareAndSetState( long expect, long update )
-    {
-        return UnsafeUtil.compareAndSwapLong( this, STATE, expect, update );
-    }
-
-    private void unconditionallySetState( long update )
-    {
-        state = update;
-    }
+    protected abstract void unconditionallySetState( long update );
 
     /**
      * Start an optimistic critical section, and return a stamp that can be used to validate if the read lock was

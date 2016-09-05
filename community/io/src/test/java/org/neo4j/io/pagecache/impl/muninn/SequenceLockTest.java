@@ -46,7 +46,7 @@ public class SequenceLockTest
         executor.shutdown();
     }
 
-    SequenceLock lock = new SequenceLock();
+    SequenceLock lock = new OnHeapSequenceLock();
 
     @Test
     public void uncontendedOptimisticLockMustValidate() throws Exception

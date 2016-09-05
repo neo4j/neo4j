@@ -85,13 +85,13 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public Reader openAsReader( File fileName, Charset charset ) throws IOException
     {
-        return new InputStreamReader( new FileInputStream( fileName ), charset );
+        return new InputStreamReader( openAsInputStream( fileName ), charset );
     }
 
     @Override
     public Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException
     {
-        return new OutputStreamWriter( new FileOutputStream( fileName, append ), charset );
+        return new OutputStreamWriter( openAsOutputStream( fileName, append ), charset );
     }
 
     @Override

@@ -59,6 +59,18 @@ public final class MemoryManager
         this.alignment = alignment;
     }
 
+    public synchronized long sumUsedMemory()
+    {
+        long sum = 0;
+        Slab s = slabs;
+        while ( s != null )
+        {
+            sum += s.nextAlignedPointer - s.address;
+            s = s.next;
+        }
+        return sum;
+    }
+
     /**
      * Allocate a contiguous, aligned region of memory of the given size in bytes.
      * @param bytes the number of bytes to allocate.
@@ -69,7 +81,7 @@ public final class MemoryManager
         if ( bytes > GRAB_SIZE )
         {
             // This is a huge allocation. Put it in its own slab and keep any existing slab at the head.
-            Slab nextSlab = slabs == null? null : slabs.next;
+            Slab nextSlab = slabs == null ? null : slabs.next;
             Slab allocationSlab = new Slab( nextSlab, bytes, alignment );
             if ( !allocationSlab.canAllocate( bytes ) )
             {
@@ -77,7 +89,7 @@ public final class MemoryManager
                 allocationSlab = new Slab( nextSlab, bytes + alignment, alignment );
             }
             long allocation = allocationSlab.allocate( bytes );
-            slabs = slabs == null? allocationSlab : slabs.setNext( allocationSlab );
+            slabs = slabs == null ? allocationSlab : slabs.setNext( allocationSlab );
             memoryReserve -= bytes;
             return allocation;
         }
@@ -179,7 +191,7 @@ public final class MemoryManager
         public String toString()
         {
             long size = limit - address;
-            long reserve = nextAlignedPointer > limit? 0 : limit - nextAlignedPointer;
+            long reserve = nextAlignedPointer > limit ? 0 : limit - nextAlignedPointer;
             double use = (1.0 - reserve / ((double) size)) * 100.0;
             return String.format( "Slab[size = %d bytes, reserve = %d bytes, use = %5.2f %%]", size, reserve, use );
         }

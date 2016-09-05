@@ -3714,7 +3714,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         // as large as 1 GB - at least I have not heard of anyone trying to
         // configure it to be more than that.
         int pageSize = 1024 * 1024 * 8;
-        getPageCache( fs, 10, pageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, 5, pageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
 
         ThreadLocalRandom rng = ThreadLocalRandom.current();
 
@@ -3723,18 +3723,25 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             assertTrue( cursor.next() );
 
-            for ( int i = 0; i < pageSize - 8; i++ )
+            long x = rng.nextLong();
+            int limit = pageSize - 8;
+            for ( int i = 0; i < limit; i++ )
             {
+                x += i;
                 cursor.setOffset( i );
-                long x = rng.nextLong();
                 cursor.putLong( x );
                 cursor.setOffset( i );
-                String reason =
-                        "Failed to read back the value that was written at " +
-                        "offset " + toHexString( i );
-                assertThat( reason,
-                        toHexString( cursor.getLong() ),
-                        is( toHexString( x ) ) );
+                long y = cursor.getLong();
+
+                if ( x != y )
+                {
+                    String reason =
+                            "Failed to read back the value that was written at " +
+                            "offset " + toHexString( i );
+                    assertThat( reason,
+                            toHexString( y ),
+                            is( toHexString( x ) ) );
+                }
             }
         }
     }

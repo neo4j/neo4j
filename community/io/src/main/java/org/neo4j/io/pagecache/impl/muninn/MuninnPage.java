@@ -33,7 +33,7 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.String.format;
 
-final class MuninnPage extends SequenceLock implements Page
+final class MuninnPage extends OnHeapSequenceLock implements Page
 {
     private static final long usageStampOffset = UnsafeUtil.getFieldOffset( MuninnPage.class, "usageStamp" );
 
