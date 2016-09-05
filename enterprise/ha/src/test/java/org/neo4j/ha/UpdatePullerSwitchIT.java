@@ -34,6 +34,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -53,7 +54,9 @@ public class UpdatePullerSwitchIT
 {
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() ).withCluster( clusterOfSize( 2 ) )
-            .withSharedSetting( tx_push_factor, "0" );
+            .withSharedSetting( tx_push_factor, "0" )
+            .withSharedSetting( HaSettings.pull_interval, "100s" )
+            .withFirstInstanceId( 6 );
 
     @Test
     public void updatePullerSwitchOnNodeModeSwitch() throws Throwable
