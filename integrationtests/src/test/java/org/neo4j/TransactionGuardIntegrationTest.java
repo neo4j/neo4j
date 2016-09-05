@@ -142,14 +142,14 @@ public class TransactionGuardIntegrationTest
     public void terminateTransactionWithCustomTimeoutWithoutConfiguredDefault()
     {
         GraphDatabaseAPI database = startDatabaseWithoutTimeout();
-        try ( Transaction transaction = database.beginTx( TimeUnit.SECONDS.toMillis( 27 ) ) )
+        try ( Transaction transaction = database.beginTx( 27, TimeUnit.SECONDS ) )
         {
             clock.forward( 26, TimeUnit.SECONDS );
             database.createNode();
             transaction.failure();
         }
 
-        try ( Transaction transaction = database.beginTx( TimeUnit.SECONDS.toMillis( 27 ) ) )
+        try ( Transaction transaction = database.beginTx( 27, TimeUnit.SECONDS ) )
         {
             clock.forward( 28, TimeUnit.SECONDS );
             database.createNode();
@@ -186,14 +186,14 @@ public class TransactionGuardIntegrationTest
     public void terminateLongRunningQueryWithCustomTimeoutWithoutConfiguredDefault()
     {
         GraphDatabaseAPI database = startDatabaseWithoutTimeout();
-        try ( Transaction transaction = database.beginTx( TimeUnit.SECONDS.toMillis( 5 ) ) )
+        try ( Transaction transaction = database.beginTx( 5, TimeUnit.SECONDS ) )
         {
             clock.forward( 4, TimeUnit.SECONDS );
             database.execute( "create (n)" );
             transaction.failure();
         }
 
-        try ( Transaction transaction = database.beginTx( TimeUnit.SECONDS.toMillis( 6 ) ) )
+        try ( Transaction transaction = database.beginTx( 6, TimeUnit.SECONDS ) )
         {
             clock.forward( 7, TimeUnit.SECONDS );
             transaction.success();

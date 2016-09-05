@@ -105,9 +105,9 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public Transaction beginTx( long timeout )
+    public Transaction beginTx( long timeout, TimeUnit unit )
     {
-        return actual.beginTx( timeout );
+        return actual.beginTx( timeout, unit );
     }
 
     @Override
@@ -117,9 +117,9 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public Result execute( String query, long timeout ) throws QueryExecutionException
+    public Result execute( String query, long timeout, TimeUnit unit ) throws QueryExecutionException
     {
-        return execute( query, Collections.emptyMap(), timeout );
+        return execute( query, Collections.emptyMap(), timeout, unit );
     }
 
     @Override
@@ -129,7 +129,8 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public Result execute( String query, Map<String,Object> parameters, long timeout ) throws QueryExecutionException
+    public Result execute( String query, Map<String,Object> parameters, long timeout, TimeUnit unit ) throws
+            QueryExecutionException
     {
         return readOnly();
     }

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.javacompat.internal;
 
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -80,9 +81,9 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
 
     @Override
     public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode,
-            long timeout )
+            long timeout, TimeUnit unit )
     {
-        return graph.beginTransaction( type, accessMode, timeout );
+        return graph.beginTransaction( type, accessMode, timeout, unit );
     }
 
     @Override

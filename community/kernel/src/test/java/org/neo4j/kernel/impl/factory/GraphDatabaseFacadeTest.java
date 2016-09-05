@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -62,7 +63,7 @@ public class GraphDatabaseFacadeTest
     @Test
     public void beginTransactionWithCustomTimeout() throws Exception
     {
-        graphDatabaseFacade.beginTx( 10L );
+        graphDatabaseFacade.beginTx( 10, TimeUnit.MILLISECONDS );
 
         verify( spi ).beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL, 10L );
     }
@@ -78,11 +79,13 @@ public class GraphDatabaseFacadeTest
     @Test
     public void executeQueryWithCustomTimeoutShouldStartTransactionWithRequestedTimeout()
     {
-        graphDatabaseFacade.execute( "create (n)", 157L );
-        verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL, 157L );
+        graphDatabaseFacade.execute( "create (n)", 157L, TimeUnit.SECONDS );
+        verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL,
+                TimeUnit.SECONDS.toMillis( 157L ) );
 
-        graphDatabaseFacade.execute( "create (n)", new HashMap<>(), 247L );
-        verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL, 247L );
+        graphDatabaseFacade.execute( "create (n)", new HashMap<>(), 247L, TimeUnit.MINUTES );
+        verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL,
+                TimeUnit.MINUTES.toMillis( 247L ) );
     }
 
     @Test

@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -115,7 +117,7 @@ class TransitionalTxManagementKernelTransaction
 
     private InternalTransaction startTransaction()
     {
-        return customTransactionTimeout > 0 ? db.beginTransaction( type, mode, customTransactionTimeout ) :
+        return customTransactionTimeout > 0 ? db.beginTransaction( type, mode, customTransactionTimeout, TimeUnit.MILLISECONDS ) :
                                             db.beginTransaction( type, mode );
     }
 }

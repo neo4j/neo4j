@@ -20,6 +20,7 @@
 package org.neo4j.server.database;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
@@ -95,7 +96,8 @@ public class CypherExecutor extends LifecycleAdapter
 
     private InternalTransaction beginCustomTransaction( long customTimeout )
     {
-        return service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL, customTimeout );
+        return service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL,
+                customTimeout, TimeUnit.MILLISECONDS );
     }
 
     private InternalTransaction beginDefaultTransaction()

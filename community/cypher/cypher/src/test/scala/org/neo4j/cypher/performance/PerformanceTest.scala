@@ -21,6 +21,7 @@ package org.neo4j.cypher.performance
 
 import java.io.File
 import java.util.Collections
+import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
@@ -66,7 +67,7 @@ class PerformanceTest extends CypherFunSuite {
     val t0: Double = System.nanoTime
 
     val result = db.execute("start a=node({root}) match a-->b-->c, b-->d return a,count(*)",
-      Collections.singletonMap("root", startPoints), 0)
+      Collections.singletonMap("root", startPoints), 0, TimeUnit.MILLISECONDS )
     result.resultAsString()
     result.close()
 

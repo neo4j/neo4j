@@ -20,6 +20,7 @@
 package org.neo4j.kernel;
 
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
@@ -60,10 +61,12 @@ public interface GraphDatabaseQueryService
      *
      * @param type transaction type
      * @param accessMode transaction access mode
-     * @param timeout transaction timeout in milliseconds
+     * @param timeout transaction timeout
+     * @param unit time unit of timeout argument
      * @return internal transaction
      */
-    InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout );
+    InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout,
+            TimeUnit unit);
 
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
 }

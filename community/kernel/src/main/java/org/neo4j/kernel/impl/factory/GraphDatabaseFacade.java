@@ -23,6 +23,7 @@ import java.io.File;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -344,9 +345,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
-    public Transaction beginTx( long timeout )
+    public Transaction beginTx( long timeout, TimeUnit unit )
     {
-        return beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL, timeout );
+        return beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL, timeout, unit );
     }
 
     public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
@@ -355,9 +356,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode,
-            long timeout )
+            long timeout, TimeUnit unit )
     {
-        return beginTransaction( () -> spi.beginTransaction( type, accessMode, timeout ) );
+        return beginTransaction( () -> spi.beginTransaction( type, accessMode, unit.toMillis( timeout ) ) );
     }
 
     @Override
@@ -367,9 +368,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
-    public Result execute( String query, long timeout ) throws QueryExecutionException
+    public Result execute( String query, long timeout, TimeUnit unit ) throws QueryExecutionException
     {
-        return execute( query, Collections.emptyMap(), timeout );
+        return execute( query, Collections.emptyMap(), timeout, unit );
     }
 
     @Override
@@ -381,9 +382,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
-    public Result execute( String query, Map<String,Object> parameters, long timeout ) throws QueryExecutionException
+    public Result execute( String query, Map<String,Object> parameters, long timeout, TimeUnit unit ) throws
+            QueryExecutionException
     {
-        InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL, timeout );
+        InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL,
+                timeout, unit );
         return execute( transaction, query, parameters );
     }
 

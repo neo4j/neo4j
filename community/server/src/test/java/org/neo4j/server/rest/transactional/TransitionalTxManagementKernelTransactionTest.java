@@ -21,6 +21,8 @@ package org.neo4j.server.rest.transactional;
 
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -46,7 +48,7 @@ public class TransitionalTxManagementKernelTransactionTest
 
         managementKernelTransaction.reopenAfterPeriodicCommit();
 
-        verify( databaseFacade, times( 2 ) ).beginTransaction( type, accessMode, 10);
+        verify( databaseFacade, times( 2 ) ).beginTransaction( type, accessMode, 10, TimeUnit.MILLISECONDS);
     }
 
     @Test

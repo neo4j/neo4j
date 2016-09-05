@@ -22,6 +22,7 @@ package org.neo4j.server.rest.transactional;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -61,13 +62,13 @@ public class TransitionalPeriodTransactionMessContainerTest
     @Test
     public void startTransactionWithCustomTimeout() throws Exception
     {
-        when( databaseFacade.beginTransaction( type, accessMode, 10 ) ).thenReturn( internalTransaction );
+        when( databaseFacade.beginTransaction( type, accessMode, 10, TimeUnit.SECONDS ) ).thenReturn( internalTransaction );
 
         TransitionalPeriodTransactionMessContainer transactionMessContainer =
                 new TransitionalPeriodTransactionMessContainer( databaseFacade );
         transactionMessContainer.create( queryService, type, accessMode, 10, request );
 
-        verify( databaseFacade ).beginTransaction( type, accessMode, 10 );
+        verify( databaseFacade ).beginTransaction( type, accessMode, 10, TimeUnit.SECONDS );
     }
 
     @Test

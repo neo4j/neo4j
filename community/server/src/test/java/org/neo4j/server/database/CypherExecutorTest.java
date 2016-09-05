@@ -22,6 +22,7 @@ package org.neo4j.server.database;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
@@ -89,7 +90,7 @@ public class CypherExecutorTest
         cypherExecutor.createSession( request );
 
         verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL,
-                CUSTOM_TRANSACTION_TIMEOUT );
+                CUSTOM_TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -157,7 +158,7 @@ public class CypherExecutorTest
         when( databaseQueryService.beginTransaction( type, accessMode ) )
                 .thenReturn( transaction );
         when( databaseQueryService.beginTransaction( type, accessMode,
-                CUSTOM_TRANSACTION_TIMEOUT ) ).thenReturn( transaction );
+                CUSTOM_TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS ) ).thenReturn( transaction );
         when( databaseQueryService.getDependencyResolver() ).thenReturn( dependencyResolver );
     }
 
