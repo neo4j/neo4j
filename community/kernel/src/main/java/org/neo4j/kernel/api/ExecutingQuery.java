@@ -36,11 +36,11 @@ public class ExecutingQuery
     private final long startTime;
 
     public ExecutingQuery(
-            long queryId,
-            String authSubjectName,
-            String queryText,
-            Map<String,Object> queryParameters,
-            long startTime
+        long queryId,
+        String authSubjectName,
+        String queryText,
+        Map<String,Object> queryParameters,
+        long startTime
     )
     {
         this.queryId = queryId;
@@ -103,7 +103,7 @@ public class ExecutingQuery
     public String toString()
     {
         return format(
-                "ExecutingQuery{queryId=%d, authSubjectName='%s', queryText='%s', queryParameters=%s, startTime=%d}",
-                queryId, authSubjectName, queryText, queryParameters, startTime );
+            "ExecutingQuery{queryId=%d, authSubjectName='%s', queryText='%s', queryParameters=%s, startTime=%d}",
+            queryId, authSubjectName, queryText, queryParameters, startTime );
     }
 }

@@ -46,31 +46,37 @@ public class DoubleLatch
         this.awaitUninterruptibly = awaitUninterruptibly;
     }
 
+    public void startAndWaitForAllToStartAndFinish()
+    {
+        startAndWaitForAllToStart();
+        waitForAllToFinish();
+    }
+
+    public void startAndWaitForAllToStart()
+    {
+        start();
+        waitForAllToStart();
+    }
+
+    public void start()
+    {
+        startSignal.countDown();
+    }
+
     public void waitForAllToStart()
     {
         awaitLatch( startSignal, awaitUninterruptibly );
     }
 
-    public void startAndWaitForAllToStart()
+    public void finishAndWaitForAllToFinish()
     {
-        startSignal.countDown();
-        awaitLatch( startSignal, awaitUninterruptibly );
-    }
-
-    public void startAndWaitForAllToStartAndFinish()
-    {
-        startAndWaitForAllToStart();
-        awaitLatch( finishSignal, awaitUninterruptibly );
+        finish();
+        waitForAllToFinish();
     }
 
     public void finish()
     {
         finishSignal.countDown();
-    }
-
-    public void finishAndWaitForAllToFinish()
-    {
-        waitForAllToFinish();
     }
 
     public void waitForAllToFinish()
@@ -86,17 +92,22 @@ public class DoubleLatch
     public static void awaitLatch( CountDownLatch latch, boolean uninterruptedWaiting )
     {
         long now = System.currentTimeMillis();
-        long deadline = now + FIVE_MINUTES;
+        long deadline = System.currentTimeMillis() + FIVE_MINUTES;
 
         while ( now < deadline )
         {
             try
             {
 
-                long waitingTime = Math.min( Math.max(0, deadline - now), 1000L );
-                latch.await( waitingTime, TimeUnit.MILLISECONDS );
-                Thread.yield();
-                return;
+                long waitingTime = Math.min( Math.max(0, deadline - now), 5000L );
+                if ( latch.await( waitingTime, TimeUnit.MILLISECONDS ) )
+                {
+                    return;
+                }
+                else
+                {
+                    Thread.yield();
+                }
             }
             catch ( InterruptedException e )
             {

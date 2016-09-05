@@ -23,12 +23,16 @@ import java.time.Clock;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -201,6 +205,42 @@ public class KernelTransactions extends LifecycleAdapter
     }
 
     /**
+<<<<<<< 02d875ee756f43722fd716311ab1036e685b081d
+=======
+     * Give an approximate set of all transactions currently running together with associated metadata as
+     * computed by the provided selector function.
+     * This is not guaranteed to be exact, as transactions may stop and start while this set is gathered.
+     *
+     * @return the (approximate) set of open transactions.
+     */
+    public <T> Set<Pair<KernelTransactionHandle, T>> activeTransactions(
+            Function<KernelTransactionHandle,Stream<T>> selector
+    )
+    {
+        return allTransactions.stream()
+                .map( this::createHandle )
+                .filter( KernelTransactionHandle::isOpen )
+                .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) )
+                .collect( toSet() );
+    }
+
+    /**
+     * Give an approximate set of all currently executing queries.
+     * This is not guaranteed to be exact, as a query may stop and start while this set is gathered, or even
+     * switch the transaction used (in case of PERIODIC COMMIT).
+     *
+     * @return the (approximate) set of currently executing 209.
+     */
+    public Set<ExecutingQuery> executingQueries() {
+        return allTransactions.stream()
+                .map( this::createHandle )
+                .filter( KernelTransactionHandle::isOpen )
+                .flatMap( KernelTransactionHandle::executingQueries )
+                .collect( toSet() );
+    }
+
+    /**
+>>>>>>> Add procedure for terminating queries
      * Create new handle for the given transaction.
      * <p>
      * <b>Note:</b> this method is package-private for testing <b>only</b>.

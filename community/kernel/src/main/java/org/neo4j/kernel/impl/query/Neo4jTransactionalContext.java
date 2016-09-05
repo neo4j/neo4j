@@ -153,22 +153,39 @@ public class Neo4jTransactionalContext implements TransactionalContext
         * creating a new one. And then we need to do that thread switching again to close the old transaction.
         */
 
+        // (1) Unbind current transaction
         QueryRegistryOperations oldQueryRegistryOperations = statement.queryRegistration();
         InternalTransaction oldTransaction = transaction;
         KernelTransaction oldKernelTx = txBridge.getKernelTransactionBoundToThisThread( true );
         txBridge.unbindTransactionFromCurrentThread();
 
+        // (2) Create, bind, register, and unbind new transaction
         transaction = graph.beginTransaction( transactionType, mode );
         statement = txBridge.get();
         statement.queryRegistration().registerExecutingQuery( executingQuery );
         KernelTransaction kernelTx = txBridge.getKernelTransactionBoundToThisThread( true );
         txBridge.unbindTransactionFromCurrentThread();
 
+        // (3) Rebind old transaction just to commit and close it (and unregister as a side effect of that)
         txBridge.bindTransactionToCurrentThread( oldKernelTx );
         oldQueryRegistryOperations.unregisterExecutingQuery( executingQuery );
-        oldTransaction.success();
-        oldTransaction.close();
+        try
+        {
+            oldTransaction.success();
+            oldTransaction.close();
+        }
+        catch ( Throwable t )
+        {
+            // Corner case: The old transaction might have been terminated by the user. Now we also need to
+            // terminate the new transaction.
+            txBridge.bindTransactionToCurrentThread( kernelTx );
+            transaction.failure();
+            transaction.close();
+            txBridge.unbindTransactionFromCurrentThread();
+            throw t;
+        }
 
+        // (4) Unbind the now closed old transaction and rebind the new transaction for continued execution
         txBridge.unbindTransactionFromCurrentThread();
         txBridge.bindTransactionToCurrentThread( kernelTx );
     }

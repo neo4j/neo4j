@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -135,6 +136,36 @@ public class BuiltInProcedures
             .flatMap( KernelTransactionHandle::executingQueries )
             .filter( ( query ) -> isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.authSubjectName() ) )
             .map( this::queryStatusResult );
+    }
+
+    @Procedure( name = "dbms.terminateQuery", mode = DBMS )
+    public Stream<QueryTerminationResult> terminateQuery( @Name( "id" ) long id )
+            throws InvalidArgumentsException, IOException
+    {
+        Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
+            getKernelTransactions().activeTransactions( tx -> executingQueriesWithId( id, tx ) );
+        return executingQueries
+            .stream()
+            .map(this::terminateQueryTransaction);
+    }
+
+    private Stream<ExecutingQuery> executingQueriesWithId( long id, KernelTransactionHandle txHandle )
+    {
+        return txHandle.executingQueries().filter( q -> q.queryId() == id );
+    }
+
+    private QueryTerminationResult terminateQueryTransaction( Pair<KernelTransactionHandle, ExecutingQuery> pair )
+    {
+        ExecutingQuery query = pair.other();
+        if ( isAdminEnterpriseAuthSubject() || authSubject.hasUsername( query.authSubjectName() ) )
+        {
+            pair.first().markForTermination( Status.Transaction.Terminated );
+            return new QueryTerminationResult( query.queryId(), query.authSubjectName() );
+        }
+        else
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
     }
 
     private KernelTransactions getKernelTransactions()
@@ -300,6 +331,18 @@ public class BuiltInProcedures
         {
             this.username = username;
             this.transactionsTerminated = transactionsTerminated;
+        }
+    }
+
+    public static class QueryTerminationResult
+    {
+        public final Long queryId;
+        public final String username;
+
+        public QueryTerminationResult( Long queryId, String username )
+        {
+            this.queryId = queryId;
+            this.username = username;
         }
     }
 
