@@ -53,5 +53,17 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                 }
             }
         } );
+        add( new SpecificPropertyMigration("unsupported.dbms.executiontime_limit.time",
+                "unsupported.dbms.executiontime_limit.time has been replaced with dbms.transaction.timeout.")
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+            {
+                if ( StringUtils.isNotEmpty( value ) )
+                {
+                    rawConfiguration.putIfAbsent( GraphDatabaseSettings.transaction_timeout.name(), value );
+                }
+            }
+        } );
     }
 }

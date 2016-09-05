@@ -40,10 +40,10 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.web.ServerQuerySession;
 
+import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
+
 public class CypherExecutor extends LifecycleAdapter
 {
-    static final String MAX_EXECUTION_TIME_HEADER = "max-execution-time";
-
     private final Database database;
     private ExecutionEngine executionEngine;
     private GraphDatabaseQueryService service;
@@ -93,7 +93,7 @@ public class CypherExecutor extends LifecycleAdapter
     {
         if ( guardEnabled )
         {
-            long customTimeout = getTransactionTimeLimit( request );
+            long customTimeout = getTransactionTimeout( request, log );
             if ( customTimeout > 0 )
             {
                 return beginCustomTransaction( customTimeout );
@@ -110,23 +110,5 @@ public class CypherExecutor extends LifecycleAdapter
     private InternalTransaction beginDefaultTransaction()
     {
         return service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
-    }
-
-    private long getTransactionTimeLimit( HttpServletRequest request )
-    {
-        String headerValue = request.getHeader( MAX_EXECUTION_TIME_HEADER );
-        if ( headerValue != null )
-        {
-            try
-            {
-                return Long.parseLong( headerValue );
-            }
-            catch ( NumberFormatException e )
-            {
-                log.error( String.format( "Fail to parse `%s` header with value: '%s'. Should be a positive number.",
-                        MAX_EXECUTION_TIME_HEADER, headerValue), e );
-            }
-        }
-        return -1;
     }
 }

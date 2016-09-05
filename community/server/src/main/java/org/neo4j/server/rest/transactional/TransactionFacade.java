@@ -65,10 +65,11 @@ public class TransactionFacade
         this.logProvider = logProvider;
     }
 
-    public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction, AccessMode mode )
-            throws TransactionLifecycleException
+    public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction,
+            AccessMode mode, long customTransactionTimeout ) throws TransactionLifecycleException
     {
-        return new TransactionHandle( kernel, engine, registry, uriScheme, implicitTransaction, mode, logProvider );
+        return new TransactionHandle( kernel, engine, registry, uriScheme, implicitTransaction, mode,
+                customTransactionTimeout, logProvider );
     }
 
     public TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException
