@@ -66,12 +66,16 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
      * such that future calls to {@link #harden()} cannot affect any reference received
      * from {@link #cement()} prior to this call.
      * @param delegate the new delegate to set.
+     *
+     * @return the old delegate
      */
-    public void setDelegate( T delegate )
+    public T setDelegate( T delegate )
     {
+        T oldDelegate = this.delegate;
         this.delegate = delegate;
         harden();
         concrete.invalidate();
+        return oldDelegate;
     }
 
     /**
