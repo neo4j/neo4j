@@ -122,15 +122,6 @@ public @interface Function
     String name() default "";
 
     /**
-     * A function is associated with one of the following modes
-     *      READ    allows only reading the graph (default mode)
-     *      WRITE   allows reading and writing the graph
-     *      SCHEMA  allows reading the graphs and performing schema operations
-     *      DBMS    allows managing the database (i.e. change password)
-     */
-    Mode mode() default Mode.DEFAULT;
-
-    /**
      * When deprecating a function it is useful to indicate a possible
      * replacement procedure that clients might show in warnings
      */
@@ -145,5 +136,4 @@ public @interface Function
      * @return an array of role names whose users are allowed to execute this function.
      */
     String[] allowed() default {};
-
 }

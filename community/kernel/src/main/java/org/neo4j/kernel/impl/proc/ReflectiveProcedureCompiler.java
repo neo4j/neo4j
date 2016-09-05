@@ -203,14 +203,12 @@ public class ReflectiveProcedureCompiler
 
         Optional<String> description = description( method );
         Function function = method.getAnnotation( Function.class );
-        Mode mode = mode( function.mode() );
 
         Optional<String> deprecated = deprecated( method, function::deprecatedBy,
                 "Use of @Function(deprecatedBy) without @Deprecated in " + procName );
 
         FunctionSignature signature =
-                new FunctionSignature( procName, inputSignature, valueConverter.type(),
-                        mode, deprecated, function.allowed(), description );
+                new FunctionSignature( procName, inputSignature, valueConverter.type(), deprecated, function.allowed(), description );
 
         return new ReflectiveFunction( signature, constructor, procedureMethod, valueConverter, setters );
     }

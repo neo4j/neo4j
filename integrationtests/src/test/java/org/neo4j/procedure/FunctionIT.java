@@ -76,7 +76,6 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.procedure.Mode.SCHEMA;
 import static org.neo4j.procedure.Mode.WRITE;
 
 public class FunctionIT
@@ -317,38 +316,6 @@ public class FunctionIT
     }
 
     @Test
-    public void shouldAllowWriteFunctionToPerformWrites() throws Throwable
-    {
-        // When
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.execute( "RETURN org.neo4j.procedure.writingFunction()" ).next();
-            tx.success();
-        }
-
-        // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertEquals( 1, db.getAllNodes().stream().count() );
-            tx.success();
-        }
-    }
-
-    @Test
-    public void shouldNotBeAbleToCallWriteFunctionThroughReadFunction() throws Throwable
-    {
-        // Expect
-        exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Write operations are not allowed" );
-
-        // When
-        try ( Transaction ignore = db.beginTx() )
-        {
-            db.execute( "RETURN org.neo4j.procedure.readOnlyCallingWriteFunction()" ).next();
-        }
-    }
-
-    @Test
     public void shouldNotBeAbleToCallWriteProcedureThroughReadFunction() throws Throwable
     {
         // Expect
@@ -359,74 +326,6 @@ public class FunctionIT
         try ( Transaction ignore = db.beginTx() )
         {
             db.execute( "RETURN org.neo4j.procedure.readOnlyCallingWriteProcedure()" ).next();
-        }
-    }
-
-    @Test
-    public void shouldNotBeAbleToCallReadFunctionThroughWriteFunctionInWriteOnlyTransaction() throws Throwable
-    {
-        // Expect
-        exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Read operations are not allowed" );
-
-        GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
-
-        // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE_ONLY ) )
-        {
-            db.execute( "RETURN org.neo4j.procedure.writeFunctionCallingReadFunction()" ).next();
-        }
-    }
-
-    @Test
-    public void shouldBeAbleToCallWriteFunctionThroughWriteFunction() throws Throwable
-    {
-        // When
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.execute( "RETURN org.neo4j.procedure.writeFunctionCallingWriteFunction()" ).next();
-            tx.success();
-        }
-
-        // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertEquals( 1, db.getAllNodes().stream().count() );
-            tx.success();
-        }
-    }
-
-    @Test
-    public void shouldBeAbleToCallWriteProcedureThroughWriteFunction() throws Throwable
-    {
-        // When
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.execute( "RETURN org.neo4j.procedure.writeFunctionCallingWriteProcedure()" ).next();
-            tx.success();
-        }
-
-        // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertEquals( 1, db.getAllNodes().stream().count() );
-            tx.success();
-        }
-    }
-
-    @Test
-    public void shouldNotBeAbleToCallSchemaFunctionThroughWriteFunctionInWriteTransaction() throws Throwable
-    {
-        // Expect
-        exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Schema operations are not allowed" );
-
-        GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
-
-        // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE ) )
-        {
-            db.execute( "RETURN org.neo4j.procedure.writeFunctionCallingSchemaFunction()" ).next();
         }
     }
 
@@ -442,79 +341,6 @@ public class FunctionIT
         {
             // When
             db.execute( "RETURN org.neo4j.procedure.readOnlyTryingToWriteSchema()" ).next();
-        }
-    }
-
-    @Test
-    public void shouldDenyReadWriteFunctionToPerformSchema() throws Throwable
-    {
-        // Expect
-        exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Cannot perform schema updates in a transaction that has performed data updates" );
-
-        // Give
-        try ( Transaction ignore = db.beginTx() )
-        {
-            // When
-            db.execute( "RETURN org.neo4j.procedure.readWriteTryingToWriteSchema()" ).next();
-        }
-    }
-
-    @Test
-    public void shouldAllowSchemaFunctionToPerformSchema() throws Throwable
-    {
-        // Give
-        try ( Transaction tx = db.beginTx() )
-        {
-            // When
-            db.execute( "RETURN org.neo4j.procedure.schemaFunction()" ).next();
-            tx.success();
-        }
-
-        // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertTrue( db.schema().getConstraints().iterator().hasNext() );
-            tx.success();
-        }
-    }
-
-    @Test
-    public void shouldAllowSchemaCallReadOnly() throws Throwable
-    {
-        // Given
-        long nodeId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            nodeId = db.createNode().getId();
-            tx.success();
-        }
-
-        try ( Transaction ignore = db.beginTx() )
-        {
-            // When
-            Result res = db.execute( "RETURN org.neo4j.procedure.schemaCallReadFunction({id}) AS node",
-                    map( "id", nodeId ) );
-
-            // Then
-            Node node = (Node) res.next().get( "node" );
-            assertThat( node.getId(), equalTo( nodeId ) );
-            assertFalse( res.hasNext() );
-        }
-    }
-
-    @Test
-    public void shouldDenySchemaFunctionToPerformWrite() throws Throwable
-    {
-        // Expect
-        exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Cannot perform data updates in a transaction that has performed schema updates" );
-
-        // Give
-        try ( Transaction ignore = db.beginTx() )
-        {
-            // When
-            db.execute( "RETURN org.neo4j.procedure.schemaTryingToWrite()" ).next();
         }
     }
 
@@ -676,16 +502,16 @@ public class FunctionIT
         //WHEN
         Result result = db.execute( "USING PERIODIC COMMIT 1 " +
                                     "LOAD CSV FROM '" + url + "' AS line " +
-                                    "WITH org.neo4j.procedure.createNode(line[0]) AS n " +
+                                    "CREATE (n {prop: org.neo4j.procedure.simpleArgument(toInt(line[0]))}) " +
                                     "RETURN n.prop" );
         // THEN
-        for ( int i = 1; i <= 100; i++ )
+        for ( long i = 1; i <= 100L; i++ )
         {
-            assertThat( result.next().get( "n.prop" ), equalTo( Integer.toString( i ) ) );
+            assertThat( result.next().get( "n.prop" ), equalTo( i  ) );
         }
 
         //Make sure all the lines has been properly commited to the database.
-        String[] dbContents = db.execute( "MATCH (n) return n.prop" ).stream().map( m -> (String) m.get( "n.prop" ) )
+        String[] dbContents = db.execute( "MATCH (n) return n.prop" ).stream().map( m -> Long.toString( (long) m.get( "n.prop" ) ))
                 .toArray( String[]::new );
         assertThat( dbContents, equalTo( lines ) );
     }
@@ -705,22 +531,6 @@ public class FunctionIT
                     "LOAD CSV FROM '" + url + "' AS line " +
                     "WITH org.neo4j.procedure.simpleArgument(toInt(line[0])) AS val " +
                     "RETURN val" );
-    }
-
-    @Test
-    public void shouldBeAbleToUseCallYieldWithLoadCsvAndSet() throws IOException
-    {
-        // GIVEN
-        String url = createCsvFile( "foo" );
-
-        //WHEN
-        Result result = db.execute(
-                "LOAD CSV FROM '" + url + "' AS line " +
-                "WITH org.neo4j.procedure.createNode(line[0]) AS n " +
-                "SET n.p = 42 " +
-                "RETURN n.p" );
-        // THEN
-        assertThat( result.next().get( "n.p" ), equalTo( 42L ) );
     }
 
     @Test
@@ -761,19 +571,6 @@ public class FunctionIT
         }
 
         return file.toURI().toURL().toString();
-    }
-
-    @Test
-    public void shouldReturnNodeListTypedAsNodeList()
-    {
-        // When
-        Result res = db.execute(
-                "WITH org.neo4j.procedure.nodeList() AS nodes RETURN extract( x IN nodes | id(x) ) as ids" );
-
-        // Then
-        assertTrue( res.hasNext() );
-        assertThat( ((List<?>) res.next().get( "ids" )).size(), equalTo( 2 ) );
-        assertFalse( res.hasNext() );
     }
 
     @Test
@@ -822,40 +619,6 @@ public class FunctionIT
         try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.NONE ) )
         {
             db.execute( "RETURN org.neo4j.procedure.integrationTestMe()" ).next();
-            tx.success();
-        }
-    }
-
-    @Test
-    public void shouldNotAllowWriteFunctionInReadOnlyTransaction() throws Throwable
-    {
-        // Expect
-        exception.expect( AuthorizationViolationException.class );
-        exception.expectMessage( "Write operations are not allowed" );
-
-        GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
-
-        // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.READ ) )
-        {
-            db.execute( "RETURN org.neo4j.procedure.writingFunction()" ).next();
-            tx.success();
-        }
-    }
-
-    @Test
-    public void shouldNotAllowSchemaWriteFunctionInWriteTransaction() throws Throwable
-    {
-        // Expect
-        exception.expect( AuthorizationViolationException.class );
-        exception.expectMessage( "Schema operations are not allowed" );
-
-        GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
-
-        // When
-        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE ) )
-        {
-            db.execute( "RETURN org.neo4j.procedure.schemaFunction()" ).next();
             tx.success();
         }
     }
@@ -956,16 +719,6 @@ public class FunctionIT
             return value * value;
         }
 
-        @Function( mode = WRITE )
-        public List<Node> nodeList()
-        {
-            List<Node> nodesList = new ArrayList<>();
-            nodesList.add( db.createNode() );
-            nodesList.add( db.createNode() );
-
-            return nodesList;
-        }
-
         @Function
         public double avgNumberList( List<Number> list )
         {
@@ -1023,20 +776,6 @@ public class FunctionIT
             return db.createNode();
         }
 
-        @Function( mode = WRITE )
-        public Node writingFunction()
-        {
-            return db.createNode();
-        }
-
-        @Function( mode = WRITE )
-        public Node createNode(String value )
-        {
-            Node node = db.createNode();
-            node.setProperty( "prop", value );
-          return  node;
-        }
-
         @Function
         public Node readOnlyCallingWriteFunction()
         {
@@ -1056,32 +795,6 @@ public class FunctionIT
             db.createNode();
         }
 
-        @Function( mode = WRITE )
-        public Node writeFunctionCallingWriteFunction()
-        {
-            return (Node) db.execute( "RETURN org.neo4j.procedure.writingFunction() AS node" ).next().get("node");
-        }
-
-        @Function( mode = WRITE )
-        public long writeFunctionCallingWriteProcedure()
-        {
-            db.execute( "CALL org.neo4j.procedure.writingProcedure()" );
-            return 1337L;
-        }
-
-        @Function( mode = WRITE )
-        public long writeFunctionCallingReadFunction()
-        {
-            return (long) db.execute( "RETURN org.neo4j.procedure.integrationTestMe() AS result" ).next()
-                    .get( "result" );
-        }
-
-        @Function( mode = WRITE )
-        public String writeFunctionCallingSchemaFunction()
-        {
-            return (String) db.execute( "RETURN  org.neo4j.procedure.schemaFunction() AS result" ).next().get("result");
-        }
-
         @Function
         public String shutdown()
         {
@@ -1089,7 +802,7 @@ public class FunctionIT
             return "oh no!";
         }
 
-        @Function( mode = WRITE )
+        @Function
         public String unsupportedFunction()
         {
             jobs.submit( () -> {
@@ -1117,7 +830,7 @@ public class FunctionIT
         }
 
         @Description( "This is a description" )
-        @Function( mode = WRITE )
+        @Function
         public Node nodeWithDescription( Node node )
         {
             return node;
@@ -1128,33 +841,6 @@ public class FunctionIT
         {
             db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
             return "done";
-        }
-
-        @Function( mode = WRITE )
-        public String readWriteTryingToWriteSchema()
-        {
-            db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
-            return "done";
-        }
-
-        @Function( mode = SCHEMA )
-        public String schemaFunction()
-        {
-            db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
-            return "done";
-        }
-
-        @Function( mode = SCHEMA )
-        public Node schemaCallReadFunction( long id )
-        {
-            return (Node) db.execute( "RETURN org.neo4j.procedure.node(" + id + ") AS node" ).next().get( "node" );
-        }
-
-        @Function( mode = SCHEMA )
-        public Node schemaTryingToWrite()
-        {
-            db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
-            return db.createNode();
         }
     }
 

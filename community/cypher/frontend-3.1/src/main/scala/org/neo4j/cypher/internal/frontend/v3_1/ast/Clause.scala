@@ -292,13 +292,10 @@ case class Unwind(expression: Expression, variable: Variable)(val position: Inpu
     }
 }
 
-trait UserDefined {
-  def containsNoUpdates: Boolean
-}
-
-abstract class CallClause extends Clause with UserDefined {
+abstract class CallClause extends Clause {
   override def name = "CALL"
   def returnColumns: List[String]
+  def containsNoUpdates: Boolean
 }
 
 case class UnresolvedCall(procedureNamespace: Namespace,

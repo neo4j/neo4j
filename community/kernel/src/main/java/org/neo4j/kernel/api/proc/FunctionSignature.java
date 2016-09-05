@@ -38,7 +38,6 @@ public class FunctionSignature
     private final QualifiedName name;
     private final List<Neo4jTypes.AnyType> inputSignature;
     private final Neo4jTypes.AnyType type;
-    private final Mode mode;
     private final String[] allowed;
     private final Optional<String> deprecated;
     private final Optional<String> description;
@@ -46,7 +45,6 @@ public class FunctionSignature
     public FunctionSignature( QualifiedName name,
             List<Neo4jTypes.AnyType> inputSignature,
             Neo4jTypes.AnyType type,
-            Mode mode,
             Optional<String> deprecated,
             String[] allowed,
             Optional<String> description )
@@ -54,7 +52,6 @@ public class FunctionSignature
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
         this.type = type;
-        this.mode = mode;
         this.deprecated = deprecated;
         this.description = description;
         this.allowed = allowed;
@@ -63,11 +60,6 @@ public class FunctionSignature
     public QualifiedName name()
     {
         return name;
-    }
-
-    public Mode mode()
-    {
-        return mode;
     }
 
     public Optional<String> deprecated()
@@ -125,7 +117,6 @@ public class FunctionSignature
         private final QualifiedName name;
         private final List<Neo4jTypes.AnyType> inputSignature = new LinkedList<>();
         private Neo4jTypes.AnyType outputType;
-        private Mode mode = Mode.READ_ONLY;
         private String[] allowed = new String[0];
         private Optional<String> deprecated = Optional.empty();
         private Optional<String> description = Optional.empty();
@@ -133,12 +124,6 @@ public class FunctionSignature
         public Builder( String[] namespace, String name )
         {
             this.name = new QualifiedName( namespace, name );
-        }
-
-        public Builder mode( Mode mode )
-        {
-            this.mode = mode;
-            return this;
         }
 
         public Builder description(String description)
@@ -179,7 +164,7 @@ public class FunctionSignature
             {
                 throw new IllegalStateException( "output type must be set" );
             }
-            return new FunctionSignature(name, inputSignature, outputType, mode, deprecated, allowed, description );
+            return new FunctionSignature(name, inputSignature, outputType, deprecated, allowed, description );
         }
     }
 

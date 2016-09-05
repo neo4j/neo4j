@@ -49,7 +49,7 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
                                       fcnSignature: Option[UserDefinedFunctionSignature],
                                       callArguments: IndexedSeq[Expression])
                                      (val position: InputPosition)
-  extends Expression with UserDefined {
+  extends Expression {
 
   def coerceArguments: ResolvedFunctionInvocation = fcnSignature match {
     case Some(signature) =>
@@ -81,13 +81,5 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
               SemanticError(s"Function call does not provide the required number of arguments ($expectedNumArgs)",
                             position))
       }
-  }
-
-  override def containsNoUpdates = fcnSignature match {
-    case None => true
-    case Some(signature) => signature.accessMode match {
-      case _: ProcedureReadOnlyAccess => true
-      case _ => false
-    }
   }
 }
