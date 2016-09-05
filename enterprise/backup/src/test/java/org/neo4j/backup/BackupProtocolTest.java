@@ -76,7 +76,7 @@ public class BackupProtocolTest
         LifeSupport life = new LifeSupport();
 
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-        BackupClient client = life.add( new BackupClient( host, port, null, NullLogProvider.getInstance(), storeId, 1000,
+        BackupClient client = life.add( new BackupClient( host, port, null, NullLogProvider.getInstance(), storeId, 10_000,
                 mock( ResponseUnpacker.class ), mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ), reader ) );
         ControlledBackupInterface backup = new ControlledBackupInterface();
         life.add( new BackupServer( backup, new HostnamePort( host, port ), NullLogProvider.getInstance(), mock( ByteCounterMonitor.class ),
