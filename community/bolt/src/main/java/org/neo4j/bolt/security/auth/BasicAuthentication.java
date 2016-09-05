@@ -34,7 +34,6 @@ import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.api.security.AuthToken.NEW_CREDENTIALS;
 import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
-import static org.neo4j.kernel.api.security.AuthToken.SCHEME_KEY;
 
 /**
  * Performs basic authentication with user name and password.
@@ -42,7 +41,6 @@ import static org.neo4j.kernel.api.security.AuthToken.SCHEME_KEY;
 public class BasicAuthentication implements Authentication
 {
     private final AuthManager authManager;
-    private static final String SCHEME = "basic";
     private final Log log;
 
     public BasicAuthentication( AuthManager authManager, LogProvider logProvider )
@@ -54,7 +52,7 @@ public class BasicAuthentication implements Authentication
     @Override
     public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
     {
-        if ( !SCHEME.equals( authToken.get( SCHEME_KEY ) ) )
+        if ( !authManager.supports( authToken ) )
         {
             throw new AuthenticationException( Status.Security.Unauthorized, "Missing username and password" );
         }

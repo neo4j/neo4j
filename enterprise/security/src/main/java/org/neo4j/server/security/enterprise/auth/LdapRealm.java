@@ -32,6 +32,7 @@ import org.apache.shiro.realm.ldap.JndiLdapRealm;
 import org.apache.shiro.realm.ldap.LdapContextFactory;
 import org.apache.shiro.realm.ldap.LdapUtils;
 import org.apache.shiro.subject.PrincipalCollection;
+import org.apache.shiro.util.CollectionUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,6 +60,7 @@ import javax.naming.ldap.LdapContext;
 import javax.naming.ldap.StartTlsRequest;
 import javax.naming.ldap.StartTlsResponse;
 
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
@@ -73,6 +75,7 @@ public class LdapRealm extends JndiLdapRealm
     private static final String GROUP_DELIMITER = ";";
     private static final String KEY_VALUE_DELIMITER = "=";
     private static final String ROLE_DELIMITER = ",";
+    public static final String LDAP_REALM = "ldap";
 
     private Boolean authenticationEnabled;
     private Boolean authorizationEnabled;
@@ -195,37 +198,40 @@ public class LdapRealm extends JndiLdapRealm
     {
         if ( authorizationEnabled )
         {
-            String username = (String) getAvailablePrincipal( principals );
-
-            if ( useSystemAccountForAuthorization )
+            Collection realmPrincipals = principals.fromRealm( getName() );
+            if (!CollectionUtils.isEmpty(realmPrincipals))
             {
-                // Perform context search using the system context
-                LdapContext ldapContext = useStartTls ? getSystemLdapContextUsingStartTls( ldapContextFactory ) :
-                                          ldapContextFactory.getSystemLdapContext();
+                String username = (String) realmPrincipals.iterator().next();
+                if ( useSystemAccountForAuthorization )
+                {
+                    // Perform context search using the system context
+                    LdapContext ldapContext = useStartTls ? getSystemLdapContextUsingStartTls( ldapContextFactory ) :
+                                              ldapContextFactory.getSystemLdapContext();
 
-                Set<String> roleNames;
-                try
-                {
-                    roleNames = findRoleNamesForUser( username, ldapContext );
-                }
-                finally
-                {
-                    LdapUtils.closeContext( ldapContext );
-                }
+                    Set<String> roleNames;
+                    try
+                    {
+                        roleNames = findRoleNamesForUser( username, ldapContext );
+                    }
+                    finally
+                    {
+                        LdapUtils.closeContext( ldapContext );
+                    }
 
-                return new SimpleAuthorizationInfo( roleNames );
-            }
-            else
-            {
-                // Authorization info is cached during authentication
-                AuthorizationInfo authorizationInfo = authorizationInfoCache.get( username );
-                if ( authorizationInfo == null )
-                {
-                    // TODO: Do a new LDAP search? But we need to cache the credentials for that...
-                    // Or we need the resulting failure message to the client to contain some status
-                    // so that the client can react by resending the auth token.
+                    return new SimpleAuthorizationInfo( roleNames );
                 }
-                return authorizationInfo;
+                else
+                {
+                    // Authorization info is cached during authentication
+                    AuthorizationInfo authorizationInfo = authorizationInfoCache.get( username );
+                    if ( authorizationInfo == null )
+                    {
+                        // TODO: Do a new LDAP search? But we need to cache the credentials for that...
+                        // Or we need the resulting failure message to the client to contain some status
+                        // so that the client can react by resending the auth token.
+                    }
+                    return authorizationInfo;
+                }
             }
         }
         return null;
@@ -274,17 +280,18 @@ public class LdapRealm extends JndiLdapRealm
     @Override
     public boolean supports( AuthenticationToken token )
     {
-        return super.supports( token ) && realmUnspecifiedOrMatched( token );
+        return super.supports( token ) && supportsSchemeAndRealm( token );
     }
 
-    private boolean realmUnspecifiedOrMatched( AuthenticationToken token )
+    private boolean supportsSchemeAndRealm( AuthenticationToken token )
     {
         try
         {
             if ( token instanceof ShiroAuthToken )
             {
                 ShiroAuthToken shiroAuthToken = (ShiroAuthToken) token;
-                return shiroAuthToken.getScheme().equals( "basic" ) && (shiroAuthToken.supportsRealm( "ldap" ));
+                return shiroAuthToken.getScheme().equals( AuthToken.BASIC_SCHEME ) &&
+                       (shiroAuthToken.supportsRealm( LDAP_REALM ));
             }
             return false;
         }
