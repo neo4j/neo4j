@@ -36,6 +36,7 @@
     <doclint-groups>reference</doclint-groups>
     <jetty.version>9.2.9.v20150224</jetty.version>
     <findbugs.version>3.0.0</findbugs.version>
+    <git.commit>unknown-commit</git.commit>
   </properties>
 
   <modules>
@@ -244,23 +245,9 @@
      Git information extraction profiles.
      Activate by adding the required Git information to the environment, e.g. on *nix:
 
-     export GIT_BRANCH
      export GIT_COMMIT
-     GIT_BRANCH=$(git rev-parse - -abbrev-ref HEAD)
-     GIT_COMMIT=$(git rev-parse - -short HEAD)
+     GIT_COMMIT=$(git rev-parse HEAD)
     -->
-    <profile>
-      <id>attach-git-info-branch</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>env.GIT_BRANCH</name>
-        </property>
-      </activation>
-      <properties>
-        <git.commit.id.describe>${env.GIT_BRANCH}</git.commit.id.describe>
-      </properties>
-    </profile>
     <profile>
       <id>attach-git-info-commit</id>
       <activation>
@@ -270,7 +257,7 @@
         </property>
       </activation>
       <properties>
-        <git.commit.id.describe>${env.GIT_COMMIT}</git.commit.id.describe>
+        <git.commit>${env.GIT_COMMIT}</git.commit>
       </properties>
     </profile>
 

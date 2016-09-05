@@ -113,8 +113,8 @@ the relevant Commercial Agreement.
               <packageName>org/neo4j/kernel</packageName>
             </manifest>
             <manifestEntries>
-              <!-- This becomes programmatically accessible from the org.neo4j.kernel Package instance -->
-              <Implementation-Version>${project.version},${git.commit.id.describe}</Implementation-Version>
+              <!-- This becomes programmatically accessible from the 'org.neo4j.kernel' java.lang.Package object -->
+              <Implementation-Version>${project.version},${git.commit}</Implementation-Version>
             </manifestEntries>
           </archive>
         </configuration>
