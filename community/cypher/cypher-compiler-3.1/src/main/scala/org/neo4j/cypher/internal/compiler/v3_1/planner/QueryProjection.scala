@@ -168,7 +168,10 @@ case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
 
   override def dependingExpressions = call.callArguments
 
-  override def preferredStrictness = Some(if (call.signature.accessMode == ProcedureReadOnlyAccess) LazyMode else EagerMode)
+  override def preferredStrictness = call.signature.accessMode match {
+    case _: ProcedureReadOnlyAccess => Some(LazyMode)
+    case _ => Some(EagerMode)
+  }
 }
 
 case class LoadCSVProjection(variable: IdName, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {
