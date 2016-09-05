@@ -45,7 +45,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
@@ -80,6 +79,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
@@ -359,8 +359,10 @@ public class ImportTool
 
             dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.<File>optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
-            pageSize = toIntExact( Settings.parseLongWithUnit( args.get( Options.PAGE_SIZE.key(),
-                    String.valueOf( org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT.pageSize() ) ) ) );
+            if ( args.has( Options.PAGE_SIZE.key() ) )
+            {
+                pageSize = toIntExact( parseLongWithUnit( args.get( Options.PAGE_SIZE.key(), String.valueOf( -1 ) ) ) );
+            }
             configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, pageSize );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
@@ -532,7 +534,8 @@ public class ImportTool
             @Override
             public int pageSize()
             {
-                return pageSize;
+                // Let's call super if not specifically configured, so that proper calculations can be made
+                return pageSize == -1 ? super.pageSize() : pageSize;
             }
         };
     }
