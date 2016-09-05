@@ -127,14 +127,13 @@ public abstract class EditionModule
         for ( AuthManager.Factory candidate : Service.load( AuthManager.Factory.class ) )
         {
             String candidateId = candidate.getKeys().iterator().next();
-            if ( candidateId.equals( key ) )
+            try
             {
                 return candidate.newInstance( config, logging.getUserLogProvider(),
                         authManagerLog( config, fileSystem ), fileSystem, jobScheduler );
             }
-            else if ( key.isEmpty() )
+            catch ( Exception e )
             {
-                // As a default use the available service for the configured build edition
                 logging.getInternalLog( GraphDatabaseFacadeFactory.class )
                         .info( "No auth manager implementation specified, defaulting to '" + candidateId + "'" );
                 return candidate.newInstance( config, logging.getUserLogProvider(),

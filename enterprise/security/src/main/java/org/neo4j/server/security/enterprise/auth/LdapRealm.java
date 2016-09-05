@@ -64,8 +64,9 @@ import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
+
+import static java.lang.String.format;
 
 /**
  * Shiro realm for LDAP based on configuration settings
@@ -85,7 +86,7 @@ public class LdapRealm extends JndiLdapRealm
     private List<String> membershipAttributeNames;
     private Boolean useSystemAccountForAuthorization;
     private Map<String,Collection<String>> groupToRoleMapping;
-    private final Log log;
+    private final SecurityLog securityLog;
 
     private Map<String, SimpleAuthorizationInfo> authorizationInfoCache = new ConcurrentHashMap<>();
 
@@ -94,12 +95,35 @@ public class LdapRealm extends JndiLdapRealm
     private static final String VALUE_GROUP = "\\s*(.*)";
     private Pattern keyValuePattern = Pattern.compile( KEY_GROUP + KEY_VALUE_DELIMITER + VALUE_GROUP );
 
-    public LdapRealm( Config config, LogProvider logProvider )
+    public LdapRealm( Config config, SecurityLog securityLog )
     {
         super();
-        log = logProvider.getLog( getClass() );
+        this.securityLog = securityLog;
+        RolePermissionResolver rolePermissionResolver = roleString ->
+        {
+            SimpleRole role = PredefinedRolesBuilder.roles.get( roleString );
+            if ( role != null )
+            {
+                return role.getPermissions();
+            }
+            else
+            {
+                return Collections.emptyList();
+            }
+        };
         setRolePermissionResolver( rolePermissionResolver );
         configureRealm( config );
+    }
+
+    private String withRealm( String template, Object... args )
+    {
+        return "{LdapRealm}: " + format( template, args );
+    }
+
+    private String server( JndiLdapContextFactory jndiLdapContextFactory )
+    {
+        return "'" + jndiLdapContextFactory.getUrl() + "'" +
+                ( useStartTls ? " using StartTLS" : "" );
     }
 
     @Override
@@ -109,20 +133,20 @@ public class LdapRealm extends JndiLdapRealm
     {
         if ( authenticationEnabled )
         {
-            JndiLdapContextFactory jndiLdapContextFactory = (JndiLdapContextFactory) ldapContextFactory;
-            // TODO: Maybe change this to security event log once we have it
-            log.debug( "Authenticating user '%s' against LDAP server '%s'%s", token.getPrincipal(),
-                    jndiLdapContextFactory.getUrl(),
-                    useStartTls ? " using StartTLS" : "" );
+            String serverString = server( (JndiLdapContextFactory) ldapContextFactory );
             try
             {
-                return useStartTls ? queryForAuthenticationInfoUsingStartTls( token, ldapContextFactory ) :
-                       super.queryForAuthenticationInfo( token, ldapContextFactory );
+                AuthenticationInfo info =
+                        useStartTls ? queryForAuthenticationInfoUsingStartTls( token, ldapContextFactory ) :
+                        super.queryForAuthenticationInfo( token, ldapContextFactory );
+                securityLog.debug( withRealm( "Authenticated user '%s' against %s",
+                        token.getPrincipal(), serverString ) );
+                return info;
             }
             catch ( Exception e )
             {
-                // TODO: Maybe change this to security event log once we have it
-                log.debug( "Authentication exception: [%s] %s",  e.getClass().getName(), e.getMessage() );
+                securityLog.error( withRealm( "Failed to authenticate user '%s' against %s: %s",
+                        token.getPrincipal(), serverString, e.getMessage() ) );
                 throw e;
             }
         }
@@ -182,13 +206,16 @@ public class LdapRealm extends JndiLdapRealm
         catch ( IOException e )
         {
             LdapUtils.closeContext( ctx );
-            log.error( "Failed to negotiate TLS connection", e );
+            securityLog.error( withRealm( "Failed to negotiate TLS connection with '%s': ",
+                    server( jndiLdapContextFactory ), e ) );
             throw new CommunicationException( e.getMessage() );
         }
-        catch ( Throwable throwable )
+        catch ( Throwable t )
         {
             LdapUtils.closeContext( ctx );
-            throw throwable;
+            securityLog.error( withRealm( "Unexpected failure to negotiate TLS connection with '%s': ",
+                    server( jndiLdapContextFactory ), t ) );
+            throw t;
         }
     }
 
@@ -250,10 +277,6 @@ public class LdapRealm extends JndiLdapRealm
             Object ldapCredentials, LdapContext ldapContext )
             throws NamingException
     {
-        // NOTE: This will be called only if authentication with the ldap context was successful
-        // TODO: Change this to security event log once we have it
-        log.debug( "Successfully authenticated user '%s' through LDAP", token.getPrincipal() );
-
         // If authorization is enabled but useSystemAccountForAuthorization is disabled, we should perform
         // the search for groups directly here while the user's authenticated ldap context is open.
         if ( authorizationEnabled && !useSystemAccountForAuthorization )
@@ -306,11 +329,15 @@ public class LdapRealm extends JndiLdapRealm
     {
         try
         {
-            return super.doGetAuthorizationInfo( principals );
+            AuthorizationInfo info = super.doGetAuthorizationInfo( principals );
+            securityLog.debug( withRealm( "Queried for authorization info for user '%s'",
+                    principals.getPrimaryPrincipal() ) );
+            return info;
         }
         catch ( AuthorizationException e )
         {
-            log.error( "%s Caused by: %s", e.getMessage(), e.getCause().getMessage() );
+            securityLog.error( withRealm( "Failed to get authorization info: '%s' caused by '%s'",
+                    e.getMessage(), e.getCause().getMessage() ) );
             throw e;
         }
     }
@@ -321,23 +348,6 @@ public class LdapRealm extends JndiLdapRealm
         // but unfortunately it is private to AuthorizingRealm
         authorizationInfoCache.put( username, new SimpleAuthorizationInfo( roleNames ) );
     }
-
-    private final RolePermissionResolver rolePermissionResolver = new RolePermissionResolver()
-    {
-        @Override
-        public Collection<Permission> resolvePermissionsInRole( String roleString )
-        {
-            SimpleRole role = PredefinedRolesBuilder.roles.get( roleString );
-            if ( role != null )
-            {
-                return role.getPermissions();
-            }
-            else
-            {
-                return Collections.emptyList();
-            }
-        }
-    };
 
     private void configureRealm( Config config )
     {
@@ -366,6 +376,12 @@ public class LdapRealm extends JndiLdapRealm
         useSystemAccountForAuthorization = config.get( SecuritySettings.ldap_authorization_use_system_account );
         groupToRoleMapping =
                 parseGroupToRoleMapping( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) );
+
+        if ( authorizationEnabled )
+        {
+            // For some combinations of settings we will never find anything
+            assertValidUserSearchSettings();
+        }
     }
 
     private String parseLdapServerUrl( String rawLdapServer )
@@ -374,7 +390,7 @@ public class LdapRealm extends JndiLdapRealm
                rawLdapServer.contains( "://" ) ? rawLdapServer : "ldap://" + rawLdapServer;
     }
 
-    Map<String,Collection<String>> parseGroupToRoleMapping( String groupToRoleMappingString )
+    private Map<String,Collection<String>> parseGroupToRoleMapping( String groupToRoleMappingString )
     {
         Map<String,Collection<String>> map = new HashMap<>();
 
@@ -387,9 +403,8 @@ public class LdapRealm extends JndiLdapRealm
                     Matcher matcher = keyValuePattern.matcher( groupAndRoles );
                     if ( !(matcher.find() && matcher.groupCount() == 6) )
                     {
-                        String errorMessage = String.format( "Failed to parse setting %s: wrong number of fields",
+                        String errorMessage = format( "Failed to parse setting %s: wrong number of fields",
                                 SecuritySettings.ldap_authorization_group_to_role_mapping.name() );
-                        log.error( errorMessage );
                         throw new IllegalArgumentException( errorMessage );
                     }
 
@@ -400,9 +415,8 @@ public class LdapRealm extends JndiLdapRealm
 
                     if ( group.isEmpty() )
                     {
-                        String errorMessage = String.format( "Failed to parse setting %s: empty group name",
+                        String errorMessage = format( "Failed to parse setting %s: empty group name",
                                 SecuritySettings.ldap_authorization_group_to_role_mapping.name() );
-                        log.error( errorMessage );
                         throw new IllegalArgumentException( errorMessage );
                     }
                     Collection<String> roleList = new ArrayList<>();
@@ -425,13 +439,7 @@ public class LdapRealm extends JndiLdapRealm
     // TODO: Extract to an LdapAuthorizationStrategy ? This ("group by attribute") is one of multiple possible strategies
     Set<String> findRoleNamesForUser( String username, LdapContext ldapContext ) throws NamingException
     {
-        Set<String> roleNames = new LinkedHashSet<String>();
-
-        // For some combinations of settings we will never find anything
-        if ( !validateUserSearchSettings() )
-        {
-            return roleNames;
-        }
+        Set<String> roleNames = new LinkedHashSet<>();
 
         SearchControls searchCtls = new SearchControls();
         searchCtls.setSearchScope( SearchControls.SUBTREE_SCOPE );
@@ -448,14 +456,22 @@ public class LdapRealm extends JndiLdapRealm
 
             if ( result.hasMoreElements() )
             {
-                log.warn( String.format(
-                        "LDAP user search for user principal '%s' is ambiguous. The first match that will be checked " +
-                        "for group membership is '%s' " +
-                        "but the search also matches '%s'. Please check your LDAP realm configuration.",
-                        username,
-                        // TODO: Check if it is ok to write this potentially sensitive information to the log
-                        searchResult.toString(),
-                        ((SearchResult) result.next()).toString() ) );
+                if ( securityLog.isDebugEnabled() )
+                {
+                    securityLog.warn( withRealm(
+                            format( "LDAP user search for user principal '%s' is ambiguous. The first match that will " +
+                                            "be checked for group membership is '%s' but the search also matches '%s'. " +
+                                            "Please check your LDAP realm configuration.",
+                                    username,
+                                    searchResult.toString(), result.next().toString() ) ) );
+                }
+                else
+                {
+                    securityLog.warn( withRealm(
+                            format( "LDAP user search for user principal '%s' is ambiguous. The search matches more " +
+                                            "than one entry. Please check your LDAP realm configuration.",
+                                    username ) ) );
+                }
             }
 
             Attributes attributes = searchResult.getAttributes();
@@ -466,8 +482,7 @@ public class LdapRealm extends JndiLdapRealm
                 {
                     Attribute attribute = (Attribute) attributeEnumeration.next();
                     String attributeId = attribute.getID();
-                    if ( membershipAttributeNames.stream()
-                            .anyMatch( searchAttribute -> attributeId.equalsIgnoreCase( searchAttribute ) ) )
+                    if ( membershipAttributeNames.stream().anyMatch( attributeId::equalsIgnoreCase ) )
                     {
                         Collection<String> groupNames = LdapUtils.getAllAttributeValues( attribute );
                         Collection<String> rolesForGroups = getRoleNamesForGroups( groupNames );
@@ -479,28 +494,31 @@ public class LdapRealm extends JndiLdapRealm
         return roleNames;
     }
 
-    private boolean validateUserSearchSettings()
+    private void assertValidUserSearchSettings()
     {
         boolean proceedWithSearch = true;
 
         if ( userSearchBase == null || userSearchBase.isEmpty() )
         {
-            log.warn( "LDAP user search base is empty." );
+            securityLog.warn( "LDAP user search base is empty." );
             proceedWithSearch = false;
         }
         if ( userSearchFilter == null || !userSearchFilter.contains( "{0}" ) )
         {
-            log.warn( "LDAP user search filter does not contain the argument placeholder {0}, so the search result " +
-                      "will be independent of the user principal." );
+            securityLog.warn( "LDAP user search filter does not contain the argument placeholder {0}, " +
+                    "so the search result will be independent of the user principal." );
         }
         if ( membershipAttributeNames == null || membershipAttributeNames.isEmpty() )
         {
             // If we don't have any attributes to look for we will never find anything
-            log.warn( "LDAP group membership attribute names are empty. Authorization will not be possible." );
+            securityLog.warn( "LDAP group membership attribute names are empty. Authorization will not be possible." );
             proceedWithSearch = false;
         }
 
-        return proceedWithSearch;
+        if ( !proceedWithSearch )
+        {
+            throw new IllegalArgumentException( "Illegal LDAP user search settings, see security log for details." );
+        }
     }
 
     private Collection<String> getRoleNamesForGroups( Collection<String> groupNames )

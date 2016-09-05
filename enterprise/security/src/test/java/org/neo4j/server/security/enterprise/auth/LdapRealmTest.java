@@ -19,10 +19,21 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.apache.shiro.authc.AuthenticationInfo;
+import org.apache.shiro.authc.AuthenticationToken;
+import org.apache.shiro.authc.SimpleAuthenticationInfo;
+import org.apache.shiro.authz.AuthorizationException;
+import org.apache.shiro.authz.AuthorizationInfo;
+import org.apache.shiro.authz.SimpleAuthorizationInfo;
+import org.apache.shiro.realm.ldap.JndiLdapContextFactory;
+import org.apache.shiro.realm.ldap.LdapContextFactory;
+import org.apache.shiro.subject.PrincipalCollection;
+import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.internal.matchers.Any;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,10 +49,10 @@ import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapContext;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertThat;
@@ -51,11 +62,13 @@ import static org.mockito.Matchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.test.assertion.Assert.assertException;
 
 public class LdapRealmTest
 {
     Config config = mock( Config.class );
-    LogProvider logProvider = NullLogProvider.getInstance();
+    SecurityLog securityLog = mock( SecurityLog.class );
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -67,7 +80,10 @@ public class LdapRealmTest
         when( config.get( SecuritySettings.ldap_authorization_user_search_base ) )
                 .thenReturn( "dc=example,dc=com" );
         when( config.get( SecuritySettings.ldap_authorization_group_membership_attribute_names ) )
-                .thenReturn( Collections.singletonList( "memberOf" ) );
+                .thenReturn( singletonList( "memberOf" ) );
+
+        when( config.get( SecuritySettings.ldap_authentication_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.ldap_authorization_enabled ) ).thenReturn( true );
     }
 
     @Test
@@ -75,7 +91,7 @@ public class LdapRealmTest
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) ).thenReturn( null );
 
-        LdapRealm realm = new LdapRealm( config, logProvider );
+        new LdapRealm( config, securityLog );
     }
 
     @Test
@@ -83,7 +99,7 @@ public class LdapRealmTest
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) ).thenReturn( "" );
 
-        LdapRealm realm = new LdapRealm( config, logProvider );
+        new LdapRealm( config, securityLog );
     }
 
     @Test
@@ -92,10 +108,10 @@ public class LdapRealmTest
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
                 .thenReturn( "group=role1,role2,role3" );
 
-        LdapRealm realm = new LdapRealm( config, logProvider );
+        LdapRealm realm = new LdapRealm( config, securityLog );
 
         assertThat( realm.getGroupToRoleMapping().get( "group" ),
-                equalTo( Arrays.asList( "role1", "role2", "role3" ) ) );
+                equalTo( asList( "role1", "role2", "role3" ) ) );
         assertThat( realm.getGroupToRoleMapping().size(), equalTo( 1 ) );
     }
 
@@ -105,13 +121,13 @@ public class LdapRealmTest
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
                 .thenReturn( "group1=role1;group2=role2,role3;group3=role4" );
 
-        LdapRealm realm = new LdapRealm( config, logProvider );
+        LdapRealm realm = new LdapRealm( config, securityLog );
 
         assertThat( realm.getGroupToRoleMapping().keySet(),
-                equalTo( new TreeSet<>( Arrays.asList( "group1", "group2", "group3" ) ) ) );
-        assertThat( realm.getGroupToRoleMapping().get( "group1" ), equalTo( Arrays.asList( "role1" ) ) );
-        assertThat( realm.getGroupToRoleMapping().get( "group2" ), equalTo( Arrays.asList( "role2", "role3" ) ) );
-        assertThat( realm.getGroupToRoleMapping().get( "group3" ), equalTo( Arrays.asList( "role4" ) ) );
+                equalTo( new TreeSet<>( asList( "group1", "group2", "group3" ) ) ) );
+        assertThat( realm.getGroupToRoleMapping().get( "group1" ), equalTo( singletonList( "role1" ) ) );
+        assertThat( realm.getGroupToRoleMapping().get( "group2" ), equalTo( asList( "role2", "role3" ) ) );
+        assertThat( realm.getGroupToRoleMapping().get( "group3" ), equalTo( singletonList( "role4" ) ) );
         assertThat( realm.getGroupToRoleMapping().size(), equalTo( 3 ) );
     }
 
@@ -121,15 +137,15 @@ public class LdapRealmTest
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
                 .thenReturn( "'group1' = role1;\t \"group2\"\n=\t role2,role3 ;  gr oup3= role4\n ;'group4 '= ; g =r" );
 
-        LdapRealm realm = new LdapRealm( config, logProvider );
+        LdapRealm realm = new LdapRealm( config, securityLog );
 
         assertThat( realm.getGroupToRoleMapping().keySet(),
-                equalTo( new TreeSet<>( Arrays.asList( "group1", "group2", "gr oup3", "group4 ", "g" ) ) ) );
-        assertThat( realm.getGroupToRoleMapping().get( "group1" ), equalTo( Arrays.asList( "role1" ) ) );
-        assertThat( realm.getGroupToRoleMapping().get( "group2" ), equalTo( Arrays.asList( "role2", "role3" ) ) );
-        assertThat( realm.getGroupToRoleMapping().get( "gr oup3" ), equalTo( Arrays.asList( "role4" ) ) );
+                equalTo( new TreeSet<>( asList( "group1", "group2", "gr oup3", "group4 ", "g" ) ) ) );
+        assertThat( realm.getGroupToRoleMapping().get( "group1" ), equalTo( singletonList( "role1" ) ) );
+        assertThat( realm.getGroupToRoleMapping().get( "group2" ), equalTo( asList( "role2", "role3" ) ) );
+        assertThat( realm.getGroupToRoleMapping().get( "gr oup3" ), equalTo( singletonList( "role4" ) ) );
         assertThat( realm.getGroupToRoleMapping().get( "group4 " ), equalTo( Collections.emptyList() ) );
-        assertThat( realm.getGroupToRoleMapping().get( "g" ), equalTo( Arrays.asList( "r" ) ) );
+        assertThat( realm.getGroupToRoleMapping().get( "g" ), equalTo( singletonList( "r" ) ) );
         assertThat( realm.getGroupToRoleMapping().size(), equalTo( 5 ) );
     }
 
@@ -138,9 +154,9 @@ public class LdapRealmTest
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) ).thenReturn( "group=role;;" );
 
-        LdapRealm realm = new LdapRealm( config, logProvider );
+        LdapRealm realm = new LdapRealm( config, securityLog );
 
-        assertThat( realm.getGroupToRoleMapping().get( "group" ), equalTo( Collections.singletonList( "role" ) ) );
+        assertThat( realm.getGroupToRoleMapping().get( "group" ), equalTo( singletonList( "role" ) ) );
         assertThat( realm.getGroupToRoleMapping().size(), equalTo( 1 ) );
     }
 
@@ -150,12 +166,12 @@ public class LdapRealmTest
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
                 .thenReturn( "group=role1,role2,role3,,," );
 
-        LdapRealm realm = new LdapRealm( config, logProvider );
+        LdapRealm realm = new LdapRealm( config, securityLog );
 
         assertThat( realm.getGroupToRoleMapping().keySet(),
                 equalTo( Stream.of( "group" ).collect( Collectors.toSet() ) ) );
         assertThat( realm.getGroupToRoleMapping().get( "group" ),
-                equalTo( Arrays.asList( "role1", "role2", "role3" ) ) );
+                equalTo( asList( "role1", "role2", "role3" ) ) );
         assertThat( realm.getGroupToRoleMapping().size(), equalTo( 1 ) );
     }
 
@@ -164,7 +180,7 @@ public class LdapRealmTest
     {
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) ).thenReturn( "group=," );
 
-        LdapRealm realm = new LdapRealm( config, logProvider );
+        LdapRealm realm = new LdapRealm( config, securityLog );
 
         assertThat( realm.getGroupToRoleMapping().get( "group" ).size(), equalTo( 0 ) );
         assertThat( realm.getGroupToRoleMapping().size(), equalTo( 1 ) );
@@ -178,7 +194,7 @@ public class LdapRealmTest
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "wrong number of fields" );
 
-        LdapRealm realm = new LdapRealm( config, logProvider );
+        new LdapRealm( config, securityLog );
     }
 
     @Test
@@ -189,7 +205,7 @@ public class LdapRealmTest
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "wrong number of fields" );
 
-        LdapRealm realm = new LdapRealm( config, logProvider );
+        new LdapRealm( config, securityLog );
     }
 
     @Test
@@ -198,10 +214,10 @@ public class LdapRealmTest
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
                 .thenReturn( "GrouP=role1,role2,role3" );
 
-        LdapRealm realm = new LdapRealm( config, logProvider );
+        LdapRealm realm = new LdapRealm( config, securityLog );
 
         assertThat( realm.getGroupToRoleMapping().get( "group" ),
-                equalTo( Arrays.asList( "role1", "role2", "role3" ) ) );
+                equalTo( asList( "role1", "role2", "role3" ) ) );
         assertThat( realm.getGroupToRoleMapping().size(), equalTo( 1 ) );
     }
 
@@ -210,18 +226,48 @@ public class LdapRealmTest
     {
         when( config.get( SecuritySettings.ldap_authorization_user_search_filter ) ).thenReturn( "" );
 
-        LogProvider logProvider = mock( LogProvider.class );
-        Log log = mock( Log.class );
         LdapContext ldapContext = mock( LdapContext.class );
         NamingEnumeration result = mock( NamingEnumeration.class );
-        when( logProvider.getLog( LdapRealm.class ) ).thenReturn( log );
         when( ldapContext.search( anyString(), anyString(), anyObject(), anyObject() ) ).thenReturn( result );
         when( result.hasMoreElements() ).thenReturn( false );
 
-        LdapRealm realm = new LdapRealm( config, logProvider );
-        realm.findRoleNamesForUser( "username", ldapContext );
+        new LdapRealm( config, securityLog );
 
-        verify( log ).warn( contains( "LDAP user search filter does not contain the argument placeholder {0}" ) );
+        verify( securityLog ).warn( contains( "LDAP user search filter does not contain the argument placeholder {0}" ) );
+    }
+
+    @Test
+    public void shouldWarnAboutUserSearchBaseBeingEmpty() throws Exception
+    {
+        when( config.get( SecuritySettings.ldap_authorization_user_search_base ) ).thenReturn( "" );
+
+        LdapContext ldapContext = mock( LdapContext.class );
+        NamingEnumeration result = mock( NamingEnumeration.class );
+        when( ldapContext.search( anyString(), anyString(), anyObject(), anyObject() ) ).thenReturn( result );
+        when( result.hasMoreElements() ).thenReturn( false );
+
+        assertException( () -> new LdapRealm( config, securityLog ), IllegalArgumentException.class,
+                "Illegal LDAP user search settings, see security log for details." );
+
+        verify( securityLog ).warn( contains( "LDAP user search base is empty." ) );
+    }
+
+    @Test
+    public void shouldWarnAboutGroupMembershipsBeingEmpty() throws Exception
+    {
+        when( config.get( SecuritySettings.ldap_authorization_group_membership_attribute_names ) )
+                .thenReturn( Collections.emptyList() );
+
+        LdapContext ldapContext = mock( LdapContext.class );
+        NamingEnumeration result = mock( NamingEnumeration.class );
+        when( ldapContext.search( anyString(), anyString(), anyObject(), anyObject() ) ).thenReturn( result );
+        when( result.hasMoreElements() ).thenReturn( false );
+
+        assertException( () -> new LdapRealm( config, securityLog ), IllegalArgumentException.class,
+                "Illegal LDAP user search settings, see security log for details." );
+
+        verify( securityLog ).warn( contains( "LDAP group membership attribute names are empty. " +
+                "Authorization will not be possible." ) );
     }
 
     @Test
@@ -229,21 +275,18 @@ public class LdapRealmTest
     {
         when( config.get( SecuritySettings.ldap_authorization_user_search_filter ) ).thenReturn( "{0}" );
 
-        LogProvider logProvider = mock( LogProvider.class );
-        Log log = mock( Log.class );
         LdapContext ldapContext = mock( LdapContext.class );
         NamingEnumeration result = mock( NamingEnumeration.class );
         SearchResult searchResult = mock( SearchResult.class );
-        when( logProvider.getLog( LdapRealm.class ) ).thenReturn( log );
         when( ldapContext.search( anyString(), anyString(), anyObject(), anyObject() ) ).thenReturn( result );
         when( result.hasMoreElements() ).thenReturn( true );
         when( result.next() ).thenReturn( searchResult );
         when( searchResult.toString() ).thenReturn( "<ldap search result>" );
 
-        LdapRealm realm = new LdapRealm( config, logProvider );
+        LdapRealm realm = new LdapRealm( config, securityLog );
         realm.findRoleNamesForUser( "username", ldapContext );
 
-        verify( log ).warn( contains( "LDAP user search for user principal 'username' is ambiguous" ) );
+        verify( securityLog ).warn( contains( "LDAP user search for user principal 'username' is ambiguous" ) );
     }
 
     @Test
@@ -251,7 +294,7 @@ public class LdapRealmTest
     {
         when( config.get( SecuritySettings.ldap_authorization_user_search_filter ) ).thenReturn( "{0}" );
         when( config.get( SecuritySettings.ldap_authorization_group_membership_attribute_names ) )
-                .thenReturn( Arrays.asList( "attr0", "attr1", "attr2" ) );
+                .thenReturn( asList( "attr0", "attr1", "attr2" ) );
         when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
                 .thenReturn( "group1=role1;group2=role2,role3" );
 
@@ -293,10 +336,144 @@ public class LdapRealmTest
         when( groupEnumeration3.next() ).thenReturn( "groupWithNoRole" );
 
         // When
-        LdapRealm realm = new LdapRealm( config, logProvider );
+        LdapRealm realm = new LdapRealm( config, securityLog );
         Set<String> roles = realm.findRoleNamesForUser( "username", ldapContext );
 
         // Then
         assertThat( roles, hasItems( "role1", "role2", "role3" ) );
+    }
+
+    @Test
+    public void shouldLogSuccessfulAuthenticationQueries() throws NamingException
+    {
+        // Given
+        when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( false );
+        when( config.get( SecuritySettings.ldap_authorization_use_system_account ) ).thenReturn( true );
+
+        LdapRealm realm = new TestLdapRealm( config, securityLog, false );
+        JndiLdapContextFactory jndiLdapContectFactory = mock( JndiLdapContextFactory.class );
+        when( jndiLdapContectFactory.getUrl() ).thenReturn( "ldap://myserver.org:12345" );
+        when( jndiLdapContectFactory.getLdapContext( Any.ANY, Any.ANY ) ).thenReturn( null );
+
+        // When
+        realm.queryForAuthenticationInfo( new ShiroAuthToken( map( "principal", "olivia", "credentials", "123" ) ),
+                jndiLdapContectFactory );
+
+        // Then
+        verify( securityLog ).debug( contains( "{LdapRealm}: Authenticated user 'olivia' against 'ldap://myserver.org:12345'" ) );
+    }
+
+    @Test
+    public void shouldLogSuccessfulAuthenticationQueriesUsingStartTLS() throws NamingException
+    {
+        // Given
+        when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( true );
+
+        LdapRealm realm = new TestLdapRealm( config, securityLog, false );
+        JndiLdapContextFactory jndiLdapContectFactory = mock( JndiLdapContextFactory.class );
+        when( jndiLdapContectFactory.getUrl() ).thenReturn( "ldap://myserver.org:12345" );
+
+        // When
+        realm.queryForAuthenticationInfo( new ShiroAuthToken( map( "principal", "olivia", "credentials", "123" ) ),
+                jndiLdapContectFactory );
+
+        // Then
+        verify( securityLog ).debug( contains(
+                "{LdapRealm}: Authenticated user 'olivia' against 'ldap://myserver.org:12345' using StartTLS" ) );
+    }
+
+    @Test
+    public void shouldLogFailedAuthenticationQueries() throws Exception
+    {
+        // Given
+        when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( true );
+
+        LdapRealm realm = new TestLdapRealm( config, securityLog, true );
+        JndiLdapContextFactory jndiLdapContectFactory = mock( JndiLdapContextFactory.class );
+        when( jndiLdapContectFactory.getUrl() ).thenReturn( "ldap://myserver.org:12345" );
+
+        // When
+        assertException( () -> realm.queryForAuthenticationInfo(
+                new ShiroAuthToken( map( "principal", "olivia", "credentials", "123" ) ), jndiLdapContectFactory ),
+                NamingException.class, ""
+            );
+
+        // Then
+        verify( securityLog ).error( contains(
+                "{LdapRealm}: Failed to authenticate user 'olivia' against 'ldap://myserver.org:12345' using StartTLS: " +
+                        "Simulated failure" ) );
+    }
+
+    @Test
+    public void shouldLogSuccessfulAuthorizationQueries() throws Exception
+    {
+        // Given
+        when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( true );
+
+        LdapRealm realm = new TestLdapRealm( config, securityLog, false );
+        JndiLdapContextFactory jndiLdapContectFactory = mock( JndiLdapContextFactory.class );
+        when( jndiLdapContectFactory.getUrl() ).thenReturn( "ldap://myserver.org:12345" );
+
+        // When
+        realm.doGetAuthorizationInfo( new SimplePrincipalCollection( "olivia", "LdapRealm" ) );
+
+        // Then
+        verify( securityLog ).debug( contains( "{LdapRealm}: Queried for authorization info for user 'olivia'" ) );
+    }
+
+    @Test
+    public void shouldLogFailedAuthorizationQueries() throws Exception
+    {
+        // Given
+        when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( true );
+
+        LdapRealm realm = new TestLdapRealm( config, securityLog, true );
+        JndiLdapContextFactory jndiLdapContectFactory = mock( JndiLdapContextFactory.class );
+        when( jndiLdapContectFactory.getUrl() ).thenReturn( "ldap://myserver.org:12345" );
+
+        // When
+        assertException( () -> realm.doGetAuthorizationInfo( new SimplePrincipalCollection( "olivia", "LdapRealm" ) ),
+                AuthorizationException.class, "" );
+
+        // Then
+        verify( securityLog ).error( contains( "{LdapRealm}: Failed to get authorization info: " +
+                "'LDAP naming error while attempting to retrieve authorization for user [olivia].'" +
+                " caused by 'Simulated failure'"
+        ) );
+    }
+
+    private class TestLdapRealm extends LdapRealm
+    {
+
+        private boolean failAuth;
+
+        TestLdapRealm( Config config, SecurityLog securityLog, boolean failAuth )
+        {
+            super( config, securityLog );
+            this.failAuth = failAuth;
+        }
+
+        @Override
+        protected AuthenticationInfo queryForAuthenticationInfoUsingStartTls( AuthenticationToken token,
+                LdapContextFactory ldapContextFactory ) throws NamingException
+        {
+            if ( failAuth )
+            {
+                throw new NamingException( "Simulated failure" );
+            }
+            return new SimpleAuthenticationInfo( "olivia", "123", "basic" );
+        }
+
+        @Override
+        protected AuthorizationInfo queryForAuthorizationInfo( PrincipalCollection principals,
+                LdapContextFactory ldapContextFactory ) throws NamingException
+        {
+            if ( failAuth )
+            {
+                throw new NamingException( "Simulated failure" );
+            }
+            return new SimpleAuthorizationInfo();
+        }
+
     }
 }
