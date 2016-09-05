@@ -19,37 +19,22 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
+import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo;
 
-public class PluginAuthenticationInfo implements org.apache.shiro.authc.AuthenticationInfo
+public class PluginAuthenticationInfo extends SimpleAuthenticationInfo
 {
-    private final AuthenticationInfo authenticationInfo;
-    private final String realmName;
+    public PluginAuthenticationInfo( Object principal, Object credentials, String realmName )
+    {
+        super( principal, credentials, realmName );
+    }
 
     public static PluginAuthenticationInfo create( AuthenticationInfo authenticationInfo, String realmName )
     {
-        return new PluginAuthenticationInfo( authenticationInfo, realmName );
-    }
-
-    private PluginAuthenticationInfo( AuthenticationInfo authenticationInfo, String realmName )
-    {
-        this.authenticationInfo = authenticationInfo;
-        this.realmName = realmName;
-    }
-
-    @Override
-    public PrincipalCollection getPrincipals()
-    {
-
-        return new SimplePrincipalCollection( this.authenticationInfo.getPrincipal(), realmName );
-    }
-
-    @Override
-    public Object getCredentials()
-    {
-        return this.authenticationInfo.getCredentials();
+        return new PluginAuthenticationInfo( authenticationInfo.getPrincipal(), authenticationInfo.getCredentials(),
+                realmName );
     }
 }

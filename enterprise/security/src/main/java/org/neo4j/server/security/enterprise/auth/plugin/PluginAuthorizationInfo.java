@@ -19,41 +19,22 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import org.apache.shiro.authz.Permission;
+import org.apache.shiro.authz.SimpleAuthorizationInfo;
 
-import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo;
 
-public class PluginAuthorizationInfo implements org.apache.shiro.authz.AuthorizationInfo
+public class PluginAuthorizationInfo extends SimpleAuthorizationInfo
 {
-    private final AuthorizationInfo authorizationInfo;
+    public PluginAuthorizationInfo( Set<String> roles )
+    {
+        super( roles );
+    }
 
     public static PluginAuthorizationInfo create( AuthorizationInfo authorizationInfo )
     {
-        return new PluginAuthorizationInfo( authorizationInfo );
-    }
-
-    private PluginAuthorizationInfo( AuthorizationInfo authorizationInfo )
-    {
-        this.authorizationInfo = authorizationInfo;
-    }
-
-    @Override
-    public Collection<String> getRoles()
-    {
-        return this.authorizationInfo.getRoles();
-    }
-
-    @Override
-    public Collection<String> getStringPermissions()
-    {
-        return null;
-    }
-
-    @Override
-    public Collection<Permission> getObjectPermissions()
-    {
-        return null;
+        return new PluginAuthorizationInfo( new LinkedHashSet<>( authorizationInfo.getRoles() ) );
     }
 }

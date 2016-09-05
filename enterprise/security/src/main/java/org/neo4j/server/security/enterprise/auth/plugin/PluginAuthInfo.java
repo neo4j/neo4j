@@ -19,57 +19,23 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import org.apache.shiro.authz.Permission;
-import org.apache.shiro.subject.PrincipalCollection;
-import org.apache.shiro.subject.SimplePrincipalCollection;
+import org.apache.shiro.authc.SimpleAccount;
 
-import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 
-public class PluginAuthInfo implements org.apache.shiro.authc.AuthenticationInfo, org.apache.shiro.authz.AuthorizationInfo
+public class PluginAuthInfo extends SimpleAccount
 {
-    private final AuthInfo authInfo;
-    private final String realmName;
+    public PluginAuthInfo( Object principal, Object credentials, String realmName, Set<String> roles )
+    {
+        super( principal, credentials, realmName, roles, null );
+    }
 
     public static PluginAuthInfo create( AuthInfo authInfo, String realmName )
     {
-        return new PluginAuthInfo( authInfo, realmName );
-    }
-
-    private PluginAuthInfo( AuthInfo authInfo, String realmName )
-    {
-        this.authInfo = authInfo;
-        this.realmName = realmName;
-    }
-
-    @Override
-    public PrincipalCollection getPrincipals()
-    {
-        return new SimplePrincipalCollection( this.authInfo.getPrincipal(), realmName );
-    }
-
-    @Override
-    public Object getCredentials()
-    {
-        return this.authInfo.getCredentials();
-    }
-
-    @Override
-    public Collection<String> getRoles()
-    {
-        return this.authInfo.getRoles();
-    }
-
-    @Override
-    public Collection<String> getStringPermissions()
-    {
-        return null;
-    }
-
-    @Override
-    public Collection<Permission> getObjectPermissions()
-    {
-        return null;
+        return new PluginAuthInfo( authInfo.getPrincipal(), authInfo.getCredentials(), realmName,
+                new LinkedHashSet<>( authInfo.getRoles() ) );
     }
 }
