@@ -27,6 +27,7 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.SlaveLockManager;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ReadOnlyLocks;
 import org.neo4j.logging.LogProvider;
 
 public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
@@ -37,8 +38,6 @@ public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
     private final Factory<Locks> locksFactory;
     private final LogProvider logProvider;
     private final Config config;
-
-    private volatile Locks currentLocks;
 
     public LockManagerSwitcher( DelegateInvocationHandler<Locks> delegate, DelegateInvocationHandler<Master> master,
                                 RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
@@ -56,31 +55,28 @@ public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
     @Override
     protected Locks getMasterImpl()
     {
-        currentLocks = locksFactory.newInstance();
-        return currentLocks;
+        return locksFactory.newInstance();
     }
 
     @Override
     protected Locks getSlaveImpl()
     {
-        currentLocks = new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
+        return new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
                 availabilityGuard, logProvider, config );
-        return currentLocks;
     }
 
     @Override
-    protected void shutdownCurrent()
+    protected Locks getPendingImpl()
     {
-        super.shutdownCurrent();
-        closeCurrentLocks();
+        return new ReadOnlyLocks();
     }
 
-    private void closeCurrentLocks()
+    @Override
+    protected void shutdownDelegate( Locks oldLocks )
     {
-        if ( currentLocks != null )
+        if ( oldLocks != null )
         {
-            currentLocks.close();
-            currentLocks = null;
+            oldLocks.close();
         }
     }
 }

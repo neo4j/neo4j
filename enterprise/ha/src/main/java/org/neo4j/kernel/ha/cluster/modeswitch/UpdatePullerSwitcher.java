@@ -23,7 +23,6 @@ import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
 import org.neo4j.kernel.ha.UpdatePuller;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 
 /**
  * UpdatePullerSwitcher will provide different implementations of {@link UpdatePuller}
@@ -35,9 +34,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 public class UpdatePullerSwitcher extends AbstractComponentSwitcher<UpdatePuller>
 {
     private final PullerFactory pullerFactory;
-
-    // Field is volatile because it is used by threads from executor in HighAvailabilityModeSwitcher
-    private volatile LifeSupport life;
 
     public UpdatePullerSwitcher( DelegateInvocationHandler<UpdatePuller> delegate, PullerFactory pullerFactory )
     {
@@ -55,30 +51,19 @@ public class UpdatePullerSwitcher extends AbstractComponentSwitcher<UpdatePuller
     protected UpdatePuller getSlaveImpl()
     {
         SlaveUpdatePuller slaveUpdatePuller = pullerFactory.createSlaveUpdatePuller();
-        startUpdatePuller( slaveUpdatePuller );
+        slaveUpdatePuller.init();
+        slaveUpdatePuller.start();
         return slaveUpdatePuller;
     }
 
     @Override
-    protected void shutdownCurrent()
+    protected void shutdownDelegate( UpdatePuller updatePuller )
     {
-        super.shutdownCurrent();
-        shutdownCurrentPuller();
-    }
-
-    private void shutdownCurrentPuller()
-    {
-        if ( life != null )
+        if ( updatePuller != null && updatePuller instanceof SlaveUpdatePuller )
         {
-            life.shutdown();
-            life = null;
+            SlaveUpdatePuller slaveUpdatePuller = (SlaveUpdatePuller) updatePuller;
+            slaveUpdatePuller.stop();
+            slaveUpdatePuller.shutdown();
         }
-    }
-
-    private void startUpdatePuller( SlaveUpdatePuller slaveUpdatePuller )
-    {
-        life = new LifeSupport();
-        life.add( slaveUpdatePuller );
-        life.start();
     }
 }

@@ -21,13 +21,9 @@ package org.neo4j.kernel.ha.cluster.modeswitch;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 public class AbstractComponentSwitcherTest
 {
@@ -54,22 +50,14 @@ public class AbstractComponentSwitcherTest
     }
 
     @Test
-    public void switchesToPending()
+    public void switchesToPending() throws Throwable
     {
         DelegateInvocationHandler<Component> delegate = new DelegateInvocationHandler<>( Component.class );
         TestComponentSwitcher switcher = new TestComponentSwitcher( delegate );
 
         switcher.switchToPending();
 
-        try
-        {
-            delegateClass( delegate );
-            fail( "Exception expected" );
-        }
-        catch ( Throwable throwable )
-        {
-            assertThat( throwable, instanceOf( TransactionFailureException.class ) );
-        }
+        assertEquals( delegateClass( delegate ), PendingComponent.class );
     }
 
     private static Class<?> delegateClass( DelegateInvocationHandler<?> invocationHandler ) throws Throwable
@@ -95,6 +83,12 @@ public class AbstractComponentSwitcherTest
         {
             return new SlaveComponent();
         }
+
+        @Override
+        protected Component getPendingImpl()
+        {
+            return new PendingComponent();
+        }
     }
 
     private interface Component
@@ -106,6 +100,10 @@ public class AbstractComponentSwitcherTest
     }
 
     private static class SlaveComponent implements Component
+    {
+    }
+
+    private static class PendingComponent implements Component
     {
     }
 }

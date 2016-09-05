@@ -213,7 +213,7 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     }
 
     @Override
-    public synchronized void init() throws Throwable
+    public synchronized void init()
     {
         if ( shutdownLatch != null )
         {
@@ -225,7 +225,17 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     }
 
     @Override
-    public synchronized void shutdown() throws Throwable
+    public void start() // for removing throw declaration
+    {
+    }
+
+    @Override
+    public void stop() // for removing throw declaration
+    {
+    }
+
+    @Override
+    public synchronized void shutdown()
     {
         if ( shutdownLatch == null )
         {

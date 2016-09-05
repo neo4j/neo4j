@@ -23,9 +23,14 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -33,7 +38,10 @@ import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.test.ha.ClusterRule;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.instanceEvicted;
 
 public class ClusterLocksIT
 {
@@ -50,10 +58,11 @@ public class ClusterLocksIT
         cluster = clusterRule.withSharedSetting( HaSettings.tx_push_factor, "2" ).startCluster();
     }
 
+    private Label testLabel = Label.label( "testLabel" );
+
     @Test( timeout = TIMEOUT_MILLIS )
     public void lockCleanupOnModeSwitch() throws Throwable
     {
-        Label testLabel = Label.label( "testLabel" );
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         createNodeOnMaster( testLabel, master );
 
@@ -67,6 +76,53 @@ public class ClusterLocksIT
         HighlyAvailableGraphDatabase clusterMaster = cluster.getMaster();
         // now it should be possible to take exclusive lock on the same node
         takeExclusiveLockOnSameNodeAfterSwitch( testLabel, master, clusterMaster );
+    }
+
+    @Test
+    public void aPendingMemberShouldBeAbleToServeReads() throws Throwable
+    {
+        createNodeOnMaster( testLabel, cluster.getMaster() );
+        cluster.sync();
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+
+        AtomicBoolean run = new AtomicBoolean( true );
+        AtomicReference<Throwable> ref = new AtomicReference<>(  );
+
+        Thread thread = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                while ( run.get() )
+                {
+                    try ( Transaction tx = slave.beginTx() )
+                    {
+                        Node single = Iterables.single( slave.getAllNodes() );
+                        Label label = Iterables.single( single.getLabels() );
+                        assertEquals( testLabel, label );
+                        tx.success();
+                    }
+                    catch ( TransactionTerminatedException ex )
+                    {
+                        // this is fine we might have stopped a transaction when we switched role..
+                    }
+                    catch ( Throwable t )
+                    {
+                        ref.compareAndSet( null, t );
+                    }
+                }
+            }
+        };
+
+        thread.start();
+
+        cluster.fail( slave, ClusterManager.NetworkFlag.values() );
+        cluster.await( instanceEvicted( slave ), 20 );
+
+        run.set( false );
+        thread.join();
+
+        assertNull( ref.get() );
     }
 
     private void takeExclusiveLockOnSameNodeAfterSwitch( Label testLabel, HighlyAvailableGraphDatabase master,
