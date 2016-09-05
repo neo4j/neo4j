@@ -118,11 +118,12 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Await indexes in the database to come online." )
+    @Description("Await indexes in the database to come online.")
     @Procedure(name = "db.awaitIndex", mode = READ)
     public void awaitIndex( @Name("label") String labelName,
                             @Name("property") String propertyKeyName,
-                            @Name(value = "timeOutSeconds") long timeout ) throws ProcedureException
+                            @Name(value = "timeOutSeconds", defaultValue = "300") long timeout )
+            throws ProcedureException
     {
         try ( AwaitIndexProcedure awaitIndexProcedure = new AwaitIndexProcedure( tx ) )
         {
