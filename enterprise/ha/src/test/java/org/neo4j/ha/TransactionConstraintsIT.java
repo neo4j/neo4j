@@ -19,7 +19,6 @@
  */
 package org.neo4j.ha;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -83,13 +82,6 @@ public class TransactionConstraintsIT
     public void setup() throws Exception
     {
         cluster = clusterRule.startCluster();
-    }
-
-    @After
-    public void afterwards() throws Throwable
-    {
-        cluster.repairAll();
-        cluster.await( allSeesAllAsAvailable() );
     }
 
     private static final String PROPERTY_KEY = "name";
