@@ -22,10 +22,7 @@ package org.neo4j.server.security.enterprise.auth;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -44,6 +41,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
+import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.api.security.OverriddenAccessMode.getUsernameFromAccessMode;
 import static org.neo4j.procedure.Mode.DBMS;
@@ -51,8 +49,6 @@ import static org.neo4j.procedure.Mode.DBMS;
 @SuppressWarnings( "unused" )
 public class AuthProcedures
 {
-    public static final String PERMISSION_DENIED = "Permission denied.";
-
     @Context
     public AuthSubject authSubject;
 
@@ -122,7 +118,7 @@ public class AuthProcedures
         try
         {
             StandardEnterpriseAuthSubject enterpriseSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-            if ( enterpriseSubject.doesUsernameMatch( username ) )
+            if ( enterpriseSubject.hasUsername( username ) )
             {
                 ownOrOther = "password";
                 enterpriseSubject.setPassword( newPassword, requirePasswordChange );
@@ -176,7 +172,7 @@ public class AuthProcedures
         try
         {
             StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-            if ( adminSubject.doesUsernameMatch( username ) && roleName.equals( PredefinedRolesBuilder.ADMIN ) )
+            if ( adminSubject.hasUsername( username ) && roleName.equals( PredefinedRolesBuilder.ADMIN ) )
             {
                 throw new InvalidArgumentsException(
                         "Removing yourself (user '" + username + "') from the admin role is not allowed." );
@@ -199,7 +195,7 @@ public class AuthProcedures
         try
         {
             StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-            if ( adminSubject.doesUsernameMatch( username ) )
+            if ( adminSubject.hasUsername( username ) )
             {
                 throw new InvalidArgumentsException( "Deleting yourself (user '" + username + "') is not allowed." );
             }
@@ -237,7 +233,7 @@ public class AuthProcedures
         try
         {
             StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-            if ( adminSubject.doesUsernameMatch( username ) )
+            if ( adminSubject.hasUsername( username ) )
             {
                 throw new InvalidArgumentsException( "Suspending yourself (user '" + username +
                         "') is not allowed." );
@@ -264,7 +260,7 @@ public class AuthProcedures
         try
         {
             StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-            if ( adminSubject.doesUsernameMatch( username ) )
+            if ( adminSubject.hasUsername( username ) )
             {
                 throw new InvalidArgumentsException( "Activating yourself (user '" + username +
                         "') is not allowed." );
@@ -405,87 +401,21 @@ public class AuthProcedures
         }
     }
 
-    // TODO: add security logging once listQueries PR is in
-    // ====================================================== FROM HERE
-    @Procedure( name = "dbms.security.listTransactions", mode = DBMS )
-    public Stream<TransactionResult> listTransactions()
-            throws InvalidArgumentsException, IOException
-    {
-        ensureAdminAuthSubject();
-
-        return countTransactionByUsername(
-                    getActiveTransactions().stream()
-                        .filter( tx -> !tx.terminationReason().isPresent() )
-                        .map( tx -> getUsernameFromAccessMode( tx.mode() ) )
-                );
-    }
-
-    @Procedure( name = "dbms.security.terminateTransactionsForUser", mode = DBMS )
-    public Stream<TransactionTerminationResult> terminateTransactionsForUser( @Name( "username" ) String username )
-            throws InvalidArgumentsException, IOException
-    {
-        ensureSelfOrAdminAuthSubject( username );
-
-        return terminateTransactionsForValidUser( username );
-    }
-
-    @Procedure( name = "dbms.security.listConnections", mode = DBMS )
-    public Stream<ConnectionResult> listConnections()
-    {
-        ensureAdminAuthSubject();
-
-        BoltConnectionTracker boltConnectionTracker = getBoltConnectionTracker();
-        return countConnectionsByUsername(
-                boltConnectionTracker.getActiveConnections().stream()
-                        .filter( session -> !session.hasTerminated() )
-                        .map( ManagedBoltStateMachine::owner )
-                );
-    }
-
-    @Procedure( name = "dbms.security.terminateConnectionsForUser", mode = DBMS )
-    public Stream<ConnectionResult> terminateConnectionsForUser( @Name( "username" ) String username )
-            throws InvalidArgumentsException
-    {
-        StandardEnterpriseAuthSubject subject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
-        if ( !subject.isAdmin() && !subject.doesUsernameMatch( username ) )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-
-        subject.getUserManager().getUser( username );
-
-        return terminateConnectionsForValidUser( username );
-    }
-    // ====================================================== TO HERE
-
     // ----------------- helpers ---------------------
 
-    Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
+    private void terminateTransactionsForValidUser( String username )
     {
-        long terminatedCount = 0;
-        for ( KernelTransactionHandle tx : getActiveTransactions() )
-        {
-            if ( getUsernameFromAccessMode( tx.mode() ).equals( username ) && !tx.isUnderlyingTransaction( this.tx ) )
-            {
-                boolean marked = tx.markForTermination( Status.Transaction.Terminated );
-                if ( marked )
-                {
-                    terminatedCount++;
-                }
-            }
-        }
-        return Stream.of( new TransactionTerminationResult( username, terminatedCount ) );
+        getActiveTransactions()
+                .stream()
+                .filter( tx ->
+                    getUsernameFromAccessMode( tx.mode() ).equals( username ) &&
+                    !tx.isUnderlyingTransaction( this.tx )
+                ).forEach( tx -> tx.markForTermination( Status.Transaction.Terminated ) );
     }
 
-    Stream<ConnectionResult> terminateConnectionsForValidUser( String username )
+    private void terminateConnectionsForValidUser( String username )
     {
-        Long killCount = 0L;
-        for ( ManagedBoltStateMachine connection : getBoltConnectionTracker().getActiveConnections( username ) )
-        {
-            connection.terminate();
-            killCount += 1;
-        }
-        return Stream.of( new ConnectionResult( username, killCount ) );
+        getBoltConnectionTracker().getActiveConnections( username ).forEach( ManagedBoltStateMachine::terminate );
     }
 
     private Set<KernelTransactionHandle> getActiveTransactions()
@@ -498,24 +428,6 @@ public class AuthProcedures
         return graph.getDependencyResolver().resolveDependency( BoltConnectionTracker.class );
     }
 
-    private Stream<TransactionResult> countTransactionByUsername( Stream<String> usernames )
-    {
-        return usernames.collect(
-                    Collectors.groupingBy( Function.identity(), Collectors.counting() )
-                ).entrySet().stream().map(
-                    entry -> new TransactionResult( entry.getKey(), entry.getValue() )
-                );
-    }
-
-    private Stream<ConnectionResult> countConnectionsByUsername( Stream<String> usernames )
-    {
-        return usernames.collect(
-                    Collectors.groupingBy( Function.identity(), Collectors.counting() )
-                ).entrySet().stream().map(
-                    entry -> new ConnectionResult( entry.getKey(), entry.getValue() )
-                );
-    }
-
     private StandardEnterpriseAuthSubject ensureAdminAuthSubject()
     {
         StandardEnterpriseAuthSubject enterpriseAuthSubject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
@@ -526,11 +438,12 @@ public class AuthProcedures
         return enterpriseAuthSubject;
     }
 
-    private StandardEnterpriseAuthSubject ensureSelfOrAdminAuthSubject( String username ) throws InvalidArgumentsException
+    private StandardEnterpriseAuthSubject ensureSelfOrAdminAuthSubject( String username )
+            throws InvalidArgumentsException
     {
         StandardEnterpriseAuthSubject subject = StandardEnterpriseAuthSubject.castOrFail( authSubject );
 
-        if ( subject.isAdmin() || subject.doesUsernameMatch( username ) )
+        if ( subject.isAdmin() || subject.hasUsername( username ) )
         {
             subject.getUserManager().getUser( username );
             return subject;
@@ -575,66 +488,6 @@ public class AuthProcedures
             this.role = role;
             this.users = new ArrayList<>();
             this.users.addAll( users );
-        }
-    }
-
-    public static class TransactionResult
-    {
-        public final String username;
-        public final Long activeTransactions;
-
-        TransactionResult( String username, Long activeTransactions )
-        {
-            this.username = username;
-            this.activeTransactions = activeTransactions;
-        }
-    }
-
-    public static class QueryStatusResult
-    {
-        public final long queryId;
-
-        public final String username;
-        public final String query;
-        public final Map<String, Object> parameters;
-        public final long startTime;
-
-        public QueryStatusResult(
-                long queryId,
-                String username,
-                String query,
-                Map<String,Object> parameters,
-                long startTime )
-        {
-            this.queryId = queryId;
-            this.username = username;
-            this.query = query;
-            this.parameters = parameters;
-            this.startTime = startTime;
-        }
-    }
-
-    public static class TransactionTerminationResult
-    {
-        public final String username;
-        public final Long transactionsTerminated;
-
-        TransactionTerminationResult( String username, Long transactionsTerminated )
-        {
-            this.username = username;
-            this.transactionsTerminated = transactionsTerminated;
-        }
-    }
-
-    public static class ConnectionResult
-    {
-        public final String username;
-        public final Long connectionCount;
-
-        ConnectionResult( String username, Long connectionCount )
-        {
-            this.username = username;
-            this.connectionCount = connectionCount;
         }
     }
 }

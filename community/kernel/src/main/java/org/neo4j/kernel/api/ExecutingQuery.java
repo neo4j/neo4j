@@ -35,8 +35,13 @@ public class ExecutingQuery
     private final Map<String, Object> queryParameters;
     private final long startTime;
 
-    public ExecutingQuery( long queryId, String authSubjectName, String queryText, Map<String,Object>
-            queryParameters, long startTime )
+    public ExecutingQuery(
+            long queryId,
+            String authSubjectName,
+            String queryText,
+            Map<String,Object> queryParameters,
+            long startTime
+    )
     {
         this.queryId = queryId;
         this.authSubjectName = authSubjectName;

@@ -161,7 +161,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     {
         BasicAuthSubject basicAuthSubject = BasicAuthSubject.castOrFail( authSubject );
 
-        if ( !basicAuthSubject.doesUsernameMatch( username ) )
+        if ( !basicAuthSubject.hasUsername( username ) )
         {
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }

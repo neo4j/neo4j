@@ -85,7 +85,6 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.Clocks;

@@ -56,7 +56,7 @@ public class AuthProcedures
     public void deleteUser( @Name( "username" ) String username ) throws InvalidArgumentsException, IOException
     {
         BasicAuthSubject subject = BasicAuthSubject.castOrFail( authSubject );
-        if ( subject.doesUsernameMatch( username ) )
+        if ( subject.hasUsername( username ) )
         {
             throw new InvalidArgumentsException( "Deleting yourself (user '" + username + "') is not allowed." );
         }

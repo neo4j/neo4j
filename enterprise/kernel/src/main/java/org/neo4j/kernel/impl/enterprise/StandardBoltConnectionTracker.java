@@ -53,7 +53,11 @@ public class StandardBoltConnectionTracker implements BoltConnectionTracker
     @Override
     public Set<ManagedBoltStateMachine> getActiveConnections( String owner )
     {
-        return sessions.entrySet().stream().filter( entry -> entry.getValue().equals( owner ) )
+        return sessions
+                .entrySet()
+                .stream()
+                .filter( entry -> entry.getValue()
+                .equals( owner ) )
                 .map( Map.Entry::getKey ).collect( toSet() );
     }
 }

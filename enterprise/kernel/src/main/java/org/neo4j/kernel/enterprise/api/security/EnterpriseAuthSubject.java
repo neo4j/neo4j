@@ -30,4 +30,18 @@ public interface EnterpriseAuthSubject extends AuthSubject
      * Enterprise has the concept of users being admins.
      */
     boolean isAdmin();
+
+    static EnterpriseAuthSubject castOrFail( AuthSubject authSubject )
+    {
+        return castOrFail( EnterpriseAuthSubject.class, authSubject );
+    }
+
+    static <T extends EnterpriseAuthSubject> T castOrFail( Class<T> clazz, AuthSubject authSubject )
+    {
+        if ( !(clazz.isInstance( authSubject )) )
+        {
+            throw new IllegalArgumentException( "Incorrect AuthSubject type " + authSubject.getClass().getTypeName() );
+        }
+        return clazz.cast( authSubject );
+    }
 }

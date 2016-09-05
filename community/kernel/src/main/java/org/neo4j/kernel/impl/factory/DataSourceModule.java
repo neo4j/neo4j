@@ -416,6 +416,12 @@ public class DataSourceModule
             internalLog.error( "Failed to register built-in edition procedures at start up: " + e.getMessage() );
         }
 
+        // Service providers
+        for ( ProceduresProvider candidate : Service.load( ProceduresProvider.class ) )
+        {
+            candidate.registerProcedures( procedures );
+        }
+
         return procedures;
     }
 

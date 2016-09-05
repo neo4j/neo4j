@@ -54,6 +54,22 @@ public interface AuthSubject extends AccessMode
     String username();
 
     /**
+     * @param username a username
+     * @return true if the provided username is the underlying user name of this subject
+     */
+    boolean hasUsername( String username );
+
+    /**
+     * Ensure that the provided username is the name of an existing user known to the system.
+     *
+     * @param username a username
+     * @throws InvalidArgumentsException if the provided user name is not the name of an existing user
+     */
+    default void ensureUserExistsWithName( String username ) throws InvalidArgumentsException {
+        throw new InvalidArgumentsException( "User '" + username + "' does not exit." );
+    }
+
+    /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
      */
     AuthSubject ANONYMOUS = new AuthSubject()
@@ -77,7 +93,7 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public boolean doesUsernameMatch( String username )
+        public boolean hasUsername( String username )
         {
             return false;
         }
@@ -196,7 +212,7 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public boolean doesUsernameMatch( String username )
+        public boolean hasUsername( String username )
         {
             return false;
         }
@@ -207,6 +223,4 @@ public interface AuthSubject extends AccessMode
             return true;
         }
     };
-
-    boolean doesUsernameMatch( String username );
 }

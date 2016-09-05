@@ -50,7 +50,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.security.enterprise.auth.AuthProcedures;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -72,6 +71,7 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgIgnored;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 @RunWith( Parameterized.class )
@@ -157,7 +157,7 @@ public class BoltConnectionManagementIT
     {
         // When
         admin.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.listConnections() YIELD username, connectionCount" ),
+                run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -173,7 +173,7 @@ public class BoltConnectionManagementIT
         // When
         authenticate( user, "Igor", "123", null );
         admin.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.listConnections() YIELD username, connectionCount" ),
+                run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -191,12 +191,12 @@ public class BoltConnectionManagementIT
         // When
         authenticate( user, "Igor", "123", null );
         user.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.listConnections() YIELD username, connectionCount" ),
+                run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
         assertThat( user, eventuallyReceives(
-                msgFailure( Status.Security.Forbidden, AuthProcedures.PERMISSION_DENIED ) ) );
+                msgFailure( Status.Security.Forbidden, PERMISSION_DENIED ) ) );
     }
 
     // --------------- terminate connections -------------------
@@ -207,7 +207,7 @@ public class BoltConnectionManagementIT
         // When
         authenticate( user, "Igor", "123", null );
         admin.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
+                run( "CALL dbms.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -216,7 +216,7 @@ public class BoltConnectionManagementIT
         assertTrue( terminationResult.get( "Igor" ) == 1L );
 
         admin.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.listConnections() YIELD username, connectionCount" ),
+                run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
                 pullAll() ) );
         Map<String, Long> listResult = collectConnectionResult( admin, 1 );
         assertTrue( listResult.containsKey( "neo4j" ) );
@@ -230,7 +230,7 @@ public class BoltConnectionManagementIT
     {
         // When
         admin.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
+                run( "CALL dbms.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -244,7 +244,7 @@ public class BoltConnectionManagementIT
     {
         // When
         admin.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.terminateConnectionsForUser( 'NonExistentUser' ) YIELD username, connectionCount" ),
+                run( "CALL dbms.terminateConnectionsForUser( 'NonExistentUser' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -313,7 +313,7 @@ public class BoltConnectionManagementIT
     {
         // Given
         conn.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
+                run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -324,7 +324,7 @@ public class BoltConnectionManagementIT
             Exception
     {
         conn1.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
+                run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
@@ -335,12 +335,12 @@ public class BoltConnectionManagementIT
     private static void assertFailTerminateConnectionForUser( TransportConnection client, String username ) throws Exception
     {
         client.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
+                run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives(
-                msgFailure( Status.Security.Forbidden, AuthProcedures.PERMISSION_DENIED ),
+                msgFailure( Status.Security.Forbidden, PERMISSION_DENIED ),
                 msgIgnored()
         ) );
 
