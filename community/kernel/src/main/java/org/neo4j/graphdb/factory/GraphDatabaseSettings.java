@@ -512,13 +512,13 @@ public abstract class GraphDatabaseSettings
     @Description("Default network interface to listen for incoming connections. " +
             "To listen for connections on all interfaces, use \"0.0.0.0\". " +
             "To bind specific connectors to a specific network interfaces, " +
-            "specify the listen_address properties for the specific connector.")
+            "specify the +listen_address+ properties for the specific connector.")
     public static final Setting<String> default_listen_address =
             setting( "dbms.connectors.default_listen_address", STRING, "localhost" );
 
     @Description("Default hostname or IP address the server uses to advertise itself to its connectors. " +
             "To advertise a specific hostname or IP address for a specific connector, " +
-            "specify the advertised_address property for the specific connector.")
+            "specify the +advertised_address+ property for the specific connector.")
     public static final Setting<String> default_advertised_hostname =
             setting( "dbms.connectors.default_advertised_hostname", STRING, "localhost" );
 
@@ -561,7 +561,7 @@ public abstract class GraphDatabaseSettings
         public final Setting<EncryptionLevel> encryption_level;
 
         @Description( "Address the connector should bind to. " +
-                "This setting is deprecated and will be replaced by listen_address" )
+                "This setting is deprecated and will be replaced by `+listen_address+`" )
         public final Setting<ListenSocketAddress> address;
 
         @Description( "Address the connector should bind to" )
