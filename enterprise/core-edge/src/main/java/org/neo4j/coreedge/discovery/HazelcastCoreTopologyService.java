@@ -69,7 +69,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     }
 
     @Override
-    public boolean publishClusterId( ClusterId clusterId )
+    public boolean casClusterId( ClusterId clusterId )
     {
         return HazelcastClusterTopology.casClusterId( hazelcastInstance, clusterId );
     }

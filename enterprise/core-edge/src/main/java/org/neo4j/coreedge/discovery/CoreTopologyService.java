@@ -25,7 +25,15 @@ public interface CoreTopologyService extends TopologyService
 {
     void addCoreTopologyListener( Listener listener );
 
-    boolean publishClusterId( ClusterId clusterId );
+    /**
+     * Publishes the cluster ID so that other members might discover it.
+     * Should only succeed to publish if one missing or already the same (CAS logic).
+     *
+     * @param clusterId The cluster ID to publish.
+     *
+     * @return True if the cluster ID was successfully CAS:ed, otherwise false.
+     */
+    boolean casClusterId( ClusterId clusterId );
 
     interface Listener
     {

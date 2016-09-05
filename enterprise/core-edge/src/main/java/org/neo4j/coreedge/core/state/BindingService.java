@@ -105,17 +105,14 @@ class BindingService extends LifecycleAdapter
             clusterIdStorage.writeState( commonClusterId );
         }
 
-        if ( topology.canBeBootstrapped() )
+        boolean success = topologyService.casClusterId( commonClusterId );
+        if ( !success )
         {
-            boolean success = topologyService.publishClusterId( commonClusterId );
-            if ( !success )
-            {
-                throw new BindingException( "Failed to publish: " + commonClusterId );
-            }
-            else
-            {
-                log.info( "Published: " + commonClusterId );
-            }
+            throw new BindingException( "Failed to publish: " + commonClusterId );
+        }
+        else
+        {
+            log.info( "Published: " + commonClusterId );
         }
 
         return commonClusterId;
