@@ -118,14 +118,6 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                                  final DiscoveryServiceFactory discoveryServiceFactory )
     {
         LogService logging = platformModule.logging;
-        Log userLog = logging.getUserLog( EnterpriseEdgeEditionModule.class );
-        if ( platformModule.config.get( OnlineBackupSettings.online_backup_enabled ) )
-        {
-            userLog.warn( "Backup is not supported on edge servers. Ignoring the configuration setting: "
-                    + OnlineBackupSettings.online_backup_enabled );
-            platformModule.config.augment( singletonMap( OnlineBackupSettings.online_backup_enabled.name(), Settings
-                    .FALSE ) );
-        }
 
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
 

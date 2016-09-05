@@ -19,10 +19,6 @@
  */
 package org.neo4j.coreedge.backup;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
@@ -35,32 +31,39 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.coreedge.TestStoreId;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
-import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.stream.Collectors.toList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
-import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.coreedge.backup.ArgsBuilder.args;
 import static org.neo4j.coreedge.backup.ArgsBuilder.toArray;
+import static org.neo4j.graphdb.Label.label;
 
 public class BackupCoreIT
 {
@@ -72,7 +75,7 @@ public class BackupCoreIT
             .withNumberOfCoreMembers( 3 )
             .withNumberOfEdgeMembers( 0 )
             .withSharedCoreParam( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-            .withInstanceCoreParam( OnlineBackupSettings.online_backup_server, serverId -> (":" + (8000 + serverId) ) );
+            .withInstanceCoreParam( OnlineBackupSettings.online_backup_server, serverId -> (":" + (8000 + serverId)) );
     private Cluster cluster;
     private File backupPath;
     private DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -88,13 +91,13 @@ public class BackupCoreIT
     public void makeSureBackupCanBePerformed() throws Throwable
     {
         // Run backup
-        CoreGraphDatabase db = createSomeData(cluster);
+        CoreGraphDatabase db = createSomeData( cluster );
         DbRepresentation beforeChange = DbRepresentation.of( db );
-        String[] args = backupArguments(backupAddress(db), backupPath.getPath() );
+        String[] args = backupArguments( backupAddress( db ), backupPath.getPath() );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
 
         // Add some new data
-        DbRepresentation afterChange = DbRepresentation.of( createSomeData(cluster) );
+        DbRepresentation afterChange = DbRepresentation.of( createSomeData( cluster ) );
 
         // Verify that backed up database can be started and compare representation
         DbRepresentation backupRepresentation = DbRepresentation.of( backupPath, getConfig() );
@@ -108,9 +111,9 @@ public class BackupCoreIT
         for ( CoreClusterMember db : cluster.coreMembers() )
         {
             // Run backup
-            DbRepresentation beforeChange = DbRepresentation.of(createSomeData( cluster ));
+            DbRepresentation beforeChange = DbRepresentation.of( createSomeData( cluster ) );
             File backupPathPerCoreMachine = new File( backupPath, "" + db.id().hashCode() );
-            String[] args = backupArguments(backupAddress(db.database()), backupPathPerCoreMachine.getPath() );
+            String[] args = backupArguments( backupAddress( db.database() ), backupPathPerCoreMachine.getPath() );
             assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
 
             // Add some new data
@@ -129,7 +132,7 @@ public class BackupCoreIT
         // given
         CoreGraphDatabase db = createSomeData( cluster );
         DbRepresentation beforeBackup = DbRepresentation.of( db );
-        String[] args = backupArguments(backupAddress(db), backupPath.getPath() );
+        String[] args = backupArguments( backupAddress( db ), backupPath.getPath() );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
 
         // when we shutdown the cluster we lose the number of core servers so we won't go through the for loop unless
@@ -146,16 +149,16 @@ public class BackupCoreIT
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         PrintStream sysOut = new PrintStream( output );
 
-        Path homeDir = Paths.get(cluster.getCoreMemberById( 0 ).homeDir().getPath());
-        new RestoreNewClusterCli( homeDir, homeDir, sysOut ).execute(toArray( args().from( backupPath )
-                .database( "graph.db" ).force().build() ));
+        Path homeDir = Paths.get( cluster.getCoreMemberById( 0 ).homeDir().getPath() );
+        new RestoreNewClusterCli( homeDir, homeDir, sysOut ).execute( toArray( args().from( backupPath )
+                .database( "graph.db" ).force().build() ) );
 
         String seed = RestoreClusterCliTest.extractSeed( output.toString() );
 
         for ( int i = 1; i < numberOfCoreMembers; i++ )
         {
-            homeDir = Paths.get(cluster.getCoreMemberById( i ).homeDir().getPath());
-            new RestoreExistingClusterCli( homeDir, homeDir  ).execute(
+            homeDir = Paths.get( cluster.getCoreMemberById( i ).homeDir().getPath() );
+            new RestoreExistingClusterCli( homeDir, homeDir ).execute(
                     toArray( args().from( backupPath ).database( "graph.db" ).seed( seed ).force().build() ) );
         }
 
@@ -163,10 +166,12 @@ public class BackupCoreIT
 
         // then
         Collection<CoreClusterMember> coreGraphDatabases = cluster.coreMembers();
-        Stream<DbRepresentation> dbRepresentations = coreGraphDatabases.stream().map( x -> DbRepresentation.of(x.database()) );
+        Stream<DbRepresentation> dbRepresentations = coreGraphDatabases.stream().map( x -> DbRepresentation.of( x
+                .database() ) );
         dbRepresentations.forEach( afterReSeed -> assertEquals( beforeBackup, afterReSeed ) );
 
-        List<File> afterRestoreDbPaths = coreGraphDatabases.stream().map( CoreClusterMember::storeDir ).collect( toList() );
+        List<File> afterRestoreDbPaths = coreGraphDatabases.stream().map( CoreClusterMember::storeDir ).collect(
+                toList() );
         cluster.shutdown();
 
         assertAllStoresHaveTheSameStoreId( afterRestoreDbPaths, fs );
@@ -176,14 +181,16 @@ public class BackupCoreIT
 
     static CoreGraphDatabase createSomeData( Cluster cluster ) throws TimeoutException, InterruptedException
     {
-        return cluster.coreTx( ( db, tx ) -> {
+        return cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
         } ).database();
     }
 
-    static String backupAddress(CoreGraphDatabase db) {
+    static String backupAddress( GraphDatabaseFacade db )
+    {
         InetSocketAddress inetSocketAddress = db.getDependencyResolver()
                 .resolveDependency( Config.class ).get( CoreEdgeClusterSettings.transaction_advertised_address )
                 .socketAddress();
