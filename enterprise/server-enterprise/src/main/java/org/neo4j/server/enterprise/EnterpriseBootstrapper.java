@@ -22,6 +22,7 @@ package org.neo4j.server.enterprise;
 import java.util.Map;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
@@ -38,20 +39,24 @@ import static org.neo4j.server.enterprise.EnterpriseServerSettings.mode;
 public class EnterpriseBootstrapper extends CommunityBootstrapper
 {
     @Override
-    protected NeoServer createNeoServer( Config configurator, GraphDatabaseDependencies dependencies, LogProvider
-            userLogProvider )
+    protected NeoServer createNeoServer( Config configurator, GraphDatabaseDependencies dependencies,
+            LogProvider userLogProvider )
     {
         return new EnterpriseNeoServer( configurator, dependencies, userLogProvider );
     }
 
     @Override
-    protected Iterable<Class<?>> settingsClasses( Map<String, String> settings )
+    protected Iterable<Class<?>> settingsClasses( Map<String,String> settings )
     {
         if ( isHAMode( settings ) )
         {
-            return Iterables.concat(
-                    super.settingsClasses( settings ),
+            return Iterables.concat( super.settingsClasses( settings ),
                     asList( HaSettings.class, ClusterSettings.class, SecuritySettings.class ) );
+        }
+        if ( isCEMode( settings ) )
+        {
+            return Iterables.concat( super.settingsClasses( settings ),
+                    asList( CoreEdgeClusterSettings.class, SecuritySettings.class ) );
         }
         else
         {
@@ -59,8 +64,14 @@ public class EnterpriseBootstrapper extends CommunityBootstrapper
         }
     }
 
-    private boolean isHAMode( Map<String, String> settings )
+    private boolean isHAMode( Map<String,String> settings )
     {
         return new Config( settings, EnterpriseServerSettings.class ).get( mode ).equals( "HA" );
+    }
+
+    private boolean isCEMode( Map<String,String> settings )
+    {
+        String mode = new Config( settings, EnterpriseServerSettings.class ).get( EnterpriseServerSettings.mode );
+        return mode.equals( "CORE" ) || mode.equals( "EDGE" );
     }
 }

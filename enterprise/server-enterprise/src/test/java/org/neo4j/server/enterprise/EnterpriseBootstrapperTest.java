@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
@@ -39,6 +38,7 @@ import org.neo4j.server.ServerBootstrapper;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -46,6 +46,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_level;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
@@ -56,6 +57,9 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
 {
     private TemporaryFolder folder = new TemporaryFolder();
     private CleanupRule cleanupRule = new CleanupRule();
+
+    @Rule
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(folder).around( cleanupRule );
@@ -147,7 +151,7 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         // When
         File configFile = tempDir.newFile( ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
 
-        Map<String, String> properties = stringMap( GraphDatabaseSettings.store_internal_log_level.name(), "DEBUG");
+        Map<String, String> properties = stringMap( store_internal_log_level.name(), "DEBUG");
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
         properties.put( "dbms.connector.1.type", "HTTP" );
         properties.put( "dbms.connector.1.enabled", "true" );
