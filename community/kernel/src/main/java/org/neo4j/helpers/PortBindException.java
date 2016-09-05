@@ -32,4 +32,10 @@ public class PortBindException extends BindException
         super( String.format("Address %s is already in use, cannot bind to it.", address) );
         setStackTrace( original.getStackTrace() );
     }
+
+    public PortBindException( HostnamePort address, HostnamePort other, BindException original )
+    {
+        super( String.format("At least one of the addresses %s or %s is already in use, cannot bind to it.", address, other) );
+        setStackTrace( original.getStackTrace() );
+    }
 }

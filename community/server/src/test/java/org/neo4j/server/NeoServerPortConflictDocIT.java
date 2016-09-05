@@ -71,4 +71,42 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
             server.stop();
         }
     }
+
+    @Test
+    public void shouldComplainIfServerHTTPSPortIsAlreadyTaken() throws IOException, InterruptedException
+    {
+        HostnamePort unContestedAddress = new HostnamePort( "localhost", 8888 );
+        HostnamePort contestedAddress = new HostnamePort( "localhost", 9999 );
+        try ( ServerSocket ignored = new ServerSocket(
+                contestedAddress.getPort(), 0, InetAddress.getByName( contestedAddress.getHost() ) ) )
+        {
+            AssertableLogProvider logProvider = new AssertableLogProvider();
+            CommunityNeoServer server = CommunityServerBuilder.server( logProvider )
+                    .onAddress( unContestedAddress )
+                    .onHttpsAddress( contestedAddress )
+                    .withHttpsEnabled()
+                    .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                    .build();
+            try
+            {
+                server.start();
+
+                fail( "Should have reported failure to start" );
+            }
+            catch ( ServerStartupException e )
+            {
+                assertThat( e.getMessage(), containsString( "Starting Neo4j failed" ) );
+            }
+
+            logProvider.assertAtLeastOnce(
+                    AssertableLogProvider.inLog( containsString( "CommunityNeoServer" ) ).error(
+                            "Failed to start Neo4j on %s: %s",
+                            unContestedAddress,
+                            format( "At least one of the addresses %s or %s is already in use, cannot bind to it.",
+                                    unContestedAddress, contestedAddress )
+                    )
+            );
+            server.stop();
+        }
+    }
 }
