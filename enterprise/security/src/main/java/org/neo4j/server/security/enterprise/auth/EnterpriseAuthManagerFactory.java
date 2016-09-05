@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.enterprise.SecurityLog;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -68,8 +69,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         SecurityLog castedSecurityLog = (SecurityLog) securityLog;
 
         // We always create the internal realm as it is our only UserManager implementation
-        InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider, fileSystem,
-                jobScheduler, castedSecurityLog );
+        InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
 
         if ( config.get( SecuritySettings.internal_authentication_enabled ) ||
              config.get( SecuritySettings.internal_authorization_enabled ) )
@@ -94,11 +94,11 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 
         return new MultiRealmAuthManager( internalRealm, realms,
                 new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity ),
-                castedSecurityLog );
+                castedSecurityLog, config.get( EnterpriseEditionSettings.security_log_successful_authentication ) );
     }
 
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,
-            FileSystemAbstraction fileSystem, JobScheduler jobScheduler, Log securityLog )
+            FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
         // Resolve auth store and roles file names
         File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );

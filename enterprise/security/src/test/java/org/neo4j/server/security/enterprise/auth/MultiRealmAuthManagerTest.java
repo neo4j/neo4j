@@ -61,6 +61,8 @@ import static org.neo4j.test.assertion.Assert.assertException;
 public class MultiRealmAuthManagerTest
 {
     private InMemoryUserRepository users;
+    private InMemoryRoleRepository roles;
+    private PasswordPolicy passwordPolicy;
     private AuthenticationStrategy authStrategy;
     private MultiRealmAuthManager manager;
     private EnterpriseUserManager userManager;
@@ -70,8 +72,18 @@ public class MultiRealmAuthManagerTest
     public void setUp() throws Throwable
     {
         users = new InMemoryUserRepository();
+        roles = new InMemoryRoleRepository();
+        passwordPolicy = mock( PasswordPolicy.class );
         authStrategy = mock( AuthenticationStrategy.class );
         logProvider = new AssertableLogProvider();
+
+        manager = createAuthManager( roles, passwordPolicy, true );
+        userManager = manager.getUserManager();
+    }
+
+    private MultiRealmAuthManager createAuthManager( InMemoryRoleRepository roles, PasswordPolicy passwordPolicy, boolean
+            logSuccessfulAuthentications ) throws Throwable
+    {
         Log log = logProvider.getLog( this.getClass() );
 
         InternalFlatFileRealm internalFlatFileRealm =
@@ -79,10 +91,10 @@ public class MultiRealmAuthManagerTest
                         authStrategy, mock( JobScheduler.class ) );
 
         manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ),
-                new MemoryConstrainedCacheManager(), new SecurityLog( log ) );
+                new MemoryConstrainedCacheManager(), new SecurityLog( log ), logSuccessfulAuthentications );
 
         manager.init();
-        userManager = manager.getUserManager();
+        return manager;
     }
 
     @After
@@ -121,6 +133,25 @@ public class MultiRealmAuthManagerTest
         // Then
         assertThat( result, equalTo( AuthenticationResult.SUCCESS ) );
         logProvider.assertExactly( info( "[jake]: logged in" ) );
+    }
+
+    @Test
+    public void shouldNotLogAuthenticationIfFlagSaysNo() throws Throwable
+    {
+        // Given
+        manager.shutdown();
+        manager = createAuthManager( roles, passwordPolicy, false );
+
+        users.create( newUser( "jake", "abc123" , false ) );
+        manager.start();
+        setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
+
+        // When
+        AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).getAuthenticationResult();
+
+        // Then
+        assertThat( result, equalTo( AuthenticationResult.SUCCESS ) );
+        logProvider.assertNone( info( "[jake]: logged in" ) );
     }
 
     @Test
@@ -591,12 +622,12 @@ public class MultiRealmAuthManagerTest
 
     private AssertableLogProvider.LogMatcher info( String message, String... arguments )
     {
-        return inLog( this.getClass() ).info( message, arguments );
+        return inLog( this.getClass() ).info( message, (Object[]) arguments );
     }
 
     private AssertableLogProvider.LogMatcher error( String message, String... arguments )
     {
-        return inLog( this.getClass() ).error( message, arguments );
+        return inLog( this.getClass() ).error( message, (Object[]) arguments );
     }
 
     private User newUser( String userName, String password, boolean pwdChange )

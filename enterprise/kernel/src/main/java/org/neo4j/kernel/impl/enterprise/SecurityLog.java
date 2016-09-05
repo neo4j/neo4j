@@ -22,14 +22,18 @@ package org.neo4j.kernel.impl.enterprise;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
+import org.neo4j.concurrent.AsyncEventSender;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
+import org.neo4j.logging.async.AsyncLog;
+import org.neo4j.logging.async.AsyncLogEvent;
 
 import static org.neo4j.helpers.Strings.escape;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
@@ -49,7 +53,7 @@ public class SecurityLog implements Log
         inner = log;
     }
 
-    private static Log createLog( Config config, FileSystemAbstraction fileSystem )
+    private static AsyncLog createLog( Config config, FileSystemAbstraction fileSystem )
     {
         FormattedLog.Builder builder = FormattedLog.withUTCTimeZone();
         File logFile = config.get( security_log_filename );
@@ -62,7 +66,14 @@ public class SecurityLog implements Log
         {
             throw new AssertionError( "File not possible to create", e );
         }
-        return builder.toOutputStream( ouputStream );
+        return new AsyncLog( new AsyncEventSender<AsyncLogEvent>()
+            {
+                @Override
+                public void send( AsyncLogEvent event )
+                {
+                    ForkJoinPool.commonPool().execute( event::process );
+                }
+            }, builder.toOutputStream( ouputStream ) );
     }
 
     private static String withSubject( AuthSubject subject, String msg )

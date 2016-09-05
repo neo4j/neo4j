@@ -27,6 +27,7 @@ import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.store.id.IdType;
 
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.list;
@@ -51,5 +52,9 @@ public class EnterpriseEditionSettings
             GraphDatabaseSettings.logs_directory,
             ( logs ) -> new File( logs, "security.log" ),
             PATH );
+
+    @Description( "Set to log successful authentication events." )
+    public static final Setting<Boolean> security_log_successful_authentication =
+            setting("dbms.security.log_successful_authentication", BOOLEAN, "true" );
 
 }

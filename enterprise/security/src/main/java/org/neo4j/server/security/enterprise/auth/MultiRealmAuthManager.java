@@ -50,9 +50,10 @@ class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplie
     private final DefaultSecurityManager securityManager;
     private final CacheManager cacheManager;
     private final SecurityLog securityLog;
+    private final boolean logSuccessfulLogin;
 
     MultiRealmAuthManager( EnterpriseUserManager userManager, Collection<Realm> realms, CacheManager cacheManager,
-            SecurityLog securityLog )
+            SecurityLog securityLog, boolean logSuccessfulLogin )
     {
         this.userManager = userManager;
         this.realms = realms;
@@ -60,6 +61,7 @@ class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplie
 
         securityManager = new DefaultSecurityManager( realms );
         this.securityLog = securityLog;
+        this.logSuccessfulLogin = logSuccessfulLogin;
         securityManager.setSubjectFactory( new ShiroSubjectFactory() );
         ((ModularRealmAuthenticator) securityManager.getAuthenticator())
                 .setAuthenticationStrategy( new ShiroAuthenticationStrategy() );
@@ -93,7 +95,10 @@ class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplie
         try
         {
             subject = new StandardEnterpriseAuthSubject( this, (ShiroSubject) securityManager.login( null, token ) );
-            securityLog.info( subject, "logged in" );
+            if ( logSuccessfulLogin )
+            {
+                securityLog.info( subject, "logged in" );
+            }
         }
         catch ( UnsupportedTokenException e )
         {
