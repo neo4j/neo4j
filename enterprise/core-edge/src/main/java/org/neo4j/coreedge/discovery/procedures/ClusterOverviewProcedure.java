@@ -28,7 +28,7 @@ import java.util.UUID;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
-import org.neo4j.coreedge.discovery.ClusterTopology;
+import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
@@ -68,8 +68,8 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
         List<ReadWriteEndPoint> endpoints = new ArrayList<>();
-        ClusterTopology clusterTopology = discoveryService.currentTopology();
-        Set<MemberId> coreMembers = clusterTopology.coreMembers();
+        CoreTopology coreTopology = discoveryService.coreServers();
+        Set<MemberId> coreMembers = coreTopology.members();
         MemberId leader = null;
         try
         {
@@ -85,7 +85,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             AdvertisedSocketAddress boltServerAddress = null;
             try
             {
-                boltServerAddress = clusterTopology.coreAddresses( memberId ).getBoltServer();
+                boltServerAddress = coreTopology.find( memberId ).getBoltServer();
             }
             catch ( NoKnownAddressesException e )
             {
@@ -94,7 +94,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             Role role = memberId.equals( leader ) ? Role.LEADER : Role.FOLLOWER;
             endpoints.add( new ReadWriteEndPoint( boltServerAddress, role, memberId.getUuid() ) );
         }
-        for ( EdgeAddresses edgeAddresses : clusterTopology.edgeMemberAddresses() )
+        for ( EdgeAddresses edgeAddresses : discoveryService.edgeServers().members() )
         {
             endpoints.add( new ReadWriteEndPoint( edgeAddresses.getBoltAddress(), Role.READ_REPLICA ) );
         }

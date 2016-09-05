@@ -52,10 +52,16 @@ class SharedDiscoveryEdgeClient extends LifecycleAdapter implements TopologyServ
     }
 
     @Override
-    public ClusterTopology currentTopology()
+    public EdgeTopology edgeServers()
     {
-        ClusterTopology topology = sharedDiscoveryService.currentTopology( null );
-        log.info( "Current topology is %s", topology );
+        return sharedDiscoveryService.edgeTopology();
+    }
+
+    @Override
+    public CoreTopology coreServers()
+    {
+        CoreTopology topology = sharedDiscoveryService.coreTopology( null );
+        log.info( "Core topology is %s", topology );
         return topology;
     }
 }

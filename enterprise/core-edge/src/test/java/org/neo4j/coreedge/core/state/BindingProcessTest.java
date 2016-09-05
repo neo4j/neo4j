@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.UUID;
 
-import org.neo4j.coreedge.discovery.ClusterTopology;
+import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.logging.Log;
 
@@ -42,7 +42,7 @@ public class BindingProcessTest
     public void notBootstrappableShouldDoNothingWhenNoIdPublished() throws Exception
     {
         // given
-        ClusterTopology topology = new ClusterTopology( null, false, Collections.emptyMap(), Collections.emptySet() );
+        CoreTopology topology = new CoreTopology( null, false, Collections.emptyMap() );
 
         BindingProcess binder = new BindingProcess( null, log );
 
@@ -58,7 +58,7 @@ public class BindingProcessTest
     {
         // given
         ClusterId commonClusterId = new ClusterId( UUID.randomUUID() );
-        ClusterTopology topology = new ClusterTopology( commonClusterId, false, Collections.emptyMap(), Collections.emptySet() );
+        CoreTopology topology = new CoreTopology( commonClusterId, false, Collections.emptyMap() );
 
         BindingProcess binder = new BindingProcess( null, log );
 
@@ -77,7 +77,7 @@ public class BindingProcessTest
         ClusterId commonClusterId = new ClusterId( UUID.randomUUID() );
         ClusterId localClusterId = new ClusterId( commonClusterId.uuid() );
 
-        ClusterTopology topology = new ClusterTopology( commonClusterId, false, Collections.emptyMap(), Collections.emptySet() );
+        CoreTopology topology = new CoreTopology( commonClusterId, false, Collections.emptyMap() );
 
         BindingProcess binder = new BindingProcess( localClusterId, log );
 
@@ -95,7 +95,7 @@ public class BindingProcessTest
         // given
         ClusterId localClusterId = new ClusterId( UUID.randomUUID() );
 
-        ClusterTopology topology = new ClusterTopology( null, false, Collections.emptyMap(), Collections.emptySet() );
+        CoreTopology topology = new CoreTopology( null, false, Collections.emptyMap() );
 
         BindingProcess binder = new BindingProcess( localClusterId, log );
 
@@ -111,7 +111,7 @@ public class BindingProcessTest
     public void bootstrappableShouldGenerateNewId() throws Exception
     {
         // given
-        ClusterTopology topology = new ClusterTopology( null, true, Collections.emptyMap(), Collections.emptySet() );
+        CoreTopology topology = new CoreTopology( null, true, Collections.emptyMap() );
 
         BindingProcess binder = new BindingProcess( null, log );
 
@@ -128,7 +128,7 @@ public class BindingProcessTest
     {
         // given
         ClusterId localClusterId = new ClusterId( UUID.randomUUID() );
-        ClusterTopology topology = new ClusterTopology( null, true, Collections.emptyMap(), Collections.emptySet() );
+        CoreTopology topology = new CoreTopology( null, true, Collections.emptyMap() );
 
         BindingProcess binder = new BindingProcess( localClusterId, log );
 
@@ -146,7 +146,7 @@ public class BindingProcessTest
         // given
         ClusterId localClusterId = new ClusterId( UUID.randomUUID() );
         ClusterId commonClusterId = new ClusterId( UUID.randomUUID() );
-        ClusterTopology topology = new ClusterTopology( commonClusterId, false, Collections.emptyMap(), Collections.emptySet() );
+        CoreTopology topology = new CoreTopology( commonClusterId, false, Collections.emptyMap());
 
         // when
         BindingProcess binder = new BindingProcess( localClusterId, log );

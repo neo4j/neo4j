@@ -22,7 +22,7 @@ package org.neo4j.coreedge.messaging.routing;
 import java.util.Iterator;
 import java.util.Random;
 
-import org.neo4j.coreedge.discovery.ClusterTopology;
+import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.identity.MemberId;
 
@@ -39,16 +39,16 @@ public class ConnectToRandomCoreMember implements CoreMemberSelectionStrategy
     @Override
     public MemberId coreMember() throws CoreMemberSelectionException
     {
-        final ClusterTopology clusterTopology = discoveryService.currentTopology();
+        final CoreTopology coreTopology = discoveryService.coreServers();
 
-        if ( clusterTopology.coreMembers().size() == 0 )
+        if ( coreTopology.members().size() == 0 )
         {
             throw new CoreMemberSelectionException( "No core servers available" );
         }
 
-        int skippedServers = random.nextInt( clusterTopology.coreMembers().size() );
+        int skippedServers = random.nextInt( coreTopology.members().size() );
 
-        final Iterator<MemberId> iterator = clusterTopology.coreMembers().iterator();
+        final Iterator<MemberId> iterator = coreTopology.members().iterator();
 
         MemberId member;
         do

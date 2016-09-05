@@ -28,11 +28,12 @@ import java.util.UUID;
 import org.hamcrest.collection.IsIterableContainingInOrder;
 import org.junit.Test;
 
-import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreAddresses;
+import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
+import org.neo4j.coreedge.discovery.EdgeTopology;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.logging.NullLogProvider;
 
@@ -62,8 +63,8 @@ public class ClusterOverviewProcedureTest
 
         Set<EdgeAddresses> edges = addresses( 4, 5 );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( null, false, coreMembers, edges );
-        when( topologyService.currentTopology() ).thenReturn( clusterTopology );
+        when( topologyService.coreServers() ).thenReturn( new CoreTopology( null, false, coreMembers ) );
+        when( topologyService.edgeServers() ).thenReturn( new EdgeTopology( null, edges ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );

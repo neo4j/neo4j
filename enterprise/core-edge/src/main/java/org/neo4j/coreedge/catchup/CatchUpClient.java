@@ -110,7 +110,7 @@ public class CatchUpClient extends LifecycleAdapter
     private synchronized CatchUpChannel acquireChannel( MemberId memberId ) throws NoKnownAddressesException
     {
         AdvertisedSocketAddress catchUpAddress =
-                discoveryService.currentTopology().coreAddresses( memberId ).getCatchupServer();
+                discoveryService.coreServers().find( memberId ).getCatchupServer();
         CatchUpChannel channel = idleChannels.remove( catchUpAddress );
         if ( channel == null )
         {

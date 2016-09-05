@@ -57,7 +57,7 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
     {
         try
         {
-            CoreAddresses coreAddresses = discoveryService.currentTopology().coreAddresses( to );
+            CoreAddresses coreAddresses = discoveryService.coreServers().find( to );
             outbound.send( coreAddresses.getRaftServer(), decorateWithStoreId( message ) );
         }
         catch ( NoKnownAddressesException e )
@@ -71,7 +71,7 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
     {
         try
         {
-            CoreAddresses coreAddresses = discoveryService.currentTopology().coreAddresses( to );
+            CoreAddresses coreAddresses = discoveryService.coreServers().find( to );
             outbound.send( coreAddresses.getRaftServer(),
                     messages.stream().map( this::decorateWithStoreId ).collect( toList() ) );
         }

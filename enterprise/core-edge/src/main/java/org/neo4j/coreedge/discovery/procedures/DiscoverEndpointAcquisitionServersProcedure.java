@@ -23,8 +23,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreAddresses;
+import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
 import org.neo4j.helpers.collection.Iterators;
@@ -66,8 +66,8 @@ public class DiscoverEndpointAcquisitionServersProcedure extends CallableProcedu
 
     private Stream<AdvertisedSocketAddress> findAddresses()
     {
-        ClusterTopology clusterTopology = discoveryService.currentTopology();
-        return clusterTopology.coreMemberAddresses().stream().map( CoreAddresses::getBoltServer );
+        CoreTopology coreTopology = discoveryService.coreServers();
+        return coreTopology.addresses().stream().map( CoreAddresses::getBoltServer );
     }
 
     private int noOfAddressesToReturn( Object[] input )

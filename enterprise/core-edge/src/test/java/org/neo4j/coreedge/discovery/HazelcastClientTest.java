@@ -117,10 +117,10 @@ public class HazelcastClientTest
         when( cluster.getMembers() ).thenReturn( members );
 
         // when
-        ClusterTopology topology = client.currentTopology();
+        CoreTopology topology = client.coreServers();
 
         // then
-        assertEquals( members.size(), topology.coreMembers().size() );
+        assertEquals( members.size(), topology.members().size() );
     }
 
     @Test
@@ -145,11 +145,11 @@ public class HazelcastClientTest
         when( cluster.getMembers() ).thenReturn( members );
 
         // when
-        ClusterTopology topology;
+        CoreTopology topology;
         for ( int i = 0; i < 5; i++ )
         {
-            topology = client.currentTopology();
-            assertEquals( members.size(), topology.coreMembers().size() );
+            topology = client.coreServers();
+            assertEquals( members.size(), topology.members().size() );
         }
 
         // then
@@ -181,9 +181,9 @@ public class HazelcastClientTest
         when( cluster.getMembers() ).thenReturn( members );
 
         // when
-        ClusterTopology topology = client.currentTopology();
+        CoreTopology topology = client.coreServers();
 
-        assertEquals( 0, topology.coreMembers().size() );
+        assertEquals( 0, topology.members().size() );
         verify( log ).info( startsWith( "Failed to read cluster topology from Hazelcast." ),
                 any( IllegalStateException.class ) );
     }
@@ -204,10 +204,10 @@ public class HazelcastClientTest
         when( hazelcastInstance.getCluster() ).thenThrow( new HazelcastInstanceNotActiveException() );
 
         // when
-        ClusterTopology topology = client.currentTopology();
+        CoreTopology topology = client.coreServers();
 
         // then
-        assertEquals( 0, topology.coreMembers().size() );
+        assertEquals( 0, topology.members().size() );
     }
 
     @Test
@@ -240,16 +240,16 @@ public class HazelcastClientTest
         when( cluster.getMembers() ).thenReturn( members );
 
         // when
-        ClusterTopology topology1 = client.currentTopology();
+        CoreTopology topology1 = client.coreServers();
 
         // then
-        assertEquals( members.size(), topology1.coreMembers().size() );
+        assertEquals( members.size(), topology1.members().size() );
 
         // when
-        ClusterTopology topology2 = client.currentTopology();
+        CoreTopology topology2 = client.coreServers();
 
         // then
-        assertEquals( members.size(), topology2.coreMembers().size() );
+        assertEquals( members.size(), topology2.members().size() );
         verify( connector, times( 2 ) ).connectToHazelcast();
     }
 
@@ -292,10 +292,10 @@ public class HazelcastClientTest
         renewableTimeoutService.invokeTimeout( REFRESH_EDGE );
 
         // when
-        ClusterTopology clusterTopology = hazelcastClient.currentTopology();
+        EdgeTopology clusterTopology = hazelcastClient.edgeServers();
 
         // then
-        assertEquals( 1, clusterTopology.edgeMemberAddresses().size() );
+        assertEquals( 1, clusterTopology.members().size() );
     }
 
     @Test
@@ -336,7 +336,7 @@ public class HazelcastClientTest
         hazelcastClient.start();
         renewableTimeoutService.invokeTimeout( REFRESH_EDGE );
 
-        int numberOfStartedEdgeServers = hazelcastClient.currentTopology().edgeMemberAddresses().size();
+        int numberOfStartedEdgeServers = hazelcastClient.edgeServers().members().size();
 
         // when
         hazelcastClient.stop();

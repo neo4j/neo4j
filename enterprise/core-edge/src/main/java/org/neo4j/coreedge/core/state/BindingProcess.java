@@ -22,7 +22,7 @@ package org.neo4j.coreedge.core.state;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.coreedge.discovery.ClusterTopology;
+import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.logging.Log;
 
@@ -37,7 +37,7 @@ class BindingProcess
         this.log = log;
     }
 
-    ClusterId attempt( ClusterTopology topology ) throws InterruptedException, TimeoutException, BindingException
+    ClusterId attempt( CoreTopology topology ) throws InterruptedException, TimeoutException, BindingException
     {
         ClusterId commonClusterId = topology.clusterId();
 

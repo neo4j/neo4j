@@ -31,8 +31,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.EDGE_SERVER_BOLT_ADDRESS_MAP_NAME;
@@ -61,18 +59,34 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     }
 
     @Override
-    public ClusterTopology currentTopology()
+    public EdgeTopology edgeServers()
     {
         try
         {
             return retry( ( hazelcastInstance ) ->
-                    HazelcastClusterTopology.getClusterTopology( hazelcastInstance, log ) );
+                    HazelcastClusterTopology.getEdgeTopology( hazelcastInstance, log ) );
         }
         catch ( Exception e )
         {
             log.info( "Failed to read cluster topology from Hazelcast. Continuing with empty (disconnected) topology. "
                     + "Connection will be reattempted on next polling attempt.", e );
-            return new ClusterTopology( null /* TODO */, false, emptyMap(), emptySet() );
+            return EdgeTopology.EMPTY;
+        }
+    }
+
+    @Override
+    public CoreTopology coreServers()
+    {
+        try
+        {
+            return retry( ( hazelcastInstance ) ->
+                    HazelcastClusterTopology.getCoreTopology( hazelcastInstance, log ) );
+        }
+        catch ( Exception e )
+        {
+            log.info( "Failed to read cluster topology from Hazelcast. Continuing with empty (disconnected) topology. "
+                    + "Connection will be reattempted on next polling attempt.", e );
+            return CoreTopology.EMPTY;
         }
     }
 

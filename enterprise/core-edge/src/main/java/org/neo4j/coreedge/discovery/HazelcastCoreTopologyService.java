@@ -67,7 +67,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     public void addCoreTopologyListener( Listener listener )
     {
         listenerService.addCoreTopologyListener( listener );
-        listener.onCoreTopologyChange( currentTopology() );
+        listener.onCoreTopologyChange( coreServers() );
     }
 
     @Override
@@ -80,16 +80,16 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     public void memberAdded( MembershipEvent membershipEvent )
     {
         log.info( "Core member added %s", membershipEvent );
-        log.info( "Current topology is %s", currentTopology() );
-        listenerService.notifyListeners(currentTopology());
+        log.info( "Current core topology is %s", coreServers() );
+        listenerService.notifyListeners( coreServers());
     }
 
     @Override
     public void memberRemoved( MembershipEvent membershipEvent )
     {
         log.info( "Core member removed %s", membershipEvent );
-        log.info( "Current topology is %s", currentTopology() );
-        listenerService.notifyListeners(currentTopology());
+        log.info( "Current core topology is %s", coreServers() );
+        listenerService.notifyListeners( coreServers());
     }
 
     @Override
@@ -103,7 +103,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         hazelcastInstance = createHazelcastInstance();
         log.info( "Cluster discovery service started" );
         membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( this );
-        listenerService.notifyListeners(currentTopology());
+        listenerService.notifyListeners( coreServers());
     }
 
     @Override
@@ -165,8 +165,14 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     }
 
     @Override
-    public ClusterTopology currentTopology()
+    public EdgeTopology edgeServers()
     {
-        return HazelcastClusterTopology.getClusterTopology( hazelcastInstance, log );
+        return HazelcastClusterTopology.getEdgeTopology( hazelcastInstance, log );
+    }
+
+    @Override
+    public CoreTopology coreServers()
+    {
+        return HazelcastClusterTopology.getCoreTopology( hazelcastInstance, log );
     }
 }

@@ -63,10 +63,27 @@ class HazelcastClusterTopology
     static final String RAFT_SERVER = "raft_server";
     static final String BOLT_SERVER = "bolt_server";
 
-    static ClusterTopology getClusterTopology( HazelcastInstance hazelcastInstance, Log log )
+    static EdgeTopology getEdgeTopology( HazelcastInstance hazelcastInstance, Log log )
+    {
+        Set<EdgeAddresses> edgeMembers = emptySet();
+        ClusterId clusterId = null;
+
+        if ( hazelcastInstance != null )
+        {
+            edgeMembers = edgeMembers( hazelcastInstance, log );
+            clusterId = getClusterId( hazelcastInstance );
+        }
+        else
+        {
+            log.info( "Cannot currently bind to distributed discovery service." );
+        }
+
+        return new EdgeTopology( clusterId, edgeMembers );
+    }
+
+    static CoreTopology getCoreTopology( HazelcastInstance hazelcastInstance, Log log )
     {
         Map<MemberId,CoreAddresses> coreMembers = emptyMap();
-        Set<EdgeAddresses> edgeMembers = emptySet();
         boolean canBeBootstrapped = false;
         ClusterId clusterId = null;
 
@@ -76,7 +93,6 @@ class HazelcastClusterTopology
             canBeBootstrapped = canBeBootstrapped( hzMembers );
 
             coreMembers = toCoreMemberMap( hzMembers, log );
-            edgeMembers = edgeMembers( hazelcastInstance, log );
 
             clusterId = getClusterId( hazelcastInstance );
         }
@@ -85,7 +101,7 @@ class HazelcastClusterTopology
             log.info( "Cannot currently bind to distributed discovery service." );
         }
 
-        return new ClusterTopology( clusterId, canBeBootstrapped, coreMembers, edgeMembers );
+        return new CoreTopology( clusterId, canBeBootstrapped, coreMembers );
     }
 
     private static ClusterId getClusterId( HazelcastInstance hazelcastInstance )

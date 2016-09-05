@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.core.state.storage.SimpleStorage;
-import org.neo4j.coreedge.discovery.ClusterTopology;
+import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.function.ThrowingAction;
@@ -84,7 +84,7 @@ class BindingService extends LifecycleAdapter
 
         long endTime = clock.millis() + timeoutMillis;
 
-        ClusterTopology topology = topologyService.currentTopology();
+        CoreTopology topology = topologyService.coreServers();
         ClusterId commonClusterId;
 
         while ( (commonClusterId = binder.attempt( topology )) == null )
@@ -92,7 +92,7 @@ class BindingService extends LifecycleAdapter
             if ( clock.millis() < endTime )
             {
                 retryWaiter.apply();
-                topology = topologyService.currentTopology();
+                topology = topologyService.coreServers();
             }
             else
             {

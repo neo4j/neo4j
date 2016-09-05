@@ -29,8 +29,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreAddresses;
+import org.neo4j.coreedge.discovery.CoreTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.identity.ClusterId;
@@ -62,8 +62,8 @@ public class DiscoverEndpointAcquisitionServersProcedureTest
         coreMembers.put( member( 1 ), coreAddresses( 1 ) );
         coreMembers.put( member( 2 ), coreAddresses( 2 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( clusterId, false, coreMembers, addresses( 3, 4, 5 ) );
-        when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
+        final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
+        when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
 
         final DiscoverEndpointAcquisitionServersProcedure proc =
                 new DiscoverEndpointAcquisitionServersProcedure( coreTopologyService, NullLogProvider.getInstance() );
@@ -87,8 +87,8 @@ public class DiscoverEndpointAcquisitionServersProcedureTest
         Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( clusterId, false, coreMembers, addresses( 3, 4, 5 ) );
-        when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
+        final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
+        when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
         final DiscoverEndpointAcquisitionServersProcedure proc =
                 new DiscoverEndpointAcquisitionServersProcedure( coreTopologyService, NullLogProvider.getInstance() );
 
@@ -110,8 +110,8 @@ public class DiscoverEndpointAcquisitionServersProcedureTest
         coreMembers.put( member( 1 ), coreAddresses( 1 ) );
         coreMembers.put( member( 2 ), coreAddresses( 2 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( clusterId, false, coreMembers, addresses( 3, 4, 5) );
-        when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
+        final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
+        when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
 
         final DiscoverEndpointAcquisitionServersProcedure proc =
                 new DiscoverEndpointAcquisitionServersProcedure( coreTopologyService, NullLogProvider.getInstance() );
@@ -134,8 +134,8 @@ public class DiscoverEndpointAcquisitionServersProcedureTest
         coreMembers.put( member( 1 ), coreAddresses( 1 ) );
         coreMembers.put( member( 2 ), coreAddresses( 2 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( clusterId, false, coreMembers, addresses( 3, 4, 5 ) );
-        when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
+        final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
+        when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
 
         final DiscoverEndpointAcquisitionServersProcedure proc =
                 new DiscoverEndpointAcquisitionServersProcedure( coreTopologyService, NullLogProvider.getInstance() );

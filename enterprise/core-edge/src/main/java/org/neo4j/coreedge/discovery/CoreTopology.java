@@ -20,44 +20,42 @@
 package org.neo4j.coreedge.discovery;
 
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
 
-public class ClusterTopology
+public class CoreTopology
 {
-    private ClusterId clusterId;
-    private final Map<MemberId, CoreAddresses> coreMembers;
-    private final Set<EdgeAddresses> edgeAddresses;
-    private final boolean canBeBootstrapped;
+    public static CoreTopology EMPTY = new CoreTopology( null, false, Collections.emptyMap() );
 
-    public ClusterTopology( ClusterId clusterId, boolean canBeBootstrapped,
-            Map<MemberId,CoreAddresses> coreMembers,
-            Set<EdgeAddresses> edgeAddresses )
+    private final ClusterId clusterId;
+    private final boolean canBeBootstrapped;
+    private final Map<MemberId, CoreAddresses> coreMembers;
+
+    public CoreTopology( ClusterId clusterId, boolean canBeBootstrapped, Map<MemberId, CoreAddresses> coreMembers )
     {
+
         this.clusterId = clusterId;
         this.canBeBootstrapped = canBeBootstrapped;
-        this.edgeAddresses = edgeAddresses;
-        this.coreMembers = new HashMap<>( coreMembers );
+        this.coreMembers = coreMembers;
     }
 
-    public Set<MemberId> coreMembers()
+    public Set<MemberId> members()
     {
         return coreMembers.keySet();
     }
 
-    public Collection<CoreAddresses> coreMemberAddresses()
+    public ClusterId clusterId()
     {
-        return coreMembers.values();
+        return clusterId;
     }
 
-    public Collection<EdgeAddresses> edgeMemberAddresses()
+    public Collection<CoreAddresses> addresses()
     {
-        return edgeAddresses;
+        return coreMembers.values();
     }
 
     public boolean canBeBootstrapped()
@@ -65,7 +63,7 @@ public class ClusterTopology
         return canBeBootstrapped;
     }
 
-    public CoreAddresses coreAddresses( MemberId memberId ) throws NoKnownAddressesException
+    public CoreAddresses find( MemberId memberId ) throws NoKnownAddressesException
     {
         CoreAddresses coreAddresses = coreMembers.get( memberId );
         if ( coreAddresses == null )
@@ -78,12 +76,7 @@ public class ClusterTopology
     @Override
     public String toString()
     {
-        return String.format( "{coreMembers=%s, bootstrappable=%s, edgeMemberAddresses=%s}",
-                coreMembers.keySet(), canBeBootstrapped(), edgeAddresses );
+        return String.format( "{coreMembers=%s, bootstrappable=%s}", coreMembers.keySet(), canBeBootstrapped() );
     }
 
-    public ClusterId clusterId()
-    {
-        return clusterId;
-    }
 }
