@@ -42,6 +42,7 @@
     <module>integrationtests</module>
     <module>stresstests</module>
     <module>tools</module>
+    <module>packaging</module>
   </modules>
 
   <build>
@@ -305,7 +306,6 @@
       </activation>
       <modules>
         <module>manual</module>
-        <module>packaging</module>
         <module>packaging/installer-linux</module>
       </modules>
       <build>
