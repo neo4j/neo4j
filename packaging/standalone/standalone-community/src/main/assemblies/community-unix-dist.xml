@@ -31,7 +31,7 @@
     <!-- filter plain text -->
     <fileSet>
       <directory>src/main/distribution/text/community</directory>
-      <outputDirectory></outputDirectory>
+      <outputDirectory/>
       <lineEnding>keep</lineEnding>
       <filtered>true</filtered>
       <directoryMode>0755</directoryMode>
@@ -43,7 +43,7 @@
     <!-- non-maven jars -->
     <fileSet>
       <directory>src/main/distribution/binary</directory>
-      <outputDirectory></outputDirectory>
+      <outputDirectory/>
       <includes>
         <include>lib/*.jar</include>
       </includes>
@@ -51,7 +51,7 @@
     <!-- filter and chmod 755 shell scripts -->
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
-      <outputDirectory></outputDirectory>
+      <outputDirectory/>
       <lineEnding>unix</lineEnding>
       <fileMode>0755</fileMode>
       <excludes>
@@ -69,7 +69,7 @@
     <!-- configuration migrator -->
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
-      <outputDirectory></outputDirectory>
+      <outputDirectory/>
       <includes>
         <include>**/config-migrator.jar</include>
       </includes>
@@ -129,7 +129,6 @@
       <useStrictFiltering>true</useStrictFiltering>
       <excludes>
         <exclude>org.neo4j:*</exclude>
-        <exclude>org.neo4j.doc:*</exclude>
         <exclude>jline:jline</exclude>
         <exclude>org.apache.lucene:*</exclude>
         <exclude>org.scala-lang:*</exclude>
