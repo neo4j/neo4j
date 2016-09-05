@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
@@ -37,6 +38,8 @@ import static java.lang.String.format;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
@@ -60,6 +63,30 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
+
+    //---------- General tests over all procedures -----------
+
+    @Test
+    public void shouldHaveDescriptionsOnAllSecurityProcedures() throws Throwable
+    {
+        assertSuccess( readSubject, "CALL dbms.procedures", r -> {
+            Stream<Map<String, Object>> securityProcedures = r.stream().filter( s -> {
+                String name = s.get( "name" ).toString();
+                String description = s.get( "description" ).toString();
+                // TODO: remove filter for Transaction and Connection once those procedures are removed
+                if ( name.contains( "dbms.security" ) &&
+                     !(name.contains( "Transaction" ) || name.contains( "Connection" )) )
+                {
+                    assertThat( "Description for '" + name + "' should not be empty", description.trim().length(),
+                            greaterThan( 0 ) );
+                    return true;
+                }
+                return false;
+            } );
+            assertThat( securityProcedures.count(), equalTo( 15L ) );
+        } );
+
+    }
 
     //---------- Change own password -----------
 
