@@ -29,9 +29,12 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 
 /**
- * Able to deserialize one input group. An input group is a list of one or more input files that all have the same
- * header. All files in the same group have the same header and vice versa.
- * An import can read multiple input groups. Each group is deserialized by {@link InputEntityDeserializer}.
+ * Able to deserialize one input group. An input group is a list of one or more input files logically seen
+ * as one stream of data. The first line in this data stream defines the header, a header which applies to
+ * all data in its group.
+ *
+ * Depending on how the data is structured, see {@link Configuration#multilineFields()} data may or may not
+ * be parsed and processed in parallel for higher throughput.
  */
 class InputGroupsDeserializer<ENTITY extends InputEntity>
         extends NestingIterator<ENTITY,DataFactory<ENTITY>>
