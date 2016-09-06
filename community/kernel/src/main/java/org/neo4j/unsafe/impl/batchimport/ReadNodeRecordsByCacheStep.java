@@ -57,7 +57,7 @@ public class ReadNodeRecordsByCacheStep extends AbstractStep<NodeRecord[]>
     public void start( int orderingGuarantees )
     {
         super.start( orderingGuarantees );
-        recordCursor.acquire( 0, RecordLoad.CHECK );
+        recordCursor.acquire( 0, RecordLoad.NORMAL );
     }
 
     @Override
@@ -95,8 +95,7 @@ public class ReadNodeRecordsByCacheStep extends AbstractStep<NodeRecord[]>
         @Override
         public void change( long nodeId, ByteArray array )
         {
-            boolean inUse = recordCursor.next( nodeId );
-            assert inUse;
+            recordCursor.next( nodeId );
             batch[cursor++] = recordCursor.get().clone();
             if ( cursor == batchSize )
             {
