@@ -54,8 +54,12 @@ public class FileUserRepository extends AbstractUserRepository
     @Override
     public void start() throws Throwable
     {
-        users.clear();
-        usersByName.clear();
+        clear();
+        loadUsers();
+    }
+
+    void loadUsers() throws IOException
+    {
         if ( fileSystem.fileExists( authFile ) )
         {
             List<User> loadedUsers;
@@ -70,6 +74,7 @@ public class FileUserRepository extends AbstractUserRepository
                 throw new IllegalStateException( "Failed to read authentication file: " + authFile );
             }
 
+            clear();
             users = loadedUsers;
             for ( User user : users )
             {
@@ -82,5 +87,14 @@ public class FileUserRepository extends AbstractUserRepository
     protected void saveUsers() throws IOException
     {
         serialization.saveRecordsToFile( fileSystem, authFile, users );
+    }
+
+    @Override
+    public void reloadIfNeeded() throws IOException
+    {
+        if ( lastLoaded < fileSystem.lastModifiedTime( authFile ) )
+        {
+            loadUsers();
+        }
     }
 }

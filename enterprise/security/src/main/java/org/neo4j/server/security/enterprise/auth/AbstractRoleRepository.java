@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 public abstract class AbstractRoleRepository extends LifecycleAdapter implements RoleRepository
@@ -46,6 +47,14 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     protected volatile List<RoleRecord> roles = new ArrayList<>();
 
     private final Pattern roleNamePattern = Pattern.compile( "^[a-zA-Z0-9_]+$" );
+
+    @Override
+    public void clear()
+    {
+        roles.clear();
+        rolesByName.clear();
+        rolesByUsername.clear();
+    }
 
     @Override
     public RoleRecord getRoleByName( String roleName )
@@ -172,6 +181,8 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
      */
     protected abstract void saveRoles() throws IOException;
 
+    protected abstract void loadRoles() throws IOException;
+
     @Override
     public synchronized int numberOfRoles()
     {
@@ -206,6 +217,13 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     public synchronized Set<String> getAllRoleNames()
     {
         return roles.stream().map( RoleRecord::name ).collect( Collectors.toSet() );
+    }
+
+    @Override
+    public boolean validateAgainst( UserRepository userRepository )
+    {
+        return rolesByUsername.keySet().stream()
+                .allMatch( username -> userRepository.getUserByName( username ) != null );
     }
 
     protected void populateUserMap( RoleRecord role )

@@ -22,8 +22,8 @@ package org.neo4j.server.security.enterprise.auth;
 import java.io.IOException;
 import java.util.Set;
 
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 /**
@@ -34,6 +34,11 @@ public interface RoleRepository extends Lifecycle
     RoleRecord getRoleByName( String roleName );
 
     Set<String> getRoleNamesByUsername( String username );
+
+    /**
+     * Clears all cached role data.
+     */
+    void clear();
 
     /**
      * Create a role, given that the roles token is unique.
@@ -70,4 +75,8 @@ public interface RoleRepository extends Lifecycle
             throws ConcurrentModificationException, IOException;
 
     Set<String> getAllRoleNames();
+
+    void reloadIfNeeded() throws IOException;
+
+    boolean validateAgainst( UserRepository userRepository );
 }

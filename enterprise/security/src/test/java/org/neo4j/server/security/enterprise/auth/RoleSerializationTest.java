@@ -34,18 +34,17 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class RoleSerializationTest
 {
-
     private SortedSet<String> steveBob;
     private SortedSet<String> kellyMarie;
 
     @Before
     public void setUp()
     {
-        steveBob = new TreeSet<String>();
+        steveBob = new TreeSet<>();
         steveBob.add( "Steve" );
         steveBob.add( "Bob" );
 
-        kellyMarie = new TreeSet<String>();
+        kellyMarie = new TreeSet<>();
         kellyMarie.add( "Kelly" );
         kellyMarie.add( "Marie" );
     }

@@ -43,6 +43,13 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     private final Pattern usernamePattern = Pattern.compile( "^[a-zA-Z0-9_]+$" );
 
     @Override
+    public void clear()
+    {
+        users.clear();
+        usersByName.clear();
+    }
+
+    @Override
     public User getUserByName( String username )
     {
         return usersByName.get( username );
@@ -81,6 +88,13 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
      * @throws IOException
      */
     protected abstract void saveUsers() throws IOException;
+
+    /**
+     * Override this in the implementing class to persist users
+     *
+     * @throws IOException
+     */
+    abstract void loadUsers() throws IOException;
 
     @Override
     public void update( User existingUser, User updatedUser )

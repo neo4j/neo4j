@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.auth;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.server.security.auth.exception.FormatException;
 import org.neo4j.string.HexString;
 

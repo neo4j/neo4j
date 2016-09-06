@@ -31,6 +31,16 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
  */
 public interface UserRepository extends Lifecycle
 {
+    /**
+     * Clears all cached user data.
+     */
+    void clear();
+
+    /**
+     * Return the user associated with the given username.
+     * @param username the username
+     * @return the associated user, or null if no user exists
+     */
     User getUserByName( String username );
 
     /**
@@ -66,4 +76,6 @@ public interface UserRepository extends Lifecycle
     boolean isValidUsername( String username );
 
     Set<String> getAllUsernames();
+
+    void reloadIfNeeded() throws IOException;
 }

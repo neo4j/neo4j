@@ -29,4 +29,16 @@ public class InMemoryUserRepository extends AbstractUserRepository
     {
         // Nothing to do
     }
+
+    @Override
+    void loadUsers() throws IOException
+    {
+        // Nothing to do
+    }
+
+    @Override
+    public void reloadIfNeeded()
+    {
+        // Nothing to do
+    }
 }

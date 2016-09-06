@@ -45,6 +45,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
@@ -69,6 +72,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
      * placed here because of user suspension not being a part of community edition
      */
     public static final String IS_SUSPENDED = "is_suspended";
+
+    private int RELOAD_ATTEMPTS = 10;
 
     private final RolePermissionResolver rolePermissionResolver = new RolePermissionResolver()
     {
@@ -96,8 +101,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     private final Map<String,SimpleRole> roles;
 
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
-            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
-            boolean authenticationEnabled, boolean authorizationEnabled )
+            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy, boolean authenticationEnabled,
+            boolean authorizationEnabled, ScheduledExecutorService executorService )
     {
         super();
 
@@ -113,6 +118,38 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         setRolePermissionResolver( rolePermissionResolver );
 
         roles = new PredefinedRolesBuilder().buildRoles();
+
+        executorService.scheduleAtFixedRate( () -> tryReload( RELOAD_ATTEMPTS ), 5, 5, TimeUnit.SECONDS );
+    }
+
+    public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
+            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy, boolean authenticationEnabled,
+            boolean authorizationEnabled )
+    {
+        this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, authenticationEnabled,
+                authorizationEnabled, new ScheduledThreadPoolExecutor( 1 ) );
+    }
+
+   private void tryReload( int attemptLeft )
+    {
+        if ( attemptLeft < 0 )
+        {
+            throw new RuntimeException( "Unable to load valid flat file repositories!" );
+        }
+
+        try
+        {
+            userRepository.reloadIfNeeded();
+            roleRepository.reloadIfNeeded();
+            if ( !roleRepository.validateAgainst( userRepository ) )
+            {
+                tryReload( attemptLeft - 1 );
+            }
+        }
+        catch ( IOException ioe )
+        {
+            tryReload( attemptLeft - 1 );
+        }
     }
 
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
@@ -200,7 +237,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
             }
             return false;
         }
-        catch( InvalidAuthTokenException e )
+        catch ( InvalidAuthTokenException e )
         {
             return false;
         }
@@ -473,7 +510,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
                     .withRequiredPasswordChange( requirePasswordChange )
                     .build();
             userRepository.update( existingUser, updatedUser );
-        } catch ( ConcurrentModificationException e )
+        }
+        catch ( ConcurrentModificationException e )
         {
             // try again
             setUserPassword( username, password, requirePasswordChange );
@@ -578,8 +616,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         if ( !userRepository.isValidUsername( name ) )
         {
             throw new InvalidArgumentsException(
-                    "User name '" + name +
-                    "' contains illegal characters. Use simple ascii characters and numbers." );
+                    "User name '" + name + "' contains illegal characters. Use simple ascii characters and numbers." );
         }
     }
 
@@ -592,8 +629,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         if ( !roleRepository.isValidRoleName( name ) )
         {
             throw new InvalidArgumentsException(
-                    "Role name '" + name +
-                    "' contains illegal characters. Use simple ascii characters and numbers." );
+                    "Role name '" + name + "' contains illegal characters. Use simple ascii characters and numbers." );
         }
     }
 

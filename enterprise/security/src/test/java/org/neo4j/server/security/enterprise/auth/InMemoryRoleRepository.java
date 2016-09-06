@@ -29,4 +29,16 @@ public class InMemoryRoleRepository extends AbstractRoleRepository
     {
         // Nothing to do
     }
+
+    @Override
+    protected void loadRoles() throws IOException
+    {
+        // Nothing to do
+    }
+
+    @Override
+    public void reloadIfNeeded()
+    {
+        // Nothing to do
+    }
 }

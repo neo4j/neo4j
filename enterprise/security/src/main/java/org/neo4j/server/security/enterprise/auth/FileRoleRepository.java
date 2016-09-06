@@ -39,6 +39,8 @@ public class FileRoleRepository extends AbstractRoleRepository
     private final RoleSerialization serialization = new RoleSerialization();
     private final FileSystemAbstraction fileSystem;
 
+    private long lastLoaded;
+
     public FileRoleRepository( FileSystemAbstraction fileSystem, File file, LogProvider logProvider )
     {
         this.roleFile = file;
@@ -49,11 +51,19 @@ public class FileRoleRepository extends AbstractRoleRepository
     @Override
     public void start() throws Throwable
     {
+        clear();
+        loadRoles();
+    }
+
+    @Override
+    protected void loadRoles() throws IOException
+    {
         if ( fileSystem.fileExists( roleFile ) )
         {
             List<RoleRecord> loadedRoles;
             try
             {
+                lastLoaded = fileSystem.lastModifiedTime( roleFile );
                 loadedRoles = serialization.loadRecordsFromFile( fileSystem, roleFile );
             }
             catch ( FormatException e )
@@ -62,6 +72,7 @@ public class FileRoleRepository extends AbstractRoleRepository
                 throw new IllegalStateException( "Failed to read role file '" + roleFile + "'." );
             }
 
+            clear();
             roles = loadedRoles;
             for ( RoleRecord role : roles )
             {
@@ -76,5 +87,14 @@ public class FileRoleRepository extends AbstractRoleRepository
     protected void saveRoles() throws IOException
     {
         serialization.saveRecordsToFile( fileSystem, roleFile, roles );
+    }
+
+    @Override
+    public void reloadIfNeeded() throws IOException
+    {
+        if ( lastLoaded < fileSystem.lastModifiedTime( roleFile ) )
+        {
+            loadRoles();
+        }
     }
 }
