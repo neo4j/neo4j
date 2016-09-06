@@ -25,10 +25,13 @@ import org.junit.Test;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -37,12 +40,14 @@ import org.neo4j.kernel.impl.core.StartupStatistics;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
@@ -181,7 +186,7 @@ public class DefaultUdcInformationCollectorTest
         assertThat( udcParams.get( "storesize" ), is( "152" ) );
     }
 
-    private Set<File> testFiles() throws Exception
+    private Set<StoreFileMetadata> testFiles() throws Exception
     {
         File foo = testDirectory.file( "neostore.foo.db" );
         File bar = testDirectory.file( "neostore.bar.keys" );
@@ -191,7 +196,14 @@ public class DefaultUdcInformationCollectorTest
         ensureSize( bar, 42 );
         ensureSize( baz, 87 );
 
-        return new HashSet<>( asList( foo, bar, baz ) );
+        return new HashSet<>( toMeta( foo, bar, baz ) );
+    }
+
+    private Set<StoreFileMetadata> toMeta( File... files )
+    {
+        return Arrays.stream( files )
+                .map( file -> new StoreFileMetadata( file, Optional.empty(), RecordFormat.NO_RECORD_SIZE ) )
+                .collect( Collectors.toCollection( HashSet::new ) );
     }
 
     private void ensureSize( File foo, int size ) throws IOException

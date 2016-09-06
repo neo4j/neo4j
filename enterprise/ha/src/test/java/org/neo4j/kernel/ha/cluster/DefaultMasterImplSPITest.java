@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha.cluster;
 
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.com.storecopy.StoreWriter;
@@ -55,7 +54,7 @@ public class DefaultMasterImplSPITest
         CheckPointer checkPointer = mock( CheckPointer.class );
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-        when( dataSource.listStoreFiles( anyBoolean() ) ).thenReturn( Iterators.<File>emptyIterator() );
+        when( dataSource.listStoreFiles( anyBoolean() ) ).thenReturn( Iterators.emptyIterator() );
 
         DefaultMasterImplSPI master = new DefaultMasterImplSPI( mock( GraphDatabaseAPI.class, RETURNS_MOCKS ),
                 mock( FileSystemAbstraction.class ), new Monitors(), mock( LabelTokenHolder.class ),

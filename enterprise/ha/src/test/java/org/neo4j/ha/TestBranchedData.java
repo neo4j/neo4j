@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.impl.util.StoreUtil;
 import org.neo4j.kernel.lifecycle.LifeRule;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -198,11 +199,11 @@ public class TestBranchedData
     {
         Collection<File> result = new ArrayList<>();
         NeoStoreDataSource ds = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
-        try ( ResourceIterator<File> files = ds.listStoreFiles( false ) )
+        try ( ResourceIterator<StoreFileMetadata> files = ds.listStoreFiles( false ) )
         {
             while ( files.hasNext() )
             {
-                File file = files.next();
+                File file = files.next().file();
                 if ( file.getPath().contains( indexName ) )
                 {
                     result.add( file );

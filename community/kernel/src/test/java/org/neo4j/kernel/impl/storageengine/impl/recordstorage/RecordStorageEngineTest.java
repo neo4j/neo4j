@@ -23,7 +23,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -36,22 +39,30 @@ import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.storemigration.StoreFile;
+import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -61,7 +72,7 @@ import static org.mockito.Mockito.when;
 
 public class RecordStorageEngineTest
 {
-
+    private static final File storeDir = new File( "/storedir" );
     private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
@@ -84,10 +95,11 @@ public class RecordStorageEngineTest
     public void panicOnExceptionDuringCommandsApply() throws Exception
     {
         IllegalStateException failure = new IllegalStateException( "Too many open files" );
-        RecordStorageEngine engine = storageEngineRule.getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ) )
-                                                      .databaseHealth( databaseHealth )
-                                                      .transactionApplierTransformer( facade -> transactionApplierFacadeTransformer( facade, failure ) )
-                                                      .build();
+        RecordStorageEngine engine = storageEngineRule
+                .getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ) )
+                .databaseHealth( databaseHealth )
+                .transactionApplierTransformer( facade -> transactionApplierFacadeTransformer( facade, failure ) )
+                .build();
         CommandsToApply commandsToApply = mock( CommandsToApply.class );
 
         try
@@ -135,7 +147,7 @@ public class RecordStorageEngineTest
     @Test
     public void mustFlushStoresWithGivenIOLimiter() throws Exception
     {
-        IOLimiter limiter = (stamp, completedIOs, swapper) -> 0;
+        IOLimiter limiter = ( stamp, completedIOs, swapper ) -> 0;
         FileSystemAbstraction fs = fsRule.get();
         AtomicReference<IOLimiter> observedLimiter = new AtomicReference<>();
         PageCache pageCache = new DelegatingPageCache( pageCacheRule.getPageCache( fs ) )
@@ -154,11 +166,52 @@ public class RecordStorageEngineTest
         assertThat( observedLimiter.get(), sameInstance( limiter ) );
     }
 
-    private RecordStorageEngine buildRecordStorageEngine()
+    @Test
+    public void shouldListAllFiles() throws Throwable
     {
-        return storageEngineRule.getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ) )
-                                .databaseHealth( databaseHealth )
-                                .build();
+        RecordStorageEngine engine = buildRecordStorageEngine();
+
+        final Collection<StoreFileMetadata> files = engine.listStorageFiles();
+        assertTrue( files.size() > 0 );
+        files.forEach( this::verifyMeta );
+    }
+
+    private void verifyMeta( StoreFileMetadata meta )
+    {
+        final Optional<StoreType> optional = meta.storeType();
+        if ( optional.isPresent() )
+        {
+            final StoreType type = optional.get();
+            final File file = meta.file();
+            final String fileName = file.getName();
+            if ( type == StoreType.COUNTS )
+            {
+                final String left = StoreFile.COUNTS_STORE_LEFT.fileName( StoreFileType.STORE );
+                final String right = StoreFile.COUNTS_STORE_RIGHT.fileName( StoreFileType.STORE );
+                assertThat( fileName, anyOf( equalTo( left ), equalTo( right ) ) );
+            }
+            else
+            {
+                final String expected = type.getStoreFile().fileName( StoreFileType.STORE );
+                assertThat( fileName, equalTo( expected ) );
+                assertTrue( "File does not exist " + file.getAbsolutePath(), fsRule.get().fileExists( file ) );
+            }
+            final int recordSize = meta.recordSize();
+            assertTrue( recordSize == RecordFormat.NO_RECORD_SIZE || recordSize > 0 );
+        }
+        else
+        {
+            fail( "Assumed all files to have a store type" );
+        }
+    }
+
+    private RecordStorageEngine buildRecordStorageEngine() throws Throwable
+    {
+        return storageEngineRule
+                .getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ) )
+                .storeDirectory( storeDir )
+                .databaseHealth( databaseHealth )
+                .build();
     }
 
     private Exception executeFailingTransaction( RecordStorageEngine engine ) throws IOException

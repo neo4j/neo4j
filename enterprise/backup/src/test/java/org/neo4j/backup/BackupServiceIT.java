@@ -92,6 +92,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -105,6 +106,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpired;
+import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_LEFT;
+import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_RIGHT;
 
 public class BackupServiceIT
 {
@@ -380,7 +383,16 @@ public class BackupServiceIT
 
         for ( final StoreFile storeFile : StoreFile.values() )
         {
-            assertThat( files, hasFile( storeFile.storeFileName() ) );
+            if ( storeFile == COUNTS_STORE_LEFT ||
+                 storeFile == COUNTS_STORE_RIGHT )
+            {
+                assertThat( files, anyOf( hasFile( COUNTS_STORE_LEFT.storeFileName() ),
+                                          hasFile( COUNTS_STORE_RIGHT.storeFileName() ) ) );
+            }
+            else
+            {
+                assertThat( files, hasFile( storeFile.storeFileName() ) );
+            }
         }
 
         assertEquals( getDbRepresentation(), getBackupDbRepresentation() );

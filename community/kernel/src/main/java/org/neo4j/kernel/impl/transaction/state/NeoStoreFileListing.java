@@ -23,17 +23,21 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.Iterators.resourceIterator;
@@ -44,20 +48,25 @@ public class NeoStoreFileListing
     private final LabelScanStore labelScanStore;
     private final IndexingService indexingService;
     private final LegacyIndexProviderLookup legacyIndexProviders;
+    private final StorageEngine storageEngine;
+    private final Function<File,StoreFileMetadata> toNotAStoreTypeFile =
+            file -> new StoreFileMetadata( file, Optional.empty(), RecordFormat.NO_RECORD_SIZE );
 
-    public NeoStoreFileListing( File storeDir, LabelScanStore labelScanStore,
-            IndexingService indexingService, LegacyIndexProviderLookup legacyIndexProviders )
+    public NeoStoreFileListing( File storeDir, LabelScanStore labelScanStore, IndexingService indexingService,
+            LegacyIndexProviderLookup legacyIndexProviders, StorageEngine storageEngine )
     {
         this.storeDir = storeDir;
         this.labelScanStore = labelScanStore;
         this.indexingService = indexingService;
         this.legacyIndexProviders = legacyIndexProviders;
+        this.storageEngine = storageEngine;
     }
 
-    public ResourceIterator<File> listStoreFiles( boolean includeLogs ) throws IOException
+    public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
     {
-        Collection<File> files = new ArrayList<>();
-        gatherNeoStoreFiles( files, includeLogs );
+        Collection<StoreFileMetadata> files = new ArrayList<>();
+        gatherNeoStoreFiles( files );
+        gatherNonRecordStores( files, includeLogs );
         Resource labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
         Resource schemaIndexSnapshots = gatherSchemaIndexFiles( files );
         Resource legacyIndexSnapshots = gatherLegacyIndexFiles( files );
@@ -66,77 +75,56 @@ public class NeoStoreFileListing
                 new MultiResource( asList( labelScanStoreSnapshot, schemaIndexSnapshots, legacyIndexSnapshots ) ) );
     }
 
-    private Resource gatherLegacyIndexFiles( Collection<File> files ) throws IOException
+    private void gatherNonRecordStores( Collection<StoreFileMetadata> files, boolean includeLogs )
+    {
+        for ( File file : storeDir.listFiles() )
+        {
+            if ( file.getName().equals( IndexConfigStore.INDEX_DB_FILE_NAME ) )
+            {
+                files.add( toNotAStoreTypeFile.apply( file ) );
+            }
+            else if ( includeLogs && transactionLogFile( file.getName() ) )
+            {
+                files.add( toNotAStoreTypeFile.apply( file ) );
+            }
+        }
+    }
+
+    private Resource gatherLegacyIndexFiles( Collection<StoreFileMetadata> files ) throws IOException
     {
         final Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
         for ( IndexImplementation indexProvider : legacyIndexProviders.all() )
         {
             ResourceIterator<File> snapshot = indexProvider.listStoreFiles();
             snapshots.add( snapshot );
-            Iterators.addToCollection( snapshot, files );
+            snapshot.stream().map( toNotAStoreTypeFile ).collect( Collectors.toCollection( () -> files ) );
         }
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
         return new MultiResource( snapshots );
     }
 
-    private Resource gatherSchemaIndexFiles(Collection<File> targetFiles) throws IOException
+    private Resource gatherSchemaIndexFiles( Collection<StoreFileMetadata> targetFiles ) throws IOException
     {
         ResourceIterator<File> snapshot = indexingService.snapshotStoreFiles();
-        Iterators.addToCollection(snapshot, targetFiles);
+        snapshot.stream().map( toNotAStoreTypeFile ).collect( Collectors.toCollection( () -> targetFiles ) );
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
         return snapshot;
     }
 
-    private Resource gatherLabelScanStoreFiles( Collection<File> targetFiles ) throws IOException
+    private Resource gatherLabelScanStoreFiles( Collection<StoreFileMetadata> targetFiles ) throws IOException
     {
         ResourceIterator<File> snapshot = labelScanStore.snapshotStoreFiles();
-        Iterators.addToCollection(snapshot, targetFiles);
+        snapshot.stream().map( toNotAStoreTypeFile ).collect( Collectors.toCollection( () -> targetFiles ) );
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
         return snapshot;
     }
 
-    private void gatherNeoStoreFiles( final Collection<File> targetFiles, boolean includeTransactionLogs )
+    private void gatherNeoStoreFiles( final Collection<StoreFileMetadata> targetFiles )
     {
-        File neostoreFile = null;
-        for ( File dbFile : Objects.requireNonNull( storeDir.listFiles() ) )
-        {
-            String name = dbFile.getName();
-            if ( dbFile.isFile() )
-            {
-                if ( name.equals( MetaDataStore.DEFAULT_NAME ) )
-                {   // Keep it, to add last
-                    neostoreFile = dbFile;
-                }
-                else if ( neoStoreFile( name ) )
-                {
-                    targetFiles.add( dbFile );
-                }
-                else if ( includeTransactionLogs && transactionLogFile( name ) )
-                {
-                    targetFiles.add( dbFile );
-                }
-            }
-        }
-        targetFiles.add( neostoreFile );
-    }
-
-    private boolean neoStoreFile( String name )
-    {
-        if ( name.endsWith( ".id" ) )
-        {
-            return false;
-        }
-
-        if ( name.equals( IndexConfigStore.INDEX_DB_FILE_NAME ) )
-        {
-            return true;
-        }
-
-        return name.startsWith( MetaDataStore.DEFAULT_NAME ) &&
-                !name.startsWith( MetaDataStore.DEFAULT_NAME + ".transaction" );
+        targetFiles.addAll( storageEngine.listStorageFiles() );
     }
 
     private boolean transactionLogFile( String name )

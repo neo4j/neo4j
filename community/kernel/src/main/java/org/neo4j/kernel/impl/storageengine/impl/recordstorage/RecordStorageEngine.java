@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
@@ -69,15 +70,20 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.DefaultIdController;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.command.CacheInvalidationBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.HighIdBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
@@ -495,6 +501,36 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void prepareForRecoveryRequired()
     {
         neoStores.deleteIdGenerators();
+    }
+
+    @Override
+    public Collection<StoreFileMetadata> listStorageFiles()
+    {
+        List<StoreFileMetadata> files = new ArrayList<>();
+        for ( StoreType type : StoreType.values() )
+        {
+            if ( type.equals( StoreType.COUNTS ) )
+            {
+                addCurrentCountStoreFile( files );
+            }
+            else
+            {
+                final RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore( type );
+                StoreFileMetadata metadata =
+                        new StoreFileMetadata( recordStore.getStorageFileName(), Optional.of( type ),
+                                recordStore.getRecordSize() );
+                files.add( metadata );
+            }
+        }
+        return files;
+    }
+
+    private void addCurrentCountStoreFile( List<StoreFileMetadata> files )
+    {
+        File countStoreFile = neoStores.getCounts().currentFile();
+        StoreFileMetadata countStoreFileMetadata = new StoreFileMetadata( countStoreFile,
+                Optional.of( StoreType.COUNTS ), RecordFormat.NO_RECORD_SIZE );
+        files.add( countStoreFileMetadata );
     }
 
     /**

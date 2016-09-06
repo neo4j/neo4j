@@ -37,6 +37,8 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
  */
 public interface RecordFormat<RECORD extends AbstractBaseRecord>
 {
+    int NO_RECORD_SIZE = 1;
+
     /**
      * Instantiates a new record to use in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int)}
      * and {@link #write(AbstractBaseRecord, PageCursor, int)}. Records may be reused, which is why the instantiation
