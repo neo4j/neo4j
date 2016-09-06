@@ -42,8 +42,7 @@ public class TestBasicHaOperations
     @ClassRule
     public static LoggerRule logger = new LoggerRule( Level.OFF );
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withSharedSetting( HaSettings.tx_push_factor, "2" );
+    public ClusterRule clusterRule = new ClusterRule( getClass() ).withSharedSetting( HaSettings.tx_push_factor, "2" );
 
     @Test
     public void testBasicFailover() throws Throwable
@@ -134,21 +133,21 @@ public class TestBasicHaOperations
             tx.success();
         }
 
+        cluster.sync();
+
         // No need to wait, the push factor is 2
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
-        String value;
-        try ( Transaction tx = slave1.beginTx() )
-        {
-            value = slave1.getNodeById( nodeId ).getProperty( "Hello" ).toString();
-            logger.getLogger().info( "Hello=" + value );
-            assertEquals( "World", value );
-            tx.success();
-        }
+        checkNodeOnSlave( nodeId, slave1 );
 
-        HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave(slave1);
+        HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( slave1 );
+        checkNodeOnSlave( nodeId, slave2 );
+    }
+
+    private void checkNodeOnSlave( long nodeId, HighlyAvailableGraphDatabase slave2 )
+    {
         try ( Transaction tx = slave2.beginTx() )
         {
-            value = slave2.getNodeById( nodeId ).getProperty( "Hello" ).toString();
+            String value = slave2.getNodeById( nodeId ).getProperty( "Hello" ).toString();
             logger.getLogger().info( "Hello=" + value );
             assertEquals( "World", value );
             tx.success();
