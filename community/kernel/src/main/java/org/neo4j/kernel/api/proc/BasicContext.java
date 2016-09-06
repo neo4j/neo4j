@@ -42,6 +42,16 @@ public class BasicContext implements Context
         return (T) o;
     }
 
+    @Override
+    public <T> T getOrElse( Key<T> key, T defaultValue ) throws ProcedureException
+    {
+        Object o = values.get( key.name() );
+        if( o == null ) {
+            return defaultValue;
+        }
+        return (T) o;
+    }
+
     public <T> void put( Key<T> key, T value )
     {
         values.put( key.name(), value );

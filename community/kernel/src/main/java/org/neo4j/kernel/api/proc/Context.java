@@ -31,10 +31,10 @@ import org.neo4j.kernel.api.security.AuthSubject;
  */
 public interface Context
 {
-    Key<KernelTransaction>
-            KERNEL_TRANSACTION = Key.key( "KernelTransaction", KernelTransaction.class );
+    Key<KernelTransaction> KERNEL_TRANSACTION = Key.key( "KernelTransaction", KernelTransaction.class );
     Key<AuthSubject> AUTH_SUBJECT = Key.key( "AuthSubject", AuthSubject.class );
     Key<Thread> THREAD = Key.key( "Thread", Thread.class );
 
     <T> T get( Key<T> key ) throws ProcedureException;
+    <T> T getOrElse( Key<T> key, T defaultValue ) throws ProcedureException;
 }
