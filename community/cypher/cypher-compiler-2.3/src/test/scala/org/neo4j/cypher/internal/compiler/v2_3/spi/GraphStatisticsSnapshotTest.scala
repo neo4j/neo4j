@@ -26,46 +26,32 @@ import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, PropertyKeyId, RelTypeI
 import scala.language.reflectiveCalls
 
 class GraphStatisticsSnapshotTest extends CypherFunSuite {
-  def graphStatistics() = new GraphStatistics {
-    private var _factor = 1L
-
-    def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-      Cardinality(labelId.fold(500)(_.id * 10) * _factor)
-
-    def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-      Cardinality(relTypeId.fold(5000)(_.id * 10) * _factor)
-
-    def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
-      Selectivity.of(1.0 / ((property.id + 1) * _factor))
-
-    def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
-      Selectivity.of(1.0 / ((property.id + 1) * _factor))
-
-
-    def factor(factor: Long): Unit = {
-     _factor = factor
-    }
-  }
-
   test("records queries and its observed values") {
-    val snapshot = MutableGraphStatisticsSnapshot()
-    val instrumentedStatistics = InstrumentedGraphStatistics(graphStatistics(), snapshot)
+    val snapshot = new MutableGraphStatisticsSnapshot()
+
+    val allNodes = 500
+    val indexSelectivity = 0.25
+    val nodesWithLabel = 40
+    val relationships = 5000
+
+    val statistics = graphStatistics(allNodes = allNodes, idxSelectivity = indexSelectivity,
+      relCardinality = relationships, labeledNodes = nodesWithLabel)
+    val instrumentedStatistics = InstrumentedGraphStatistics(statistics, snapshot)
     instrumentedStatistics.nodesWithLabelCardinality(None)
     instrumentedStatistics.indexSelectivity(LabelId(0), PropertyKeyId(3))
     instrumentedStatistics.nodesWithLabelCardinality(Some(LabelId(4)))
     instrumentedStatistics.cardinalityByLabelsAndRelationshipType(Some(LabelId(2)), None, None)
-    instrumentedStatistics.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(1)), Some(LabelId(2)))
-    snapshot.freeze.map should equal(Map(
-      NodesWithLabelCardinality(None) -> 500,
-      IndexSelectivity(LabelId(0), PropertyKeyId(3)) -> 0.25,
-      NodesWithLabelCardinality(Some(LabelId(4))) -> 40,
-      CardinalityByLabelsAndRelationshipType(Some(LabelId(2)), None, None) -> 5000,
-      CardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(1)), Some(LabelId(2))) -> 10
+
+    snapshot.freeze.statsValues should equal(Map(
+      NodesWithLabelCardinality(None) -> allNodes,
+      IndexSelectivity(LabelId(0), PropertyKeyId(3)) -> indexSelectivity,
+      NodesWithLabelCardinality(Some(LabelId(4))) -> nodesWithLabel,
+      CardinalityByLabelsAndRelationshipType(Some(LabelId(2)), None, None) -> relationships
     ))
   }
 
-  test("a snapshot shouldn't diverge from itself") {
-    val snapshot = MutableGraphStatisticsSnapshot()
+  test("a snapshot shouldn't diverge from equal values") {
+    val snapshot = new MutableGraphStatisticsSnapshot()
     val instrumentedStatistics = InstrumentedGraphStatistics(graphStatistics(), snapshot)
     instrumentedStatistics.nodesWithLabelCardinality(None)
     instrumentedStatistics.indexSelectivity(LabelId(0), PropertyKeyId(3))
@@ -73,21 +59,45 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     instrumentedStatistics.cardinalityByLabelsAndRelationshipType(Some(LabelId(2)), None, None)
     instrumentedStatistics.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(1)), Some(LabelId(2)))
 
-    val frozenSnapshot = snapshot.freeze
-    val smallNumber: Double = 1e-10
+    val snapshot2 = new MutableGraphStatisticsSnapshot()
+    val statistics = graphStatistics()
 
-    frozenSnapshot.diverges(frozenSnapshot, smallNumber) should equal(false)
+    val instrumentedStatistics2 = InstrumentedGraphStatistics(statistics, snapshot2)
+    instrumentedStatistics2.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(1)), Some(LabelId(2)))
+    instrumentedStatistics2.cardinalityByLabelsAndRelationshipType(Some(LabelId(2)), None, None)
+    instrumentedStatistics2.indexSelectivity(LabelId(0), PropertyKeyId(3))
+    instrumentedStatistics2.nodesWithLabelCardinality(None)
+    instrumentedStatistics2.nodesWithLabelCardinality(Some(LabelId(4)))
+
+    val frozen1 = snapshot.freeze
+    val reallySensitiveDivergence: Double = 0.9
+
+    frozen1.diverges(snapshot2.freeze, reallySensitiveDivergence) should equal(false)
+  }
+
+  test("a snapshot shouldn't diverge from small differences") {
+    val snapshot = new MutableGraphStatisticsSnapshot()
+    val instrumentedStatistics = InstrumentedGraphStatistics(graphStatistics(allNodes = 1000), snapshot)
+    instrumentedStatistics.nodesWithLabelCardinality(None)
+
+    val snapshot2 = new MutableGraphStatisticsSnapshot()
+    val instrumentedStatistics2 = InstrumentedGraphStatistics(graphStatistics(allNodes = 1010), snapshot2)
+    instrumentedStatistics2.nodesWithLabelCardinality(None)
+
+    val frozen1 = snapshot.freeze
+    frozen1.diverges(snapshot2.freeze, minThreshold = 0.01) should equal(false)
+    frozen1.diverges(snapshot2.freeze, minThreshold = 0.001) should equal(true)
   }
 
   test("a snapshot should pick up divergences") {
-    val snapshot1 = MutableGraphStatisticsSnapshot()
+    val snapshot1 = new MutableGraphStatisticsSnapshot()
     val statistics = graphStatistics()
     val instrumentedStatistics1 = InstrumentedGraphStatistics(statistics, snapshot1)
     instrumentedStatistics1.nodesWithLabelCardinality(None)
     instrumentedStatistics1.indexSelectivity(LabelId(0), PropertyKeyId(3))
     instrumentedStatistics1.nodesWithLabelCardinality(Some(LabelId(4)))
 
-    val snapshot2 = MutableGraphStatisticsSnapshot()
+    val snapshot2 = new MutableGraphStatisticsSnapshot()
     val instrumentedStatistics2 = InstrumentedGraphStatistics(statistics, snapshot2)
     instrumentedStatistics2.nodesWithLabelCardinality(None)
     instrumentedStatistics2.nodesWithLabelCardinality(Some(LabelId(4)))
@@ -105,14 +115,14 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
   }
 
   test("if threshold is 1.0 nothing diverges") {
-    val snapshot1 = MutableGraphStatisticsSnapshot()
+    val snapshot1 = new MutableGraphStatisticsSnapshot()
     val statistics = graphStatistics()
     val instrumentedStatistics1 = InstrumentedGraphStatistics(statistics, snapshot1)
     instrumentedStatistics1.nodesWithLabelCardinality(None)
     instrumentedStatistics1.indexSelectivity(LabelId(0), PropertyKeyId(3))
     instrumentedStatistics1.nodesWithLabelCardinality(Some(LabelId(4)))
 
-    val snapshot2 = MutableGraphStatisticsSnapshot()
+    val snapshot2 = new MutableGraphStatisticsSnapshot()
     val instrumentedStatistics2 = InstrumentedGraphStatistics(statistics, snapshot2)
     instrumentedStatistics2.nodesWithLabelCardinality(None)
     instrumentedStatistics2.nodesWithLabelCardinality(Some(LabelId(4)))
@@ -124,5 +134,32 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     val frozen2 = snapshot2.freeze
 
     frozen1.diverges(frozen2, 1.0) should equal(false)
+  }
+
+  private def graphStatistics(allNodes: Long = 500,
+                              labeledNodes: Long = 500,
+                              relCardinality: Long = 5000,
+                              idxSelectivity: Double = 1,
+                              idxPropertyExistsSelectivity: Double = 1) = new GraphStatistics {
+    private var _factor: Double = 1L
+
+    def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = labelId match {
+      case None => Cardinality(allNodes * _factor)
+      case Some(id) => Cardinality(labeledNodes * _factor)
+    }
+
+    def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+      Cardinality(relCardinality * _factor)
+
+    def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] = {
+      Selectivity.of(idxSelectivity / _factor)
+    }
+
+    def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
+      Selectivity.of(idxPropertyExistsSelectivity / _factor)
+
+    def factor(factor: Double): Unit = {
+      _factor = factor
+    }
   }
 }
