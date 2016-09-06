@@ -151,7 +151,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         life.add( dependencies.satisfyDependency(
                 new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
 
-        life.add( dependencies.satisfyDependency( createAuthManager( config, logging ) ) );
+        life.add( dependencies.satisfyDependency( createAuthManager( config, logging, platformModule.fileSystem ) ) );
 
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 

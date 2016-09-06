@@ -494,7 +494,7 @@ public class HighlyAvailableEditionModule
                 createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
                         storeDir, lastUpdateTime, lastTxIdGetter, life ) );
 
-        life.add( dependencies.satisfyDependency( createAuthManager( config, logging ) ) );
+        life.add( dependencies.satisfyDependency( createAuthManager( config, logging, platformModule.fileSystem ) ) );
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, paxosLife,
                 clusterClient, members, platformModule.jobScheduler, master, requestContextFactory,

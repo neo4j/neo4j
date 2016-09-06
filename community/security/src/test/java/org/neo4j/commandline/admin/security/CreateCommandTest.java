@@ -19,28 +19,19 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-
-import java.io.File;
 
 import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.OutsideWorld;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class CreateCommandTest extends CommandTestBase
 {
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDir );
-
     @Test
     public void shouldFailToCreateExistingUser() throws Throwable
     {
@@ -50,9 +41,6 @@ public class CreateCommandTest extends CommandTestBase
         // When - trying to create it again
         try
         {
-            File graphDir = testDir.graphDbDir();
-            File confDir = new File( graphDir, "conf" );
-            OutsideWorld out = mock( OutsideWorld.class );
             UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
             usersCommand.execute( new String[]{"create", "another", "abc"} );
             fail( "Should not have succeeded without exception" );
@@ -70,9 +58,6 @@ public class CreateCommandTest extends CommandTestBase
         // Given - no existing user
 
         // When - creating new user
-        File graphDir = testDir.graphDbDir();
-        File confDir = new File( graphDir, "conf" );
-        OutsideWorld out = mock( OutsideWorld.class );
         UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
         usersCommand.execute( new String[]{"create", "another", "abc"} );
 
@@ -90,9 +75,6 @@ public class CreateCommandTest extends CommandTestBase
         // Given - no existing user
 
         // When - creating new user with password change requirement
-        File graphDir = testDir.graphDbDir();
-        File confDir = new File( graphDir, "conf" );
-        OutsideWorld out = mock( OutsideWorld.class );
         UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
         usersCommand.execute( new String[]{"create", "another", "abc", "--requires-password-change=true"} );
 
@@ -110,9 +92,6 @@ public class CreateCommandTest extends CommandTestBase
         // Given - no existing user
 
         // When - creating new user with password change requirement
-        File graphDir = testDir.graphDbDir();
-        File confDir = new File( graphDir, "conf" );
-        OutsideWorld out = mock( OutsideWorld.class );
         UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
         usersCommand.execute( new String[]{"create", "--requires-password-change=true", "another", "abc"} );
 

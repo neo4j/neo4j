@@ -19,8 +19,13 @@
  */
 package org.neo4j.commandline.admin;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+
 class RealOutsideWorld implements OutsideWorld
 {
+    FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+
     @Override
     public void stdOutLine( String text )
     {
@@ -43,5 +48,11 @@ class RealOutsideWorld implements OutsideWorld
     public void printStacktrace( Exception exception )
     {
         exception.printStackTrace();
+    }
+
+    @Override
+    public FileSystemAbstraction fileSystem()
+    {
+        return fileSystemAbstraction;
     }
 }

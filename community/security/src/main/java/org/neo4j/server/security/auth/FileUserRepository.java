@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.security.auth;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.exception.FormatException;
@@ -34,7 +34,9 @@ import org.neo4j.server.security.auth.exception.FormatException;
  */
 public class FileUserRepository extends AbstractUserRepository
 {
-    private final Path authFile;
+    private final File authFile;
+    private final FileSystemAbstraction fileSystem;
+    private long lastLoaded;
 
     // TODO: We could improve concurrency by using a ReadWriteLock
 
@@ -42,9 +44,10 @@ public class FileUserRepository extends AbstractUserRepository
 
     private final UserSerialization serialization = new UserSerialization();
 
-    public FileUserRepository( Path file, LogProvider logProvider )
+    public FileUserRepository( FileSystemAbstraction fileSystem, File file, LogProvider logProvider )
     {
-        this.authFile = file.toAbsolutePath();
+        this.fileSystem = fileSystem;
+        this.authFile = file;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -53,15 +56,17 @@ public class FileUserRepository extends AbstractUserRepository
     {
         users.clear();
         usersByName.clear();
-        if ( Files.exists( authFile ) )
+        if ( fileSystem.fileExists( authFile ) )
         {
             List<User> loadedUsers;
             try
             {
-                loadedUsers = serialization.loadRecordsFromFile( authFile );
+                lastLoaded = fileSystem.lastModifiedTime( authFile );
+                loadedUsers = serialization.loadRecordsFromFile( fileSystem, authFile );
             } catch ( FormatException e )
             {
-                log.error( "Failed to read authentication file \"%s\" (%s)", authFile.toAbsolutePath(), e.getMessage() );
+                log.error( "Failed to read authentication file \"%s\" (%s)", authFile.getAbsolutePath(),
+                        e.getMessage() );
                 throw new IllegalStateException( "Failed to read authentication file: " + authFile );
             }
 
@@ -76,6 +81,6 @@ public class FileUserRepository extends AbstractUserRepository
     @Override
     protected void saveUsers() throws IOException
     {
-        serialization.saveRecordsToFile(authFile, users);
+        serialization.saveRecordsToFile( fileSystem, authFile, users );
     }
 }

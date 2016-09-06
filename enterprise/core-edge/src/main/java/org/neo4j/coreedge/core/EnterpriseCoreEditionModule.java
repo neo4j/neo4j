@@ -215,7 +215,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 createKernelData( platformModule.fileSystem, platformModule.pageCache, platformModule.storeDir,
                         config, platformModule.graphDatabaseFacade, life ) );
 
-        life.add( dependencies.satisfyDependency( createAuthManager( config, logging ) ) );
+        life.add( dependencies.satisfyDependency( createAuthManager( config, logging, platformModule.fileSystem ) ) );
 
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
 

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.factory;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
@@ -106,7 +107,7 @@ public abstract class EditionModule
         config.augment( singletonMap( Configuration.editionName.name(), databaseInfo.edition.toString() ) );
     }
 
-    public static AuthManager createAuthManager( Config config, LogService logging )
+    public static AuthManager createAuthManager( Config config, LogService logging, FileSystemAbstraction fileSystem )
     {
         boolean authEnabled = config.get( GraphDatabaseSettings.auth_enabled );
         if ( !authEnabled )
@@ -120,14 +121,14 @@ public abstract class EditionModule
             String candidateId = candidate.getKeys().iterator().next();
             if ( candidateId.equals( key ) )
             {
-                return candidate.newInstance( config, logging.getUserLogProvider() );
+                return candidate.newInstance( config, logging.getUserLogProvider(), fileSystem );
             }
             else if ( key.isEmpty() )
             {
                 // As a default use the available service for the configured build edition
                 logging.getInternalLog( GraphDatabaseFacadeFactory.class )
                         .info( "No auth manager implementation specified, defaulting to '" + candidateId + "'" );
-                return candidate.newInstance( config, logging.getUserLogProvider() );
+                return candidate.newInstance( config, logging.getUserLogProvider(), fileSystem );
             }
         }
 

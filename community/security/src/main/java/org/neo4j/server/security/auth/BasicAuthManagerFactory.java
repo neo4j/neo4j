@@ -24,6 +24,7 @@ import java.io.File;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -38,7 +39,8 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
 {
     private static final String USER_STORE_FILENAME = "auth";
 
-    public static FileUserRepository getUserRepository( Config config, LogProvider logProvider )
+    public static FileUserRepository getUserRepository( Config config, LogProvider logProvider,
+            FileSystemAbstraction fileSystem )
     {
         // Resolve auth store file names
         File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
@@ -50,7 +52,7 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
         {
             userStoreFile = new File( authStoreDir, USER_STORE_FILENAME );
         }
-        return new FileUserRepository( userStoreFile.toPath(), logProvider );
+        return new FileUserRepository( fileSystem, userStoreFile, logProvider );
     }
 
     public interface Dependencies
@@ -65,7 +67,7 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
     }
 
     @Override
-    public AuthManager newInstance( Config config, LogProvider logProvider )
+    public AuthManager newInstance( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
     {
         if ( !config.get( GraphDatabaseSettings.auth_enabled ) )
         {
@@ -73,7 +75,7 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
                     "configuration setting auth_enabled=false" );
         }
 
-        final UserRepository userRepository = getUserRepository( config, logProvider );
+        final UserRepository userRepository = getUserRepository( config, logProvider, fileSystem );
 
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 

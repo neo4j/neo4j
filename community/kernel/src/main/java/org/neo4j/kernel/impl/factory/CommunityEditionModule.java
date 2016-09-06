@@ -102,7 +102,7 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency(
                 createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
 
-        life.add( dependencies.satisfyDependency( createAuthManager( config, logging ) ) );
+        life.add( dependencies.satisfyDependency( createAuthManager( config, logging, platformModule.fileSystem ) ) );
 
         commitProcessFactory = new CommunityCommitProcessFactory();
 

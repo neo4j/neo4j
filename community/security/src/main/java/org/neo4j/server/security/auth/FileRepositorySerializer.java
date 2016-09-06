@@ -19,13 +19,17 @@
  */
 package org.neo4j.server.security.auth;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.server.security.auth.exception.FormatException;
 import org.neo4j.string.UTF8;
 
@@ -34,34 +38,59 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public abstract class FileRepositorySerializer<S>
 {
-    public void saveRecordsToFile(Path recordsFile, Collection<S> records) throws IOException
-    {
-        Path directory = recordsFile.getParent();
-        if ( !Files.exists( directory ) )
-        {
-            Files.createDirectories( directory );
-        }
+    private Random random = new SecureRandom();
 
-        Path tempFile = Files.createTempFile( directory, recordsFile.getFileName().toString() + "-", ".tmp" );
+    public static void writeToFile( FileSystemAbstraction fs, File file, byte[] bytes ) throws IOException
+    {
+        OutputStream o = fs.openAsOutputStream( file, false );
+        o.write( bytes );
+        o.close();
+    }
+
+    public static byte[] readFromFile( FileSystemAbstraction fs, File file ) throws IOException
+    {
+        InputStream s = fs.openAsInputStream( file );
+        byte[] bytes = sun.misc.IOUtils.readFully( s, -1, false );
+        s.close();
+        return bytes;
+    }
+
+    public void saveRecordsToFile( FileSystemAbstraction fileSystem, File recordsFile, Collection<S> records ) throws
+            IOException
+    {
+        File tempFile = getTempFile( fileSystem, recordsFile );
+
         try
         {
-            Files.write( tempFile, serialize( records ) );
-            Files.move( tempFile, recordsFile, ATOMIC_MOVE, REPLACE_EXISTING );
+            writeToFile( fileSystem, tempFile, serialize( records ) );
+            fileSystem.move( tempFile, recordsFile, ATOMIC_MOVE, REPLACE_EXISTING );
         }
         catch ( Throwable e )
         {
-            Files.delete( tempFile );
+            fileSystem.deleteFile( tempFile );
             throw e;
         }
     }
 
-    public List<S> loadRecordsFromFile(Path recordsFile) throws IOException, FormatException
+    protected File getTempFile( FileSystemAbstraction fileSystem, File recordsFile ) throws IOException
     {
-        byte[] fileBytes = Files.readAllBytes( recordsFile );
-        return deserializeRecords( fileBytes );
+        File directory = recordsFile.getParentFile();
+        if ( !fileSystem.fileExists( directory ) )
+        {
+            fileSystem.mkdirs( directory );
+        }
+
+        long n = random.nextLong();
+        n = (n == Long.MIN_VALUE) ? 0 : Math.abs( n );
+        return new File( directory, Long.toString( n ) + "_" + recordsFile.getName() + ".tmp" );
     }
 
-    public byte[] serialize(Collection<S> records)
+    public List<S> loadRecordsFromFile( FileSystemAbstraction fileSystem, File recordsFile ) throws IOException, FormatException
+    {
+        return deserializeRecords( readFromFile( fileSystem, recordsFile ) );
+    }
+
+    public byte[] serialize( Collection<S> records )
     {
         StringBuilder sb = new StringBuilder();
         for ( S record : records )
@@ -73,7 +102,7 @@ public abstract class FileRepositorySerializer<S>
 
     public List<S> deserializeRecords( byte[] bytes ) throws FormatException
     {
-        List<S> out = new ArrayList<>(  );
+        List<S> out = new ArrayList<>();
         int lineNumber = 1;
         for ( String line : UTF8.decode( bytes ).split( "\n" ) )
         {

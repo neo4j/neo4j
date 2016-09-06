@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.admin.security;
 
+import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,8 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.DelegateFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
@@ -217,7 +220,8 @@ public class UsersCommand implements AdminCommand
     {
         Config config = loadNeo4jConfig( homeDir, configDir );
         FileUserRepository userRepository =
-                BasicAuthManagerFactory.getUserRepository( config, NullLogProvider.getInstance() );
+                BasicAuthManagerFactory.getUserRepository( config,
+                        NullLogProvider.getInstance(), outsideWorld.fileSystem() );
         userRepository.start();
         return userRepository;
     }

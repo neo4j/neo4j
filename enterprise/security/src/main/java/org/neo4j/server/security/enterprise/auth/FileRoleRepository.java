@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.exception.FormatException;
@@ -34,31 +34,31 @@ import org.neo4j.server.security.auth.exception.FormatException;
  */
 public class FileRoleRepository extends AbstractRoleRepository
 {
-    private final Path roleFile;
-
+    private final File roleFile;
     private final Log log;
-
     private final RoleSerialization serialization = new RoleSerialization();
+    private final FileSystemAbstraction fileSystem;
 
-    public FileRoleRepository( Path file, LogProvider logProvider )
+    public FileRoleRepository( FileSystemAbstraction fileSystem, File file, LogProvider logProvider )
     {
-        this.roleFile = file.toAbsolutePath();
+        this.roleFile = file;
         this.log = logProvider.getLog( getClass() );
+        this.fileSystem = fileSystem;
     }
 
     @Override
     public void start() throws Throwable
     {
-        if ( Files.exists( roleFile ) )
+        if ( fileSystem.fileExists( roleFile ) )
         {
             List<RoleRecord> loadedRoles;
             try
             {
-                loadedRoles = serialization.loadRecordsFromFile( roleFile );
+                loadedRoles = serialization.loadRecordsFromFile( fileSystem, roleFile );
             }
             catch ( FormatException e )
             {
-                log.error( "Failed to read role file \"%s\" (%s)", roleFile.toAbsolutePath(), e.getMessage() );
+                log.error( "Failed to read role file \"%s\" (%s)", roleFile.getAbsolutePath(), e.getMessage() );
                 throw new IllegalStateException( "Failed to read role file '" + roleFile + "'." );
             }
 
@@ -75,6 +75,6 @@ public class FileRoleRepository extends AbstractRoleRepository
     @Override
     protected void saveRoles() throws IOException
     {
-        serialization.saveRecordsToFile( roleFile, roles );
+        serialization.saveRecordsToFile( fileSystem, roleFile, roles );
     }
 }

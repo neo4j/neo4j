@@ -23,16 +23,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.io.File;
-
 import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.OutsideWorld;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -49,9 +45,6 @@ public class DeleteCommandTest extends CommandTestBase
         // When - trying to delete a user
         try
         {
-            File graphDir = testDir.graphDbDir();
-            File confDir = new File( graphDir, "conf" );
-            OutsideWorld out = mock( OutsideWorld.class );
             UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
             usersCommand.execute( new String[]{"delete", "another"} );
             fail( "Should not have succeeded without exception" );
@@ -70,9 +63,6 @@ public class DeleteCommandTest extends CommandTestBase
         createTestUser( "another", "abc" );
 
         // When - creating new user
-        File graphDir = testDir.graphDbDir();
-        File confDir = new File( graphDir, "conf" );
-        OutsideWorld out = mock( OutsideWorld.class );
         UsersCommand usersCommand = new UsersCommand( graphDir.toPath(), confDir.toPath(), out );
         usersCommand.execute( new String[]{"delete", "another"} );
 

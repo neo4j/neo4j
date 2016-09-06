@@ -19,6 +19,8 @@
  */
 package org.neo4j.commandline.admin;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+
 public interface OutsideWorld
 {
     void stdOutLine( String text );
@@ -28,4 +30,6 @@ public interface OutsideWorld
     void exit( int status );
 
     void printStacktrace( Exception exception );
+
+    FileSystemAbstraction fileSystem();
 }
