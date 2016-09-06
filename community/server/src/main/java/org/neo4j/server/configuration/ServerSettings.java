@@ -141,7 +141,8 @@ public interface ServerSettings
             "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ),
             range( 1, JettyThreadCalculator.MAX_THREADS ) );
 
-    @Description("If execution time limiting is enabled in the database, this configures the maximum request execution time.")
+    @Description( "If execution time limiting is enabled in the database, this configures the maximum request execution time. " +
+            "Please use dbms.transaction.timeout instead." )
     @Internal
     @Deprecated
     Setting<Long> webserver_limit_execution_time = setting( "unsupported.dbms.executiontime_limit.time", DURATION, NO_DEFAULT );
