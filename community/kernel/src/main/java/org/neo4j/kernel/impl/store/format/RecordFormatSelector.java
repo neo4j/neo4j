@@ -192,7 +192,8 @@ public class RecordFormatSelector
 
         if ( formatConfigured && storeWithFormatExists )
         {
-            if ( currentFormat.generation() == configuredFormat.generation() )
+            if ( currentFormat.getFormatFamily().equals( configuredFormat.getFormatFamily() ) &&
+                 (currentFormat.generation() == configuredFormat.generation()) )
             {
                 info( logProvider, "Configured format matches format in the store. Selected: " + currentFormat );
                 return currentFormat;
@@ -248,7 +249,8 @@ public class RecordFormatSelector
                 info( logProvider, "Selected format '" + DEFAULT_FORMAT + "' for the new store" );
                 result = DEFAULT_FORMAT;
             }
-            else if ( result.generation() < DEFAULT_FORMAT.generation() )
+            else if ( FormatFamily.isHigherFamilyFormat( DEFAULT_FORMAT, result ) ||
+                      (FormatFamily.isSameFamily( result, DEFAULT_FORMAT ) && (result.generation() < DEFAULT_FORMAT.generation())) )
             {
                 // format was not explicitly configured and store has lower format
                 // select default format, upgrade is intended

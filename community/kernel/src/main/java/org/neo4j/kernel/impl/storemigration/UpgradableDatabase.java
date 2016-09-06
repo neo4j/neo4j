@@ -95,12 +95,12 @@ public class UpgradableDatabase
 
             // If we are trying to open an enterprise store when configured to use community format, then inform the user
             // of the config setting to change since downgrades aren't possible but the store can still be opened.
-            if ( FormatFamily.isNotUpgradable( fromFormat.getFormatFamily(), format.getFormatFamily() ) )
+            if ( FormatFamily.isLowerFamilyFormat( format, fromFormat ) )
             {
                 throw new StoreUpgrader.UnexpectedUpgradingStoreFormatException();
             }
 
-            if ( fromFormat.generation() > format.generation() )
+            if ( FormatFamily.isSameFamily( fromFormat, format ) && (fromFormat.generation() > format.generation()) )
             {
                 // Tried to downgrade, that isn't supported
                 result = new Result( Outcome.unexpectedUpgradingStoreVersion, fromFormat.storeVersion(),

@@ -45,26 +45,42 @@ public abstract class FormatFamily implements Comparable<FormatFamily>
     }
 
     /**
-     * Check if migration between provided font families is possible.
-     * Family is upgradable if rank of the new family is higher then rank of old family
-     * @param oldFamily old family
-     * @param newFamily new family
-     * @return true if upgrade between families is possible, false otherwise
+     * Check if new record format family is higher then old record format family.
+     * New format family is higher then old one in case when it safe to migrate from old format into new
+     * format in terms of format capabilities and determined by family rank: new family is higher if it's rank is higher
+     * then rank
+     * of old family
+     * @param newFormat new record format
+     * @param oldFormat old record format
+     * @return true if new record format family is higher
      */
-    public static boolean isUpgradable( FormatFamily oldFamily, FormatFamily newFamily )
+    public static boolean isHigherFamilyFormat( RecordFormats newFormat, RecordFormats oldFormat )
     {
-        return oldFamily.compareTo( newFamily ) < 0;
+        return oldFormat.getFormatFamily().compareTo( newFormat.getFormatFamily() ) < 0;
     }
 
     /**
-     * Check if provided font families is not upgradable.
-     * Family is not upgradable if rank of the new family is lower or equal to rank of old family
-     * @param oldFamily old family
-     * @param newFamily new family
-     * @return true if families not upgradable, false otherwise
+     * Check if record formats have same format family
+     * @param recordFormats1 first record format
+     * @param recordFormats2 second record format
+     * @return true if formats have the same format family
      */
-    public static boolean isNotUpgradable( FormatFamily oldFamily, FormatFamily newFamily )
+    public static boolean isSameFamily( RecordFormats recordFormats1, RecordFormats recordFormats2 )
     {
-        return oldFamily.compareTo( newFamily ) > 0;
+        return recordFormats1.getFormatFamily().equals( recordFormats2.getFormatFamily() );
+    }
+
+    /**
+     * Check if new record format family is lower then old record format family.
+     * New format family is lower then old one in case when its not safe to migrate from old format into new
+     * format in terms of format capabilities and determined by family rank: new family is lower if it's rank is lower
+     * then rank of old family
+     * @param newFormat new record format
+     * @param oldFormat old record format
+     * @return true if new record format family is lower
+     */
+    public static boolean isLowerFamilyFormat( RecordFormats newFormat, RecordFormats oldFormat )
+    {
+        return oldFormat.getFormatFamily().compareTo( newFormat.getFormatFamily() ) > 0;
     }
 }

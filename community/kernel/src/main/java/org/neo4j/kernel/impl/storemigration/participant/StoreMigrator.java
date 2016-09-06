@@ -171,7 +171,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
         RecordFormats oldFormat = selectForVersion( versionToMigrateFrom );
         RecordFormats newFormat = selectForVersion( versionToMigrateTo );
-        if ( upgradeFormatType( oldFormat, newFormat ) || isDifferentCapabilities( oldFormat, newFormat ) )
+        if ( FormatFamily.isHigherFamilyFormat( newFormat, oldFormat ) ||
+             (FormatFamily.isSameFamily( oldFormat, newFormat ) && isDifferentCapabilities( oldFormat, newFormat )) )
         {
             // TODO if this store has relationship indexes then warn user about that they will be incorrect
             // after migration, because now we're rewriting the relationship ids.
@@ -196,11 +197,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private boolean isDifferentCapabilities( RecordFormats oldFormat, RecordFormats newFormat )
     {
         return !oldFormat.hasSameCapabilities( newFormat, CapabilityType.FORMAT );
-    }
-
-    private boolean upgradeFormatType( RecordFormats oldFormat, RecordFormats newFormat )
-    {
-        return FormatFamily.isUpgradable( oldFormat.getFormatFamily(), newFormat.getFormatFamily() );
     }
 
     void writeLastTxInformation( File migrationDir, TransactionId txInfo ) throws IOException
