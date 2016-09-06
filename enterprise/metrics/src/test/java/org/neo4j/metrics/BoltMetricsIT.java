@@ -76,20 +76,20 @@ public class BoltMetricsIT
         // Then
         assertEventually( "init request shows up as received",
                 () -> readLongValue( metricsCsv( metricsFolder, BoltMetrics.MESSAGES_RECIEVED ) ),
-                equalTo( 1L ), 5, TimeUnit.SECONDS );
+                equalTo( 1L ), 10, TimeUnit.SECONDS );
         assertEventually( "init request shows up as started",
                 () -> readLongValue( metricsCsv( metricsFolder, BoltMetrics.MESSAGES_STARTED ) ),
-                equalTo( 1L ), 5, TimeUnit.SECONDS );
+                equalTo( 1L ), 10, TimeUnit.SECONDS );
         assertEventually( "init request shows up as done",
                 () -> readLongValue( metricsCsv( metricsFolder, BoltMetrics.MESSAGES_DONE ) ),
-                equalTo( 1L ), 5, TimeUnit.SECONDS );
+                equalTo( 1L ), 10, TimeUnit.SECONDS );
 
         assertEventually( "queue time shows up",
                 () -> readLongValue( metricsCsv( metricsFolder, BoltMetrics.TOTAL_QUEUE_TIME ) ),
-                greaterThanOrEqualTo( 0L ), 5, TimeUnit.SECONDS );
+                greaterThanOrEqualTo( 0L ), 10, TimeUnit.SECONDS );
         assertEventually( "processing time shows up",
                 () -> readLongValue( metricsCsv( metricsFolder, BoltMetrics.TOTAL_PROCESSING_TIME ) ),
-                greaterThanOrEqualTo( 0L ), 5, TimeUnit.SECONDS );
+                greaterThanOrEqualTo( 0L ), 10, TimeUnit.SECONDS );
 
     }
 
