@@ -59,8 +59,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val kernelTransaction = mock[KernelTransactionImplementation]
     when(kernelTransaction.mode()).thenReturn(AccessMode.Static.FULL)
     val storeStatement = mock[StorageStatement]
-    val operations = mock[StatementOperationParts](RETURNS_DEEP_STUBS)
-    statement = new KernelStatement(kernelTransaction, null, operations, storeStatement, new Procedures())
+    statement = new KernelStatement(kernelTransaction, null, storeStatement, new Procedures())
     statement.acquire()
   }
 

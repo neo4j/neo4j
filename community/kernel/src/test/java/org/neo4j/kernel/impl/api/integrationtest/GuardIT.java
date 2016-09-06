@@ -26,12 +26,14 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.guard.TimeoutGuard;
 import org.neo4j.kernel.impl.api.GuardingStatementOperations;
+import org.neo4j.kernel.impl.api.StatementOperationContainer;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.CleanupRule;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 public class GuardIT
@@ -50,15 +52,27 @@ public class GuardIT
     }
 
     @Test
-    public void includeGuardingOperationLayer() throws Exception
+    public void includeGuardingOperationLayerOnGuardingParts() throws Exception
     {
         GraphDatabaseAPI database = startDataBase();
 
         DependencyResolver dependencyResolver = database.getDependencyResolver();
-        StatementOperationParts operationParts =
-                dependencyResolver.resolveDependency( StatementOperationParts.class );
-        assertThat( operationParts.entityReadOperations(), instanceOf( GuardingStatementOperations.class ) );
-        assertThat( operationParts.entityWriteOperations(), instanceOf( GuardingStatementOperations.class ) );
+        StatementOperationContainer operationParts = dependencyResolver.resolveDependency( StatementOperationContainer.class );
+        StatementOperationParts guardedParts = operationParts.guardedParts();
+        assertThat( guardedParts.entityReadOperations(), instanceOf( GuardingStatementOperations.class ) );
+        assertThat( guardedParts.entityWriteOperations(), instanceOf( GuardingStatementOperations.class ) );
+    }
+
+    @Test
+    public void notIncludeGuardingOperationLayerOnNonGuardingParts() throws Exception
+    {
+        GraphDatabaseAPI database = startDataBase();
+
+        DependencyResolver dependencyResolver = database.getDependencyResolver();
+        StatementOperationContainer operationParts = dependencyResolver.resolveDependency( StatementOperationContainer.class );
+        StatementOperationParts guardedParts = operationParts.nonGuarderParts();
+        assertThat( guardedParts.entityReadOperations(), not( instanceOf( GuardingStatementOperations.class ) ) );
+        assertThat( guardedParts.entityWriteOperations(), not( instanceOf( GuardingStatementOperations.class ) ) );
     }
 
     private GraphDatabaseAPI startDataBase()

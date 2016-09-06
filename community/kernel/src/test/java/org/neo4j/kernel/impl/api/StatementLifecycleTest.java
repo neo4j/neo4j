@@ -69,6 +69,6 @@ public class StatementLifecycleTest
     private KernelStatement getKernelStatement( KernelTransactionImplementation transaction,
             StorageStatement storageStatement )
     {
-        return new KernelStatement( transaction, null, null, storageStatement, new Procedures() );
+        return new KernelStatement( transaction, null, storageStatement, new Procedures() );
     }
 }

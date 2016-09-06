@@ -440,15 +440,16 @@ public class KernelTransactionsTest
         Tracers tracers = new Tracers( "null", NullLog.getInstance(), new Monitors(), mock( JobScheduler.class ) );
         StatementLocksFactory statementLocksFactory = new SimpleStatementLocksFactory( locks );
 
+        StatementOperationContainer statementOperationsContianer = new StatementOperationContainer( null, null );
         if ( testKernelTransactions )
         {
-            return new TestKernelTransactions( statementLocksFactory, null, null, null,
-                    DEFAULT,
+            return new TestKernelTransactions( statementLocksFactory, null, statementOperationsContianer,
+                    null, DEFAULT,
                     commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
                     tracers, storageEngine, new Procedures(), transactionIdStore, Clocks.systemClock() );
         }
         return new KernelTransactions( statementLocksFactory,
-                null, null, null, DEFAULT,
+                null, statementOperationsContianer, null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
                 tracers, storageEngine, new Procedures(), transactionIdStore, Clocks.systemClock() );
     }
@@ -520,7 +521,7 @@ public class KernelTransactionsTest
     {
         public TestKernelTransactions( StatementLocksFactory statementLocksFactory,
                 ConstraintIndexCreator constraintIndexCreator,
-                StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard,
+                StatementOperationContainer statementOperationsContianer, SchemaWriteGuard schemaWriteGuard,
                 TransactionHeaderInformationFactory txHeaderFactory,
                 TransactionCommitProcess transactionCommitProcess,
                 IndexConfigStore indexConfigStore,
@@ -529,7 +530,7 @@ public class KernelTransactionsTest
                 Tracers tracers, StorageEngine storageEngine, Procedures procedures,
                 TransactionIdStore transactionIdStore, Clock clock )
         {
-            super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory,
+            super( statementLocksFactory, constraintIndexCreator, statementOperationsContianer, schemaWriteGuard, txHeaderFactory,
                     transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor,
                     dataSourceLife, tracers, storageEngine, procedures, transactionIdStore, clock );
         }

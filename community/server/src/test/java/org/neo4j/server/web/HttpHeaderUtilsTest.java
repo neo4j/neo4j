@@ -59,7 +59,7 @@ public class HttpHeaderUtilsTest
     {
         Log log = logProvider.getLog( HttpServletRequest.class );
         long transactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
-        assertEquals( "Transaction timeout not specified.", -1, transactionTimeout );
+        assertEquals( "Transaction timeout not specified.", 0, transactionTimeout );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -69,7 +69,7 @@ public class HttpHeaderUtilsTest
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) ).thenReturn( "aa" );
         Log log = logProvider.getLog( HttpServletRequest.class );
         long transactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
-        assertEquals( "Transaction timeout not specified.", -1, transactionTimeout );
+        assertEquals( "Transaction timeout not specified.", 0, transactionTimeout );
         logProvider.assertContainsMessageContaining("Fail to parse `max-execution-time` header with value: 'aa'. Should be a positive number.");
     }
 }

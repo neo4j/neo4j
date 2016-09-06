@@ -78,6 +78,8 @@ public class KernelTransactionTestBase
     protected final SchemaWriteGuard schemaWriteGuard = mock( SchemaWriteGuard.class );
     protected final FakeClock clock = Clocks.fakeClock();
     protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
+    protected final StatementOperationContainer operationContainer = mock( StatementOperationContainer.class );
+
     private final long defaultTransactionTimeoutMillis = GraphDatabaseSettings.transaction_timeout.from( Config.defaults() );
 
     @Before
@@ -132,9 +134,9 @@ public class KernelTransactionTestBase
 
     public KernelTransactionImplementation newNotInitializedTransaction()
     {
-        return new KernelTransactionImplementation( null, schemaWriteGuard, hooks, null, null, headerInformationFactory,
-                commitProcess, transactionMonitor, legacyIndexStateSupplier, txPool, clock, TransactionTracer.NULL,
-                storageEngine );
+        return new KernelTransactionImplementation( operationContainer, schemaWriteGuard,
+                hooks, null, null, headerInformationFactory, commitProcess, transactionMonitor, legacyIndexStateSupplier,
+                txPool, clock, TransactionTracer.NULL, storageEngine );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

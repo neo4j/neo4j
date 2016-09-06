@@ -101,16 +101,20 @@ public class OperationsFacade
 {
     private final KernelTransaction tx;
     private final KernelStatement statement;
-    private final StatementOperationParts operations;
     private final Procedures procedures;
+    private StatementOperationParts operations;
 
     OperationsFacade( KernelTransaction tx, KernelStatement statement,
-                      StatementOperationParts operations, Procedures procedures )
+                      Procedures procedures )
     {
         this.tx = tx;
         this.statement = statement;
-        this.operations = operations;
         this.procedures = procedures;
+    }
+
+    public void initialize( StatementOperationParts operationParts )
+    {
+        this.operations = operationParts;
     }
 
     final KeyReadOperations tokenRead()

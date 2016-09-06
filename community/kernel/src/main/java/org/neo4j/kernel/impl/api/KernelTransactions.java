@@ -68,7 +68,7 @@ public class KernelTransactions extends LifecycleAdapter
 
     private final StatementLocksFactory statementLocksFactory;
     private final ConstraintIndexCreator constraintIndexCreator;
-    private final StatementOperationParts statementOperations;
+    private final StatementOperationContainer statementOperations;
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final TransactionCommitProcess transactionCommitProcess;
@@ -100,7 +100,7 @@ public class KernelTransactions extends LifecycleAdapter
 
     public KernelTransactions( StatementLocksFactory statementLocksFactory,
                                ConstraintIndexCreator constraintIndexCreator,
-                               StatementOperationParts statementOperations,
+                               StatementOperationContainer statementOperationContainer,
                                SchemaWriteGuard schemaWriteGuard,
                                TransactionHeaderInformationFactory txHeaderFactory,
                                TransactionCommitProcess transactionCommitProcess,
@@ -117,7 +117,7 @@ public class KernelTransactions extends LifecycleAdapter
     {
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
-        this.statementOperations = statementOperations;
+        this.statementOperations = statementOperationContainer;
         this.schemaWriteGuard = schemaWriteGuard;
         this.transactionHeaderInformationFactory = txHeaderFactory;
         this.transactionCommitProcess = transactionCommitProcess;
