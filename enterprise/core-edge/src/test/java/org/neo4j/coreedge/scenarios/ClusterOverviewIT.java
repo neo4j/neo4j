@@ -244,7 +244,8 @@ public class ClusterOverviewIT
 
         for ( int coreServerId = 0; coreServerId < 5; coreServerId++ )
         {
-            assertEventualOverview( cluster, allOf( containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 4 ) ), coreServerId );
+            assertEventualOverview( cluster, allOf( containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 4 ) ),
+                    coreServerId );
         }
 
         // when
@@ -254,13 +255,16 @@ public class ClusterOverviewIT
         for ( int coreServerId = 2; coreServerId < 5; coreServerId++ )
         {
             // then
-            assertEventualOverview( cluster, allOf( containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 2 ) ), coreServerId );
+            assertEventualOverview( cluster, allOf( containsRole( Role.LEADER, 1 ), containsRole( Role.FOLLOWER, 2 ) ),
+                    coreServerId );
         }
     }
 
-    private void assertEventualOverview( Cluster cluster, Matcher<List<MemberInfo>> expected, int coreServerId ) throws org.neo4j.kernel.api.exceptions.KernelException, InterruptedException
+    private void assertEventualOverview( Cluster cluster, Matcher<List<MemberInfo>> expected, int coreServerId )
+            throws org.neo4j.kernel.api.exceptions.KernelException, InterruptedException
     {
-        assertEventually( "should have overview", () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 15, SECONDS );
+        assertEventually( "should have overview",
+                () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 60, SECONDS );
     }
 
     private Matcher<List<MemberInfo>> containsAddress( String expectedAddress )
@@ -292,8 +296,8 @@ public class ClusterOverviewIT
        return containsRole( unexpectedRole, 0 );
     }
 
-    private List<MemberInfo> clusterOverview( GraphDatabaseFacade db ) throws TransactionFailureException,
-            ProcedureException
+    private List<MemberInfo> clusterOverview( GraphDatabaseFacade db )
+            throws TransactionFailureException, ProcedureException
     {
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         KernelTransaction transaction = kernel.newTransaction( Type.implicit, READ );
@@ -313,7 +317,7 @@ public class ClusterOverviewIT
         return infos;
     }
 
-    private class MemberInfo
+    private static class MemberInfo
     {
         private final String address;
         private final Role role;
