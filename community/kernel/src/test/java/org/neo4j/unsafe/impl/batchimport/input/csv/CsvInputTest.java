@@ -50,6 +50,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -825,6 +826,59 @@ public class CsvInputTest
         verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 1l ), eq( (String)null ) );
         verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2l ), eq( (String)null ) );
         verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2l ), eq( "additional" ) );
+    }
+
+    @Test
+    public void shouldDecorateInputs() throws Exception
+    {
+        // GIVEN
+        String defaultType = "KNOWS";
+        Thread expectedThread = Thread.currentThread();
+        Function<InputRelationship,InputRelationship> decorator = new Function<InputRelationship,InputRelationship>()
+        {
+            private final Function<InputRelationship,InputRelationship> actual = defaultRelationshipType( defaultType );
+
+            @Override
+            public InputRelationship apply( InputRelationship relationship )
+            {
+                // We assert that it's the thread iterating over the entities in the end that is doing
+                // the decoration, not the individual (potentially multiple) processing threads.
+                assertSame( expectedThread, Thread.currentThread() );
+                return actual.apply( relationship );
+            }
+        };
+        Iterable<DataFactory<InputRelationship>> data = DataFactories.relationshipData(
+                CsvInputTest.<InputRelationship>data( lines(
+                        ":START_ID,:END_ID",
+                        "1,2",
+                        "2,3",
+                        "3,4" ),
+                decorator ) );
+        Input input = new CsvInput( null, null, data, defaultFormatRelationshipFileHeader(),
+                IdType.INTEGER, COMMAS, mock( Collector.class ), 4 );
+
+        // WHEN/THEN
+        try ( InputIterator<InputRelationship> relationships = input.relationships().iterator() )
+        {
+            int count = 0;
+            while ( relationships.hasNext() )
+            {
+                assertEquals( defaultType, relationships.next().type() );
+                count++;
+            }
+            assertFalse( relationships.hasNext() );
+            assertEquals( 3, count );
+        }
+    }
+
+    private static String lines( String... data )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( int i = 0; i < data.length; i++ )
+        {
+            builder.append( i > 0 ? "\n" : "" ).append( data[i] );
+        }
+        return builder.toString();
     }
 
     private Configuration customConfig( final char delimiter, final char arrayDelimiter, final char quote )

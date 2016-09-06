@@ -108,10 +108,10 @@ public class CsvInput implements Input
             public InputIterator<InputNode> iterator()
             {
                 return new InputGroupsDeserializer<>( nodeDataFactory.iterator(),
-                        nodeHeaderFactory, config, idType, maxProcessors, (dataStream, dataHeader, decorator) ->
+                        nodeHeaderFactory, config, idType, maxProcessors, (dataStream, dataHeader) ->
                         new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
                                 new InputNodeDeserialization( dataStream, dataHeader, groups, idType.idsAreExternal() ),
-                                decorator, Validators.<InputNode>emptyValidator(), badCollector ), InputNode.class );
+                                badCollector ), InputNode.class, Validators.<InputNode>emptyValidator() );
             }
 
             @Override
@@ -131,10 +131,10 @@ public class CsvInput implements Input
             public InputIterator<InputRelationship> iterator()
             {
                 return new InputGroupsDeserializer<>( relationshipDataFactory.iterator(),
-                        relationshipHeaderFactory, config, idType, maxProcessors, (dataStream, dataHeader, decorator) ->
+                        relationshipHeaderFactory, config, idType, maxProcessors, (dataStream, dataHeader) ->
                         new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
                                 new InputRelationshipDeserialization( dataStream, dataHeader, groups ),
-                                decorator, new InputRelationshipValidator(), badCollector ), InputRelationship.class );
+                                badCollector ), InputRelationship.class, new InputRelationshipValidator() );
             }
 
             @Override

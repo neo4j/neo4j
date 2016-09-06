@@ -20,13 +20,10 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.IOException;
-import java.util.function.Function;
-
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
@@ -45,22 +42,17 @@ public class InputEntityDeserializer<ENTITY extends InputEntity> extends InputIt
     private final CharSeeker data;
     private final Mark mark = new Mark();
     private final int delimiter;
-    private final Function<ENTITY,ENTITY> decorator;
     private final Deserialization<ENTITY> deserialization;
-    private final Validator<ENTITY> validator;
     private final Extractors.StringExtractor stringExtractor = new Extractors.StringExtractor( false );
     private final Collector badCollector;
 
     InputEntityDeserializer( Header header, CharSeeker data, int delimiter,
-            Deserialization<ENTITY> deserialization, Function<ENTITY,ENTITY> decorator,
-            Validator<ENTITY> validator, Collector badCollector )
+            Deserialization<ENTITY> deserialization, Collector badCollector )
     {
         this.header = header;
         this.data = data;
         this.delimiter = delimiter;
         this.deserialization = deserialization;
-        this.decorator = decorator;
-        this.validator = validator;
         this.badCollector = badCollector;
     }
 
@@ -93,9 +85,6 @@ public class InputEntityDeserializer<ENTITY extends InputEntity> extends InputIt
                 badCollector.collectExtraColumns(
                         data.sourceDescription(), lineNumber, stringExtractor.value() );
             }
-
-            entity = decorator.apply( entity );
-            validator.validate( entity );
 
             return entity;
         }
@@ -174,7 +163,7 @@ public class InputEntityDeserializer<ENTITY extends InputEntity> extends InputIt
                     e.getMessage() );
             if ( e instanceof InputException )
             {
-                throw Exceptions.withMessage( e, message );
+                throw Exceptions.withMessage( e, e.getMessage() + " - " + message );
             }
             throw new InputException( message, e );
         }

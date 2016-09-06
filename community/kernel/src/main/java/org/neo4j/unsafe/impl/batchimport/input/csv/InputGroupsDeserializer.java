@@ -23,14 +23,18 @@ import java.util.Iterator;
 import java.util.function.Function;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.helpers.collection.NestingIterator;
+import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 
 /**
- * Able to deserialize one input group. An input group is a list of one or more input files containing
- * its own header. An import can read multiple input groups. Each group is deserialized by
- * {@link InputEntityDeserializer}.
+ * Able to deserialize one input group. An input group is a list of one or more input files logically seen
+ * as one stream of data. The first line in this data stream defines the header, a header which applies to
+ * all data in its group.
+ *
+ * Depending on how the data is structured, see {@link Configuration#multilineFields()} data may or may not
+ * be parsed and processed in parallel for higher throughput.
  */
 class InputGroupsDeserializer<ENTITY extends InputEntity>
         extends NestingIterator<ENTITY,DataFactory<ENTITY>>
@@ -46,17 +50,18 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
     private final int maxProcessors;
     private final DeserializerFactory<ENTITY> factory;
     private final Class<ENTITY> entityClass;
+    private final Validator<ENTITY> validator;
+    private Function<ENTITY,ENTITY> currentDataDecorator;
 
     @FunctionalInterface
     public interface DeserializerFactory<ENTITY extends InputEntity>
     {
-        InputEntityDeserializer<ENTITY> create( CharSeeker dataStream, Header dataHeader,
-                Function<ENTITY,ENTITY> decorator );
+        InputEntityDeserializer<ENTITY> create( CharSeeker dataStream, Header dataHeader );
     }
 
     InputGroupsDeserializer( Iterator<DataFactory<ENTITY>> dataFactory, Header.Factory headerFactory,
             Configuration config, IdType idType, int maxProcessors, DeserializerFactory<ENTITY> factory,
-            Class<ENTITY> entityClass )
+            Class<ENTITY> entityClass, Validator<ENTITY> validator )
     {
         super( dataFactory );
         this.headerFactory = headerFactory;
@@ -65,6 +70,7 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
         this.maxProcessors = maxProcessors;
         this.factory = factory;
         this.entityClass = entityClass;
+        this.validator = validator;
     }
 
     @Override
@@ -74,6 +80,7 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
 
         // Open the data stream. It's closed by the batch importer when execution is done.
         Data<ENTITY> data = dataFactory.create( config );
+        currentDataDecorator = data.decorator();
         if ( config.multilineFields() )
         {
             // Use a single-threaded reading and parsing because if we can expect multi-line fields it's
@@ -87,7 +94,7 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
             // from somewhere else, it's up to that factory.
             Header dataHeader = headerFactory.create( dataStream, config, idType );
 
-            InputEntityDeserializer<ENTITY> input = factory.create( dataStream, dataHeader, data.decorator() );
+            InputEntityDeserializer<ENTITY> input = factory.create( dataStream, dataHeader );
             // It's important that we assign currentInput before calling initialize(), so that if something
             // goes wrong in initialize() and our close() is called we close it properly.
             currentInput = input;
@@ -110,6 +117,18 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
         }
 
         return currentInput;
+    }
+
+    @Override
+    protected ENTITY fetchNextOrNull()
+    {
+        ENTITY next = super.fetchNextOrNull();
+        if ( next != null )
+        {
+            next = currentDataDecorator.apply( next );
+            validator.validate( next );
+        }
+        return next;
     }
 
     private void closeCurrent()
