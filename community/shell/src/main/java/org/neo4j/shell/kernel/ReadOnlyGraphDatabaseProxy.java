@@ -99,6 +99,13 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout,
+            TimeUnit unit )
+    {
+        return actual.beginTransaction( type, accessMode, timeout, unit );
+    }
+
+    @Override
     public Transaction beginTx()
     {
         return actual.beginTx();

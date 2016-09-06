@@ -138,7 +138,8 @@ public class GraphDatabaseFacadeFactory
         CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = edition.coreAPIAvailabilityGuard;
 
         // Start it
-        graphDatabaseFacade.init( new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard ) );
+        graphDatabaseFacade.init( new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard ),
+                platform.config );
 
         Throwable error = null;
         try

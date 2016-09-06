@@ -28,7 +28,6 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -54,7 +53,6 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     private final DataSourceModule dataSource;
     private final Logger msgLog;
     private final CoreAPIAvailabilityGuard availability;
-    private final long defaultTransactionTimeout;
 
     public ClassicCoreSPI(PlatformModule platform, DataSourceModule dataSource, Logger msgLog, CoreAPIAvailabilityGuard availability )
     {
@@ -62,7 +60,6 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         this.dataSource = dataSource;
         this.msgLog = msgLog;
         this.availability = availability;
-        defaultTransactionTimeout = platform.config.get( GraphDatabaseSettings.transaction_timeout );
     }
 
     @Override
@@ -165,12 +162,6 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
             msgLog.log( "Shutdown failed", throwable );
             throw throwable;
         }
-    }
-
-    @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
-    {
-        return beginTransaction( type, accessMode, defaultTransactionTimeout );
     }
 
     @Override

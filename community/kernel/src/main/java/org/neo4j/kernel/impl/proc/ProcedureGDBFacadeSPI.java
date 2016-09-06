@@ -196,12 +196,6 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout )
     {
         throw new UnsupportedOperationException();

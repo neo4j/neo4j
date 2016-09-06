@@ -28,9 +28,11 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 import static org.mockito.Mockito.mock;
@@ -45,6 +47,7 @@ public class GraphDatabaseFacadeTest
     private GraphDatabaseFacade graphDatabaseFacade = new GraphDatabaseFacade();
     private GraphDatabaseQueryService queryService;
     private DependencyResolver dependencyResolver;
+    private Config defaultConfig;
 
     @Before
     public void setUp()
@@ -55,9 +58,12 @@ public class GraphDatabaseFacadeTest
 
         when( spi.queryService() ).thenReturn( queryService );
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
-        when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( contextBridge );
+        when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) )
+                .thenReturn( contextBridge );
 
-        graphDatabaseFacade.init( spi );
+        defaultConfig = Config.defaults();
+
+        graphDatabaseFacade.init( spi, defaultConfig );
     }
 
     @Test
@@ -73,7 +79,8 @@ public class GraphDatabaseFacadeTest
     {
         graphDatabaseFacade.beginTx();
 
-        verify( spi ).beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL );
+        long timeout = defaultConfig.get( GraphDatabaseSettings.transaction_timeout );
+        verify( spi ).beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL, timeout );
     }
 
     @Test
@@ -94,6 +101,7 @@ public class GraphDatabaseFacadeTest
         graphDatabaseFacade.execute( "create (n)" );
         graphDatabaseFacade.execute( "create (n)", new HashMap<>() );
 
-        verify( spi, times( 2 ) ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        long timeout = defaultConfig.get( GraphDatabaseSettings.transaction_timeout );
+        verify( spi, times( 2 ) ).beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL, timeout );
     }
 }

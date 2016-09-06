@@ -20,6 +20,7 @@
 package org.neo4j.kernel.internal;
 
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -53,5 +54,21 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
 
     String getStoreDir();
 
+    /**
+     * Begin internal transaction with specified type and access mode
+     * @param type transaction type
+     * @param accessMode transaction access mode
+     * @return internal transaction
+     */
     InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode );
+
+    /**
+     * Begin internal transaction with specified type, access mode and timeout
+     * @param type transaction type
+     * @param accessMode transaction access mode
+     * @param timeout transaction timeout
+     * @param unit time unit of timeout argument
+     * @return internal transaction
+     */
+    InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout, TimeUnit unit );
 }

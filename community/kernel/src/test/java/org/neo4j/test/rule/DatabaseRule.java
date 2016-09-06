@@ -156,6 +156,13 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode, long timeout,
+            TimeUnit unit )
+    {
+        return getGraphDatabaseAPI().beginTransaction( type, accessMode, timeout, unit );
+    }
+
+    @Override
     public Transaction beginTx()
     {
         return getGraphDatabaseAPI().beginTx();

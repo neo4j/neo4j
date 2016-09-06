@@ -62,13 +62,13 @@ public class TransitionalPeriodTransactionMessContainerTest
     @Test
     public void startTransactionWithCustomTimeout() throws Exception
     {
-        when( databaseFacade.beginTransaction( type, accessMode, 10, TimeUnit.SECONDS ) ).thenReturn( internalTransaction );
+        when( databaseFacade.beginTransaction( type, accessMode, 10, TimeUnit.MILLISECONDS ) ).thenReturn( internalTransaction );
 
         TransitionalPeriodTransactionMessContainer transactionMessContainer =
                 new TransitionalPeriodTransactionMessContainer( databaseFacade );
         transactionMessContainer.create( queryService, type, accessMode, 10, request );
 
-        verify( databaseFacade ).beginTransaction( type, accessMode, 10, TimeUnit.SECONDS );
+        verify( databaseFacade ).beginTransaction( type, accessMode, 10, TimeUnit.MILLISECONDS );
     }
 
     @Test
