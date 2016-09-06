@@ -41,10 +41,10 @@ abstract class FunctionTestBase(funcName: String) extends CypherFunSuite {
     result.errors.head.msg should equal(message)
   }
 
-  protected def evaluateWithTypes(argumentTypes: IndexedSeq[TypeSpec]): (SemanticCheckResult, ast.UserFunctionInvocation) = {
+  protected def evaluateWithTypes(argumentTypes: IndexedSeq[TypeSpec]): (SemanticCheckResult, ast.FunctionInvocation) = {
     val arguments = argumentTypes.map(DummyExpression(_))
 
-    val invocation = ast.UserFunctionInvocation(
+    val invocation = ast.FunctionInvocation(
       ast.FunctionName(funcName)(DummyPosition(6)),
       distinct = false,
       arguments

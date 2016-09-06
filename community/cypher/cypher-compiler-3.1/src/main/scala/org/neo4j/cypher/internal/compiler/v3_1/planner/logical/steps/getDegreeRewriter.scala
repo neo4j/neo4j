@@ -33,17 +33,17 @@ case object getDegreeRewriter extends Rewriter {
 
   private def rewriter = Rewriter.lift {
     // LENGTH( (a)-[]->() )
-    case func@UserFunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None))))))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None))))))
       if func.function == functions.Length || func.function == functions.Size =>
       calculateUsingGetDegree(func, node, types, dir)
 
     // LENGTH( ()-[]->(a) )
-    case func@UserFunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None))))))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None))))))
       if func.function == functions.Length || func.function == functions.Size =>
       calculateUsingGetDegree(func, node, types, dir.reversed)
   }
 
-  private def calculateUsingGetDegree(func: UserFunctionInvocation, node: Variable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
+  private def calculateUsingGetDegree(func: FunctionInvocation, node: Variable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
     types
       .map(typ => GetDegree(node.copyId, Some(typ), dir)(typ.position))
       .reduceOption[Expression](Add(_, _)(func.position))

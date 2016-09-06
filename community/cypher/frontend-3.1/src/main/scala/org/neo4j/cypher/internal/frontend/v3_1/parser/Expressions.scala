@@ -193,11 +193,11 @@ trait Expressions extends Parser
   private def IdInColl: Rule2[ast.Variable, ast.Expression] =
     Variable ~~ keyword("IN") ~~ Expression
 
-  def FunctionInvocation: Rule1[ast.UserFunctionInvocation] = rule("a function") {
+  def FunctionInvocation: Rule1[ast.FunctionInvocation] = rule("a function") {
     ((group(Namespace ~~ FunctionName ~~ "(" ~~
       (keyword("DISTINCT") ~ push(true) | EMPTY ~ push(false)) ~~
       zeroOrMore(Expression, separator = CommaSep) ~~ ")"
-    ) ~~> (_.toIndexedSeq)) memoMismatches) ~~>> (ast.UserFunctionInvocation(_, _, _, _))
+    ) ~~> (_.toIndexedSeq)) memoMismatches) ~~>> (ast.FunctionInvocation(_, _, _, _))
   }
 
   def ListComprehension: Rule1[ast.ListComprehension] = rule("[") {

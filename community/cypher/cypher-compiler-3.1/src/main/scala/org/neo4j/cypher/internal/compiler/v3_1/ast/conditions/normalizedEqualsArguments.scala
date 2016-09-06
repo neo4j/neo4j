@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.ast.conditions
 
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.Condition
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Equals, Expression, Property, UserFunctionInvocation, functions}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{Equals, Expression, FunctionInvocation, Property, functions}
 
 case object normalizedEqualsArguments extends Condition {
   def apply(that: Any): Seq[String] = {
@@ -28,15 +28,15 @@ case object normalizedEqualsArguments extends Condition {
     equals.collect {
       case eq@Equals(expr, Property(_,_)) if !expr.isInstanceOf[Property] && notIdFunction(expr) =>
         s"Equals at ${eq.position} is not normalized: $eq"
-      case eq@Equals(expr, func@UserFunctionInvocation(_, _, _, _)) if isIdFunction(func) && notIdFunction(expr) =>
+      case eq@Equals(expr, func@FunctionInvocation(_, _, _, _)) if isIdFunction(func) && notIdFunction(expr) =>
         s"Equals at ${eq.position} is not normalized: $eq"
     }
   }
 
-  private def isIdFunction(func: UserFunctionInvocation) = func.function == functions.Id
+  private def isIdFunction(func: FunctionInvocation) = func.function == functions.Id
 
   private def notIdFunction(expr: Expression) =
-    !expr.isInstanceOf[UserFunctionInvocation] || !isIdFunction(expr.asInstanceOf[UserFunctionInvocation])
+    !expr.isInstanceOf[FunctionInvocation] || !isIdFunction(expr.asInstanceOf[FunctionInvocation])
 
   override def name: String = productPrefix
 }

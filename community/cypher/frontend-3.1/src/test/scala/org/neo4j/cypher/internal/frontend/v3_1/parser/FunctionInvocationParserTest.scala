@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.frontend.v3_1.parser
 import org.neo4j.cypher.internal.frontend.v3_1.{DummyPosition, ast}
 
 class FunctionInvocationParserTest
-  extends ParserAstTest[ast.UserFunctionInvocation]
+  extends ParserAstTest[ast.FunctionInvocation]
     with Expressions
     with Literals
     with Base
@@ -31,11 +31,11 @@ class FunctionInvocationParserTest
   implicit val parser = FunctionInvocation
 
   test("foo()") {
-    yields(ast.UserFunctionInvocation(ast.Namespace()(pos), ast.FunctionName("foo")(pos), distinct = false, Vector.empty))
+    yields(ast.FunctionInvocation(ast.Namespace()(pos), ast.FunctionName("foo")(pos), distinct = false, Vector.empty))
   }
 
   test("foo('test', 1 + 2)") {
-    yields(ast.UserFunctionInvocation(ast.Namespace()(pos), ast.FunctionName("foo")(pos), distinct = false, Vector(
+    yields(ast.FunctionInvocation(ast.Namespace()(pos), ast.FunctionName("foo")(pos), distinct = false, Vector(
       ast.StringLiteral("test")(pos),
       ast.Add(
         ast.SignedDecimalIntegerLiteral("1")(pos),
@@ -43,11 +43,11 @@ class FunctionInvocationParserTest
     )))
   }
   test("my.namespace.foo()") {
-    yields(ast.UserFunctionInvocation(ast.Namespace(List("my", "namespace"))(pos), ast.FunctionName("foo")(pos), distinct = false, Vector.empty))
+    yields(ast.FunctionInvocation(ast.Namespace(List("my", "namespace"))(pos), ast.FunctionName("foo")(pos), distinct = false, Vector.empty))
   }
 
   test("my.namespace.foo('test', 1 + 2)") {
-    yields(ast.UserFunctionInvocation(ast.Namespace(List("my", "namespace"))(pos), ast.FunctionName("foo")(pos), distinct = false, Vector(
+    yields(ast.FunctionInvocation(ast.Namespace(List("my", "namespace"))(pos), ast.FunctionName("foo")(pos), distinct = false, Vector(
       ast.StringLiteral("test")(pos),
       ast.Add(
         ast.SignedDecimalIntegerLiteral("1")(pos),

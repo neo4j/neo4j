@@ -31,7 +31,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
   val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _) _
 
-  val existsPredicate: Expression = UserFunctionInvocation(FunctionName(functions.Exists.name) _, property) _
+  val existsPredicate: Expression = FunctionInvocation(FunctionName(functions.Exists.name) _, property) _
   val startsWithPredicate: Expression = StartsWith(property, StringLiteral("") _) _
   val ltPredicate: Expression = LessThan(property, SignedDecimalIntegerLiteral("12") _) _
   val neqPredicate: Expression = NotEquals(property, SignedDecimalIntegerLiteral("12") _) _

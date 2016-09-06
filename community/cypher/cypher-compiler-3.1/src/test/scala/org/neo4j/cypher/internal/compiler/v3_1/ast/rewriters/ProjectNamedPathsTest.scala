@@ -252,7 +252,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val WHERE =
       Where(
         GreaterThan(
-          UserFunctionInvocation(FunctionName("length")(pos), PathExpression(NodePathStep(aId, SingleRelationshipPathStep(rId, SemanticDirection.OUTGOING, NilPathStep)))(pos))(pos),
+          FunctionInvocation(FunctionName("length")(pos), PathExpression(NodePathStep(aId, SingleRelationshipPathStep(rId, SemanticDirection.OUTGOING, NilPathStep)))(pos))(pos),
           SignedDecimalIntegerLiteral("10")(pos)
         )(pos)
       )(pos)
@@ -297,7 +297,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val WITH1 =
       With(distinct = false,
         ReturnItems(includeExisting = false, Seq(
-          AliasedReturnItem(UserFunctionInvocation(FunctionName("length")(pos), pathExpression)(pos), l)(pos),
+          AliasedReturnItem(FunctionInvocation(FunctionName("length")(pos), pathExpression)(pos), l)(pos),
           AliasedReturnItem(CountStar()(pos), x)(pos)
         ))(pos), None, None, None, None)(pos)
 

@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{PlanContext, ProcedureSignature}
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{FunctionName, Statement, UserFunctionInvocation}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{FunctionInvocation, FunctionName, Statement}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.{DeprecatedFunctionNotification, DeprecatedProcedureNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, SemanticTable, inSequence}
@@ -230,7 +230,7 @@ case class CypherCompiler(parser: CypherParser,
 
   private def syntaxDeprecationNotifications(statement: Statement): Set[InternalNotification] =
     statement.treeFold(Set.empty[InternalNotification]) {
-      case f@UserFunctionInvocation(_, FunctionName(name), _, _) if aliases.get(name).nonEmpty =>
+      case f@FunctionInvocation(_, FunctionName(name), _, _) if aliases.get(name).nonEmpty =>
         (seq) => (seq + DeprecatedFunctionNotification(f.position, name, aliases(name)), None)
     }
 

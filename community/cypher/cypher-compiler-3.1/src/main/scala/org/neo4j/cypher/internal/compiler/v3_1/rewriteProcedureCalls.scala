@@ -40,7 +40,7 @@ object rewriteProcedureCalls {
         val coerced = resolved.coerceArguments
         coerced
 
-      case function: UserFunctionInvocation if function.needsToBeResolved =>
+      case function: FunctionInvocation if function.needsToBeResolved =>
           val resolved = ResolvedFunctionInvocation(funcSignatureLookup)(function)
 
           // We coerce here to ensure that the semantic check run after this rewriter assigns a type

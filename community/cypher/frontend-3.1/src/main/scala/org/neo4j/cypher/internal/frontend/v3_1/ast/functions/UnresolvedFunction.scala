@@ -27,5 +27,5 @@ case object UnresolvedFunction extends Function {
   def name = "UNKNOWN"
 
   //we cannot do a full semantic check until we have resolved the function call.
-  override protected def semanticCheck(ctx: SemanticContext, invocation: UserFunctionInvocation) = SemanticCheckResult.success
+  override protected def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation) = SemanticCheckResult.success
 }

@@ -25,10 +25,10 @@ object IsAggregate {
     case expr: CountStar =>
       Some(expr)
 
-    case fi: UserFunctionInvocation if fi.distinct =>
+    case fi: FunctionInvocation if fi.distinct =>
       Some(fi)
 
-    case fi: UserFunctionInvocation =>
+    case fi: FunctionInvocation =>
       fi.function match {
         case fun: AggregatingFunction => Some(fi)
         case _                              => None

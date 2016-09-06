@@ -62,6 +62,6 @@ class NormalizedEqualsArgumentsTest extends CypherFunSuite with AstConstructionT
     condition(ast) should equal(Seq(s"Equals at ${ast.position} is not normalized: $ast"))
   }
 
-  private def id(name: String): UserFunctionInvocation =
-    UserFunctionInvocation(FunctionName("id")(pos), distinct = false, Array(Variable(name)(pos)))(pos)
+  private def id(name: String): FunctionInvocation =
+    FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(Variable(name)(pos)))(pos)
 }

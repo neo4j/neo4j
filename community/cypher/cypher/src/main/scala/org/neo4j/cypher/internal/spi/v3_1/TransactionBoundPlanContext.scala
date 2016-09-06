@@ -147,9 +147,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
     val maybeFunction = tc.statement.readOperations().functionGet(kn)
     if (maybeFunction.isPresent) {
       val ks = maybeFunction.get
-      val input = ks.inputSignature().asScala
-        .map(asCypherType)
-        .toIndexedSeq
+      val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue))).toIndexedSeq
       val output = asCypherType(ks.outputType())
       val deprecationInfo = asOption(ks.deprecated())
 

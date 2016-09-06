@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{AstConstructionTestSupport, FunctionName, UserFunctionInvocation}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{AstConstructionTestSupport, FunctionInvocation, FunctionName}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -27,13 +27,13 @@ class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConst
   val rewriter = replaceAliasedFunctionInvocations
 
   test("should rewrite toInt()") {
-    val before = UserFunctionInvocation(FunctionName("toInt")(pos), literalInt(1))(pos)
+    val before = FunctionInvocation(FunctionName("toInt")(pos), literalInt(1))(pos)
 
     rewriter(before) should equal(before.copy(functionName = FunctionName("toInteger")(pos))(pos))
   }
 
   test("doesn't touch toInteger()") {
-    val before = UserFunctionInvocation(FunctionName("toInteger")(pos), literalInt(1))(pos)
+    val before = FunctionInvocation(FunctionName("toInteger")(pos), literalInt(1))(pos)
 
     rewriter(before) should equal(before)
   }

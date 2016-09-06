@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 
@@ -34,7 +35,7 @@ public class UserFunctionSignatureTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
     private final UserFunctionSignature signature =
-            functionSignature( "asd" ).in( Neo4jTypes.NTAny ).out( Neo4jTypes.NTAny ).build();
+            functionSignature( "asd" ).in( "in", Neo4jTypes.NTAny ).out( Neo4jTypes.NTAny ).build();
 
     @Test
     public void inputSignatureShouldNotBeModifiable() throws Throwable
@@ -43,7 +44,7 @@ public class UserFunctionSignatureTest
         exception.expect( UnsupportedOperationException.class );
 
         // When
-        signature.inputSignature().add( Neo4jTypes.NTAny );
+        signature.inputSignature().add( new FieldSignature( "in2", Neo4jTypes.NTAny ));
     }
 
     @Test
@@ -51,12 +52,12 @@ public class UserFunctionSignatureTest
     {
         // When
         String toStr = functionSignature( "org", "myProcedure" )
-                .in( Neo4jTypes.NTList( Neo4jTypes.NTString ) )
+                .in( "in", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
                 .out( Neo4jTypes.NTNumber )
                 .build()
                 .toString();
 
         // Then
-        assertEquals( "org.myProcedure(LIST? OF STRING?) :: (NUMBER?)", toStr );
+        assertEquals( "org.myProcedure(in :: LIST? OF STRING?) :: (NUMBER?)", toStr );
     }
 }

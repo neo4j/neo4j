@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 case object Collect extends AggregatingFunction  {
   def name = "collect"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.UserFunctionInvocation)  =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation)  =
     checkArgs(invocation, 1) ifOkChain {
       invocation.arguments(0).expectType(CTAny.covariant) chain
       invocation.specifyType(invocation.arguments(0).types(_).wrapInList)

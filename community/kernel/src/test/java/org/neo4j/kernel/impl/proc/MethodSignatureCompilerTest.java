@@ -81,13 +81,13 @@ public class MethodSignatureCompilerTest
     public static class ClassWithFunctionWithSimpleArgs
     {
         @UserFunction
-        public String echo( String in)
+        public String echo( @Name("in") String in)
         {
             return in;
         }
 
         @UserFunction
-        public String echoWithInvalidType( UnmappableRecord in)
+        public String echoWithInvalidType( @Name("in") UnmappableRecord in)
         {
             return "echo";
         }

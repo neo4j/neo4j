@@ -139,7 +139,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
           acc => (acc :+ name, None)
         case In(Property(Variable(id), PropertyKeyName(name)),_) if id == variable =>
           acc => (acc :+ name, None)
-        case predicate@UserFunctionInvocation(_, _, _, IndexedSeq(Property(Variable(id), PropertyKeyName(name))))
+        case predicate@FunctionInvocation(_, _, _, IndexedSeq(Property(Variable(id), PropertyKeyName(name))))
           if id == variable && predicate.function == functions.Exists =>
           acc => (acc :+ name, None)
         case IsNotNull(Property(Variable(id), PropertyKeyName(name))) if id == variable =>
@@ -181,7 +181,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
   private def applicable(other: Expression) = {
     other match {
       case _: Property => false
-      case f: UserFunctionInvocation => f.function != functions.Id
+      case f: FunctionInvocation => f.function != functions.Id
       case _ => true
     }
   }

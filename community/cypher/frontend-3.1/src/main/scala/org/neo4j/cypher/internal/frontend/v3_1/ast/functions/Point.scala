@@ -28,7 +28,7 @@ case object Point extends Function with SimpleTypedFunction {
 
   override def name = "point"
 
-  override def semanticCheck(ctx: SemanticContext, invocation: UserFunctionInvocation) =
+  override def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation) =
     super.semanticCheck(ctx, invocation) ifOkChain checkPointMap(invocation.args(0))
 
   /*

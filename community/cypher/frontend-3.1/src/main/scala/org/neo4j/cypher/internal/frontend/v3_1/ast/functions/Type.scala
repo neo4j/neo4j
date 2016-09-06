@@ -20,20 +20,20 @@
 package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Function, UserFunctionInvocation}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{Function, FunctionInvocation}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheckResult, SemanticError, SemanticState, _}
 
 case object Type extends Function {
   def name = "type"
 
-  override protected def semanticCheck(ctx: SemanticContext, invocation: UserFunctionInvocation): SemanticCheck =
+  override protected def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation): SemanticCheck =
     checkMinArgs(invocation, 1) ifOkChain
       checkMaxArgs(invocation, 1) ifOkChain
       checkTypeOfArgument(invocation) ifOkChain
       invocation.specifyType(CTString)
 
-  private def checkTypeOfArgument(invocation: UserFunctionInvocation): SemanticCheck = (s: SemanticState) => {
+  private def checkTypeOfArgument(invocation: FunctionInvocation): SemanticCheck = (s: SemanticState) => {
     val e = invocation.args.head
 
     s.expressionType(e).specified match {

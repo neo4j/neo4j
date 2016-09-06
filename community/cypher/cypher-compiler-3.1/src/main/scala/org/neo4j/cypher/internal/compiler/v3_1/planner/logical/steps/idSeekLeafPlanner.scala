@@ -86,5 +86,5 @@ object idSeekLeafPlanner extends LeafPlanner {
   private def relTypeAsStringLiteral(relType: RelTypeName) = StringLiteral(relType.name)(relType.position)
 
   private def typeOfRelExpr(idExpr: Variable) =
-    UserFunctionInvocation(FunctionName("type")(idExpr.position), idExpr)(idExpr.position)
+    FunctionInvocation(FunctionName("type")(idExpr.position), idExpr)(idExpr.position)
 }

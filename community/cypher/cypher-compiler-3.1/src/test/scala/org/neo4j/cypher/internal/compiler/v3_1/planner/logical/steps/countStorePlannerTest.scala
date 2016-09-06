@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{LogicalPlanningC
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{AggregatingQueryProjection, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{AstConstructionTestSupport, FunctionName, UserFunctionInvocation, Variable}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{AstConstructionTestSupport, FunctionInvocation, FunctionName, Variable}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -147,7 +147,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   def producePlannerQuery(query: String, variable: String) = {
     val (pq, _) = producePlannerQueryForPattern(query)
     pq.withHorizon(AggregatingQueryProjection(
-      aggregationExpressions = Map(s"count($variable)" -> UserFunctionInvocation(FunctionName("count") _, Variable(variable) _) _)))
+      aggregationExpressions = Map(s"count($variable)" -> FunctionInvocation(FunctionName("count") _, Variable(variable) _) _)))
   }
 
   case class IsCountPlan(variable: String, noneExpected: Boolean) extends Matcher[Option[LogicalPlan]] {

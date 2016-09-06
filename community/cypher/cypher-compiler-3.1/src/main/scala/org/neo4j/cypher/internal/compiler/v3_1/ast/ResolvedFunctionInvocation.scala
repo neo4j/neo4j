@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast._
 
 object ResolvedFunctionInvocation {
 
-  def apply(signatureLookup: QualifiedName => Option[UserFunctionSignature])(unresolved: UserFunctionInvocation): ResolvedFunctionInvocation = {
+  def apply(signatureLookup: QualifiedName => Option[UserFunctionSignature])(unresolved: FunctionInvocation): ResolvedFunctionInvocation = {
     val position = unresolved.position
     val name = QualifiedName(unresolved)
     val signature = signatureLookup(name)
@@ -59,7 +59,7 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
         .zip(optInputFields)
         .map {
           case (arg, optField) =>
-            optField.map { field => CoerceTo(arg, field) }.getOrElse(arg)
+            optField.map { field => CoerceTo(arg, field.typ) }.getOrElse(arg)
         }
     copy(callArguments = coercedArguments)(position)
     case None => this
@@ -69,17 +69,18 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
     case None => SemanticError(s"Unknown function '$qualifiedName'", position)
     case Some(signature) =>
       val expectedNumArgs = signature.inputSignature.length
-      val actualNumArgs = callArguments.length
+      val usedDefaultArgs = signature.inputSignature.drop(callArguments.length).flatMap(_.default)
+      val actualNumArgs = callArguments.length + usedDefaultArgs.length
 
-      if (expectedNumArgs == actualNumArgs) {
-        signature.inputSignature.zip(callArguments).map {
-          case (field, arg) =>
-            arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.covariant)
-        }.foldLeft(success)(_ chain _)
-      } else {
-        error(_: SemanticState,
-              SemanticError(s"Function call does not provide the required number of arguments ($expectedNumArgs)",
-                            position))
-      }
+        if (expectedNumArgs == actualNumArgs) {
+          //this zip is fine since it will only verify provided args in callArguments
+          //default values are checked at load time
+          signature.inputSignature.zip(callArguments).map {
+            case (field, arg) =>
+              arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
+          }.foldLeft(success)(_ chain _)
+        } else {
+          error(_: SemanticState, SemanticError(s"Function call does not provide the required number of arguments ($expectedNumArgs)", position))
+        }
   }
 }

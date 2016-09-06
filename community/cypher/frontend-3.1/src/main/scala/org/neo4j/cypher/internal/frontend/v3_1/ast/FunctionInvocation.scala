@@ -23,19 +23,19 @@ import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_1.ast.functions.UnresolvedFunction
 
-object UserFunctionInvocation {
-  def apply(name: FunctionName, argument: Expression)(position: InputPosition): UserFunctionInvocation =
-    UserFunctionInvocation(Namespace()(position), name, distinct = false, IndexedSeq(argument))(position)
-  def apply(left: Expression, name: FunctionName, right: Expression): UserFunctionInvocation =
-    UserFunctionInvocation(Namespace()(name.position), name, distinct = false, IndexedSeq(left, right))(name.position)
-  def apply(expression: Expression, name: FunctionName): UserFunctionInvocation =
-    UserFunctionInvocation(Namespace()(name.position), name, distinct = false, IndexedSeq(expression))(name.position)
-  def apply(functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])(position: InputPosition): UserFunctionInvocation =
-  UserFunctionInvocation(Namespace()(position), functionName, distinct, args)(position)
+object FunctionInvocation {
+  def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =
+    FunctionInvocation(Namespace()(position), name, distinct = false, IndexedSeq(argument))(position)
+  def apply(left: Expression, name: FunctionName, right: Expression): FunctionInvocation =
+    FunctionInvocation(Namespace()(name.position), name, distinct = false, IndexedSeq(left, right))(name.position)
+  def apply(expression: Expression, name: FunctionName): FunctionInvocation =
+    FunctionInvocation(Namespace()(name.position), name, distinct = false, IndexedSeq(expression))(name.position)
+  def apply(functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])(position: InputPosition): FunctionInvocation =
+  FunctionInvocation(Namespace()(position), functionName, distinct, args)(position)
 }
 
-case class UserFunctionInvocation(namespace: Namespace, functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])
-                                 (val position: InputPosition) extends Expression {
+case class FunctionInvocation(namespace: Namespace, functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])
+                             (val position: InputPosition) extends Expression {
   val name = functionName.name
   val function = Function.lookup.getOrElse(name.toLowerCase, UnresolvedFunction)
 

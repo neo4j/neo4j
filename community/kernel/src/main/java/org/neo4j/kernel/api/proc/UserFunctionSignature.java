@@ -36,14 +36,14 @@ import static java.util.Collections.unmodifiableList;
 public class UserFunctionSignature
 {
     private final QualifiedName name;
-    private final List<Neo4jTypes.AnyType> inputSignature;
+    private final List<FieldSignature> inputSignature;
     private final Neo4jTypes.AnyType type;
     private final String[] allowed;
     private final Optional<String> deprecated;
     private final Optional<String> description;
 
     public UserFunctionSignature( QualifiedName name,
-            List<Neo4jTypes.AnyType> inputSignature,
+            List<FieldSignature> inputSignature,
             Neo4jTypes.AnyType type,
             Optional<String> deprecated,
             String[] allowed,
@@ -67,7 +67,7 @@ public class UserFunctionSignature
         return deprecated;
     }
 
-    public List<Neo4jTypes.AnyType> inputSignature()
+    public List<FieldSignature> inputSignature()
     {
         return inputSignature;
     }
@@ -115,7 +115,7 @@ public class UserFunctionSignature
     public static class Builder
     {
         private final QualifiedName name;
-        private final List<Neo4jTypes.AnyType> inputSignature = new LinkedList<>();
+        private final List<FieldSignature> inputSignature = new LinkedList<>();
         private Neo4jTypes.AnyType outputType;
         private String[] allowed = new String[0];
         private Optional<String> deprecated = Optional.empty();
@@ -139,9 +139,9 @@ public class UserFunctionSignature
         }
 
         /** Define an input field */
-        public Builder in( AnyType type )
+        public Builder in( String name, AnyType type )
         {
-            inputSignature.add( type );
+            inputSignature.add( new FieldSignature( name, type ) );
             return this;
         }
 

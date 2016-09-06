@@ -54,7 +54,7 @@ case object countStorePlanner {
                                         argumentIds: Set[IdName], selections: Selections)(implicit context: LogicalPlanningContext): Option[LogicalPlan] =
     exp match {
       case // COUNT(<id>)
-        func@UserFunctionInvocation(_, _, false, Vector(Variable(variableName))) if func.function == functions.Count =>
+        func@FunctionInvocation(_, _, false, Vector(Variable(variableName))) if func.function == functions.Count =>
         trySolveNodeAggregation(query, columnName, Some(variableName), patternRelationships, patternNodes, argumentIds, selections)
 
       case // COUNT(*)
@@ -62,7 +62,7 @@ case object countStorePlanner {
         trySolveNodeAggregation(query, columnName, None, patternRelationships, patternNodes, argumentIds, selections)
 
       case // COUNT(n.prop)
-        func@UserFunctionInvocation(_, _, false, Vector(Property(Variable(variableName), PropertyKeyName(propKeyName))))
+        func@FunctionInvocation(_, _, false, Vector(Property(Variable(variableName), PropertyKeyName(propKeyName))))
         if func.function == functions.Count =>
         val labelCheck: Option[LabelName] => (Option[LogicalPlan] => Option[LogicalPlan]) = {
             case None => _ => None

@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, SemanticDirec
 import org.neo4j.graphdb.Direction
 
 object ExpressionConverters {
-  def toCommandExpression(expression: ast.Function, invocation: ast.UserFunctionInvocation): CommandExpression =
+  def toCommandExpression(expression: ast.Function, invocation: ast.FunctionInvocation): CommandExpression =
     expression match {
       case Abs => commandexpressions.AbsFunction(toCommandExpression(invocation.arguments.head))
       case Acos => commandexpressions.AcosFunction(toCommandExpression(invocation.arguments.head))
@@ -259,7 +259,7 @@ object ExpressionConverters {
     case e: ast.Divide => commandexpressions.Divide(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
     case e: ast.Modulo => commandexpressions.Modulo(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
     case e: ast.Pow => commandexpressions.Pow(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
-    case e: ast.UserFunctionInvocation => toCommandExpression(e.function, e)
+    case e: ast.FunctionInvocation => toCommandExpression(e.function, e)
     case e: ast.CountStar => commandexpressions.CountStar()
     case e: ast.Property => toCommandProperty(e)
     case e: ast.Parameter => toCommandParameter(e)
@@ -289,7 +289,11 @@ object ExpressionConverters {
     case e: InequalitySeekRangeWrapper => InequalitySeekRangeExpression(e.range.mapBounds(toCommandExpression))
     case e: ast.AndedPropertyInequalities => predicates.AndedPropertyComparablePredicates(variable(e.variable), toCommandProperty(e.property), e.inequalities.map(inequalityExpression))
     case e: DesugaredMapProjection => commandexpressions.DesugaredMapProjection(e.name.name, e.includeAllProps, mapProjectionItems(e.items))
-    case e: ResolvedFunctionInvocation => commandexpressions.FunctionInvocation(e.fcnSignature.get, e.callArguments.map(toCommandExpression))
+    case e: ResolvedFunctionInvocation =>
+      val callArgumentCommands = e.callArguments.map(Some(_)).zipAll(e.fcnSignature.get.inputSignature.map(_.default.map(_.value)), None, None).map {
+        case (given, default) => given.map(toCommandExpression).getOrElse(commandexpressions.Literal(default.get))
+      }
+      commandexpressions.FunctionInvocation(e.fcnSignature.get, callArgumentCommands)
     case e: ast.MapProjection => throw new InternalException("should have been rewritten away")
     case _ =>
       throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")

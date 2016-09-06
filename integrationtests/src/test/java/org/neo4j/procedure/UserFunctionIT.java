@@ -623,6 +623,61 @@ public class UserFunctionIT
         }
     }
 
+    @Test
+    public void shouldCallProcedureWithAllDefaultArgument() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues() AS result" );
+
+        // Then
+        assertThat( res.next().get("result"), equalTo( "a string,42,3.14,true" ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldCallFunctionWithOneProvidedRestDefaultArgument() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues('another string') AS result");
+
+        // Then
+        assertThat( res.next().get("result"), equalTo( "another string,42,3.14,true" ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldCallFunctionWithTwoProvidedRestDefaultArgument() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues('another string', 1337) AS result");
+
+        // Then
+        assertThat( res.next().get("result"), equalTo( "another string,1337,3.14,true" ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldCallFunctionWithThreeProvidedRestDefaultArgument() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues('another string', 1337, 2.718281828) AS result");
+
+        // Then
+        assertThat( res.next().get("result"), equalTo( "another string,1337,2.72,true" ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldCallFunctionWithFourProvidedRestDefaultArgument() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues('another string', 1337, 2.718281828, false) AS result");
+
+        // Then
+        assertThat( res.next().get("result"), equalTo( "another string,1337,2.72,false" ) );
+        assertFalse( res.hasNext() );
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -659,19 +714,30 @@ public class UserFunctionIT
         }
 
         @UserFunction
-        public long simpleArgument( long someValue )
+        public long simpleArgument(@Name( "someValue" ) long someValue )
         {
             return someValue;
         }
 
         @UserFunction
-        public long nodeListArgument( List<Node> nodes )
+        public String defaultValues(
+                @Name( value = "string", defaultValue = "a string") String string,
+                @Name( value = "integer", defaultValue = "42") long integer,
+                @Name( value = "float", defaultValue = "3.14") double aFloat,
+                @Name( value = "boolean", defaultValue = "true") boolean aBoolean
+        )
+        {
+            return String.format( "%s,%d,%.2f,%b", string, integer, aFloat, aBoolean  );
+        }
+
+        @UserFunction
+        public long nodeListArgument( @Name("nodes") List<Node> nodes )
         {
             return nodes.size();
         }
 
         @UserFunction
-        public long delegatingFunction( long someValue )
+        public long delegatingFunction( @Name( "someValue" ) long someValue )
         {
             return (long) db
                     .execute( "RETURN org.neo4j.procedure.simpleArgument({name}) AS result", map( "name", someValue ) )
@@ -679,7 +745,7 @@ public class UserFunctionIT
         }
 
         @UserFunction
-        public long recursiveSum( long order )
+        public long recursiveSum( @Name( "someValue" ) long order )
         {
             if ( order == 0L )
             {
@@ -696,13 +762,13 @@ public class UserFunctionIT
         }
 
         @UserFunction
-        public long genericArguments( List<List<String>> stringList, List<List<List<Long>>> longList )
+        public long genericArguments( @Name( "strings" ) List<List<String>> stringList, @Name( "longs" ) List<List<List<Long>>> longList )
         {
             return stringList.size() + longList.size();
         }
 
         @UserFunction
-        public long mapArgument( Map<String,Object> map )
+        public long mapArgument( @Name( "map" ) Map<String,Object> map )
         {
             return map.size();
         }
@@ -714,26 +780,26 @@ public class UserFunctionIT
         }
 
         @UserFunction
-        public double squareDouble( double value )
+        public double squareDouble( @Name( "someValue" )double value )
         {
             return value * value;
         }
 
         @UserFunction
-        public double avgNumberList( List<Number> list )
+        public double avgNumberList( @Name( "someValue" ) List<Number> list )
         {
             return list.stream().reduce( ( l, r ) -> l.doubleValue() + r.doubleValue() ).orElse( 0.0d ).doubleValue() /
                    list.size();
         }
 
         @UserFunction
-        public double avgDoubleList(  List<Double> list )
+        public double avgDoubleList(  @Name( "someValue" ) List<Double> list )
         {
             return list.stream().reduce( ( l, r ) -> l + r ).orElse( 0.0d ) / list.size();
         }
 
         @UserFunction
-        public long squareLong( long value )
+        public long squareLong( @Name( "someValue" ) long value )
         {
             return value * value;
         }
@@ -821,7 +887,7 @@ public class UserFunctionIT
         }
 
         @UserFunction
-        public Path nodePaths( Node node )
+        public Path nodePaths( @Name( "someValue" ) Node node )
         {
             return (Path) db
                     .execute( "WITH {node} AS node MATCH p=(node)-[*]->() RETURN p", map( "node", node ) )
@@ -831,7 +897,7 @@ public class UserFunctionIT
 
         @Description( "This is a description" )
         @UserFunction
-        public Node nodeWithDescription( Node node )
+        public Node nodeWithDescription( @Name( "someValue" ) Node node )
         {
             return node;
         }

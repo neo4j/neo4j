@@ -116,8 +116,8 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
     normalizeArgumentOrder(input) should equal(LessThanOrEqual(rhs, lhs)(pos))
   }
 
-  private def id(name: String): UserFunctionInvocation =
-    UserFunctionInvocation(FunctionName("id")(pos), distinct = false, Array(Variable(name)(pos)))(pos)
+  private def id(name: String): FunctionInvocation =
+    FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(Variable(name)(pos)))(pos)
 }
 
 

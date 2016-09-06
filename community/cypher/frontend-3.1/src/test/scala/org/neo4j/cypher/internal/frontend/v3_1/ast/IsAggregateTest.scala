@@ -30,19 +30,19 @@ class IsAggregateTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("max(null) is an aggregate expression") {
-    val expr: Expression = UserFunctionInvocation(FunctionName("max")_, Null()_)_
+    val expr: Expression = FunctionInvocation(FunctionName("max")_, Null()_)_
 
     IsAggregate.unapply(expr) should equal(Some(expr))
   }
 
   test("distinct id(null) an aggregate expression") {
-    val expr: Expression = UserFunctionInvocation(Namespace()_, FunctionName("id")_, distinct = true, Vector(Null()_))(pos)
+    val expr: Expression = FunctionInvocation(Namespace()_, FunctionName("id")_, distinct = true, Vector(Null()_))(pos)
 
     IsAggregate.unapply(expr) should equal(Some(expr))
   }
 
   test("id(null) is not an aggregate expression") {
-    val expr: Expression = UserFunctionInvocation(Namespace()_, FunctionName("id")_, distinct = false, Vector(Null()_))(pos)
+    val expr: Expression = FunctionInvocation(Namespace()_, FunctionName("id")_, distinct = false, Vector(Null()_))(pos)
 
     IsAggregate.unapply(expr) should equal(None)
   }
