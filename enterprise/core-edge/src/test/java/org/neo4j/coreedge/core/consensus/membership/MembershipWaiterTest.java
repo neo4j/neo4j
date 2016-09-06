@@ -25,7 +25,6 @@ import java.util.concurrent.TimeoutException;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.coreedge.core.consensus.MismatchedStoreIdService;
 import org.neo4j.coreedge.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.coreedge.core.consensus.log.RaftLogEntry;
 import org.neo4j.coreedge.core.consensus.state.RaftState;
@@ -59,7 +58,7 @@ public class MembershipWaiterTest
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500,
-                mock( MismatchedStoreIdService.class ), NullLogProvider.getInstance() );
+                NullLogProvider.getInstance() );
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
@@ -81,7 +80,7 @@ public class MembershipWaiterTest
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1,
-                mock( MismatchedStoreIdService.class ), NullLogProvider.getInstance() );
+                NullLogProvider.getInstance() );
 
         RaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 1 ) )
@@ -108,7 +107,7 @@ public class MembershipWaiterTest
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1,
-                mock( MismatchedStoreIdService.class ), NullLogProvider.getInstance() );
+                NullLogProvider.getInstance() );
 
         RaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 0 ), member( 1 ) )

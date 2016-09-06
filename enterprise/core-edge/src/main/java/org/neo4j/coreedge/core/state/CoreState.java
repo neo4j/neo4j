@@ -20,14 +20,11 @@
 package org.neo4j.coreedge.core.state;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
 import org.neo4j.coreedge.core.state.snapshot.CoreStateDownloader;
-import org.neo4j.coreedge.core.consensus.MismatchedStoreIdService;
 import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.log.pruning.LogPruner;
@@ -38,13 +35,12 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessage>, LogPruner, MismatchedStoreIdService, Lifecycle
+public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessage>, LogPruner, Lifecycle
 {
     private final RaftMachine raftMachine;
     private final LocalDatabase localDatabase;
     private final Log log;
     private final CoreStateDownloader downloader;
-    private final List<MismatchedStoreIdService.MismatchedStoreListener> listeners = new ArrayList<>(  );
     private final CommandApplicationProcess applicationProcess;
 
     public CoreState(
@@ -80,11 +76,6 @@ public class CoreState implements MessageHandler<RaftMessages.StoreIdAwareMessag
             raftMachine.stopTimers();
             localDatabase.panic( e );
         }
-    }
-
-    public void addMismatchedStoreListener( MismatchedStoreListener listener )
-    {
-        listeners.add( listener );
     }
 
     private synchronized void notifyCommitted( long commitIndex )

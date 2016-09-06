@@ -55,7 +55,6 @@ import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.messaging.LoggingInbound;
 import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
-import org.neo4j.coreedge.messaging.routing.NotMyselfSelectionStrategy;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -118,8 +117,6 @@ public class CoreServerModule
         CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher,
                 catchUpClient, logProvider, copiedStoreRecovery );
 
-        NotMyselfSelectionStrategy someoneElse = new NotMyselfSelectionStrategy( discoveryService, myself );
-
         CoreState coreState = new CoreState(
                 consensusModule.raftMachine(), localDatabase,
                 logProvider,
@@ -146,7 +143,7 @@ public class CoreServerModule
 
         MembershipWaiter membershipWaiter =
                 new MembershipWaiter( myself, platformModule.jobScheduler, dbHealthSupplier,
-                        electionTimeout * 4, coreState, logProvider );
+                        electionTimeout * 4, logProvider );
         long joinCatchupTimeout = config.get( CoreEdgeClusterSettings.join_catch_up_timeout );
         membershipWaiterLifecycle = new MembershipWaiterLifecycle( membershipWaiter,
                 joinCatchupTimeout, consensusModule.raftMachine(), logProvider );

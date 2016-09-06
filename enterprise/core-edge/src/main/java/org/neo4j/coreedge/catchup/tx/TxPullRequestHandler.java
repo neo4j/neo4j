@@ -74,7 +74,7 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
         CatchupResult status = SUCCESS;
         StoreId localStoreId = storeIdSupplier.get();
 
-        if ( !localStoreId.equals( msg.expectedStoreId() ) )
+        if ( localStoreId == null || !localStoreId.equals( msg.expectedStoreId() ) )
         {
             status = E_STORE_ID_MISMATCH;
             log.info( "Failed to serve TxPullRequest for tx %d and storeId %s because that storeId is different " +

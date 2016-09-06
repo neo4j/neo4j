@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.core.consensus.MismatchedStoreIdService;
 import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -56,17 +55,15 @@ public class MembershipWaiter
     private final JobScheduler jobScheduler;
     private final Supplier<DatabaseHealth> dbHealthSupplier;
     private final long maxCatchupLag;
-    private final MismatchedStoreIdService mismatchedStoreIdService;
     private final Log log;
 
     public MembershipWaiter( MemberId myself, JobScheduler jobScheduler, Supplier<DatabaseHealth> dbHealthSupplier,
-            long maxCatchupLag, MismatchedStoreIdService mismatchedStoreIdService, LogProvider logProvider )
+            long maxCatchupLag, LogProvider logProvider )
     {
         this.myself = myself;
         this.jobScheduler = jobScheduler;
         this.dbHealthSupplier = dbHealthSupplier;
         this.maxCatchupLag = maxCatchupLag;
-        this.mismatchedStoreIdService = mismatchedStoreIdService;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -75,7 +72,6 @@ public class MembershipWaiter
         CompletableFuture<Boolean> catchUpFuture = new CompletableFuture<>();
 
         Evaluator evaluator = new Evaluator( raftState, catchUpFuture, dbHealthSupplier );
-        mismatchedStoreIdService.addMismatchedStoreListener( evaluator );
 
         JobScheduler.JobHandle jobHandle = jobScheduler.scheduleRecurring(
                 new JobScheduler.Group( getClass().toString(), POOLED ),
@@ -86,7 +82,7 @@ public class MembershipWaiter
         return catchUpFuture;
     }
 
-    private class Evaluator implements Runnable, MismatchedStoreIdService.MismatchedStoreListener
+    private class Evaluator implements Runnable
     {
         private final ReadableRaftState raftState;
         private final CompletableFuture<Boolean> catchUpFuture;
@@ -147,12 +143,6 @@ public class MembershipWaiter
             }
 
             return caughtUpWithLeader;
-        }
-
-        @Override
-        public void onMismatchedStore( MismatchedStoreIdService.MismatchedStoreIdException ex )
-        {
-            catchUpFuture.completeExceptionally( ex );
         }
     }
 }
