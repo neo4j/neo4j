@@ -192,9 +192,7 @@ public class HaBeanIT
 
         masterShutdown.repair();
 
-        cluster.await( ClusterManager.masterAvailable() );
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
-        cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 2 ) );
+        cluster.await( ClusterManager.allSeesAllAsAvailable(), 180 );
 
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
