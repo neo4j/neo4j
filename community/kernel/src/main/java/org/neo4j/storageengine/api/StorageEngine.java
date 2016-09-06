@@ -117,8 +117,8 @@ public interface StorageEngine
     void prepareForRecoveryRequired();
 
     /**
-     * @return a {@link Collection} of {@link StoreFileMetadata} containing metadata about all store files managed by this
-     * {@link StorageEngine}.
+     * @return a {@link Collection} of {@link StoreFileMetadata} containing metadata about all store files managed by
+     * this {@link StorageEngine}.
      */
     Collection<StoreFileMetadata> listStorageFiles();
 
