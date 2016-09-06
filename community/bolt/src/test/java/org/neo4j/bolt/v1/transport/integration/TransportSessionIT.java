@@ -165,10 +165,9 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Statement.SyntaxError,
-                        "Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))\n" +
-                        "\"INVALID\"\n" +
-                        " ^"),
-                msgIgnored()));
+                        String.format("Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))%n" +
+                        "\"INVALID\"%n" +
+                        " ^")), msgIgnored()));
 
         // When
         client.send( TransportTestUtil.chunk( ackFailure(), run("RETURN 1"), pullAll()) );
