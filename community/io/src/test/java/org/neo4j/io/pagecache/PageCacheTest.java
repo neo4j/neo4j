@@ -66,6 +66,8 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.test.RepeatRule;
 
 import static java.lang.Long.toHexString;
+import static java.lang.System.currentTimeMillis;
+
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -1471,7 +1473,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( pagesChecked, is( initialPages ) );
     }
 
-    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    // This test has an internal timeout in that it tries to verify 1000 reads within SHORT_TIMEOUT_MILLIS,
+    // although this is a soft limit in that it may abort if number of verifications isn't reached.
+    // This is so because on some machines this test takes a very long time to run. Verifying in the end
+    // that at least there were some correct reads is good enough.
+    @Test
     public void retryMustResetCursorOffset() throws Exception
     {
         // The general idea here, is that we have a page with a particular value in its 0th position.
@@ -1494,6 +1500,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 do
                 {
                     cursor.putByte( expectedByte );
+                    // Give some hint to scheduler to give some CPU cycles to the read thread below
+                    Thread.yield();
                 } while ( cursor.shouldRetry() );
             }
         }
@@ -1525,7 +1533,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         startLatch.await();
 
-        for ( int i = 0; i < 1000; i++ )
+        long timeout = currentTimeMillis() + SHORT_TIMEOUT_MILLIS;
+        int i = 0;
+        for ( ; i < 1000 && currentTimeMillis() < timeout; i++ )
         {
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
             {
@@ -1533,12 +1543,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 do
                 {
                     assertThat( cursor.getByte(), is( expectedByte ) );
-                } while ( cursor.shouldRetry() );
+                } while ( cursor.shouldRetry() && currentTimeMillis() < timeout );
             }
         }
 
         end.set( true );
         writerFuture.get();
+        assertTrue( i > 1 );
         pagedFile.close();
     }
 
