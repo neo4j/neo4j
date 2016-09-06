@@ -29,7 +29,8 @@ public enum CoreStateType
 {
     LOCK_TOKEN( new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() ) ),
     SESSION_TRACKER( new GlobalSessionTrackerState.Marshal( new MemberId.Marshal() ) ),
-    ID_ALLOCATION( new IdAllocationState.Marshal() );
+    ID_ALLOCATION( new IdAllocationState.Marshal() ),
+    RAFT_CORE_STATE( new RaftCoreState.Marshal() );
 
     public final StateMarshal marshal;
 

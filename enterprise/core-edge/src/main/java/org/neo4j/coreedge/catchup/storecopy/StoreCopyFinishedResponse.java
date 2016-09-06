@@ -19,45 +19,51 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
+import java.util.Objects;
+
 public class StoreCopyFinishedResponse
 {
+    public enum Status
+    {
+        SUCCESS,
+        E_STORE_ID_MISMATCH
+    }
+
+    private final Status status;
     private final long lastCommittedTxBeforeStoreCopy;
 
-    public StoreCopyFinishedResponse( long lastCommittedTxBeforeStoreCopy )
+    public StoreCopyFinishedResponse( Status status,
+            long lastCommittedTxBeforeStoreCopy )
     {
+        this.status = status;
         this.lastCommittedTxBeforeStoreCopy = lastCommittedTxBeforeStoreCopy;
     }
 
-    public long lastCommittedTxBeforeStoreCopy()
+    long lastCommittedTxBeforeStoreCopy()
     {
         return lastCommittedTxBeforeStoreCopy;
+    }
+
+    Status status()
+    {
+        return status;
     }
 
     @Override
     public boolean equals( Object o )
     {
         if ( this == o )
-        {
-            return true;
-        }
+        { return true; }
         if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
+        { return false; }
         StoreCopyFinishedResponse that = (StoreCopyFinishedResponse) o;
-
-        if ( lastCommittedTxBeforeStoreCopy != that.lastCommittedTxBeforeStoreCopy )
-        {
-            return false;
-        }
-
-        return true;
+        return lastCommittedTxBeforeStoreCopy == that.lastCommittedTxBeforeStoreCopy &&
+               status == that.status;
     }
 
     @Override
     public int hashCode()
     {
-        return (int) (lastCommittedTxBeforeStoreCopy ^ (lastCommittedTxBeforeStoreCopy >>> 32));
+        return Objects.hash( status, lastCommittedTxBeforeStoreCopy );
     }
 }

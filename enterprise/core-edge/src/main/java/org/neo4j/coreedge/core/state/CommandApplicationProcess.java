@@ -25,10 +25,12 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.SessionTracker;
+import org.neo4j.coreedge.core.consensus.RaftMachine;
 import org.neo4j.coreedge.core.replication.DistributedOperation;
 import org.neo4j.coreedge.core.replication.ProgressTracker;
 import org.neo4j.coreedge.core.state.machines.CoreStateMachines;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
+import org.neo4j.coreedge.core.state.snapshot.CoreStateType;
 import org.neo4j.coreedge.core.state.storage.StateStorage;
 import org.neo4j.coreedge.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.coreedge.core.consensus.log.RaftLog;
@@ -264,7 +266,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
         flush();
     }
 
-    public synchronized CoreSnapshot snapshot() throws IOException, InterruptedException
+    public synchronized CoreSnapshot snapshot( RaftMachine raft ) throws IOException, InterruptedException
     {
         applier.sync( false );
 
@@ -273,21 +275,19 @@ public class CommandApplicationProcess extends LifecycleAdapter
         CoreSnapshot coreSnapshot = new CoreSnapshot( prevIndex, prevTerm );
 
         coreStateMachines.addSnapshots( coreSnapshot );
-        sessionTracker.addSnapshots( coreSnapshot );
+        coreSnapshot.add( CoreStateType.SESSION_TRACKER, sessionTracker.snapshot() );
+        coreSnapshot.add( CoreStateType.RAFT_CORE_STATE, raft.coreState() );
 
         return coreSnapshot;
     }
 
-    synchronized void installSnapshot( CoreSnapshot coreSnapshot )
+    synchronized void installSnapshot( CoreSnapshot coreSnapshot, RaftMachine raft ) throws IOException
     {
         coreStateMachines.installSnapshots( coreSnapshot );
         long snapshotPrevIndex = coreSnapshot.prevIndex();
         try
         {
-            if ( snapshotPrevIndex > 1 )
-            {
-                raftLog.skip( snapshotPrevIndex, coreSnapshot.prevTerm() );
-            }
+            raftLog.skip( snapshotPrevIndex, coreSnapshot.prevTerm() );
         }
         catch ( IOException e )
         {
@@ -296,6 +296,8 @@ public class CommandApplicationProcess extends LifecycleAdapter
         this.lastApplied = this.lastFlushed = snapshotPrevIndex;
         log.info( format( "Skipping lastApplied index forward to %d", snapshotPrevIndex ) );
 
-        sessionTracker.installSnapshots( coreSnapshot );
+        raft.installCoreState( coreSnapshot.get( CoreStateType.RAFT_CORE_STATE ) );
+
+        sessionTracker.installSnapshot( coreSnapshot.get( CoreStateType.SESSION_TRACKER ) );
     }
 }

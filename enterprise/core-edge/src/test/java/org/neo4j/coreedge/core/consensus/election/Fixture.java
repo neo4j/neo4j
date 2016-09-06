@@ -97,8 +97,11 @@ public class Fixture
 
     void boot() throws BootstrapException, TimeoutException, InterruptedException
     {
+        for ( RaftMachine raft : rafts )
+        {
+            raft.bootstrapWithInitialMembers( new RaftTestGroup( members ) );
+        }
         net.start();
-        Iterables.first( rafts ).bootstrapWithInitialMembers( new RaftTestGroup( members ) );
         awaitBootstrapped();
     }
 

@@ -51,7 +51,7 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Sto
         MemberId.Marshal memberMarshal = new MemberId.Marshal();
 
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
-        StoreIdMarshal.marshal( storeId, channel );
+        StoreIdMarshal.INSTANCE.marshal( storeId, channel );
         channel.putInt( message.type().ordinal() );
         memberMarshal.marshal( message.from(), channel );
 

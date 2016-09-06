@@ -19,14 +19,17 @@
  */
 package org.neo4j.coreedge.core.state.snapshot;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchUpResponseAdaptor;
+import org.neo4j.coreedge.catchup.CatchupResult;
+import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
+import org.neo4j.coreedge.catchup.storecopy.TemporaryStoreDirectory;
 import org.neo4j.coreedge.core.state.CoreState;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.coreedge.identity.StoreId;
@@ -34,6 +37,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.neo4j.coreedge.catchup.CatchupResult.E_TRANSACTION_PRUNED;
+import static org.neo4j.coreedge.catchup.CatchupResult.SUCCESS;
 
 public class CoreStateDownloader
 {
@@ -41,22 +46,37 @@ public class CoreStateDownloader
     private final StoreFetcher storeFetcher;
     private final CatchUpClient catchUpClient;
     private final Log log;
+    private final CopiedStoreRecovery copiedStoreRecovery;
 
-    public CoreStateDownloader( LocalDatabase localDatabase, StoreFetcher storeFetcher, CatchUpClient catchUpClient,
-                                LogProvider logProvider )
+    public CoreStateDownloader( LocalDatabase localDatabase, StoreFetcher storeFetcher,
+            CatchUpClient catchUpClient, LogProvider logProvider,
+            CopiedStoreRecovery copiedStoreRecovery )
     {
         this.localDatabase = localDatabase;
         this.storeFetcher = storeFetcher;
         this.catchUpClient = catchUpClient;
         this.log = logProvider.getLog( getClass() );
+        this.copiedStoreRecovery = copiedStoreRecovery;
     }
 
-    public synchronized void downloadSnapshot( MemberId source, StoreId storeId, CoreState coreState )
-            throws InterruptedException, StoreCopyFailedException
+    public synchronized void downloadSnapshot( MemberId source, CoreState coreState )
+            throws StoreCopyFailedException
     {
+        // TODO: Think about recovery scenarios.
         try
         {
+            /* Extract some key properties before shutting it down. */
+            boolean isEmptyStore = localDatabase.isEmpty();
+            StoreId localStoreId = localDatabase.storeId();
+
+            StoreId remoteStoreId = storeFetcher.getStoreIdOf( source );
+            if ( !isEmptyStore && !remoteStoreId.equals( localStoreId ) )
+            {
+                throw new StoreCopyFailedException( "StoreId mismatch and not empty" );
+            }
+
             localDatabase.stop();
+
             log.info( "Downloading snapshot from core server at %s", source );
 
             /* The core snapshot must be copied before the store, because the store has a dependency on
@@ -76,8 +96,24 @@ public class CoreStateDownloader
                         }
                     } );
 
-            localDatabase.bringUpToDateOrReplaceStoreFrom( source, storeId, storeFetcher ); // this deletes the current store
-            log.info( "Replaced store with one downloaded from %s", source );
+            if ( isEmptyStore )
+            {
+                copyWholeStoreFrom( source, remoteStoreId, storeFetcher );
+            }
+            else
+            {
+                CatchupResult catchupResult = storeFetcher.tryCatchingUp( source, localStoreId, localDatabase.storeDir() );
+
+                if ( catchupResult == E_TRANSACTION_PRUNED )
+                {
+                    // TODO: Delete store before copying to avoid double-storage issue.
+                    copyWholeStoreFrom( source, localStoreId, storeFetcher );
+                }
+                else if( catchupResult != SUCCESS )
+                {
+                    throw new StoreCopyFailedException( "Failed to download store: " + catchupResult );
+                }
+            }
 
             /* We install the snapshot after the store has been downloaded,
              * so that we are not left with a state ahead of the store. */
@@ -88,12 +124,22 @@ public class CoreStateDownloader
              * the EnterpriseCoreEditionModule, which has important side-effects. */
             log.info( "Restarting local database", source );
             localDatabase.start();
-            log.info( "Restarted local database", source );
+            log.info( "Local database started", source );
         }
         catch ( Throwable e )
         {
             localDatabase.panic( e );
             throw new StoreCopyFailedException( e );
         }
+    }
+
+    private void copyWholeStoreFrom( MemberId source, StoreId expectedStoreId, StoreFetcher storeFetcher ) throws IOException, StoreCopyFailedException
+    {
+        TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( localDatabase.storeDir() );
+        storeFetcher.copyStore( source, expectedStoreId, tempStore.storeDir() );
+        copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
+        localDatabase.replaceWith( tempStore.storeDir() );
+        // TODO: Delete tempDir.
+        log.info( "Replaced store with one downloaded from %s", source );
     }
 }

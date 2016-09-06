@@ -50,7 +50,7 @@ public class CatchUpTest
         final MemberId[] allMembers = {leader, member( 1 ), member( 2 )};
 
         final RaftTestFixture fixture = new RaftTestFixture( net, 3, allMembers );
-        fixture.members().withId( leader ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( allMembers ) );
+        fixture.bootstrap( allMembers );
         final MemberId leaderMember = fixture.members().withId( leader ).member();
 
         // when
@@ -79,6 +79,7 @@ public class CatchUpTest
         final MemberId[] allMembers = {leaderId, member( 1 ), sleepyId};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, allMembers );
+        fixture.bootstrap( allMembers );
         fixture.members().withId( leaderId ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( allMembers ) );
 
         fixture.members().withId( leaderId ).timeoutService().invokeTimeout( RaftMachine.Timeouts.ELECTION );

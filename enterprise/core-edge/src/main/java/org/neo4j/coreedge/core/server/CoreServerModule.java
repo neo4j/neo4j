@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.core.server;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.ReplicationModule;
@@ -28,6 +27,7 @@ import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
+import org.neo4j.coreedge.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyClient;
 import org.neo4j.coreedge.catchup.storecopy.StoreFetcher;
@@ -55,7 +55,6 @@ import org.neo4j.coreedge.logging.MessageLogger;
 import org.neo4j.coreedge.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.messaging.LoggingInbound;
 import org.neo4j.coreedge.messaging.address.ListenSocketAddress;
-import org.neo4j.coreedge.messaging.routing.NotMyselfSelectionStrategy;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -76,9 +75,9 @@ public class CoreServerModule
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
 
     public CoreServerModule( MemberId myself, final PlatformModule platformModule, ConsensusModule consensusModule,
-                             CoreStateMachinesModule coreStateMachinesModule, ReplicationModule replicationModule,
-                             File clusterStateDirectory, CoreTopologyService discoveryService,
-                             LocalDatabase localDatabase, MessageLogger<MemberId> messageLogger )
+            CoreStateMachinesModule coreStateMachinesModule, ReplicationModule replicationModule,
+            File clusterStateDirectory, CoreTopologyService discoveryService,
+            LocalDatabase localDatabase, MessageLogger<MemberId> messageLogger, Supplier<DatabaseHealth> dbHealthSupplier )
     {
         final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
@@ -112,15 +111,16 @@ public class CoreServerModule
                 new TransactionLogCatchUpFactory() );
 
         CoreStateApplier coreStateApplier = new CoreStateApplier( logProvider );
-        CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher,
-                catchUpClient, logProvider );
 
-        NotMyselfSelectionStrategy someoneElse = new NotMyselfSelectionStrategy( discoveryService, myself );
+        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
+                platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
+        CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher,
+                catchUpClient, logProvider, copiedStoreRecovery );
 
         CoreState coreState = new CoreState(
                 consensusModule.raftMachine(), localDatabase,
                 logProvider,
-                someoneElse, downloader,
+                downloader,
                 new CommandApplicationProcess( coreStateMachinesModule.coreStateMachines, consensusModule.raftLog(),
                         config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
                         config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
@@ -142,7 +142,8 @@ public class CoreServerModule
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
 
         MembershipWaiter membershipWaiter =
-                new MembershipWaiter( myself, platformModule.jobScheduler, electionTimeout * 4, coreState, logProvider );
+                new MembershipWaiter( myself, platformModule.jobScheduler, dbHealthSupplier,
+                        electionTimeout * 4, logProvider );
         long joinCatchupTimeout = config.get( CoreEdgeClusterSettings.join_catch_up_timeout );
         membershipWaiterLifecycle = new MembershipWaiterLifecycle( membershipWaiter,
                 joinCatchupTimeout, consensusModule.raftMachine(), logProvider );

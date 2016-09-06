@@ -41,7 +41,7 @@ import org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderEncoder;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreIdRequestHandler;
-import org.neo4j.coreedge.catchup.storecopy.GetStoreRequest;
+import org.neo4j.coreedge.catchup.storecopy.GetStoreRequestDecoder;
 import org.neo4j.coreedge.catchup.storecopy.GetStoreRequestHandler;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponseEncoder;
 import org.neo4j.coreedge.catchup.tx.TxPullRequestDecoder;
@@ -161,7 +161,7 @@ public class CatchupServer extends LifecycleAdapter
         RequestDecoderDispatcher<State> decoderDispatcher =
                 new RequestDecoderDispatcher<>( protocol, logProvider );
         decoderDispatcher.register( State.TX_PULL, new TxPullRequestDecoder() );
-        decoderDispatcher.register( State.GET_STORE, new SimpleRequestDecoder( GetStoreRequest::new ) );
+        decoderDispatcher.register( State.GET_STORE, new GetStoreRequestDecoder() );
         decoderDispatcher.register( State.GET_STORE_ID, new SimpleRequestDecoder( GetStoreIdRequest::new ) );
         decoderDispatcher.register( State.GET_CORE_SNAPSHOT, new SimpleRequestDecoder( CoreSnapshotRequest::new) );
         return decoderDispatcher;

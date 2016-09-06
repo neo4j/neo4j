@@ -42,6 +42,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.coreedge.catchup.CatchupResult.E_STORE_ID_MISMATCH;
+import static org.neo4j.coreedge.catchup.CatchupResult.E_TRANSACTION_PRUNED;
+import static org.neo4j.coreedge.catchup.CatchupResult.SUCCESS;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
 import static org.neo4j.kernel.impl.util.Cursors.cursor;
 import static org.neo4j.kernel.impl.util.Cursors.io;
@@ -71,7 +74,7 @@ public class TxPullRequestHandlerTest
         ChannelHandlerContext context = mock( ChannelHandlerContext.class );
 
         // when
-        txPullRequestHandler.channelRead0( context, new TxPullRequest( 12, storeId ) );
+        txPullRequestHandler.channelRead0( context, new TxPullRequest( 13, storeId ) );
 
         // then
         verify( context, times( 3 ) ).write( ResponseMessageType.TX );
@@ -80,7 +83,7 @@ public class TxPullRequestHandlerTest
         verify( context ).write( new TxPullResponse( storeId, tx( 15 ) ) );
 
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( 15, true ) );
+        verify( context ).write( new TxStreamFinishedResponse( SUCCESS ) );
     }
 
     @Test
@@ -102,14 +105,14 @@ public class TxPullRequestHandlerTest
         ChannelHandlerContext context = mock( ChannelHandlerContext.class );
 
         // when
-        txPullRequestHandler.channelRead0( context, new TxPullRequest( 12, storeId ) );
+        txPullRequestHandler.channelRead0( context, new TxPullRequest( 13, storeId ) );
 
         // then
         verify( context, never() ).write( ResponseMessageType.TX );
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( 12, false ) );
+        verify( context ).write( new TxStreamFinishedResponse( E_TRANSACTION_PRUNED ) );
         logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
-                .info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", 12L ) );
+                .info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", 13L ) );
     }
 
     @Test
@@ -134,10 +137,10 @@ public class TxPullRequestHandlerTest
         // then
         verify( context, never() ).write( ResponseMessageType.TX );
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( 1, false ) );
+        verify( context ).write( new TxStreamFinishedResponse( E_STORE_ID_MISMATCH ) );
         logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
                 .info( "Failed to serve TxPullRequest for tx %d and storeId %s because that storeId is different " +
-                        "from this machine with %s", 1L, clientStoreId, serverStoreId ) );
+                        "from this machine with %s", 2L, clientStoreId, serverStoreId ) );
     }
 
     private static CommittedTransactionRepresentation tx( int id )

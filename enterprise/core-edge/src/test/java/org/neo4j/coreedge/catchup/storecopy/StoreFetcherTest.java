@@ -19,11 +19,11 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
-
-import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.TransactionLogCatchUpWriter;
@@ -43,6 +43,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.coreedge.catchup.CatchupResult.SUCCESS;
 
 public class StoreFetcherTest
 {
@@ -53,18 +54,18 @@ public class StoreFetcherTest
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         TxPullClient txPullClient = mock( TxPullClient.class );
+        when( txPullClient.pullTransactions( any(), any(), anyLong(), any() ) ).thenReturn( SUCCESS );
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
         StoreFetcher fetcher = new StoreFetcher( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
-                null,
-                storeCopyClient, txPullClient, factory( writer ) );
+                null, storeCopyClient, txPullClient, factory( writer ) );
 
         // when
         MemberId localhost = new MemberId( UUID.randomUUID() );
         fetcher.copyStore( localhost, storeId, new File( "destination" ) );
 
         // then
-        verify( storeCopyClient ).copyStoreFiles( eq( localhost ), any( StoreFileStreams.class ) );
+        verify( storeCopyClient ).copyStoreFiles( eq( localhost ), eq( storeId ), any( StoreFileStreams.class ) );
         verify( txPullClient ).pullTransactions( eq( localhost ), eq( storeId ), anyLong(), any( TxPullResponseListener.class ) );
     }
 
@@ -73,29 +74,27 @@ public class StoreFetcherTest
     {
         // given
         long lastFlushedTxId = 12;
-        long lastPulledTxId = 34;
-        StoreId storeId = new StoreId( 1, 2, 3, 4 );
+        StoreId wantedStoreId = new StoreId( 1, 2, 3, 4 );
         MemberId localhost = new MemberId( UUID.randomUUID() );
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
-        when( storeCopyClient.copyStoreFiles( eq( localhost ), any( StoreFileStreams.class ) ) )
+        when( storeCopyClient.copyStoreFiles( eq( localhost ), eq( wantedStoreId ), any( StoreFileStreams.class ) ) )
                 .thenReturn( lastFlushedTxId );
 
         TxPullClient txPullClient = mock( TxPullClient.class );
-        when( txPullClient.pullTransactions( eq( localhost ), eq( storeId ), anyLong(), any( TxPullResponseListener.class ) ) )
-                .thenReturn( lastPulledTxId );
+        when( txPullClient.pullTransactions( eq( localhost ), eq( wantedStoreId ), anyLong(), any( TxPullResponseListener.class ) ) )
+                .thenReturn( SUCCESS );
 
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
         StoreFetcher fetcher = new StoreFetcher( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
-                null,
-                storeCopyClient, txPullClient, factory( writer ) );
+                null, storeCopyClient, txPullClient, factory( writer ) );
 
         // when
-        fetcher.copyStore( localhost, storeId, new File( "destination" ) );
+        fetcher.copyStore( localhost, wantedStoreId, new File( "destination" ) );
 
         // then
-        verify( txPullClient ).pullTransactions( eq( localhost ), eq( storeId ), eq( lastFlushedTxId - 1 ), any( TxPullResponseListener.class ) );
+        verify( txPullClient ).pullTransactions( eq( localhost ), eq( wantedStoreId ), eq( lastFlushedTxId ), any( TxPullResponseListener.class ) );
     }
 
     @Test

@@ -309,6 +309,7 @@ public class LeaderTest
         // things
         RaftMessages.AppendEntries.Response response = appendEntriesResponse()
                 .failure()
+                .appendIndex( 0 )
                 .matchIndex( -1 )
                 .term( 4 )
                 .from( instance2 ).build();

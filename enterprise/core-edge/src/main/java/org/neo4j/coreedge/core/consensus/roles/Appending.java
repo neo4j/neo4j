@@ -37,7 +37,6 @@ class Appending
 {
     static void handleAppendEntriesRequest( ReadableRaftState state, Outcome outcome,
             RaftMessages.AppendEntries.Request request, Log log ) throws IOException
-
     {
         if ( request.leaderTerm() < state.term() )
         {
@@ -110,7 +109,7 @@ class Appending
         outcome.addOutgoingMessage( new RaftMessages.Directed( request.from(), appendResponse ) );
     }
 
-    static  void appendNewEntry( ReadableRaftState ctx, Outcome outcome, ReplicatedContent content ) throws IOException
+    static void appendNewEntry( ReadableRaftState ctx, Outcome outcome, ReplicatedContent content ) throws IOException
     {
         long prevLogIndex = ctx.entryLog().appendIndex();
         long prevLogTerm = prevLogIndex == -1 ? -1 :
@@ -124,7 +123,7 @@ class Appending
         outcome.addLogCommand( new AppendLogEntry( prevLogIndex + 1, newLogEntry ) );
     }
 
-    static  void appendNewEntries( ReadableRaftState ctx, Outcome outcome,
+    static void appendNewEntries( ReadableRaftState ctx, Outcome outcome,
             List<ReplicatedContent> contents ) throws IOException
     {
         long prevLogIndex = ctx.entryLog().appendIndex();

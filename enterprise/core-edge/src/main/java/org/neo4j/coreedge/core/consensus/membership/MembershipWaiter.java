@@ -21,11 +21,12 @@ package org.neo4j.coreedge.core.consensus.membership;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
-import org.neo4j.coreedge.core.consensus.MismatchedStoreIdService;
 import org.neo4j.coreedge.core.consensus.state.ReadableRaftState;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -52,17 +53,17 @@ public class MembershipWaiter
 {
     private final MemberId myself;
     private final JobScheduler jobScheduler;
+    private final Supplier<DatabaseHealth> dbHealthSupplier;
     private final long maxCatchupLag;
-    private final MismatchedStoreIdService mismatchedStoreIdService;
     private final Log log;
 
-    public MembershipWaiter( MemberId myself, JobScheduler jobScheduler, long maxCatchupLag,
-                             MismatchedStoreIdService mismatchedStoreIdService, LogProvider logProvider )
+    public MembershipWaiter( MemberId myself, JobScheduler jobScheduler, Supplier<DatabaseHealth> dbHealthSupplier,
+            long maxCatchupLag, LogProvider logProvider )
     {
         this.myself = myself;
         this.jobScheduler = jobScheduler;
+        this.dbHealthSupplier = dbHealthSupplier;
         this.maxCatchupLag = maxCatchupLag;
-        this.mismatchedStoreIdService = mismatchedStoreIdService;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -70,8 +71,7 @@ public class MembershipWaiter
     {
         CompletableFuture<Boolean> catchUpFuture = new CompletableFuture<>();
 
-        Evaluator evaluator = new Evaluator( raftState, catchUpFuture );
-        mismatchedStoreIdService.addMismatchedStoreListener( evaluator );
+        Evaluator evaluator = new Evaluator( raftState, catchUpFuture, dbHealthSupplier );
 
         JobScheduler.JobHandle jobHandle = jobScheduler.scheduleRecurring(
                 new JobScheduler.Group( getClass().toString(), POOLED ),
@@ -82,23 +82,30 @@ public class MembershipWaiter
         return catchUpFuture;
     }
 
-    private class Evaluator implements Runnable, MismatchedStoreIdService.MismatchedStoreListener
+    private class Evaluator implements Runnable
     {
         private final ReadableRaftState raftState;
         private final CompletableFuture<Boolean> catchUpFuture;
 
         private long lastLeaderCommit;
+        private final Supplier<DatabaseHealth> dbHealthSupplier;
 
-        private Evaluator( ReadableRaftState raftState, CompletableFuture<Boolean> catchUpFuture )
+        private Evaluator( ReadableRaftState raftState, CompletableFuture<Boolean> catchUpFuture,
+                Supplier<DatabaseHealth> dbHealthSupplier )
         {
             this.raftState = raftState;
             this.catchUpFuture = catchUpFuture;
             this.lastLeaderCommit = raftState.leaderCommit();
+            this.dbHealthSupplier = dbHealthSupplier;
         }
 
         public void run()
         {
-            if ( iAmAVotingMember() && caughtUpWithLeader() )
+            if ( !dbHealthSupplier.get().isHealthy() )
+            {
+                catchUpFuture.completeExceptionally( dbHealthSupplier.get().cause() );
+            }
+            else if ( iAmAVotingMember() && caughtUpWithLeader() )
             {
                 catchUpFuture.complete( true );
             }
@@ -136,12 +143,6 @@ public class MembershipWaiter
             }
 
             return caughtUpWithLeader;
-        }
-
-        @Override
-        public void onMismatchedStore( MismatchedStoreIdService.MismatchedStoreIdException ex )
-        {
-            catchUpFuture.completeExceptionally( ex );
         }
     }
 }

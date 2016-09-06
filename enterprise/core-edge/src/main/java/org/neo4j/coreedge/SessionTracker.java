@@ -28,7 +28,7 @@ import org.neo4j.coreedge.core.replication.session.LocalOperationId;
 import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
 import org.neo4j.coreedge.core.state.storage.StateStorage;
 
-public class SessionTracker implements SnapFlushable
+public class SessionTracker
 {
     private final StateStorage<GlobalSessionTrackerState> sessionTrackerStorage;
     private GlobalSessionTrackerState sessionState = new GlobalSessionTrackerState();
@@ -43,28 +43,24 @@ public class SessionTracker implements SnapFlushable
         sessionState = sessionTrackerStorage.getInitialState();
     }
 
-    @Override
     public long getLastAppliedIndex()
     {
         return sessionState.logIndex();
     }
 
-    @Override
     public void flush() throws IOException
     {
         sessionTrackerStorage.persistStoreData( sessionState );
     }
 
-    @Override
-    public void addSnapshots( CoreSnapshot coreSnapshot )
+    public GlobalSessionTrackerState snapshot()
     {
-        coreSnapshot.add( CoreStateType.SESSION_TRACKER, sessionState.newInstance() );
+        return sessionState.newInstance();
     }
 
-    @Override
-    public void installSnapshots( CoreSnapshot coreSnapshot )
+    public void installSnapshot( GlobalSessionTrackerState sessionState )
     {
-        sessionState = coreSnapshot.get( CoreStateType.SESSION_TRACKER );
+        this.sessionState = sessionState;
     }
 
     public boolean validateOperation( GlobalSession globalSession, LocalOperationId localOperationId )

@@ -35,7 +35,7 @@ import static org.neo4j.coreedge.core.consensus.roles.Role.FOLLOWER;
 
 class Follower implements RaftMessageHandler
 {
-    static boolean logHistoryMatches( ReadableRaftState ctx, long prevLogIndex, long prevLogTerm, Log log )
+    static boolean logHistoryMatches( ReadableRaftState ctx, long leaderSegmentPrevIndex, long leaderSegmentPrevTerm, Log log )
             throws IOException
     {
         // NOTE: A prevLogIndex before or at our log's prevIndex means that we
@@ -44,15 +44,17 @@ class Follower implements RaftMessageHandler
         // NOTE: The entry term for a non existing log index is defined as -1,
         //       so the history for a non existing log entry never matches.
 
-        long logPrevIndex = ctx.entryLog().prevIndex();
-        long logPrevTerm = ctx.entryLog().readEntryTerm( prevLogIndex );
+        long localLogPrevIndex = ctx.entryLog().prevIndex();
+        long localSegmentPrevTerm = ctx.entryLog().readEntryTerm( leaderSegmentPrevIndex );
 
-        boolean logHistoryMatches = prevLogIndex <= logPrevIndex || logPrevTerm == prevLogTerm;
+        boolean logHistoryMatches =
+                leaderSegmentPrevIndex > -1 &&
+                (leaderSegmentPrevIndex <= localLogPrevIndex || localSegmentPrevTerm == leaderSegmentPrevTerm);
 
         if ( !logHistoryMatches )
         {
             log.info( "Log history mismatch: index:[%s, %s], term:[%s, %s]",
-                    logPrevIndex, prevLogIndex, logPrevTerm, prevLogTerm );
+                    localLogPrevIndex, leaderSegmentPrevIndex, localSegmentPrevTerm, leaderSegmentPrevTerm );
         }
 
         return logHistoryMatches;
@@ -75,7 +77,7 @@ class Follower implements RaftMessageHandler
             return;
         }
 
-        if ( compactionInfo.prevIndex() > ctx.entryLog().appendIndex() )
+        if ( ctx.entryLog().appendIndex() <= -1 || compactionInfo.prevIndex() > ctx.entryLog().appendIndex() )
         {
             outcome.markNeedForFreshSnapshot();
         }
@@ -129,5 +131,4 @@ class Follower implements RaftMessageHandler
 
         return outcome;
     }
-
 }

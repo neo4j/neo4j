@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchUpClient;
 import org.neo4j.coreedge.catchup.CatchUpResponseAdaptor;
+import org.neo4j.coreedge.catchup.CatchupResult;
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
 import org.neo4j.coreedge.core.consensus.schedule.RenewableTimeoutService.TimeoutName;
@@ -67,9 +68,9 @@ public class TxPollingClient extends LifecycleAdapter
     private BatchingTxApplier applier;
 
     public TxPollingClient( LogProvider logProvider, Supplier<StoreId> localDatabase,
-                            CatchUpClient catchUpClient, CoreMemberSelectionStrategy connectionStrategy,
-                            RenewableTimeoutService timeoutService, long txPullIntervalMillis,
-                            BatchingTxApplier applier, Monitors monitors )
+            CatchUpClient catchUpClient, CoreMemberSelectionStrategy connectionStrategy,
+            RenewableTimeoutService timeoutService, long txPullIntervalMillis,
+            BatchingTxApplier applier, Monitors monitors )
     {
         this.localDatabase = localDatabase;
         this.log = logProvider.getLog( getClass() );
@@ -106,21 +107,21 @@ public class TxPollingClient extends LifecycleAdapter
             pullRequestMonitor.txPullRequest( lastAppliedTxId );
             TxPullRequest txPullRequest = new TxPullRequest( lastAppliedTxId, localDatabase.get() );
             catchUpClient.makeBlockingRequest( transactionServer, txPullRequest, 30, TimeUnit.SECONDS,
-                    new CatchUpResponseAdaptor<Long>() {
+                    new CatchUpResponseAdaptor<CatchupResult>()
+                    {
                         @Override
-                        public void onTxPullResponse( CompletableFuture<Long> signal, TxPullResponse response )
+                        public void onTxPullResponse( CompletableFuture<CatchupResult> signal, TxPullResponse response )
                         {
                             applier.queue( response.tx() );
                             timeout.renew();
                         }
 
                         @Override
-                        public void onTxStreamFinishedResponse( CompletableFuture<Long> signal,
-                                                                TxStreamFinishedResponse response )
+                        public void onTxStreamFinishedResponse( CompletableFuture<CatchupResult> signal, TxStreamFinishedResponse response )
                         {
-                            signal.complete( response.lastTransactionIdSent() );
+                            signal.complete( response.status() );
                         }
-                    });
+                    } );
         }
         catch ( Exception e )
         {

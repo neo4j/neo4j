@@ -17,19 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge;
+package org.neo4j.coreedge.catchup.storecopy;
 
-import java.io.IOException;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageDecoder;
 
-import org.neo4j.coreedge.core.state.snapshot.CoreSnapshot;
+import java.util.List;
 
-public interface SnapFlushable
+import org.neo4j.coreedge.identity.StoreId;
+import org.neo4j.coreedge.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.coreedge.messaging.marshalling.storeid.StoreIdMarshal;
+
+public class GetStoreRequestDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    void flush() throws IOException;
-
-    void addSnapshots( CoreSnapshot coreSnapshot );
-
-    long getLastAppliedIndex();
-
-    void installSnapshots( CoreSnapshot coreSnapshot );
+    @Override
+    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
+    {
+        StoreId expectedStoreId = StoreIdMarshal.INSTANCE.unmarshal( new NetworkReadableClosableChannelNetty4( msg ) );
+        out.add( new GetStoreRequest( expectedStoreId ) );
+    }
 }

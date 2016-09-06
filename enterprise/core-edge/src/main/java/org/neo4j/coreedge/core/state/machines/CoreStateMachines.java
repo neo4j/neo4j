@@ -22,7 +22,6 @@ package org.neo4j.coreedge.core.state.machines;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-import org.neo4j.coreedge.SnapFlushable;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.core.state.snapshot.CoreStateType;
 import org.neo4j.coreedge.core.state.CommandDispatcher;
@@ -43,7 +42,7 @@ import org.neo4j.storageengine.api.Token;
 
 import static java.lang.Math.max;
 
-public class CoreStateMachines implements SnapFlushable
+public class CoreStateMachines
 {
     private final ReplicatedTransactionStateMachine replicatedTxStateMachine;
 
@@ -87,7 +86,6 @@ public class CoreStateMachines implements SnapFlushable
         return currentBatch;
     }
 
-    @Override
     public long getLastAppliedIndex()
     {
         long lastAppliedTxIndex = replicatedTxStateMachine.lastAppliedIndex();
@@ -101,7 +99,6 @@ public class CoreStateMachines implements SnapFlushable
         return max( max( lastAppliedLockTokenIndex, lastAppliedIdAllocationIndex ), lastAppliedTxIndex );
     }
 
-    @Override
     public void flush() throws IOException
     {
         assert !runningBatch;
@@ -116,7 +113,6 @@ public class CoreStateMachines implements SnapFlushable
         idAllocationStateMachine.flush();
     }
 
-    @Override
     public void addSnapshots( CoreSnapshot coreSnapshot )
     {
         assert !runningBatch;
@@ -126,7 +122,6 @@ public class CoreStateMachines implements SnapFlushable
         // transactions and tokens live in the store
     }
 
-    @Override
     public void installSnapshots( CoreSnapshot coreSnapshot )
     {
         assert !runningBatch;

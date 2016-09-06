@@ -17,25 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.core.consensus;
+package org.neo4j.coreedge.catchup;
 
-import org.neo4j.coreedge.identity.StoreId;
-import org.neo4j.kernel.impl.store.StoreFailureException;
-
-public interface MismatchedStoreIdService
+public enum CatchupResult
 {
-    void addMismatchedStoreListener( MismatchedStoreListener listener );
-
-    interface MismatchedStoreListener
-    {
-        void onMismatchedStore( MismatchedStoreIdException ex );
-    }
-
-    class MismatchedStoreIdException extends StoreFailureException
-    {
-        public MismatchedStoreIdException( StoreId expected, StoreId encountered )
-        {
-            super( "Expected:" + expected + ", encountered:" + encountered );
-        }
-    }
+    SUCCESS,
+    E_STORE_ID_MISMATCH,
+    E_TRANSACTION_PRUNED
 }

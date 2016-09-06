@@ -35,6 +35,7 @@ import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreClusterMember;
 import org.neo4j.graphdb.Node;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.time.Clocks;
@@ -73,7 +74,8 @@ public class CoreToCoreCopySnapshotIT
 
         // shutdown the follower, remove the store, restart
         follower.shutdown();
-        new StoreFiles( new DefaultFileSystemAbstraction() ).delete( follower.storeDir() );
+        FileUtils.deleteRecursively( follower.storeDir() );
+        follower.storeDir().mkdir();
         follower.start();
 
         // then

@@ -31,12 +31,14 @@ import io.netty.handler.stream.ChunkedNioStream;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
+import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponse.Status;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 
 import static org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
+import static org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponse.Status.SUCCESS;
 
 public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStoreRequest>
 {
@@ -57,9 +59,16 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, GetStoreRequest msg ) throws Exception
     {
-        long lastCheckPointedTx = checkPointerSupplier.get().tryCheckPoint( new SimpleTriggerInfo( "Store copy" ) );
-        sendFiles( ctx );
-        endStoreCopy( ctx, lastCheckPointedTx );
+        if ( !msg.expectedStoreId().equalToKernelStoreId( dataSource.get().getStoreId() ) )
+        {
+            endStoreCopy( SUCCESS, ctx, -1 );
+        }
+        else
+        {
+            long lastCheckPointedTx = checkPointerSupplier.get().tryCheckPoint( new SimpleTriggerInfo( "Store copy" ) );
+            sendFiles( ctx );
+            endStoreCopy( SUCCESS, ctx, lastCheckPointedTx );
+        }
         protocol.expect( State.MESSAGE_TYPE );
     }
 
@@ -81,9 +90,9 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
         ctx.writeAndFlush( new ChunkedNioStream( new FileInputStream( file ).getChannel() ) );
     }
 
-    private void endStoreCopy( ChannelHandlerContext ctx, long lastCommittedTxBeforeStoreCopy )
+    private void endStoreCopy( Status status, ChannelHandlerContext ctx, long lastCommittedTxBeforeStoreCopy )
     {
         ctx.write( ResponseMessageType.STORE_COPY_FINISHED );
-        ctx.writeAndFlush( new StoreCopyFinishedResponse( lastCommittedTxBeforeStoreCopy ) );
+        ctx.writeAndFlush( new StoreCopyFinishedResponse( status, lastCommittedTxBeforeStoreCopy ) );
     }
 }

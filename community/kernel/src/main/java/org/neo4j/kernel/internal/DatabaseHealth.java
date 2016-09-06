@@ -104,4 +104,9 @@ public class DatabaseHealth
         causeOfPanic = null;
         log.info( "Database health set to OK" );
     }
+
+    public Throwable cause()
+    {
+        return causeOfPanic;
+    }
 }

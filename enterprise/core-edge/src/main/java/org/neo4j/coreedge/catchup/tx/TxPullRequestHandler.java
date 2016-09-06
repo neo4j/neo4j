@@ -24,6 +24,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.catchup.CatchupResult;
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
@@ -37,10 +38,15 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.coreedge.catchup.CatchupResult.E_STORE_ID_MISMATCH;
+import static org.neo4j.coreedge.catchup.CatchupResult.E_TRANSACTION_PRUNED;
+import static org.neo4j.coreedge.catchup.CatchupResult.SUCCESS;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+
 public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequest>
 {
     private final CatchupServerProtocol protocol;
-    private final StoreId storeId;
+    private final Supplier<StoreId> storeIdSupplier;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
     private final TxPullRequestsMonitor monitor;
@@ -53,7 +59,7 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
                                  Monitors monitors, LogProvider logProvider )
     {
         this.protocol = protocol;
-        this.storeId = storeIdSupplier.get();
+        this.storeIdSupplier = storeIdSupplier;
         this.transactionIdStore = transactionIdStoreSupplier.get();
         this.logicalTransactionStore = logicalTransactionStoreSupplier.get();
         this.monitor = monitors.newMonitor( TxPullRequestsMonitor.class );
@@ -63,40 +69,42 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, final TxPullRequest msg ) throws Exception
     {
-        long startTxId = Math.max( msg.txId(), TransactionIdStore.BASE_TX_ID );
-        long endTxId = startTxId;
-        boolean success = true;
+        long firstTxId = Math.max( msg.txId(), BASE_TX_ID + 1 );
+        long lastTxId = firstTxId;
+        CatchupResult status = SUCCESS;
+        StoreId localStoreId = storeIdSupplier.get();
 
-        if ( !this.storeId.equals( msg.storeId() ) )
+        if ( localStoreId == null || !localStoreId.equals( msg.expectedStoreId() ) )
         {
-            success = false;
+            status = E_STORE_ID_MISMATCH;
             log.info( "Failed to serve TxPullRequest for tx %d and storeId %s because that storeId is different " +
                             "from this machine with %s",
-                    endTxId, msg.storeId(), this.storeId );
+                    lastTxId, msg.expectedStoreId(), localStoreId );
         }
-
-        else if ( transactionIdStore.getLastCommittedTransactionId() > startTxId )
+        else if ( transactionIdStore.getLastCommittedTransactionId() >= firstTxId )
         {
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
-                          logicalTransactionStore.getTransactions( startTxId + 1 ) )
+                          logicalTransactionStore.getTransactions( firstTxId ) )
             {
                 while ( cursor.next() )
                 {
                     ctx.write( ResponseMessageType.TX );
                     CommittedTransactionRepresentation tx = cursor.get();
-                    endTxId = tx.getCommitEntry().getTxId();
-                    ctx.write( new TxPullResponse( storeId, tx ) );
+                    lastTxId = tx.getCommitEntry().getTxId();
+                    ctx.write( new TxPullResponse( localStoreId, tx ) );
                 }
                 ctx.flush();
             }
             catch ( NoSuchTransactionException e )
             {
-                success = false;
-                log.info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", endTxId );
+                status = E_TRANSACTION_PRUNED;
+                log.info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", lastTxId );
             }
         }
+
         ctx.write( ResponseMessageType.TX_STREAM_FINISHED );
-        ctx.write( new TxStreamFinishedResponse( endTxId, success ) );
+        TxStreamFinishedResponse response = new TxStreamFinishedResponse( status );
+        ctx.write( response );
         ctx.flush();
 
         monitor.increment();

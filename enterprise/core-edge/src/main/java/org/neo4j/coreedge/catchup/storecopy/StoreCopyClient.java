@@ -41,11 +41,11 @@ public class StoreCopyClient
         this.catchUpClient = catchUpClient;
     }
 
-    long copyStoreFiles( MemberId from, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
+    long copyStoreFiles( MemberId from, StoreId expectedStoreId, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
     {
         try
         {
-            return catchUpClient.makeBlockingRequest( from, new GetStoreRequest(), 30, SECONDS,
+            return catchUpClient.makeBlockingRequest( from, new GetStoreRequest( expectedStoreId ), 30, SECONDS,
                     new CatchUpResponseAdaptor<Long>()
                     {
                         private long expectedBytes = 0;

@@ -72,6 +72,14 @@ public final class StoreId
         return upgradeId;
     }
 
+    public boolean equalToKernelStoreId( org.neo4j.kernel.impl.store.StoreId kenelStoreId )
+    {
+        return creationTime == kenelStoreId.getCreationTime() &&
+               randomId == kenelStoreId.getRandomId() &&
+               upgradeTime == kenelStoreId.getUpgradeTime() &&
+               upgradeId == kenelStoreId.getUpgradeId();
+    }
+
     @Override
     public boolean equals( Object o )
     {

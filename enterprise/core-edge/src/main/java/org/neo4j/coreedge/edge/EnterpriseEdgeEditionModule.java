@@ -202,8 +202,6 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 , logProvider );
 
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
-                new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(),
-                        platformModule.pageCache ),
                 new StoreFiles( new DefaultFileSystemAbstraction() ),
                 platformModule.dataSourceManager,
                 dependencies.provideDependency( TransactionIdStore.class ),
@@ -226,10 +224,13 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 new StoreCopyClient( catchUpClient ), new TxPullClient( catchUpClient, platformModule.monitors ),
                 new TransactionLogCatchUpFactory() );
 
+        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
+                platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
+
         life.add( new EdgeStartupProcess( storeFetcher,
                 localDatabase,
                 txPulling, new ConnectToRandomCoreMember( discoveryService ),
-                new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider ) );
+                new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, copiedStoreRecovery ) );
 
         dependencies.satisfyDependency( createSessionTracker() );
     }

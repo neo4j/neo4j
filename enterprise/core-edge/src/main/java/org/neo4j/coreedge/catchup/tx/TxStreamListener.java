@@ -19,6 +19,6 @@
  */
 package org.neo4j.coreedge.catchup.tx;
 
-interface TxPullListener extends TxPullResponseListener, TxStreamCompleteListener
+interface TxStreamListener extends TxPullResponseListener, TxStreamCompleteListener
 {
 }

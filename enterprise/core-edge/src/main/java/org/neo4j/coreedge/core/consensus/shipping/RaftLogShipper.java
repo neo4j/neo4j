@@ -69,6 +69,7 @@ import static org.neo4j.coreedge.core.consensus.shipping.RaftLogShipper.Timeouts
  */
 public class RaftLogShipper
 {
+    private static final long MIN_INDEX = 1L; // we never ship entry zero, which must be bootstrapped or received as part of a snapshot
     private final int TIMER_INACTIVE = 0;
 
     enum Mode
@@ -172,7 +173,7 @@ public class RaftLogShipper
         switch ( mode )
         {
             case MISMATCH:
-                long logIndex = max( min( lastSentIndex - 1, lastRemoteAppendIndex ), 0 );
+                long logIndex = max( min( lastSentIndex - 1, lastRemoteAppendIndex ), MIN_INDEX );
                 sendEmpty( logIndex, leaderContext );
                 break;
             case PIPELINE:
@@ -261,7 +262,6 @@ public class RaftLogShipper
                     break;
                 }
             }
-
         }
 
         lastLeaderContext = leaderContext;
@@ -427,7 +427,6 @@ public class RaftLogShipper
 
             RaftMessages.AppendEntries.Request appendRequest = new RaftMessages.AppendEntries.Request(
                     leader, leaderContext.term, prevLogIndex, prevLogTerm, RaftLogEntry.empty, leaderContext.commitIndex );
-
             outbound.send( follower, appendRequest );
         }
         catch ( IOException e )

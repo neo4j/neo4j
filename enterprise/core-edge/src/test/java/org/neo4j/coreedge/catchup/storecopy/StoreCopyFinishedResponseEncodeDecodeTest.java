@@ -22,6 +22,8 @@ package org.neo4j.coreedge.catchup.storecopy;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
+import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponse.Status;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 
@@ -34,7 +36,7 @@ public class StoreCopyFinishedResponseEncodeDecodeTest
         EmbeddedChannel channel =
                 new EmbeddedChannel( new StoreCopyFinishedResponseEncoder(), new StoreCopyFinishedResponseDecoder() );
         final long arbitraryId = 23;
-        StoreCopyFinishedResponse sent = new StoreCopyFinishedResponse( arbitraryId );
+        StoreCopyFinishedResponse sent = new StoreCopyFinishedResponse( Status.E_STORE_ID_MISMATCH, arbitraryId );
 
         // when
         channel.writeOutbound( sent );

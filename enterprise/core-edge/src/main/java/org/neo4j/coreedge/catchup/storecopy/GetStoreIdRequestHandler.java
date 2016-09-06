@@ -49,7 +49,7 @@ public class GetStoreIdRequestHandler extends SimpleChannelInboundHandler<GetSto
         StoreId storeId = storeIdSupplier.get();
         ctx.writeAndFlush( ResponseMessageType.STORE_ID );
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
-        StoreIdMarshal.marshal( storeId, channel );
+        StoreIdMarshal.INSTANCE.marshal( storeId, channel );
         ctx.writeAndFlush( channel.buffer() );
         protocol.expect( State.MESSAGE_TYPE );
     }

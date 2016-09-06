@@ -199,18 +199,19 @@ public class Outcome implements Message, ConsensusOutcome
     {
         return "Outcome{" +
                "nextRole=" + nextRole +
-               ", newTerm=" + term +
+               ", term=" + term +
                ", leader=" + leader +
                ", leaderCommit=" + leaderCommit +
                ", logCommands=" + logCommands +
-               ", shipCommands=" + shipCommands +
+               ", outgoingMessages=" + outgoingMessages +
+               ", commitIndex=" + commitIndex +
                ", votedFor=" + votedFor +
-               ", updatedVotesForMe=" + votesForMe +
-               ", lastLogIndexBeforeWeBecameLeader=" + lastLogIndexBeforeWeBecameLeader +
-               ", updatedFollowerStates=" + followerStates +
                ", renewElectionTimeout=" + renewElectionTimeout +
                ", needsFreshSnapshot=" + needsFreshSnapshot +
-               ", outgoingMessages=" + outgoingMessages +
+               ", votesForMe=" + votesForMe +
+               ", lastLogIndexBeforeWeBecameLeader=" + lastLogIndexBeforeWeBecameLeader +
+               ", followerStates=" + followerStates +
+               ", shipCommands=" + shipCommands +
                ", electedLeader=" + electedLeader +
                ", steppingDown=" + steppingDown +
                '}';

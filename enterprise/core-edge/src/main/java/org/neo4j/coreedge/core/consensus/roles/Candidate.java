@@ -151,5 +151,4 @@ class Candidate implements RaftMessageHandler
 
         return outcome;
     }
-
 }

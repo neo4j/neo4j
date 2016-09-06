@@ -142,8 +142,8 @@ class HazelcastClusterTopology
         }
 
         return hazelcastInstance.<String/*uuid*/,String/*boltAddress*/>getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
-                .entrySet().stream().
-                        filter( entry -> connectedUUIDs.contains( entry.getKey() ) )
+                .entrySet().stream()
+                .filter( entry -> connectedUUIDs.contains( entry.getKey() ) )
                 .map( entry -> new EdgeAddresses( new AdvertisedSocketAddress( entry.getValue() /*boltAddress*/ ) ) )
                 .collect( toSet() );
     }

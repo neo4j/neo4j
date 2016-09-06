@@ -26,6 +26,7 @@ import org.neo4j.coreedge.core.consensus.Followers;
 import org.neo4j.coreedge.core.consensus.RaftMessageHandler;
 import org.neo4j.coreedge.core.consensus.RaftMessages;
 import org.neo4j.coreedge.core.consensus.RaftMessages.Heartbeat;
+import org.neo4j.coreedge.core.consensus.RaftMessages.LogCompactionInfo;
 import org.neo4j.coreedge.core.consensus.outcome.Outcome;
 import org.neo4j.coreedge.core.consensus.outcome.ShipCommand;
 import org.neo4j.coreedge.core.replication.ReplicatedContent;
@@ -49,10 +50,9 @@ public class Leader implements RaftMessageHandler
 
     private static void sendHeartbeats( ReadableRaftState ctx, Outcome outcome ) throws IOException
     {
-        long commitIndex = ctx.leaderCommit();
+        long commitIndex = ctx.commitIndex();
         long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
-        Heartbeat heartbeat = new Heartbeat( ctx.myself(), ctx.term(), commitIndex,
-                commitIndexTerm );
+        Heartbeat heartbeat = new Heartbeat( ctx.myself(), ctx.term(), commitIndex, commitIndexTerm );
         for ( MemberId to : replicationTargets( ctx ) )
         {
             outcome.addOutgoingMessage( new RaftMessages.Directed( to, heartbeat ) );
@@ -97,7 +97,7 @@ public class Leader implements RaftMessageHandler
                 if ( req.leaderTerm() < ctx.term() )
                 {
                     RaftMessages.AppendEntries.Response appendResponse =
-                            new RaftMessages.AppendEntries.Response( ctx.myself(), ctx.term(), false, req.prevLogIndex(),
+                            new RaftMessages.AppendEntries.Response( ctx.myself(), ctx.term(), false, -1,
                                     ctx.entryLog().appendIndex() );
 
                     outcome.addOutgoingMessage( new RaftMessages.Directed( req.from(), appendResponse ) );
@@ -180,7 +180,7 @@ public class Leader implements RaftMessageHandler
                 }
                 else // Response indicated failure.
                 {
-                    if ( response.appendIndex() >= ctx.entryLog().prevIndex() )
+                    if ( response.appendIndex() > -1 && response.appendIndex() >= ctx.entryLog().prevIndex() )
                     {
                         // Signal a mismatch to the log shipper, which will serve an earlier entry.
                         outcome.addShipCommand( new ShipCommand.Mismatch( response.appendIndex(), response.from() ) );
@@ -189,8 +189,10 @@ public class Leader implements RaftMessageHandler
                     {
                         // There are no earlier entries, message the follower that we have compacted so that
                         // it can take appropriate action.
-                        outcome.addOutgoingMessage( new RaftMessages.Directed( response.from(),
-                                new RaftMessages.LogCompactionInfo( ctx.myself(), ctx.term(), ctx.entryLog().prevIndex() ) ) );
+                        LogCompactionInfo compactionInfo = new LogCompactionInfo( ctx.myself(), ctx.term(), ctx.entryLog().prevIndex() );
+                        RaftMessages.Directed directedCompactionInfo = new RaftMessages.Directed( response.from(), compactionInfo );
+
+                        outcome.addOutgoingMessage( directedCompactionInfo );
                     }
                 }
                 break;
@@ -238,5 +240,4 @@ public class Leader implements RaftMessageHandler
 
         return outcome;
     }
-
 }
