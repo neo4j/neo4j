@@ -26,6 +26,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.Log;
 
 public class HttpHeaderUtils {
@@ -78,6 +79,6 @@ public class HttpHeaderUtils {
                         MAX_EXECUTION_TIME_HEADER, headerValue), e );
             }
         }
-        return -1;
+        return GraphDatabaseSettings.UNSPECIFIED_TIMEOUT;
     }
 }

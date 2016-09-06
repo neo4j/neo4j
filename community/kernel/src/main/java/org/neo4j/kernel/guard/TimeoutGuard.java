@@ -25,6 +25,8 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.logging.Log;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.UNSPECIFIED_TIMEOUT;
+
 /**
  * Guard that checks kernel transaction for timeout.
  * As soon as transaction timeout time reached {@link GuardTimeoutException } will be thrown.
@@ -48,7 +50,7 @@ public class TimeoutGuard implements Guard
 
     private void check( KernelTransactionImplementation transaction )
     {
-        if ( transaction.timeout() > 0 )
+        if ( transaction.timeout() > UNSPECIFIED_TIMEOUT )
         {
             check( getMaxTransactionCompletionTime( transaction ), "Transaction timeout." );
         }

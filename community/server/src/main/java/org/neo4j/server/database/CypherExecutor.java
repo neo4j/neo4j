@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -91,7 +92,8 @@ public class CypherExecutor extends LifecycleAdapter
     private InternalTransaction getInternalTransaction( HttpServletRequest request )
     {
         long customTimeout = getTransactionTimeout( request, log );
-        return customTimeout > 0 ? beginCustomTransaction( customTimeout ) : beginDefaultTransaction();
+        return customTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ? beginCustomTransaction( customTimeout ) :
+                                                                           beginDefaultTransaction();
     }
 
     private InternalTransaction beginCustomTransaction( long customTimeout )

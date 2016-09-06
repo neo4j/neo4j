@@ -82,6 +82,9 @@ public abstract class GraphDatabaseSettings
     public static final int DEFAULT_LABEL_BLOCK_SIZE = 64;
     public static final int MINIMAL_BLOCK_SIZE = 16;
 
+    // default unspecified transaction timeout
+    public static final long UNSPECIFIED_TIMEOUT = 0L;
+
     @SuppressWarnings("unused") // accessed by reflection
     @Migrator
     private static final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
@@ -213,7 +216,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> execution_guard_enabled = setting("unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
 
     @Description("The maximum time interval of a transaction within which it should be completed.")
-    public static final Setting<Long> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, "0" );
+    public static final Setting<Long> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, String.valueOf( UNSPECIFIED_TIMEOUT ) );
 
     @Description( "The maximum amount of time to wait for running transactions to complete before allowing "
                   + "initiated database shutdown to continue" )

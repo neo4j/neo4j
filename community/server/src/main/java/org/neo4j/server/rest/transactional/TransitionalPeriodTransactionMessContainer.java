@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -63,7 +64,7 @@ public class TransitionalPeriodTransactionMessContainer
     public QuerySession create( String query, Map<String, Object> parameters, GraphDatabaseQueryService service,
             Type type, AccessMode mode, long customTransactionTimeout, HttpServletRequest request )
     {
-        InternalTransaction transaction = customTransactionTimeout > 0 ?
+        InternalTransaction transaction = customTransactionTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ?
                                           db.beginTransaction( type, mode, customTransactionTimeout, TimeUnit.MILLISECONDS ) :
                                           db.beginTransaction( type, mode);
         TransactionalContext context = new Neo4jTransactionalContext( service, transaction, txBridge.get(), query,
