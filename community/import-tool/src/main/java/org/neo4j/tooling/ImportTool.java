@@ -97,6 +97,8 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
  */
 public class ImportTool
 {
+    private static final int UNSPECIFIED = -1;
+
     enum Options
     {
         STORE_DIR( "into", null,
@@ -326,7 +328,7 @@ public class ImportTool
         boolean skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns;
         Config dbConfig;
         OutputStream badOutput = null;
-        int pageSize = -1;
+        int pageSize = UNSPECIFIED;
         org.neo4j.unsafe.impl.batchimport.Configuration configuration = null;
 
         boolean success = false;
@@ -361,7 +363,8 @@ public class ImportTool
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
             if ( args.has( Options.PAGE_SIZE.key() ) )
             {
-                pageSize = toIntExact( parseLongWithUnit( args.get( Options.PAGE_SIZE.key(), String.valueOf( -1 ) ) ) );
+                pageSize = toIntExact( parseLongWithUnit( args.get( Options.PAGE_SIZE.key(),
+                        String.valueOf( UNSPECIFIED ) ) ) );
             }
             configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, pageSize );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
@@ -535,7 +538,7 @@ public class ImportTool
             public int pageSize()
             {
                 // Let's call super if not specifically configured, so that proper calculations can be made
-                return pageSize == -1 ? super.pageSize() : pageSize;
+                return pageSize == UNSPECIFIED ? super.pageSize() : pageSize;
             }
         };
     }
