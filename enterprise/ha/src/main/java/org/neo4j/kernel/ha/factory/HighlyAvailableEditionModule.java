@@ -131,6 +131,7 @@ import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
@@ -183,6 +184,26 @@ public class HighlyAvailableEditionModule
 
     public HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;
+    private SecurityLog securityLog;
+
+    @Override
+    protected Log authManagerLog( Config config, FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
+            throws IOException
+    {
+        if (securityLog == null)
+        {
+            securityLog = new SecurityLog( config, fileSystem,
+                    jobScheduler.executor( JobScheduler.Groups.internalLogRotation ) );
+        }
+        return securityLog;
+    }
+
+    @Override
+    public void registerProcedures( Procedures procedures )
+    {
+        super.registerProcedures( procedures );
+        procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
+    }
 
     public HighlyAvailableEditionModule( final PlatformModule platformModule )
     {

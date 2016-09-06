@@ -41,7 +41,7 @@ public class SecurityLog implements Log
 {
     private final Log inner;
 
-    SecurityLog( Config config, FileSystemAbstraction fileSystem, Executor executor ) throws IOException
+    public SecurityLog( Config config, FileSystemAbstraction fileSystem, Executor executor ) throws IOException
     {
         this( createLog( config, fileSystem, executor ) );
     }

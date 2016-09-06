@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
+import org.neo4j.kernel.impl.enterprise.SecurityLog;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -78,12 +79,14 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 
@@ -98,6 +101,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private final ConsensusModule consensusModule;
     private final CoreTopologyService topologyService;
     private final LogProvider logProvider;
+    private SecurityLog securityLog;
 
     public enum RaftLogImplementation
     {
@@ -109,6 +113,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     {
         try
         {
+            procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
             procedures.register( new DiscoverEndpointAcquisitionServersProcedure( topologyService, logProvider ) );
             procedures.register( new AcquireEndpointsProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
             procedures.register( new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
@@ -118,6 +123,18 @@ public class EnterpriseCoreEditionModule extends EditionModule
         {
             throw new RuntimeException( e );
         }
+    }
+
+    @Override
+    protected Log authManagerLog( Config config, FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
+            throws IOException
+    {
+        if (securityLog == null)
+        {
+            securityLog = new SecurityLog( config, fileSystem,
+                    jobScheduler.executor( JobScheduler.Groups.internalLogRotation ) );
+        }
+        return securityLog;
     }
 
     EnterpriseCoreEditionModule( final PlatformModule platformModule,
