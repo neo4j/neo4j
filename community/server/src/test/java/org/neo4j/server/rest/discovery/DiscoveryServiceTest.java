@@ -24,10 +24,11 @@ import org.junit.Test;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
@@ -45,7 +46,7 @@ import static org.mockito.Mockito.when;
 public class DiscoveryServiceTest
 {
     private String baseUri;
-    private HostnamePort boltAddress;
+    private AdvertisedSocketAddress boltAddress;
     private URI dataUri;
     private URI managementUri;
 
@@ -53,19 +54,25 @@ public class DiscoveryServiceTest
     public void setUp() throws URISyntaxException
     {
         baseUri = "http://www.example.com";
-        boltAddress = new HostnamePort( "example.com:7687" );
+        boltAddress = new AdvertisedSocketAddress( "example.com", 7687 );
         dataUri = new URI( "/data" );
         managementUri = new URI( "/management" );
     }
 
     private Config mockConfig() throws URISyntaxException
     {
-        Config mockConfig = mock( Config.class );
-        when( mockConfig.get( GraphDatabaseSettings.auth_enabled ) ).thenReturn( false );
-        when( mockConfig.get( GraphDatabaseSettings.bolt_advertised_address ) ).thenReturn( boltAddress );
-        when( mockConfig.get( ServerSettings.management_api_path ) ).thenReturn( managementUri );
-        when( mockConfig.get( ServerSettings.rest_api_path ) ).thenReturn( dataUri );
-        return mockConfig;
+        Config config = Config.defaults();
+
+        HashMap<String, String> settings = new HashMap<>();
+        settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
+        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), boltAddress.toString() );
+        settings.put( ServerSettings.management_api_path.name(), managementUri.toString() );
+        settings.put( ServerSettings.rest_api_path.name(), dataUri.toString() );
+
+        config.augment( settings );
+        return config;
     }
 
     private DiscoveryService testDiscoveryService() throws URISyntaxException

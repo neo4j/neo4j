@@ -30,7 +30,8 @@ import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Settings;
@@ -43,13 +44,15 @@ import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.EMPTY;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
+import static org.neo4j.kernel.configuration.Settings.legacyFallback;
+import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
@@ -74,15 +77,22 @@ public interface ServerSettings
     Setting<List<String>> security_rules = setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );
 
     @Description("Configuration options for HTTP connectors. " +
-                 "\"(http-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
-                 "\"http-public\" or some other name that describes what the connector is for.")
-    class HttpConnector extends GraphDatabaseSettings.Connector
+            "\"(http-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
+            "\"http-public\" or some other name that describes what the connector is for.")
+    public class HttpConnector extends GraphDatabaseSettings.Connector
     {
         @Description("Enable TLS for this connector")
-        public final Setting<Encryption> encryption;
+        public final Setting<HttpConnector.Encryption> encryption;
 
-        @Description("Address the connector should bind to")
-        public final Setting<HostnamePort> address;
+        @Description( "Address the connector should bind to. " +
+                "This setting is deprecated and will be replaced by `+listen_address+`" )
+        public final Setting<ListenSocketAddress> address;
+
+        @Description( "Address the connector should bind to" )
+        public final Setting<ListenSocketAddress> listen_address;
+
+        @Description( "Advertised address for this connector" )
+        public final Setting<AdvertisedSocketAddress> advertised_address;
 
         public HttpConnector()
         {
@@ -92,8 +102,14 @@ public interface ServerSettings
         public HttpConnector( String key )
         {
             super( key, ConnectorType.HTTP.name() );
-            address = group.scope( setting( "address", HOSTNAME_PORT, "localhost:7474" ) );
-            encryption = group.scope( setting( "encryption", options( Encryption.class ), Encryption.NONE.name() ) );
+            encryption = group.scope( setting( "encryption", options( HttpConnector.Encryption.class ), HttpConnector.Encryption.NONE.name() ) );
+            Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", 7474 );
+            Setting<ListenSocketAddress> listenAddressSetting = legacyFallback( legacyAddressSetting,
+                    listenAddress( "listen_address", 7474 ) );
+
+            this.address = group.scope( legacyAddressSetting );
+            this.listen_address = group.scope( listenAddressSetting );
+            this.advertised_address = group.scope( advertisedAddress( "advertised_address", listenAddressSetting ) );
         }
 
         public enum Encryption
@@ -102,21 +118,20 @@ public interface ServerSettings
         }
     }
 
-    static HttpConnector httpConnector( String key )
+    public static HttpConnector httpConnector( String key )
     {
         return new HttpConnector( key );
     }
 
-    static Optional<HttpConnector> httpConnector( Config config, HttpConnector.Encryption encryption )
+    public static Optional<HttpConnector> httpConnector( Config config, HttpConnector.Encryption encryption )
     {
         return config
                 .view( enumerate( GraphDatabaseSettings.Connector.class ) )
                 .map( HttpConnector::new )
-                .filter( ( connConfig ) -> {
-                    return config.get( connConfig.type ) == HTTP
-                            && config.get( connConfig.enabled )
-                            && config.get( connConfig.encryption ) == encryption;
-                } )
+                .filter( ( connConfig ) ->
+                        config.get( connConfig.type ) == HTTP &&
+                                config.get( connConfig.enabled ) &&
+                                config.get( connConfig.encryption ) == encryption )
                 .findFirst();
     }
 

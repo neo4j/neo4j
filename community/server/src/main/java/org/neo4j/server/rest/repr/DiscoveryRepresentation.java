@@ -43,7 +43,10 @@ public class DiscoveryRepresentation extends MappingRepresentation
     {
         serializer.putRelativeUri( MANAGEMENT_URI_KEY, managementUri );
         serializer.putRelativeUri( DATA_URI_KEY, dataUri );
-        serializer.putAbsoluteUri( BOLT_URI_KEY, "bolt://" + boltAddress );
+        if ( boltAddress != null )
+        {
+            serializer.putAbsoluteUri( BOLT_URI_KEY, "bolt://" + boltAddress );
+        }
     }
 
 }

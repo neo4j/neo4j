@@ -37,7 +37,7 @@ public class SettingsDocumenter
     private static final Predicate<SettingDescription> REGULAR_SETTINGS = ( s ) -> !s.isDeprecated();
     private static final Predicate<SettingDescription> DEPRECATED_SETTINGS = SettingDescription::isDeprecated;
 
-    private static final Pattern CONFIG_SETTING_PATTERN = Pattern.compile( "[a-z0-9]+((\\.|_)[a-z0-9]+)+" );
+    private static final Pattern CONFIG_SETTING_PATTERN = Pattern.compile( "\\+?[a-z0-9]+((\\.|_)[a-z0-9]+)+\\+?" );
     // TODO: This one, and the blacklist below, exist because we try and infer what is a config name
     //       in prose text. This is fraught with accidental error. We should instead look into
     //       adopting a convention for how we mark references to other config options in the @Description
@@ -188,6 +188,11 @@ public class SettingsDocumenter
             {
                 // a filenamne
                 match = "_" + match + "_";
+            }
+            else if ( match.startsWith( "+" ) && match.endsWith( "+" ) )
+            {
+                // marked as passthrough, strip the mark but otherwise do nothing
+                match = match.replaceAll( "^\\+|\\+$", "" );
             }
             else if ( match.equals( settingBeingRendered ) )
             {

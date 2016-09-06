@@ -100,7 +100,8 @@ public class SharedDiscoveryServiceIT
         return new Config( stringMap(
                 CoreEdgeClusterSettings.raft_advertised_address.name(), "127.0.0.1:7000",
                 CoreEdgeClusterSettings.transaction_advertised_address.name(), "127.0.0.1:7001",
-                GraphDatabaseSettings.bolt_advertised_address.name(), "127.0.0.1:7002" ) );
+                new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true",
+                new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "127.0.0.1:7002" ) );
     }
 
     private Callable<Void> sharedClientStarter( CoreTopologyService topologyService, Set<MemberId> expectedTargetSet )

@@ -33,15 +33,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.bolt.security.ssl.KeyStoreInformation;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.plugins.Injectable;
 
 public interface WebServer
 {
-    void setAddress( HostnamePort address );
+    void setAddress( ListenSocketAddress address );
 
-    void setHttpsAddress( Optional<HostnamePort> address );
+    void setHttpsAddress( Optional<ListenSocketAddress> address );
 
     void setHttpsCertificateInformation( KeyStoreInformation config );
 

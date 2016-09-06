@@ -45,7 +45,8 @@ import org.neo4j.coreedge.core.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.edge.EnterpriseEdgeEditionModule;
 import org.neo4j.coreedge.identity.ClusterId;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.SocketAddressFormat;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
@@ -54,12 +55,15 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toSet;
 
+import static org.neo4j.helpers.SocketAddressFormat.socketAddress;
+
 class HazelcastClusterTopology
 {
     static final String EDGE_SERVER_BOLT_ADDRESS_MAP_NAME = "edge-servers"; // hz client uuid string -> boltAddress string
     static final String CLUSTER_UUID = "cluster_uuid";
     static final String MEMBER_UUID = "member_uuid";
     static final String TRANSACTION_SERVER = "transaction_server";
+    static final String DISCOVERY_SERVER = "discovery_server";
     static final String RAFT_SERVER = "raft_server";
     static final String BOLT_SERVER = "bolt_server";
 
@@ -142,9 +146,9 @@ class HazelcastClusterTopology
         }
 
         return hazelcastInstance.<String/*uuid*/,String/*boltAddress*/>getMap( EDGE_SERVER_BOLT_ADDRESS_MAP_NAME )
-                .entrySet().stream()
-                .filter( entry -> connectedUUIDs.contains( entry.getKey() ) )
-                .map( entry -> new EdgeAddresses( new AdvertisedSocketAddress( entry.getValue() /*boltAddress*/ ) ) )
+                .entrySet().stream().
+                        filter( entry -> connectedUUIDs.contains( entry.getKey() ) )
+                .map( entry -> new EdgeAddresses( SocketAddressFormat.socketAddress( entry.getValue() /*boltAddress*/, AdvertisedSocketAddress::new ) ) )
                 .collect( toSet() );
     }
 
@@ -179,8 +183,12 @@ class HazelcastClusterTopology
         MemberAttributeConfig memberAttributeConfig = new MemberAttributeConfig();
         memberAttributeConfig.setStringAttribute( MEMBER_UUID, myself.getUuid().toString() );
 
-        AdvertisedSocketAddress transactionSource = config.get( CoreEdgeClusterSettings
-                .transaction_advertised_address );
+        AdvertisedSocketAddress discoveryAddress =
+                config.get( CoreEdgeClusterSettings.discovery_advertised_address );
+        memberAttributeConfig.setStringAttribute( DISCOVERY_SERVER, discoveryAddress.toString() );
+
+        AdvertisedSocketAddress transactionSource =
+                config.get( CoreEdgeClusterSettings.transaction_advertised_address );
         memberAttributeConfig.setStringAttribute( TRANSACTION_SERVER, transactionSource.toString() );
 
         AdvertisedSocketAddress raftAddress = config.get( CoreEdgeClusterSettings.raft_advertised_address );
@@ -196,9 +204,9 @@ class HazelcastClusterTopology
         MemberId memberId = new MemberId( UUID.fromString( member.getStringAttribute( MEMBER_UUID ) ) );
 
         return Pair.of( memberId, new CoreAddresses(
-                new AdvertisedSocketAddress( member.getStringAttribute( RAFT_SERVER ) ),
-                new AdvertisedSocketAddress( member.getStringAttribute( TRANSACTION_SERVER ) ),
-                new AdvertisedSocketAddress( member.getStringAttribute( BOLT_SERVER ) )
+                SocketAddressFormat.socketAddress( member.getStringAttribute( RAFT_SERVER ), AdvertisedSocketAddress::new ),
+                SocketAddressFormat.socketAddress( member.getStringAttribute( TRANSACTION_SERVER ), AdvertisedSocketAddress::new ),
+                SocketAddressFormat.socketAddress( member.getStringAttribute( BOLT_SERVER ), AdvertisedSocketAddress::new )
         ) );
     }
 }

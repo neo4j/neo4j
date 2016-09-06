@@ -28,11 +28,12 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
 
 /**
  * Used to discover the rest of the server URIs through a HTTP GET request to
@@ -41,12 +42,12 @@ import org.neo4j.server.rest.repr.OutputFormat;
 @Path( "/" )
 public class DiscoveryService
 {
-    private final Config configuration;
+    private final Config config;
     private final OutputFormat outputFormat;
 
-    public DiscoveryService( @Context Config configuration, @Context OutputFormat outputFormat )
+    public DiscoveryService( @Context Config config, @Context OutputFormat outputFormat )
     {
-        this.configuration = configuration;
+        this.config = config;
         this.outputFormat = outputFormat;
     }
 
@@ -54,9 +55,10 @@ public class DiscoveryService
     @Produces( MediaType.APPLICATION_JSON )
     public Response getDiscoveryDocument() throws URISyntaxException
     {
-        String managementUri = configuration.get( ServerSettings.management_api_path ).getPath() + "/";
-        String dataUri = configuration.get( ServerSettings.rest_api_path ).getPath() + "/";
-        String boltAddress = configuration.get( GraphDatabaseSettings.bolt_advertised_address ).toString();
+        String managementUri = config.get( ServerSettings.management_api_path ).getPath() + "/";
+        String dataUri = config.get( ServerSettings.rest_api_path ).getPath() + "/";
+        String boltAddress = boltConnectors( config ).stream().findFirst()
+                .map( boltConnector -> config.get( boltConnector.advertised_address ).toString() ).orElse( null );
 
         return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri, boltAddress ) );
     }
@@ -65,7 +67,6 @@ public class DiscoveryService
     @Produces( MediaType.WILDCARD )
     public Response redirectToBrowser()
     {
-        return outputFormat.seeOther( configuration.get( ServerSettings.browser_path ) );
-
+        return outputFormat.seeOther( config.get( ServerSettings.browser_path ) );
     }
 }

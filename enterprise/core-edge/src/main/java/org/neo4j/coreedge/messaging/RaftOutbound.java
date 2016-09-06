@@ -28,7 +28,7 @@ import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.identity.MemberId;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.coreedge.messaging.address.UnknownAddressMonitor;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;

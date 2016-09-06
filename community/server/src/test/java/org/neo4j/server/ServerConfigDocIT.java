@@ -26,6 +26,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
@@ -53,7 +54,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldPickUpAddressFromConfig() throws Exception
     {
-        HostnamePort nonDefaultAddress = new HostnamePort( "0.0.0.0", 4321 );
+        ListenSocketAddress nonDefaultAddress = new ListenSocketAddress( "0.0.0.0", 4321 );
         server = server().onAddress( nonDefaultAddress )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();

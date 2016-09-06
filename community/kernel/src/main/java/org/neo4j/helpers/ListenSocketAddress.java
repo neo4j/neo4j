@@ -19,23 +19,10 @@
  */
 package org.neo4j.helpers;
 
-import java.net.BindException;
-
-/**
- * A bind exception that includes which port we failed to bind to. Whenever possible, catch and rethrow bind exceptions as this, to make it possible to
- * sort out which address it is that is in use.
- */
-public class PortBindException extends BindException
+public class ListenSocketAddress extends SocketAddress
 {
-    public PortBindException( ListenSocketAddress address, BindException original )
+    public ListenSocketAddress( String hostname, int port )
     {
-        super( String.format("Address %s is already in use, cannot bind to it.", address) );
-        setStackTrace( original.getStackTrace() );
-    }
-
-    public PortBindException( ListenSocketAddress address, ListenSocketAddress other, BindException original )
-    {
-        super( String.format("At least one of the addresses %s or %s is already in use, cannot bind to it.", address, other) );
-        setStackTrace( original.getStackTrace() );
+        super( hostname, port );
     }
 }

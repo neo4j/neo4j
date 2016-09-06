@@ -31,7 +31,7 @@ import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.core.consensus.LeaderLocator;
 import org.neo4j.coreedge.core.consensus.NoLeaderFoundException;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.coreedge.identity.MemberId;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;

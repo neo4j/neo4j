@@ -70,7 +70,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.coreedge.core.consensus.schedule.ControlledRenewableTimeoutService;
-import org.neo4j.coreedge.messaging.address.AdvertisedSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -93,7 +93,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class HazelcastClientTest
 {
-    private static final AdvertisedSocketAddress ADDRESS = new AdvertisedSocketAddress( "localhost:7000" );
+    private static final AdvertisedSocketAddress ADDRESS = new AdvertisedSocketAddress( "localhost", 7000 );
 
     @Test
     public void shouldReturnTopologyUsingHazelcastMembers() throws Exception
