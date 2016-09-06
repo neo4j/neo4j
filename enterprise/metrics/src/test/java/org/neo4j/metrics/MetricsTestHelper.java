@@ -45,7 +45,7 @@ public class MetricsTestHelper
             throws IOException, InterruptedException
     {
         // let's wait until the file is in place (since the reporting is async that might take a while)
-        assertEventually( "Metrics file should exist", metricFile::exists, is( true ), 20, SECONDS );
+        assertEventually( "Metrics file should exist", metricFile::exists, is( true ), 40, SECONDS );
 
         try ( BufferedReader reader = new BufferedReader( new FileReader( metricFile ) ) )
         {
@@ -72,7 +72,7 @@ public class MetricsTestHelper
     public static File metricsCsv( File dbDir, String metric ) throws InterruptedException
     {
         File csvFile = new File( dbDir, metric + ".csv" );
-        assertEventually( "Metrics file should exist", csvFile::exists, is( true ), 20, SECONDS );
+        assertEventually( "Metrics file should exist", csvFile::exists, is( true ), 40, SECONDS );
         return csvFile;
     }
 }
