@@ -45,7 +45,9 @@ import org.neo4j.kernel.impl.ha.ClusterManager.StoreDirInitializer;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.test.TargetDirectory;
 
+import static org.neo4j.cluster.ClusterSettings.broadcast_timeout;
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
+import static org.neo4j.cluster.ClusterSettings.join_timeout;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_level;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
@@ -89,6 +91,7 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
                 .withSharedSetting( default_timeout, "1s" )
                 .withSharedSetting( tx_push_factor, "0" )
                 .withSharedSetting( pagecache_memory, "8m" )
+                .withSharedSetting( join_timeout, "60s" )
                 .withAvailabilityChecks( allSeesAllAsAvailable() )
                 .withStoreDirInitializer( defaultStoreDirInitializer );
     }
