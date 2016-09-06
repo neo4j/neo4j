@@ -205,9 +205,9 @@ public class UserFunctionIT
     {
         // Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Unknown function 'org.someFunctionThatDoesNotExist' (line 1, column 8 (offset: 7))" +
-                                 "\n" +
-                                 "\"RETURN org.someFunctionThatDoesNotExist()");
+        exception.expectMessage( String.format("Unknown function 'org.someFunctionThatDoesNotExist' (line 1, column 8 (offset: 7))" +
+                                 "%n" +
+                                 "\"RETURN org.someFunctionThatDoesNotExist()"));
 
         // When
         db.execute( "RETURN org.someFunctionThatDoesNotExist()" );

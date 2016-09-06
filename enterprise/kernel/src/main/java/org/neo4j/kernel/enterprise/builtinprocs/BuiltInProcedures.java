@@ -44,7 +44,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.procedure.Procedure.Mode.DBMS;
+import static org.neo4j.procedure.Mode.DBMS;
 
 public class BuiltInProcedures
 {

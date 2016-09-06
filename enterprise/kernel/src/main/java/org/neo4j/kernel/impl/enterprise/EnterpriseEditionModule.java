@@ -47,7 +47,7 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     public void registerProcedures( Procedures procedures ) throws KernelException
     {
         super.registerProcedures( procedures );
-        procedures.register( BuiltInProcedures.class );
+        procedures.registerProcedure( BuiltInProcedures.class );
     }
 
     public EnterpriseEditionModule( PlatformModule platformModule )
