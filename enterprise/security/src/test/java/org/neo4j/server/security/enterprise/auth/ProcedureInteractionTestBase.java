@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
@@ -52,9 +53,11 @@ import static org.hamcrest.CoreMatchers.either;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
@@ -383,6 +386,38 @@ abstract class ProcedureInteractionTestBase<S>
         assertEquals( Arrays.asList( items ).size(), results.size() );
         Assert.assertThat( results, containsInAnyOrder( items ) );
     }
+
+    @SuppressWarnings( "unchecked" )
+    public static void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
+    {
+        List<Map<String, Object>> result = r.stream().collect( Collectors.toList() );
+
+        assertEquals( "Results for should have size " + expected.size() + " but was " + result.size(),
+                expected.size(), result.size() );
+
+        for ( Map<String, Object> row : result )
+        {
+            String key = (String) row.get( keyKey );
+            assertThat( expected, hasKey( key ) );
+            assertThat( row, hasKey( valueKey ) );
+
+            Object objectValue = row.get( valueKey );
+            if ( objectValue instanceof List )
+            {
+                List<String> value = (List<String>) objectValue;
+                List<String> expectedValues = (List<String>) expected.get( key );
+                assertEquals( "sizes", value.size(), expectedValues.size() );
+                assertThat( value, containsInAnyOrder( expectedValues.toArray() ) );
+            }
+            else
+            {
+                String value = objectValue.toString();
+                String expectedValue = expected.get( key ).toString();
+                assertThat( value, equalTo( expectedValue ) );
+            }
+        }
+    }
+
 
     // --------------------- helpers -----------------------
 
