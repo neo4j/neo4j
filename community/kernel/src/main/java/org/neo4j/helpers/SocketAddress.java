@@ -26,7 +26,7 @@ import java.util.Objects;
  * Socket address derived from configuration.
  * There is no network awareness at all, just stores the raw configuration exactly as it comes.
  */
-class SocketAddress
+public class SocketAddress
 {
     private final String hostname;
     private final int port;
