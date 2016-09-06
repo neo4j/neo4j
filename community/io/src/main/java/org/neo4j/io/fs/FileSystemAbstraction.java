@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.file.CopyOption;
 import java.util.function.Function;
 import java.util.zip.ZipOutputStream;
 
@@ -57,7 +58,7 @@ public interface FileSystemAbstraction
 
     void deleteRecursively( File directory ) throws IOException;
 
-    boolean renameFile( File from, File to ) throws IOException;
+    boolean move( File from, File to, CopyOption... copyOptions ) throws IOException;
 
     File[] listFiles( File directory );
 
@@ -74,6 +75,8 @@ public interface FileSystemAbstraction
     <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz, Function<Class<K>, K> creator );
 
     void truncate( File path, long size ) throws IOException;
+
+    long lastModifiedTime( File file ) throws IOException;
 
     interface ThirdPartyFileSystem extends Closeable
     {

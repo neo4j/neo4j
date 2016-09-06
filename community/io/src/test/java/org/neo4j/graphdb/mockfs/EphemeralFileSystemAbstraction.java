@@ -40,6 +40,9 @@ import java.nio.channels.OverlappingFileLockException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
+import java.nio.file.CopyOption;
+import java.nio.file.StandardCopyOption;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -70,6 +73,8 @@ import static java.util.Arrays.asList;
 
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
+    private Clock clock;
+
     interface Positionable
     {
         long pos();
@@ -84,6 +89,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
     public EphemeralFileSystemAbstraction()
     {
+        this( Clock.systemUTC() );
+    }
+
+    public EphemeralFileSystemAbstraction( Clock clock )
+    {
+        this.clock = clock;
         this.files = new ConcurrentHashMap<>();
         initCurrentWorkingDirectory();
     }
@@ -280,7 +291,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                                              + "' (The system cannot find the path specified)" );
         }
 
-        EphemeralFileData data = new EphemeralFileData();
+        EphemeralFileData data = new EphemeralFileData( clock );
         free( files.put( canonicalFile( fileName ), data ) );
         return new StoreFileChannel(
                 new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) ) );
@@ -369,15 +380,25 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean renameFile( File from, File to ) throws IOException
+    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
     {
         from = canonicalFile( from );
         to = canonicalFile( to );
+
+        boolean replaceExisting = false;
+        for ( CopyOption op : copyOptions )
+        {
+            if ( op == StandardCopyOption.REPLACE_EXISTING )
+            {
+                replaceExisting = true;
+            }
+        }
+
         if ( !files.containsKey( from ) )
         {
             throw new IOException( "'" + from + "' doesn't exist" );
         }
-        if ( files.containsKey( to ) )
+        if ( !replaceExisting && files.containsKey( to ) )
         {
             throw new IOException( "'" + to + "' already exists" );
         }
@@ -590,6 +611,17 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             throw new FileNotFoundException( "File " + file + " not found" );
         }
         data.truncate( size );
+    }
+
+    @Override
+    public long lastModifiedTime( File file ) throws IOException
+    {
+        EphemeralFileData data = files.get( canonicalFile( file ) );
+        if ( data == null )
+        {
+            throw new FileNotFoundException( "File " + file + " not found" );
+        }
+        return data.lastModified;
     }
 
     @SuppressWarnings( "serial" )
@@ -844,16 +876,20 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         private int size;
         private int forcedSize;
         private int locked;
+        private Clock clock;
+        private long lastModified;
 
-        public EphemeralFileData()
+        public EphemeralFileData( Clock clock )
         {
-            this( new DynamicByteBuffer() );
+            this( new DynamicByteBuffer(), clock );
         }
 
-        private EphemeralFileData( DynamicByteBuffer data )
+        private EphemeralFileData( DynamicByteBuffer data, Clock clock )
         {
             this.fileAsBuffer = data;
             this.forcedBuffer = data.copy();
+            this.clock = clock;
+            this.lastModified = clock.millis();
         }
 
         int read( Positionable fc, ByteBuffer dst )
@@ -905,12 +941,13 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             }
 
             size = newSize;
+            lastModified = clock.millis();
             return wanted;
         }
 
         synchronized EphemeralFileData copy()
         {
-            EphemeralFileData copy = new EphemeralFileData( fileAsBuffer.copy() );
+            EphemeralFileData copy = new EphemeralFileData( fileAsBuffer.copy(), clock );
             copy.size = size;
             return copy;
         }

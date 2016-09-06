@@ -175,7 +175,7 @@ public class LegacyLogs
             final String oldName = file.getName();
             final long version = getLegacyLogVersion( oldName );
             final String newName = DEFAULT_NAME + DEFAULT_VERSION_SUFFIX + version;
-            fs.renameFile( file, new File( file.getParent(), newName ) );
+            fs.move( file, new File( file.getParent(), newName ) );
         }
 
         deleteUnusedLogFiles( storeDir );

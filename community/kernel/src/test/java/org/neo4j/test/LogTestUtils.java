@@ -296,7 +296,7 @@ public class LogTestUtils
         public void restore() throws IOException
         {
             fileSystem.deleteFile( file );
-            fileSystem.renameFile( backup, file );
+            fileSystem.move( backup, file );
         }
     }
 

@@ -279,7 +279,7 @@ public class RotatingFileOutputStreamSupplierTest
         OutputStream outputStream = supplier.get();
 
         IOException exception = new IOException( "text exception" );
-        doThrow( exception ).when( fs ).renameFile( any( File.class ), any( File.class ) );
+        doThrow( exception ).when( fs ).move( any( File.class ), any( File.class ) );
 
         write( outputStream, "A string longer than 10 bytes" );
         assertThat( supplier.get(), is( outputStream ) );

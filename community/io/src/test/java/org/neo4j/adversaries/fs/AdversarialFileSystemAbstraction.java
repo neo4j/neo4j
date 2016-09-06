@@ -32,6 +32,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.charset.Charset;
+import java.nio.file.CopyOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -68,10 +69,10 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         return AdversarialFileChannel.wrap( (StoreFileChannel) delegate.open( fileName, mode ), adversary );
     }
 
-    public boolean renameFile( File from, File to ) throws IOException
+    public boolean move( File from, File to, CopyOption... copyOptions ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, SecurityException.class );
-        return delegate.renameFile( from, to );
+        return delegate.move( from, to, copyOptions );
     }
 
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
@@ -202,6 +203,14 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         adversary.injectFailure( FileNotFoundException.class, IOException.class, IllegalArgumentException.class,
                 SecurityException.class, NullPointerException.class );
         delegate.truncate( path, size );
+    }
+
+    @Override
+    public long lastModifiedTime( File file ) throws IOException
+    {
+        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class,
+                NullPointerException.class );
+        return delegate.lastModifiedTime( file );
     }
 
     private <K extends ThirdPartyFileSystem> ThirdPartyFileSystem adversarialProxy(
