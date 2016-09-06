@@ -34,6 +34,8 @@ import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageType;
 
+import static java.lang.String.format;
+
 /**
  * Used to generate dynamic proxies whose methods are backed by a {@link StateMachine}. Method
  * calls will be translated to the corresponding message, and the parameters are set as payload.
@@ -49,7 +51,7 @@ public class StateMachineProxyFactory
     private final StateMachineConversations conversations;
     private volatile InstanceId me;
 
-    private final Map<String, ResponseFuture> responseFutureMap = new ConcurrentHashMap<String, ResponseFuture>();
+    private final Map<String, ResponseFuture> responseFutureMap = new ConcurrentHashMap<>();
 
 
     public StateMachineProxyFactory( StateMachines stateMachines, StateMachineConversations conversations, InstanceId me )
@@ -104,7 +106,7 @@ public class StateMachineProxyFactory
             }
             else
             {
-                ResponseFuture future = new ResponseFuture( conversationId, typeAsEnum );
+                ResponseFuture future = new ResponseFuture( conversationId, typeAsEnum, responseFutureMap );
                 responseFutureMap.put( conversationId, future );
                 stateMachines.process( message );
 
@@ -185,21 +187,23 @@ public class StateMachineProxyFactory
         throw exception;
     }
 
-    class ResponseFuture
-            implements Future<Object>
+    private static class ResponseFuture implements Future<Object>
     {
         private final String conversationId;
         private final MessageType initiatedByMessageType;
+        private final Map<String,ResponseFuture> responseFutureMap; /* temporary for debug logging */
 
         private Message response;
 
-        ResponseFuture( String conversationId, MessageType initiatedByMessageType )
+        ResponseFuture( String conversationId, MessageType initiatedByMessageType,
+                Map<String,ResponseFuture> responseFutureMap )
         {
             this.conversationId = conversationId;
             this.initiatedByMessageType = initiatedByMessageType;
+            this.responseFutureMap = responseFutureMap;
         }
 
-        public synchronized boolean setPotentialResponse( Message response )
+        synchronized boolean setPotentialResponse( Message response )
         {
             if ( isResponse( response ) )
             {
@@ -297,9 +301,16 @@ public class StateMachineProxyFactory
 
             if ( response == null )
             {
-                throw new TimeoutException();
+                throw new TimeoutException( format( "Conversation-response mapping:%n" + responseFutureMap ) );
             }
             return getResult();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "ResponseFuture{" + "conversationId='" + conversationId + '\'' + ", initiatedByMessageType=" +
+                    initiatedByMessageType + ", response=" + response + '}';
         }
     }
 }
