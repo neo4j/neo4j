@@ -57,14 +57,12 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.procedure.Procedure.Mode.READ;
 import static org.neo4j.procedure.Procedure.Mode.WRITE;
-import static org.neo4j.server.security.auth.AuthProceduresIT.assertKeyIsMap;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
@@ -417,7 +415,6 @@ abstract class ProcedureInteractionTestBase<S>
             }
         }
     }
-
 
     // --------------------- helpers -----------------------
 
