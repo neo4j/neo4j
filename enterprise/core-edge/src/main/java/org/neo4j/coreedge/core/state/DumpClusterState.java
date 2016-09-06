@@ -105,7 +105,7 @@ public class DumpClusterState
         dumpState( RAFT_VOTE_NAME, new VoteState.Marshal( new Marshal() ) );
     }
 
-    private void dumpState( String name, StateMarshal<?> marshal ) throws IOException
+    private void dumpState( String name, StateMarshal<?> marshal )
     {
         int rotationSize = Config.defaults().get( CoreEdgeClusterSettings.replicated_lock_token_state_size );
         DurableStateStorage<?> storage =

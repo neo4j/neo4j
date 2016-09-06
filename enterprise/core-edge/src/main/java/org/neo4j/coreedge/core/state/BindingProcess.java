@@ -45,11 +45,11 @@ class BindingProcess
         {
             if ( localClusterId == null )
             {
-                log.info( "Binding to discovered cluster: " + commonClusterId );
+                log.info( "Discovered cluster id: " + commonClusterId );
             }
             else if ( commonClusterId.equals( localClusterId ) )
             {
-                log.info( "Found expected cluster: " + commonClusterId );
+                log.info( "Found matching cluster id: " + commonClusterId );
             }
             else
             {
@@ -57,17 +57,15 @@ class BindingProcess
                                                            "Expected: %s Discovered: %s", localClusterId, commonClusterId ) );
             }
         }
+        else if ( localClusterId != null )
+        {
+            commonClusterId = localClusterId;
+            log.info( "No common cluster id found, using local: " + commonClusterId );
+        }
         else if ( topology.canBeBootstrapped() )
         {
-            if ( localClusterId == null )
-            {
-                commonClusterId = new ClusterId( UUID.randomUUID() );
-                log.info( "Bootstrapping cluster: " + commonClusterId );
-            }
-            else
-            {
-                commonClusterId = localClusterId;
-            }
+            commonClusterId = new ClusterId( UUID.randomUUID() );
+            log.info( "Creating new cluster id: " + commonClusterId );
         }
 
         return commonClusterId;

@@ -91,17 +91,11 @@ public class CoreServerModule
 
         StateStorage<Long> lastFlushedStorage;
 
-        try
-        {
-            lastFlushedStorage = life.add(
-                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, ReplicationModule.LAST_FLUSHED_NAME,
-                            new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
-                            logProvider ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        lastFlushedStorage = life.add(
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, ReplicationModule.LAST_FLUSHED_NAME,
+                        new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
+                        logProvider ) );
+
         consensusModule.raftMembershipManager().setRecoverFromIndexSupplier( lastFlushedStorage::getInitialState );
 
         ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );

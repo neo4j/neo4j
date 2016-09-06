@@ -80,6 +80,7 @@ public class BindingServiceTest
         ClusterTopology topologyOK = new ClusterTopology( commonClusterId, false, emptyMap(), emptySet() );
 
         when( topologyService.currentTopology() ).thenReturn( topologyNOK, topologyNOK, topologyNOK, topologyOK );
+        when( topologyService.casClusterId( any() ) ).thenReturn( true );
 
         BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
                 getInstance(), Clocks.systemClock(), () -> sleep( 1 ), 30_000 );
@@ -89,7 +90,7 @@ public class BindingServiceTest
 
         // then
         assertEquals( commonClusterId, bindingService.clusterId() );
-        verify( topologyService, never() ).publishClusterId( any() );
+        verify( topologyService ).casClusterId( any() );
         verify( clusterIdStorage ).writeState( bindingService.clusterId() );
     }
 
@@ -100,7 +101,7 @@ public class BindingServiceTest
         ClusterTopology topology = new ClusterTopology( null, true, emptyMap(), emptySet() );
 
         when( topologyService.currentTopology() ).thenReturn( topology );
-        when( topologyService.publishClusterId( any() ) ).thenReturn( true );
+        when( topologyService.casClusterId( any() ) ).thenReturn( true );
 
         BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
                 getInstance(), Clocks.systemClock(), () -> sleep( 1 ), 30_000 );
@@ -109,7 +110,7 @@ public class BindingServiceTest
         bindingService.start();
 
         // then
-        verify( topologyService ).publishClusterId( bindingService.clusterId() );
+        verify( topologyService ).casClusterId( bindingService.clusterId() );
         verify( clusterIdStorage ).writeState( bindingService.clusterId() );
     }
 
@@ -124,7 +125,7 @@ public class BindingServiceTest
         when( clusterIdStorage.readState() ).thenReturn( localClusterId );
 
         when( topologyService.currentTopology() ).thenReturn( topology );
-        when( topologyService.publishClusterId( any() ) ).thenReturn( true );
+        when( topologyService.casClusterId( any() ) ).thenReturn( true );
 
         BindingService bindingService = new BindingService( clusterIdStorage, topologyService,
                 getInstance(), Clocks.systemClock(), () -> sleep( 1 ), 30_000 );
@@ -134,7 +135,7 @@ public class BindingServiceTest
 
         // then
         assertEquals( localClusterId, bindingService.clusterId() );
-        verify( topologyService ).publishClusterId( localClusterId );
+        verify( topologyService ).casClusterId( localClusterId );
         verify( clusterIdStorage, never() ).writeState( any() );
     }
 }

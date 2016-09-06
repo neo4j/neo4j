@@ -58,7 +58,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public boolean publishClusterId( ClusterId clusterId )
+    public boolean casClusterId( ClusterId clusterId )
     {
         return sharedDiscoveryService.casClusterId( clusterId );
     }

@@ -50,7 +50,7 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
     private PhysicalFlushableChannel currentStoreChannel;
 
     public DurableStateStorage( FileSystemAbstraction fsa, File baseDir, String name, StateMarshal<STATE> marshal,
-            int numberOfEntriesBeforeRotation, LogProvider logProvider ) throws IOException
+            int numberOfEntriesBeforeRotation, LogProvider logProvider )
     {
         this.fsa = fsa;
         this.name = name;

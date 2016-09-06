@@ -90,6 +90,24 @@ public class BindingProcessTest
     }
 
     @Test
+    public void notBootstrappableShouldAcceptLocalId() throws Exception
+    {
+        // given
+        ClusterId localClusterId = new ClusterId( UUID.randomUUID() );
+
+        ClusterTopology topology = new ClusterTopology( null, false, Collections.emptyMap(), Collections.emptySet() );
+
+        BindingProcess binder = new BindingProcess( localClusterId, log );
+
+        // when
+        ClusterId boundClusterId = binder.attempt( topology );
+
+        // then
+        assertNotNull( boundClusterId );
+        assertEquals( localClusterId, boundClusterId );
+    }
+
+    @Test
     public void bootstrappableShouldGenerateNewId() throws Exception
     {
         // given

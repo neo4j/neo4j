@@ -93,28 +93,21 @@ public class ConsensusModule
         StateStorage<VoteState> voteState;
         StateStorage<RaftMembershipState> raftMembershipStorage;
 
-        try
-        {
-            StateStorage<TermState> durableTermState = life.add(
-                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_TERM_NAME,
-                            new TermState.Marshal(), config.get( CoreEdgeClusterSettings.term_state_size ), logProvider ) );
+        StateStorage<TermState> durableTermState = life.add(
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_TERM_NAME,
+                        new TermState.Marshal(), config.get( CoreEdgeClusterSettings.term_state_size ), logProvider ) );
 
-            termState = new MonitoredTermStateStorage( durableTermState, platformModule.monitors );
+        termState = new MonitoredTermStateStorage( durableTermState, platformModule.monitors );
 
-            voteState = life.add(
-                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_VOTE_NAME,
-                            new VoteState.Marshal( new MemberId.Marshal() ),
-                            config.get( CoreEdgeClusterSettings.vote_state_size ), logProvider ) );
+        voteState = life.add(
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_VOTE_NAME,
+                        new VoteState.Marshal( new MemberId.Marshal() ),
+                        config.get( CoreEdgeClusterSettings.vote_state_size ), logProvider ) );
 
-            raftMembershipStorage = life.add(
-                    new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_MEMBERSHIP_NAME,
-                            new RaftMembershipState.Marshal(), config.get( CoreEdgeClusterSettings.raft_membership_state_size ),
-                            logProvider ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        raftMembershipStorage = life.add(
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_MEMBERSHIP_NAME,
+                        new RaftMembershipState.Marshal(), config.get( CoreEdgeClusterSettings.raft_membership_state_size ),
+                        logProvider ) );
 
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
         long heartbeatInterval = electionTimeout / 3;
