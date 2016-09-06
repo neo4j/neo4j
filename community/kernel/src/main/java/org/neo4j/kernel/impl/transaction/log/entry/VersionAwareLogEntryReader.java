@@ -20,16 +20,17 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
-
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.withMessage;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySanity.logEntryMakesSense;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVersion;
 
 /**
@@ -44,15 +45,18 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVers
 public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionAwareChannel> implements LogEntryReader<SOURCE>
 {
     private final CommandReaderFactory commandReaderFactory;
+    private final InvalidLogEntryHandler invalidLogEntryHandler;
 
     public VersionAwareLogEntryReader()
     {
-        this( new RecordStorageCommandReaderFactory() );
+        this( new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
     }
 
-    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
+    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory,
+            InvalidLogEntryHandler invalidLogEntryHandler )
     {
         this.commandReaderFactory = commandReaderFactory;
+        this.invalidLogEntryHandler = invalidLogEntryHandler;
     }
 
     @Override
@@ -61,41 +65,70 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
         try
         {
             LogPositionMarker positionMarker = new LogPositionMarker();
-            channel.getCurrentPosition( positionMarker );
+            long skipped = 0;
             while ( true )
             {
-                LogEntryVersion version = null;
-                LogEntryParser<LogEntry> entryReader;
+                channel.getCurrentPosition( positionMarker );
+
+                /*
+                 * if the read type is negative than it is actually the log entry version
+                 * so we need to read an extra byte which will contain the type
+                 */
+                byte typeCode;
+                byte versionCode;
                 try
                 {
-                    /*
-                     * if the read type is negative than it is actually the log entry version
-                     * so we need to read an extra byte which will contain the type
-                     */
-                    byte typeCode = channel.get();
-                    byte versionCode = 0;
+                    typeCode = channel.get();
+                    versionCode = 0;
                     if ( typeCode < 0 )
                     {
                         versionCode = typeCode;
                         typeCode = channel.get();
                     }
-
-                    version = byVersion( versionCode );
-                    entryReader = version.entryParser( typeCode );
                 }
                 catch ( ReadPastEndException e )
                 {   // Make these exceptions slip by straight out to the outer handler
                     throw e;
+                }
+
+                LogEntryVersion version = null;
+                LogEntryParser<LogEntry> entryReader;
+                LogEntry entry;
+                try
+                {
+                    version = byVersion( versionCode );
+                    entryReader = version.entryParser( typeCode );
+                    entry = entryReader.parse( version, channel, positionMarker, commandReaderFactory );
+                    if ( entry != null && skipped > 0 )
+                    {
+                        // Take extra care when reading an entry in a bad section. Just because entry reading
+                        // didn't throw exception doesn't mean that it's a sane entry.
+                        if ( !logEntryMakesSense( entry ) )
+                        {
+                            throw new IllegalArgumentException( "Log entry " + entry + " which was read after " +
+                                    "a bad section of " + skipped + " bytes was read successfully, but " +
+                                    "its contents is unrealistic, so treating as part of bad section" );
+                        }
+                        invalidLogEntryHandler.bytesSkipped( skipped );
+                        skipped = 0;
+                    }
                 }
                 catch ( Exception e )
                 {   // Tag all other exceptions with log position and other useful information
                     LogPosition position = positionMarker.newPosition();
                     e = withMessage( e, e.getMessage() + ". At position " + position +
                             " and entry version " + version );
+
+                    if ( channelSupportsPositioning( channel ) &&
+                            invalidLogEntryHandler.handleInvalidEntry( e, position ) )
+                    {
+                        ((ReadAheadLogChannel)channel).setCurrentPosition( positionMarker.getByteOffset() + 1 );
+                        skipped++;
+                        continue;
+                    }
                     throw launderedException( IOException.class, e );
                 }
 
-                LogEntry entry = entryReader.parse( version, channel, positionMarker, commandReaderFactory );
                 if ( !entryReader.skip() )
                 {
                     return entry;
@@ -106,5 +139,10 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
         {
             return null;
         }
+    }
+
+    private boolean channelSupportsPositioning( SOURCE channel )
+    {
+        return channel instanceof ReadAheadLogChannel;
     }
 }
