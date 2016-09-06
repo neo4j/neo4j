@@ -23,15 +23,18 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupSettings;
+import org.neo4j.coreedge.core.CoreGraphDatabase;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.edge.EdgeGraphDatabase;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
@@ -44,6 +47,7 @@ import static org.neo4j.coreedge.backup.BackupCoreIT.backupAddress;
 import static org.neo4j.coreedge.backup.BackupCoreIT.backupArguments;
 import static org.neo4j.coreedge.backup.BackupCoreIT.createSomeData;
 import static org.neo4j.coreedge.backup.BackupCoreIT.getConfig;
+import static org.neo4j.function.Predicates.awaitEx;
 import static org.neo4j.test.rule.SuppressOutput.suppress;
 
 public class BackupEdgeIT
@@ -69,16 +73,25 @@ public class BackupEdgeIT
         cluster = clusterRule.startCluster();
     }
 
+    private boolean edgesUpToDateAsTheLeader( CoreGraphDatabase leader, EdgeGraphDatabase edgeClusterMember )
+    {
+        long leaderTxId = leader.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
+        long lastClosedTxId = edgeClusterMember.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
+        return lastClosedTxId == leaderTxId;
+    }
+
     @Test
     public void makeSureBackupCanBePerformed() throws Throwable
     {
         // Run backup
-        createSomeData( cluster );
+        CoreGraphDatabase leader = createSomeData( cluster );
 
-        EdgeGraphDatabase db = cluster.findAnEdgeMember().database();
+        EdgeGraphDatabase edgeServer = cluster.findAnEdgeMember().database();
 
-        DbRepresentation beforeChange = DbRepresentation.of( db );
-        String backupAddress = backupAddress( db );
+        awaitEx( () -> edgesUpToDateAsTheLeader( leader, edgeServer ), 1, TimeUnit.MINUTES );
+
+        DbRepresentation beforeChange = DbRepresentation.of( edgeServer );
+        String backupAddress = backupAddress( edgeServer );
         System.out.println( backupAddress );
         String[] args = backupArguments( backupAddress, backupPath.getPath() );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
