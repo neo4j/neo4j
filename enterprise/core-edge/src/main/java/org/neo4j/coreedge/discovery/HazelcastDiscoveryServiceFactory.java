@@ -32,8 +32,7 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
     public CoreTopologyService coreTopologyService( Config config, MemberId myself, LogProvider logProvider,
             LogProvider userLogProvider )
     {
-        makeHazelcastSilent( config );
-        hazelcastShouldNotPhoneHome();
+        configureHazelcast( config );
         return new HazelcastCoreTopologyService( config, myself, logProvider, userLogProvider );
     }
 
@@ -42,19 +41,17 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
                                                  LogProvider logProvider, DelayedRenewableTimeoutService timeoutService,
                                                  long edgeTimeToLiveTimeout, long edgeRefreshRate )
     {
-        makeHazelcastSilent( config );
+        configureHazelcast( config );
         return new HazelcastClient( new HazelcastClientConnector( config ), logProvider, boltAddress, timeoutService,
                 edgeTimeToLiveTimeout, edgeRefreshRate );
     }
 
-    private void hazelcastShouldNotPhoneHome()
+    private static void configureHazelcast( Config config )
     {
+        // tell hazelcast to not phone home
         System.setProperty( "hazelcast.phone.home.enabled", "false" );
-    }
 
-    private static void makeHazelcastSilent( Config config )
-    {
-        // Make hazelcast quiet for core and edge servers
+        // Make hazelcast quiet
         if ( config.get( CoreEdgeClusterSettings.disable_middleware_logging ) )
         {
             // This is clunky, but the documented programmatic way doesn't seem to work
