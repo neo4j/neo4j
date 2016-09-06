@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import java.util.function.Function;
-
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -50,11 +48,11 @@ import static org.neo4j.csv.reader.CharSeekers.charSeeker;
  * Then properties {@code abc@somewhere} and {@code def@somewhere} will be amended to input node {@code 1}
  * and {@code ghi@someplace} to input node {@code 3}.
  */
-public class ExternalPropertiesDecorator implements Function<InputNode,InputNode>
+public class ExternalPropertiesDecorator implements Decorator<InputNode>
 {
     private final InputEntityDeserializer<InputNode> deserializer;
-    private InputNode currentExternal;
     private final UpdateBehaviour updateBehaviour;
+    private volatile InputNode currentExternal;
 
     /**
      * @param headerFactory creates a {@link Header} that will specify which field is the {@link Type#ID id field}
@@ -108,5 +106,11 @@ public class ExternalPropertiesDecorator implements Function<InputNode,InputNode
     private void decorate( InputNode from )
     {
         from.updateProperties( updateBehaviour, currentExternal.properties() );
+    }
+
+    @Override
+    public boolean isMutable()
+    {
+        return true;
     }
 }

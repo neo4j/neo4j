@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.function.Function;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.helpers.collection.NestingIterator;
+import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
@@ -45,18 +46,19 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
     private boolean currentInputOpen;
     private final int maxProcessors;
     private final DeserializerFactory<ENTITY> factory;
+    private final Validator<ENTITY> validator;
     private final Class<ENTITY> entityClass;
 
     @FunctionalInterface
     public interface DeserializerFactory<ENTITY extends InputEntity>
     {
         InputEntityDeserializer<ENTITY> create( CharSeeker dataStream, Header dataHeader,
-                Function<ENTITY,ENTITY> decorator );
+                Function<ENTITY,ENTITY> decorator, Validator<ENTITY> validator );
     }
 
     InputGroupsDeserializer( Iterator<DataFactory<ENTITY>> dataFactory, Header.Factory headerFactory,
             Configuration config, IdType idType, int maxProcessors, DeserializerFactory<ENTITY> factory,
-            Class<ENTITY> entityClass )
+            Validator<ENTITY> validator, Class<ENTITY> entityClass )
     {
         super( dataFactory );
         this.headerFactory = headerFactory;
@@ -64,6 +66,7 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
         this.idType = idType;
         this.maxProcessors = maxProcessors;
         this.factory = factory;
+        this.validator = validator;
         this.entityClass = entityClass;
     }
 
@@ -87,7 +90,8 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
             // from somewhere else, it's up to that factory.
             Header dataHeader = headerFactory.create( dataStream, config, idType );
 
-            InputEntityDeserializer<ENTITY> input = factory.create( dataStream, dataHeader, data.decorator() );
+            InputEntityDeserializer<ENTITY> input =
+                    factory.create( dataStream, dataHeader, data.decorator(), validator );
             // It's important that we assign currentInput before calling initialize(), so that if something
             // goes wrong in initialize() and our close() is called we close it properly.
             currentInput = input;
@@ -104,7 +108,7 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
             // complete rows of data and can be parsed individually by multiple threads.
 
             currentInput = new ParallelInputEntityDeserializer<>( data, headerFactory, config, idType,
-                    maxProcessors, factory, entityClass  );
+                    maxProcessors, factory, validator, entityClass );
             currentInput.processors( previousInputProcessors );
             currentInputOpen = true;
         }

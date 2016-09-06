@@ -70,6 +70,7 @@ import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
@@ -628,7 +629,7 @@ public class ImportTool
             @Override
             protected DataFactory<InputNode> underlyingObjectToObject( Option<File[]> input )
             {
-                Function<InputNode,InputNode> decorator = input.metadata() != null
+                Decorator<InputNode> decorator = input.metadata() != null
                         ? additiveLabels( input.metadata().split( ":" ) )
                         : NO_NODE_DECORATOR;
                 return data( decorator, encoding, input.value() );
