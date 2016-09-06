@@ -45,6 +45,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.GuardTimeoutException;
 import org.neo4j.kernel.guard.TimeoutGuard;
@@ -117,6 +118,7 @@ public class TransactionGuardIntegrationTest
         catch ( GuardTimeoutException e )
         {
             assertThat( e.getMessage(), startsWith( "Transaction timeout." ) );
+            assertEquals( e.status(), Status.Transaction.TransactionTimedOut );
         }
 
         assertDatabaseDoesNotHaveNodes( database );
