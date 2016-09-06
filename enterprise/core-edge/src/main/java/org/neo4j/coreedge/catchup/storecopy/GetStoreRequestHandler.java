@@ -19,15 +19,15 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.stream.ChunkedNioStream;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.function.Supplier;
-
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.stream.ChunkedNioStream;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
@@ -35,6 +35,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.neo4j.coreedge.catchup.CatchupServerProtocol.State;
 
@@ -65,11 +66,11 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
 
     private void sendFiles( ChannelHandlerContext ctx ) throws IOException
     {
-        try ( ResourceIterator<File> files = dataSource.get().listStoreFiles( false ) )
+        try ( ResourceIterator<StoreFileMetadata> files = dataSource.get().listStoreFiles( false ) )
         {
             while ( files.hasNext() )
             {
-                sendFile( ctx, files.next() );
+                sendFile( ctx, files.next().file() );
             }
         }
     }

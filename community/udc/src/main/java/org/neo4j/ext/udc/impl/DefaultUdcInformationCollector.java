@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.OsBeanUtil;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -175,7 +176,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
             return;
         }
 
-        try ( ResourceIterator<File> files = neoStoreDataSource.listStoreFiles( false ) )
+        try ( ResourceIterator<StoreFileMetadata> files = neoStoreDataSource.listStoreFiles( false ) )
         {
             addStoreFileSizes( udcFields, files );
         }
@@ -185,13 +186,13 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         }
     }
 
-    private void addStoreFileSizes( Map<String,String> udcFields, ResourceIterator<File> files )
+    private void addStoreFileSizes( Map<String,String> udcFields, ResourceIterator<StoreFileMetadata> files )
     {
         long size = 0;
 
         while ( files.hasNext() )
         {
-            File file = files.next();
+            File file = files.next().file();
 
             size += file.length();
         }
