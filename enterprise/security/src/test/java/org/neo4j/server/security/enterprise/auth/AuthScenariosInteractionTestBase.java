@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.google.common.base.Charsets;
+import org.apache.commons.io.Charsets;
 import org.junit.Rule;
 import org.junit.Test;
 

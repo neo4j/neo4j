@@ -249,7 +249,7 @@ public class LdapRealmTest
         assertException( () -> new LdapRealm( config, securityLog ), IllegalArgumentException.class,
                 "Illegal LDAP user search settings, see security log for details." );
 
-        verify( securityLog ).warn( contains( "LDAP user search base is empty." ) );
+        verify( securityLog ).error( contains( "LDAP user search base is empty." ) );
     }
 
     @Test
@@ -266,7 +266,7 @@ public class LdapRealmTest
         assertException( () -> new LdapRealm( config, securityLog ), IllegalArgumentException.class,
                 "Illegal LDAP user search settings, see security log for details." );
 
-        verify( securityLog ).warn( contains( "LDAP group membership attribute names are empty. " +
+        verify( securityLog ).error( contains( "LDAP group membership attribute names are empty. " +
                 "Authorization will not be possible." ) );
     }
 
