@@ -46,6 +46,7 @@ import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.time.Clocks;
@@ -130,6 +131,7 @@ public class BuiltInProcedures
         return terminateConnectionsForValidUser( username );
     }
 
+    @Description( "List all queries currently executing at this instance that are visible to the user." )
     @Procedure( name = "dbms.listQueries", mode = DBMS )
     public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException, IOException
     {
@@ -141,6 +143,7 @@ public class BuiltInProcedures
             .map( this::queryStatusResult );
     }
 
+    @Description( "Kill all transactions executing the query with the given query id." )
     @Procedure( name = "dbms.killQuery", mode = DBMS )
     public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText )
             throws InvalidArgumentsException, IOException
@@ -155,6 +158,7 @@ public class BuiltInProcedures
             .map(this::killQueryTransaction);
     }
 
+    @Description( "Kill all transactions executing a query with any of the given query ids." )
     @Procedure( name = "dbms.killQueries", mode = DBMS )
     public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts )
             throws InvalidArgumentsException, IOException
