@@ -35,7 +35,7 @@ public class Election
         Set<MemberId> currentMembers = ctx.votingMembers();
         if ( currentMembers == null || !currentMembers.contains( ctx.myself() ) )
         {
-            log.info( "Election attempted but not started, current members are %s, i am %s",
+            log.info( "Election attempted but not started, current members are %s, I am %s",
                     currentMembers, ctx.myself()  );
             return false;
         }
