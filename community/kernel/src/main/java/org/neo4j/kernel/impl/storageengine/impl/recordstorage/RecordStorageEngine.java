@@ -533,7 +533,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         files.add( countStoreFileMetadata );
     }
 
-
     /**
      * @return the underlying {@link NeoStores} which should <strong>ONLY</strong> be accessed by tests
      * until all tests are properly converted to not rely on access to {@link NeoStores}. Currently there
