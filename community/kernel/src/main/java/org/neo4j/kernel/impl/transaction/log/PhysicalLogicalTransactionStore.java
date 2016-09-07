@@ -49,7 +49,13 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 
 
     @Override
-    public IOCursor<CommittedTransactionRepresentation> getTransactions( final long transactionIdToStartFrom )
+    public TransactionCursor getTransactions( LogPosition position ) throws NoSuchTransactionException, IOException
+    {
+        return new PhysicalTransactionCursor<>( logFile.getReader( position ), new VersionAwareLogEntryReader<>() );
+    }
+
+    @Override
+    public TransactionCursor getTransactions( final long transactionIdToStartFrom )
             throws IOException
     {
         // look up in position cache

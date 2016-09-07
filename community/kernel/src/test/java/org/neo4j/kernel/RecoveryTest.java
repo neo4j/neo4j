@@ -25,31 +25,33 @@ import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.helpers.Pair;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.RecoveryLegacyIndexApplierLookup;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.RecoveryIndexingUpdatesValidator;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
@@ -67,18 +69,13 @@ import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
@@ -123,7 +120,7 @@ public class RecoveryTest
                 writer.writeCommitEntry( 4l, 5l );
                 lastCommittedTxCommitEntry = new OnePhaseCommit( 4l, 5l );
 
-                // check point
+                // check point pointing to the previously committed transaction
                 writer.writeCheckPointEntry( lastCommittedTxPosition );
                 expectedCheckPointEntry = new CheckPoint( lastCommittedTxPosition );
 
@@ -141,7 +138,7 @@ public class RecoveryTest
 
         LifeSupport life = new LifeSupport();
         Recovery.Monitor monitor = mock( Recovery.Monitor.class );
-        final AtomicBoolean recoveryRequiredCalled = new AtomicBoolean();
+        final AtomicBoolean recoveryRequired = new AtomicBoolean();
         try
         {
             RecoveryLabelScanWriterProvider provider = mock( RecoveryLabelScanWriterProvider.class );
@@ -153,51 +150,55 @@ public class RecoveryTest
                     LogEntryVersion.CURRENT.byteCode() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
-            life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, mock( NeoStores.class ), null,
-                    logFiles, fs, logVersionRepository, finder, validator )
+            TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 100 );
+            LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
+                    transactionIdStore, logVersionRepository, mock( PhysicalLogFile.Monitor.class ),
+                    metadataCache ) );
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile,
+                    metadataCache );
+            TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
+
+            life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, mock( NeoStores.class ),
+                    logFiles, fs, logVersionRepository, finder, validator, transactionIdStore, txStore, storeApplier )
             {
+                private int nr = 0;
+
                 @Override
-                public Visitor<LogVersionedStoreChannel,IOException> getRecoverer()
+                public Visitor<CommittedTransactionRepresentation,Exception> getRecoveryVisitor()
                 {
-                    return new Visitor<LogVersionedStoreChannel,IOException>()
+                    recoveryRequired.set( true );
+                    final Visitor<CommittedTransactionRepresentation,Exception> actual = super.getRecoveryVisitor();
+                    return new Visitor<CommittedTransactionRepresentation,Exception>()
                     {
                         @Override
-                        public boolean visit( LogVersionedStoreChannel element ) throws IOException
+                        public boolean visit( CommittedTransactionRepresentation tx ) throws Exception
                         {
-                            try ( ReadableVersionableLogChannel channel =
-                                          new ReadAheadLogChannel( element, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE ) )
+                            actual.visit( tx );
+
+                            switch ( nr++ )
                             {
-                                assertEquals( lastCommittedTxStartEntry, reader.readLogEntry( channel ) );
-                                assertEquals( lastCommittedTxCommitEntry, reader.readLogEntry( channel ) );
-                                assertEquals( expectedCheckPointEntry, reader.readLogEntry( channel ) );
-                                assertEquals( expectedStartEntry, reader.readLogEntry( channel ) );
-                                assertEquals( expectedCommitEntry, reader.readLogEntry( channel ) );
-
-                                assertNull( reader.readLogEntry( channel ) );
-
-                                return true;
+                            case 0:
+                                assertEquals( lastCommittedTxStartEntry, tx.getStartEntry() );
+                                assertEquals( lastCommittedTxCommitEntry, tx.getCommitEntry() );
+                                break;
+                            case 1:
+                                assertEquals( expectedStartEntry, tx.getStartEntry() );
+                                assertEquals( expectedCommitEntry, tx.getCommitEntry() );
+                                break;
+                            default: fail( "Too many recovered transactions" );
                             }
+                            return false;
                         }
                     };
                 }
-
-                @Override
-                public void recoveryRequired()
-                {
-                    recoveryRequiredCalled.set( true );
-                }
             }, monitor ) );
-
-            life.add( new PhysicalLogFile( fs, logFiles, 50, transactionIdStore, logVersionRepository,
-                    mock( PhysicalLogFile.Monitor.class ), new TransactionMetadataCache( 10, 100 ) ) );
 
             life.start();
 
             InOrder order = inOrder( monitor );
             order.verify( monitor, times( 1 ) ).recoveryRequired( any( LogPosition.class ) );
-            order.verify( monitor, times( 1 ) ).logRecovered( any( LogPosition.class ) );
-            order.verify( monitor, times( 1 ) ).recoveryCompleted();
-            assertTrue( recoveryRequiredCalled.get() );
+            order.verify( monitor, times( 1 ) ).recoveryCompleted( 2 );
+            assertTrue( recoveryRequired.get() );
         }
         finally
         {
@@ -246,24 +247,23 @@ public class RecoveryTest
                     LogEntryVersion.CURRENT.byteCode() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
-            life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, mock( NeoStores.class ), null,
-                    logFiles, fs, logVersionRepository, finder, validator )
+            TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 100 );
+            LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
+                    transactionIdStore, logVersionRepository, mock( PhysicalLogFile.Monitor.class ), metadataCache ) );
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache );
+            TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
+
+            life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, mock( NeoStores.class ),
+                    logFiles, fs, logVersionRepository, finder, validator, transactionIdStore, txStore, storeApplier )
             {
                 @Override
-                public Visitor<LogVersionedStoreChannel, IOException> getRecoverer()
-                {
-                    throw new AssertionError( "Recovery should not be required" );
-                }
-
-                @Override
-                public void recoveryRequired()
+                public Visitor<CommittedTransactionRepresentation,Exception> getRecoveryVisitor()
                 {
                     fail( "Recovery should not be required" );
+                    return null; // <-- to satisfy the compiler
                 }
             }, monitor ));
 
-            life.add( new PhysicalLogFile( fs, logFiles, 50, transactionIdStore, logVersionRepository, mock( PhysicalLogFile.Monitor.class),
-                    new TransactionMetadataCache( 10, 100 )) );
 
             life.start();
 
@@ -274,6 +274,10 @@ public class RecoveryTest
             life.shutdown();
         }
     }
+
+    // TODO: Test about truncate file
+
+    // TODO: Test about calling TransactionIdStore method
 
     private void writeSomeData( File file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
     {

@@ -73,6 +73,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -233,7 +234,7 @@ public class ConsistencyCheckToolTest
 
         // Then
         verify( listener ).recoveryRequired( any( LogPosition.class ) );
-        verify( listener ).recoveryCompleted();
+        verify( listener ).recoveryCompleted( anyInt() );
     }
 
     @Test

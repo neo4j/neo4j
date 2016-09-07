@@ -33,18 +33,18 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
 public class PhysicalTransactionCursor<T extends ReadableLogChannel>
-        implements IOCursor<CommittedTransactionRepresentation>
+        implements TransactionCursor
 {
+    private final T channel;
     private final LogEntryCursor logEntryCursor;
-    private final Marker<T> marker;
+    private final LogPositionMarker lastGoodPositionMarker = new LogPositionMarker();
 
     private CommittedTransactionRepresentation current;
-    private long lastKnownGoodPosition;
 
     public PhysicalTransactionCursor( T channel, LogEntryReader<T> entryReader ) throws IOException
     {
-        this.marker = new Marker<>( channel );
-        this.lastKnownGoodPosition = marker.currentPosition();
+        this.channel = channel;
+        channel.getCurrentPosition( lastGoodPositionMarker );
         this.logEntryCursor = new LogEntryCursor( (LogEntryReader<ReadableLogChannel>) entryReader, channel );
     }
 
@@ -73,7 +73,7 @@ public class PhysicalTransactionCursor<T extends ReadableLogChannel>
             if ( entry instanceof CheckPoint )
             {
                 // this is a good position anyhow
-                lastKnownGoodPosition = marker.currentPosition();
+                channel.getCurrentPosition( lastGoodPositionMarker );
                 continue;
             }
 
@@ -105,7 +105,7 @@ public class PhysicalTransactionCursor<T extends ReadableLogChannel>
                     startEntry.getLocalId(), startEntry.getTimeWritten(),
                     startEntry.getLastCommittedTxWhenTransactionStarted(), commitEntry.getTimeWritten(), -1 );
             current = new CommittedTransactionRepresentation( startEntry, transaction, commitEntry );
-            lastKnownGoodPosition = marker.currentPosition();
+            channel.getCurrentPosition( lastGoodPositionMarker );
             return true;
         }
     }
@@ -116,24 +116,13 @@ public class PhysicalTransactionCursor<T extends ReadableLogChannel>
         logEntryCursor.close();
     }
 
-    public long lastKnownGoodPosition()
+    /**
+     * @return last known good position, which is a {@link LogPosition} after a {@link CheckPoint} or
+     * a {@link LogEntryCommit}.
+     */
+    @Override
+    public LogPosition position()
     {
-        return lastKnownGoodPosition;
-    }
-
-    private static class Marker<T extends ReadableLogChannel>
-    {
-        private final LogPositionMarker marker = new LogPositionMarker();
-        private final T channel;
-
-        public Marker( T channel )
-        {
-            this.channel = channel;
-        }
-
-        public long currentPosition() throws IOException
-        {
-            return channel.getCurrentPosition( marker ).getByteOffset();
-        }
+        return lastGoodPositionMarker.newPosition();
     }
 }
