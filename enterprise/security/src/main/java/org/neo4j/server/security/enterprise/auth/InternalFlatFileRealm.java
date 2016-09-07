@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -119,7 +120,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
         roles = new PredefinedRolesBuilder().buildRoles();
 
-        executorService.scheduleAtFixedRate( () -> tryReload( RELOAD_ATTEMPTS ), 5, 5, TimeUnit.SECONDS );
+        executorService.scheduleAtFixedRate( () -> tryReload( RELOAD_ATTEMPTS, new LinkedList<>() ),
+                5, 5, TimeUnit.SECONDS );
     }
 
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
@@ -130,11 +132,12 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
                 authorizationEnabled, new ScheduledThreadPoolExecutor( 1 ) );
     }
 
-   private void tryReload( int attemptLeft )
+   private void tryReload( int attemptLeft, java.util.List<String> failures )
     {
         if ( attemptLeft < 0 )
         {
-            throw new RuntimeException( "Unable to load valid flat file repositories!" );
+            throw new RuntimeException( "Unable to load valid flat file repositories! Attempts failed with:\n\t" +
+                    String.join( "\n\t", failures ) );
         }
 
         try
@@ -143,12 +146,15 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
             roleRepository.reloadIfNeeded();
             if ( !roleRepository.validateAgainst( userRepository ) )
             {
-                tryReload( attemptLeft - 1 );
+                failures.add( "Role-auth file combination not valid." );
+                Thread.sleep( 10 );
+                tryReload( attemptLeft - 1, failures );
             }
         }
-        catch ( IOException ioe )
+        catch ( IOException | IllegalStateException | InterruptedException e )
         {
-            tryReload( attemptLeft - 1 );
+            failures.add( e.getMessage() );
+            tryReload( attemptLeft - 1, failures );
         }
     }
 

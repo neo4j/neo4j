@@ -24,16 +24,17 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.Writer;
-import java.nio.charset.Charset;
-import java.nio.file.FileSystems;
+import java.io.InputStream;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.io.fs.DelegateFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -48,6 +49,8 @@ import org.neo4j.time.Clocks;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.fail;
 
 public class InternalFlatFileRealmIT
 {
@@ -60,14 +63,18 @@ public class InternalFlatFileRealmIT
     TestScheduledExecutorService executor = new TestScheduledExecutorService( 1 );
     LogProvider logProvider = NullLogProvider.getInstance();
     InternalFlatFileRealm realm;
+    EvilFileSystem fs;
+
+    private static int LARGE_NUMBER = 123;
 
     @Before
     public void setup() throws Throwable
     {
+        fs = new EvilFileSystem( fsRule.get() );
         userStoreFile = new File( "dbms", "auth" );
         roleStoreFile = new File( "dbms", "roles" );
-        final UserRepository userRepository = new FileUserRepository( fsRule.get(), userStoreFile, logProvider );
-        final RoleRepository roleRepository = new FileRoleRepository( fsRule.get(), roleStoreFile, logProvider );
+        final UserRepository userRepository = new FileUserRepository( fs, userStoreFile, logProvider );
+        final RoleRepository roleRepository = new FileRoleRepository( fs, roleStoreFile, logProvider );
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
         AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 );
 
@@ -86,12 +93,11 @@ public class InternalFlatFileRealmIT
     @Test
     public void shouldReloadAuthFiles() throws Exception
     {
-        overwrite( userStoreFile,
+        fs.addUserRoleFilePair(
                 "Hanna:SHA-256,FE0056C37E,A543:\n" +
                 "Carol:SHA-256,FE0056C37E,A543:\n" +
-                "Mia:SHA-256,0E1FFFC23E,34A4:password_change_required\n"  );
-
-        overwrite( roleStoreFile,
+                "Mia:SHA-256,0E1FFFC23E,34A4:password_change_required\n"
+                ,
                 "admin:Mia\n" +
                 "publisher:Hanna,Carol\n" );
 
@@ -102,14 +108,79 @@ public class InternalFlatFileRealmIT
         assertThat( realm.getUsernamesForRole( "publisher" ), containsInAnyOrder( "Hanna", "Carol" ) );
     }
 
-    protected void overwrite( File file, String newContents ) throws IOException
+    @Test
+    public void shouldReloadAuthFilesUntilValid() throws Exception
     {
-        FileSystemAbstraction fs = fsRule.get();
+        // we start with invalid auth file
+        fs.addUserRoleFilePair(
+                "Hanna:SHA-256,FE0056C37E,A543:\n" +
+                        "Carol:SHA-256,FE0056C37E,A543:\n" +
+                        "Mia:SHA-256,0E1FFFC23E,34"
+                ,
+                "admin:Mia\n" +
+                        "publisher:Hanna,Carol\n" );
 
-        fs.deleteFile( file );
-        Writer w = fs.openAsWriter( file, Charset.defaultCharset(), false );
-        w.write( newContents );
-        w.close();
+        // now the roles file has non-existent users
+        fs.addUserRoleFilePair(
+                "Hanna:SHA-256,FE0056C37E,A543:\n" +
+                        "Carol:SHA-256,FE0056C37E,A543:\n" +
+                        "Mia:SHA-256,0E1FFFC23E,34A4:password_change_required\n"
+                ,
+                "admin:neo4j,Mao\n" +
+                        "publisher:Hanna\n" );
+
+        // finally valid files
+        fs.addUserRoleFilePair(
+                "Hanna:SHA-256,FE0056C37E,A543:\n" +
+                        "Carol:SHA-256,FE0056C37E,A543:\n" +
+                        "Mia:SHA-256,0E1FFFC23E,34A4:password_change_required\n"
+                ,
+                "admin:Mia\n" +
+                        "publisher:Hanna,Carol\n" );
+
+        executor.scheduledRunnable.run();
+
+        assertThat( realm.getAllUsernames(), containsInAnyOrder( "Hanna", "Carol", "Mia" ) );
+        assertThat( realm.getUsernamesForRole( "admin" ), containsInAnyOrder( "Mia" ) );
+        assertThat( realm.getUsernamesForRole( "publisher" ), containsInAnyOrder( "Hanna", "Carol" ) );
+    }
+
+    @Test
+    public void shouldEventuallyFailReloadAttempts() throws Exception
+    {
+        // the roles file has non-existent users
+        fs.addUserRoleFilePair(
+                "Hanna:SHA-256,FE0056C37E,A543:\n" +
+                "Carol:SHA-256,FE0056C37E,A543:\n" +
+                "Mia:SHA-256,0E1FFFC23E,34A4:password_change_required\n"
+                ,
+                "admin:neo4j,Mao\n" +
+                "publisher:Hanna\n" );
+
+        // perma-broken auth file
+        for ( int i = 0; i < LARGE_NUMBER - 1; i++ )
+        {
+            fs.addUserRoleFilePair(
+                    "Hanna:SHA-256,FE0056C37E,A543:\n" +
+                    "Carol:SHA-256,FE0056C37E,A543:\n" +
+                    "Mia:SHA-256,0E1FFFC23E,34"
+                    ,
+                    "admin:Mia\n" +
+                    "publisher:Hanna,Carol\n" );
+        }
+
+        try
+        {
+            executor.scheduledRunnable.run();
+            fail( "Expected exception due to invalid auth file combo." );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e.getMessage(), containsString(
+                    "Unable to load valid flat file repositories! Attempts failed with:" ) );
+            assertThat( e.getMessage(), containsString( "Failed to read authentication file: dbms/auth" ) );
+            assertThat( e.getMessage(), containsString( "Role-auth file combination not valid" ) );
+        }
     }
 
     class TestScheduledExecutorService extends ScheduledThreadPoolExecutor
@@ -126,6 +197,51 @@ public class InternalFlatFileRealmIT
         {
             this.scheduledRunnable = r;
             return null;
+        }
+    }
+
+    private class EvilFileSystem extends DelegatingFileSystemAbstraction
+    {
+        private Queue<String> userStoreVersions = new LinkedList<>();
+        private Queue<String> roleStoreVersions = new LinkedList<>();
+
+        EvilFileSystem( FileSystemAbstraction delegate )
+        {
+            super( delegate );
+        }
+
+        void addUserRoleFilePair( String usersVersion, String rolesVersion )
+        {
+            userStoreVersions.add( usersVersion );
+            roleStoreVersions.add( rolesVersion );
+        }
+
+        @Override
+        public InputStream openAsInputStream( File fileName ) throws IOException
+        {
+            if ( fileName.equals( userStoreFile ) )
+            {
+                return new ByteArrayInputStream( userStoreVersions.remove().getBytes( "UTF-8" ) );
+            }
+            if ( fileName.equals( roleStoreFile ) )
+            {
+                return new ByteArrayInputStream( roleStoreVersions.remove().getBytes( "UTF-8" ) );
+            }
+            return super.openAsInputStream( fileName );
+        }
+
+        @Override
+        public long lastModifiedTime( File fileName ) throws IOException
+        {
+            if ( fileName.equals( userStoreFile ) )
+            {
+                return LARGE_NUMBER+1 - userStoreVersions.size();
+            }
+            if ( fileName.equals( roleStoreFile ) )
+            {
+                return LARGE_NUMBER+1 - roleStoreVersions.size();
+            }
+            return super.lastModifiedTime( fileName );
         }
     }
 }
