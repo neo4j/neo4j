@@ -49,8 +49,8 @@ public class ToFileStoreWriter implements StoreWriter
     }
 
     @Override
-    public long write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
-            boolean hasData ) throws IOException
+    public long write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer, boolean hasData,
+            int recordSize ) throws IOException
     {
         try
         {
@@ -74,7 +74,8 @@ public class ToFileStoreWriter implements StoreWriter
                 }
                 if ( storeType.isPresent() && storeType.get().isRecordStore() )
                 {
-                    try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), CREATE, WRITE ) )
+                    int filePageSize = pageCache.pageSize() - pageCache.pageSize() % recordSize;
+                    try ( PagedFile pagedFile = pageCache.map( file, filePageSize, CREATE, WRITE ) )
                     {
                         return writeDataThroughPageCache( pagedFile, data, temporaryBuffer, hasData );
                     }
