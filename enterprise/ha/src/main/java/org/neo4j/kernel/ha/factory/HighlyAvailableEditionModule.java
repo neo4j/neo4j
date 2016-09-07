@@ -182,7 +182,7 @@ public class HighlyAvailableEditionModule
 {
     public static final String CUSTOM_IO_EXCEPTION_MESSAGE = "HA mode not allowed with custom IO integrations";
 
-    public HighAvailabilityMemberStateMachine memberStateMachine;
+    private HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;
     private SecurityLog securityLog;
 
@@ -561,7 +561,7 @@ public class HighlyAvailableEditionModule
         sysInfo.set( UsageDataKeys.serverId, config.get( ClusterSettings.server_id ).toString() );
     }
 
-    protected TransactionHeaderInformationFactory createHeaderInformationFactory(
+    private TransactionHeaderInformationFactory createHeaderInformationFactory(
             final HighAvailabilityMemberContext memberContext )
     {
         return new TransactionHeaderInformationFactory.WithRandomBytes()
@@ -719,8 +719,8 @@ public class HighlyAvailableEditionModule
         return life.add( new HighlyAvailableKernelData( graphDb, members, databaseInfo, fs, pageCache, storeDir, config ) );
     }
 
-    protected void registerRecovery( final DatabaseInfo databaseInfo, final DependencyResolver dependencyResolver,
-                                     final LogService logging )
+    private void registerRecovery( final DatabaseInfo databaseInfo, final DependencyResolver dependencyResolver,
+            final LogService logging )
     {
         memberStateMachine.addHighAvailabilityMemberListener( new HighAvailabilityMemberListener.Adapter()
         {
@@ -775,7 +775,7 @@ public class HighlyAvailableEditionModule
         } );
     }
 
-    protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver resolver, boolean isMaster )
+    private void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver resolver, boolean isMaster )
     {
         super.doAfterRecoveryAndStartup( databaseInfo, resolver );
 
@@ -823,35 +823,15 @@ public class HighlyAvailableEditionModule
 
     private Server.Configuration masterServerConfig( final Config config )
     {
-        return new Server.Configuration()
-        {
-            @Override
-            public long getOldChannelThreshold()
-            {
-                return config.get( HaSettings.lock_read_timeout );
-            }
-
-            @Override
-            public int getMaxConcurrentTransactions()
-            {
-                return config.get( HaSettings.max_concurrent_channels_per_slave );
-            }
-
-            @Override
-            public int getChunkSize()
-            {
-                return config.get( HaSettings.com_chunk_size ).intValue();
-            }
-
-            @Override
-            public HostnamePort getServerAddress()
-            {
-                return config.get( HaSettings.ha_server );
-            }
-        };
+        return commonConfig( config );
     }
 
     private Server.Configuration slaveServerConfig( final Config config )
+    {
+        return commonConfig( config );
+    }
+
+    private Server.Configuration commonConfig( final Config config )
     {
         return new Server.Configuration()
         {
