@@ -26,8 +26,6 @@ import org.junit.Test;
 
 import org.neo4j.helpers.collection.Iterables;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -35,13 +33,12 @@ import static org.mockito.Mockito.verify;
 public class AdminToolTest
 {
     @Test
-    public void shouldExecuteTheCommand()
+    public void shouldExecuteTheCommand() throws CommandFailed, IncorrectUsage
     {
-        RecordingCommand command = new RecordingCommand();
-        AdminCommand.Provider provider = command.provider();
-        AdminTool tool = new AdminTool( new CannedLocator( provider ), new NullOutsideWorld(), false );
-        tool.execute( null, null, provider.name() );
-        assertThat( command.executed, is( true ) );
+        AdminCommand command = mock( AdminCommand.class );
+        new AdminTool( cannedCommand( "command", command ), new NullOutsideWorld(), false )
+                .execute( null, null, "command", "the", "other", "args" );
+        verify( command ).execute( new String[]{"the", "other", "args"} );
     }
 
     @Test
@@ -62,98 +59,136 @@ public class AdminToolTest
     }
 
     @Test
-    public void shouldPrintUsageWhenNoCommandIsProvided()
-    {
-        OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null );
-        verify( outsideWorld ).stdErrLine( "Usage:" );
-    }
-
-    @Test
-    public void shouldPrintASpecificMessageWhenNoCommandIsProvided()
+    public void shouldProvideFeedbackWhenNoCommandIsProvided()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null );
         verify( outsideWorld ).stdErrLine( "you must provide a command" );
-    }
-
-    @Test
-    public void shouldExit1WhenNoCommandIsProvided()
-    {
-        OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null );
+        verify( outsideWorld ).stdErrLine( "Usage:" );
         verify( outsideWorld ).exit( 1 );
     }
 
     @Test
-    public void shouldNotThrowAnExceptionEvenIfTheCommandDoesSo()
-    {
-        new AdminTool( new CannedLocator( new ExceptionThrowingCommandProvider() ), new NullOutsideWorld(), false )
-                .execute( null, null, "exception" );
-    }
-
-    @Test
-    public void shouldExit1IfTheCommandThrowsAnException()
+    public void shouldProvideFeedbackIfTheCommandThrowsARuntimeException()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        new AdminTool( new CannedLocator( new ExceptionThrowingCommandProvider() ), outsideWorld, false )
+        AdminCommand command = args ->
+        {
+            throw new RuntimeException( "the-exception-message" );
+        };
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
                 .execute( null, null, "exception" );
+        verify( outsideWorld ).stdErrLine( "unexpected error: the-exception-message" );
         verify( outsideWorld ).exit( 1 );
     }
 
     @Test
-    public void shouldPrintTheStacktraceWhenTheCommandThrowsAnExceptionIfTheDebugFlagIsSet()
+    public void shouldPrintTheStacktraceWhenTheCommandThrowsARuntimeExceptionIfTheDebugFlagIsSet()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        RuntimeException exception = new RuntimeException();
-        new AdminTool( new CannedLocator( new ExceptionThrowingCommandProvider( exception ) ), outsideWorld, true )
+        RuntimeException exception = new RuntimeException( "" );
+        AdminCommand command = args ->
+        {
+            throw exception;
+        };
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true )
                 .execute( null, null, "exception" );
         verify( outsideWorld ).printStacktrace( exception );
     }
 
     @Test
-    public void shouldNotPrintTheStacktraceWhenTheCommandThrowsAnExceptionIfTheDebugFlagIsNotSet()
+    public void shouldNotPrintTheStacktraceWhenTheCommandThrowsARuntimeExceptionIfTheDebugFlagIsNotSet()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        RuntimeException exception = new RuntimeException();
-        new AdminTool( new CannedLocator( new ExceptionThrowingCommandProvider( exception ) ), outsideWorld, false )
+        RuntimeException exception = new RuntimeException( "" );
+        AdminCommand command = args ->
+        {
+            throw exception;
+        };
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
                 .execute( null, null, "exception" );
         verify( outsideWorld, never() ).printStacktrace( exception );
     }
 
-    private static class RecordingCommand implements AdminCommand
+    @Test
+    public void shouldProvideFeedbackIfTheCommandFails()
     {
-        public boolean executed;
-
-        @Override
-        public void execute( String[] args )
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        AdminCommand command = args ->
         {
-            executed = true;
-        }
+            throw new CommandFailed( "the-failure-message" );
+        };
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
+                .execute( null, null, "exception" );
+        verify( outsideWorld ).stdErrLine( "command failed: the-failure-message" );
+        verify( outsideWorld ).exit( 1 );
+    }
 
-        public Provider provider()
+    @Test
+    public void shouldPrintTheStacktraceWhenTheCommandFailsIfTheDebugFlagIsSet()
+    {
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        CommandFailed exception = new CommandFailed( "" );
+        AdminCommand command = args ->
         {
-            return new Provider( "recording" )
+            throw exception;
+        };
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true )
+                .execute( null, null, "exception" );
+        verify( outsideWorld ).printStacktrace( exception );
+    }
+
+    @Test
+    public void shouldNotPrintTheStacktraceWhenTheCommandFailsIfTheDebugFlagIsNotSet()
+    {
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        CommandFailed exception = new CommandFailed( "" );
+        AdminCommand command = args ->
+        {
+            throw exception;
+        };
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
+                .execute( null, null, "exception" );
+        verify( outsideWorld, never() ).printStacktrace( exception );
+    }
+
+    @Test
+    public void shouldProvideFeedbackIfTheCommandReportsAUsageProblem()
+    {
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        AdminCommand command = args ->
+        {
+            throw new IncorrectUsage( "the-usage-message" );
+        };
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
+                .execute( null, null, "exception" );
+        verify( outsideWorld ).stdErrLine( "neo4j-admin exception" );
+        verify( outsideWorld ).stdErrLine( "the-usage-message" );
+        verify( outsideWorld ).exit( 1 );
+    }
+
+    private CannedLocator cannedCommand( final String name, AdminCommand command )
+    {
+        return new CannedLocator( new AdminCommand.Provider( name )
+        {
+            @Override
+            public Optional<String> arguments()
             {
-                @Override
-                public Optional<String> arguments()
-                {
-                    throw new UnsupportedOperationException( "not implemented" );
-                }
+                return Optional.empty();
+            }
 
-                @Override
-                public String description()
-                {
-                    throw new UnsupportedOperationException( "not implemented" );
-                }
+            @Override
+            public String description()
+            {
+                return "";
+            }
 
-                @Override
-                public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-                {
-                    return RecordingCommand.this;
-                }
-            };
-        }
+            @Override
+            public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+            {
+                return command;
+            }
+        } );
     }
 
     private static class NullOutsideWorld implements OutsideWorld
@@ -218,43 +253,6 @@ public class AdminToolTest
         {
             return args ->
             {
-            };
-        }
-    }
-
-    private class ExceptionThrowingCommandProvider extends AdminCommand.Provider
-    {
-        private RuntimeException exception;
-
-        protected ExceptionThrowingCommandProvider()
-        {
-            this( new RuntimeException() );
-        }
-
-        public ExceptionThrowingCommandProvider( RuntimeException exception )
-        {
-            super( "exception" );
-            this.exception = exception;
-        }
-
-        @Override
-        public Optional<String> arguments()
-        {
-            return Optional.empty();
-        }
-
-        @Override
-        public String description()
-        {
-            return "";
-        }
-
-        @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-        {
-            return args ->
-            {
-                throw exception;
             };
         }
     }

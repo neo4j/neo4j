@@ -17,17 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.admin;
+package org.neo4j.dbms.archive;
 
-public class CommandFailed extends Exception
+import java.io.IOException;
+import java.nio.file.Path;
+
+public class IncorrectFormat extends Exception
 {
-    public CommandFailed( String message, Exception cause )
+    public IncorrectFormat( Path archive, IOException cause )
     {
-        super( message, cause );
-    }
-
-    public CommandFailed( String message )
-    {
-        super( message );
+        super( archive.toString(), cause );
     }
 }

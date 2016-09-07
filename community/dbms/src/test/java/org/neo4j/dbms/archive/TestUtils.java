@@ -17,17 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.admin;
+package org.neo4j.dbms.archive;
 
-public class CommandFailed extends Exception
+import java.io.Closeable;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.Set;
+
+public class TestUtils
 {
-    public CommandFailed( String message, Exception cause )
+    public static Closeable withPermissions( Path file, Set<PosixFilePermission> permissions ) throws IOException
     {
-        super( message, cause );
-    }
-
-    public CommandFailed( String message )
-    {
-        super( message );
+        Set<PosixFilePermission> originalPermissions = Files.getPosixFilePermissions( file );
+        Files.setPosixFilePermissions( file, permissions );
+        return () -> Files.setPosixFilePermissions( file, originalPermissions );
     }
 }

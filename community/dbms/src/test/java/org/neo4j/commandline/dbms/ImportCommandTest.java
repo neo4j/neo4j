@@ -17,7 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.admin;
+package org.neo4j.commandline.dbms;
+
+import java.io.File;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -25,8 +27,7 @@ import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-
+import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.util.Validators;
