@@ -30,12 +30,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -60,7 +59,7 @@ public class InternalFlatFileRealmIT
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
-    TestScheduledExecutorService executor = new TestScheduledExecutorService( 1 );
+    TestJobScheduler jobScheduler = new TestJobScheduler();
     LogProvider logProvider = NullLogProvider.getInstance();
     InternalFlatFileRealm realm;
     EvilFileSystem fs;
@@ -79,7 +78,7 @@ public class InternalFlatFileRealmIT
         AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 );
 
         realm = new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
-                        true, true, executor );
+                        true, true, jobScheduler );
         realm.init();
         realm.start();
     }
@@ -101,7 +100,7 @@ public class InternalFlatFileRealmIT
                 "admin:Mia\n" +
                 "publisher:Hanna,Carol\n" );
 
-        executor.scheduledRunnable.run();
+        jobScheduler.scheduledRunnable.run();
 
         assertThat( realm.getAllUsernames(), containsInAnyOrder( "Hanna", "Carol", "Mia" ) );
         assertThat( realm.getUsernamesForRole( "admin" ), containsInAnyOrder( "Mia" ) );
@@ -138,7 +137,7 @@ public class InternalFlatFileRealmIT
                 "admin:Mia\n" +
                         "publisher:Hanna,Carol\n" );
 
-        executor.scheduledRunnable.run();
+        jobScheduler.scheduledRunnable.run();
 
         assertThat( realm.getAllUsernames(), containsInAnyOrder( "Hanna", "Carol", "Mia" ) );
         assertThat( realm.getUsernamesForRole( "admin" ), containsInAnyOrder( "Mia" ) );
@@ -171,7 +170,7 @@ public class InternalFlatFileRealmIT
 
         try
         {
-            executor.scheduledRunnable.run();
+            jobScheduler.scheduledRunnable.run();
             fail( "Expected exception due to invalid auth file combo." );
         }
         catch ( Exception e )
@@ -183,17 +182,12 @@ public class InternalFlatFileRealmIT
         }
     }
 
-    class TestScheduledExecutorService extends ScheduledThreadPoolExecutor
+    class TestJobScheduler extends Neo4jJobScheduler
     {
         Runnable scheduledRunnable;
 
-        public TestScheduledExecutorService( int corePoolSize )
-        {
-            super( corePoolSize );
-        }
-
         @Override
-        public ScheduledFuture<?> scheduleAtFixedRate( Runnable r, long initialDelay, long delay, TimeUnit timeUnit )
+        public JobHandle scheduleRecurring( Group group, Runnable r, long delay, TimeUnit timeUnit )
         {
             this.scheduledRunnable = r;
             return null;

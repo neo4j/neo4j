@@ -32,6 +32,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
@@ -56,14 +57,15 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     }
 
     @Override
-    public AuthManager newInstance( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
+    public AuthManager newInstance( Config config, LogProvider logProvider,
+            FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
         StaticLoggerBinder.setNeo4jLogProvider( logProvider );
 
         List<Realm> realms = new ArrayList<>( 2 );
 
         // We always create the internal realm as it is our only UserManager implementation
-        InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider, fileSystem );
+        InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider, fileSystem, jobScheduler );
 
         if ( config.get( SecuritySettings.internal_authentication_enabled ) ||
              config.get( SecuritySettings.internal_authorization_enabled ) )
@@ -91,7 +93,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     }
 
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,
-            FileSystemAbstraction fileSystem )
+            FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
         // Resolve auth store and roles file names
         File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
@@ -104,6 +106,6 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 
         return new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
                 config.get( SecuritySettings.internal_authentication_enabled ),
-                config.get( SecuritySettings.internal_authorization_enabled ) );
+                config.get( SecuritySettings.internal_authorization_enabled ), jobScheduler );
     }
 }

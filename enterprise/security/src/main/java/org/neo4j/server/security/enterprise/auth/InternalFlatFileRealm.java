@@ -46,14 +46,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.PasswordPolicy;
@@ -102,8 +101,14 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     private final Map<String,SimpleRole> roles;
 
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
-            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy, boolean authenticationEnabled,
-            boolean authorizationEnabled, ScheduledExecutorService executorService )
+            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler )
+    {
+        this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true, jobScheduler );
+    }
+
+    public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
+            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
+            boolean authenticationEnabled, boolean authorizationEnabled, JobScheduler jobScheduler )
     {
         super();
 
@@ -120,16 +125,10 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
         roles = new PredefinedRolesBuilder().buildRoles();
 
-        executorService.scheduleAtFixedRate( () -> tryReload( RELOAD_ATTEMPTS, new LinkedList<>() ),
-                5, 5, TimeUnit.SECONDS );
-    }
-
-    public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
-            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy, boolean authenticationEnabled,
-            boolean authorizationEnabled )
-    {
-        this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, authenticationEnabled,
-                authorizationEnabled, new ScheduledThreadPoolExecutor( 1 ) );
+        jobScheduler.scheduleRecurring(
+                JobScheduler.Groups.nativeSecurity,
+                () -> tryReload( RELOAD_ATTEMPTS, new LinkedList<>() ),
+                5, TimeUnit.SECONDS );
     }
 
    private void tryReload( int attemptLeft, java.util.List<String> failures )
@@ -156,12 +155,6 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
             failures.add( e.getMessage() );
             tryReload( attemptLeft - 1, failures );
         }
-    }
-
-    public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
-            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy )
-    {
-        this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true );
     }
 
     @Override
