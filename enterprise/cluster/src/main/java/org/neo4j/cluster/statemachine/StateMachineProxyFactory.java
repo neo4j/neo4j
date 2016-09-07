@@ -33,6 +33,8 @@ import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
@@ -49,16 +51,18 @@ public class StateMachineProxyFactory
 {
     private final StateMachines stateMachines;
     private final StateMachineConversations conversations;
+    private final Log log;
     private volatile InstanceId me;
 
     private final Map<String, ResponseFuture> responseFutureMap = new ConcurrentHashMap<>();
 
-
-    public StateMachineProxyFactory( StateMachines stateMachines, StateMachineConversations conversations, InstanceId me )
+    public StateMachineProxyFactory( StateMachines stateMachines, StateMachineConversations conversations,
+            InstanceId me, LogProvider logProvider )
     {
         this.stateMachines = stateMachines;
         this.conversations = conversations;
         this.me = me;
+        this.log = logProvider.getLog( getClass() );
     }
 
     public <CLIENT> CLIENT newProxy( Class<CLIENT> proxyInterface )
@@ -108,6 +112,7 @@ public class StateMachineProxyFactory
             {
                 ResponseFuture future = new ResponseFuture( conversationId, typeAsEnum, responseFutureMap );
                 responseFutureMap.put( conversationId, future );
+                log.debug( "Added response future for conversation id %s", conversationId );
                 stateMachines.process( message );
 
                 return future;
@@ -134,6 +139,11 @@ public class StateMachineProxyFactory
                     {
                         responseFutureMap.remove( conversationId );
                     }
+                }
+                else
+                {
+                    log.warn(  "Unable to find the client (with the conversation id %s) waiting for the response %s.",
+                            conversationId, message  );
                 }
             }
         }
