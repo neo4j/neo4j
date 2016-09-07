@@ -1465,7 +1465,6 @@ public class OperationsFacade
     @Override
     public void unregisterExecutingQuery( ExecutingQuery executingQuery )
     {
-        statement.assertOpen();
         queryRegistrationOperations().unregisterExecutingQuery( statement, executingQuery );
     }
 
