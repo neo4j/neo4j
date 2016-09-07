@@ -45,7 +45,7 @@ public class ToNetworkStoreWriter implements StoreWriter
 
     @Override
     public long write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
-            boolean hasData ) throws IOException
+            boolean hasData, int recordSize ) throws IOException
     {
         char[] chars = path.toCharArray();
         targetBuffer.writeShort( chars.length );
@@ -56,6 +56,8 @@ public class ToNetworkStoreWriter implements StoreWriter
         long totalWritten = 2 + chars.length*2 + 1;
         if ( hasData )
         {
+            targetBuffer.writeInt( recordSize );
+            totalWritten += 4;
             totalWritten += buffer.write( data );
             buffer.close();
 
