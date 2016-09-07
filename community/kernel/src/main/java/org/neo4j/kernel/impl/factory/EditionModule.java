@@ -128,16 +128,7 @@ public abstract class EditionModule
         }
 
         String key = config.get( GraphDatabaseSettings.auth_manager );
-        Log authManagerLog;
-        try
-        {
-            authManagerLog = authManagerLog( config, fileSystem, jobScheduler );
-        }
-        catch ( IOException ioe ){
-            logging.getInternalLog( GraphDatabaseFacadeFactory.class ).warn( "Unable to create log for auth-manager. " +
-                    "Auth logging turned off." );
-            authManagerLog = NullLog.getInstance();
-        }
+        Log authManagerLog = createAuthManagerLog( config, logging, fileSystem, jobScheduler );
 
         for ( AuthManager.Factory candidate : Service.load( AuthManager.Factory.class ) )
         {
@@ -166,6 +157,22 @@ public abstract class EditionModule
         }
 
         throw new IllegalArgumentException( "No auth manager found with the name '" + key + "'." );
+    }
+
+    private Log createAuthManagerLog( Config config, LogService logging, FileSystemAbstraction fileSystem,
+            JobScheduler jobScheduler )
+    {
+        Log authManagerLog;
+        try
+        {
+            authManagerLog = authManagerLog( config, fileSystem, jobScheduler );
+        }
+        catch ( IOException ioe ){
+            logging.getInternalLog( GraphDatabaseFacadeFactory.class ).warn(
+                    "Unable to create log for auth-manager. Auth logging turned off." );
+            authManagerLog = NullLog.getInstance();
+        }
+        return authManagerLog;
     }
 
     protected BoltConnectionTracker createSessionTracker()
