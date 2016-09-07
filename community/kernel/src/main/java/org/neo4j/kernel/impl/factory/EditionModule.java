@@ -65,8 +65,7 @@ public abstract class EditionModule
 {
     public abstract void registerProcedures( Procedures procedures ) throws KernelException;
 
-    protected Log authManagerLog( Config config, FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
-            throws IOException
+    protected Log authManagerLog()
     {
         return NullLog.getInstance();
     }
@@ -128,7 +127,6 @@ public abstract class EditionModule
         }
 
         String key = config.get( GraphDatabaseSettings.auth_manager );
-        Log authManagerLog = createAuthManagerLog( config, logging, fileSystem, jobScheduler );
 
         for ( AuthManager.Factory candidate : Service.load( AuthManager.Factory.class ) )
         {
@@ -136,43 +134,29 @@ public abstract class EditionModule
             try
             {
                 return candidate.newInstance( config, logging.getUserLogProvider(),
-                        authManagerLog, fileSystem, jobScheduler );
+                        authManagerLog(), fileSystem, jobScheduler );
             }
-            catch ( Exception e )
+            catch ( Exception e1 )
             {
                 logging.getInternalLog( GraphDatabaseFacadeFactory.class )
                         .info( "No auth manager implementation specified, defaulting to '" + candidateId + "'" );
-                return candidate.newInstance( config, logging.getUserLogProvider(),
-                        authManagerLog, fileSystem, jobScheduler );
+                try
+                {
+                    return candidate.newInstance( config, logging.getUserLogProvider(), authManagerLog(), fileSystem,
+                            jobScheduler );
+                }
+                catch ( Exception e2 )
+                {
+                    logging.getUserLog( GraphDatabaseFacadeFactory.class )
+                            .error( "No auth manager implementation specified and no default could be loaded. " +
+                                    "It is an illegal product configuration to have auth enabled and not provide an " +
+                                    "auth manager service." );
+                    throw new IllegalArgumentException( "Auth enabled but no auth manager found. This is an illegal product configuration." );
+                }
             }
         }
 
-        if ( key.isEmpty() )
-        {
-            logging.getUserLog( GraphDatabaseFacadeFactory.class )
-                    .error( "No auth manager implementation specified and no default could be loaded. " +
-                            "It is an illegal product configuration to have auth enabled and not provide an " +
-                            "auth manager service." );
-            throw new IllegalArgumentException( "Auth enabled but no auth manager found. This is an illegal product configuration." );
-        }
-
-        throw new IllegalArgumentException( "No auth manager found with the name '" + key + "'." );
-    }
-
-    private Log createAuthManagerLog( Config config, LogService logging, FileSystemAbstraction fileSystem,
-            JobScheduler jobScheduler )
-    {
-        Log authManagerLog;
-        try
-        {
-            authManagerLog = authManagerLog( config, fileSystem, jobScheduler );
-        }
-        catch ( IOException ioe ){
-            logging.getInternalLog( GraphDatabaseFacadeFactory.class ).warn(
-                    "Unable to create log for auth-manager. Auth logging turned off." );
-            authManagerLog = NullLog.getInstance();
-        }
-        return authManagerLog;
+        throw new IllegalArgumentException( "No auth manager factory detected!." );
     }
 
     protected BoltConnectionTracker createSessionTracker()

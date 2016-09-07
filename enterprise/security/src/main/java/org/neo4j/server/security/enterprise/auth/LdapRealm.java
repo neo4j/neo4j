@@ -456,22 +456,19 @@ public class LdapRealm extends JndiLdapRealm
 
             if ( result.hasMoreElements() )
             {
-                if ( securityLog.isDebugEnabled() )
-                {
-                    securityLog.warn( withRealm(
-                            format( "LDAP user search for user principal '%s' is ambiguous. The first match that will " +
+                securityLog.warn(
+                        securityLog.isDebugEnabled() ?
+                        withRealm(
+                            "LDAP user search for user principal '%s' is ambiguous. The first match that will " +
                                             "be checked for group membership is '%s' but the search also matches '%s'. " +
                                             "Please check your LDAP realm configuration.",
-                                    username,
-                                    searchResult.toString(), result.next().toString() ) ) );
-                }
-                else
-                {
-                    securityLog.warn( withRealm(
-                            format( "LDAP user search for user principal '%s' is ambiguous. The search matches more " +
+                            username, searchResult.toString(), result.next().toString() )
+                        :
+                        withRealm(
+                            "LDAP user search for user principal '%s' is ambiguous. The search matches more " +
                                             "than one entry. Please check your LDAP realm configuration.",
-                                    username ) ) );
-                }
+                            username )
+                    );
             }
 
             Attributes attributes = searchResult.getAttributes();
@@ -500,7 +497,7 @@ public class LdapRealm extends JndiLdapRealm
 
         if ( userSearchBase == null || userSearchBase.isEmpty() )
         {
-            securityLog.warn( "LDAP user search base is empty." );
+            securityLog.error( "LDAP user search base is empty." );
             proceedWithSearch = false;
         }
         if ( userSearchFilter == null || !userSearchFilter.contains( "{0}" ) )
@@ -511,7 +508,7 @@ public class LdapRealm extends JndiLdapRealm
         if ( membershipAttributeNames == null || membershipAttributeNames.isEmpty() )
         {
             // If we don't have any attributes to look for we will never find anything
-            securityLog.warn( "LDAP group membership attribute names are empty. Authorization will not be possible." );
+            securityLog.error( "LDAP group membership attribute names are empty. Authorization will not be possible." );
             proceedWithSearch = false;
         }
 

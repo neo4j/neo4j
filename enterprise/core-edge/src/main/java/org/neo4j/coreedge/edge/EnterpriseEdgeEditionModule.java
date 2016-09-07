@@ -51,6 +51,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -103,29 +104,15 @@ public class EnterpriseEdgeEditionModule extends EditionModule
     private SecurityLog securityLog;
 
     @Override
-    public void registerProcedures( Procedures procedures )
+    public void registerProcedures( Procedures procedures ) throws KernelException
     {
-        // TODO
-        try
-        {
-            procedures.register( new EdgeRoleProcedure() );
-            procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
-        }
-        catch ( ProcedureException e )
-        {
-            throw new RuntimeException( e );
-        }
+        procedures.register( new EdgeRoleProcedure() );
+        procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
     }
 
     @Override
-    protected Log authManagerLog( Config config, FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
-            throws IOException
+    protected Log authManagerLog()
     {
-        if (securityLog == null)
-        {
-            securityLog = new SecurityLog( config, fileSystem,
-                    jobScheduler.executor( JobScheduler.Groups.internalLogRotation ) );
-        }
         return securityLog;
     }
 
@@ -163,6 +150,9 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         life.add( dependencies.satisfyDependency(
                 new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
+
+        securityLog = SecurityLog.create( config, logging.getInternalLog( GraphDatabaseFacade.class ),
+                platformModule.fileSystem, platformModule.jobScheduler );
 
         life.add( dependencies.satisfyDependency( createAuthManager( config, logging,
                 platformModule.fileSystem, platformModule.jobScheduler ) ) );

@@ -138,6 +138,7 @@ import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableI
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -187,21 +188,14 @@ public class HighlyAvailableEditionModule
     private SecurityLog securityLog;
 
     @Override
-    protected Log authManagerLog( Config config, FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
-            throws IOException
+    protected Log authManagerLog()
     {
-        if (securityLog == null)
-        {
-            securityLog = new SecurityLog( config, fileSystem,
-                    jobScheduler.executor( JobScheduler.Groups.internalLogRotation ) );
-        }
         return securityLog;
     }
 
     @Override
-    public void registerProcedures( Procedures procedures )
+    public void registerProcedures( Procedures procedures ) throws KernelException
     {
-        super.registerProcedures( procedures );
         procedures.registerComponent( SecurityLog.class, (ctx) -> securityLog );
     }
 
@@ -515,6 +509,9 @@ public class HighlyAvailableEditionModule
                 createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
                         storeDir, lastUpdateTime, lastTxIdGetter, life ) );
 
+        securityLog = SecurityLog.create( config, logging.getInternalLog( GraphDatabaseFacade.class ),
+                platformModule.fileSystem, platformModule.jobScheduler );
+
         life.add( dependencies.satisfyDependency( createAuthManager( config, logging,
                 platformModule.fileSystem, platformModule.jobScheduler ) ) );
 
@@ -529,8 +526,7 @@ public class HighlyAvailableEditionModule
             {
                 throw new InvalidTransactionTypeKernelException(
                         "Modifying the database schema can only be done on the master server, " +
-                                "this server is a slave. Please issue schema modification commands directly to " +
-                                "the master."
+                        "this server is a slave. Please issue schema modification commands directly to the master."
                 );
             }
         };
@@ -859,12 +855,6 @@ public class HighlyAvailableEditionModule
                 return config.get( HaSettings.ha_server );
             }
         };
-    }
-
-    @Override
-    public void registerProcedures( Procedures procedures ) throws KernelException
-    {
-        // empty
     }
 
     @Override

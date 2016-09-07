@@ -72,6 +72,7 @@ import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -126,14 +127,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
     }
 
     @Override
-    protected Log authManagerLog( Config config, FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
-            throws IOException
+    protected Log authManagerLog()
     {
-        if (securityLog == null)
-        {
-            securityLog = new SecurityLog( config, fileSystem,
-                    jobScheduler.executor( JobScheduler.Groups.internalLogRotation ) );
-        }
         return securityLog;
     }
 
@@ -231,6 +226,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
         dependencies.satisfyDependency(
                 createKernelData( platformModule.fileSystem, platformModule.pageCache, platformModule.storeDir,
                         config, platformModule.graphDatabaseFacade, life ) );
+
+        securityLog = SecurityLog.create( config, logging.getInternalLog( GraphDatabaseFacade.class ),
+                platformModule.fileSystem, platformModule.jobScheduler );
 
         life.add( dependencies.satisfyDependency( createAuthManager( config, logging,
                 platformModule.fileSystem, platformModule.jobScheduler ) ) );

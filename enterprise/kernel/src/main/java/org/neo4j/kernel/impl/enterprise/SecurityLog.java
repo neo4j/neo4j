@@ -28,6 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
@@ -206,4 +207,17 @@ public class SecurityLog implements Log
         inner.bulk( consumer );
     }
 
+    public static SecurityLog create( Config config, Log log, FileSystemAbstraction fileSystem,
+            JobScheduler jobScheduler )
+    {
+        try
+        {
+            return new SecurityLog( config, fileSystem,
+                    jobScheduler.executor( JobScheduler.Groups.internalLogRotation ) );
+        }
+        catch ( IOException ioe ){
+            log.warn( "Unable to create log for auth-manager. Auth logging turned off." );
+            return null;
+        }
+    }
 }
